@@ -102,11 +102,19 @@ printf "${GREEN}Installed runtime versions match manifests.${NC}\n"
 printf "${GREEN}Detected package managers: npm and pip${NC}\n"
 
 if [[ -f package.json ]]; then
-  printf "package.json detected. Running npm ci...\n"
-  npm ci
+  if [[ -f package-lock.json ]]; then
+    printf "package.json and package-lock.json detected. Running npm ci...\n"
+    npm ci
+  else
+    printf "package.json detected without package-lock.json. Running npm install...\n"
+    npm install
+  fi
 else
   printf "${YELLOW}No package.json found. Skipping npm ci for this fresh-clone check.${NC}\n"
 fi
+
+printf "Installing Python package with dev dependencies...\n"
+python -m pip install -e ".[dev]"
 
 printf "Running hello checks...\n"
 NODE_HELLO="$(node -e "console.log('hello')" | tr -d '\r')"
@@ -116,3 +124,14 @@ PYTHON_HELLO="$(python -c "print('hello')" | tr -d '\r')"
 [[ "$PYTHON_HELLO" == "hello" ]] || fail "Python hello check failed. Expected 'hello', Found '$PYTHON_HELLO'."
 
 printf "${GREEN}Hello checks passed for both Node and Python stacks.${NC}\n"
+
+if [[ -f package.json ]]; then
+  printf "Running TypeScript checks...\n"
+  npm run typecheck
+  npm test
+fi
+
+printf "Running Python checks...\n"
+python -m pytest
+
+printf "${GREEN}Project checks passed for both TypeScript and Python.${NC}\n"
