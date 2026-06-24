@@ -94,4 +94,18 @@ Success means:
 
 - `node --version` matches [`.nvmrc`](./.nvmrc) and the `nodejs` entry in [`.tool-versions`](./.tool-versions)
 - `python --version` matches the `python` entry in [`.tool-versions`](./.tool-versions) and `requires-python` in [`pyproject.toml`](./pyproject.toml)
+- running the setup script completes with both hello checks green
+
+## Security Information
+
+Due to the nature of the project holding sensitive information, it is essential that all engineers working on the project have a common understanding of what privileges and secrets management is necessary.
+1. When working on the project, all engineers must create code operating under the lowest level privileges possible to avoid harmful manipulation of unrelated systems.
+2. All additions must be thoroughly reviewed to ensure that no secrets (API keys, tokens, forms filled in with authentic looking information) are used in AI prompts or committed to repositories. Any information that is not listed as *public* information (CUI and SBU information) should *never* be entered into prompts or committed. 
+3. Types of sensitive artifacts: API keys, service tokens, envrionment variables. All of these should be checked to make sure that they are excluded in the .gitignore (it would look like `.env` as a file).
+
+### Security Checklist
+- [ ] Code additions are being made at lowest level privileges affecting the least amount of code necessary
+- [ ] Clearly fake synthetic information has been generated for any development of systems that process real sensitive information
+- [ ] Ensure all `.env` files are ignored in the .gitignore
+- [ ] `config.toml` file includes `sandbox_mode = "workspace-write"` (*never* `sandbox_mode = "danger-full-access"`) and `approval_policy = "on-request"`.
 - running the setup script completes with both hello checks and project checks green
