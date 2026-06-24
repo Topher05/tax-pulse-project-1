@@ -115,10 +115,25 @@ Write-Host "Installed runtime versions match manifests." -ForegroundColor Green
 Write-Host "Detected package managers: npm and pip" -ForegroundColor Green
 
 if (Test-Path -LiteralPath "package.json") {
-    Write-Host "package.json detected. Running npm ci..." -ForegroundColor Cyan
-    & npm ci | Out-Host
+    if (Test-Path -LiteralPath "package-lock.json") {
+        Write-Host "package.json and package-lock.json detected. Running npm ci..." -ForegroundColor Cyan
+        & npm ci | Out-Host
+    } else {
+        Write-Host "package.json detected without package-lock.json. Running npm install..." -ForegroundColor Cyan
+        & npm install | Out-Host
+    }
+
+    if ($LASTEXITCODE -ne 0) {
+        Fail "npm dependency installation failed."
+    }
 } else {
     Write-Host "No package.json found. Skipping npm ci for this fresh-clone check." -ForegroundColor Yellow
+}
+
+Write-Host "Installing Python package with dev dependencies..." -ForegroundColor Cyan
+& py -$PythonMajorMinor -m pip install -e ".[dev]" | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    Fail "Python package installation failed."
 }
 
 Write-Host "Running hello checks..." -ForegroundColor Cyan
@@ -134,3 +149,24 @@ if ($pythonHello -ne "hello") {
 }
 
 Write-Host "Hello checks passed for both Node and Python stacks." -ForegroundColor Green
+
+if (Test-Path -LiteralPath "package.json") {
+    Write-Host "Running TypeScript checks..." -ForegroundColor Cyan
+    & npm run typecheck | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        Fail "TypeScript typecheck failed."
+    }
+
+    & npm test | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        Fail "TypeScript tests failed."
+    }
+}
+
+Write-Host "Running Python checks..." -ForegroundColor Cyan
+& py -$PythonMajorMinor -m pytest | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    Fail "Python tests failed."
+}
+
+Write-Host "Project checks passed for both TypeScript and Python." -ForegroundColor Green

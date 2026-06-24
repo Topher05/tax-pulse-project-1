@@ -1,5 +1,14 @@
 # tax-pulse-project-team-1
 
+## Project Layout
+
+This workspace is scaffolded as a small dual-runtime project:
+
+- TypeScript source lives in [`src/typescript`](./src/typescript)
+- Python source lives in [`src/python/tax_pulse_project_team_1`](./src/python/tax_pulse_project_team_1)
+- TypeScript tests live in [`tests/typescript`](./tests/typescript)
+- Python tests live in [`tests/python`](./tests/python)
+
 ## Toolchain
 
 - `nvm` is the required Node.js installer for both setup scripts.
@@ -39,8 +48,28 @@ Each script:
 - installs Python from the pinned manifest version
 - verifies the Node and Python runtimes plus `npm` and `pip`
 - fails if the active Node or Python version differs from the manifest pin
+- installs TypeScript dependencies from [`package.json`](./package.json)
+- installs the Python package in editable mode with dev dependencies
 - runs a `hello` check for both the Node and Python stacks
-- skips `npm ci` when no `package.json` exists
+- runs TypeScript type checks and smoke tests
+- runs Python smoke tests
+
+## Development Commands
+
+After setup, run these from the repository root:
+
+```bash
+npm run dev
+npm run typecheck
+npm test
+npm run build
+npm start
+```
+
+```bash
+python -m tax_pulse_project_team_1.main
+python -m pytest
+```
 
 ## Manual Verification
 
@@ -54,8 +83,15 @@ npm --version
 py -3.13 -m pip --version
 ```
 
+Install dependencies manually if needed:
+
+```powershell
+npm install
+py -3.13 -m pip install -e ".[dev]"
+```
+
 Success means:
 
 - `node --version` matches [`.nvmrc`](./.nvmrc) and the `nodejs` entry in [`.tool-versions`](./.tool-versions)
 - `python --version` matches the `python` entry in [`.tool-versions`](./.tool-versions) and `requires-python` in [`pyproject.toml`](./pyproject.toml)
-- running the setup script completes with both hello checks green
+- running the setup script completes with both hello checks and project checks green
