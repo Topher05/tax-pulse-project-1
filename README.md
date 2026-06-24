@@ -2,8 +2,12 @@
 
 ## Toolchain
 
-- Node.js is pinned to `22.0.0` in [`.nvmrc`](./.nvmrc) and [`.tool-versions`](./.tool-versions).
-- Python is pinned to `3.13.0` in [`.tool-versions`](./.tool-versions) and constrained to `3.13.0` in [`pyproject.toml`](./pyproject.toml).
+- `nvm` is the required Node.js installer for both setup scripts.
+- `pyenv` is the required Python installer for `setup.sh`.
+- `nvm for Windows`, `winget`, and the `py` launcher are required for `setup.ps1`.
+- Node.js is pinned in both [`.nvmrc`](./.nvmrc) and [`.tool-versions`](./.tool-versions).
+- Python is pinned in [`.tool-versions`](./.tool-versions) and must exactly match `requires-python` in [`pyproject.toml`](./pyproject.toml).
+- The setup scripts treat the manifests as strict pins and exit non-zero on any mismatch.
 
 ## Verify Active Versions
 
@@ -15,3 +19,43 @@ py -3.13 --version
 ```
 
 The reported versions should match the pinned values above.
+
+## Setup
+
+From the repository root:
+
+```powershell
+./setup.ps1
+```
+
+```bash
+./setup.sh
+```
+
+Each script:
+
+- validates that `.nvmrc`, `.tool-versions`, and `pyproject.toml` agree on the pinned versions
+- installs Node from the pinned manifest version
+- installs Python from the pinned manifest version
+- verifies the Node and Python runtimes plus `npm` and `pip`
+- fails if the active Node or Python version differs from the manifest pin
+- runs a `hello` check for both the Node and Python stacks
+- skips `npm ci` when no `package.json` exists
+
+## Manual Verification
+
+Run this from the repository root:
+
+```powershell
+nvm use 22.0.0
+node --version
+py -3.13 --version
+npm --version
+py -3.13 -m pip --version
+```
+
+Success means:
+
+- `node --version` matches [`.nvmrc`](./.nvmrc) and the `nodejs` entry in [`.tool-versions`](./.tool-versions)
+- `python --version` matches the `python` entry in [`.tool-versions`](./.tool-versions) and `requires-python` in [`pyproject.toml`](./pyproject.toml)
+- running the setup script completes with both hello checks green
