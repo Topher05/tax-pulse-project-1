@@ -71,6 +71,16 @@ python -m tax_pulse_project_team_1.main
 python -m pytest
 ```
 
+## Contributing and Codex Context
+
+Codex should follow the repository conventions in [`AGENTS.md`](./AGENTS.md), including
+the TaxPulse domain constraints, Python and TypeScript layout, formatter expectations,
+and validation commands.
+
+Repo-local Codex settings live in [`.codex/config.toml`](./.codex/config.toml). Keep
+the sandbox at `workspace-write` with `approval_policy = "on-request"` for least-privilege
+AI pairing.
+
 ## Manual Verification
 
 Run this from the repository root:
