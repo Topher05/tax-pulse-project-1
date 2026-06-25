@@ -1,7 +1,9 @@
+import { fileURLToPath } from "node:url";
+
 export function createGreeting(runtime: string = "TypeScript"): string {
   return `hello from ${runtime}`;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   console.log(createGreeting());
 }
