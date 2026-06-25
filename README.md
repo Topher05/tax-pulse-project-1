@@ -54,6 +54,10 @@ Each script:
 - runs TypeScript type checks and smoke tests
 - runs Python smoke tests
 
+On Windows, if `setup.ps1` installs `nvm for Windows` or Python for the first time, close and reopen PowerShell before rerunning version checks or `nvm`/`py` commands. 
+
+New installs may not be visible to the current shell session immediately. System restart may be required if terminal refresh doesn't respond to test commands
+
 ## Development Commands
 
 After setup, run these from the repository root:
@@ -110,7 +114,7 @@ Success means:
 
 Due to the nature of the project holding sensitive information, it is essential that all engineers working on the project have a common understanding of what privileges and secrets management is necessary.
 1. When working on the project, all engineers must create code operating under the lowest level privileges possible to avoid harmful manipulation of unrelated systems.
-2. All additions must be thoroughly reviewed to ensure that no secrets (API keys, tokens, forms filled in with authentic looking information) are used in AI prompts or committed to repositories. Any information that is not listed as *public* information (CUI and SBU information) should *never* be entered into prompts or committed. 
+2. All additions must be thoroughly reviewed to ensure that no secrets (API keys, tokens, forms filled in with authentic looking information) are used in AI prompts or committed to repositories. Any information that is not listed as *public* information (CUI and SBU information) should *never* be entered into prompts or committed.
 3. Types of sensitive artifacts: API keys, service tokens, envrionment variables. All of these should be checked to make sure that they are excluded in the .gitignore (it would look like `.env` as a file).
 
 ### Security Checklist
