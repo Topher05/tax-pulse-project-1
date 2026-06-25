@@ -1,4 +1,18 @@
 import { fileURLToPath } from "node:url";
+import { z } from "zod";
+
+export const taxPlanCycleStages = [
+  "Intake",
+  "Data Aggregation",
+  "Modeling",
+  "Review",
+  "Client Approval",
+  "Executed",
+  "Archived",
+] as const;
+
+export type TaxPlanCycleStage = (typeof taxPlanCycleStages)[number];
+
 export {
   clientIncomeDeductionAggregationPayloadSchema,
   deductionSchema,
