@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { strict as assert } from "node:assert";
+import { test } from "node:test";
 
 import {
   clientIncomeDeductionAggregationPayloadSchema,
@@ -26,7 +26,10 @@ test("tax plan cycle stages are listed in canonical order", () => {
 });
 
 const validStage: TaxPlanCycleStage = "Review";
-assert.equal(validStage, "Review");
+
+test("tax plan cycle stage type accepts known stages", () => {
+  assert.equal(validStage, "Review");
+});
 
 // @ts-expect-error unknown stage strings are not assignable
 const invalidStage: TaxPlanCycleStage = "Unknown";
