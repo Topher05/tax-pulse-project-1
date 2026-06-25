@@ -10,6 +10,7 @@ requires-python = "==3.13.14"
 
 [project.optional-dependencies]
 dev = [
+  "pydantic>=2,<3",
   "pytest>=8.0",
   "ruff>=0.8",
 ]
