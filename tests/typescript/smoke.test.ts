@@ -4,12 +4,33 @@ import test from "node:test";
 import {
   clientIncomeDeductionAggregationPayloadSchema,
   createGreeting,
+  taxPlanCycleStages,
   type ClientIncomeDeductionAggregationPayload,
+  type TaxPlanCycleStage,
 } from "../../src/typescript/index.js";
 
 test("createGreeting returns the TypeScript smoke message", () => {
   assert.equal(createGreeting(), "hello from TypeScript");
 });
+
+test("tax plan cycle stages are listed in canonical order", () => {
+  assert.deepEqual(taxPlanCycleStages, [
+    "Intake",
+    "Data Aggregation",
+    "Modeling",
+    "Review",
+    "Client Approval",
+    "Executed",
+    "Archived",
+  ]);
+});
+
+const validStage: TaxPlanCycleStage = "Review";
+assert.equal(validStage, "Review");
+
+// @ts-expect-error unknown stage strings are not assignable
+const invalidStage: TaxPlanCycleStage = "Unknown";
+void invalidStage;
 
 test("client income and deduction aggregation payload validates", () => {
   const payload: ClientIncomeDeductionAggregationPayload = {
