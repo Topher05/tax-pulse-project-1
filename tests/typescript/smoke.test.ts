@@ -1,11 +1,14 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
+import { z } from "zod";
 
 import {
   clientIncomeDeductionAggregationPayloadSchema,
   createGreeting,
+  taxPlanCycleSchema,
   taxPlanCycleStages,
   type ClientIncomeDeductionAggregationPayload,
+  type TaxPlanCycle,
   type TaxPlanCycleStage,
 } from "../../src/typescript/index.js";
 
@@ -34,6 +37,58 @@ test("tax plan cycle stage type accepts known stages", () => {
 // @ts-expect-error unknown stage strings are not assignable
 const invalidStage: TaxPlanCycleStage = "Unknown";
 void invalidStage;
+
+const validTaxPlanCycle: TaxPlanCycle = {
+  stage: "Review",
+  owner: "advisor-123",
+  priority: "high",
+  due_date: "2026-12-31",
+  on_hold: false,
+};
+
+test("tax plan cycle validates at the boundary", () => {
+  assert.deepEqual(
+    taxPlanCycleSchema.parse(validTaxPlanCycle),
+    validTaxPlanCycle,
+  );
+});
+
+test("tax plan cycle rejects unknown stage values with a zod error", () => {
+  const result = taxPlanCycleSchema.safeParse({
+    ...validTaxPlanCycle,
+    stage: "Unknown",
+  });
+
+  assert.equal(result.success, false);
+
+  if (!result.success) {
+    assert.ok(result.error instanceof z.ZodError);
+    assert.equal(result.error.issues[0]?.path[0], "stage");
+  }
+});
+
+test("tax plan cycle validates owner, priority, due_date, and hold reason boundaries", () => {
+  const invalidPayloads = [
+    { ...validTaxPlanCycle, owner: "" },
+    { ...validTaxPlanCycle, priority: "urgent" },
+    { ...validTaxPlanCycle, due_date: "12/31/2026" },
+    { ...validTaxPlanCycle, on_hold: true },
+  ];
+
+  for (const invalidPayload of invalidPayloads) {
+    assert.equal(taxPlanCycleSchema.safeParse(invalidPayload).success, false);
+  }
+});
+
+test("tax plan cycle accepts a hold reason when on hold", () => {
+  const heldCycle: TaxPlanCycle = {
+    ...validTaxPlanCycle,
+    on_hold: true,
+    hold_reason: "Awaiting client brokerage statement",
+  };
+
+  assert.deepEqual(taxPlanCycleSchema.parse(heldCycle), heldCycle);
+});
 
 test("client income and deduction aggregation payload validates", () => {
   const payload: ClientIncomeDeductionAggregationPayload = {
