@@ -10,6 +10,7 @@ export {
 } from "./aggregationPayload.js";
 
 export {
+  isLegalTaxPlanCycleStageTransition,
   taxPlanCyclePrioritySchema,
   taxPlanCycleSchema,
   taxPlanCycleStageSchema,

@@ -14,6 +14,13 @@ export const taxPlanCycleStageSchema = z.enum(taxPlanCycleStages);
 
 export const taxPlanCyclePrioritySchema = z.enum(["low", "medium", "high"]);
 
+export function isLegalTaxPlanCycleStageTransition(
+  from: TaxPlanCycleStage,
+  to: TaxPlanCycleStage,
+): boolean {
+  return taxPlanCycleStages.indexOf(to) === taxPlanCycleStages.indexOf(from) + 1;
+}
+
 export const taxPlanCycleSchema = z
   .object({
     stage: taxPlanCycleStageSchema,

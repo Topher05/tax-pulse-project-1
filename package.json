@@ -12,7 +12,7 @@
     "dev": "tsx src/typescript/index.ts",
     "start": "node dist/typescript/index.js",
     "test": "npm run typecheck && node --import tsx --test tests/typescript/smoke.test.ts && npm run test:vitest",
-    "test:vitest": "vitest run tests/typescript/taxPlanCycle.test.ts",
+    "test:vitest": "vitest run tests/typescript/taxPlanCycle*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit"
   },
   "devDependencies": {
