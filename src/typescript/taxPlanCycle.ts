@@ -3,7 +3,7 @@ import { z } from "zod";
 export const taxPlanCycleStages = [
   "Intake",
   "Data Aggregation",
-  "Modeling",
+  "Modeling Advisor",
   "Review",
   "Client Approval",
   "Executed",
