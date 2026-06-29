@@ -10,7 +10,7 @@ CREATE TABLE tax_plan_cycle (
     stage IN (
       'Intake',
       'Data Aggregation',
-      'Modeling Advisor',
+      'Modeling',
       'Review',
       'Client Approval',
       'Executed',

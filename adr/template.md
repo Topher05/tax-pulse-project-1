@@ -8,3 +8,5 @@ Record the decision in clear, direct language.
 
 ## Consequences
 Describe the expected benefits, tradeoffs, and follow-up constraints created by this decision.
+
+## Alternatives considered

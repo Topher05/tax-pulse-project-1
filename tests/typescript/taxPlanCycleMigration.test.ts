@@ -128,7 +128,7 @@ describe("tax plan cycle migration", () => {
       expect(structure.constraints.tax_plan_cycle_stage_check?.type).toBe("c");
       expect(
         structure.constraints.tax_plan_cycle_stage_check?.definition,
-      ).toContain("Modeling Advisor");
+      ).toContain("Modeling");
 
       await client.query(
         `

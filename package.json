@@ -15,7 +15,7 @@
     "test": "npm run typecheck && node --import tsx --test tests/typescript/smoke.test.ts && npm run test:vitest",
 
     "test:migration": "vitest run tests/typescript/taxPlanCycleMigration.test.ts",
-    "test:vitest": "vitest run tests/typescript/taxPlanCycle", "tests/typescript/taxPlanCycleTransitions.test.ts",
+    "test:vitest": "vitest run tests/typescript/taxPlanCycle.test.ts tests/typescript/taxPlanCycleTransitions.test.ts",
 
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit"
   },
