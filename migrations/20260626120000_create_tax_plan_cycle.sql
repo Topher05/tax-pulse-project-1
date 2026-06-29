@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   id TEXT PRIMARY KEY
 );
 
-CREATE TABLE tax_plan_cycle (
+CREATE TABLE IF NOT EXISTS tax_plan_cycle (
   client_id TEXT CONSTRAINT tax_plan_cycle_client_id_pk PRIMARY KEY,
   tenant_id TEXT NOT NULL CONSTRAINT tax_plan_cycle_tenant_id_fk REFERENCES tenants (id),
   planning_period TEXT NOT NULL,
@@ -24,5 +24,5 @@ CREATE TABLE tax_plan_cycle (
   hold_reason TEXT
 );
 
-CREATE INDEX tax_plan_cycle_tenant_id_due_date_idx
+CREATE INDEX IF NOT EXISTS tax_plan_cycle_tenant_id_due_date_idx
   ON tax_plan_cycle (tenant_id, due_date);
