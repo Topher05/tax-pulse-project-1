@@ -1,15 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, test } from "vitest";
+import type { Client } from "pg";
 
 import {
   applyMigrations,
-  isPsqlAvailable,
-  runPsqlScript,
+  getDatabaseUrlFromEnv,
+  withDatabaseClient,
 } from "../../src/typescript/postgresMigrations.js";
 
-const databaseUrl = process.env.DATABASE_URL;
-const canRunIntegration = databaseUrl !== undefined && isPsqlAvailable();
-const describeIfDatabase = canRunIntegration ? describe : describe.skip;
+const databaseUrl = getDatabaseUrlFromEnv();
 
 const expectedColumns = [
   "client_id",
@@ -31,73 +30,86 @@ function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
 }
 
-function schemaPrelude(schemaName: string): string {
-  return [
-    `DROP SCHEMA IF EXISTS ${quoteIdentifier(schemaName)} CASCADE;`,
-    `CREATE SCHEMA ${quoteIdentifier(schemaName)};`,
-    `SET search_path TO ${quoteIdentifier(schemaName)}, public;`,
-    "CREATE TABLE tenants (id text PRIMARY KEY);",
-    "INSERT INTO tenants (id) VALUES ('tenant-001'), ('tenant-002');",
-  ].join("\n");
-}
+async function withTestSchema<T>(
+  callback: (client: Client) => Promise<T>,
+): Promise<T> {
+  return withDatabaseClient(databaseUrl, async (client) => {
+    const schemaName = createTestSchemaName();
+    const quotedSchemaName = quoteIdentifier(schemaName);
 
-function applyTestMigration(schemaName: string): void {
-  applyMigrations(databaseUrl!, {
-    preludeSql: `SET search_path TO ${quoteIdentifier(schemaName)}, public;`,
+    await client.query(`CREATE SCHEMA ${quotedSchemaName}`);
+    await client.query(`SET search_path TO ${quotedSchemaName}, public`);
+
+    try {
+      return await callback(client);
+    } finally {
+      await client.query("SET search_path TO public");
+      await client.query(`DROP SCHEMA IF EXISTS ${quotedSchemaName} CASCADE`);
+    }
   });
 }
 
-describeIfDatabase("tax plan cycle migration", () => {
-  test("creates the table, verifies it is empty, and persists two records", () => {
-    const schemaName = createTestSchemaName();
+async function getTableStructure(client: Client): Promise<{
+  columns: string[];
+  constraints: Record<string, { definition: string; type: string }>;
+  indexes: string[];
+  rowCount: number;
+}> {
+  const rowCountResult = await client.query(
+    "SELECT count(*)::int AS row_count FROM tax_plan_cycle",
+  );
+  const columnsResult = await client.query(
+    `
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'tax_plan_cycle'
+      ORDER BY ordinal_position
+    `,
+  );
+  const constraintsResult = await client.query(
+    `
+      SELECT conname, contype, pg_get_constraintdef(oid) AS definition
+      FROM pg_constraint
+      WHERE conrelid = 'tax_plan_cycle'::regclass
+    `,
+  );
+  const indexesResult = await client.query(
+    `
+      SELECT indexname
+      FROM pg_indexes
+      WHERE schemaname = current_schema()
+        AND tablename = 'tax_plan_cycle'
+      ORDER BY indexname
+    `,
+  );
 
-    try {
-      runPsqlScript(databaseUrl!, schemaPrelude(schemaName));
-      applyTestMigration(schemaName);
+  const constraints = Object.fromEntries(
+    constraintsResult.rows.map((row) => [
+      String(row.conname),
+      {
+        definition: String(row.definition),
+        type: String(row.contype),
+      },
+    ]),
+  );
 
-      const structureJson = runPsqlScript(
-        databaseUrl!,
-        [
-          `SET search_path TO ${quoteIdentifier(schemaName)}, public;`,
-          `SELECT json_build_object(
-            'row_count', (SELECT count(*) FROM tax_plan_cycle),
-            'columns', (
-              SELECT json_agg(column_name ORDER BY ordinal_position)
-              FROM information_schema.columns
-              WHERE table_schema = current_schema()
-                AND table_name = 'tax_plan_cycle'
-            ),
-            'constraints', (
-              SELECT json_object_agg(
-                conname,
-                json_build_object(
-                  'type', contype,
-                  'definition', pg_get_constraintdef(oid)
-                )
-              )
-              FROM pg_constraint
-              WHERE conrelid = 'tax_plan_cycle'::regclass
-            ),
-            'indexes', (
-              SELECT json_agg(indexname ORDER BY indexname)
-              FROM pg_indexes
-              WHERE schemaname = current_schema()
-                AND tablename = 'tax_plan_cycle'
-            )
-          )::text;`,
-        ].join("\n"),
-      );
-      const structure = JSON.parse(structureJson) as {
-        columns: string[];
-        constraints: Record<
-          string,
-          { definition: string; type: string }
-        >;
-        indexes: string[];
-        row_count: number;
-      };
+  return {
+    rowCount: Number(rowCountResult.rows[0]?.row_count ?? 0),
+    columns: columnsResult.rows.map((row) => String(row.column_name)),
+    constraints,
+    indexes: indexesResult.rows.map((row) => String(row.indexname)),
+  };
+}
 
-      expect(structure.row_count).toBe(0);
+describe("tax plan cycle migration", () => {
+  test("creates the table, verifies it is empty, and persists two records", async () => {
+    await withTestSchema(async (client) => {
+      await applyMigrations(client);
+
+      const structure = await getTableStructure(client);
+
+      expect(structure.rowCount).toBe(0);
       expect(structure.columns).toEqual(expectedColumns);
       expect(structure.indexes).toContain(
         "tax_plan_cycle_tenant_id_due_date_idx",
@@ -109,93 +121,71 @@ describeIfDatabase("tax plan cycle migration", () => {
       expect(structure.constraints.tax_plan_cycle_tenant_id_fk?.type).toBe("f");
       expect(
         structure.constraints.tax_plan_cycle_tenant_id_fk?.definition,
-      ).toContain("REFERENCES tenants");
+      ).toContain("FOREIGN KEY (tenant_id)");
       expect(
         structure.constraints.tax_plan_cycle_tenant_id_fk?.definition,
-      ).toContain("(id)");
+      ).toContain("REFERENCES tenants(id)");
       expect(structure.constraints.tax_plan_cycle_stage_check?.type).toBe("c");
       expect(
         structure.constraints.tax_plan_cycle_stage_check?.definition,
       ).toContain("Modeling Advisor");
 
-      runPsqlScript(
-        databaseUrl!,
+      await client.query(
+        `
+          INSERT INTO tax_plan_cycle (
+            client_id,
+            tenant_id,
+            planning_period,
+            stage,
+            owner,
+            priority,
+            due_date,
+            on_hold,
+            hold_reason
+          ) VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9),
+            ($10, $11, $12, $13, $14, $15, $16, $17, $18)
+        `,
         [
-          `SET search_path TO ${quoteIdentifier(schemaName)}, public;`,
-          `
-            INSERT INTO tax_plan_cycle (
-              client_id,
-              tenant_id,
-              planning_period,
-              stage,
-              owner,
-              priority,
-              due_date,
-              on_hold,
-              hold_reason
-            ) VALUES
-              (
-                'client-001',
-                'tenant-001',
-                '2026-Q3',
-                'Intake',
-                'advisor-001',
-                'high',
-                '2026-07-15',
-                FALSE,
-                NULL
-              ),
-              (
-                'client-002',
-                'tenant-001',
-                '2026-Q4',
-                'Review',
-                'advisor-002',
-                'medium',
-                '2026-08-20',
-                TRUE,
-                'Awaiting broker statements'
-              );
-          `,
-        ].join("\n"),
+          "client-001",
+          "tenant-001",
+          "2026-Q3",
+          "Intake",
+          "advisor-001",
+          "high",
+          "2026-07-15",
+          false,
+          null,
+          "client-002",
+          "tenant-001",
+          "2026-Q4",
+          "Review",
+          "advisor-002",
+          "medium",
+          "2026-08-20",
+          true,
+          "Awaiting broker statements",
+        ],
       );
 
-      const rowsJson = runPsqlScript(
-        databaseUrl!,
-        [
-          `SET search_path TO ${quoteIdentifier(schemaName)}, public;`,
-          `
-            SELECT json_agg(row_to_json(records) ORDER BY client_id)::text
-            FROM (
-              SELECT
-                client_id,
-                tenant_id,
-                planning_period,
-                stage,
-                owner,
-                priority,
-                due_date::text AS due_date,
-                on_hold,
-                hold_reason
-              FROM tax_plan_cycle
-              ORDER BY client_id
-            ) AS records;
-          `,
-        ].join("\n"),
+      const rows = await client.query(
+        `
+          SELECT
+            client_id,
+            tenant_id,
+            planning_period,
+            stage,
+            owner,
+            priority,
+            due_date::text AS due_date,
+            on_hold,
+            hold_reason
+          FROM tax_plan_cycle
+          ORDER BY client_id
+        `,
       );
-      const rows = JSON.parse(rowsJson) as Array<{
-        client_id: string;
-        due_date: string;
-        hold_reason: string | null;
-        on_hold: boolean;
-        owner: string;
-        planning_period: string;
-        priority: string;
-        stage: string;
-        tenant_id: string;
-      }>;
 
-      expect(rows).toEqual([
+      expect(rows.rows).toEqual([
         {
           client_id: "client-001",
           tenant_id: "tenant-001",
@@ -219,55 +209,39 @@ describeIfDatabase("tax plan cycle migration", () => {
           hold_reason: "Awaiting broker statements",
         },
       ]);
-    } finally {
-      runPsqlScript(
-        databaseUrl!,
-        `DROP SCHEMA IF EXISTS ${quoteIdentifier(schemaName)} CASCADE;`,
-      );
-    }
+    });
   });
 
-  test("rejects invalid stage values", () => {
-    const schemaName = createTestSchemaName();
+  test("rejects invalid stage values", async () => {
+    await withTestSchema(async (client) => {
+      await applyMigrations(client);
 
-    try {
-      runPsqlScript(databaseUrl!, schemaPrelude(schemaName));
-      applyTestMigration(schemaName);
-
-      expect(() =>
-        runPsqlScript(
-          databaseUrl!,
+      await expect(
+        client.query(
+          `
+            INSERT INTO tax_plan_cycle (
+              client_id,
+              tenant_id,
+              planning_period,
+              stage,
+              owner,
+              priority,
+              due_date,
+              on_hold
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          `,
           [
-            `SET search_path TO ${quoteIdentifier(schemaName)}, public;`,
-            `
-              INSERT INTO tax_plan_cycle (
-                client_id,
-                tenant_id,
-                planning_period,
-                stage,
-                owner,
-                priority,
-                due_date,
-                on_hold
-              ) VALUES (
-                'client-invalid',
-                'tenant-001',
-                '2026-Q3',
-                'Planning',
-                'advisor-003',
-                'low',
-                '2026-09-01',
-                FALSE
-              );
-            `,
-          ].join("\n"),
+            "client-invalid",
+            "tenant-001",
+            "2026-Q3",
+            "Planning",
+            "advisor-003",
+            "low",
+            "2026-09-01",
+            false,
+          ],
         ),
-      ).toThrow();
-    } finally {
-      runPsqlScript(
-        databaseUrl!,
-        `DROP SCHEMA IF EXISTS ${quoteIdentifier(schemaName)} CASCADE;`,
-      );
-    }
+      ).rejects.toThrow();
+    });
   });
 });
