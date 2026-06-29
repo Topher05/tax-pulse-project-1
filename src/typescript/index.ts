@@ -8,6 +8,11 @@ export {
   type Deduction,
   type IncomeEvent,
 } from "./aggregationPayload.js";
+export {
+  TaxPulseAggregationClient,
+  type AggregationDataSource,
+} from "./aggregationClient.js";
+export { InMemoryMockAggregationDataSource } from "./mockAggregationDataSource.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
