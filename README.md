@@ -75,6 +75,39 @@ python -m tax_pulse_project_team_1.main
 python -m pytest
 ```
 
+## Migration Commands
+
+The PostgreSQL migration workflow is SQL-only and uses the top-level
+[`migrations/`](./migrations) directory.
+
+Local setup:
+
+1. Install PostgreSQL 18 using the official installer or your platform package manager. [link here](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
+2. Start the local PostgreSQL service.
+3. Create a database for this project `taxpulse`.
+4. User setup
+    - Setup a new super user, and password use these in the config file
+    - Can use pgAdmin or psql to setup user, developer can select preference
+4. Copy [`.env.example`](./.env.example) to `.env`.
+5. Edit `.env` and set `DATABASE_URL` to your local PostgreSQL connection string.
+
+Apply all migrations:
+
+```powershell
+npm run migrate
+```
+
+Run the migration integration test:
+
+```powershell
+npm run test:migration
+```
+
+Notes:
+
+- The Node scripts read `.env` automatically through `dotenv`.
+- The migration bootstrap creates the minimal `tenants` table needed for the `tax_plan_cycle` foreign key path.
+
 ## Contributing and Codex Context
 
 Codex should follow the repository conventions in [`AGENTS.md`](./AGENTS.md), including

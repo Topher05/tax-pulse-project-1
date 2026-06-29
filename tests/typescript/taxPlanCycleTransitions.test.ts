@@ -11,8 +11,8 @@ describe("tax plan cycle stage transitions", () => {
     to: TaxPlanCycleStage;
   }> = [
     { from: "Intake", to: "Data Aggregation" },
-    { from: "Data Aggregation", to: "Modeling" },
-    { from: "Modeling", to: "Review" },
+    { from: "Data Aggregation", to: "Modeling Advisor" },
+    { from: "Modeling Advisor", to: "Review" },
     { from: "Review", to: "Client Approval" },
     { from: "Client Approval", to: "Executed" },
     { from: "Executed", to: "Archived" },
@@ -29,7 +29,7 @@ describe("tax plan cycle stage transitions", () => {
     from: TaxPlanCycleStage;
     to: TaxPlanCycleStage;
   }> = [
-    { from: "Intake", to: "Modeling" },
+    { from: "Intake", to: "Modeling Advisor" },
     { from: "Data Aggregation", to: "Review" },
     { from: "Review", to: "Executed" },
   ];
