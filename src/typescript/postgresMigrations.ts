@@ -1,16 +1,25 @@
-import { spawnSync } from "node:child_process";
+import { config as loadEnv } from "dotenv";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { Client } from "pg";
+
+loadEnv();
 
 const repoRoot = process.cwd();
 
 export const migrationsDirectory = resolve(repoRoot, "migrations");
 const migrationNamePattern = /^\d{14}_[a-z0-9][a-z0-9_-]*\.sql$/;
 
-export function isPsqlAvailable(): boolean {
-  const result = spawnSync("psql", ["--version"], { encoding: "utf8" });
+export function getDatabaseUrlFromEnv(): string {
+  const databaseUrl = process.env.DATABASE_URL?.trim();
 
-  return result.error === undefined && result.status === 0;
+  if (!databaseUrl) {
+    throw new Error(
+      "DATABASE_URL is required. Copy .env.example to .env and set DATABASE_URL.",
+    );
+  }
+
+  return databaseUrl;
 }
 
 export function listMigrationFiles(
@@ -32,60 +41,35 @@ export function listMigrationFiles(
     });
 }
 
-export function runPsqlScript(databaseUrl: string, sql: string): string {
-  const result = spawnSync(
-    "psql",
-    [
-      "--no-psqlrc",
-      "--quiet",
-      "--tuples-only",
-      "--no-align",
-      "--set",
-      "ON_ERROR_STOP=1",
-      "--dbname",
-      databaseUrl,
-    ],
-    {
-      encoding: "utf8",
-      input: sql,
-      maxBuffer: 10 * 1024 * 1024,
-    },
-  );
+export async function withDatabaseClient<T>(
+  databaseUrl: string,
+  callback: (client: Client) => Promise<T>,
+): Promise<T> {
+  const client = new Client({ connectionString: databaseUrl });
 
-  if (result.error) {
-    throw new Error(`Failed to run psql: ${result.error.message}`);
+  await client.connect();
+
+  try {
+    return await callback(client);
+  } finally {
+    await client.end();
   }
-
-  if (result.status !== 0) {
-    throw new Error(
-      `psql exited with code ${result.status}: ${result.stderr.trim()}`,
-    );
-  }
-
-  return result.stdout.trim();
 }
 
-export function applyMigrations(
-  databaseUrl: string,
-  options: {
-    migrationsDir?: string;
-    preludeSql?: string;
-  } = {},
-): void {
-  const migrations = listMigrationFiles(options.migrationsDir);
-  const scriptParts: string[] = [];
+export async function applyMigrations(client: Client): Promise<void> {
+  const migrationFiles = listMigrationFiles();
 
-  if (options.preludeSql?.trim()) {
-    scriptParts.push(options.preludeSql.trim());
-  }
-
-  for (const migrationFile of migrations) {
-    scriptParts.push(readFileSync(migrationFile, "utf8").trim());
-  }
-
-  if (scriptParts.length === 0) {
+  if (migrationFiles.length === 0) {
     throw new Error(`No SQL migrations found in ${migrationsDirectory}`);
   }
 
-  runPsqlScript(databaseUrl, scriptParts.join("\n\n"));
+  for (const migrationFile of migrationFiles) {
+    const migrationSql = readFileSync(migrationFile, "utf8").trim();
+
+    if (!migrationSql) {
+      continue;
+    }
+
+    await client.query(migrationSql);
+  }
 }
