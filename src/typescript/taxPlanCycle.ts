@@ -18,7 +18,7 @@ export function isLegalTaxPlanCycleStageTransition(
   from: TaxPlanCycleStage,
   to: TaxPlanCycleStage,
 ): boolean {
-  if (from === "Review" && to === "Modeling") {
+  if (from === "Review" && to === "Modeling Advisor") {
     return true;
   }
 

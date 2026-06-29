@@ -41,10 +41,10 @@ describe("tax plan cycle stage transitions", () => {
     },
   );
 
-  test("allows Review to send back to Modeling", () => {
-    expect(isLegalTaxPlanCycleStageTransition("Review", "Modeling")).toBe(
-      true,
-    );
+  test("allows Review to send back to Modeling Advisor", () => {
+    expect(
+      isLegalTaxPlanCycleStageTransition("Review", "Modeling Advisor"),
+    ).toBe(true);
   });
 
   const illegalBackwardTransitions: Array<{
@@ -52,7 +52,7 @@ describe("tax plan cycle stage transitions", () => {
     to: TaxPlanCycleStage;
   }> = [
     { from: "Data Aggregation", to: "Intake" },
-    { from: "Modeling", to: "Data Aggregation" },
+    { from: "Modeling Advisor", to: "Data Aggregation" },
     { from: "Review", to: "Data Aggregation" },
     { from: "Client Approval", to: "Review" },
     { from: "Executed", to: "Client Approval" },
