@@ -1,3 +1,7 @@
+CREATE TABLE IF NOT EXISTS tenants (
+  id TEXT PRIMARY KEY
+);
+
 CREATE TABLE tax_plan_cycle (
   client_id TEXT CONSTRAINT tax_plan_cycle_client_id_pk PRIMARY KEY,
   tenant_id TEXT NOT NULL CONSTRAINT tax_plan_cycle_tenant_id_fk REFERENCES tenants (id),
