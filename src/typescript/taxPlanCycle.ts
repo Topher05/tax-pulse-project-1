@@ -18,6 +18,10 @@ export function isLegalTaxPlanCycleStageTransition(
   from: TaxPlanCycleStage,
   to: TaxPlanCycleStage,
 ): boolean {
+  if (from === "Review" && to === "Modeling") {
+    return true;
+  }
+
   return taxPlanCycleStages.indexOf(to) === taxPlanCycleStages.indexOf(from) + 1;
 }
 

@@ -40,4 +40,44 @@ describe("tax plan cycle stage transitions", () => {
       expect(isLegalTaxPlanCycleStageTransition(from, to)).toBe(false);
     },
   );
+
+  test("allows Review to send back to Modeling", () => {
+    expect(isLegalTaxPlanCycleStageTransition("Review", "Modeling")).toBe(
+      true,
+    );
+  });
+
+  const illegalBackwardTransitions: Array<{
+    from: TaxPlanCycleStage;
+    to: TaxPlanCycleStage;
+  }> = [
+    { from: "Data Aggregation", to: "Intake" },
+    { from: "Modeling", to: "Data Aggregation" },
+    { from: "Review", to: "Data Aggregation" },
+    { from: "Client Approval", to: "Review" },
+    { from: "Executed", to: "Client Approval" },
+    { from: "Archived", to: "Executed" },
+  ];
+
+  test.each(illegalBackwardTransitions)(
+    "rejects backward transition from $from to $to",
+    ({ from, to }) => {
+      expect(isLegalTaxPlanCycleStageTransition(from, to)).toBe(false);
+    },
+  );
+
+  const illegalNonStoryTransitions: Array<{
+    from: TaxPlanCycleStage;
+    to: TaxPlanCycleStage;
+  }> = [
+    { from: "Review", to: "Review" },
+    { from: "Archived", to: "Review" },
+  ];
+
+  test.each(illegalNonStoryTransitions)(
+    "rejects non-advancing transition from $from to $to",
+    ({ from, to }) => {
+      expect(isLegalTaxPlanCycleStageTransition(from, to)).toBe(false);
+    },
+  );
 });
