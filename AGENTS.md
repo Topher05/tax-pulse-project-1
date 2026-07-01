@@ -27,3 +27,6 @@ python -m pytest
 npm run typecheck
 npm test
 ```
+
+## Ticket Journal
+- When implementing a Jira ticket from `planning/stackpulse_tax.csv`, add an entry to `planning/team/ticket-journal.md` named from the current branch, whose final segment should identify the ticket each member is working on, and include the branch name, assignee, Jira key, summary, description, acceptance criteria, code connection, changed files, and validation notes.
