@@ -29,16 +29,31 @@ export {
 
 export {
   isLegalTaxPlanCycleStageTransition,
+  taxPlanCycleCreateSchema,
   taxPlanCyclePrioritySchema,
   taxPlanCycleSchema,
   taxPlanCycleStageSchema,
   taxPlanCycleStages,
   type TaxPlanCycle,
+  type TaxPlanCycleCreateInput,
   type TaxPlanCyclePriority,
   type TaxPlanCycleStage,
 } from "./taxPlanCycle.js";
+
 import { createApp } from "./app.js";
 import { createLogger } from "./logger.js";
+
+export {
+  taxPlanCycleCreateController,
+  type TaxPlanCycleCreateController,
+  type TaxPlanCycleCreateResult,
+} from "./taxPlanCycleCreateController.js";
+export {
+  createTaxPlanCycleRouter,
+  type CreateTaxPlanCycleRouterOptions,
+  type ValidationErrorIssue,
+  type ValidationErrorResponse,
+} from "./taxPlanCycleRoutes.js";
 
 export function createGreeting(runtime: string = "TypeScript"): string {
   return `hello from ${runtime}`;
