@@ -38,6 +38,14 @@ every stage change on a Tax Plan Cycle is recorded.
 - `vitest.config.ts` no longer excludes the migration test, so `npm run test:migration`
   reaches the intended test file.
 
+**Project Scope Connection:**
+
+TaxPulse Advisory is built around a Tax Plan Cycle that moves through defined workflow
+stages with role-gated transitions and immutable audit history. This ticket supports
+that scope by creating the database table that records every stage change for a cycle.
+That transition history is a foundation for reviewer visibility, compliance evidence,
+and the archived audit trail described in the project scope.
+
 **Changed Files:**
 
 - `migrations/20260626120000_create_tax_plan_cycle.sql`
