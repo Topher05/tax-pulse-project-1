@@ -1,0 +1,717 @@
+Issue Type,Issue key,Issue id,Summary,Assignee,Assignee Id,Status,Resolution,Sprint,Parent,Parent key,Parent summary,Created,Updated,Description,Custom field (Acceptance Criteria),Inward issue link (Blocks),Inward issue link (Blocks),Inward issue link (Blocks),Inward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks),Outward issue link (Blocks)
+Story,SCRUM-5,10036,Team Norms,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,Done,Done,Capstone Deliverables,10042,SCRUM-11,Documentation,6/18/26 15:50,6/23/26 15:26,"As a team, create a parent page in Confluence called ""Team Norms"". This page will contain the following child pages:
+
+* Working Agreement
+* Definition of Ready
+* Definition of Done
+* GitFlow","* A parent page titled ""Team Norms"" exists in Confluence
+* The ""Team Norms"" page has four child pages created with the following exact titles:
+** Working Agreement
+** Definition of Ready
+** Definition of Done
+** GitFlow
+* All four child pages are properly linked/nested under the ""Team Norms"" parent page
+* The parent-child page hierarchy is visible in Confluence's page navigation
+* All pages are accessible to the intended team members",,,,,,,,,,,,
+Story,SCRUM-6,10037,Working Agreement,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,Done,Done,Capstone Deliverables,10042,SCRUM-11,Documentation,6/18/26 15:50,6/22/26 23:28,"As a team, create a team Working Agreement that defines how the team will work together and hold each other accountable.","* A child page titled ""Working Agreement"" is created under the ""Team Norms"" parent page in Confluence
+* The Working Agreement is documented on the page and accessible to all team members
+* All team members participate in creating the agreement
+* The agreement includes the following sections:
+** Working Hours - Core hours when team members are available and agreed meeting times
+** Communication - How to communicate absences and unavailability
+** Team Collaboration - Guidelines for respectful communication and ensuring all voices are heard
+** Scrum Practices - Team-specific agile practices (e.g., when to escalate blockers, keeping Jira updated)
+** Version Control - Git workflow rules (e.g., no direct commits to main, PR review timeframes)
+* All team members commit to following the agreement
+* A process for handling disagreements during creation is documented
+
+Note: Keep the agreement concise and focused on the most important team norms.",,,,,,,,,,,,
+Story,SCRUM-7,10038,Definition of Done,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,Done,Done,Capstone Deliverables,10042,SCRUM-11,Documentation,6/18/26 15:51,6/22/26 23:27,"As a team, create a Definition of Done that establishes clear criteria for when features, sprints, and releases are production-ready.","* A child page titled ""Definition of Done"" is created under the ""Team Norms"" parent page in Confluence
+* The Definition of Done includes all three sections with at least 3 criteria each:
+** Feature/User Story Done:
+*** All acceptance criteria met
+*** Unit tests written and passing
+*** Code reviewed and approved
+*** No critical bugs or blockers
+** Sprint Done:
+*** All committed stories completed
+*** Code merged to appropriate branch
+*** All tests passing (unit, integration)
+*** Sprint demo completed
+** Release Done:
+*** All sprint DoD criteria met
+*** Security scan completed
+*** Documentation updated
+*** Responsive design verified
+*** Ready for production deployment
+* All team members participate in creating and approve the final criteria
+* A review cadence is established (e.g., during retrospectives)
+
+*Success Metrics:*
+
+* Minimum 3 criteria per section
+* 100% team participation and documented approval",,,,,,,,,,,,
+Story,SCRUM-8,10039,GitFlow,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,Done,Done,Capstone Deliverables,10042,SCRUM-11,Documentation,6/18/26 15:51,6/22/26 23:27,"As a team, establish a GitFlow branching model and CI/CD pipeline strategy for all team code repositories.","* A child page titled ""GitFlow"" is created under the ""Team Norms"" parent page in Confluence
+* The GitFlow document defines the branching strategy with CI/CD pipelines for key branch types:
+** Main Branch:
+*** Triggers: On merge/push
+*** Pipeline: Full test suite, security scanning, production deployment (with approval gate), smoke tests
+*** Protection: Requires PR approval, no direct commits
+** Develop Branch:
+*** Triggers: On merge/push
+*** Pipeline: Full test suite, code quality checks (linting, ≥80% coverage), deploy to staging
+*** Protection: Requires PR approval
+** Feature Branches (feature/*):
+*** Naming convention defined (e.g., feature/JIRA-123-description)
+*** Unit tests written and passing
+** Release Branches (release/*):
+*** Triggers: On creation/push
+*** Pipeline: Full test suite, security audit, deploy to pre-production, QA testing window
+*** Version tagging strategy defined
+** Hotfix Branches (hotfix/*):
+*** Triggers: On creation/push/PR
+*** Pipeline: Targeted tests, regression suite, security check, expedited deployment to staging
+*** Fast-track review process defined
+* Branch protection rules documented for main and develop branches
+* Merge strategies specified (squash, rebase, or merge commit)
+* All team members participate in creating and approve the workflow
+
+*Success Metrics:*
+
+* Pipelines configured for key branches
+* Zero unauthorized deployments to production
+* 100% of deployments traceable to source branch",,,,,,,,,,,,
+Story,SCRUM-9,10040,Code Review Standards,,,Done,Done,Capstone Deliverables,10042,SCRUM-11,Documentation,6/18/26 15:51,6/22/26 23:28,"As a team, create Code Review Standards that define PR review expectations including turnaround time and what to look for.","* A child page titled ""Code Review Standards"" is created under the ""Team Norms"" parent page in Confluence
+* The page is accessible to all team members
+* The Code Review Standards include the following sections:
+** Review Turnaround Time:
+*** Initial review within 24 hours
+*** Urgent/hotfix reviews within 4 hours
+*** Follow-up reviews within 12 hours
+** PR Size Guidelines:
+*** Ideal PR size (e.g., <400 lines of code)
+*** When to split large PRs
+** What to Review:
+*** Code correctness and logic
+*** Code readability and maintainability
+*** Test coverage and quality
+*** Security vulnerabilities
+*** Performance implications
+*** Documentation and comments
+*** Adherence to coding standards
+** PR Requirements:
+*** Descriptive title and description
+*** Link to Jira ticket
+*** All tests passing
+*** No merge conflicts
+*** At least one reviewer approval required
+** Review Etiquette:
+*** Be respectful and constructive
+*** Explain the ""why"" behind comments
+*** Distinguish between required changes and suggestions
+* All team members participate in creating and approve the standards",,,,,,,,,,,,
+Story,SCRUM-10,10041,Definition of Ready,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,Done,Done,Capstone Deliverables,10042,SCRUM-11,Documentation,6/18/26 15:51,6/22/26 23:27,"As a team, create a Definition of Ready that establishes clear criteria for when user stories and sprints are ready to begin.","* A child page titled ""Definition of Ready"" is created under the ""Team Norms"" parent page in Confluence
+* The page is accessible to all team members
+* The Definition of Ready includes both of the following sections with a minimum of 3 criteria each:
+** Definition of Ready for a User Story:
+*** Acceptance criteria are clearly defined
+*** Story is estimated with story points
+*** Story is assigned to a team member
+*** Dependencies are identified
+*** Technical approach is understood
+** Definition of Ready for a Sprint:
+*** Sprint backlog is prioritized
+*** All user stories meet the Definition of Ready
+*** Sprint goal is defined
+*** Team capacity is confirmed
+*** No blocking dependencies exist
+* All team members participate in creating and agree on the criteria
+* Team formally approves the Definition of Ready (documented approval/sign-off)
+* A review cadence is established (e.g., after each retrospective)
+
+*Success Metrics:*
+
+* Definition of Ready contains at least 3 criteria per section
+* 100% team participation in creation
+* Documented team approval/consensus",,,,,,,,,,,,
+Epic,SCRUM-11,10042,Documentation,,,To Do,,,,,,6/18/26 15:51,6/18/26 15:51,,,,,,,,,,,,,,
+Epic,SCRUM-12,10043,Engineering Foundations & Federal Posture,,,To Do,,,,,,6/18/26 15:52,6/18/26 15:54,,,,,,,,,,,,,,
+Epic,SCRUM-13,10044,Domain Model & Walking Skeleton,,,To Do,,,,,,6/18/26 15:52,6/18/26 15:54,,,,,,,,,,,,,,
+Epic,SCRUM-14,10045,"Secure APIs — Auth, Audit & Boundaries",,,To Do,,,,,,6/18/26 15:52,6/18/26 15:55,,,,,,,,,,,,,,
+Epic,SCRUM-15,10046,Polyglot Backend & Contracts,,,To Do,,,,,,6/18/26 15:52,6/18/26 15:55,,,,,,,,,,,,,,
+Epic,SCRUM-16,10047,React SPA — Operator & Portal Experience,,,To Do,,,,,,6/18/26 15:52,6/18/26 15:55,,,,,,,,,,,,,,
+Epic,SCRUM-17,10048,Event-Driven Workflow & Legacy Integration,,,To Do,,,,,,6/18/26 15:52,6/18/26 15:55,,,,,,,,,,,,,,
+Epic,SCRUM-18,10049,UI Completion & Polish,,,To Do,,,,,,6/18/26 15:53,6/18/26 15:55,,,,,,,,,,,,,,
+Epic,SCRUM-19,10050,"Containers, Serverless & Deployment",,,To Do,,,,,,6/18/26 15:53,6/18/26 15:55,,,,,,,,,,,,,,
+Epic,SCRUM-20,10051,"IaC, Secure Pipeline & Observability",,,To Do,,,,,,6/18/26 15:53,6/18/26 15:55,,,,,,,,,,,,,,
+Epic,SCRUM-21,10052,Data Engineering Pipeline,,,To Do,,,,,,6/18/26 15:53,6/18/26 15:55,,,,,,,,,,,,,,
+Epic,SCRUM-22,10053,RAG-Powered AI Assist,,,To Do,,,,,,6/18/26 15:53,6/18/26 15:55,,,,,,,,,,,,,,
+Epic,SCRUM-23,10054,"Hardening, Evidence & Final Demo",,,To Do,,,,,,6/18/26 15:53,6/18/26 15:55,,,,,,,,,,,,,,
+Story,SCRUM-24,10087,Pin the Node and Python runtimes in a version manifest,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:58,6/24/26 15:31,"As a Platform Engineer, I want the Node 22 and Python 3.13 runtimes pinned in a version manifest, so that every TaxPulse engineer builds on identical interpreters.","# A version manifest (.nvmrc / .tool-versions and pyproject) pins Node 22 and Python 3.13 exactly.
+
+# A documented command prints the active versions and they match the manifest.
+
+# The pinned versions are referenced in the repo README.",,,,,SCRUM-25,,,,,,,
+Story,SCRUM-25,10088,Write the bootstrap setup script with version guard,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:58,6/24/26 17:18,"As a Platform Engineer, I want a setup script that installs the pinned toolchain and fails on a version mismatch, so that a misconfigured machine is caught before work begins.","# The script installs the pinned Node, Python, and package managers from the manifest.
+
+# The script exits non-zero when an installed version does not match the manifest.
+
+# A fresh clone reaches a green 'hello' check for both the Node and Python stacks after running the script.",SCRUM-24,,,,SCRUM-26,SCRUM-28,SCRUM-34,,,,,
+Story,SCRUM-26,10089,Document the federal/security posture in the README,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:58,6/24/26 18:19,"As a Platform Engineer, I want the project's federal and security posture documented in the README, so that every engineer knows the least-privilege and no-secrets-in-code rules from day one.","# The README states the least-privilege and no-secrets-in-code rules the project must hold to.
+
+# The README names which artifacts (tokens, keys) must never be committed.
+
+# A linked checklist lets a new engineer self-verify their setup meets the posture.",SCRUM-25,,,,SCRUM-27,,,,,,,
+Story,SCRUM-27,10090,Configure Codex AI-pairing conventions for the repo,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:58,6/25/26 22:08,"As a Backend Developer, I want Codex configured with repo conventions and a context file, so that AI pairing produces code consistent with the TaxPulse toolchain.","# A repo context file documents the language, formatter, and test-runner conventions for Codex to follow.
+
+# A sample Codex prompt produces a function that passes the repo's formatter unchanged.
+
+# The context file is referenced from the contributing guide.",SCRUM-26,,,,,,,,,,,
+Story,SCRUM-28,10091,Define the Tax Plan Cycle stage enum as a typed union,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:59,6/25/26 22:55,"As a Backend Developer, I want the seven Tax Plan Cycle stages modeled as a TypeScript union, so that stage values are constrained at compile time.","# A union type enumerates Intake, Data Aggregation, Modeling, Review, Client Approval, Executed, and Archived.
+
+# An exported constant array lists the stages in their canonical order.
+
+# Assigning an unknown string to the stage type fails type-checking.",SCRUM-25,,,,SCRUM-29,SCRUM-37,,,,,,
+Story,SCRUM-29,10092,Author the Tax Plan Cycle zod schema,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:59,6/26/26 17:08,"As a Backend Developer, I want a zod schema for the Tax Plan Cycle entity, so that stage, owner, priority, due_date, and on_hold are validated at the boundary.","# The zod schema validates stage (from the stage union), owner, priority, due_date, on_hold, and hold_reason.
+
+# Parsing an unknown stage value rejects with a typed zod error.
+
+# The inferred TypeScript type is exported and reused by callers without redeclaration.",SCRUM-28,,,,SCRUM-30,SCRUM-31,SCRUM-41,,,,,
+Story,SCRUM-30,10093,Unit-test the Tax Plan Cycle schema with Vitest,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:59,6/26/26 17:52,"As a Backend Developer, I want Vitest cases over the Tax Plan Cycle schema, so that valid and invalid payloads are covered before any persistence exists.","# A passing test parses a well-formed cycle and asserts the inferred type.
+
+# A test asserts a missing required field and an unknown stage each reject.
+
+# The suite runs locally under Vitest and is green.",SCRUM-29,,,,SCRUM-39,,,,,,,
+Story,SCRUM-31,10094,Define the aggregation payload type for income and deductions,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:59,6/26/26 17:08,"As a Backend Developer, I want a typed aggregation payload for a client's income and deduction picture, so that the Data Aggregation seam has a stable contract.","# A TypeScript type models income events (source, amount, withholding) and deductions (category, amount).
+
+# A zod schema validates the payload and rejects negative amounts.
+
+# The type is exported for reuse by the aggregation client.",SCRUM-29,,,,SCRUM-32,,,,,,,
+Story,SCRUM-32,10095,Build the async aggregation client against a mock source,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:59,6/29/26 18:08,"As a Backend Developer, I want an async Node client that fetches the aggregation payload from a mock source, so that the Data Aggregation stage has a non-blocking integration seam.","# The client uses async/await and returns the typed aggregation payload from the in-memory mock source.
+
+# Concurrent aggregation calls for two clients resolve independently.
+
+# A Vitest case asserts the returned payload validates against the aggregation schema.",SCRUM-31,,,,SCRUM-33,,,,,,,
+Story,SCRUM-33,10096,Surface aggregation timeouts as rejected promises,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,In Progress,,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:59,6/29/26 18:06,"As a Backend Developer, I want a simulated source timeout surfaced as a rejected promise, so that the Data Aggregation stage never hangs on a slow source.","# The client races the source call against a configurable timeout.
+
+# A simulated timeout rejects with a typed timeout error rather than hanging.
+
+# A Vitest case asserts the rejection and that a fast call still resolves.",SCRUM-32,,,,,,,,,,,
+Story,SCRUM-34,10097,Model the tax-calc request with pydantic v2,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 20:00,6/25/26 22:21,"As a Backend Developer, I want a pydantic v2 model for a tax-calc request, so that the Tax Calculation Engine validates filing status, income, deductions, and state at the boundary.","# A pydantic v2 model represents filing status, income, deductions, and state.
+
+# The model rejects an invalid filing status with a validation error.
+
+# A pytest case asserts both a valid parse and the invalid-status rejection.",SCRUM-25,,,,SCRUM-35,SCRUM-79,,,,,,
+Story,SCRUM-35,10098,Scaffold the async calc-result stub under pytest,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 20:00,6/28/26 17:44,"As a Backend Developer, I want an async calculation stub that returns a placeholder result, so that the Tax Calculation Engine has an async-ready structure before real logic lands.","# An async function accepts the tax-calc request model and returns a typed placeholder result.
+
+# A pytest async case awaits the stub and asserts the result shape.
+
+# Formatting and type checks pass via the pinned Python tooling.",SCRUM-34,,,,SCRUM-36,SCRUM-64,,,,,,
+Story,SCRUM-36,10099,"Wire Python lint, format, and type-check tooling",Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 20:00,6/24/26 8:00,"As a Backend Developer, I want the Python service wired with pinned lint, format, and type-check tools, so that the Tax Calculation Engine and RAG services share consistent conventions.","# A single command runs the formatter, linter, and type-checker over the Python package.
+
+# The command exits non-zero on a style or typing violation.
+
+# The conventions are documented alongside the Node conventions in the contributing guide.",SCRUM-35,,,,,,,,,,,
+Story,SCRUM-37,10100,Add the ADR template and record the stage-only decision,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 20:00,6/25/26 23:40,"As a Backend Developer, I want an ADR template and the first ADR recording that condition lives in the stage, so that key domain decisions are durably captured.","# An ADR template with context/decision/consequences sections is committed.
+
+# ADR-0001 records that a Tax Plan Cycle's condition lives in its stage with no separate status field.
+
+# The ADR index links ADR-0001.",SCRUM-28,,,,SCRUM-38,,,,,,,
+Story,SCRUM-38,10101,Document the Git workflow and AI code-review checklist,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 20:00,6/23/26 15:52,"As a Backend Developer, I want a contributing guide with branch naming, a PR template, and an AI-review checklist, so that reviews stay consistent across the team.","# The contributing guide documents branch naming and a PR template.
+
+# An AI-review prompt checklist enumerates what each review must verify.
+
+# A sample PR demonstrates the ADR link and a completed review checklist.",SCRUM-37,,,,,,,,,,,
+Story,SCRUM-39,10102,Write failing tests for legal forward stage transitions,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 20:00,6/26/26 22:01,"As a Backend Developer, I want failing Vitest cases asserting each legal forward transition, so that the stage machine is specified test-first.","# Tests assert each legal forward transition along Intake → Data Aggregation → Modeling → Review → Client Approval → Executed → Archived.
+
+# Tests assert that skips (e.g. Intake → Modeling) are illegal.
+
+# The tests fail against the not-yet-implemented validator.",SCRUM-30,,,,SCRUM-40,,,,,,,
+Story,SCRUM-40,10103,Implement the stage-transition validator,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,Done,Done,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 20:01,6/29/26 18:08,"As a Backend Developer, I want the linear stage-transition rules implemented, so that only legal Tax Plan Cycle transitions are ever permitted.","# The validator permits every legal forward transition and rejects skips.
+
+# The validator allows the Review → Modeling send-back and rejects all other backward moves.
+
+# Every transition test from the prior story passes under Vitest locally.",SCRUM-39,,,,SCRUM-67,,,,,,,
+Story,SCRUM-41,10104,Create the tenant table and migration,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,In Progress,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:02,6/29/26 23:45,"As a Backend Developer, I want a PostgreSQL tenant table with a migration, so that each firm's data has an isolation anchor.","# A migration creates a tenant table with id, name, and created_at.
+
+# Running the migration from empty creates the table and is idempotent.
+
+# A seed inserts two sample tenants for local testing.",SCRUM-29,,,,SCRUM-42,SCRUM-55,,,,,,
+Story,SCRUM-42,10105,Create the tax_plan_cycle table with tenant isolation,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,Done,Done,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:02,6/29/26 18:08,"As a Backend Developer, I want a tax_plan_cycle table keyed by tenant, so that each firm's cases are stored in isolation.","# A migration creates tax_plan_cycle with tenant_id FK, client_id, planning_period, stage, owner, priority, due_date, on_hold, and hold_reason.
+
+# A check constraint restricts stage to the seven canonical values.
+
+# An index on (tenant_id, due_date) supports queue ordering.",SCRUM-41,,,,SCRUM-43,SCRUM-137,,,,,,
+Story,SCRUM-43,10106,Create the stage_transition table,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,To Do,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:02,6/23/26 15:39,"As a Backend Developer, I want a stage_transition table, so that every stage change on a Tax Plan Cycle is recorded.","# A migration creates stage_transition with case_id FK, from_stage, to_stage, actor, and occurred_at.
+
+# A foreign key ties each transition to its tax_plan_cycle.
+
+# An index on case_id supports reading a case's transition history.",SCRUM-42,,,,SCRUM-44,SCRUM-51,SCRUM-65,,,,,
+Story,SCRUM-44,10107,Enforce tenant isolation with a scoped read helper,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:02,6/26/26 3:20,"As a Backend Developer, I want a tenant-scoped read helper for Tax Plan Cycles, so that a query for one tenant never returns another tenant's rows.","# A helper requires a tenant_id and applies it to every cycle query.
+
+# A Testcontainers test seeds two tenants and asserts cross-tenant rows are never returned.
+
+# Omitting the tenant_id is a type error, not a silent full-table scan.",SCRUM-43,,,,SCRUM-45,SCRUM-47,,,,,,
+Story,SCRUM-45,10108,Stand up a Testcontainers PostgreSQL fixture,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,To Do,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:02,6/23/26 15:40,"As a Backend Developer, I want a Testcontainers-managed PostgreSQL fixture, so that repository tests run against a real database.","# A Testcontainers PostgreSQL instance starts and applies migrations per test run.
+
+# A seed loads sample cycles before each suite.
+
+# The container is torn down after the suite and the run is green locally.",SCRUM-44,,,,SCRUM-46,,,,,,,
+Story,SCRUM-46,10109,Test the Plan Cycle Queue ordering and overdue flag,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,To Do,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:03,6/23/26 15:52,"As a Backend Developer, I want the Plan Cycle Queue query covered against real PostgreSQL, so that ordering and overdue logic are correct.","# A query returns a tenant's cases ordered by due_date ascending.
+
+# Cases past their due_date are flagged overdue in the result.
+
+# A Testcontainers test asserts both ordering and the overdue flag.",SCRUM-45,,,,SCRUM-73,,,,,,,
+Story,SCRUM-47,10110,Scaffold the Express 5 app with health and error middleware,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,In Progress,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:03,6/30/26 15:24,"As a Backend Developer, I want an Express 5 app skeleton with health and structured-error middleware, so that the Core Case Service has a consistent HTTP surface.","# The app exposes a health endpoint returning service status.
+
+# An error middleware returns RFC 7807 Problem Details JSON for thrown errors.
+
+# Structured request logging is emitted via pino.",SCRUM-44,,,,SCRUM-48,,,,,,,
+Story,SCRUM-48,10111,Add the create-cycle route with zod validation,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,blocked,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:03,6/30/26 18:01,"As a Backend Developer, I want a create-cycle route validated with zod, so that malformed Tax Plan Cycle creates are rejected at the boundary.","# A POST route validates the create body against the Tax Plan Cycle create schema.
+
+# A malformed request returns 400 with a structured validation error.
+
+# A valid request reaches the controller layer (no persistence yet).",SCRUM-47,,,,SCRUM-49,,,,,,,
+Story,SCRUM-49,10112,Add the read-cycle route,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:03,6/23/26 15:42,"As a Backend Developer, I want a read-cycle route by case ID, so that a created Tax Plan Cycle can be fetched back.","# A GET route accepts a case ID path parameter and validates it.
+
+# An unknown case ID returns 404 as Problem Details.
+
+# The route is tenant-scoped via the request's tenant context.",SCRUM-48,,,,SCRUM-50,,,,,,,
+Story,SCRUM-50,10113,Publish the OpenAPI document for create and read,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,To Do,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:03,6/23/26 15:42,"As a Backend Developer, I want an OpenAPI description of the create and read operations, so that the contract is published before clients consume it.","# An OpenAPI document describes the create and read operations with their request/response schemas.
+
+# The schemas are derived from the same zod definitions the routes use.
+
+# The document is served at a documented path and validates against the OpenAPI spec.",SCRUM-49,,,,SCRUM-53,SCRUM-71,,,,,,
+Story,SCRUM-51,10114,Define the Drizzle schema for the Tax Plan Cycle tables,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,To Do,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:03,6/29/26 15:08,"As a Backend Developer, I want Drizzle schema definitions matching the PostgreSQL tables, so that persistence is type-safe and migration-driven.","# Drizzle definitions match the tenant, tax_plan_cycle, and stage_transition tables.
+
+# A generated migration creates the tables from empty and matches the hand-written migrations.
+
+# Running migrations is idempotent and recorded in a migrations table.",SCRUM-43,,,,SCRUM-52,,,,,,,
+Story,SCRUM-52,10115,Implement the Tax Plan Cycle repository through Drizzle,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:03,6/23/26 15:43,"As a Backend Developer, I want a repository that inserts and reads a Tax Plan Cycle through Drizzle, so that the service persists cases via one typed boundary.","# A repository method inserts a cycle and returns its generated case ID.
+
+# A repository method reads a cycle back by case ID within the tenant scope.
+
+# A Testcontainers test covers insert-then-read through Drizzle.",SCRUM-51,,,,SCRUM-53,,,,,,,
+Story,SCRUM-53,10116,Wire create-cycle to persist in Intake stage,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,To Do,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:04,6/23/26 15:43,"As an Advisor, I want creating a Tax Plan Cycle to persist it in Intake, so that a new cycle is recorded against a client and planning period.","# POST creates a cycle in Intake stage for a given client and planning period and returns its case ID.
+
+# The initial stage and due_date are persisted via the repository.
+
+# A creation also writes the initial stage_transition row.",SCRUM-52,SCRUM-50,,,SCRUM-54,SCRUM-76,SCRUM-139,,,,,
+Story,SCRUM-54,10117,Wire read-cycle and cover the create-then-read path,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,To Do,,SCRUM Sprint 1,10044,SCRUM-13,Domain Model & Walking Skeleton,6/19/26 20:04,6/29/26 15:38,"As an Advisor, I want to read a created Tax Plan Cycle back through the API, so that I can confirm the end-to-end spine works.","# GET by case ID returns the persisted cycle including stage and due_date.
+
+# The create-then-read path is covered by an automated integration test against PostgreSQL.
+
+# Reading another tenant's case ID returns 404.",SCRUM-53,,,,SCRUM-90,SCRUM-153,,,,,,
+Story,SCRUM-55,10118,Create the user and role tables,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:28,6/29/26 15:19,"As a Backend Developer, I want user and role tables, so that TaxPulse identities and their roles are stored per tenant.","# A migration creates a user table with tenant_id, email (unique per tenant), and status.
+# A role table enumerates Firm Admin, Advisor, Client, and TaxPulse Platform Admin.
+# A user is assigned exactly one role via a foreign key.",SCRUM-41,,,,SCRUM-56,SCRUM-146,,,,,,
+Story,SCRUM-56,10119,Create the credential and mfa_enrollment tables,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:29,6/29/26 15:19,"As a Backend Developer, I want credential and mfa_enrollment tables, so that password hashes and second factors are stored apart from user profile data.","# A migration creates a credential table holding the argon2id hash keyed to a user.
+# An mfa_enrollment table stores a per-user TOTP secret and enrolled flag.
+# Neither table stores a plaintext password or recovery code.",SCRUM-55,,,,SCRUM-57,,,,,,,
+Story,SCRUM-57,10120,Hash and store passwords with argon2id,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:29,6/29/26 15:20,"As a Security Engineer, I want passwords hashed with argon2id on registration, so that no credential is ever stored in plaintext.","# Registration hashes the password with argon2id and stores only the hash in the credential table.
+# The work-factor parameters are configurable and documented.
+# A test asserts the stored value is a valid argon2id hash, not the plaintext.",SCRUM-56,,,,SCRUM-58,,,,,,,
+Story,SCRUM-58,10121,Verify password on login,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:29,6/29/26 15:21,"As a Security Engineer, I want login to verify the password against the argon2id hash, so that only valid credentials proceed to the second factor.","# Login verifies the submitted password against the stored hash.
+# A wrong password returns 401 without revealing whether the email exists.
+# A correct password advances to the MFA challenge rather than issuing a token directly.",SCRUM-57,,,,SCRUM-59,,,,,,,
+Story,SCRUM-59,10122,Enroll a user in TOTP MFA,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:29,6/29/26 15:21,"As a Security Engineer, I want users to enroll a TOTP second factor, so that login requires more than a password.","# An enroll endpoint generates a TOTP secret and returns a provisioning URI.
+# Enrollment is confirmed by submitting a valid current code before the factor is activated.
+# The secret is stored in mfa_enrollment and the user is marked enrolled.",SCRUM-58,,,,SCRUM-60,,,,,,,
+Story,SCRUM-60,10123,Challenge and verify the MFA code at login,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:29,6/29/26 15:21,"As a Security Engineer, I want login to require a valid TOTP code, so that a stolen password alone cannot authenticate.","# After password verification, login requires a second-factor code.
+# An invalid or expired code returns 401 and does not issue a token.
+# A valid code proceeds to JWT issuance.",SCRUM-59,,,,SCRUM-61,,,,,,,
+Story,SCRUM-61,10124,Issue access and refresh JWTs with role and tenant claims,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:29,6/29/26 15:23,"As a Security Engineer, I want the service to issue access and refresh JWTs carrying role and tenant, so that every request carries a verified identity.","# A successful login issues a short-lived access token and a refresh token with a defined issuer.
+# The access token carries the user's role and tenant_id claims.
+# The refresh token is persisted in a refresh_token table and can be revoked.",SCRUM-60,,,,SCRUM-62,SCRUM-64,,,,,,
+Story,SCRUM-62,10125,Add JWT validation middleware to protected routes,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:30,6/29/26 15:23,"As a Security Engineer, I want JWT validation middleware on protected routes, so that unauthenticated requests are rejected.","# Middleware validates the access token signature, expiry, and issuer.
+# A request without a valid JWT to a protected route returns 401.
+# A valid token exposes role and tenant_id to the request context.",SCRUM-61,,,,SCRUM-63,SCRUM-67,SCRUM-69,,,,,
+Story,SCRUM-63,10126,Cover auth negative paths and reject SSO callbacks,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:30,6/29/26 15:24,"As a Security Engineer, I want negative-path auth tests including a rejected SSO callback, so that only the supported email+password+MFA flow can authenticate.","# Tests assert wrong password, missing MFA, and tampered token each return 401.
+# A request to a hypothetical SSO/OIDC callback route returns 404 — SSO is out of scope.
+# The negative-path suite runs locally and is green.",SCRUM-62,,,,,,,,,,,
+Story,SCRUM-64,10127,Validate shared JWTs in a FastAPI dependency,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:30,6/29/26 15:24,"As a Security Engineer, I want a FastAPI dependency that validates the same JWTs the Node service issues, so that the Tax Calculation Engine trusts one identity scheme.","# The dependency validates JWT signature, expiry, and issuer using the shared key.
+# An expired or tampered token is rejected with 401.
+# A valid token exposes role and tenant_id to downstream handlers.",SCRUM-61,SCRUM-35,,,,,,,,,,
+Story,SCRUM-65,10128,Create the append-only audit_entry table,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:30,6/29/26 15:26,"As a Backend Developer, I want an append-only audit_entry table, so that who-did-what-when is recorded immutably per case.","# A migration creates audit_entry with case_id, actor, action, outcome, and occurred_at.
+# A database rule or trigger blocks UPDATE and DELETE on audit_entry.
+# A test asserts an attempted update fails.",SCRUM-43,,,,SCRUM-66,,,,,,,
+Story,SCRUM-66,10129,Write an audit entry on every stage transition,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:30,6/29/26 15:26,"As a Firm Admin, I want every stage transition written to the audit trail, so that the Plan Cycle is compliance-defensible.","# Each successful stage transition writes an append-only audit entry of who-did-what-when.
+# The audit write commits with the transition in the same transaction.
+# A test asserts a transition produces exactly one audit entry.",SCRUM-65,,,,SCRUM-67,SCRUM-130,,,,,,
+Story,SCRUM-67,10130,Wire the role-gated transition endpoint enforcing the permission matrix,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:31,6/29/26 15:32,"As a Security Engineer, I want the stage-transition validator exposed as a role-gated endpoint, so that only authorized roles advance a Tax Plan Cycle and denials are audited.","# A PATCH /cycles/{id}/transition endpoint invokes the stage-transition validator for the requested move.
+# The endpoint enforces the TaxPulse matrix: Review Sign-Off/Send Back and Close & Seal require Firm Admin; the Advisor (EDIT) may run Data Aggregation to Modeling to Submit for Review and Present to Client.
+# An authorized, legal transition advances the stage and writes the stage_transition row; an illegal move returns 422 and an unauthorized role returns 403, neither mutating the cycle.
+# A denied attempt writes an append-only audit entry recording the attempting actor and the attempted transition.
+# Tests assert allowed versus denied transitions per role plus the 403 and 422 paths.",SCRUM-66,SCRUM-40,SCRUM-62,,SCRUM-68,,,,,,,
+Story,SCRUM-68,10131,Redact income and deduction figures in audit output,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:31,6/29/26 15:33,"As a Firm Admin, I want dollar figures redacted in audit output, so that sensitive amounts are not exposed in the trail.","# Income and deduction dollar figures are redacted when an audit entry is rendered.
+# Redaction is applied at read/serialization time, leaving the stored action intact.
+# A test asserts a redacted figure never appears in the audit output.",SCRUM-67,,,,,,,,,,,
+Story,SCRUM-69,10132,Enforce per-tenant rate limiting,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:31,6/29/26 15:32,"As a Platform Engineer, I want per-tenant rate limiting, so that one firm cannot exhaust shared capacity.","# Requests exceeding a per-tenant limit return 429 with a Retry-After header.
+# Rate-limit counters are isolated per tenant_id.
+# A test asserts one tenant's burst does not throttle another tenant.",SCRUM-62,,,,SCRUM-70,,,,,,,
+Story,SCRUM-70,10133,Emit cost-accounting headers per request,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:31,6/29/26 15:35,"As a Platform Engineer, I want cost-accounting headers on responses, so that per-request usage is observable.","# Responses include a header reporting the request's accounted cost units.
+# The cost value reflects the operation performed.
+# A test asserts the header is present on a representative endpoint.",SCRUM-69,,,,,,,,,,,
+Story,SCRUM-71,10134,Serve all Plan Cycle endpoints under /v1,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:31,6/29/26 15:35,"As a Backend Developer, I want the Plan Cycle API served under a /v1 prefix, so that the Core Case Service can evolve without breaking consumers.","# All Plan Cycle endpoints are served under a /v1 prefix.
+# An unknown version prefix returns 404 rather than falling through to /v1.
+# The OpenAPI document reflects the /v1 paths.",SCRUM-50,,,,SCRUM-72,,,,,,,
+Story,SCRUM-72,10135,Document service ownership boundaries in an ADR,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 2,10045,SCRUM-14,"Secure APIs — Auth, Audit & Boundaries",6/19/26 20:31,6/29/26 15:35,"As a Backend Developer, I want an ADR documenting which entity each service owns, so that bounded contexts stay clear as the system grows.","# An ADR states that the Core Case Service owns the case and the Tax Engine owns calculations.
+# The ADR names the store each context writes to.
+# The ADR is linked from the ADR index.",SCRUM-71,,,,SCRUM-78,,,,,,,
+Story,SCRUM-73,10136,Define the DynamoDB queue projection table,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:33,6/30/26 15:12,"As a Backend Developer, I want a DynamoDB table for the Plan Cycle Queue projection, so that the queue is read from a denormalized store.","# A DynamoDB table holds a denormalized queue projection keyed by tenant_id with case sort key.
+# Each item carries case ID, client, stage, owner, priority, due_date, and overdue flag.
+# The table definition is created against a local DynamoDB for tests.",SCRUM-46,,,,SCRUM-74,,,,,,,
+Story,SCRUM-74,10137,Project Tax Plan Cycle changes into the queue table,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:33,6/30/26 15:11,"As a Backend Developer, I want cycle changes projected into the DynamoDB queue, so that the read model stays consistent with the case.","# Creating or updating a cycle upserts its queue projection item.
+# The overdue flag is recomputed from due_date on each projection.
+# A test asserts the projection matches the source cycle after a stage change.",SCRUM-73,,,,SCRUM-75,SCRUM-136,,,,,,
+Story,SCRUM-75,10138,Cache the queue read in Redis with invalidation,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:33,6/30/26 15:11,"As an Advisor, I want the Plan Cycle Queue cached in Redis, so that the queue loads fast without hammering the read store.","# Queue reads check Redis first and fall back to DynamoDB on a miss.
+# A cache entry is invalidated when a case's stage or due_date changes.
+# A test asserts a stale entry is not served after an invalidating change.",SCRUM-74,,,,SCRUM-78,SCRUM-92,,,,,,
+Story,SCRUM-76,10139,Store idempotency keys for case creation,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:33,6/30/26 15:12,"As a Backend Developer, I want an idempotency-key store, so that a retried create returns the original result.","# An idempotency record keyed by Idempotency-Key persists the first result.
+# A repeat request with the same key returns the stored original result.
+# Distinct keys create distinct cycles.",SCRUM-53,,,,SCRUM-77,,,,,,,
+Story,SCRUM-77,10140,Guard concurrent creates with the idempotency key,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:34,6/30/26 15:12,"As a Backend Developer, I want concurrent creates with the same key to produce one cycle, so that retries under load never duplicate cases.","# Two concurrent requests with the same Idempotency-Key create exactly one cycle.
+# The second request waits for or reads the first result rather than inserting again.
+# A concurrency test asserts a single cycle is created.",SCRUM-76,,,,,,,,,,,
+Story,SCRUM-78,10141,Document the storage decision matrix,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:34,6/30/26 15:13,"As a Platform Engineer, I want a storage decision matrix, so that future features place data in the right store.","# The matrix maps transactional case data, queue read models, and cache entries to PostgreSQL, DynamoDB, or Redis with rationale.
+# The matrix names the bounded context that owns each store.
+# The document is linked from the repo README.",SCRUM-75,SCRUM-72,,,,,,,,,,
+Story,SCRUM-79,10142,Create the bracket reference tables,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:34,6/30/26 15:13,"As a Backend Developer, I want federal and state bracket reference tables seeded, so that the engine computes liability from real brackets.","# A migration creates federal and state bracket tables with rate, lower, and upper bounds by filing status.
+# A seed loads the current-year federal and a sample state's brackets.
+# A query returns the brackets for a given filing status and state.",SCRUM-34,,,,SCRUM-172,SCRUM-173,,,,,,
+Story,SCRUM-80,10143,Define the calculation request/response contract,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:34,6/30/26 15:14,"As a Backend Developer, I want a pydantic contract for the calculation request and response, so that the engine has a stable typed interface.","# A request model carries filing status, income, deductions, and state.
+# A response model carries federal liability, state liability, effective rate, marginal rate, and quarterly estimate.
+# Invalid inputs (e.g. negative income) reject with a validation error.",,,,,,,,,,,,
+Story,SCRUM-81,10144,Implement bracket liability and effective/marginal rates,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:34,6/30/26 15:14,"As an Advisor, I want federal and state bracket liability with effective and marginal rates, so that each Tax Plan Cycle shows real numbers.","# The engine computes federal and state bracket liability for a given filing status and state.
+# It derives the effective rate and the marginal rate from the brackets.
+# Identical inputs always return identical outputs (deterministic, no ML).",,,,,SCRUM-86,,,,,,,
+Story,SCRUM-82,10145,Derive the quarterly estimated payment,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:34,6/30/26 15:15,"As an Advisor, I want the quarterly estimated payment derived from total liability, so that the cycle shows what the client owes each quarter.","# The engine splits total liability into four quarterly estimates.
+# The estimate accounts for withholdings already applied.
+# A pytest case asserts the four estimates sum to the net liability.",,,,,,,,,,,,
+Story,SCRUM-83,10146,Cover calculation edge cases with pytest,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:34,6/30/26 15:15,"As a Backend Developer, I want pytest edge cases over the calculation, so that boundary conditions are correct.","# Tests cover zero income, income at a bracket boundary, and deductions exceeding income.
+# Each case asserts the federal, state, effective, and marginal outputs.
+# The suite is deterministic and green locally.",,,,,,,,,,,,
+Story,SCRUM-84,10147,Expose the calculation via a FastAPI endpoint,Chimaobi Martins Okorie,712020:cef23c23-3c47-44a0-8595-520670fad000,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:35,6/30/26 15:15,"As an Advisor, I want the calculation exposed via a JWT-protected FastAPI endpoint, so that the Core service can request real numbers.","# A POST endpoint accepts the calculation request and returns the response model.
+# The endpoint requires a valid shared JWT and is tenant-scoped.
+# An httpx test asserts a sample request returns the expected liability.",,,,,SCRUM-87,SCRUM-88,SCRUM-154,SCRUM-182,,,,
+Story,SCRUM-85,10148,Create the scenario table for typed-in figures,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:35,6/30/26 15:15,"As a Backend Developer, I want a scenario table, so that 2-5 modeled scenarios are persisted per cycle.","# A migration creates a scenario table keyed to a case with name, typed-in figures, and computed result.
+# A constraint or repository check limits a case to between 2 and 5 scenarios.
+# A test asserts a 6th scenario insert is rejected.",,,,,SCRUM-86,,,,,,,
+Story,SCRUM-86,10149,Compute scenario deltas against the baseline,Christopher Martus,712020:815ffcbc-06c4-4695-ad37-f7b48aa00d89,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:35,6/30/26 15:16,"As an Advisor, I want each scenario's delta versus the baseline computed, so that I can compare planning options for a client.","# A scenario request accepts 2-5 scenarios of typed-in figures and rejects fewer than 2 or more than 5.
+# Each result reports total tax and the dollar delta versus the baseline.
+# Scenario calculations reuse the same bracket logic as the baseline calculation.",SCRUM-85,SCRUM-81,,,SCRUM-87,,,,,,,
+Story,SCRUM-87,10150,Expose the scenario endpoint,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:35,6/30/26 15:16,"As an Advisor, I want a scenario endpoint, so that scenario comparisons can be requested over HTTP.","# A POST endpoint accepts a baseline plus 2-5 scenarios and returns each scenario's total tax and delta.
+# The endpoint enforces the 2-5 bound and returns 422 otherwise.
+# An httpx test asserts a 3-scenario request returns three deltas.",SCRUM-86,SCRUM-84,,,SCRUM-88,SCRUM-90,,,,,,
+Story,SCRUM-88,10151,Author the consumer-side Pact for calculation,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:35,6/30/26 15:16,"As a Backend Developer, I want a consumer-side Pact for the calculation request, so that the Core service's expectations are pinned.","# A consumer Pact test defines the calculation request and expected response shape.
+# The pact also covers the scenario endpoint shape.
+# The generated pact file is published to the broker or shared directory.",SCRUM-84,SCRUM-87,,,SCRUM-89,,,,,,,
+Story,SCRUM-89,10152,Verify the provider Pact in the engine,Dylan Harle,712020:d84bcd7f-832f-4e62-9ba1-a7d21dc6c3f1,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:36,6/30/26 15:17,"As a Backend Developer, I want the Tax Engine to verify the pact, so that a breaking change is caught before deploy.","# The Tax Calculation Engine verifies the consumer pact against its live endpoints.
+# Verification fails on a contract mismatch.
+# Verification covers both the single-calculation and scenario endpoints.",SCRUM-88,,,,,,,,,,,
+Story,SCRUM-90,10153,Call the engine from the Core service via the Node HTTP client,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:36,6/30/26 15:12,"As an Advisor, I want modeling on a cycle to call the Tax Engine through the Core service, so that results are persisted on the case.","# A scenario-modeling request on a case in Modeling stage calls the engine and stores the returned figures.
+# The call carries the shared JWT and tenant context.
+# The stored scenario results are returned on a subsequent case read.",SCRUM-87,SCRUM-54,,,SCRUM-91,,,,,,,
+Story,SCRUM-91,10154,Handle engine failure without corrupting the case,Caleb Latimer,712020:e2917733-fda7-4d6e-a0dd-d1fce8f09b5c,To Do,,SCRUM Sprint 2,10046,SCRUM-15,Polyglot Backend & Contracts,6/19/26 20:36,6/30/26 15:13,"As an Advisor, I want an engine failure surfaced cleanly, so that a calculation outage never corrupts a case.","# An engine failure surfaces as a 502-class Problem Details error.
+# The case's stored state is unchanged after a failed call.
+# A test asserts the case is intact after an injected engine failure.",SCRUM-90,,,,,,,,,,,
+Story,SCRUM-92,10155,Scaffold the React/Vite app shell and sidebar,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:41,6/20/26 0:13,"As a Frontend Developer, I want a React/Vite shell with the wireframe sidebar, so that the operator workspace has a consistent frame.","# A Vite-built React app renders the sidebar groups (Workspace, Plan Tools, Firm) matching the wireframe.
+# The topbar shows the view title and the design-only View-as switcher.
+# The shell renders an empty content region for routed views.",SCRUM-75,,,,SCRUM-93,SCRUM-95,,,,,,
+Story,SCRUM-93,10156,Build the Plan Cycle Queue table component,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:41,6/20/26 0:13,"As an Advisor, I want the Plan Cycle Queue rendered from the wireframe, so that I can see all open cycles at a glance.","# The queue renders rows with case ID, client, stage, owner, priority, and due date.
+# Cases past their due date render an Overdue badge.
+# The queue KPI cards (Open, Awaiting Review, Overdue, Presented This Week) render above the table.",SCRUM-92,,,,SCRUM-94,SCRUM-98,,,,,,
+Story,SCRUM-94,10157,"Add loading, empty, and error states to the queue",,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:41,6/20/26 0:13,"As an Advisor, I want the queue to show loading, empty, and error states, so that the screen behaves predictably while data resolves.","# A loading skeleton renders while the queue request is in flight.
+# An empty state renders when the tenant has no open cycles.
+# An error state renders with a retry affordance on request failure.",SCRUM-93,,,,,,,,,,,
+Story,SCRUM-95,10158,Build the Plan Cycle Detail tab and stepper hook,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:41,6/20/26 0:13,"As an Advisor, I want a hook managing the detail tabs and stage stepper, so that switching tabs is predictable.","# A custom hook tracks the active tab (Overview, Scenarios, Comments, Audit Trail) and the stepper position.
+# Switching tabs preserves unsaved local input in the comments box.
+# The hook is unit-tested for tab and stepper transitions.",SCRUM-92,,,,SCRUM-96,,,,,,,
+Story,SCRUM-96,10159,Build the Plan Cycle Detail Overview tab,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:41,6/20/26 0:13,"As an Advisor, I want the Overview tab of Plan Cycle Detail, so that I see the plan brief, recommendation, and case properties.","# The Overview tab renders the plan brief (period, recommendation, projected savings, risk flags).
+# The case properties side panel renders advisor, reviewer, stage entered, due date, on-hold, and priority.
+# The stage stepper highlights the current stage.",SCRUM-95,,,,SCRUM-97,,,,,,,
+Story,SCRUM-97,10160,Build the Comments and Audit Trail tabs,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:42,6/20/26 5:39,"As an Advisor, I want the Comments and Audit Trail tabs, so that I can discuss the case and review its history.","# The Comments tab lists comments and offers an add-comment input.
+# The Audit Trail tab renders the case's audit entries read-only with redacted figures.
+# Both tabs render loading and empty states.",SCRUM-96,,,,SCRUM-184,,,,,,,
+Story,SCRUM-98,10161,Guard internal routes with TanStack Router,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:42,6/20/26 0:13,"As an Advisor, I want TanStack Router guarding internal routes, so that only authenticated users reach the workspace.","# TanStack Router guards the internal workspace routes.
+# An unauthenticated user is redirected to login.
+# A test asserts the guard redirects without a token.",SCRUM-93,,,,SCRUM-99,,,,,,,
+Story,SCRUM-99,10162,Attach JWT and refresh-on-401 in TanStack Query,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:42,6/20/26 0:13,"As an Advisor, I want TanStack Query to attach the JWT and refresh on 401, so that authorized data loads without manual re-login.","# TanStack Query attaches the access token to API calls.
+# A 401 triggers a token refresh and one retry.
+# A failed refresh logs the user out rather than retrying indefinitely.",SCRUM-98,,,,SCRUM-100,,,,,,,
+Story,SCRUM-100,10163,Wire the queue and detail screens to live data,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:42,6/20/26 0:44,"As an Advisor, I want the queue and detail screens fetching live data, so that they show the signed-in user's authorized cases.","# The queue fetches the tenant's cycles via a TanStack Query hook.
+# The detail screen fetches a single cycle by case ID.
+# A scoped Advisor sees only their assigned cases per the permission matrix.",SCRUM-99,,,,SCRUM-101,SCRUM-103,SCRUM-105,SCRUM-111,SCRUM-122,SCRUM-127,SCRUM-142,SCRUM-146
+Story,SCRUM-101,10164,Build the Scenario Planner form with react-hook-form + zod,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:42,6/20/26 0:13,"As an Advisor, I want a Scenario Planner form, so that I can enter 2-5 scenarios of typed-in figures.","# The form uses react-hook-form with zod validation.
+# Submitting fewer than 2 or more than 5 scenarios is blocked.
+# Validation errors display inline next to the offending field.",SCRUM-100,,,,SCRUM-102,,,,,,,
+Story,SCRUM-102,10165,Render scenario results in a TanStack Table,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:42,6/20/26 0:42,"As an Advisor, I want scenario results in a TanStack Table, so that I can compare each scenario's tax impact.","# Submitting calls the calculation endpoint and renders each scenario's total tax and delta.
+# The baseline row shows the current taxable and tax figures.
+# The table renders loading and error states around the request.",SCRUM-101,,,,SCRUM-127,,,,,,,
+Story,SCRUM-103,10166,Render Estimated Tax by Quarter and Income Breakdown charts,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:43,6/20/26 0:14,"As an Advisor, I want the quarterly and income charts, so that the client's tax picture is visible at a glance.","# An Estimated Tax by Quarter bar chart renders the four quarterly estimates.
+# An Income Breakdown chart renders income by source.
+# Charts re-render when the underlying calculation data changes.",SCRUM-100,,,,SCRUM-104,SCRUM-117,,,,,,
+Story,SCRUM-104,10167,Render Tax Breakdown and Year-over-Year charts,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:43,6/20/26 0:13,"As an Advisor, I want the Tax Breakdown and Year-over-Year visuals, so that the dashboard is complete per the wireframe.","# A Tax Breakdown panel renders federal, state, and effective-rate figures.
+# A Year-over-Year chart compares the current year against the prior year.
+# The four dashboard KPI cards (Estimated Total Tax, Effective Rate, YTD Gross Income, Outstanding Payments) render.",SCRUM-103,,,,,,,,,,,
+Story,SCRUM-105,10168,Scaffold the Income screen component from the wireframe,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:43,6/20/26 0:13,"As a Frontend Developer, I want a typed Income screen component scaffolded from the wireframe, so that the screen has a stable structure before data is wired.","# A typed React component renders the Income screen layout (header, KPI region, table region) matching the wireframe.
+# The component declares typed props for the income data it will receive.
+# The component renders inert placeholder regions with no data fetching yet.",SCRUM-100,,,,SCRUM-106,,,,,,,
+Story,SCRUM-106,10169,Add the TanStack Query hook to the income endpoint,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:43,6/20/26 0:13,"As a Frontend Developer, I want a TanStack Query hook fetching the client's income events, so that the Income screen reads live data through one typed boundary.","# A TanStack Query hook calls the income endpoint and returns typed income events.
+# The hook exposes loading, error, and data states to callers.
+# A test asserts the hook returns parsed income events for a mocked response.",SCRUM-105,,,,SCRUM-107,SCRUM-108,SCRUM-109,,,,,
+Story,SCRUM-107,10170,"Add loading, empty, and error states to the Income screen",,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:44,6/20/26 0:14,"As a Frontend Developer, I want the Income screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.","# A loading skeleton renders while the income request is in flight.
+# An empty state renders when the client has no income events.
+# An error state renders with a retry affordance on request failure.",SCRUM-106,,,,SCRUM-110,,,,,,,
+Story,SCRUM-108,10171,Build the Add Income form with react-hook-form and zod,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:44,6/20/26 0:14,"As a Frontend Developer, I want an Add Income form validated with react-hook-form and zod, so that malformed income entries are rejected at the boundary.","# The form captures source, type, amount, and withholding and validates with react-hook-form + zod.
+# A negative amount or missing required field surfaces an inline validation message and blocks submit.
+# A valid submit invokes the create handler with the typed payload.",SCRUM-106,,,,SCRUM-109,,,,,,,
+Story,SCRUM-109,10172,Render the income table from live data,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:44,6/20/26 0:14,"As a Frontend Developer, I want the income table rendered from the hook data, so that recorded income events and their amounts are visible.","# The table renders date, source, type, amount, and withholding columns from the hook data.
+# Per-source KPI cards (W-2, 1099, Capital Gains, Rental, Other) render above the table.
+# A newly added income event appears in the table after a successful create.",SCRUM-106,SCRUM-108,,,SCRUM-110,,,,,,,
+Story,SCRUM-110,10173,Add accessibility and a component test for the Income screen,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:44,6/20/26 0:14,"As a Frontend Developer, I want the Income screen to pass an axe check and a component test, so that it is accessible and regression-guarded.","# An axe accessibility check on the rendered screen reports no violations.
+# A component test asserts the table renders rows and the empty state for no data.
+# The form's inputs carry accessible labels and the test asserts a validation error is announced.",SCRUM-109,SCRUM-107,,,,,,,,,,
+Story,SCRUM-111,10174,Scaffold the Deductions screen component from the wireframe,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:45,6/20/26 0:14,"As a Frontend Developer, I want a typed Deductions screen component scaffolded from the wireframe, so that the screen has a stable structure before data is wired.","# A typed React component renders the Deductions screen layout (header, KPI region, table region) matching the wireframe.
+# The component declares typed props for the deduction data it will receive.
+# The component renders inert placeholder regions with no data fetching yet.",SCRUM-100,,,,SCRUM-112,,,,,,,
+Story,SCRUM-112,10175,Add the TanStack Query hook to the deductions endpoint,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:45,6/20/26 0:14,"As a Frontend Developer, I want a TanStack Query hook fetching the client's deductions, so that the Deductions screen reads live data through one typed boundary.","# A TanStack Query hook calls the deductions endpoint and returns typed deductions.
+# The hook exposes loading, error, and data states to callers.
+# A test asserts the hook returns parsed deductions for a mocked response.",SCRUM-111,,,,SCRUM-113,SCRUM-114,SCRUM-115,,,,,
+Story,SCRUM-113,10176,"Add loading, empty, and error states to the Deductions screen",,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:45,6/20/26 0:14,"As a Frontend Developer, I want the Deductions screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.","# A loading skeleton renders while the deductions request is in flight.
+# An empty state renders when the client has no deductions.
+# An error state renders with a retry affordance on request failure.",SCRUM-112,,,,SCRUM-116,,,,,,,
+Story,SCRUM-114,10177,Build the Add Deduction form with zod validation,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:45,6/20/26 0:14,"As a Frontend Developer, I want an Add Deduction form validated with zod, so that malformed deduction entries are caught at the boundary.","# The form captures description, category, and amount and validates with react-hook-form + zod.
+# A negative amount or missing required field surfaces an inline validation message and blocks submit.
+# A valid submit invokes the create handler with the typed payload.",SCRUM-112,,,,SCRUM-115,,,,,,,
+Story,SCRUM-115,10178,Render the deductions table from live data,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:45,6/20/26 0:14,"As a Frontend Developer, I want the deductions table rendered from the hook data, so that recorded deductions and their tax impact are visible.","# The table renders date, description, category, amount, and tax-impact columns from the hook data.
+# KPI cards render total deductions, estimated tax savings, and the deduction method.
+# A newly added deduction appears in the table after a successful create.",SCRUM-112,SCRUM-114,,,SCRUM-116,,,,,,,
+Story,SCRUM-116,10179,Add accessibility and a component test for the Deductions screen,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:46,6/20/26 0:14,"As a Frontend Developer, I want the Deductions screen to pass an axe check and a component test, so that it is accessible and regression-guarded.","# An axe accessibility check on the rendered screen reports no violations.
+# A component test asserts the table renders rows and the empty state for no data.
+# The form's inputs carry accessible labels and the test asserts a validation error is announced.",SCRUM-115,SCRUM-113,,,,,,,,,,
+Story,SCRUM-117,10180,Scaffold the Quarterly Payments screen component from the wireframe,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:46,6/20/26 0:14,"As a Frontend Developer, I want a typed Quarterly Payments screen scaffolded from the wireframe, so that the read-only screen has a stable structure before data is wired.","# A typed React component renders the Quarterly Payments layout (KPI region, quarter timeline region) matching the wireframe.
+# The component declares typed props for the quarterly estimate data it will receive.
+# No payment-recording or mark-paid control is scaffolded (out of MVP scope).",SCRUM-103,,,,SCRUM-118,,,,,,,
+Story,SCRUM-118,10181,Add the TanStack Query hook to the quarterly estimates endpoint,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:46,6/20/26 0:14,"As a Frontend Developer, I want a TanStack Query hook fetching the quarterly estimates, so that the screen reads live read-only data through one typed boundary.","# A TanStack Query hook calls the quarterly estimates endpoint and returns typed quarter items.
+# The hook exposes loading, error, and data states to callers.
+# A test asserts the hook returns parsed quarter items for a mocked response.",SCRUM-117,,,,SCRUM-119,SCRUM-120,,,,,,
+Story,SCRUM-119,10182,"Add loading, empty, and error states to the Quarterly Payments screen",,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:46,6/20/26 0:15,"As a Frontend Developer, I want the Quarterly Payments screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.","# A loading skeleton renders while the quarterly estimates request is in flight.
+# An empty state renders when no quarterly estimates exist for the period.
+# An error state renders with a retry affordance on request failure.",SCRUM-118,,,,SCRUM-121,,,,,,,
+Story,SCRUM-120,10183,Render the KPI cards and read-only quarter timeline,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:46,6/20/26 0:14,"As a Frontend Developer, I want the KPI cards and quarter timeline rendered read-only, so that estimated amounts and deadlines are visible without any recording action.","# The four 1040-ES quarter items render with date and estimated amount from the hook data.
+# KPI cards render total estimated, paid so far, and remaining; a withholding-progress bar renders coverage.
+# No mark-paid or payment-recording control is present (explicitly out of MVP scope).",SCRUM-118,,,,SCRUM-121,,,,,,,
+Story,SCRUM-121,10184,Add accessibility and a component test for the Quarterly Payments screen,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:46,6/20/26 0:15,"As a Frontend Developer, I want the Quarterly Payments screen to pass an axe check and a component test, so that it is accessible and regression-guarded.","# An axe accessibility check on the rendered screen reports no violations.
+# A component test asserts the four quarter items and KPI cards render from sample data.
+# The test asserts no payment-recording control is present in the rendered screen.",SCRUM-120,SCRUM-119,,,,,,,,,,
+Story,SCRUM-122,10185,Scaffold the Client Roster screen component from the wireframe,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:47,6/20/26 0:15,"As a Frontend Developer, I want a typed Client Roster screen scaffolded from the wireframe, so that the screen has a stable structure before data is wired.","# A typed React component renders the Client Roster layout (header, table region) matching the wireframe.
+# The component declares typed props for the roster data it will receive.
+# The component renders an inert table region with no data fetching yet.",SCRUM-100,,,,SCRUM-123,,,,,,,
+Story,SCRUM-123,10186,Add the TanStack Query hook to the client roster endpoint,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:47,6/20/26 0:15,"As a Frontend Developer, I want a TanStack Query hook fetching the firm's client roster, so that the screen reads live data through one typed boundary.","# A TanStack Query hook calls the roster endpoint and returns typed client rows.
+# The hook exposes loading, error, and data states to callers.
+# A test asserts the hook returns parsed client rows for a mocked response.",SCRUM-122,,,,SCRUM-124,SCRUM-125,,,,,,
+Story,SCRUM-124,10187,"Add loading, empty, and error states to the Client Roster screen",,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:47,6/20/26 0:15,"As a Frontend Developer, I want the Client Roster screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.","# A loading skeleton renders while the roster request is in flight.
+# An empty state renders when the firm has no clients.
+# An error state renders with a retry affordance on request failure.",SCRUM-123,,,,,,,,,,,
+Story,SCRUM-125,10188,Render the roster as a TanStack Table,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:47,6/20/26 0:15,"As a Frontend Developer, I want the client roster rendered with TanStack Table, so that advisors can scan and sort their clients.","# A TanStack Table renders client, filing status, YTD income, estimated tax, and quarterly status columns.
+# Columns are sortable through TanStack Table's column model.
+# The rendered rows reflect the hook data.",SCRUM-123,,,,SCRUM-126,,,,,,,
+Story,SCRUM-126,10189,Add accessibility and a component test for the Client Roster screen,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:48,6/20/26 0:15,"As a Frontend Developer, I want the Client Roster screen to pass an axe check and a component test, so that it is accessible and regression-guarded.","# An axe accessibility check on the rendered screen reports no violations.
+# A component test asserts the table renders rows and the empty state for no data.
+# The test asserts a column sort reorders the rendered rows.",SCRUM-125,,,,,,,,,,,
+Story,SCRUM-127,10190,Write the advisor open-queue-to-scenario E2E test,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:48,6/20/26 0:43,"As a Frontend Developer, I want a Playwright test of the core advisor flow, so that it is protected against regressions.","# The test logs in as an Advisor, opens the Plan Cycle Queue, and opens a case.
+# It enters a scenario in the Scenario Planner and asserts a result row appears.
+# The test runs headless and fails the build on error.",SCRUM-102,SCRUM-100,,,SCRUM-128,,,,,,,
+Story,SCRUM-128,10191,Add the axe accessibility gate,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:48,6/20/26 0:43,"As a Frontend Developer, I want an axe scan in the test suite, so that the SPA stays accessible.","# An axe scan of the dashboard and Plan Cycle Detail reports zero critical violations.
+# Form fields on the Scenario Planner carry accessible labels.
+# The check fails the build if a critical violation is introduced.",SCRUM-127,,,,SCRUM-129,,,,,,,
+Story,SCRUM-129,10192,Add the Lighthouse performance threshold,,,To Do,,SCRUM Sprint 3,10047,SCRUM-16,React SPA — Operator & Portal Experience,6/19/26 20:48,6/20/26 5:37,"As a Frontend Developer, I want a Lighthouse threshold, so that the SPA stays performant.","# A Lighthouse run scores at least 90 on the dashboard route.
+# The run is reproducible against the built app.
+# The build fails if the score regresses below threshold.",SCRUM-128,,,,SCRUM-161,,,,,,,
+Story,SCRUM-130,10193,Define the stage-changed CloudEvents schema,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:50,6/20/26 0:43,"As a Backend Developer, I want a CloudEvents schema for the stage-changed event, so that consumers have a stable event contract.","# A CloudEvents-shaped schema defines case_id, from_stage, to_stage, tenant_id, and actor.
+# A zod validator parses and rejects malformed events.
+# The schema is versioned and documented.",SCRUM-66,,,,SCRUM-131,,,,,,,
+Story,SCRUM-131,10194,Publish stage-changed events to SNS,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:51,6/20/26 0:44,"As a Backend Developer, I want each stage transition to publish a stage-changed event, so that downstream consumers react without polling.","# Advancing a case publishes a stage-changed event to an SNS topic.
+# The published event validates against the CloudEvents schema.
+# The publisher runs as a plain service method, not a cloud runtime, in this sprint.",SCRUM-130,,,,SCRUM-132,SCRUM-133,SCRUM-137,,,,,
+Story,SCRUM-132,10195,Consume stage-changed events from SQS,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:51,6/20/26 0:45,"As a Backend Developer, I want an SQS consumer for stage-changed events, so that a subscriber processes transitions out of band.","# A consumer subscribed via SQS receives the event and logs it.
+# The consumer validates the event against the schema before processing.
+# A test asserts a published event is received and parsed by the consumer.",SCRUM-131,,,,SCRUM-143,SCRUM-156,,,,,,
+Story,SCRUM-133,10196,Write stage transitions through a transactional outbox,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:51,6/20/26 0:43,"As a Backend Developer, I want stage transitions written through an outbox, so that an event is never lost when the case commits.","# The stage change and its outbox row commit in the same database transaction.
+# The outbox row carries the serialized CloudEvent payload.
+# A test asserts a rolled-back transition leaves no outbox row.",SCRUM-131,,,,SCRUM-134,,,,,,,
+Story,SCRUM-134,10197,Relay outbox rows with retry,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:51,6/20/26 0:43,"As a Backend Developer, I want a relay that publishes outbox rows and retries on failure, so that committed events are reliably delivered.","# A relay publishes unsent outbox rows and marks them sent.
+# A transient publish failure is retried with backoff.
+# A test asserts a row is marked sent only after a successful publish.",SCRUM-133,,,,SCRUM-135,,,,,,,
+Story,SCRUM-135,10198,Route repeatedly failing messages to a DLQ,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:51,6/20/26 0:43,"As a Backend Developer, I want a dead-letter queue, so that a poison message never blocks the queue.","# A message that fails repeatedly past a max-retry count lands in a DLQ.
+# The DLQ entry preserves the original payload and the failure reason.
+# A test asserts a persistently failing message reaches the DLQ and the queue continues.",SCRUM-134,,,,SCRUM-136,,,,,,,
+Story,SCRUM-136,10199,Make the queue-projection consumer idempotent,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:52,6/20/26 0:45,"As a Backend Developer, I want the queue-projection consumer idempotent, so that a redelivered event does not double-apply.","# The consumer records processed event IDs and skips duplicates.
+# Re-processing the same stage-changed event yields the same projection.
+# A test asserts an at-least-once redelivery is handled idempotently.",SCRUM-135,SCRUM-74,,,SCRUM-159,,,,,,,
+Story,SCRUM-137,10200,Create the action_item table and present-to-client event,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:52,6/20/26 0:44,"As a Backend Developer, I want an action_item table and a present-to-client event, so that presenting a cycle can create action items.","# A migration creates action_item with case_id, description, deadline, and completed flag.
+# The present-to-client transition emits a CloudEvent for action-item creation.
+# A consumer creates action items in the portal read model on that event.",SCRUM-131,SCRUM-42,,,SCRUM-138,SCRUM-144,,,,,,
+Story,SCRUM-138,10201,Compensate present-to-client on action-item failure,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:52,6/20/26 5:37,"As an Advisor, I want present-to-client modeled as a compensating saga, so that a partial failure leaves the case consistent.","# A failure during action-item creation compensates by reverting the cycle to Review.
+# The compensation is recorded in the audit trail.
+# The saga path is covered by a test for both success and compensation.",SCRUM-137,,,,SCRUM-160,,,,,,,
+Story,SCRUM-139,10202,Generate the SOAP TIN/EIN client from the WSDL,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:52,6/20/26 0:44,"As a Backend Developer, I want a node-soap client for the TIN/EIN service, so that Intake can validate a client's tax identifier.","# A node-soap client consumes the WSDL and exposes the TIN/EIN validation operation.
+# A call against a stub SOAP service returns a raw validation response.
+# A test asserts the operation is callable with a sample TIN/EIN.",SCRUM-53,,,,SCRUM-140,,,,,,,
+Story,SCRUM-140,10203,Map the SOAP response through an anti-corruption layer,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:52,6/20/26 0:44,"As an Advisor, I want the SOAP response mapped through an ACL, so that the legacy contract never leaks into the domain.","# An anti-corruption layer maps the SOAP response into a clean internal validation result type.
+# The TIN/EIN validation runs at the Intake stage and records the result on the case.
+# A test asserts the domain type contains no SOAP-specific fields.",SCRUM-139,,,,SCRUM-141,,,,,,,
+Story,SCRUM-141,10204,Translate SOAP faults to typed domain errors,,,To Do,,SCRUM Sprint 4,10048,SCRUM-17,Event-Driven Workflow & Legacy Integration,6/19/26 20:52,6/20/26 0:44,"As a Backend Developer, I want SOAP faults translated to domain errors, so that legacy failures are handled cleanly.","# A SOAP fault is translated into a typed domain error.
+# The error is recorded on the case rather than crashing Intake.
+# A test asserts an injected SOAP fault produces the typed domain error.",SCRUM-140,,,,,,,,,,,
+Story,SCRUM-142,10205,Build the client My Tax Plan view scoped to the client,,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:54,6/20/26 0:44,"As a Client, I want the My Tax Plan view, so that I can follow my plan's progress in the portal.","# The portal shows the client's current Plan Cycle stage stepper scoped to only their own cycle.
+# The hero and plan summary (advisor, next meeting, projected savings, top recommendation) render.
+# The view is unreachable for another client's cycle.",SCRUM-100,,,,SCRUM-143,SCRUM-144,,,,,,
+Story,SCRUM-143,10206,Show read-only scenarios and live stage updates in the portal,,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:54,6/20/26 0:44,"As a Client, I want read-only scenarios and live stage updates, so that I always see the current plan state.","# Scenarios appear read-only to the client, matching the external permission matrix.
+# A stage-changed event updates the displayed stage without a manual refresh.
+# The advisor-messages panel renders read-only.",SCRUM-142,SCRUM-132,,,,,,,,,,
+Story,SCRUM-144,10207,Build the portal Action Items screen with completion,,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:54,6/20/26 0:44,"As a Client, I want to mark action items complete, so that my advisor can track execution.","# The Action Items screen lists items with their deadline and lets the client mark each complete.
+# Completing an action item emits an event that updates the internal Action Item Tracking view.
+# A completed item reflects its new state without a manual refresh.",SCRUM-137,SCRUM-142,,,SCRUM-145,,,,,,,
+Story,SCRUM-145,10208,Approve the recommendation to advance Client Approval,,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:54,6/20/26 5:39,"As a Client, I want to approve the recommendation, so that the cycle advances past Client Approval.","# Approving advances the cycle past Client Approval per the permission matrix.
+# The approval is recorded in the audit trail.
+# The portal reflects the advanced stage after approval.",SCRUM-144,,,,SCRUM-190,,,,,,,
+Story,SCRUM-146,10209,Scaffold the Firm Team & Users screen component from the wireframe,,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:54,6/20/26 0:44,"As a Frontend Developer, I want a typed Team & Users screen scaffolded from the wireframe, so that the screen has a stable structure before data is wired.","# A typed React component renders the Team & Users layout (header, user roster region) matching the wireframe.
+# The component declares typed props for the user roster data it will receive.
+# The screen is hidden from non-admin roles per the permission matrix.",SCRUM-100,SCRUM-55,,,SCRUM-147,,,,,,,
+Story,SCRUM-147,10210,Add the TanStack Query hook to the firm users endpoint,,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:55,6/20/26 0:45,"As a Frontend Developer, I want a TanStack Query hook fetching the firm's users, so that the screen reads live data through one typed boundary.","# A TanStack Query hook calls the firm users endpoint and returns typed user rows.
+# The hook exposes loading, error, and data states to callers.
+# A test asserts the hook returns parsed user rows for a mocked response.",SCRUM-146,,,,SCRUM-148,SCRUM-149,,,,,,
+Story,SCRUM-148,10211,"Add loading, empty, and error states to the Team & Users screen",,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:55,6/20/26 0:45,"As a Frontend Developer, I want the Team & Users screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.","# A loading skeleton renders while the users request is in flight.
+# An empty state renders when the firm has no users beyond the admin.
+# An error state renders with a retry affordance on request failure.",SCRUM-147,,,,SCRUM-150,,,,,,,
+Story,SCRUM-149,10212,Render the user roster table with a role-assignment control,,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:55,6/20/26 0:45,"As a Firm Admin, I want the user roster table with a role-assignment control, so that I can manage my firm's staff and their roles.","# The table renders name, email, role, status, and last login for the tenant's users.
+# A role-assignment control lets a Firm Admin change a user's tenant-scoped role; it is disabled for non-admins.
+# Changing a role invokes the update handler with the user and new role.",SCRUM-147,,,,SCRUM-150,SCRUM-151,,,,,,
+Story,SCRUM-150,10213,Add accessibility and a component test for the Team & Users screen,,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:55,6/20/26 0:45,"As a Frontend Developer, I want the Team & Users screen to pass an axe check and a component test, so that it is accessible and regression-guarded.","# An axe accessibility check on the rendered screen reports no violations.
+# A component test asserts the roster renders rows and the empty state for no extra users.
+# The test asserts the role-assignment control is disabled for a non-admin role.",SCRUM-149,SCRUM-148,,,,,,,,,,
+Story,SCRUM-151,10214,Build the All Tenants & Users admin screen,,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:55,6/20/26 0:45,"As a TaxPulse Platform Admin, I want the All Tenants & Users screen, so that I can manage accounts across tenants without impersonating.","# The screen lists tenants and their users with role and status.
+# An Invite User control creates a user under a chosen tenant.
+# No impersonation control is present, per MVP scope.",SCRUM-149,,,,SCRUM-152,,,,,,,
+Story,SCRUM-152,10215,Build the Roles & Permissions and Audit Log admin screens,,,To Do,,SCRUM Sprint 4,10049,SCRUM-18,UI Completion & Polish,6/19/26 20:55,6/20/26 5:39,"As a TaxPulse Platform Admin, I want the Roles & Permissions and Audit Log screens, so that I can review the permission matrix and platform-wide audit events.","# The Roles & Permissions screen renders the read-only permission matrix for the four roles.
+# The Audit Log screen lists platform-wide audit entries with redacted figures.
+# Both screens render loading and empty states.",SCRUM-151,,,,SCRUM-191,,,,,,,
+Story,SCRUM-153,10216,Write the multi-stage Dockerfile for the Core Case Service,,,To Do,,SCRUM Sprint 5,10050,SCRUM-19,"Containers, Serverless & Deployment",6/19/26 20:57,6/20/26 0:45,"As a Platform Engineer, I want a multi-stage Dockerfile for the Core Case Service, so that its production image is small and reproducible.","# The image builds in multiple stages and excludes dev dependencies from the final layer.
+# The container runs the service and passes a healthcheck.
+# The build is reproducible from a clean checkout.",SCRUM-54,,,,SCRUM-155,,,,,,,
+Story,SCRUM-154,10217,Write the multi-stage Dockerfile for the Tax Engine,,,To Do,,SCRUM Sprint 5,10050,SCRUM-19,"Containers, Serverless & Deployment",6/19/26 20:57,6/20/26 0:45,"As a Platform Engineer, I want a multi-stage Dockerfile for the Tax Calculation Engine, so that its production image is lean.","# The Python image builds in multiple stages and ships only runtime dependencies.
+# The container runs the FastAPI service and passes a healthcheck.
+# The build is reproducible from a clean checkout.",SCRUM-84,,,,SCRUM-155,,,,,,,
+Story,SCRUM-155,10218,"Compose the services, PostgreSQL, and Redis",,,To Do,,SCRUM Sprint 5,10050,SCRUM-19,"Containers, Serverless & Deployment",6/19/26 20:57,6/20/26 0:45,"As a Platform Engineer, I want Docker Compose running the services and data stores, so that the team can run the stack locally.","# Compose starts the Core Case Service, Tax Engine, PostgreSQL, and Redis together.
+# The services reach the data stores over the Compose network.
+# A documented command brings the stack up and a smoke check passes.",SCRUM-153,SCRUM-154,,,SCRUM-156,SCRUM-157,,,,,,
+Story,SCRUM-156,10219,Add LocalStack SNS/SQS to Compose,,,To Do,,SCRUM Sprint 5,10050,SCRUM-19,"Containers, Serverless & Deployment",6/19/26 20:57,6/20/26 5:37,"As a Platform Engineer, I want LocalStack emulating SNS/SQS in Compose, so that the workflow events run locally.","# LocalStack provides the SNS/SQS resources the workflow events use.
+# The publisher and consumer connect to LocalStack endpoints in the local profile.
+# A smoke check publishes and consumes one stage-changed event end-to-end.",SCRUM-155,SCRUM-132,,,SCRUM-159,SCRUM-160,,,,,,
+Story,SCRUM-157,10220,Define ECS Fargate task definitions for the services,,,To Do,,SCRUM Sprint 5,10050,SCRUM-19,"Containers, Serverless & Deployment",6/19/26 20:57,6/20/26 0:45,"As a Platform Engineer, I want ECS Fargate task definitions, so that the long-lived APIs have a managed runtime.","# Task definitions exist for the Core Case Service and the Tax Engine images.
+# Each task specifies CPU, memory, env, and a container healthcheck.
+# The tasks pull from the image registry and register with the cluster.",SCRUM-155,,,,SCRUM-158,,,,,,,
+Story,SCRUM-158,10221,Route ALB traffic and auto-replace unhealthy tasks,,,To Do,,SCRUM Sprint 5,10050,SCRUM-19,"Containers, Serverless & Deployment",6/19/26 20:58,6/20/26 5:37,"As a Platform Engineer, I want an ALB routing to the services with health-based replacement, so that the APIs are reachable and self-healing.","# The ALB routes /v1 case traffic and calculation traffic to the correct service.
+# A task that fails its health check is replaced automatically.
+# A smoke request through the ALB reaches each service.",SCRUM-157,,,,SCRUM-161,SCRUM-162,,,,,,
+Story,SCRUM-159,10222,Refactor the stage-event consumer to a Lambda,,,To Do,,SCRUM Sprint 5,10050,SCRUM-19,"Containers, Serverless & Deployment",6/19/26 20:58,6/20/26 5:37,"As a Platform Engineer, I want the Sprint 4 stage-changed consumer running as a Lambda, so that bursting events are handled serverlessly.","# The consumer that was a plain service now runs as a Lambda triggered by the SQS queue.
+# The Lambda updates the Plan Cycle Queue read model on each event.
+# Messages that fail processing route to the existing DLQ.",SCRUM-136,SCRUM-156,,,SCRUM-164,,,,,,,
+Story,SCRUM-160,10223,Refactor present-to-client and execute stubs to Lambda + API Gateway,,,To Do,,SCRUM Sprint 5,10050,SCRUM-19,"Containers, Serverless & Deployment",6/19/26 20:58,6/20/26 5:37,"As a Platform Engineer, I want the present-to-client and execute stub transitions as Lambdas behind API Gateway, so that they scale on demand.","# The present-to-client and execute stub endpoints run as Lambdas fronted by API Gateway.
+# Each handler stamps the transition timestamp and emits the stage-changed event.
+# The endpoints enforce the same role gate as before the refactor.",SCRUM-138,SCRUM-156,,,SCRUM-164,,,,,,,
+Story,SCRUM-161,10224,Serve the SPA from S3 behind CloudFront,,,To Do,,SCRUM Sprint 5,10050,SCRUM-19,"Containers, Serverless & Deployment",6/19/26 20:58,6/20/26 5:37,"As a Platform Engineer, I want the SPA served from S3 via CloudFront, so that users load the app from an edge-cached CDN.","# The built SPA is synced to a private S3 bucket served only through CloudFront.
+# SPA client-side routes resolve to index.html via the CloudFront error/rewrite config.
+# A deploy invalidates the CloudFront cache for changed assets.",SCRUM-129,SCRUM-158,,,SCRUM-164,,,,,,,
+Story,SCRUM-162,10225,Codify the VPC and data stores in Terraform,,,To Do,,SCRUM Sprint 5,10051,SCRUM-20,"IaC, Secure Pipeline & Observability",6/19/26 20:59,6/20/26 5:37,"As a Platform Engineer, I want the networking and data stores in Terraform, so that infrastructure is version-controlled and reproducible.","# Terraform defines the VPC, PostgreSQL, DynamoDB, and Redis resources.
+# terraform plan is clean after an apply (no drift).
+# State is stored in a remote backend.",SCRUM-158,,,,SCRUM-163,,,,,,,
+Story,SCRUM-163,10226,Gate Terraform with Checkov and tfsec,,,To Do,,SCRUM Sprint 5,10051,SCRUM-20,"IaC, Secure Pipeline & Observability",6/19/26 20:59,6/20/26 5:37,"As a Security Engineer, I want Checkov and tfsec scanning the Terraform, so that misconfigurations are caught before apply.","# Checkov and tfsec run in CI against the Terraform.
+# The gate fails on a high-severity misconfiguration.
+# Documented suppressions require a justification comment.",SCRUM-162,,,,SCRUM-164,,,,,,,
+Story,SCRUM-164,10227,"Modularize ECS, Lambda, and SPA delivery in Terraform",,,To Do,,SCRUM Sprint 5,10051,SCRUM-20,"IaC, Secure Pipeline & Observability",6/19/26 20:59,6/20/26 5:38,"As a Platform Engineer, I want reusable Terraform modules, so that the whole stack provisions from one root configuration.","# Separate modules exist for the ECS services, the Lambda consumers, and the SPA delivery.
+# A root configuration wires the modules and outputs the public URLs.
+# Module inputs are documented with required variables.",SCRUM-163,SCRUM-159,SCRUM-160,SCRUM-161,SCRUM-165,SCRUM-170,,,,,,
+Story,SCRUM-165,10228,Add the Semgrep and Bandit SAST gate in CI/CD,,,To Do,,SCRUM Sprint 5,10051,SCRUM-20,"IaC, Secure Pipeline & Observability",6/19/26 21:00,6/20/26 5:37,"As a Security Engineer, I want Semgrep and Bandit on every PR via GitHub Actions, so that vulnerable code patterns are caught before merge.","# A GitHub Actions workflow runs Semgrep on the TypeScript and Bandit on the Python code.
+# The gate blocks the PR on a high-severity finding.
+# The gate runs automatically on every pull request.",SCRUM-164,,,,SCRUM-166,,,,,,,
+Story,SCRUM-166,10229,Add the OSV and Gitleaks gate,,,To Do,,SCRUM Sprint 5,10051,SCRUM-20,"IaC, Secure Pipeline & Observability",6/19/26 21:00,6/20/26 5:38,"As a Security Engineer, I want OSV and Gitleaks on every PR, so that vulnerable dependencies and committed secrets are blocked.","# OSV flags a known-vulnerable dependency and fails the PR.
+# Gitleaks blocks a committed secret.
+# Both run automatically on every pull request.",SCRUM-165,,,,SCRUM-167,,,,,,,
+Story,SCRUM-167,10230,Scan images and produce SBOMs with Trivy and Syft,,,To Do,,SCRUM Sprint 5,10051,SCRUM-20,"IaC, Secure Pipeline & Observability",6/19/26 21:00,6/20/26 5:38,"As a Security Engineer, I want Trivy and Syft in the release pipeline, so that images are scanned and have a machine-readable bill of materials.","# Trivy scans the container images and fails on a high-severity vulnerability.
+# Syft produces an SBOM per image.
+# The reports are published as build artifacts.",SCRUM-166,,,,SCRUM-168,,,,,,,
+Story,SCRUM-168,10231,Sign images with Cosign and verify before deploy,,,To Do,,SCRUM Sprint 5,10051,SCRUM-20,"IaC, Secure Pipeline & Observability",6/19/26 21:00,6/20/26 5:38,"As a Security Engineer, I want Cosign signing with pre-deploy verification, so that only signed artifacts are deployed.","# Released images are signed with Cosign.
+# The signature is verified before deploy and an unsigned image is rejected.
+# The verification step runs in the release pipeline.",SCRUM-167,,,,SCRUM-169,,,,,,,
+Story,SCRUM-169,10232,Run an OWASP ZAP baseline scan against the deployed app,,,To Do,,SCRUM Sprint 5,10051,SCRUM-20,"IaC, Secure Pipeline & Observability",6/19/26 21:00,6/20/26 5:39,"As a Security Engineer, I want a ZAP baseline scan, so that the deployed app is checked for common web vulnerabilities.","# An OWASP ZAP baseline scan runs against the deployed app.
+# The scan reports findings as a build artifact.
+# High-severity findings fail the release.",SCRUM-168,,,,SCRUM-189,,,,,,,
+Story,SCRUM-170,10233,Emit CloudWatch metrics and X-Ray traces across services,,,To Do,,SCRUM Sprint 5,10051,SCRUM-20,"IaC, Secure Pipeline & Observability",6/19/26 21:01,6/20/26 5:39,"As a Platform Engineer, I want CloudWatch metrics and X-Ray traces, so that I can observe the deployed stack.","# Services emit structured logs and metrics to CloudWatch.
+# X-Ray traces span the Core Case Service and Tax Engine.
+# A trace shows a scenario request crossing service boundaries end-to-end.",SCRUM-164,,,,SCRUM-171,SCRUM-185,SCRUM-187,,,,,
+Story,SCRUM-171,10234,Add a disposition log for triaged issues,,,To Do,,SCRUM Sprint 5,10051,SCRUM-20,"IaC, Secure Pipeline & Observability",6/19/26 21:01,6/20/26 5:38,"As a Platform Engineer, I want a disposition log template, so that triaged issues are recorded with their root cause and action.","# A disposition log template records each triaged issue's root cause and action.
+# The template links the relevant CloudWatch metric or X-Ray trace.
+# A sample entry demonstrates the workflow.",SCRUM-170,,,,,,,,,,,
+Story,SCRUM-172,10235,Create the income_event table,,,To Do,,SCRUM Sprint 6,10052,SCRUM-21,Data Engineering Pipeline,6/19/26 21:01,6/20/26 5:38,"As a Data Engineer, I want an income_event table, so that the pipeline reads structured income sources.","# A migration creates income_event with source, type, amount, withholding, and date columns.
+# Running the migration from empty creates the table and is idempotent.
+# A seed loads a checked-in sample income dataset for exploration.",SCRUM-79,,,,SCRUM-174,SCRUM-175,,,,,,
+Story,SCRUM-173,10236,Create the deduction table,,,To Do,,SCRUM Sprint 6,10052,SCRUM-21,Data Engineering Pipeline,6/19/26 21:02,6/20/26 5:38,"As a Data Engineer, I want a deduction table, so that the pipeline reads structured deduction data.","# A migration creates deduction with category, amount, tax-impact, and date columns.
+# Running the migration from empty creates the table and is idempotent.
+# A seed loads a checked-in sample deduction dataset for exploration.",SCRUM-79,,,,SCRUM-174,SCRUM-175,,,,,,
+Story,SCRUM-174,10237,Add constraints and indexes to the income_event and deduction tables,,,To Do,,SCRUM Sprint 6,10052,SCRUM-21,Data Engineering Pipeline,6/19/26 21:02,6/20/26 5:38,"As a Data Engineer, I want constraints and indexes on the source tables, so that pipeline queries are fast and data quality is enforced at the DB.","# A migration adds non-negative checks on income_event.amount and deduction.amount.
+# Indexes on the date columns of both tables support time-range pipeline scans.
+# A test asserts a negative amount insert is rejected and a date-range query uses the index.",SCRUM-172,SCRUM-173,,,,,,,,,,
+Story,SCRUM-175,10238,Explore income data with polars and DuckDB,,,To Do,,SCRUM Sprint 6,10052,SCRUM-21,Data Engineering Pipeline,6/19/26 21:02,6/20/26 5:38,"As a Data Engineer, I want to explore income events with polars and DuckDB, so that aggregation logic can be validated before the pipeline is built.","# A script loads income events into polars and computes income by source.
+# A DuckDB query aggregates year-to-date income from the same dataset.
+# The exploration is reproducible from the checked-in sample dataset.",SCRUM-172,SCRUM-173,,,SCRUM-176,,,,,,,
+Story,SCRUM-176,10239,Compute YTD and YoY aggregates and write Parquet to S3,,,To Do,,SCRUM Sprint 6,10052,SCRUM-21,Data Engineering Pipeline,6/19/26 21:02,6/20/26 5:38,"As a Data Engineer, I want a pipeline producing YTD and YoY aggregates as Parquet, so that the dashboard charts have a reliable data source.","# The pipeline produces YTD and year-over-year income aggregates.
+# It writes the aggregates as Parquet to S3.
+# The YoY output feeds the dashboard's Year-over-Year chart.",SCRUM-175,,,,SCRUM-177,,,,,,,
+Story,SCRUM-177,10240,Validate the pipeline with Great Expectations,,,To Do,,SCRUM Sprint 6,10052,SCRUM-21,Data Engineering Pipeline,6/19/26 21:02,6/20/26 5:38,"As a Data Engineer, I want Great Expectations gating the pipeline, so that bad data never reaches the dashboard.","# Great Expectations validates non-negative amounts and known income sources.
+# The run fails on a breach rather than emitting bad aggregates.
+# A test asserts a negative-amount fixture fails the validation.",SCRUM-176,,,,SCRUM-178,,,,,,,
+Story,SCRUM-178,10241,Load and chunk the tax-code and playbook corpus,,,To Do,,SCRUM Sprint 6,10053,SCRUM-22,RAG-Powered AI Assist,6/19/26 21:03,6/20/26 5:38,"As a Data Engineer, I want the tax-code and planning-playbook corpus chunked with citations, so that AI-Assist retrieval has a grounded source.","# The corpus loader chunks the tax-code and planning-playbook documents.
+# Each chunk preserves a source citation.
+# A retrieval smoke test returns the expected rule chunk for a sample recommendation.",SCRUM-177,,,,SCRUM-179,,,,,,,
+Story,SCRUM-179,10242,Embed chunks into a pgvector index,,,To Do,,SCRUM Sprint 6,10053,SCRUM-22,RAG-Powered AI Assist,6/19/26 21:03,6/20/26 5:38,"As a Data Engineer, I want corpus chunks embedded into pgvector, so that AI-Assist retrieval is semantic.","# Chunks are embedded with OpenAI embeddings and stored in a pgvector index.
+# A similarity query returns the most relevant rule chunks for a query.
+# The index is rebuilt deterministically from the chunked corpus.",SCRUM-178,,,,SCRUM-180,,,,,,,
+Story,SCRUM-180,10243,Add hybrid retrieval and reranking,,,To Do,,SCRUM Sprint 6,10053,SCRUM-22,RAG-Powered AI Assist,6/19/26 21:03,6/20/26 5:38,"As a Data Engineer, I want hybrid retrieval with reranking, so that the most relevant rule chunks surface for each recommendation.","# Retrieval combines vector similarity with keyword matching.
+# A reranking step orders candidate chunks by relevance.
+# A test asserts the expected chunk ranks first for a sample query.",SCRUM-179,,,,SCRUM-181,,,,,,,
+Story,SCRUM-181,10244,Gate retrieval quality with RAGAS,,,To Do,,SCRUM Sprint 6,10053,SCRUM-22,RAG-Powered AI Assist,6/19/26 21:03,6/20/26 5:39,"As a Data Engineer, I want a RAGAS evaluation, so that AI-Assist retrieval meets a documented quality bar.","# A RAGAS evaluation reports context-relevance and faithfulness on a sample question set.
+# The evaluation fails if scores drop below the documented threshold.
+# The question set and thresholds are checked in.",SCRUM-180,,,,SCRUM-182,SCRUM-189,,,,,,
+Story,SCRUM-182,10245,Ship the /assist endpoint with citations and tenant scoping,,,To Do,,SCRUM Sprint 6,10053,SCRUM-22,RAG-Powered AI Assist,6/19/26 21:04,6/20/26 5:39,"As an Advisor, I want an /assist endpoint that explains and cites a recommendation, so that I can justify the plan to a client.","# POST /assist takes a recommendation context and returns an explanation grounded in retrieved chunks.
+# The response includes citations identifying the tax-code or playbook source.
+# The endpoint enforces tenant scoping so retrieval never crosses tenants.",SCRUM-181,SCRUM-84,,,SCRUM-183,SCRUM-184,,,,,,
+Story,SCRUM-183,10246,Add a prompt-injection defense test set,,,To Do,,SCRUM Sprint 6,10053,SCRUM-22,RAG-Powered AI Assist,6/19/26 21:04,6/20/26 5:39,"As a Security Engineer, I want a prompt-injection test set against /assist, so that the assistant resists adversarial inputs.","# A test set submits prompt-injection attempts to /assist.
+# The endpoint refuses to leak system instructions or cross-tenant data.
+# The set runs as part of the AI-Assist test suite.",SCRUM-182,,,,,,,,,,,
+Story,SCRUM-184,10247,Add the AI-Assist side panel to Plan Cycle Detail,,,To Do,,SCRUM Sprint 6,10053,SCRUM-22,RAG-Powered AI Assist,6/19/26 21:04,6/20/26 5:39,"As an Advisor, I want an AI-Assist side panel on Plan Cycle Detail, so that I can ask the assistant to explain and cite a recommendation in context.","# A side panel sends the open case's recommendation to /assist.
+# The panel renders the explanation with its rule citations.
+# A loading and error state are shown while the request is in flight or fails.",SCRUM-182,SCRUM-97,,,SCRUM-191,,,,,,,
+Story,SCRUM-185,10248,Draw the TaxPulse data-flow diagram,,,To Do,,SCRUM Sprint 7,10054,SCRUM-23,"Hardening, Evidence & Final Demo",6/19/26 21:04,6/20/26 5:39,"As a Security Engineer, I want a data-flow diagram of TaxPulse, so that the threat model has a clear system picture.","# The diagram covers auth, the Core Case Service, the Tax Engine, and the portal.
+# Trust boundaries between tenants and between internal and external users are marked.
+# The diagram is checked into the evidence directory.",SCRUM-170,,,,SCRUM-186,,,,,,,
+Story,SCRUM-186,10249,Document STRIDE threats and mitigations,,,To Do,,SCRUM Sprint 7,10054,SCRUM-23,"Hardening, Evidence & Final Demo",6/19/26 21:05,6/20/26 5:39,"As a Security Engineer, I want STRIDE threats and mitigations documented, so that the highest-risk threats are tracked and addressed.","# Each STRIDE category lists at least one identified threat and its mitigation.
+# Tenant-isolation and audit-trail-tampering threats are explicitly addressed.
+# Each mitigation references where it is implemented.",SCRUM-185,,,,SCRUM-189,,,,,,,
+Story,SCRUM-187,10250,Define SLOs and CloudWatch alarms,,,To Do,,SCRUM Sprint 7,10054,SCRUM-23,"Hardening, Evidence & Final Demo",6/19/26 21:05,6/20/26 5:39,"As a Platform Engineer, I want SLOs with alarms, so that on-call can detect and respond to degradation.","# SLOs are defined for calculation latency and case-API availability with error budgets.
+# CloudWatch alarms fire when an SLO is at risk.
+# The SLOs and alarms are documented together.",SCRUM-170,,,,SCRUM-188,,,,,,,
+Story,SCRUM-188,10251,Write the incident runbook for the top failure modes,,,To Do,,SCRUM Sprint 7,10054,SCRUM-23,"Hardening, Evidence & Final Demo",6/19/26 21:05,6/20/26 5:39,"As a Platform Engineer, I want an incident runbook, so that on-call can respond to TaxPulse degradation without tribal knowledge.","# A runbook documents triage steps for the top two failure modes.
+# Each step links the relevant alarm and disposition-log template.
+# The runbook is reviewed against a tabletop scenario.",SCRUM-187,,,,,,,,,,,
+Story,SCRUM-189,10252,Assemble the reproducible evidence packet,,,To Do,,SCRUM Sprint 7,10054,SCRUM-23,"Hardening, Evidence & Final Demo",6/19/26 21:05,6/20/26 5:39,"As a Platform Engineer, I want an evidence packet, so that the build is reproducible and auditable by reviewers.","# The packet links CI test results, security-scan reports, and SBOMs for the released images.
+# It documents the exact steps to reproduce a deploy from a clean checkout.
+# A reviewer can follow the packet to a running stack without tribal knowledge.",SCRUM-169,SCRUM-181,SCRUM-186,,SCRUM-190,,,,,,,
+Story,SCRUM-190,10253,Rehearse the end-to-end cycle from Intake to Archived,,,To Do,,SCRUM Sprint 7,10054,SCRUM-23,"Hardening, Evidence & Final Demo",6/19/26 21:05,6/20/26 5:39,"As an Advisor, I want a rehearsed end-to-end cycle, so that the demo runs cleanly through every stage gate.","# The rehearsal creates a cycle, aggregates data, models scenarios, and passes Firm Admin review.
+# The cycle is presented to the client and reaches Executed.
+# The path is reproducible from the evidence packet's steps.",SCRUM-189,SCRUM-145,,,SCRUM-191,,,,,,,
+Story,SCRUM-191,10254,Deliver the final demo with portal approval and AI-Assist,,,To Do,,SCRUM Sprint 7,10054,SCRUM-23,"Hardening, Evidence & Final Demo",6/19/26 21:06,6/20/26 5:39,"As an Advisor, I want the final demo to show the portal and AI-Assist, so that stakeholders see the full TaxPulse workflow end-to-end.","# The client approves the recommendation and completes an action item from the portal.
+# The demo shows AI-Assist citing a rule in context.
+# The case reaches Archived with a sealed audit trail.",SCRUM-190,SCRUM-184,SCRUM-152,,,,,,,,,
