@@ -23,6 +23,39 @@ const expectedColumns = [
   "hold_reason",
 ];
 
+const expectedColumnTypes = {
+  client_id: "uuid",
+  tenant_id: "uuid",
+  planning_period: "text",
+  stage: "text",
+  owner: "text",
+  priority: "text",
+  due_date: "date",
+  on_hold: "boolean",
+  hold_reason: "text",
+} as const;
+
+const sampleTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11";
+const sampleClientIds = [
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+] as const;
+const sampleStageTransitionCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23";
+const sampleMissingCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24";
+
+async function seedSampleTenant(client: Client): Promise<void> {
+  await client.query(
+    `
+      INSERT INTO tenants (id, name, created_at)
+      VALUES ($1, $2, $3)
+    `,
+    [
+      sampleTenantId,
+      "North Shore Advisors",
+      "2026-06-29T12:00:00Z",
+    ],
+  );
+}
 const expectedStageTransitionColumns = [
   "case_id",
   "from_stage",
@@ -63,7 +96,7 @@ async function getTableStructure(
   tableName: string,
 ): Promise<{
   columns: string[];
-  nullableColumns: Record<string, boolean>;
+  columnTypes: Record<string, string>;
   constraints: Record<string, { definition: string; type: string }>;
   indexes: string[];
   rowCount: number;
@@ -73,8 +106,7 @@ async function getTableStructure(
   );
   const columnsResult = await client.query(
     `
-      SELECT column_name
-      , is_nullable
+      SELECT column_name, data_type
       FROM information_schema.columns
       WHERE table_schema = current_schema()
         AND table_name = $1
@@ -114,10 +146,10 @@ async function getTableStructure(
   return {
     rowCount: Number(rowCountResult.rows[0]?.row_count ?? 0),
     columns: columnsResult.rows.map((row) => String(row.column_name)),
-    nullableColumns: Object.fromEntries(
+    columnTypes: Object.fromEntries(
       columnsResult.rows.map((row) => [
         String(row.column_name),
-        row.is_nullable === "YES",
+        String(row.data_type),
       ]),
     ),
     constraints,
@@ -129,12 +161,13 @@ describe("tax plan cycle migration", () => {
   test("creates the table, verifies it is empty, and persists two records", async () => {
     await withTestSchema(async (client) => {
       await applyMigrations(client);
+      await seedSampleTenant(client);
 
       const structure = await getTableStructure(client, "tax_plan_cycle");
 
       expect(structure.rowCount).toBe(0);
       expect(structure.columns).toEqual(expectedColumns);
-      expect(structure.nullableColumns.case_id).toBe(false);
+      expect(structure.columnTypes).toEqual(expectedColumnTypes);
       expect(structure.indexes).toContain(
         "tax_plan_cycle_tenant_id_due_date_idx",
       );
@@ -158,10 +191,6 @@ describe("tax plan cycle migration", () => {
         structure.constraints.tax_plan_cycle_stage_check?.definition,
       ).toContain("Modeling");
 
-      await client.query("INSERT INTO tenants (id) VALUES ($1)", [
-        "tenant-001",
-      ]);
-
       await client.query(
         `
           INSERT INTO tax_plan_cycle (
@@ -180,9 +209,8 @@ describe("tax plan cycle migration", () => {
             ($11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
         `,
         [
-          "client-001",
-          "case-001",
-          "tenant-001",
+          sampleClientIds[0],
+          sampleTenantId,
           "2026-Q3",
           "Intake",
           "advisor-001",
@@ -190,9 +218,8 @@ describe("tax plan cycle migration", () => {
           "2026-07-15",
           false,
           null,
-          "client-002",
-          "case-002",
-          "tenant-001",
+          sampleClientIds[1],
+          sampleTenantId,
           "2026-Q4",
           "Review",
           "advisor-002",
@@ -223,9 +250,8 @@ describe("tax plan cycle migration", () => {
 
       expect(rows.rows).toEqual([
         {
-          client_id: "client-001",
-          case_id: "case-001",
-          tenant_id: "tenant-001",
+          client_id: sampleClientIds[0],
+          tenant_id: sampleTenantId,
           planning_period: "2026-Q3",
           stage: "Intake",
           owner: "advisor-001",
@@ -235,9 +261,8 @@ describe("tax plan cycle migration", () => {
           hold_reason: null,
         },
         {
-          client_id: "client-002",
-          case_id: "case-002",
-          tenant_id: "tenant-001",
+          client_id: sampleClientIds[1],
+          tenant_id: sampleTenantId,
           planning_period: "2026-Q4",
           stage: "Review",
           owner: "advisor-002",
@@ -253,9 +278,7 @@ describe("tax plan cycle migration", () => {
   test("rejects invalid stage values", async () => {
     await withTestSchema(async (client) => {
       await applyMigrations(client);
-      await client.query("INSERT INTO tenants (id) VALUES ($1)", [
-        "tenant-001",
-      ]);
+      await seedSampleTenant(client);
 
       await expect(
         client.query(
@@ -273,9 +296,8 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
           `,
           [
-            "client-invalid",
-            "case-invalid",
-            "tenant-001",
+            "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d31",
+            sampleTenantId,
             "2026-Q3",
             "Planning",
             "advisor-003",
@@ -319,9 +341,7 @@ describe("tax plan cycle migration", () => {
         structure.constraints.stage_transition_to_stage_check?.definition,
       ).toContain("Data Aggregation");
 
-      await client.query("INSERT INTO tenants (id) VALUES ($1)", [
-        "tenant-001",
-      ]);
+      await seedSampleTenant(client);
 
       await client.query(
         `
@@ -338,9 +358,8 @@ describe("tax plan cycle migration", () => {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `,
         [
-          "client-001",
-          "case-001",
-          "tenant-001",
+          sampleStageTransitionCaseId,
+          sampleTenantId,
           "2026-Q3",
           "Data Aggregation",
           "advisor-001",
@@ -361,7 +380,7 @@ describe("tax plan cycle migration", () => {
           ) VALUES ($1, $2, $3, $4, $5)
         `,
         [
-          "case-001",
+          sampleStageTransitionCaseId,
           "Intake",
           "Data Aggregation",
           "advisor-001",
@@ -380,16 +399,16 @@ describe("tax plan cycle migration", () => {
           FROM stage_transition
           WHERE case_id = $1
         `,
-        ["case-001"],
+        [sampleStageTransitionCaseId],
       );
 
       expect(rows.rows).toEqual([
         {
-          case_id: "case-001",
+          case_id: sampleStageTransitionCaseId,
           from_stage: "Intake",
           to_stage: "Data Aggregation",
           actor: "advisor-001",
-          occurred_at: new Date("2026-07-01T14:00:00.000Z"),
+          occurred_at: new Date("2026-07-01T18:00:00.000Z"),
         },
       ]);
     });
@@ -411,7 +430,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            "missing-case",
+            sampleMissingCaseId,
             "Intake",
             "Data Aggregation",
             "advisor-001",
@@ -426,9 +445,7 @@ describe("tax plan cycle migration", () => {
     await withTestSchema(async (client) => {
       await applyMigrations(client);
 
-      await client.query("INSERT INTO tenants (id) VALUES ($1)", [
-        "tenant-001",
-      ]);
+      await seedSampleTenant(client);
 
       await client.query(
         `
@@ -445,9 +462,8 @@ describe("tax plan cycle migration", () => {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `,
         [
-          "client-001",
-          "case-001",
-          "tenant-001",
+          sampleClientIds[0],
+          sampleTenantId,
           "2026-Q3",
           "Intake",
           "advisor-001",
@@ -469,7 +485,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            "case-001",
+            sampleClientIds[0],
             "Planning",
             "Data Aggregation",
             "advisor-001",
@@ -490,7 +506,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            "case-001",
+            sampleClientIds[0],
             "Intake",
             "Planning",
             "advisor-001",

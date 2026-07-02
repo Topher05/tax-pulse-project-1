@@ -30,6 +30,7 @@ export function listMigrationFiles(
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right))
     .map((fileName) => {
+      console.log(fileName)
       if (!migrationNamePattern.test(fileName)) {
         throw new Error(
           `Invalid migration file name "${fileName}". ` +
@@ -69,7 +70,7 @@ export async function applyMigrations(client: Client): Promise<void> {
     if (!migrationSql) {
       continue;
     }
-
+    console.log(migrationSql)
     await client.query(migrationSql);
   }
 }

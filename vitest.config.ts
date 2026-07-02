@@ -7,8 +7,8 @@ export default defineConfig({
       "**/.ruff_cache/**",
       "**/dist/**",
       "**/node_modules/**",
+      // Run smoke.test.ts only through `node --import tsx --test`, not Vitest.
       "tests/typescript/smoke.test.ts",
-      "tests/typescript/taxPlanCycleMigration.test.ts", // Note, test will fail due to foreign key constraints
     ],
     include: ["tests/typescript/**/*.test.ts"],
   },
