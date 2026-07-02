@@ -9,41 +9,41 @@ Conventions documented in [confluence](https://fedstack-june22-t1.atlassian.net/
 
 ### Branch Naming (Features)
 
-Use lowercase kebab-case with the Jira key at the end of the branch name. Feature
-branches should also include the developer name and feature name. `firstname-lastname-jiraXX`
+Use lowercase kebab-case with the Jira key at the end of the branch name. Feature branches must include the developer name and feature ticket number. `firstname-lastname-jiraXX`
+
 Examples:
 - `martins-okorie-jira43`
 - `dylan-harle-jira37`
-- `alex-hotfix-fk-fix-jira52`
 
-Branch names should not deviate from this pattern, the ticket key at the end is mandatory.
+Feature branch names should not deviate from this pattern, the ticket key at the end is mandatory.
+
 ### Branch Naming (Releases)
-Use Version tagging strategy: **release-vMAJOR.MINOR.PATCH;** 
-- MAJOR: Breaking changes; 
-- MINOR: Backward-compatible features; 
-- PATCH: Backward-compatible bug fixes or hotfixes 
+Use Version tagging strategy: **release-vMAJOR.MINOR.PATCH**
+- MAJOR: Breaking changes
+- MINOR: Backward-compatible features
+- PATCH: Backward-compatible bug fixes or hotfixes
 
 Examples:
-- `release-2.1.2`
-- `release-3.0.0`
+- `release-v2.1.2`
+- `release-v3.0.0`
 
 ### Branch Naming (Bugs)
-Use lowercase kebab-case with the Jira key at the end of the branch name. Feature
-branches should also include the developer name and feature name. `hotfix-jiraXX`
+Use lowercase kebab-case with the hotfix number at the end of the branch name.Branches must include the developer name and the hotfix number.
+
+`firstname-lastname-hotfixYY`
 
 Examples:
-- `hotfix-jira22`
-- `hotfix-jira19`
+- `caleb-latimer-hotfix1`
+- `christopher-martus-hotfix87`
+
+Note: `hotfixYY` is different in count and must always be an integer, first hotfix will be 1,and iterate off the previous hotfix separately of `jiraXX`
 
 ## Pull Requests
 
 Every PR should include:
-
-- a short summary of the change
-- the Jira key or planning reference
-- the branch name
+- the branch identifier (jira, hotfix or release)
 - an ADR link when the change affects architecture, workflow, or domain behavior
-- test and validation notes
+- acceptance criteria as a checklist which should include setup, testing, how to verify that the task is complete
 - any migration, rollout, or review-risk notes
 - checklist completion status
 
@@ -55,7 +55,6 @@ Before requesting review, run the checklist in
 [`planning/ai-review-checklist.md`](./planning/ai-review-checklist.md).
 
 The review should confirm:
-
 - branch naming follows the repo convention
 - the branch type matches the Git flow rules
 - the PR describes the actual change clearly
