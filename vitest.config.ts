@@ -6,7 +6,9 @@ export default defineConfig({
       "**/.pytest_cache/**",
       "**/.ruff_cache/**",
       "**/dist/**",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      // Run smoke.test.ts only through `node --import tsx --test`, not Vitest.
+      "tests/typescript/smoke.test.ts",
     ],
     include: ["tests/typescript/**/*.test.ts"],
   },
