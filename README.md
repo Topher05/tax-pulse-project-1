@@ -75,6 +75,22 @@ python -m tax_pulse_project_team_1.main
 python -m pytest
 ```
 
+## Contributor Workflow
+
+Use these docs as the source of truth for branch naming, PR shape, and review checks:
+
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) for Git flow, branch naming, and review expectations
+- [`.github/pull_request_template.md`](./.github/pull_request_template.md) for the PR structure
+- [`planning/ai-review-checklist.md`](./planning/ai-review-checklist.md) for review verification items
+- [`planning/sample-pr.md`](./planning/sample-pr.md) for a completed example PR
+
+When preparing a change:
+
+1. Name the branch to match the Git flow rule for its type.
+2. Fill in the PR template with the ticket, brief, ADR link, validation, and risk notes.
+3. Run the AI review checklist before requesting review.
+4. Use the sample PR as the reference for the expected level of detail.
+
 ## Migration Commands
 
 The PostgreSQL migration workflow is SQL-only and uses the top-level
@@ -106,7 +122,9 @@ npm run test:migration
 Notes:
 
 - The Node scripts read `.env` automatically through `dotenv`.
-- The migration bootstrap creates the minimal `tenants` table needed for the `tax_plan_cycle` foreign key path.
+- Treat the SQL migration files as the source of truth for schema changes.
+- Keep any local seed data synthetic and clearly fake.
+- If a `seed.sql` file is present in the repository root, use it for local-only sample data rather than hand-editing production-like records.
 
 ## Contributing and Codex Context
 

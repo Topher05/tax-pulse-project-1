@@ -69,3 +69,14 @@ The review should confirm:
 
 See [`planning/sample-pr.md`](./planning/sample-pr.md) for a completed example that
 shows the ADR link and a filled-out review checklist.
+
+### Code Review
+
+See [`Code Review Standardss`](https://fedstack-june22-t1.atlassian.net/wiki/spaces/OTHER/pages/2654582/Code+Review+Standards) for a completed list of requirements per review:
+
+- When PR is posted message should be sent in `t1-StackPulse` teams chat to inform all members
+- Assignee is the developer, team-member who takes on the review self-assigns
+- Reviewer must:
+-- Updates ticket status from Code Review to Done (if passed) or Code Review to Testing (if failed)
+-- Merges branch to development on completion
+-- Deletes previous branch after closing the PR
