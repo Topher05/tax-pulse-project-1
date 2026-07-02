@@ -30,7 +30,7 @@ Use this prompt shape when asking an AI to review a PR:
 
 > Review this PR for correctness, security, data safety, tenant isolation, and alignment with the linked ADR. Confirm the branch naming, summary, ticket, validation, and migration notes are complete. Call out anything missing or risky.
 
-> Also verify the branch type matches Git flow and that the expected pipeline and protection rules for `main`, `development`, `firstname-lastname-jiraXX*`, `release-vMAJOR.MINOR.PATCH`, or `hotfix/*` are reflected in the change.
+> Also verify the branch type matches Git flow and that the expected pipeline and protection rules for `main`, `development`, `firstname-lastname-jiraXX*`, `release-vMAJOR.MINOR.PATCH`, or `firstname-lastname-hotfix*` are reflected in the change.
 
 ## Review Output
 
