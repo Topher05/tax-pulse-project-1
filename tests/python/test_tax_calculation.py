@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 from tax_pulse_project_team_1 import TaxCalculationRequest
@@ -18,28 +19,19 @@ def test_tax_calculation_request_accepts_required_fields() -> None:
 
 
 def test_tax_calculation_request_rejects_missing_fields() -> None:
-    try:
+    with pytest.raises(ValidationError, match="filing_status"):
         TaxCalculationRequest(income=100000, deductions=12000, state="CA")
-    except ValidationError as exc:
-        message = str(exc)
-    else:
-        raise AssertionError("Expected ValidationError for missing filing_status")
-
-    assert "filing_status" in message
 
 
 def test_tax_calculation_request_rejects_invalid_filing_status_with_custom_message() -> None:
-    try:
+    with pytest.raises(ValidationError) as exc_info:
         TaxCalculationRequest(
             income=100000,
             deductions=12000,
             state="CA",
             filing_status="invalid-status",
         )
-    except ValidationError as exc:
-        message = str(exc)
-    else:
-        raise AssertionError("Expected ValidationError for invalid filing_status")
 
+    message = str(exc_info.value)
     assert "Invalid filing status" in message
     assert "single" in message

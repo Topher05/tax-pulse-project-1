@@ -40,6 +40,27 @@ Examples:
 - `caleb-latimer-hotfix1`
 - `christopher-martus-hotfix87`
 
+## Python Development Conventions
+
+Follow the Python settings in [`pyproject.toml`](./pyproject.toml) as the source of truth
+for Python 3.13 work in `src/python` and `tests/python`.
+
+- Use Ruff for both formatting and linting.
+- Keep function signatures typed where practical, including explicit return annotations.
+- Keep Python modules under `src/python/tax_pulse_project_team_1` and keep tests under
+  `tests/python`.
+- Use synthetic-only data in tests and examples. Do not add secrets, tokens, or real
+  taxpayer data.
+- Prefer small, readable helpers over large implicit logic blocks.
+
+Good Python changes usually:
+
+- add type hints to new public helpers and models
+- keep imports tidy and unused names removed
+- pass `ruff format --check src/python tests/python`
+- pass `ruff check src/python tests/python`
+- pass `python -m pytest`
+
 ## Pull Requests
 
 Every PR should include:
