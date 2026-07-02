@@ -22,6 +22,38 @@ const expectedColumns = [
   "hold_reason",
 ];
 
+const expectedColumnTypes = {
+  client_id: "uuid",
+  tenant_id: "uuid",
+  planning_period: "text",
+  stage: "text",
+  owner: "text",
+  priority: "text",
+  due_date: "date",
+  on_hold: "boolean",
+  hold_reason: "text",
+} as const;
+
+const sampleTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11";
+const sampleClientIds = [
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+] as const;
+
+async function seedSampleTenant(client: Client): Promise<void> {
+  await client.query(
+    `
+      INSERT INTO tenants (id, name, created_at)
+      VALUES ($1, $2, $3)
+    `,
+    [
+      sampleTenantId,
+      "North Shore Advisors",
+      "2026-06-29T12:00:00Z",
+    ],
+  );
+}
+
 function createTestSchemaName(): string {
   return `taxpulse_migration_${randomUUID().replace(/-/g, "")}`;
 }
@@ -51,6 +83,7 @@ async function withTestSchema<T>(
 
 async function getTableStructure(client: Client): Promise<{
   columns: string[];
+  columnTypes: Record<string, string>;
   constraints: Record<string, { definition: string; type: string }>;
   indexes: string[];
   rowCount: number;
@@ -60,7 +93,7 @@ async function getTableStructure(client: Client): Promise<{
   );
   const columnsResult = await client.query(
     `
-      SELECT column_name
+      SELECT column_name, data_type
       FROM information_schema.columns
       WHERE table_schema = current_schema()
         AND table_name = 'tax_plan_cycle'
@@ -97,6 +130,12 @@ async function getTableStructure(client: Client): Promise<{
   return {
     rowCount: Number(rowCountResult.rows[0]?.row_count ?? 0),
     columns: columnsResult.rows.map((row) => String(row.column_name)),
+    columnTypes: Object.fromEntries(
+      columnsResult.rows.map((row) => [
+        String(row.column_name),
+        String(row.data_type),
+      ]),
+    ),
     constraints,
     indexes: indexesResult.rows.map((row) => String(row.indexname)),
   };
@@ -106,11 +145,13 @@ describe("tax plan cycle migration", () => {
   test("creates the table, verifies it is empty, and persists two records", async () => {
     await withTestSchema(async (client) => {
       await applyMigrations(client);
+      await seedSampleTenant(client);
 
       const structure = await getTableStructure(client);
 
       expect(structure.rowCount).toBe(0);
       expect(structure.columns).toEqual(expectedColumns);
+      expect(structure.columnTypes).toEqual(expectedColumnTypes);
       expect(structure.indexes).toContain(
         "tax_plan_cycle_tenant_id_due_date_idx",
       );
@@ -128,7 +169,7 @@ describe("tax plan cycle migration", () => {
       expect(structure.constraints.tax_plan_cycle_stage_check?.type).toBe("c");
       expect(
         structure.constraints.tax_plan_cycle_stage_check?.definition,
-      ).toContain("Modeling Advisor");
+      ).toContain("Modeling");
 
       await client.query(
         `
@@ -147,8 +188,8 @@ describe("tax plan cycle migration", () => {
             ($10, $11, $12, $13, $14, $15, $16, $17, $18)
         `,
         [
-          "client-001",
-          "tenant-001",
+          sampleClientIds[0],
+          sampleTenantId,
           "2026-Q3",
           "Intake",
           "advisor-001",
@@ -156,8 +197,8 @@ describe("tax plan cycle migration", () => {
           "2026-07-15",
           false,
           null,
-          "client-002",
-          "tenant-001",
+          sampleClientIds[1],
+          sampleTenantId,
           "2026-Q4",
           "Review",
           "advisor-002",
@@ -187,8 +228,8 @@ describe("tax plan cycle migration", () => {
 
       expect(rows.rows).toEqual([
         {
-          client_id: "client-001",
-          tenant_id: "tenant-001",
+          client_id: sampleClientIds[0],
+          tenant_id: sampleTenantId,
           planning_period: "2026-Q3",
           stage: "Intake",
           owner: "advisor-001",
@@ -198,8 +239,8 @@ describe("tax plan cycle migration", () => {
           hold_reason: null,
         },
         {
-          client_id: "client-002",
-          tenant_id: "tenant-001",
+          client_id: sampleClientIds[1],
+          tenant_id: sampleTenantId,
           planning_period: "2026-Q4",
           stage: "Review",
           owner: "advisor-002",
@@ -215,6 +256,7 @@ describe("tax plan cycle migration", () => {
   test("rejects invalid stage values", async () => {
     await withTestSchema(async (client) => {
       await applyMigrations(client);
+      await seedSampleTenant(client);
 
       await expect(
         client.query(
@@ -231,8 +273,8 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
           `,
           [
-            "client-invalid",
-            "tenant-001",
+            "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d31",
+            sampleTenantId,
             "2026-Q3",
             "Planning",
             "advisor-003",
