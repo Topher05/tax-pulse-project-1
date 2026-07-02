@@ -56,7 +56,7 @@ Each script:
 
 On Windows, if `setup.ps1` installs `nvm for Windows` or Python for the first time, close and reopen PowerShell before rerunning version checks or `nvm`/`py` commands. 
 
-New installs may not be visible to the current shell session immediately. System restart may be required if terminal refresh doesn't respond to test commands
+New installs may not be visible to the current shell session immediately. A system restart may be required if refreshing the terminal does not make the new commands available.
 
 ## Development Commands
 
@@ -101,11 +101,11 @@ Local setup:
 1. Install PostgreSQL 18 using the official installer or your platform package manager. [link here](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
 2. Start the local PostgreSQL service.
 3. Create a database for this project `taxpulse`.
-4. User setup
-    - Setup a new super user, and password use these in the config file
-    - Can use pgAdmin or psql to setup user, developer can select preference
-4. Copy [`.env.example`](./.env.example) to `.env`.
-5. Edit `.env` and set `DATABASE_URL` to your local PostgreSQL connection string.
+4. Set up a database user.
+    - Create a new superuser and use its credentials in the config file.
+    - Use pgAdmin or `psql`, whichever you prefer.
+5. Copy [`.env.example`](./.env.example) to `.env`.
+6. Edit `.env` and set `DATABASE_URL` to your local PostgreSQL connection string.
 
 Apply all migrations:
 
@@ -159,18 +159,18 @@ Success means:
 
 - `node --version` matches [`.nvmrc`](./.nvmrc) and the `nodejs` entry in [`.tool-versions`](./.tool-versions)
 - `python --version` matches the `python` entry in [`.tool-versions`](./.tool-versions) and `requires-python` in [`pyproject.toml`](./pyproject.toml)
-- running the setup script completes with both hello checks green
+- Running the setup script completes with both hello checks green
 
 ## Security Information
 
 Due to the nature of the project holding sensitive information, it is essential that all engineers working on the project have a common understanding of what privileges and secrets management is necessary.
 1. When working on the project, all engineers must create code operating under the lowest level privileges possible to avoid harmful manipulation of unrelated systems.
 2. All additions must be thoroughly reviewed to ensure that no secrets (API keys, tokens, forms filled in with authentic looking information) are used in AI prompts or committed to repositories. Any information that is not listed as *public* information (CUI and SBU information) should *never* be entered into prompts or committed.
-3. Types of sensitive artifacts: API keys, service tokens, envrionment variables. All of these should be checked to make sure that they are excluded in the .gitignore (it would look like `.env` as a file).
+3. Types of sensitive artifacts: API keys, service tokens, and environment variables. All of these should be checked to make sure that they are excluded in `.gitignore` (for example, `.env`).
 
 ### Security Checklist
 - [ ] Code additions are being made at lowest level privileges affecting the least amount of code necessary
 - [ ] Clearly fake synthetic information has been generated for any development of systems that process real sensitive information
 - [ ] Ensure all `.env` files are ignored in the .gitignore
 - [ ] `config.toml` file includes `sandbox_mode = "workspace-write"` (*never* `sandbox_mode = "danger-full-access"`) and `approval_policy = "on-request"`.
-- running the setup script completes with both hello checks and project checks green
+- Running the setup script completes with both hello checks and project checks green

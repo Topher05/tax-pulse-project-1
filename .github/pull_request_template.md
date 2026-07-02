@@ -18,7 +18,7 @@ Pull Request: release-v3.11.2
 
 <!-- Link any ADR that informs this change. Delete if not applicable. -->
 
-## Acceptance criteria
+## Acceptance Criteria
 <!--
 - [] Setup if required
 - [] Test steps to verify
@@ -34,10 +34,10 @@ Pull Request: release-v3.11.2
 
 - [ ] Branch name follows the repo convention
 - [ ] Branch type follows Git flow expectations for main, development, feature, release, or hotfix
-- [ ] Ticket reference & link is present
+- [ ] Ticket reference and link is present
 - [ ] Brief matches the actual change
 - [ ] ADR link is present when needed
-- [ ] Acceptance Criteria checklist is present
+- [ ] Acceptance criteria checklist is present
 - [ ] Risk notes are listed when relevant
 - [ ] No secrets or real taxpayer data were introduced
 - [ ] Migration or rollback concerns were addressed when relevant

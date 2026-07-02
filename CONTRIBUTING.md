@@ -7,7 +7,7 @@ Follow the Git flow conventions below when naming branches and requesting review
 ## Git Flow
 Conventions documented in [confluence](https://fedstack-june22-t1.atlassian.net/wiki/spaces/OTHER/pages/2162869/GitFlow)
 
-### Branch Naming (Jira features)
+### Branch Naming (Features)
 
 Use lowercase kebab-case with the Jira key at the end of the branch name. Feature branches must include the developer name and feature ticket number. `firstname-lastname-jiraXX`
 
@@ -15,10 +15,11 @@ Examples:
 - `martins-okorie-jira43`
 - `dylan-harle-jira37`
 
-Feature branch names should not deviate from this pattern, the ticket key at the end is mandatory.
+Feature branch names should not deviate from this pattern; the ticket key at the end is mandatory.
 
 ### Branch Naming (Releases)
-Use Version tagging strategy: **release-vMAJOR.MINOR.PATCH**
+
+Use version tagging strategy: `release-vMAJOR.MINOR.PATCH`.
 - MAJOR: Breaking changes
 - MINOR: Backward-compatible features
 - PATCH: Backward-compatible bug fixes or hotfixes
@@ -28,6 +29,7 @@ Examples:
 - `release-v3.0.0`
 
 ### Branch Naming (Hotfixes)
+
 Use lowercase kebab-case with the hotfix number at the end of the branch name.
 
 Branches must include the developer name and the hotfix number.
@@ -44,7 +46,7 @@ Every PR should include:
 - the branch identifier (jira, hotfix or release)
 - a brief summary of the contained changes
 - an ADR link when the change affects architecture, workflow, or domain behavior
-- acceptance criteria as a checklist which should include setup, testing, how to verify that the task is complete
+- acceptance criteria as a checklist which should include setup, testing, and how to verify that the task is complete
 - any migration, rollout, or review-risk notes
 - checklist completion status
 
@@ -72,11 +74,11 @@ shows the ADR link and a filled-out review checklist.
 
 ### Code Review
 
-See [`Code Review Standardss`](https://fedstack-june22-t1.atlassian.net/wiki/spaces/OTHER/pages/2654582/Code+Review+Standards) for a completed list of requirements per review:
+See [`Code Review Standards`](https://fedstack-june22-t1.atlassian.net/wiki/spaces/OTHER/pages/2654582/Code+Review+Standards) for a completed list of requirements per review:
 
 - When PR is posted message should be sent in `t1-StackPulse` teams chat to inform all members
 - Assignee is the developer, team-member who takes on the review self-assigns
 - Reviewer must:
--- Updates ticket status from Code Review to Done (if passed) or Code Review to Testing (if failed)
--- Merges branch to development on completion
--- Deletes previous branch after closing the PR
+  - update ticket status from Code Review to Done (if passed) or Code Review to Testing (if failed)
+  - merge the branch into development on completion
+  - delete the previous branch after closing the PR
