@@ -106,7 +106,13 @@ npm run test:migration
 Notes:
 
 - The Node scripts read `.env` automatically through `dotenv`.
-- The migration bootstrap creates the minimal `tenants` table needed for the `tax_plan_cycle` foreign key path.
+- `seed.sql` seeds two sample tenants for local testing after the migrations have been applied.
+
+Seed the sample tenants locally with:
+
+```powershell
+npm run seed
+```
 
 ## Contributing and Codex Context
 
