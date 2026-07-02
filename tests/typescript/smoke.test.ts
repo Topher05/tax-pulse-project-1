@@ -20,7 +20,7 @@ test("tax plan cycle stages are listed in canonical order", () => {
   assert.deepEqual(taxPlanCycleStages, [
     "Intake",
     "Data Aggregation",
-    "Modeling Advisor",
+    "Modeling",
     "Review",
     "Client Approval",
     "Executed",

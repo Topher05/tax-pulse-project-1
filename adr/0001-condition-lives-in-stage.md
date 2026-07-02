@@ -2,7 +2,7 @@
 
 ## Context
 TaxPulse Advisory centers work around a Tax Plan Cycle. Each cycle moves through the
-canonical workflow stages of `Intake`, `Data Aggregation`, `Modeling Advisor`,
+canonical workflow stages of `Intake`, `Data Aggregation`, `Modeling`,
 `Review`, `Client Approval`, `Executed`, and `Archived`.
 
 The product must show where a cycle is in the workflow, gate transitions by role and

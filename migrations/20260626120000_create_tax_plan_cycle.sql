@@ -1,16 +1,12 @@
-CREATE TABLE IF NOT EXISTS tenants (
-  id TEXT PRIMARY KEY
-);
-
 CREATE TABLE IF NOT EXISTS tax_plan_cycle (
-  client_id TEXT CONSTRAINT tax_plan_cycle_client_id_pk PRIMARY KEY,
-  tenant_id TEXT NOT NULL CONSTRAINT tax_plan_cycle_tenant_id_fk REFERENCES tenants (id),
+  client_id UUID CONSTRAINT tax_plan_cycle_client_id_pk PRIMARY KEY DEFAULT uuidv7(),
+  tenant_id UUID NOT NULL CONSTRAINT tax_plan_cycle_tenant_id_fk REFERENCES tenants (id),
   planning_period TEXT NOT NULL,
   stage TEXT NOT NULL CONSTRAINT tax_plan_cycle_stage_check CHECK (
     stage IN (
       'Intake',
       'Data Aggregation',
-      'Modeling Advisor',
+      'Modeling',
       'Review',
       'Client Approval',
       'Executed',
