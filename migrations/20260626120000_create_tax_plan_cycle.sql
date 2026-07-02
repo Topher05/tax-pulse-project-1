@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS tax_plan_cycle_tenant_id_due_date_idx
   ON tax_plan_cycle (tenant_id, due_date);
 
 CREATE TABLE stage_transition (
-  case_id TEXT NOT NULL CONSTRAINT stage_transition_case_id_fk REFERENCES tax_plan_cycle (client_id),
+  case_id UUID NOT NULL CONSTRAINT stage_transition_case_id_fk REFERENCES tax_plan_cycle (client_id),
   from_stage TEXT NOT NULL CONSTRAINT stage_transition_from_stage_check CHECK (
     from_stage IN (
       'Intake',

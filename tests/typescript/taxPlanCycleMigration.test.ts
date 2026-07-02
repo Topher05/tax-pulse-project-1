@@ -39,6 +39,8 @@ const sampleClientIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
 ] as const;
+const sampleStageTransitionCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23";
+const sampleMissingCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24";
 
 async function seedSampleTenant(client: Client): Promise<void> {
   await client.query(
@@ -183,10 +185,6 @@ describe("tax plan cycle migration", () => {
       expect(
         structure.constraints.tax_plan_cycle_stage_check?.definition,
       ).toContain("Modeling");
-
-      await client.query("INSERT INTO tenants (id) VALUES ($1)", [
-        "tenant-001",
-      ]);
 
       await client.query(
         `
@@ -335,9 +333,7 @@ describe("tax plan cycle migration", () => {
         structure.constraints.stage_transition_to_stage_check?.definition,
       ).toContain("Data Aggregation");
 
-      await client.query("INSERT INTO tenants (id) VALUES ($1)", [
-        "tenant-001",
-      ]);
+      await seedSampleTenant(client);
 
       await client.query(
         `
@@ -353,8 +349,8 @@ describe("tax plan cycle migration", () => {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `,
         [
-          "client-001",
-          "tenant-001",
+          sampleStageTransitionCaseId,
+          sampleTenantId,
           "2026-Q3",
           "Data Aggregation",
           "advisor-001",
@@ -375,7 +371,7 @@ describe("tax plan cycle migration", () => {
           ) VALUES ($1, $2, $3, $4, $5)
         `,
         [
-          "client-001",
+          sampleStageTransitionCaseId,
           "Intake",
           "Data Aggregation",
           "advisor-001",
@@ -394,16 +390,16 @@ describe("tax plan cycle migration", () => {
           FROM stage_transition
           WHERE case_id = $1
         `,
-        ["client-001"],
+        [sampleStageTransitionCaseId],
       );
 
       expect(rows.rows).toEqual([
         {
-          case_id: "client-001",
+          case_id: sampleStageTransitionCaseId,
           from_stage: "Intake",
           to_stage: "Data Aggregation",
           actor: "advisor-001",
-          occurred_at: new Date("2026-07-01T14:00:00.000Z"),
+          occurred_at: new Date("2026-07-01T18:00:00.000Z"),
         },
       ]);
     });
@@ -425,7 +421,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            "missing-client",
+            sampleMissingCaseId,
             "Intake",
             "Data Aggregation",
             "advisor-001",
@@ -440,9 +436,7 @@ describe("tax plan cycle migration", () => {
     await withTestSchema(async (client) => {
       await applyMigrations(client);
 
-      await client.query("INSERT INTO tenants (id) VALUES ($1)", [
-        "tenant-001",
-      ]);
+      await seedSampleTenant(client);
 
       await client.query(
         `
@@ -458,8 +452,8 @@ describe("tax plan cycle migration", () => {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `,
         [
-          "client-001",
-          "tenant-001",
+          sampleClientIds[0],
+          sampleTenantId,
           "2026-Q3",
           "Intake",
           "advisor-001",
@@ -481,7 +475,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            "client-001",
+            sampleClientIds[0],
             "Planning",
             "Data Aggregation",
             "advisor-001",
@@ -502,7 +496,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            "client-001",
+            sampleClientIds[0],
             "Intake",
             "Planning",
             "advisor-001",
