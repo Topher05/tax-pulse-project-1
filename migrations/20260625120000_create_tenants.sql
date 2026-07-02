@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS tax_plan_cycle;
+
+DROP TABLE IF EXISTS tenants;
+
+CREATE TABLE tenants (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
