@@ -33,11 +33,11 @@ Pull Request: release-v3.11.2
 ## AI Review Checklist
 
 - [ ] Branch name follows the repo convention
-- [ ] Branch type follows Git flow expectations for main, develop, feature, release, or hotfix
-- [ ] Summary matches the actual change
-- [ ] Ticket reference is present
+- [ ] Branch type follows Git flow expectations for main, development, feature, release, or hotfix
+- [ ] Ticket reference & link is present
+- [ ] Brief matches the actual change
 - [ ] ADR link is present when needed
-- [ ] Validation is listed
+- [ ] Acceptance Criteria checklist is present
 - [ ] Risk notes are listed when relevant
 - [ ] No secrets or real taxpayer data were introduced
 - [ ] Migration or rollback concerns were addressed when relevant
