@@ -6,7 +6,7 @@
 
 ## Branch
 
-<!-- Example: martins-okorie-jira43 -->
+<!-- Example: chimaobi-docs-pr-template-jira38 -->
 
 ## Ticket
 
@@ -27,6 +27,7 @@
 ## AI Review Checklist
 
 - [ ] Branch name follows the repo convention
+- [ ] Branch type follows Git flow expectations for main, develop, feature, release, or hotfix
 - [ ] Summary matches the actual change
 - [ ] Ticket reference is present
 - [ ] ADR link is present when needed

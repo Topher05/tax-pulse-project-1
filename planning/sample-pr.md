@@ -1,6 +1,6 @@
 # Sample PR: Document Team Review Workflow
 
-**Branch:** `docs-pr-template-jira38`
+**Branch:** `chimaobi-docs-pr-template-jira38`
 
 **Ticket:** `SCRUM-38`
 
@@ -14,6 +14,7 @@ consistent across the team.
 ## Validation
 
 - Reviewed branch naming convention and repo docs layout
+- Confirmed the branch follows the `feature/*` style naming rule with the Jira key at the end
 - Confirmed the PR template includes summary, ticket, ADR, validation, and risk sections
 - Confirmed the AI review checklist covers tenant isolation, secrets, migrations, and rollback concerns
 
