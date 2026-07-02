@@ -1,23 +1,29 @@
-# Pull Request
+# Pull Request: Branch Type & Number
 
-## Summary
+<!-- Example:
 
-<!-- Describe the change in plain language. -->
-
-## Branch
-
-<!-- Example: chimaobi-docs-pr-template-jira38 -->
+Pull Request: caleb-latimer-jira38
+Pull Request: caleb-latimer-hotfix15
+Pull Request: release-v3.11.2
+ -->
 
 ## Ticket
 
-<!-- Jira key or planning reference -->
+<!-- URL to jira item -->
+
+## Brief
+<!-- Short 1-3 line summary of changes/task scope-->
 
 ## ADR Link
 
 <!-- Link any ADR that informs this change. Delete if not applicable. -->
 
-## Validation
-
+## Acceptance criteria
+<!--
+- [] Setup if required
+- [] Test steps to verify
+- [] Command to run for tests, all should be passing
+-->
 <!-- List checks, tests, and manual verification. -->
 
 ## Risk Notes
