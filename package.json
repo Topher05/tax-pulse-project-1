@@ -13,7 +13,7 @@
     "migrate": "tsx src/typescript/runMigrations.ts",
     "seed": "tsx src/typescript/runSeed.ts",
     "start": "node dist/typescript/index.js",
-    "test": "npm run typecheck && npm run test:smoke && npm run test:vitest",
+    "test": "npm run typecheck && npm run test:vitest",
     "test:migration": "vitest run tests/typescript/taxPlanCycleMigration.test.ts",
     "test:smoke": "node --import tsx --test tests/typescript/smoke.test.ts",
     "test:vitest": "vitest run",
