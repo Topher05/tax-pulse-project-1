@@ -7,7 +7,10 @@ import {
   type TaxPlanCycleCreateController,
 } from "./taxPlanCycleCreateController.js";
 import { ProblemHttpError, type ProblemDetails } from "./errors.js";
-import { taxPlanCycleCreateSchema } from "./taxPlanCycle.js";
+import {
+  taxPlanCycleCreateSchema,
+  taxPlanCycleReadParamsSchema,
+} from "./taxPlanCycle.js";
 
 export interface ValidationErrorIssue {
   path: Array<string | number>;
@@ -22,6 +25,12 @@ export interface ValidationErrorResponse extends ProblemDetails {
 
 export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
+}
+
+interface TenantScopedRequest extends Request {
+  tenant: {
+    id: string;
+  };
 }
 
 function toValidationIssue(issue: ZodIssue): ValidationErrorIssue {
@@ -39,6 +48,53 @@ export function createTaxPlanCycleRouter(
 ): Router {
   const router = Router();
   const controller = options.controller ?? taxPlanCycleCreateController;
+
+  router.get(
+    "/tax-plan-cycles/:caseId",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedParams = taxPlanCycleReadParamsSchema.safeParse(req.params);
+
+      if (!parsedParams.success) {
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Request path parameters failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: parsedParams.error.issues.map(toValidationIssue),
+            },
+          }),
+        );
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant.id;
+        const cycle = await controller.findByCaseId({
+          tenantId,
+          caseId: parsedParams.data.caseId,
+        });
+
+        if (cycle === null) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Cycle Not Found",
+              status: 404,
+              detail: "No tax plan cycle was found for the requested case ID.",
+            }),
+          );
+          return;
+        }
+
+        res.status(200).json(cycle);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
   router.post(
     "/tax-plan-cycles",

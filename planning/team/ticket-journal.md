@@ -118,3 +118,63 @@ before it can affect downstream case, tenant, audit, or persistence behavior.
 - `npm test` passed, including smoke tests and Vitest coverage for the health
   endpoint, pino request logging, Problem Details middleware, and the create-cycle
   route through `createApp`.
+
+## dylan-harle-jira49 - SCRUM-49
+
+**Branch:** `dylan-harle-jira49`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-13 - Domain Model & Walking Skeleton
+
+**Summary:** Add the read-cycle route
+
+**CSV Description:** As a Backend Developer, I want a read-cycle route by case ID, so
+that a created Tax Plan Cycle can be fetched back.
+
+**Acceptance Criteria:**
+
+- A GET route accepts a case ID path parameter and validates it.
+- An unknown case ID returns 404 as Problem Details.
+- The route is tenant-scoped via the request's tenant context.
+
+**How This Ties Into the Code:**
+
+- `taxPlanCycleSchema` now validates `case_id` as the Tax Plan Cycle unit-of-work
+  identifier while keeping `client_id` separate as the client identifier.
+- `tax_plan_cycle` now includes `case_id TEXT NOT NULL`, with transition history
+  pointing at `tax_plan_cycle.case_id` instead of treating `client_id` as the case ID.
+- `createTaxPlanCycleRouter` now serves `GET /tax-plan-cycles/:caseId`, validates
+  the path parameter with zod, reads tenant scope from `req.tenant.id`, and delegates
+  to `findByCaseId({ tenantId, caseId })`.
+- Missing or cross-tenant cycles return the shared RFC 7807 Problem Details response
+  with a 404 status, preserving tenant isolation by not revealing cross-tenant
+  existence.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory centers work around tenant-scoped Tax Plan Cycles. This ticket adds
+the read-side HTTP boundary needed to fetch a cycle by its case identifier while
+preserving stage-based workflow state, tenant isolation, and the shared Problem
+Details error contract.
+
+**Changed Files:**
+
+- `migrations/20260626120000_create_tax_plan_cycle.sql`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycle.ts`
+- `src/typescript/taxPlanCycleCreateController.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `tests/typescript/smoke.test.ts`
+- `tests/typescript/taxPlanCycle.test.ts`
+- `tests/typescript/taxPlanCycleMigration.test.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm test` passed.
+- `npm run test:migration` did not execute the migration test because the current
+  `vitest.config.ts` explicitly excludes `tests/typescript/taxPlanCycleMigration.test.ts`;
+  Vitest exited with "No test files found."
