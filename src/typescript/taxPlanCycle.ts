@@ -18,6 +18,10 @@ export function isLegalTaxPlanCycleStageTransition(
   from: TaxPlanCycleStage,
   to: TaxPlanCycleStage,
 ): boolean {
+  if (from === "Review" && to === "Modeling") {
+    return true;
+  }
+
   return taxPlanCycleStages.indexOf(to) === taxPlanCycleStages.indexOf(from) + 1;
 }
 
@@ -40,6 +44,9 @@ export const taxPlanCycleSchema = z
     }
   });
 
+export const taxPlanCycleCreateSchema = taxPlanCycleSchema;
+
 export type TaxPlanCycleStage = z.infer<typeof taxPlanCycleStageSchema>;
 export type TaxPlanCyclePriority = z.infer<typeof taxPlanCyclePrioritySchema>;
 export type TaxPlanCycle = z.infer<typeof taxPlanCycleSchema>;
+export type TaxPlanCycleCreateInput = z.infer<typeof taxPlanCycleCreateSchema>;

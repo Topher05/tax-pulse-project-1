@@ -53,6 +53,13 @@ async function seedSampleTenant(client: Client): Promise<void> {
     ],
   );
 }
+const expectedStageTransitionColumns = [
+  "case_id",
+  "from_stage",
+  "to_stage",
+  "actor",
+  "occurred_at",
+];
 
 function createTestSchemaName(): string {
   return `taxpulse_migration_${randomUUID().replace(/-/g, "")}`;
@@ -81,7 +88,10 @@ async function withTestSchema<T>(
   });
 }
 
-async function getTableStructure(client: Client): Promise<{
+async function getTableStructure(
+  client: Client,
+  tableName: string,
+): Promise<{
   columns: string[];
   columnTypes: Record<string, string>;
   constraints: Record<string, { definition: string; type: string }>;
@@ -89,32 +99,35 @@ async function getTableStructure(client: Client): Promise<{
   rowCount: number;
 }> {
   const rowCountResult = await client.query(
-    "SELECT count(*)::int AS row_count FROM tax_plan_cycle",
+    `SELECT count(*)::int AS row_count FROM ${quoteIdentifier(tableName)}`,
   );
   const columnsResult = await client.query(
     `
       SELECT column_name, data_type
       FROM information_schema.columns
       WHERE table_schema = current_schema()
-        AND table_name = 'tax_plan_cycle'
+        AND table_name = $1
       ORDER BY ordinal_position
     `,
+    [tableName],
   );
   const constraintsResult = await client.query(
     `
       SELECT conname, contype, pg_get_constraintdef(oid) AS definition
       FROM pg_constraint
-      WHERE conrelid = 'tax_plan_cycle'::regclass
+      WHERE conrelid = $1::regclass
     `,
+    [tableName],
   );
   const indexesResult = await client.query(
     `
       SELECT indexname
       FROM pg_indexes
       WHERE schemaname = current_schema()
-        AND tablename = 'tax_plan_cycle'
+        AND tablename = $1
       ORDER BY indexname
     `,
+    [tableName],
   );
 
   const constraints = Object.fromEntries(
@@ -147,7 +160,7 @@ describe("tax plan cycle migration", () => {
       await applyMigrations(client);
       await seedSampleTenant(client);
 
-      const structure = await getTableStructure(client);
+      const structure = await getTableStructure(client, "tax_plan_cycle");
 
       expect(structure.rowCount).toBe(0);
       expect(structure.columns).toEqual(expectedColumns);
@@ -170,6 +183,10 @@ describe("tax plan cycle migration", () => {
       expect(
         structure.constraints.tax_plan_cycle_stage_check?.definition,
       ).toContain("Modeling");
+
+      await client.query("INSERT INTO tenants (id) VALUES ($1)", [
+        "tenant-001",
+      ]);
 
       await client.query(
         `
@@ -281,6 +298,215 @@ describe("tax plan cycle migration", () => {
             "low",
             "2026-09-01",
             false,
+          ],
+        ),
+      ).rejects.toThrow();
+    });
+  });
+
+  test("creates the stage transition table and persists transition history", async () => {
+    await withTestSchema(async (client) => {
+      await applyMigrations(client);
+
+      const structure = await getTableStructure(client, "stage_transition");
+
+      expect(structure.rowCount).toBe(0);
+      expect(structure.columns).toEqual(expectedStageTransitionColumns);
+      expect(structure.indexes).toContain("stage_transition_case_id_idx");
+      expect(structure.constraints.stage_transition_case_id_fk?.type).toBe(
+        "f",
+      );
+      expect(
+        structure.constraints.stage_transition_case_id_fk?.definition,
+      ).toContain("FOREIGN KEY (case_id)");
+      expect(
+        structure.constraints.stage_transition_case_id_fk?.definition,
+      ).toContain("REFERENCES tax_plan_cycle(client_id)");
+      expect(
+        structure.constraints.stage_transition_from_stage_check?.type,
+      ).toBe("c");
+      expect(
+        structure.constraints.stage_transition_from_stage_check?.definition,
+      ).toContain("Data Aggregation");
+      expect(
+        structure.constraints.stage_transition_to_stage_check?.type,
+      ).toBe("c");
+      expect(
+        structure.constraints.stage_transition_to_stage_check?.definition,
+      ).toContain("Data Aggregation");
+
+      await client.query("INSERT INTO tenants (id) VALUES ($1)", [
+        "tenant-001",
+      ]);
+
+      await client.query(
+        `
+          INSERT INTO tax_plan_cycle (
+            client_id,
+            tenant_id,
+            planning_period,
+            stage,
+            owner,
+            priority,
+            due_date,
+            on_hold
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `,
+        [
+          "client-001",
+          "tenant-001",
+          "2026-Q3",
+          "Data Aggregation",
+          "advisor-001",
+          "high",
+          "2026-07-15",
+          false,
+        ],
+      );
+
+      await client.query(
+        `
+          INSERT INTO stage_transition (
+            case_id,
+            from_stage,
+            to_stage,
+            actor,
+            occurred_at
+          ) VALUES ($1, $2, $3, $4, $5)
+        `,
+        [
+          "client-001",
+          "Intake",
+          "Data Aggregation",
+          "advisor-001",
+          "2026-07-01T14:00:00.000Z",
+        ],
+      );
+
+      const rows = await client.query(
+        `
+          SELECT
+            case_id,
+            from_stage,
+            to_stage,
+            actor,
+            occurred_at AT TIME ZONE 'UTC' AS occurred_at
+          FROM stage_transition
+          WHERE case_id = $1
+        `,
+        ["client-001"],
+      );
+
+      expect(rows.rows).toEqual([
+        {
+          case_id: "client-001",
+          from_stage: "Intake",
+          to_stage: "Data Aggregation",
+          actor: "advisor-001",
+          occurred_at: new Date("2026-07-01T14:00:00.000Z"),
+        },
+      ]);
+    });
+  });
+
+  test("rejects stage transitions for missing cases", async () => {
+    await withTestSchema(async (client) => {
+      await applyMigrations(client);
+
+      await expect(
+        client.query(
+          `
+            INSERT INTO stage_transition (
+              case_id,
+              from_stage,
+              to_stage,
+              actor,
+              occurred_at
+            ) VALUES ($1, $2, $3, $4, $5)
+          `,
+          [
+            "missing-client",
+            "Intake",
+            "Data Aggregation",
+            "advisor-001",
+            "2026-07-01T14:00:00.000Z",
+          ],
+        ),
+      ).rejects.toThrow();
+    });
+  });
+
+  test("rejects invalid stage transition stage values", async () => {
+    await withTestSchema(async (client) => {
+      await applyMigrations(client);
+
+      await client.query("INSERT INTO tenants (id) VALUES ($1)", [
+        "tenant-001",
+      ]);
+
+      await client.query(
+        `
+          INSERT INTO tax_plan_cycle (
+            client_id,
+            tenant_id,
+            planning_period,
+            stage,
+            owner,
+            priority,
+            due_date,
+            on_hold
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `,
+        [
+          "client-001",
+          "tenant-001",
+          "2026-Q3",
+          "Intake",
+          "advisor-001",
+          "high",
+          "2026-07-15",
+          false,
+        ],
+      );
+
+      await expect(
+        client.query(
+          `
+            INSERT INTO stage_transition (
+              case_id,
+              from_stage,
+              to_stage,
+              actor,
+              occurred_at
+            ) VALUES ($1, $2, $3, $4, $5)
+          `,
+          [
+            "client-001",
+            "Planning",
+            "Data Aggregation",
+            "advisor-001",
+            "2026-07-01T14:00:00.000Z",
+          ],
+        ),
+      ).rejects.toThrow();
+
+      await expect(
+        client.query(
+          `
+            INSERT INTO stage_transition (
+              case_id,
+              from_stage,
+              to_stage,
+              actor,
+              occurred_at
+            ) VALUES ($1, $2, $3, $4, $5)
+          `,
+          [
+            "client-001",
+            "Intake",
+            "Planning",
+            "advisor-001",
+            "2026-07-01T14:00:00.000Z",
           ],
         ),
       ).rejects.toThrow();

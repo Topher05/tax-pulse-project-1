@@ -15,10 +15,11 @@
     "start": "node dist/typescript/index.js",
     "test": "npm run typecheck && node --import tsx --test tests/typescript/smoke.test.ts && npm run test:vitest",
     "test:migration": "vitest run tests/typescript/taxPlanCycleMigration.test.ts",
-    "test:vitest": "vitest run tests/typescript/taxPlanCycle.test.ts tests/typescript/taxPlanCycleTransitions.test.ts",
+    "test:vitest": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.15.5",
     "dotenv": "^17.2.1",
@@ -27,7 +28,10 @@
     "vitest": "^2.1.9"
   },
   "dependencies": {
+    "express": "^5.2.1",
     "pg": "^8.16.3",
+    "pino": "^9.14.0",
+    "pino-http": "^10.5.0",
     "zod": "^4.4.3"
   }
 }

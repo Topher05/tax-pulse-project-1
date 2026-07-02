@@ -8,6 +8,7 @@ export default defineConfig({
       "**/dist/**",
       "**/node_modules/**",
       // "tests/typescript/taxPlanCycleMigration.test.ts", // Note, test will fail due to foreign key constraints
+      // "tests/typescript/smoke.test.ts",
     ],
     include: ["tests/typescript/**/*.test.ts"],
   },
