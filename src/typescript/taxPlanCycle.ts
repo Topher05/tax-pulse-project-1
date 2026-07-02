@@ -27,6 +27,8 @@ export function isLegalTaxPlanCycleStageTransition(
 
 export const taxPlanCycleSchema = z
   .object({
+    case_id: z.string().trim().min(1),
+    client_id: z.string().trim().min(1),
     stage: taxPlanCycleStageSchema,
     owner: z.string().min(1),
     priority: taxPlanCyclePrioritySchema,
@@ -45,8 +47,14 @@ export const taxPlanCycleSchema = z
   });
 
 export const taxPlanCycleCreateSchema = taxPlanCycleSchema;
+export const taxPlanCycleReadParamsSchema = z.object({
+  caseId: z.string().trim().min(1),
+});
 
 export type TaxPlanCycleStage = z.infer<typeof taxPlanCycleStageSchema>;
 export type TaxPlanCyclePriority = z.infer<typeof taxPlanCyclePrioritySchema>;
 export type TaxPlanCycle = z.infer<typeof taxPlanCycleSchema>;
 export type TaxPlanCycleCreateInput = z.infer<typeof taxPlanCycleCreateSchema>;
+export type TaxPlanCycleReadParams = z.infer<
+  typeof taxPlanCycleReadParamsSchema
+>;
