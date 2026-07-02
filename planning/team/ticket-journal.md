@@ -58,3 +58,63 @@ and the archived audit trail described in the project scope.
 - `npm run test:migration` now starts and reaches
   `tests/typescript/taxPlanCycleMigration.test.ts`, but this local environment needs
   `DATABASE_URL` set before the PostgreSQL migration test can execute.
+
+## dylan-harle-jira48 - SCRUM-48
+
+**Branch:** `dylan-harle-jira48`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-13 - Domain Model & Walking Skeleton
+
+**Summary:** Add the create-cycle route with zod validation
+
+**CSV Description:** As a Backend Developer, I want a create-cycle route validated with
+zod, so that malformed Tax Plan Cycle creates are rejected at the boundary.
+
+**Acceptance Criteria:**
+
+- A POST route validates the create body against the Tax Plan Cycle create schema.
+- A malformed request returns 400 with a structured validation error.
+- A valid request reaches the controller layer with no persistence yet.
+
+**How This Ties Into the Code:**
+
+- `createApp` now owns JSON body parsing before registered feature routes, so the
+  create-cycle endpoint runs through the SCRUM-47 Express skeleton instead of a
+  route-only test harness.
+- `main` registers `createTaxPlanCycleRouter` through `createApp`, connecting the
+  no-persistence create endpoint to the Core Case Service HTTP surface.
+- Malformed create bodies are raised as `ProblemHttpError` instances and returned by
+  the shared RFC 7807 Problem Details middleware with validation issues attached as
+  safe extension data.
+- Controller failures also flow through the same Problem Details middleware, while
+  valid creates still reach the controller stub and return the accepted response.
+- `tests/typescript/taxPlanCycleRoutes.test.ts` boots the route through `createApp`
+  to verify JSON parsing, shared error handling, and controller delegation together.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory centers work around the Tax Plan Cycle. This ticket adds the first
+write-side HTTP boundary for creating a cycle while preserving the project constraints
+that workflow state remains in the case stage and malformed boundary input is rejected
+before it can affect downstream case, tenant, audit, or persistence behavior.
+
+**Changed Files:**
+
+- `package-lock.json`
+- `src/typescript/app.ts`
+- `src/typescript/errors.ts`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm install` completed and installed the SCRUM-47 logging dependencies declared in
+  `package.json`.
+- `npm run typecheck` passed.
+- `npm test` passed, including smoke tests and Vitest coverage for the health
+  endpoint, pino request logging, Problem Details middleware, and the create-cycle
+  route through `createApp`.

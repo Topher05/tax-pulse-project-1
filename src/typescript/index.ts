@@ -42,6 +42,7 @@ export {
 
 import { createApp } from "./app.js";
 import { createLogger } from "./logger.js";
+import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 
 export {
   taxPlanCycleCreateController,
@@ -77,7 +78,12 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 
 export async function main(): Promise<Server> {
   const logger = createLogger();
-  const app = createApp({ logger });
+  const app = createApp({
+    logger,
+    registerRoutes: (app) => {
+      app.use(createTaxPlanCycleRouter());
+    },
+  });
   const port = getPortFromEnv();
 
   return await new Promise<Server>((resolve, reject) => {

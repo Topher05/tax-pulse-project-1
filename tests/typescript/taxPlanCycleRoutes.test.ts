@@ -1,15 +1,19 @@
 import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
-import express from "express";
 import { describe, expect, test, vi } from "vitest";
 
 import {
+  ProblemHttpError,
+  createApp,
+  createLogger,
   createTaxPlanCycleRouter,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateInput,
   type ValidationErrorResponse,
 } from "../../src/typescript/index.js";
+
+const silentLogger = createLogger({ level: "silent" });
 
 const validCreateBody: TaxPlanCycleCreateInput = {
   stage: "Review",
@@ -23,9 +27,12 @@ async function withRouteServer(
   controller: TaxPlanCycleCreateController,
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
-  const app = express();
-  app.use(express.json());
-  app.use(createTaxPlanCycleRouter({ controller }));
+  const app = createApp({
+    logger: silentLogger,
+    registerRoutes: (app) => {
+      app.use(createTaxPlanCycleRouter({ controller }));
+    },
+  });
 
   const server = app.listen(0);
   await once(server, "listening");
@@ -40,7 +47,7 @@ async function withRouteServer(
 }
 
 describe("createTaxPlanCycleRouter", () => {
-  test("returns 400 with a structured validation error for malformed creates", async () => {
+  test("returns 400 Problem Details for malformed creates", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
       accepted: true,
     }));
@@ -58,9 +65,17 @@ describe("createTaxPlanCycleRouter", () => {
       const body = (await response.json()) as ValidationErrorResponse;
 
       expect(response.status).toBe(400);
-      expect(body.error.code).toBe("VALIDATION_ERROR");
-      expect(body.error.message).toBe("Request body failed validation");
-      expect(body.error.issues).toEqual(
+      expect(response.headers.get("content-type")).toContain(
+        "application/problem+json",
+      );
+      expect(body).toMatchObject({
+        type: "https://taxpulse.example/problems/validation-error",
+        title: "Validation Error",
+        status: 400,
+        detail: "Request body failed validation.",
+        code: "VALIDATION_ERROR",
+      });
+      expect(body.issues).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ path: ["stage"] }),
           expect.objectContaining({ path: ["owner"] }),
@@ -86,6 +101,37 @@ describe("createTaxPlanCycleRouter", () => {
       await expect(response.json()).resolves.toEqual({ accepted: true });
       expect(create).toHaveBeenCalledTimes(1);
       expect(create).toHaveBeenCalledWith(validCreateBody);
+    });
+  });
+
+  test("returns shared Problem Details when the controller rejects a create", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => {
+      throw new ProblemHttpError({
+        type: "https://taxpulse.example/problems/cycle-conflict",
+        title: "Cycle Conflict",
+        status: 409,
+        detail: "The requested tax plan cycle is already locked.",
+      });
+    });
+
+    await withRouteServer({ create }, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validCreateBody),
+      });
+
+      expect(response.status).toBe(409);
+      expect(response.headers.get("content-type")).toContain(
+        "application/problem+json",
+      );
+      await expect(response.json()).resolves.toEqual({
+        type: "https://taxpulse.example/problems/cycle-conflict",
+        title: "Cycle Conflict",
+        status: 409,
+        detail: "The requested tax plan cycle is already locked.",
+      });
+      expect(create).toHaveBeenCalledTimes(1);
     });
   });
 });

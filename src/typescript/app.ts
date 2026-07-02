@@ -15,6 +15,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
 
   app.disable("x-powered-by");
   app.use(createRequestLogger(logger));
+  app.use(express.json());
 
   app.get("/health", (_req, res) => {
     res.status(200).json({ status: "ok" });

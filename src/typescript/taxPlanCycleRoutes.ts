@@ -6,6 +6,7 @@ import {
   taxPlanCycleCreateController,
   type TaxPlanCycleCreateController,
 } from "./taxPlanCycleCreateController.js";
+import { ProblemHttpError, type ProblemDetails } from "./errors.js";
 import { taxPlanCycleCreateSchema } from "./taxPlanCycle.js";
 
 export interface ValidationErrorIssue {
@@ -14,12 +15,9 @@ export interface ValidationErrorIssue {
   code: string;
 }
 
-export interface ValidationErrorResponse {
-  error: {
-    code: "VALIDATION_ERROR";
-    message: "Request body failed validation";
-    issues: ValidationErrorIssue[];
-  };
+export interface ValidationErrorResponse extends ProblemDetails {
+  code: "VALIDATION_ERROR";
+  issues: ValidationErrorIssue[];
 }
 
 export interface CreateTaxPlanCycleRouterOptions {
@@ -36,16 +34,6 @@ function toValidationIssue(issue: ZodIssue): ValidationErrorIssue {
   };
 }
 
-function toValidationErrorResponse(issues: ZodIssue[]): ValidationErrorResponse {
-  return {
-    error: {
-      code: "VALIDATION_ERROR",
-      message: "Request body failed validation",
-      issues: issues.map(toValidationIssue),
-    },
-  };
-}
-
 export function createTaxPlanCycleRouter(
   options: CreateTaxPlanCycleRouterOptions = {},
 ): Router {
@@ -58,7 +46,18 @@ export function createTaxPlanCycleRouter(
       const parsedBody = taxPlanCycleCreateSchema.safeParse(req.body);
 
       if (!parsedBody.success) {
-        res.status(400).json(toValidationErrorResponse(parsedBody.error.issues));
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Request body failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: parsedBody.error.issues.map(toValidationIssue),
+            },
+          }),
+        );
         return;
       }
 
