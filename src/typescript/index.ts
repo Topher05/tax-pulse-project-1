@@ -31,22 +31,26 @@ export {
   isLegalTaxPlanCycleStageTransition,
   taxPlanCycleCreateSchema,
   taxPlanCyclePrioritySchema,
+  taxPlanCycleReadParamsSchema,
   taxPlanCycleSchema,
   taxPlanCycleStageSchema,
   taxPlanCycleStages,
   type TaxPlanCycle,
   type TaxPlanCycleCreateInput,
   type TaxPlanCyclePriority,
+  type TaxPlanCycleReadParams,
   type TaxPlanCycleStage,
 } from "./taxPlanCycle.js";
 
 import { createApp } from "./app.js";
 import { createLogger } from "./logger.js";
+import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 
 export {
   taxPlanCycleCreateController,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateResult,
+  type TaxPlanCycleReadInput,
 } from "./taxPlanCycleCreateController.js";
 export {
   createTaxPlanCycleRouter,
@@ -77,7 +81,12 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 
 export async function main(): Promise<Server> {
   const logger = createLogger();
-  const app = createApp({ logger });
+  const app = createApp({
+    logger,
+    registerRoutes: (app) => {
+      app.use(createTaxPlanCycleRouter());
+    },
+  });
   const port = getPortFromEnv();
 
   return await new Promise<Server>((resolve, reject) => {

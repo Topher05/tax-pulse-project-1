@@ -1,10 +1,12 @@
 import type { ErrorRequestHandler } from "express";
+import type { Logger } from "pino";
 
 export interface ProblemDetails {
   type: string;
   title: string;
   status: number;
   detail: string;
+  [extension: string]: unknown;
 }
 
 export interface ProblemHttpErrorOptions {
@@ -12,6 +14,7 @@ export interface ProblemHttpErrorOptions {
   title: string;
   detail: string;
   type?: string;
+  extensions?: Record<string, unknown>;
 }
 
 export class ProblemHttpError extends Error {
@@ -19,12 +22,14 @@ export class ProblemHttpError extends Error {
   readonly title: string;
   readonly status: number;
   readonly detail: string;
+  readonly extensions: Record<string, unknown>;
 
   constructor({
     status,
     title,
     detail,
     type = "about:blank",
+    extensions = {},
   }: ProblemHttpErrorOptions) {
     super(detail);
     this.name = "ProblemHttpError";
@@ -32,6 +37,7 @@ export class ProblemHttpError extends Error {
     this.title = title;
     this.status = status;
     this.detail = detail;
+    this.extensions = extensions;
   }
 }
 
@@ -42,6 +48,7 @@ function toProblemDetails(error: unknown): ProblemDetails {
       title: error.title,
       status: error.status,
       detail: error.detail,
+      ...error.extensions,
     };
   }
 
@@ -60,8 +67,9 @@ export const problemDetailsMiddleware: ErrorRequestHandler = (
   _next,
 ) => {
   const problem = toProblemDetails(error);
+  const requestLogger = (req as typeof req & { log?: Pick<Logger, "error"> }).log;
 
-  req.log?.error(
+  requestLogger?.error(
     {
       err: error,
       problem,
