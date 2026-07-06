@@ -75,6 +75,25 @@ async function resetTestSchema(client: Client, schemaName: string): Promise<void
   );
 }
 
+async function seedSampleTenants(client: Client): Promise<void> {
+  await client.query(
+    `
+      INSERT INTO tenants (id, name, created_at) VALUES
+        ($1, $2, $3),
+        ($4, $5, $6)
+      ON CONFLICT (id) DO NOTHING
+    `,
+    [
+      sampleTenantIds[0],
+      "North Shore Advisors",
+      "2026-06-29T12:00:00Z",
+      sampleTenantIds[1],
+      "Harbor View Planning",
+      "2026-06-29T12:30:00Z",
+    ],
+  );
+}
+
 async function withTestSchema<T>(
   databaseUrl: string,
   callback: (client: Client) => Promise<T>,
@@ -116,19 +135,21 @@ describe("tax plan cycle read helper", () => {
 
     await withTestSchema(container.connectionUri, async (client) => {
       await applyMigrations(client);
+      await seedSampleTenants(client);
 
       for (const cycle of sampleCycles) {
         await client.query(
           `
-            INSERT INTO tax_plan_cycle (
+          INSERT INTO tax_plan_cycle (
               client_id,
               tenant_id,
-            planning_period,
-            stage,
-            owner,
-            priority,
-            due_date,
-            hold_reason
+              planning_period,
+              stage,
+              owner,
+              priority,
+              due_date,
+              on_hold,
+              hold_reason
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
           `,
           [
