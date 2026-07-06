@@ -10,8 +10,10 @@ export {
   type IncomeEvent,
 } from "./aggregationPayload.js";
 export {
+  AggregationTimeoutError,
   TaxPulseAggregationClient,
   type AggregationDataSource,
+  type TaxPulseAggregationClientOptions,
 } from "./aggregationClient.js";
 export { InMemoryMockAggregationDataSource } from "./mockAggregationDataSource.js";
 export { createApp, type CreateAppOptions } from "./app.js";

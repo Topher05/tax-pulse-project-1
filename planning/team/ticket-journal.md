@@ -3,6 +3,66 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## martins-okorie-jira33 - SCRUM-33
+
+**Branch:** `martins-okorie-jira33`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Epic:** SCRUM-12 - Engineering Foundations & Federal Posture
+
+**Summary:** Surface aggregation timeouts as rejected promises
+
+**CSV Description:** As a Backend Developer, I want a simulated source timeout surfaced
+as a rejected promise, so that the Data Aggregation stage never hangs on a slow source.
+
+**Acceptance Criteria:**
+
+- The client races the source call against a configurable timeout.
+- A simulated timeout rejects with a typed timeout error rather than hanging.
+- A Vitest case asserts the rejection and that a fast call still resolves.
+
+**How This Ties Into the Code:**
+
+- `TaxPulseAggregationClient` now accepts optional timeout configuration while keeping
+  the existing constructor call shape valid.
+- Aggregation fetches race the source promise against a timeout promise and reject with
+  `AggregationTimeoutError` when the timeout wins.
+- The timeout error carries the affected `clientId` and configured `timeoutMs` for
+  typed handling by callers and tests.
+- `tests/typescript/aggregationClient.test.ts` verifies both the timeout rejection and
+  the fast-source success path with deterministic fake timers.
+
+**Tradeoffs:**
+
+- Timeout handling rejects the client call but does not cancel the underlying
+  data-source promise because the current source interface has no abort signal.
+- Constructor-level timeout configuration preserves existing callers while making the
+  timeout configurable for slow-source simulations.
+- A `1000ms` default prevents hangs without making local mock behavior brittle.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory depends on the Data Aggregation stage to gather client income and
+deduction information without blocking the Tax Plan Cycle workflow. This ticket keeps a
+slow simulated source from hanging aggregation work, which protects stage progression and
+maintains predictable backend behavior for tenant-scoped planning workflows.
+
+**Changed Files:**
+
+- `src/typescript/aggregationClient.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/aggregationClient.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/aggregationClient.test.ts` passed.
+- `npm test` was rerun with local socket permissions; all non-migration suites passed
+  with 41 tests, but the migration suites require `DATABASE_URL` in this local
+  environment.
+
 ## martins-okorie-jira43 - SCRUM-43
 
 **Branch:** `martins-okorie-jira43`
