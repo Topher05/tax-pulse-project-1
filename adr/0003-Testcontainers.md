@@ -38,3 +38,5 @@ The tradeoffs are:
 The implementation should preserve synthetic test data only and continue to avoid secrets, tokens, or real taxpayer records.
 
 the workspace is on Node v22.0.0, and testcontainers@12.0.4 pulls undici@8.5.0
+
+Merge this with other note
