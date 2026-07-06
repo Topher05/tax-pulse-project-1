@@ -4,9 +4,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import type { Client } from "pg";
 
-import {
-  createTaxPlanCycleReadHelper,
-} from "../../src/typescript/index.js";
+import { createTaxPlanCycleReadHelper } from "../../src/typescript/index.js";
 import {
   applyMigrations,
   withDatabaseClient,
@@ -61,7 +59,10 @@ function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
 }
 
-async function resetTestSchema(client: Client, schemaName: string): Promise<void> {
+async function resetTestSchema(
+  client: Client,
+  schemaName: string,
+): Promise<void> {
   const quotedSchemaName = quoteIdentifier(schemaName);
 
   await client.query(
@@ -140,7 +141,7 @@ describe("tax plan cycle read helper", () => {
       for (const cycle of sampleCycles) {
         await client.query(
           `
-          INSERT INTO tax_plan_cycle (
+            INSERT INTO tax_plan_cycle (
               client_id,
               tenant_id,
               planning_period,

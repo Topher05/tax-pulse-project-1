@@ -8,9 +8,7 @@ export interface TaxPlanCycleReadInput {
 }
 
 export interface TaxPlanCycleReadHelper {
-  findByCaseId(
-    input: TaxPlanCycleReadInput,
-  ): Promise<TaxPlanCycle | null>;
+  findByCaseId(input: TaxPlanCycleReadInput): Promise<TaxPlanCycle | null>;
 }
 
 interface TaxPlanCycleRow {
@@ -23,9 +21,7 @@ interface TaxPlanCycleRow {
   hold_reason: string | null;
 }
 
-function toTaxPlanCycle(
-  row: TaxPlanCycleRow,
-): TaxPlanCycle {
+function toTaxPlanCycle(row: TaxPlanCycleRow): TaxPlanCycle {
   // Temporary scaffold: the persisted cycle identifier is `client_id`, and we
   // mirror it into the API-facing `case_id` field until a dedicated case key
   // exists in storage.
