@@ -136,6 +136,17 @@ if ($LASTEXITCODE -ne 0) {
     Fail "Python package installation failed."
 }
 
+Write-Host "Verifying Python linting and type-check tools..." -ForegroundColor Cyan
+& py -$PythonMajorMinor -m ruff --version | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    Fail "Ruff is unavailable after Python dev installation."
+}
+
+& py -$PythonMajorMinor -m pyright --version | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    Fail "Pyright is unavailable after Python dev installation."
+}
+
 Write-Host "Running hello checks..." -ForegroundColor Cyan
 $nodeHello = (& node -e "console.log('hello')").Trim()
 $pythonHello = (& py -$PythonMajorMinor -c "print('hello')").Trim()
@@ -164,6 +175,22 @@ if (Test-Path -LiteralPath "package.json") {
 }
 
 Write-Host "Running Python checks..." -ForegroundColor Cyan
+& py -$PythonMajorMinor -m ruff format --check src/python tests/python | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    Fail "Ruff formatting check failed."
+}
+
+& py -$PythonMajorMinor -m ruff check src/python tests/python | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    Fail "Ruff lint check failed."
+}
+
+$PythonExecutable = (& py -$PythonMajorMinor -c "import sys; print(sys.executable)").Trim()
+& py -$PythonMajorMinor -m pyright --pythonpath $PythonExecutable | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    Fail "Pyright type check failed."
+}
+
 & py -$PythonMajorMinor -m pytest | Out-Host
 if ($LASTEXITCODE -ne 0) {
     Fail "Python tests failed."

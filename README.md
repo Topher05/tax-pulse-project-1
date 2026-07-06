@@ -16,6 +16,7 @@ This workspace is scaffolded as a small dual-runtime project:
 - `nvm for Windows`, `winget`, and the `py` launcher are required for `setup.ps1`.
 - Node.js is pinned in both [`.nvmrc`](./.nvmrc) and [`.tool-versions`](./.tool-versions).
 - Python is pinned in [`.tool-versions`](./.tool-versions) and must exactly match `requires-python` in [`pyproject.toml`](./pyproject.toml).
+- Python dev dependencies come from [`pyproject.toml`](./pyproject.toml) and include Ruff, pytest, and `pyright[nodejs]`.
 - The setup scripts treat the manifests as strict pins and exit non-zero on any mismatch.
 
 ## Verify Active Versions
@@ -49,10 +50,11 @@ Each script:
 - verifies the Node and Python runtimes plus `npm` and `pip`
 - fails if the active Node or Python version differs from the manifest pin
 - installs TypeScript dependencies from [`package.json`](./package.json)
-- installs the Python package in editable mode with dev dependencies
+- installs the Python package in editable mode with dev dependencies from [`pyproject.toml`](./pyproject.toml)
+- verifies the Python dev tools, including Ruff and Pyright
 - runs a `hello` check for both the Node and Python stacks
 - runs TypeScript type checks and smoke tests
-- runs Python smoke tests
+- runs Python Ruff checks, Pyright, and smoke tests
 
 On Windows, if `setup.ps1` installs `nvm for Windows` or Python for the first time, close and reopen PowerShell before rerunning version checks or `nvm`/`py` commands. 
 
@@ -72,6 +74,9 @@ npm start
 
 ```bash
 python -m tax_pulse_project_team_1.main
+python -m ruff format --check src/python tests/python
+python -m ruff check src/python tests/python
+python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"
 python -m pytest
 ```
 
@@ -155,10 +160,14 @@ npm install
 py -3.13 -m pip install -e ".[dev]"
 ```
 
+That editable install pulls in the Python developer tooling declared in
+[`pyproject.toml`](./pyproject.toml), including Ruff, pytest, and `pyright[nodejs]`.
+
 Success means:
 
 - `node --version` matches [`.nvmrc`](./.nvmrc) and the `nodejs` entry in [`.tool-versions`](./.tool-versions)
 - `python --version` matches the `python` entry in [`.tool-versions`](./.tool-versions) and `requires-python` in [`pyproject.toml`](./pyproject.toml)
+- `python -m ruff format --check src/python tests/python`, `python -m ruff check src/python tests/python`, and `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"` all pass
 - Running the setup script completes with both hello checks green
 
 ## Security Information
