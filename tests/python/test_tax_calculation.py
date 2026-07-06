@@ -1,6 +1,5 @@
 import pytest
 from pydantic import ValidationError
-
 from tax_pulse_project_team_1 import (
     TaxCalculationRequest,
     TaxCalculationResult,

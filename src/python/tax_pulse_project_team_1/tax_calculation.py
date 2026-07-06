@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Final, Literal
+
 from pydantic import BaseModel, field_validator
 
 ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
