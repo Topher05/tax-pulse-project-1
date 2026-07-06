@@ -326,8 +326,10 @@ the PostgreSQL tables, so that persistence is type-safe and migration-driven.
 - `drizzle.config.ts` points Drizzle Kit at the TypeScript schema and writes generated
   migration evidence into `drizzle/`.
 - `migrations/20260626120000_create_tax_plan_cycle.sql` now matches SCRUM-42 by
-  omitting `case_id` from `tax_plan_cycle`, while SCRUM-43 transition history keeps
-  `stage_transition.case_id` as a foreign key to `tax_plan_cycle.client_id`.
+  focusing on `tax_plan_cycle`, while `migrations/20260627120000_create_stage_transition.sql`
+  keeps the SCRUM-43 transition history DDL in its own migration.
+- `stage_transition.case_id` remains a foreign key to the generated `tax_plan_cycle.id`
+  case identifier.
 - `applyMigrations` now creates `schema_migrations`, records applied SQL files, and
   skips already-applied migrations so reruns are idempotent.
 - Migration tests verify the table contract, Drizzle-generated SQL evidence, migration
@@ -348,6 +350,7 @@ skeleton.
 - `drizzle/`
 - `migrations/20260625120000_create_tenants.sql`
 - `migrations/20260626120000_create_tax_plan_cycle.sql`
+- `migrations/20260627120000_create_stage_transition.sql`
 - `package-lock.json`
 - `package.json`
 - `src/typescript/db/schema.ts`
@@ -366,6 +369,8 @@ skeleton.
 - `npm test` passed with local socket permissions; 8 files and 49 tests passed.
 - `npm run test:migration` passed with local PostgreSQL socket permissions; 7 tests
   passed.
+- The handwritten stage transition migration was split into its own idempotent file
+  for readability while preserving the existing table shape.
 - Python validation commands could not run in this shell because `python`/`python3`
   are Python 3.13.2 and do not have Ruff, Pyright, or pytest installed, while
   `pyproject.toml` requires Python 3.13.14 exactly.
