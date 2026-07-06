@@ -1,12 +1,19 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
+  AggregationTimeoutError,
   InMemoryMockAggregationDataSource,
   TaxPulseAggregationClient,
   clientIncomeDeductionAggregationPayloadSchema,
+  type AggregationDataSource,
+  type ClientIncomeDeductionAggregationPayload,
 } from "../../src/typescript/index.js";
 
 describe("TaxPulseAggregationClient", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   test("fetches a typed aggregation payload from the in-memory mock source", async () => {
     const client = new TaxPulseAggregationClient(
       new InMemoryMockAggregationDataSource(),
@@ -59,5 +66,64 @@ describe("TaxPulseAggregationClient", () => {
     expect(firstPayload.clientId).toBe("client-123");
     expect(secondPayload.clientId).toBe("client-456");
     expect(firstPayload).not.toBe(secondPayload);
+  });
+
+  test("rejects with a typed timeout error when the source does not resolve", async () => {
+    vi.useFakeTimers();
+    const client = new TaxPulseAggregationClient(
+      {
+        async fetchClientAggregationPayload() {
+          return await new Promise<ClientIncomeDeductionAggregationPayload>(
+            () => {},
+          );
+        },
+      },
+      { timeoutMs: 25 },
+    );
+
+    const payloadPromise = client.fetchAggregationPayload("client-timeout");
+    const rejectionExpectation = expect(payloadPromise).rejects.toMatchObject({
+      clientId: "client-timeout",
+      timeoutMs: 25,
+    });
+
+    await vi.advanceTimersByTimeAsync(25);
+    await rejectionExpectation;
+
+    const error = await payloadPromise.catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(AggregationTimeoutError);
+  });
+
+  test("resolves a fast source before the configured timeout elapses", async () => {
+    vi.useFakeTimers();
+    const fastPayload: ClientIncomeDeductionAggregationPayload = {
+      clientId: "client-fast",
+      incomeEvents: [
+        {
+          source: "Synthetic salary",
+          amount: 96000,
+          withholding: 18000,
+        },
+      ],
+      deductions: [
+        {
+          category: "Synthetic retirement contribution",
+          amount: 6000,
+        },
+      ],
+    };
+    const fastSource: AggregationDataSource = {
+      async fetchClientAggregationPayload() {
+        return fastPayload;
+      },
+    };
+    const client = new TaxPulseAggregationClient(fastSource, { timeoutMs: 25 });
+
+    const payload = await client.fetchAggregationPayload("client-fast");
+
+    expect(
+      clientIncomeDeductionAggregationPayloadSchema.parse(payload),
+    ).toStrictEqual(payload);
+    expect(payload).toStrictEqual(fastPayload);
   });
 });

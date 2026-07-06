@@ -192,7 +192,7 @@ Story,SCRUM-32,10095,Build the async aggregation client against a mock source,Re
 # Concurrent aggregation calls for two clients resolve independently.
 
 # A Vitest case asserts the returned payload validates against the aggregation schema.",SCRUM-31,,,,SCRUM-33,,,,,,,
-Story,SCRUM-33,10096,Surface aggregation timeouts as rejected promises,Reyhan Daniels,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,In Progress,,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:59,6/29/26 18:06,"As a Backend Developer, I want a simulated source timeout surfaced as a rejected promise, so that the Data Aggregation stage never hangs on a slow source.","# The client races the source call against a configurable timeout.
+Story,SCRUM-33,10096,Surface aggregation timeouts as rejected promises,Chimaobi Martins Okorie,712020:ede85fb5-735c-4afb-b9bb-c51ef52a7881,In Progress,,SCRUM Sprint 1,10043,SCRUM-12,Engineering Foundations & Federal Posture,6/19/26 19:59,6/29/26 18:06,"As a Backend Developer, I want a simulated source timeout surfaced as a rejected promise, so that the Data Aggregation stage never hangs on a slow source.","# The client races the source call against a configurable timeout.
 
 # A simulated timeout rejects with a typed timeout error rather than hanging.
 
