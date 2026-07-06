@@ -43,7 +43,7 @@ const sampleClientIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
 ] as const;
-const sampleStageTransitionCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23";
+const sampleStageTransitionId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23";
 const sampleMissingCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24";
 
 async function seedSampleTenant(client: Client): Promise<void> {
@@ -60,6 +60,7 @@ async function seedSampleTenant(client: Client): Promise<void> {
   );
 }
 const expectedStageTransitionColumns = [
+  "id",
   "case_id",
   "from_stage",
   "to_stage",
@@ -75,6 +76,20 @@ function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
 }
 
+async function resetTestSchema(client: Client, schemaName: string): Promise<void> {
+  const quotedSchemaName = quoteIdentifier(schemaName);
+
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.stage_transition CASCADE`,
+  );
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.tax_plan_cycle CASCADE`,
+  );
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.tenants CASCADE`,
+  );
+}
+
 async function withTestSchema<T>(
   callback: (client: Client) => Promise<T>,
 ): Promise<T> {
@@ -88,6 +103,7 @@ async function withTestSchema<T>(
 
     await client.query(`CREATE SCHEMA ${quotedSchemaName}`);
     await client.query(`SET search_path TO ${quotedSchemaName}, public`);
+    await resetTestSchema(client, schemaName);
 
     try {
       return await callback(client);
@@ -252,7 +268,7 @@ describeMigration("tax plan cycle migration", () => {
             ($1, $2, $3, $4, $5, $6, $7, $8, $9),
             ($10, $11, $12, $13, $14, $15, $16, $17, $18)
         `,
-        [
+          [
           sampleClientIds[0],
           sampleTenantId,
           "2026-Q3",
@@ -360,6 +376,10 @@ describeMigration("tax plan cycle migration", () => {
 
       expect(structure.rowCount).toBe(0);
       expect(structure.columns).toEqual(expectedStageTransitionColumns);
+      expect(structure.constraints.stage_transition_pkey?.type).toBe("p");
+      expect(structure.constraints.stage_transition_pkey?.definition).toContain(
+        "PRIMARY KEY (id)",
+      );
       expect(structure.indexes).toContain("stage_transition_case_id_idx");
       expect(structure.constraints.stage_transition_case_id_fk?.type).toBe(
         "f",
@@ -399,7 +419,7 @@ describeMigration("tax plan cycle migration", () => {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `,
         [
-          sampleStageTransitionCaseId,
+          sampleStageTransitionId,
           sampleTenantId,
           "2026-Q3",
           "Data Aggregation",
@@ -416,12 +436,12 @@ describeMigration("tax plan cycle migration", () => {
             case_id,
             from_stage,
             to_stage,
-            actor,
-            occurred_at
+          actor,
+          occurred_at
           ) VALUES ($1, $2, $3, $4, $5)
         `,
         [
-          sampleStageTransitionCaseId,
+          sampleStageTransitionId,
           "Intake",
           "Data Aggregation",
           "advisor-001",
@@ -432,6 +452,7 @@ describeMigration("tax plan cycle migration", () => {
       const rows = await client.query(
         `
           SELECT
+            id::int AS id,
             case_id,
             from_stage,
             to_stage,
@@ -440,12 +461,13 @@ describeMigration("tax plan cycle migration", () => {
           FROM stage_transition
           WHERE case_id = $1
         `,
-        [sampleStageTransitionCaseId],
+        [sampleStageTransitionId],
       );
 
       expect(rows.rows).toEqual([
         {
-          case_id: sampleStageTransitionCaseId,
+          id: 1,
+          case_id: sampleStageTransitionId,
           from_stage: "Intake",
           to_stage: "Data Aggregation",
           actor: "advisor-001",
@@ -525,7 +547,7 @@ describeMigration("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            sampleClientIds[0],
+            sampleStageTransitionId,
             "Planning",
             "Data Aggregation",
             "advisor-001",
@@ -546,7 +568,7 @@ describeMigration("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            sampleClientIds[0],
+            sampleStageTransitionId,
             "Intake",
             "Planning",
             "advisor-001",

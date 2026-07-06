@@ -102,6 +102,7 @@ printf "${GREEN}Installed runtime versions match manifests.${NC}\n"
 printf "${GREEN}Detected package managers: npm and pip${NC}\n"
 
 if [[ -f package.json ]]; then
+  # These dependency installs are required before the TypeScript and Python checks can run.
   if [[ -f package-lock.json ]]; then
     printf "package.json and package-lock.json detected. Running npm ci...\n"
     npm ci
@@ -114,6 +115,7 @@ else
 fi
 
 printf "Installing Python package with dev dependencies...\n"
+# This editable install is required before Ruff, Pyright, and pytest can run reliably.
 python -m pip install -e ".[dev]"
 
 printf "Verifying Python linting and type-check tools...\n"

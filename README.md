@@ -14,6 +14,7 @@ This workspace is scaffolded as a small dual-runtime project:
 - `nvm` is the required Node.js installer for both setup scripts.
 - `pyenv` is the required Python installer for `setup.sh`.
 - `nvm for Windows`, `winget`, and the `py` launcher are required for `setup.ps1`.
+- Docker Desktop or a compatible Docker Engine is required for the Testcontainers-backed integration suite.
 - Node.js is pinned in both [`.nvmrc`](./.nvmrc) and [`.tool-versions`](./.tool-versions).
 - Python is pinned in [`.tool-versions`](./.tool-versions) and must exactly match `requires-python` in [`pyproject.toml`](./pyproject.toml).
 - Python dev dependencies come from [`pyproject.toml`](./pyproject.toml) and include Ruff, pytest, and `pyright[nodejs]`.
@@ -57,6 +58,8 @@ Each script:
 - runs Python Ruff checks, Pyright, and smoke tests
 
 On Windows, if `setup.ps1` installs `nvm for Windows` or Python for the first time, close and reopen PowerShell before rerunning version checks or `nvm`/`py` commands. 
+
+If you plan to run the PostgreSQL integration suite or any other Testcontainers-backed command, start Docker before invoking it.
 
 New installs may not be visible to the current shell session immediately. A system restart may be required if refreshing the terminal does not make the new commands available.
 
@@ -121,6 +124,9 @@ The PostgreSQL migration workflow keeps typed Drizzle schema definitions in
 migration evidence in [`drizzle/`](./drizzle), and the executable SQL migration files
 in the top-level [`migrations/`](./migrations) directory.
 
+Docker is required for the repository integration tests because they use a
+Testcontainers-managed PostgreSQL instance.
+
 Local setup:
 
 1. Install PostgreSQL 18 using the official installer or your platform package manager. [link here](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
@@ -163,6 +169,7 @@ Notes:
   the top-level `migrations/` files and records applied files in `schema_migrations`.
 - Keep any local seed data synthetic and clearly fake.
 - If a `seed.sql` file is present in the repository root, use it for local-only sample data rather than hand-editing production-like records.
+- Start Docker before running `npm run test:integration` or any command that depends on Testcontainers.
 
 ## Contributing and Codex Context
 
