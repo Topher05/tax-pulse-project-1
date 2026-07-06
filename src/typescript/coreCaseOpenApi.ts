@@ -43,7 +43,6 @@ export const coreCaseOpenApiSchemaRegistrations = [
 ] as const satisfies readonly CoreCaseOpenApiSchemaRegistration[];
 
 const fakeTaxPlanCycleExample = {
-  case_id: "case-123",
   client_id: "client-123",
   stage: "Intake",
   owner: "advisor-123",
@@ -217,9 +216,9 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
               in: "path",
               required: true,
               description:
-                "Synthetic case identifier scoped by the request tenant.",
+                "Synthetic UUID case identifier scoped by the request tenant.",
               schema: caseIdSchema,
-              example: "case-123",
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
             },
           ],
           responses: {
@@ -244,8 +243,8 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                       {
                         path: ["caseId"],
                         message:
-                          "Too small: expected string to have >=1 characters",
-                        code: "too_small",
+                          "Invalid UUID",
+                        code: "invalid_format",
                       },
                     ],
                   },

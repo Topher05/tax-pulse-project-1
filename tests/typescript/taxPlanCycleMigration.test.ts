@@ -1,14 +1,18 @@
 import { randomUUID } from "node:crypto";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import type { Client } from "pg";
 
 import {
+  appliedMigrationsTableName,
   applyMigrations,
-  getDatabaseUrlFromEnv,
+  migrationsDirectory,
   withDatabaseClient,
 } from "../../src/typescript/postgresMigrations.js";
 
-const databaseUrl = getDatabaseUrlFromEnv();
+const databaseUrl = process.env.DATABASE_URL?.trim();
+const describeMigration = databaseUrl ? describe : describe.skip;
 
 const expectedColumns = [
   "client_id",
@@ -89,6 +93,10 @@ async function resetTestSchema(client: Client, schemaName: string): Promise<void
 async function withTestSchema<T>(
   callback: (client: Client) => Promise<T>,
 ): Promise<T> {
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required for migration tests.");
+  }
+
   return withDatabaseClient(databaseUrl, async (client) => {
     const schemaName = createTestSchemaName();
     const quotedSchemaName = quoteIdentifier(schemaName);
@@ -172,7 +180,48 @@ async function getTableStructure(
   };
 }
 
-describe("tax plan cycle migration", () => {
+describeMigration("tax plan cycle migration", () => {
+  test("records applied migrations and skips them on rerun", async () => {
+    await withTestSchema(async (client) => {
+      await applyMigrations(client);
+      await applyMigrations(client);
+
+      const migrationFiles = readdirSync(migrationsDirectory)
+        .filter((fileName) => fileName.endsWith(".sql"))
+        .sort((left, right) => left.localeCompare(right));
+      const appliedRows = await client.query(
+        `
+          SELECT file_name
+          FROM ${appliedMigrationsTableName}
+          ORDER BY file_name
+        `,
+      );
+
+      expect(appliedRows.rows.map((row) => String(row.file_name))).toEqual(
+        migrationFiles,
+      );
+    });
+  });
+
+  test("keeps Drizzle-generated migration evidence aligned with the table contract", () => {
+    const drizzleMigrationsDir = join(process.cwd(), "drizzle");
+
+    expect(existsSync(drizzleMigrationsDir)).toBe(true);
+
+    const migrationSql = readdirSync(drizzleMigrationsDir)
+      .filter((fileName) => fileName.endsWith(".sql"))
+      .map((fileName) => readFileSync(join(drizzleMigrationsDir, fileName), "utf8"))
+      .join("\n");
+
+    expect(migrationSql).toContain('CREATE TABLE "tenants"');
+    expect(migrationSql).toContain('CREATE TABLE "tax_plan_cycle"');
+    expect(migrationSql).not.toContain('CONSTRAINT "tax_plan_cycle_case_id_key" UNIQUE');
+    expect(migrationSql).toContain('CREATE TABLE "stage_transition"');
+    expect(migrationSql).toContain(
+      'FOREIGN KEY ("case_id") REFERENCES "public"."tax_plan_cycle"("client_id")',
+    );
+  });
+
   test("creates the table, verifies it is empty, and persists two records", async () => {
     await withTestSchema(async (client) => {
       await applyMigrations(client);
@@ -190,6 +239,7 @@ describe("tax plan cycle migration", () => {
       expect(
         structure.constraints.tax_plan_cycle_client_id_pk?.definition,
       ).toContain("PRIMARY KEY (client_id)");
+      expect(structure.constraints.tax_plan_cycle_case_id_key).toBeUndefined();
       expect(structure.constraints.tax_plan_cycle_tenant_id_fk?.type).toBe("f");
       expect(
         structure.constraints.tax_plan_cycle_tenant_id_fk?.definition,
@@ -301,7 +351,7 @@ describe("tax plan cycle migration", () => {
               priority,
               due_date,
               on_hold
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
           `,
           [
             "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d31",

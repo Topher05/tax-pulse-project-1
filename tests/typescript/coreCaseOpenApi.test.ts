@@ -185,7 +185,6 @@ describe("Core Case Service OpenAPI document", () => {
 
     expect(Object.keys(properties)).toEqual(
       expect.arrayContaining([
-        "case_id",
         "client_id",
         "stage",
         "owner",

@@ -200,10 +200,11 @@ that a created Tax Plan Cycle can be fetched back.
 
 **How This Ties Into the Code:**
 
-- `taxPlanCycleSchema` now validates `case_id` as the Tax Plan Cycle unit-of-work
-  identifier while keeping `client_id` separate as the client identifier.
-- `tax_plan_cycle` now includes `case_id TEXT NOT NULL`, with transition history
-  pointing at `tax_plan_cycle.case_id` instead of treating `client_id` as the case ID.
+- `taxPlanCycleSchema` uses `client_id` as the Tax Plan Cycle unit-of-work identifier
+  exposed through the current `caseId` route parameter.
+- `tax_plan_cycle` follows the SCRUM-42 table shape without a separate `case_id`
+  column, while transition history still uses the SCRUM-43 `stage_transition.case_id`
+  column to reference `tax_plan_cycle.client_id`.
 - `createTaxPlanCycleRouter` now serves `GET /tax-plan-cycles/:caseId`, validates
   the path parameter with zod, reads tenant scope from `req.tenant.id`, and delegates
   to `findByCaseId({ tenantId, caseId })`.
@@ -296,3 +297,75 @@ and fake-only synthetic examples.
 - `python -m ruff format --check src/python tests/python` passed.
 - `python -m pytest` passed with 4 tests; pytest emitted a local cache warning because
   it could not write under `.pytest_cache`.
+
+## martins-okorie-jira51 - SCRUM-51
+
+**Branch:** `martins-okorie-jira51`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Epic:** SCRUM-13 - Domain Model & Walking Skeleton
+
+**Summary:** Define the Drizzle schema for the Tax Plan Cycle tables
+
+**CSV Description:** As a Backend Developer, I want Drizzle schema definitions matching
+the PostgreSQL tables, so that persistence is type-safe and migration-driven.
+
+**Acceptance Criteria:**
+
+- Drizzle definitions match the tenant, tax_plan_cycle, and stage_transition tables.
+- A generated migration creates the tables from empty and matches the hand-written
+  migrations.
+- Running migrations is idempotent and recorded in a migrations table.
+
+**How This Ties Into the Code:**
+
+- `src/typescript/db/schema.ts` defines exported Drizzle tables for `tenants`,
+  `tax_plan_cycle`, and `stage_transition` with the intended columns, constraints,
+  indexes, and foreign keys.
+- `drizzle.config.ts` points Drizzle Kit at the TypeScript schema and writes generated
+  migration evidence into `drizzle/`.
+- `migrations/20260626120000_create_tax_plan_cycle.sql` now matches SCRUM-42 by
+  omitting `case_id` from `tax_plan_cycle`, while SCRUM-43 transition history keeps
+  `stage_transition.case_id` as a foreign key to `tax_plan_cycle.client_id`.
+- `applyMigrations` now creates `schema_migrations`, records applied SQL files, and
+  skips already-applied migrations so reruns are idempotent.
+- Migration tests verify the table contract, Drizzle-generated SQL evidence, migration
+  tracking, idempotent reruns, and the foreign key/check-constraint behavior.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory centers work on tenant-scoped Tax Plan Cycles with stage-based
+workflow state and durable transition history. This ticket gives the Core Case Service
+a typed Drizzle schema for those persistence tables while preserving tenant isolation,
+the no-separate-status rule, and migration evidence needed for a defensible walking
+skeleton.
+
+**Changed Files:**
+
+- `README.md`
+- `drizzle.config.ts`
+- `drizzle/`
+- `migrations/20260625120000_create_tenants.sql`
+- `migrations/20260626120000_create_tax_plan_cycle.sql`
+- `package-lock.json`
+- `package.json`
+- `src/typescript/db/schema.ts`
+- `src/typescript/index.ts`
+- `src/typescript/postgresMigrations.ts`
+- `tests/typescript/taxPlanCycleMigration.test.ts`
+- `tests/typescript/tenantsMigration.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm run db:check` passed.
+- `npm run db:generate` created the Drizzle migration evidence; a second run reported
+  no schema changes.
+- `npm test` passed with local socket permissions; 8 files and 49 tests passed.
+- `npm run test:migration` passed with local PostgreSQL socket permissions; 7 tests
+  passed.
+- Python validation commands could not run in this shell because `python`/`python3`
+  are Python 3.13.2 and do not have Ruff, Pyright, or pytest installed, while
+  `pyproject.toml` requires Python 3.13.14 exactly.

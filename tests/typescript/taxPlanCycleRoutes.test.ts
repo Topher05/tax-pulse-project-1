@@ -18,7 +18,6 @@ import {
 const silentLogger = createLogger({ level: "silent" });
 
 const validCreateBody: TaxPlanCycleCreateInput = {
-  case_id: "case-123",
   client_id: "client-123",
   stage: "Review",
   owner: "advisor-123",
@@ -169,14 +168,16 @@ describe("createTaxPlanCycleRouter", () => {
     >(() => validReadCycle);
 
     await withRouteServer({ create, findByCaseId }, async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/tax-plan-cycles/case-123`);
+      const response = await fetch(
+        `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01`,
+      );
 
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toEqual(validReadCycle);
       expect(findByCaseId).toHaveBeenCalledTimes(1);
       expect(findByCaseId).toHaveBeenCalledWith({
         tenantId: "tenant-001",
-        caseId: "case-123",
+        caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
       });
       expect(create).not.toHaveBeenCalled();
     });
@@ -191,7 +192,9 @@ describe("createTaxPlanCycleRouter", () => {
     >(() => null);
 
     await withRouteServer({ create, findByCaseId }, async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/tax-plan-cycles/missing-case`);
+      const response = await fetch(
+        `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02`,
+      );
 
       expect(response.status).toBe(404);
       expect(response.headers.get("content-type")).toContain(
@@ -205,7 +208,7 @@ describe("createTaxPlanCycleRouter", () => {
       });
       expect(findByCaseId).toHaveBeenCalledWith({
         tenantId: "tenant-001",
-        caseId: "missing-case",
+        caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02",
       });
     });
   });
@@ -219,7 +222,9 @@ describe("createTaxPlanCycleRouter", () => {
     >(() => null);
 
     await withRouteServer({ create, findByCaseId }, async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/tax-plan-cycles/case-elsewhere`);
+      const response = await fetch(
+        `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e03`,
+      );
 
       expect(response.status).toBe(404);
       expect(response.headers.get("content-type")).toContain(
@@ -227,7 +232,7 @@ describe("createTaxPlanCycleRouter", () => {
       );
       expect(findByCaseId).toHaveBeenCalledWith({
         tenantId: "tenant-001",
-        caseId: "case-elsewhere",
+        caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e03",
       });
     });
   });

@@ -4,11 +4,11 @@ import type { Client } from "pg";
 
 import {
   applyMigrations,
-  getDatabaseUrlFromEnv,
   withDatabaseClient,
 } from "../../src/typescript/postgresMigrations.js";
 
-const databaseUrl = getDatabaseUrlFromEnv();
+const databaseUrl = process.env.DATABASE_URL?.trim();
+const describeMigration = databaseUrl ? describe : describe.skip;
 
 const expectedColumns = ["id", "name", "created_at"];
 const expectedColumnTypes = {
@@ -47,6 +47,10 @@ async function resetTestSchema(client: Client, schemaName: string): Promise<void
 async function withTestSchema<T>(
   callback: (client: Client) => Promise<T>,
 ): Promise<T> {
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required for migration tests.");
+  }
+
   return withDatabaseClient(databaseUrl, async (client) => {
     const schemaName = createTestSchemaName();
     const quotedSchemaName = quoteIdentifier(schemaName);
@@ -64,7 +68,7 @@ async function withTestSchema<T>(
   });
 }
 
-describe("tenants migration", () => {
+describeMigration("tenants migration", () => {
   test("creates the table and persists two tenants", async () => {
     await withTestSchema(async (client) => {
       await applyMigrations(client);

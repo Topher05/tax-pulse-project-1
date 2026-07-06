@@ -39,7 +39,6 @@ const invalidStage: TaxPlanCycleStage = "Unknown";
 void invalidStage;
 
 const validTaxPlanCycle: TaxPlanCycle = {
-  case_id: "case-123",
   client_id: "client-123",
   stage: "Review",
   owner: "advisor-123",
@@ -71,7 +70,6 @@ test("tax plan cycle rejects unknown stage values with a zod error", () => {
 
 test("tax plan cycle validates owner, priority, due_date, and hold reason boundaries", () => {
   const invalidPayloads = [
-    { ...validTaxPlanCycle, case_id: "" },
     { ...validTaxPlanCycle, client_id: "" },
     { ...validTaxPlanCycle, owner: "" },
     { ...validTaxPlanCycle, priority: "urgent" },

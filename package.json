@@ -9,6 +9,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "db:check": "drizzle-kit check",
+    "db:generate": "drizzle-kit generate",
     "dev": "tsx src/typescript/index.ts",
     "migrate": "tsx src/typescript/runMigrations.ts",
     "seed": "tsx src/typescript/runSeed.ts",
@@ -25,12 +27,14 @@
     "@types/node": "^22.0.0",
     "@types/pg": "^8.15.5",
     "dotenv": "^17.2.1",
+    "drizzle-kit": "^0.31.10",
     "testcontainers": "^12.0.4",
     "tsx": "^4.20.0",
     "typescript": "^5.8.0",
     "vitest": "^2.1.9"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
     "pg": "^8.16.3",
     "pino": "^9.14.0",
