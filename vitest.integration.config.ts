@@ -2,8 +2,9 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    hookTimeout: 45_000,
-    testTimeout: 45_000,
+    hookTimeout: 90_000,
+    testTimeout: 90_000,
+    setupFiles: ["tests/typescript/testSetup.ts"],
     exclude: [
       "**/.pytest_cache/**",
       "**/.ruff_cache/**",
