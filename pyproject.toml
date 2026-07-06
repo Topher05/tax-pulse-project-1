@@ -13,6 +13,7 @@ dev = [
   "pydantic>=2,<3",
   "pytest>=8.0",
   "pytest-asyncio>=0.23",
+  "pyright[nodejs]>=1.1",
   "ruff>=0.8",
 ]
 
@@ -32,3 +33,18 @@ pythonpath = ["src/python"]
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "UP", "ANN"]
+
+[tool.pyright]
+include = ["src/python", "tests/python"]
+exclude = [
+  "**/__pycache__",
+  ".pytest_cache",
+  ".ruff_cache",
+  "dist",
+  "node_modules",
+]
+pythonVersion = "3.13"
+typeCheckingMode = "standard"

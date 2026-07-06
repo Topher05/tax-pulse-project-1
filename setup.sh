@@ -116,6 +116,10 @@ fi
 printf "Installing Python package with dev dependencies...\n"
 python -m pip install -e ".[dev]"
 
+printf "Verifying Python linting and type-check tools...\n"
+python -m ruff --version
+python -m pyright --version
+
 printf "Running hello checks...\n"
 NODE_HELLO="$(node -e "console.log('hello')" | tr -d '\r')"
 PYTHON_HELLO="$(python -c "print('hello')" | tr -d '\r')"
@@ -132,6 +136,10 @@ if [[ -f package.json ]]; then
 fi
 
 printf "Running Python checks...\n"
+python -m ruff format --check src/python tests/python
+python -m ruff check src/python tests/python
+PYTHON_EXECUTABLE="$(python -c "import sys; print(sys.executable)")"
+python -m pyright --pythonpath "$PYTHON_EXECUTABLE"
 python -m pytest
 
 printf "${GREEN}Project checks passed for both TypeScript and Python.${NC}\n"
