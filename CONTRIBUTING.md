@@ -46,6 +46,7 @@ Follow the Python settings in [`pyproject.toml`](./pyproject.toml) as the source
 for Python 3.13 work in `src/python` and `tests/python`.
 
 - Use Ruff for both formatting and linting.
+- Use Pyright for Python type checking alongside Ruff.
 - Keep function signatures typed where practical, including explicit return annotations.
 - Keep Python modules under `src/python/tax_pulse_project_team_1` and keep tests under
   `tests/python`.
@@ -59,6 +60,7 @@ Good Python changes usually:
 - keep imports tidy and unused names removed
 - pass `ruff format --check src/python tests/python`
 - pass `ruff check src/python tests/python`
+- pass `pyright`
 - pass `python -m pytest`
 
 ## Typescript/Node Development Conventions

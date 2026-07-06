@@ -23,6 +23,7 @@ Run relevant checks from the repository root:
 
 ```bash
 python -m ruff format --check src/python tests/python
+python -m pyright
 python -m pytest
 npm run typecheck
 npm test
