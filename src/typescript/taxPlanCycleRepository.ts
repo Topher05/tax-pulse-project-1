@@ -14,7 +14,6 @@ export interface TaxPlanCycleReadHelper {
 }
 
 interface TaxPlanCycleRow {
-  case_id: string;
   client_id: string;
   stage: TaxPlanCycle["stage"];
   owner: string;
@@ -27,8 +26,11 @@ interface TaxPlanCycleRow {
 function toTaxPlanCycle(
   row: TaxPlanCycleRow,
 ): TaxPlanCycle {
+  // Temporary scaffold: the persisted cycle identifier is `client_id`, and we
+  // mirror it into the API-facing `case_id` field until a dedicated case key
+  // exists in storage.
   return taxPlanCycleSchema.parse({
-    case_id: row.case_id,
+    case_id: row.client_id,
     client_id: row.client_id,
     stage: row.stage,
     owner: row.owner,
@@ -47,7 +49,6 @@ export function createTaxPlanCycleReadHelper(
       const result = await client.query<TaxPlanCycleRow>(
         `
           SELECT
-            case_id,
             client_id,
             stage,
             owner,
@@ -57,7 +58,7 @@ export function createTaxPlanCycleReadHelper(
             hold_reason
           FROM tax_plan_cycle
           WHERE tenant_id = $1
-            AND case_id = $2
+            AND client_id = $2
           LIMIT 1
         `,
         [tenantId, caseId],

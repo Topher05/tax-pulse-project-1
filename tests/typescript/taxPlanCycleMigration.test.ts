@@ -12,7 +12,6 @@ const databaseUrl = getDatabaseUrlFromEnv();
 
 const expectedColumns = [
   "client_id",
-  "case_id",
   "tenant_id",
   "planning_period",
   "stage",
@@ -25,7 +24,6 @@ const expectedColumns = [
 
 const expectedColumnTypes = {
   client_id: "uuid",
-  case_id: "uuid",
   tenant_id: "uuid",
   planning_period: "text",
   stage: "text",
@@ -37,16 +35,11 @@ const expectedColumnTypes = {
 } as const;
 
 const sampleTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11";
-const sampleCaseIds = [
+const sampleClientIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
 ] as const;
-const sampleClientIds = [
-  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d31",
-  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d32",
-] as const;
-const sampleStageTransitionCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23";
-const sampleStageTransitionClientId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d33";
+const sampleStageTransitionId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23";
 const sampleMissingCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24";
 
 async function seedSampleTenant(client: Client): Promise<void> {
@@ -63,6 +56,7 @@ async function seedSampleTenant(client: Client): Promise<void> {
   );
 }
 const expectedStageTransitionColumns = [
+  "id",
   "case_id",
   "from_stage",
   "to_stage",
@@ -196,10 +190,6 @@ describe("tax plan cycle migration", () => {
       expect(
         structure.constraints.tax_plan_cycle_client_id_pk?.definition,
       ).toContain("PRIMARY KEY (client_id)");
-      expect(structure.constraints.tax_plan_cycle_case_id_key?.type).toBe("u");
-      expect(
-        structure.constraints.tax_plan_cycle_case_id_key?.definition,
-      ).toContain("UNIQUE (case_id)");
       expect(structure.constraints.tax_plan_cycle_tenant_id_fk?.type).toBe("f");
       expect(
         structure.constraints.tax_plan_cycle_tenant_id_fk?.definition,
@@ -216,7 +206,6 @@ describe("tax plan cycle migration", () => {
         `
           INSERT INTO tax_plan_cycle (
             client_id,
-            case_id,
             tenant_id,
             planning_period,
             stage,
@@ -226,12 +215,11 @@ describe("tax plan cycle migration", () => {
             on_hold,
             hold_reason
           ) VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10),
-            ($11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9),
+            ($10, $11, $12, $13, $14, $15, $16, $17, $18)
         `,
-        [
+          [
           sampleClientIds[0],
-          sampleCaseIds[0],
           sampleTenantId,
           "2026-Q3",
           "Intake",
@@ -241,7 +229,6 @@ describe("tax plan cycle migration", () => {
           false,
           null,
           sampleClientIds[1],
-          sampleCaseIds[1],
           sampleTenantId,
           "2026-Q4",
           "Review",
@@ -257,7 +244,6 @@ describe("tax plan cycle migration", () => {
         `
           SELECT
             client_id,
-            case_id,
             tenant_id,
             planning_period,
             stage,
@@ -274,7 +260,6 @@ describe("tax plan cycle migration", () => {
       expect(rows.rows).toEqual([
         {
           client_id: sampleClientIds[0],
-          case_id: sampleCaseIds[0],
           tenant_id: sampleTenantId,
           planning_period: "2026-Q3",
           stage: "Intake",
@@ -286,7 +271,6 @@ describe("tax plan cycle migration", () => {
         },
         {
           client_id: sampleClientIds[1],
-          case_id: sampleCaseIds[1],
           tenant_id: sampleTenantId,
           planning_period: "2026-Q4",
           stage: "Review",
@@ -310,7 +294,6 @@ describe("tax plan cycle migration", () => {
           `
             INSERT INTO tax_plan_cycle (
               client_id,
-              case_id,
               tenant_id,
               planning_period,
               stage,
@@ -322,7 +305,6 @@ describe("tax plan cycle migration", () => {
           `,
           [
             "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d31",
-            "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d41",
             sampleTenantId,
             "2026-Q3",
             "Planning",
@@ -344,6 +326,10 @@ describe("tax plan cycle migration", () => {
 
       expect(structure.rowCount).toBe(0);
       expect(structure.columns).toEqual(expectedStageTransitionColumns);
+      expect(structure.constraints.stage_transition_pkey?.type).toBe("p");
+      expect(structure.constraints.stage_transition_pkey?.definition).toContain(
+        "PRIMARY KEY (id)",
+      );
       expect(structure.indexes).toContain("stage_transition_case_id_idx");
       expect(structure.constraints.stage_transition_case_id_fk?.type).toBe(
         "f",
@@ -353,7 +339,7 @@ describe("tax plan cycle migration", () => {
       ).toContain("FOREIGN KEY (case_id)");
       expect(
         structure.constraints.stage_transition_case_id_fk?.definition,
-      ).toContain("REFERENCES tax_plan_cycle(case_id)");
+      ).toContain("REFERENCES tax_plan_cycle(client_id)");
       expect(
         structure.constraints.stage_transition_from_stage_check?.type,
       ).toBe("c");
@@ -373,7 +359,6 @@ describe("tax plan cycle migration", () => {
         `
           INSERT INTO tax_plan_cycle (
             client_id,
-            case_id,
             tenant_id,
             planning_period,
             stage,
@@ -381,11 +366,10 @@ describe("tax plan cycle migration", () => {
             priority,
             due_date,
             on_hold
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `,
         [
-          sampleStageTransitionClientId,
-          sampleStageTransitionCaseId,
+          sampleStageTransitionId,
           sampleTenantId,
           "2026-Q3",
           "Data Aggregation",
@@ -402,12 +386,12 @@ describe("tax plan cycle migration", () => {
             case_id,
             from_stage,
             to_stage,
-            actor,
-            occurred_at
+          actor,
+          occurred_at
           ) VALUES ($1, $2, $3, $4, $5)
         `,
         [
-          sampleStageTransitionCaseId,
+          sampleStageTransitionId,
           "Intake",
           "Data Aggregation",
           "advisor-001",
@@ -418,6 +402,7 @@ describe("tax plan cycle migration", () => {
       const rows = await client.query(
         `
           SELECT
+            id::int AS id,
             case_id,
             from_stage,
             to_stage,
@@ -426,12 +411,13 @@ describe("tax plan cycle migration", () => {
           FROM stage_transition
           WHERE case_id = $1
         `,
-        [sampleStageTransitionCaseId],
+        [sampleStageTransitionId],
       );
 
       expect(rows.rows).toEqual([
         {
-          case_id: sampleStageTransitionCaseId,
+          id: 1,
+          case_id: sampleStageTransitionId,
           from_stage: "Intake",
           to_stage: "Data Aggregation",
           actor: "advisor-001",
@@ -478,7 +464,6 @@ describe("tax plan cycle migration", () => {
         `
           INSERT INTO tax_plan_cycle (
             client_id,
-            case_id,
             tenant_id,
             planning_period,
             stage,
@@ -486,11 +471,10 @@ describe("tax plan cycle migration", () => {
             priority,
             due_date,
             on_hold
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `,
         [
           sampleClientIds[0],
-          sampleCaseIds[0],
           sampleTenantId,
           "2026-Q3",
           "Intake",
@@ -513,7 +497,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            sampleCaseIds[0],
+            sampleStageTransitionId,
             "Planning",
             "Data Aggregation",
             "advisor-001",
@@ -534,7 +518,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            sampleCaseIds[0],
+            sampleStageTransitionId,
             "Intake",
             "Planning",
             "advisor-001",
