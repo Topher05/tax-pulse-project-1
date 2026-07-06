@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS tax_plan_cycle (
-  client_id UUID CONSTRAINT tax_plan_cycle_client_id_pk PRIMARY KEY DEFAULT uuidv7(),
+  id UUID CONSTRAINT tax_plan_cycle_id_pk PRIMARY KEY DEFAULT uuidv7(),
+  client_id UUID NOT NULL,
   tenant_id UUID NOT NULL CONSTRAINT tax_plan_cycle_tenant_id_fk REFERENCES tenants (id),
   planning_period TEXT NOT NULL,
   stage TEXT NOT NULL CONSTRAINT tax_plan_cycle_stage_check CHECK (
@@ -26,7 +27,7 @@ CREATE INDEX IF NOT EXISTS tax_plan_cycle_tenant_id_due_date_idx
 -- Note: Consider pulling transition migration into it's own file, easier readability
 CREATE TABLE stage_transition (
   id BIGSERIAL PRIMARY KEY,
-  case_id UUID NOT NULL CONSTRAINT stage_transition_case_id_fk REFERENCES tax_plan_cycle (client_id), -- Temporary placeholder: case_id maps to the stored cycle client_id.
+  case_id UUID NOT NULL CONSTRAINT stage_transition_case_id_fk REFERENCES tax_plan_cycle (id),
   from_stage TEXT NOT NULL CONSTRAINT stage_transition_from_stage_check CHECK (
     from_stage IN (
       'Intake',

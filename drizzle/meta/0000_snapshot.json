@@ -65,7 +65,7 @@
             "case_id"
           ],
           "columnsTo": [
-            "client_id"
+            "id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -90,12 +90,18 @@
       "name": "tax_plan_cycle",
       "schema": "",
       "columns": {
-        "client_id": {
-          "name": "client_id",
+        "id": {
+          "name": "id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true,
           "default": "uuidv7()"
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
         },
         "tenant_id": {
           "name": "tenant_id",
@@ -186,10 +192,10 @@
         }
       },
       "compositePrimaryKeys": {
-        "tax_plan_cycle_client_id_pk": {
-          "name": "tax_plan_cycle_client_id_pk",
+        "tax_plan_cycle_id_pk": {
+          "name": "tax_plan_cycle_id_pk",
           "columns": [
-            "client_id"
+            "id"
           ]
         }
       },

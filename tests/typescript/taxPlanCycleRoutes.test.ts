@@ -18,7 +18,7 @@ import {
 const silentLogger = createLogger({ level: "silent" });
 
 const validCreateBody: TaxPlanCycleCreateInput = {
-  client_id: "client-123",
+  client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
   stage: "Review",
   owner: "advisor-123",
   priority: "high",
@@ -27,6 +27,7 @@ const validCreateBody: TaxPlanCycleCreateInput = {
 };
 
 const validReadCycle: TaxPlanCycle = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
   ...validCreateBody,
 };
 

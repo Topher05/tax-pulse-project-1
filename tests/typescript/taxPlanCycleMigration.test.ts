@@ -15,6 +15,7 @@ const databaseUrl = process.env.DATABASE_URL?.trim();
 const describeMigration = databaseUrl ? describe : describe.skip;
 
 const expectedColumns = [
+  "id",
   "client_id",
   "tenant_id",
   "planning_period",
@@ -27,6 +28,7 @@ const expectedColumns = [
 ];
 
 const expectedColumnTypes = {
+  id: "uuid",
   client_id: "uuid",
   tenant_id: "uuid",
   planning_period: "text",
@@ -43,7 +45,11 @@ const sampleClientIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
 ] as const;
-const sampleStageTransitionId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23";
+const sampleCycleIds = [
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d31",
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d32",
+] as const;
+const sampleStageTransitionCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d33";
 const sampleMissingCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24";
 
 async function seedSampleTenant(client: Client): Promise<void> {
@@ -218,7 +224,7 @@ describeMigration("tax plan cycle migration", () => {
     expect(migrationSql).not.toContain('CONSTRAINT "tax_plan_cycle_case_id_key" UNIQUE');
     expect(migrationSql).toContain('CREATE TABLE "stage_transition"');
     expect(migrationSql).toContain(
-      'FOREIGN KEY ("case_id") REFERENCES "public"."tax_plan_cycle"("client_id")',
+      'FOREIGN KEY ("case_id") REFERENCES "public"."tax_plan_cycle"("id")',
     );
   });
 
@@ -235,10 +241,11 @@ describeMigration("tax plan cycle migration", () => {
       expect(structure.indexes).toContain(
         "tax_plan_cycle_tenant_id_due_date_idx",
       );
-      expect(structure.constraints.tax_plan_cycle_client_id_pk?.type).toBe("p");
-      expect(
-        structure.constraints.tax_plan_cycle_client_id_pk?.definition,
-      ).toContain("PRIMARY KEY (client_id)");
+      expect(structure.constraints.tax_plan_cycle_id_pk?.type).toBe("p");
+      expect(structure.constraints.tax_plan_cycle_id_pk?.definition).toContain(
+        "PRIMARY KEY (id)",
+      );
+      expect(structure.constraints.tax_plan_cycle_client_id_pk).toBeUndefined();
       expect(structure.constraints.tax_plan_cycle_case_id_key).toBeUndefined();
       expect(structure.constraints.tax_plan_cycle_tenant_id_fk?.type).toBe("f");
       expect(
@@ -255,6 +262,7 @@ describeMigration("tax plan cycle migration", () => {
       await client.query(
         `
           INSERT INTO tax_plan_cycle (
+            id,
             client_id,
             tenant_id,
             planning_period,
@@ -265,10 +273,11 @@ describeMigration("tax plan cycle migration", () => {
             on_hold,
             hold_reason
           ) VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9),
-            ($10, $11, $12, $13, $14, $15, $16, $17, $18)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10),
+            ($11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
         `,
-          [
+        [
+          sampleCycleIds[0],
           sampleClientIds[0],
           sampleTenantId,
           "2026-Q3",
@@ -278,6 +287,7 @@ describeMigration("tax plan cycle migration", () => {
           "2026-07-15",
           false,
           null,
+          sampleCycleIds[1],
           sampleClientIds[1],
           sampleTenantId,
           "2026-Q4",
@@ -293,6 +303,7 @@ describeMigration("tax plan cycle migration", () => {
       const rows = await client.query(
         `
           SELECT
+            id,
             client_id,
             tenant_id,
             planning_period,
@@ -303,12 +314,13 @@ describeMigration("tax plan cycle migration", () => {
             on_hold,
             hold_reason
           FROM tax_plan_cycle
-          ORDER BY client_id
+          ORDER BY id
         `,
       );
 
       expect(rows.rows).toEqual([
         {
+          id: sampleCycleIds[0],
           client_id: sampleClientIds[0],
           tenant_id: sampleTenantId,
           planning_period: "2026-Q3",
@@ -320,6 +332,7 @@ describeMigration("tax plan cycle migration", () => {
           hold_reason: null,
         },
         {
+          id: sampleCycleIds[1],
           client_id: sampleClientIds[1],
           tenant_id: sampleTenantId,
           planning_period: "2026-Q4",
@@ -343,8 +356,8 @@ describeMigration("tax plan cycle migration", () => {
         client.query(
           `
             INSERT INTO tax_plan_cycle (
-              client_id,
               tenant_id,
+              client_id,
               planning_period,
               stage,
               owner,
@@ -354,8 +367,8 @@ describeMigration("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
           `,
           [
-            "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d31",
             sampleTenantId,
+            "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d41",
             "2026-Q3",
             "Planning",
             "advisor-003",
@@ -389,7 +402,7 @@ describeMigration("tax plan cycle migration", () => {
       ).toContain("FOREIGN KEY (case_id)");
       expect(
         structure.constraints.stage_transition_case_id_fk?.definition,
-      ).toContain("REFERENCES tax_plan_cycle(client_id)");
+      ).toContain("REFERENCES tax_plan_cycle(id)");
       expect(
         structure.constraints.stage_transition_from_stage_check?.type,
       ).toBe("c");
@@ -408,6 +421,7 @@ describeMigration("tax plan cycle migration", () => {
       await client.query(
         `
           INSERT INTO tax_plan_cycle (
+            id,
             client_id,
             tenant_id,
             planning_period,
@@ -416,10 +430,11 @@ describeMigration("tax plan cycle migration", () => {
             priority,
             due_date,
             on_hold
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `,
         [
-          sampleStageTransitionId,
+          sampleStageTransitionCaseId,
+          sampleClientIds[0],
           sampleTenantId,
           "2026-Q3",
           "Data Aggregation",
@@ -441,7 +456,7 @@ describeMigration("tax plan cycle migration", () => {
           ) VALUES ($1, $2, $3, $4, $5)
         `,
         [
-          sampleStageTransitionId,
+          sampleStageTransitionCaseId,
           "Intake",
           "Data Aggregation",
           "advisor-001",
@@ -461,13 +476,13 @@ describeMigration("tax plan cycle migration", () => {
           FROM stage_transition
           WHERE case_id = $1
         `,
-        [sampleStageTransitionId],
+        [sampleStageTransitionCaseId],
       );
 
       expect(rows.rows).toEqual([
         {
           id: 1,
-          case_id: sampleStageTransitionId,
+          case_id: sampleStageTransitionCaseId,
           from_stage: "Intake",
           to_stage: "Data Aggregation",
           actor: "advisor-001",
@@ -513,6 +528,7 @@ describeMigration("tax plan cycle migration", () => {
       await client.query(
         `
           INSERT INTO tax_plan_cycle (
+            id,
             client_id,
             tenant_id,
             planning_period,
@@ -521,9 +537,10 @@ describeMigration("tax plan cycle migration", () => {
             priority,
             due_date,
             on_hold
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `,
         [
+          sampleStageTransitionCaseId,
           sampleClientIds[0],
           sampleTenantId,
           "2026-Q3",
@@ -547,7 +564,7 @@ describeMigration("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            sampleStageTransitionId,
+            sampleStageTransitionCaseId,
             "Planning",
             "Data Aggregation",
             "advisor-001",
@@ -568,7 +585,7 @@ describeMigration("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            sampleStageTransitionId,
+            sampleStageTransitionCaseId,
             "Intake",
             "Planning",
             "advisor-001",

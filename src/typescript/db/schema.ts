@@ -28,7 +28,8 @@ export const tenants = pgTable("tenants", {
 export const taxPlanCycle = pgTable(
   "tax_plan_cycle",
   {
-    clientId: uuid("client_id").default(sql`uuidv7()`).notNull(),
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    clientId: uuid("client_id").notNull(),
     tenantId: uuid("tenant_id").notNull(),
     planningPeriod: text("planning_period").notNull(),
     stage: text("stage").notNull(),
@@ -40,8 +41,8 @@ export const taxPlanCycle = pgTable(
   },
   (table) => [
     primaryKey({
-      name: "tax_plan_cycle_client_id_pk",
-      columns: [table.clientId],
+      name: "tax_plan_cycle_id_pk",
+      columns: [table.id],
     }),
     foreignKey({
       name: "tax_plan_cycle_tenant_id_fk",
@@ -66,7 +67,7 @@ export const stageTransition = pgTable(
     foreignKey({
       name: "stage_transition_case_id_fk",
       columns: [table.caseId],
-      foreignColumns: [taxPlanCycle.clientId],
+      foreignColumns: [taxPlanCycle.id],
     }),
     check(
       "stage_transition_from_stage_check",

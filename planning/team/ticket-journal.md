@@ -369,3 +369,73 @@ skeleton.
 - Python validation commands could not run in this shell because `python`/`python3`
   are Python 3.13.2 and do not have Ruff, Pyright, or pytest installed, while
   `pyproject.toml` requires Python 3.13.14 exactly.
+
+## dylan-harle-jira52 - SCRUM-52
+
+**Branch:** `dylan-harle-jira52`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-13 - Domain Model & Walking Skeleton
+
+**Summary:** Implement the Tax Plan Cycle repository through Drizzle
+
+**CSV Description:** As a Backend Developer, I want a repository that inserts and reads
+a Tax Plan Cycle through Drizzle, so that the service persists cases via one typed
+boundary.
+
+**Acceptance Criteria:**
+
+- A repository method inserts a cycle and returns its generated case ID.
+- A repository method reads a cycle back by case ID within the tenant scope.
+- A Testcontainers test covers insert-then-read through Drizzle.
+
+**How This Ties Into the Code:**
+
+- `tax_plan_cycle.id` is now the generated primary key and the service-facing case ID.
+- `tax_plan_cycle.client_id` remains a required client reference, but it is no longer
+  the cycle primary key or the target of transition history.
+- `stage_transition.case_id` now references `tax_plan_cycle.id`.
+- `TaxPlanCycle` read models include generated `id`, while create payloads omit it.
+- `createTaxPlanCycleRepository` inserts through Drizzle, returns the generated `id`,
+  and reads by `{ tenantId, caseId }` using the new primary key.
+- `createTaxPlanCycleReadHelper` remains as a compatibility wrapper for existing route
+  code.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory centers work around tenant-scoped Tax Plan Cycles with durable stage
+history. This ticket removes the temporary `client_id`-as-case-ID assumption and gives
+future case, transition, audit, and read-model work a stable generated cycle key while
+preserving tenant-scoped reads.
+
+**Changed Files:**
+
+- `drizzle/`
+- `migrations/20260626120000_create_tax_plan_cycle.sql`
+- `seed.sql`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/db/schema.ts`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycle.ts`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `tests/typescript/smoke.test.ts`
+- `tests/typescript/taxPlanCycle.test.ts`
+- `tests/typescript/taxPlanCycleMigration.test.ts`
+- `tests/typescript/taxPlanCycleRead.typecheck.ts`
+- `tests/typescript/taxPlanCycleRepository.integration.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+
+**Validation Notes:**
+
+- `npm install` restored declared dependencies, including `drizzle-orm`, into
+  `node_modules`.
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/aggregationClient.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/httpApp.test.ts tests/typescript/taxPlanCycle.test.ts tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/taxPlanCycleTransitions.test.ts`
+  passed with 41 tests.
+- `npm run test:integration` passed with 2 Testcontainers repository tests.
+- `npm run test:smoke` passed with 9 tests.
+- `npm run db:check` passed.
+- `npm test` still fails in this local environment when migration tests use the
+  configured `DATABASE_URL` because that PostgreSQL instance does not provide
+  `uuidv7()`.

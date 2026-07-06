@@ -25,27 +25,41 @@ export function isLegalTaxPlanCycleStageTransition(
   return taxPlanCycleStages.indexOf(to) === taxPlanCycleStages.indexOf(from) + 1;
 }
 
-export const taxPlanCycleSchema = z
-  .object({
-    client_id: z.string().trim().min(1),
-    stage: taxPlanCycleStageSchema,
-    owner: z.string().min(1),
-    priority: taxPlanCyclePrioritySchema,
-    due_date: z.iso.date(),
-    on_hold: z.boolean(),
-    hold_reason: z.string().min(1).optional(),
-  })
-  .superRefine((cycle, ctx) => {
-    if (cycle.on_hold && cycle.hold_reason === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["hold_reason"],
-        message: "hold_reason is required when on_hold is true",
-      });
-    }
-  });
+const taxPlanCycleBaseSchema = z.object({
+  id: z.uuid(),
+  client_id: z.uuid(),
+  stage: taxPlanCycleStageSchema,
+  owner: z.string().min(1),
+  priority: taxPlanCyclePrioritySchema,
+  due_date: z.iso.date(),
+  on_hold: z.boolean(),
+  hold_reason: z.string().min(1).optional(),
+});
 
-export const taxPlanCycleCreateSchema = taxPlanCycleSchema;
+function requireHoldReasonWhenOnHold<
+  T extends { on_hold: boolean; hold_reason?: string },
+>(
+  cycle: T,
+  ctx: z.RefinementCtx,
+): void {
+  if (cycle.on_hold && cycle.hold_reason === undefined) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["hold_reason"],
+      message: "hold_reason is required when on_hold is true",
+    });
+  }
+}
+
+export const taxPlanCycleSchema = taxPlanCycleBaseSchema.superRefine(
+  requireHoldReasonWhenOnHold,
+);
+
+export const taxPlanCycleCreateSchema = taxPlanCycleBaseSchema
+  .omit({
+    id: true,
+  })
+  .superRefine(requireHoldReasonWhenOnHold);
 export const taxPlanCycleReadParamsSchema = z.object({
   caseId: z.uuid(),
 });

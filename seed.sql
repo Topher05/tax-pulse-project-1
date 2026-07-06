@@ -13,6 +13,7 @@ INSERT INTO tenants (id, name, created_at) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO tax_plan_cycle (
+  id,
   client_id,
   tenant_id,
   planning_period,
@@ -25,6 +26,7 @@ INSERT INTO tax_plan_cycle (
 ) VALUES
   (
     '018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11',
+    '018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21',
     '018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01',
     '2026-Q3',
     'Review',
@@ -36,6 +38,7 @@ INSERT INTO tax_plan_cycle (
   ),
   (
     '018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12',
+    '018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22',
     '018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02',
     '2026-Q4',
     'Intake',
@@ -45,4 +48,4 @@ INSERT INTO tax_plan_cycle (
     TRUE,
     'Awaiting client documents'
   )
-ON CONFLICT (client_id) DO NOTHING;
+ON CONFLICT (id) DO NOTHING;
