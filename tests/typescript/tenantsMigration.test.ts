@@ -30,6 +30,20 @@ function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
 }
 
+async function resetTestSchema(client: Client, schemaName: string): Promise<void> {
+  const quotedSchemaName = quoteIdentifier(schemaName);
+
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.stage_transition CASCADE`,
+  );
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.tax_plan_cycle CASCADE`,
+  );
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.tenants CASCADE`,
+  );
+}
+
 async function withTestSchema<T>(
   callback: (client: Client) => Promise<T>,
 ): Promise<T> {
@@ -39,6 +53,7 @@ async function withTestSchema<T>(
 
     await client.query(`CREATE SCHEMA ${quotedSchemaName}`);
     await client.query(`SET search_path TO ${quotedSchemaName}, public`);
+    await resetTestSchema(client, schemaName);
 
     try {
       return await callback(client);

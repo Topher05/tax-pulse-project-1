@@ -25,6 +25,7 @@ const expectedColumns = [
 
 const expectedColumnTypes = {
   client_id: "uuid",
+  case_id: "uuid",
   tenant_id: "uuid",
   planning_period: "text",
   stage: "text",
@@ -36,11 +37,16 @@ const expectedColumnTypes = {
 } as const;
 
 const sampleTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11";
-const sampleClientIds = [
+const sampleCaseIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
 ] as const;
+const sampleClientIds = [
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d31",
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d32",
+] as const;
 const sampleStageTransitionCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23";
+const sampleStageTransitionClientId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d33";
 const sampleMissingCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24";
 
 async function seedSampleTenant(client: Client): Promise<void> {
@@ -72,6 +78,20 @@ function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
 }
 
+async function resetTestSchema(client: Client, schemaName: string): Promise<void> {
+  const quotedSchemaName = quoteIdentifier(schemaName);
+
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.stage_transition CASCADE`,
+  );
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.tax_plan_cycle CASCADE`,
+  );
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.tenants CASCADE`,
+  );
+}
+
 async function withTestSchema<T>(
   callback: (client: Client) => Promise<T>,
 ): Promise<T> {
@@ -81,6 +101,7 @@ async function withTestSchema<T>(
 
     await client.query(`CREATE SCHEMA ${quotedSchemaName}`);
     await client.query(`SET search_path TO ${quotedSchemaName}, public`);
+    await resetTestSchema(client, schemaName);
 
     try {
       return await callback(client);
@@ -210,6 +231,7 @@ describe("tax plan cycle migration", () => {
         `,
         [
           sampleClientIds[0],
+          sampleCaseIds[0],
           sampleTenantId,
           "2026-Q3",
           "Intake",
@@ -219,6 +241,7 @@ describe("tax plan cycle migration", () => {
           false,
           null,
           sampleClientIds[1],
+          sampleCaseIds[1],
           sampleTenantId,
           "2026-Q4",
           "Review",
@@ -251,6 +274,7 @@ describe("tax plan cycle migration", () => {
       expect(rows.rows).toEqual([
         {
           client_id: sampleClientIds[0],
+          case_id: sampleCaseIds[0],
           tenant_id: sampleTenantId,
           planning_period: "2026-Q3",
           stage: "Intake",
@@ -262,6 +286,7 @@ describe("tax plan cycle migration", () => {
         },
         {
           client_id: sampleClientIds[1],
+          case_id: sampleCaseIds[1],
           tenant_id: sampleTenantId,
           planning_period: "2026-Q4",
           stage: "Review",
@@ -297,6 +322,7 @@ describe("tax plan cycle migration", () => {
           `,
           [
             "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d31",
+            "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d41",
             sampleTenantId,
             "2026-Q3",
             "Planning",
@@ -358,6 +384,7 @@ describe("tax plan cycle migration", () => {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `,
         [
+          sampleStageTransitionClientId,
           sampleStageTransitionCaseId,
           sampleTenantId,
           "2026-Q3",
@@ -463,6 +490,7 @@ describe("tax plan cycle migration", () => {
         `,
         [
           sampleClientIds[0],
+          sampleCaseIds[0],
           sampleTenantId,
           "2026-Q3",
           "Intake",
@@ -485,7 +513,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            sampleClientIds[0],
+            sampleCaseIds[0],
             "Planning",
             "Data Aggregation",
             "advisor-001",
@@ -506,7 +534,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            sampleClientIds[0],
+            sampleCaseIds[0],
             "Intake",
             "Planning",
             "advisor-001",

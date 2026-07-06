@@ -14,6 +14,7 @@ export interface TaxPlanCycleReadHelper {
 }
 
 interface TaxPlanCycleRow {
+  case_id: string;
   client_id: string;
   stage: TaxPlanCycle["stage"];
   owner: string;
@@ -24,11 +25,10 @@ interface TaxPlanCycleRow {
 }
 
 function toTaxPlanCycle(
-  caseId: string,
   row: TaxPlanCycleRow,
 ): TaxPlanCycle {
   return taxPlanCycleSchema.parse({
-    case_id: caseId,
+    case_id: row.case_id,
     client_id: row.client_id,
     stage: row.stage,
     owner: row.owner,
@@ -47,6 +47,7 @@ export function createTaxPlanCycleReadHelper(
       const result = await client.query<TaxPlanCycleRow>(
         `
           SELECT
+            case_id,
             client_id,
             stage,
             owner,
@@ -56,7 +57,7 @@ export function createTaxPlanCycleReadHelper(
             hold_reason
           FROM tax_plan_cycle
           WHERE tenant_id = $1
-            AND client_id = $2
+            AND case_id = $2
           LIMIT 1
         `,
         [tenantId, caseId],
@@ -67,7 +68,7 @@ export function createTaxPlanCycleReadHelper(
         return null;
       }
 
-      return toTaxPlanCycle(caseId, row);
+      return toTaxPlanCycle(row);
     },
   };
 }

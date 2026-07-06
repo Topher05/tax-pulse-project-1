@@ -18,14 +18,20 @@ const sampleTenantIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02",
 ] as const;
 
-const sampleCycleIds = [
+const sampleCaseIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11",
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
 ] as const;
 
+const sampleClientIds = [
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+] as const;
+
 const sampleCycles = [
   {
-    client_id: sampleCycleIds[0],
+    case_id: sampleCaseIds[0],
+    client_id: sampleClientIds[0],
     tenant_id: sampleTenantIds[0],
     planning_period: "2026-Q3",
     stage: "Review",
@@ -36,7 +42,8 @@ const sampleCycles = [
     hold_reason: null,
   },
   {
-    client_id: sampleCycleIds[1],
+    case_id: sampleCaseIds[1],
+    client_id: sampleClientIds[1],
     tenant_id: sampleTenantIds[1],
     planning_period: "2026-Q4",
     stage: "Intake",
@@ -56,6 +63,20 @@ function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
 }
 
+async function resetTestSchema(client: Client, schemaName: string): Promise<void> {
+  const quotedSchemaName = quoteIdentifier(schemaName);
+
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.stage_transition CASCADE`,
+  );
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.tax_plan_cycle CASCADE`,
+  );
+  await client.query(
+    `DROP TABLE IF EXISTS ${quotedSchemaName}.tenants CASCADE`,
+  );
+}
+
 async function withTestSchema<T>(
   databaseUrl: string,
   callback: (client: Client) => Promise<T>,
@@ -66,6 +87,7 @@ async function withTestSchema<T>(
 
     await client.query(`CREATE SCHEMA ${quotedSchemaName}`);
     await client.query(`SET search_path TO ${quotedSchemaName}, public`);
+    await resetTestSchema(client, schemaName);
 
     try {
       return await callback(client);
@@ -101,6 +123,7 @@ describe("tax plan cycle read helper", () => {
         await client.query(
           `
             INSERT INTO tax_plan_cycle (
+              case_id,
               client_id,
               tenant_id,
               planning_period,
@@ -110,9 +133,10 @@ describe("tax plan cycle read helper", () => {
               due_date,
               on_hold,
               hold_reason
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           `,
           [
+            cycle.case_id,
             cycle.client_id,
             cycle.tenant_id,
             cycle.planning_period,
@@ -131,11 +155,11 @@ describe("tax plan cycle read helper", () => {
       await expect(
         readHelper.findByCaseId({
           tenantId: sampleTenantIds[0],
-          caseId: sampleCycleIds[0],
+          caseId: sampleCaseIds[0],
         }),
       ).resolves.toEqual({
-        case_id: sampleCycleIds[0],
-        client_id: sampleCycleIds[0],
+        case_id: sampleCaseIds[0],
+        client_id: sampleClientIds[0],
         stage: "Review",
         owner: "advisor-001",
         priority: "high",
@@ -146,18 +170,18 @@ describe("tax plan cycle read helper", () => {
       await expect(
         readHelper.findByCaseId({
           tenantId: sampleTenantIds[0],
-          caseId: sampleCycleIds[1],
+          caseId: sampleCaseIds[1],
         }),
       ).resolves.toBeNull();
 
       await expect(
         readHelper.findByCaseId({
           tenantId: sampleTenantIds[1],
-          caseId: sampleCycleIds[1],
+          caseId: sampleCaseIds[1],
         }),
       ).resolves.toEqual({
-        case_id: sampleCycleIds[1],
-        client_id: sampleCycleIds[1],
+        case_id: sampleCaseIds[1],
+        client_id: sampleClientIds[1],
         stage: "Intake",
         owner: "advisor-002",
         priority: "medium",
