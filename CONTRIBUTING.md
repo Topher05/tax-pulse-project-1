@@ -45,6 +45,8 @@ Examples:
 Follow the Python settings in [`pyproject.toml`](./pyproject.toml) as the source of truth
 for Python 3.13 work in `src/python` and `tests/python`.
 
+- Python dev dependencies live in [`pyproject.toml`](./pyproject.toml) and currently
+  include Ruff, pytest, and `pyright[nodejs]`.
 - Use Ruff for both formatting and linting.
 - Use Pyright for Python type checking alongside Ruff.
 - Keep function signatures typed where practical, including explicit return annotations.

@@ -16,6 +16,7 @@ This workspace is scaffolded as a small dual-runtime project:
 - `nvm for Windows`, `winget`, and the `py` launcher are required for `setup.ps1`.
 - Node.js is pinned in both [`.nvmrc`](./.nvmrc) and [`.tool-versions`](./.tool-versions).
 - Python is pinned in [`.tool-versions`](./.tool-versions) and must exactly match `requires-python` in [`pyproject.toml`](./pyproject.toml).
+- Python dev dependencies come from [`pyproject.toml`](./pyproject.toml) and include Ruff, pytest, and `pyright[nodejs]`.
 - The setup scripts treat the manifests as strict pins and exit non-zero on any mismatch.
 
 ## Verify Active Versions
@@ -49,7 +50,7 @@ Each script:
 - verifies the Node and Python runtimes plus `npm` and `pip`
 - fails if the active Node or Python version differs from the manifest pin
 - installs TypeScript dependencies from [`package.json`](./package.json)
-- installs the Python package in editable mode with dev dependencies
+- installs the Python package in editable mode with dev dependencies from [`pyproject.toml`](./pyproject.toml)
 - verifies the Python dev tools, including Ruff and Pyright
 - runs a `hello` check for both the Node and Python stacks
 - runs TypeScript type checks and smoke tests
@@ -158,6 +159,9 @@ Install dependencies manually if needed:
 npm install
 py -3.13 -m pip install -e ".[dev]"
 ```
+
+That editable install pulls in the Python developer tooling declared in
+[`pyproject.toml`](./pyproject.toml), including Ruff, pytest, and `pyright[nodejs]`.
 
 Success means:
 

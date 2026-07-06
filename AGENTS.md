@@ -13,6 +13,8 @@ state, role-gated transitions, scoped internal/external access, and immutable au
 
 ## Conventions
 - Keep Python formatted with Ruff using `pyproject.toml`: line length 100, target `py313`.
+- Python dev dependencies live in `pyproject.toml` and currently include Ruff, pytest, and
+  `pyright[nodejs]`.
 - TypeScript uses strict `NodeNext` ESM settings from `tsconfig.json`.
 - Do not add a separate case `status`; workflow condition lives in the case stage.
 - Preserve tenant isolation, least privilege, scoped portal access, and audit-trail behavior.
