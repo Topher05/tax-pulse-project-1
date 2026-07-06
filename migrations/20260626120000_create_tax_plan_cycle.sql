@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS tax_plan_cycle (
 CREATE INDEX IF NOT EXISTS tax_plan_cycle_tenant_id_due_date_idx
   ON tax_plan_cycle (tenant_id, due_date);
 
+-- Note: Consider pulling transition migration into it's own file, easier readability
 CREATE TABLE stage_transition (
   id BIGSERIAL PRIMARY KEY,
   case_id UUID NOT NULL CONSTRAINT stage_transition_case_id_fk REFERENCES tax_plan_cycle (client_id), -- Temporary placeholder: case_id maps to the stored cycle client_id.
