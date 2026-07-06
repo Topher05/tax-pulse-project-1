@@ -1,14 +1,18 @@
 import { randomUUID } from "node:crypto";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import type { Client } from "pg";
 
 import {
+  appliedMigrationsTableName,
   applyMigrations,
-  getDatabaseUrlFromEnv,
+  migrationsDirectory,
   withDatabaseClient,
 } from "../../src/typescript/postgresMigrations.js";
 
-const databaseUrl = getDatabaseUrlFromEnv();
+const databaseUrl = process.env.DATABASE_URL?.trim();
+const describeMigration = databaseUrl ? describe : describe.skip;
 
 const expectedColumns = [
   "client_id",
@@ -25,6 +29,7 @@ const expectedColumns = [
 
 const expectedColumnTypes = {
   client_id: "uuid",
+  case_id: "text",
   tenant_id: "uuid",
   planning_period: "text",
   stage: "text",
@@ -40,6 +45,7 @@ const sampleClientIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
 ] as const;
+const sampleCaseIds = ["case-2026-q3", "case-2026-q4"] as const;
 const sampleStageTransitionCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23";
 const sampleMissingCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24";
 
@@ -75,6 +81,10 @@ function quoteIdentifier(identifier: string): string {
 async function withTestSchema<T>(
   callback: (client: Client) => Promise<T>,
 ): Promise<T> {
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required for migration tests.");
+  }
+
   return withDatabaseClient(databaseUrl, async (client) => {
     const schemaName = createTestSchemaName();
     const quotedSchemaName = quoteIdentifier(schemaName);
@@ -157,7 +167,49 @@ async function getTableStructure(
   };
 }
 
-describe("tax plan cycle migration", () => {
+describeMigration("tax plan cycle migration", () => {
+  test("records applied migrations and skips them on rerun", async () => {
+    await withTestSchema(async (client) => {
+      await applyMigrations(client);
+      await applyMigrations(client);
+
+      const migrationFiles = readdirSync(migrationsDirectory)
+        .filter((fileName) => fileName.endsWith(".sql"))
+        .sort((left, right) => left.localeCompare(right));
+      const appliedRows = await client.query(
+        `
+          SELECT file_name
+          FROM ${appliedMigrationsTableName}
+          ORDER BY file_name
+        `,
+      );
+
+      expect(appliedRows.rows.map((row) => String(row.file_name))).toEqual(
+        migrationFiles,
+      );
+    });
+  });
+
+  test("keeps Drizzle-generated migration evidence aligned with the table contract", () => {
+    const drizzleMigrationsDir = join(process.cwd(), "drizzle");
+
+    expect(existsSync(drizzleMigrationsDir)).toBe(true);
+
+    const migrationSql = readdirSync(drizzleMigrationsDir)
+      .filter((fileName) => fileName.endsWith(".sql"))
+      .map((fileName) => readFileSync(join(drizzleMigrationsDir, fileName), "utf8"))
+      .join("\n");
+
+    expect(migrationSql).toContain('CREATE TABLE "tenants"');
+    expect(migrationSql).toContain('CREATE TABLE "tax_plan_cycle"');
+    expect(migrationSql).toContain('"case_id" text NOT NULL');
+    expect(migrationSql).toContain('CONSTRAINT "tax_plan_cycle_case_id_key" UNIQUE');
+    expect(migrationSql).toContain('CREATE TABLE "stage_transition"');
+    expect(migrationSql).toContain(
+      'FOREIGN KEY ("case_id") REFERENCES "public"."tax_plan_cycle"("case_id")',
+    );
+  });
+
   test("creates the table, verifies it is empty, and persists two records", async () => {
     await withTestSchema(async (client) => {
       await applyMigrations(client);
@@ -210,6 +262,7 @@ describe("tax plan cycle migration", () => {
         `,
         [
           sampleClientIds[0],
+          sampleCaseIds[0],
           sampleTenantId,
           "2026-Q3",
           "Intake",
@@ -219,6 +272,7 @@ describe("tax plan cycle migration", () => {
           false,
           null,
           sampleClientIds[1],
+          sampleCaseIds[1],
           sampleTenantId,
           "2026-Q4",
           "Review",
@@ -251,6 +305,7 @@ describe("tax plan cycle migration", () => {
       expect(rows.rows).toEqual([
         {
           client_id: sampleClientIds[0],
+          case_id: sampleCaseIds[0],
           tenant_id: sampleTenantId,
           planning_period: "2026-Q3",
           stage: "Intake",
@@ -262,6 +317,7 @@ describe("tax plan cycle migration", () => {
         },
         {
           client_id: sampleClientIds[1],
+          case_id: sampleCaseIds[1],
           tenant_id: sampleTenantId,
           planning_period: "2026-Q4",
           stage: "Review",
@@ -297,6 +353,7 @@ describe("tax plan cycle migration", () => {
           `,
           [
             "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d31",
+            "case-invalid-stage",
             sampleTenantId,
             "2026-Q3",
             "Planning",
@@ -358,6 +415,7 @@ describe("tax plan cycle migration", () => {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `,
         [
+          sampleStageTransitionCaseId,
           sampleStageTransitionCaseId,
           sampleTenantId,
           "2026-Q3",
@@ -463,6 +521,7 @@ describe("tax plan cycle migration", () => {
         `,
         [
           sampleClientIds[0],
+          sampleCaseIds[0],
           sampleTenantId,
           "2026-Q3",
           "Intake",
@@ -485,7 +544,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            sampleClientIds[0],
+            sampleCaseIds[0],
             "Planning",
             "Data Aggregation",
             "advisor-001",
@@ -506,7 +565,7 @@ describe("tax plan cycle migration", () => {
             ) VALUES ($1, $2, $3, $4, $5)
           `,
           [
-            sampleClientIds[0],
+            sampleCaseIds[0],
             "Intake",
             "Planning",
             "advisor-001",

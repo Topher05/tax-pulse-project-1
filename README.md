@@ -116,8 +116,10 @@ routes. Workflow condition is represented by `stage`; there is no separate case
 
 ## Migration Commands
 
-The PostgreSQL migration workflow is SQL-only and uses the top-level
-[`migrations/`](./migrations) directory.
+The PostgreSQL migration workflow keeps typed Drizzle schema definitions in
+[`src/typescript/db/schema.ts`](./src/typescript/db/schema.ts), generated Drizzle
+migration evidence in [`drizzle/`](./drizzle), and the executable SQL migration files
+in the top-level [`migrations/`](./migrations) directory.
 
 Local setup:
 
@@ -136,6 +138,18 @@ Apply all migrations:
 npm run migrate
 ```
 
+Generate Drizzle migration evidence from the TypeScript schema:
+
+```powershell
+npm run db:generate
+```
+
+Check Drizzle migration metadata:
+
+```powershell
+npm run db:check
+```
+
 Run the migration integration test:
 
 ```powershell
@@ -145,7 +159,8 @@ npm run test:migration
 Notes:
 
 - The Node scripts read `.env` automatically through `dotenv`.
-- Treat the SQL migration files as the source of truth for schema changes.
+- Drizzle definitions are the typed schema contract; the SQL migration runner applies
+  the top-level `migrations/` files and records applied files in `schema_migrations`.
 - Keep any local seed data synthetic and clearly fake.
 - If a `seed.sql` file is present in the repository root, use it for local-only sample data rather than hand-editing production-like records.
 
