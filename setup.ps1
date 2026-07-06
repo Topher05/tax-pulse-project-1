@@ -115,6 +115,7 @@ Write-Host "Installed runtime versions match manifests." -ForegroundColor Green
 Write-Host "Detected package managers: npm and pip" -ForegroundColor Green
 
 if (Test-Path -LiteralPath "package.json") {
+    # These dependency installs are required before the TypeScript and Python checks can run.
     if (Test-Path -LiteralPath "package-lock.json") {
         Write-Host "package.json and package-lock.json detected. Running npm ci..." -ForegroundColor Cyan
         & npm ci | Out-Host
@@ -131,6 +132,7 @@ if (Test-Path -LiteralPath "package.json") {
 }
 
 Write-Host "Installing Python package with dev dependencies..." -ForegroundColor Cyan
+# This editable install is required before Ruff, Pyright, and pytest can run reliably.
 & py -$PythonMajorMinor -m pip install -e ".[dev]" | Out-Host
 if ($LASTEXITCODE -ne 0) {
     Fail "Python package installation failed."
