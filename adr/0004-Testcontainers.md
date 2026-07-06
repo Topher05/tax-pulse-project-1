@@ -1,4 +1,4 @@
-# ADR-0003: Testcontainers-Managed PostgreSQL Fixture for Integration Tests
+# ADR-0004: Testcontainers-Managed PostgreSQL Fixture for Integration Tests
 
 ## Context
 The TypeScript repository integration tests need a real PostgreSQL instance so we can verify tenant-scoped reads, migrations, and seed behavior against the same database engine used in production-like flows.
