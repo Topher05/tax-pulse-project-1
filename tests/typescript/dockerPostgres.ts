@@ -1,9 +1,12 @@
 // Temporary Docker-backed placeholder until the repo is wired to a full Testcontainers setup.
+import { config as loadEnv } from "dotenv";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 
 import { Client } from "pg";
+
+loadEnv();
 
 interface SpawnResult {
   stdout: string;
@@ -13,6 +16,38 @@ interface SpawnResult {
 export interface DockerPostgresContainer {
   connectionUri: string;
   stop(): Promise<void>;
+}
+
+const defaultDockerPostgresImage = "postgres:18-alpine";
+const defaultDockerPostgresDb = "taxpulse";
+const defaultDockerPostgresUser = "postgres";
+const defaultDockerPostgresPassword = "postgres";
+
+function getDockerPostgresConfig(): {
+  image: string;
+  database: string;
+  user: string;
+  password: string;
+} {
+  return {
+    image: process.env.DOCKER_POSTGRES_IMAGE?.trim() || defaultDockerPostgresImage,
+    database: process.env.DOCKER_POSTGRES_DB?.trim() || defaultDockerPostgresDb,
+    user: process.env.DOCKER_POSTGRES_USER?.trim() || defaultDockerPostgresUser,
+    password:
+      process.env.DOCKER_POSTGRES_PASSWORD?.trim() || defaultDockerPostgresPassword,
+  };
+}
+
+function toPostgresConnectionUri(
+  user: string,
+  password: string,
+  hostPort: string,
+  database: string,
+): string {
+  const encodedUser = encodeURIComponent(user);
+  const encodedPassword = encodeURIComponent(password);
+
+  return `postgres://${encodedUser}:${encodedPassword}@127.0.0.1:${hostPort}/${database}`;
 }
 
 function runCommand(command: string, args: string[]): Promise<SpawnResult> {
@@ -67,6 +102,7 @@ async function waitForConnection(connectionUri: string): Promise<void> {
 }
 
 export async function startDockerPostgresContainer(): Promise<DockerPostgresContainer> {
+  const config = getDockerPostgresConfig();
   const containerName = `taxpulse-read-${randomUUID().replace(/-/g, "")}`;
   const runResult = await runCommand("docker", [
     "run",
@@ -75,14 +111,14 @@ export async function startDockerPostgresContainer(): Promise<DockerPostgresCont
     "--name",
     containerName,
     "-e",
-    "POSTGRES_DB=taxpulse",
+    `POSTGRES_DB=${config.database}`,
     "-e",
-    "POSTGRES_USER=postgres",
+    `POSTGRES_USER=${config.user}`,
     "-e",
-    "POSTGRES_PASSWORD=postgres",
+    `POSTGRES_PASSWORD=${config.password}`,
     "-p",
     "127.0.0.1::5432",
-    "postgres:18-alpine",
+    config.image,
   ]);
   const containerId = runResult.stdout;
 
@@ -100,7 +136,12 @@ export async function startDockerPostgresContainer(): Promise<DockerPostgresCont
     throw new Error("Could not determine the PostgreSQL host port.");
   }
 
-  const connectionUri = `postgres://postgres:postgres@127.0.0.1:${hostPort}/taxpulse`;
+  const connectionUri = toPostgresConnectionUri(
+    config.user,
+    config.password,
+    hostPort,
+    config.database,
+  );
 
   await waitForConnection(connectionUri);
 
