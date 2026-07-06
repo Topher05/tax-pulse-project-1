@@ -1,5 +1,5 @@
 {
-  "id": "07fe812d-551a-4055-8dd2-7992c660f331",
+  "id": "3c67e7a8-694a-43a8-b51d-cfe65ef6afde",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -10,7 +10,7 @@
       "columns": {
         "case_id": {
           "name": "case_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -65,7 +65,7 @@
             "case_id"
           ],
           "columnsTo": [
-            "case_id"
+            "client_id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -96,12 +96,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "uuidv7()"
-        },
-        "case_id": {
-          "name": "case_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
         },
         "tenant_id": {
           "name": "tenant_id",
@@ -199,15 +193,7 @@
           ]
         }
       },
-      "uniqueConstraints": {
-        "tax_plan_cycle_case_id_key": {
-          "name": "tax_plan_cycle_case_id_key",
-          "nullsNotDistinct": false,
-          "columns": [
-            "case_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
         "tax_plan_cycle_stage_check": {

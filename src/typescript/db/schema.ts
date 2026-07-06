@@ -9,7 +9,6 @@ import {
   primaryKey,
   text,
   timestamp,
-  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -30,7 +29,6 @@ export const taxPlanCycle = pgTable(
   "tax_plan_cycle",
   {
     clientId: uuid("client_id").default(sql`uuidv7()`).notNull(),
-    caseId: text("case_id").notNull(),
     tenantId: uuid("tenant_id").notNull(),
     planningPeriod: text("planning_period").notNull(),
     stage: text("stage").notNull(),
@@ -45,7 +43,6 @@ export const taxPlanCycle = pgTable(
       name: "tax_plan_cycle_client_id_pk",
       columns: [table.clientId],
     }),
-    unique("tax_plan_cycle_case_id_key").on(table.caseId),
     foreignKey({
       name: "tax_plan_cycle_tenant_id_fk",
       columns: [table.tenantId],
@@ -59,7 +56,7 @@ export const taxPlanCycle = pgTable(
 export const stageTransition = pgTable(
   "stage_transition",
   {
-    caseId: text("case_id").notNull(),
+    caseId: uuid("case_id").notNull(),
     fromStage: text("from_stage").notNull(),
     toStage: text("to_stage").notNull(),
     actor: text("actor").notNull(),
@@ -69,7 +66,7 @@ export const stageTransition = pgTable(
     foreignKey({
       name: "stage_transition_case_id_fk",
       columns: [table.caseId],
-      foreignColumns: [taxPlanCycle.caseId],
+      foreignColumns: [taxPlanCycle.clientId],
     }),
     check(
       "stage_transition_from_stage_check",
