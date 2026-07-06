@@ -26,6 +26,12 @@ export {
   createRequestLogger,
   type CreateLoggerOptions,
 } from "./logger.js";
+export {
+  coreCaseOpenApiSchemaRegistrations,
+  createCoreCaseOpenApiDocument,
+  type CoreCaseOpenApiSchemaRegistration,
+} from "./coreCaseOpenApi.js";
+export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
@@ -43,11 +49,13 @@ export {
 } from "./taxPlanCycle.js";
 
 import { createApp } from "./app.js";
+import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 
 export {
   taxPlanCycleCreateController,
+  taxPlanCycleCreateResultSchema,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateResult,
   type TaxPlanCycleReadInput,
@@ -84,6 +92,7 @@ export async function main(): Promise<Server> {
   const app = createApp({
     logger,
     registerRoutes: (app) => {
+      app.use(createCoreCaseOpenApiRouter());
       app.use(createTaxPlanCycleRouter());
     },
   });

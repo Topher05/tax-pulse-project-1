@@ -1,8 +1,14 @@
+import { z } from "zod";
+
 import type { TaxPlanCycle, TaxPlanCycleCreateInput } from "./taxPlanCycle.js";
 
-export interface TaxPlanCycleCreateResult {
-  accepted: true;
-}
+export const taxPlanCycleCreateResultSchema = z.object({
+  accepted: z.literal(true),
+});
+
+export type TaxPlanCycleCreateResult = z.infer<
+  typeof taxPlanCycleCreateResultSchema
+>;
 
 export interface TaxPlanCycleReadInput {
   tenantId: string;
