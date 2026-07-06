@@ -42,13 +42,18 @@ export const coreCaseOpenApiSchemaRegistrations = [
   },
 ] as const satisfies readonly CoreCaseOpenApiSchemaRegistration[];
 
-const fakeTaxPlanCycleExample = {
-  client_id: "client-123",
+const fakeTaxPlanCycleCreateExample = {
+  client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
   stage: "Intake",
   owner: "advisor-123",
   priority: "medium",
   due_date: "2026-12-31",
   on_hold: false,
+};
+
+const fakeTaxPlanCycleExample = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+  ...fakeTaxPlanCycleCreateExample,
 };
 
 const validationErrorExample = {
@@ -147,7 +152,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
             content: {
               "application/json": {
                 schema: createRequestSchema,
-                example: fakeTaxPlanCycleExample,
+                example: fakeTaxPlanCycleCreateExample,
               },
             },
           },

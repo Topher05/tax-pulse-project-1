@@ -39,7 +39,8 @@ const invalidStage: TaxPlanCycleStage = "Unknown";
 void invalidStage;
 
 const validTaxPlanCycle: TaxPlanCycle = {
-  client_id: "client-123",
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+  client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
   stage: "Review",
   owner: "advisor-123",
   priority: "high",

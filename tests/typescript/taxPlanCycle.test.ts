@@ -8,7 +8,8 @@ import {
 
 describe("taxPlanCycleSchema", () => {
   const wellFormedCycle: TaxPlanCycle = {
-    client_id: "client-123",
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+    client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
     stage: "Review",
     owner: "advisor-123",
     priority: "high",
@@ -24,12 +25,10 @@ describe("taxPlanCycleSchema", () => {
   });
 
   test("rejects missing required fields", () => {
-    const { client_id: _clientId, ...missingClientIdPayload } = wellFormedCycle;
+    const { id: _id, ...missingIdPayload } = wellFormedCycle;
     const { owner: _owner, ...missingOwnerPayload } = wellFormedCycle;
 
-    expect(taxPlanCycleSchema.safeParse(missingClientIdPayload).success).toBe(
-      false,
-    );
+    expect(taxPlanCycleSchema.safeParse(missingIdPayload).success).toBe(false);
     expect(taxPlanCycleSchema.safeParse(missingOwnerPayload).success).toBe(
       false,
     );
