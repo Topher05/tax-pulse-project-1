@@ -178,3 +178,61 @@ Details error contract.
 - `npm run test:migration` did not execute the migration test because the current
   `vitest.config.ts` explicitly excludes `tests/typescript/taxPlanCycleMigration.test.ts`;
   Vitest exited with "No test files found."
+
+## development - SCRUM-50
+
+**Branch:** `development`
+
+**Owner:** Reyhan Daniels
+
+**Epic:** SCRUM-13 - Domain Model & Walking Skeleton
+
+**Summary:** Publish the OpenAPI document for create and read
+
+**CSV Description:** As a Backend Developer, I want an OpenAPI description of the
+create and read operations, so that the contract is published before clients consume it.
+
+**Acceptance Criteria:**
+
+- An OpenAPI document describes the create and read operations with their
+  request/response schemas.
+- The document is served at a documented path and validates against the OpenAPI spec.
+
+**How This Ties Into the Code:**
+
+- `createCoreCaseOpenApiDocument` publishes an OpenAPI 3.0.3 document for
+  `POST /tax-plan-cycles` and `GET /tax-plan-cycles/{caseId}`.
+- The document derives Tax Plan Cycle request, read parameter, and read response schemas
+  from the same Zod definitions used by the route boundary.
+- The create acknowledgment response now has a small Zod schema source so the OpenAPI
+  response schema is not maintained as an unrelated hand-written contract.
+- `createCoreCaseOpenApiRouter` serves the document at `GET /openapi.json`, and service
+  startup registers it with the existing Core Case Service routes.
+- `README.md` documents the OpenAPI path and the covered create/read operations.
+- `tests/typescript/coreCaseOpenApi.test.ts` verifies the served document, operation
+  coverage, schema contents, source schema registrations, and local OpenAPI structure.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory exposes tenant-scoped Tax Plan Cycle operations to client teams.
+Publishing the create/read OpenAPI contract gives client teams a stable, documented
+boundary while preserving tenant isolation language, the stage-based workflow model,
+and fake-only synthetic examples.
+
+**Changed Files:**
+
+- `README.md`
+- `planning/team/ticket-journal.md`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/coreCaseOpenApiRoutes.ts`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycleCreateController.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm test` passed, including the OpenAPI document tests.
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m pytest` passed with 4 tests; pytest emitted a local cache warning because
+  it could not write under `.pytest_cache`.

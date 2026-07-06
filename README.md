@@ -91,6 +91,24 @@ When preparing a change:
 3. Run the AI review checklist before requesting review.
 4. Use the sample PR as the reference for the expected level of detail.
 
+## Core Case Service API
+
+The Core Case Service publishes its OpenAPI 3.0 JSON document at:
+
+```text
+GET /openapi.json
+```
+
+The document currently describes the unversioned Tax Plan Cycle create and read
+operations:
+
+- `POST /tax-plan-cycles`
+- `GET /tax-plan-cycles/{caseId}`
+
+The Tax Plan Cycle schemas are generated from the same Zod definitions used by the
+routes. Workflow condition is represented by `stage`; there is no separate case
+`status` field.
+
 ## Migration Commands
 
 The PostgreSQL migration workflow is SQL-only and uses the top-level
