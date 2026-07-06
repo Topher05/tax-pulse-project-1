@@ -23,7 +23,7 @@ Run relevant checks from the repository root:
 
 ```bash
 python -m ruff format --check src/python tests/python
-python -m pyright
+python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"
 python -m pytest
 npm run typecheck
 npm test

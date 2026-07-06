@@ -1,6 +1,5 @@
 import pytest
 from pydantic import ValidationError
-
 from tax_pulse_project_team_1 import TaxCalculationRequest
 
 
@@ -20,7 +19,7 @@ def test_tax_calculation_request_accepts_required_fields() -> None:
 
 def test_tax_calculation_request_rejects_missing_fields() -> None:
     with pytest.raises(ValidationError, match="filing_status"):
-        TaxCalculationRequest(income=100000, deductions=12000, state="CA")
+        TaxCalculationRequest.model_validate({"income": 100000, "deductions": 12000, "state": "CA"})
 
 
 def test_tax_calculation_request_rejects_invalid_filing_status_with_custom_message() -> None:

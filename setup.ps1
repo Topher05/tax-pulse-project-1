@@ -185,7 +185,8 @@ if ($LASTEXITCODE -ne 0) {
     Fail "Ruff lint check failed."
 }
 
-& py -$PythonMajorMinor -m pyright | Out-Host
+$PythonExecutable = (& py -$PythonMajorMinor -c "import sys; print(sys.executable)").Trim()
+& py -$PythonMajorMinor -m pyright --pythonpath $PythonExecutable | Out-Host
 if ($LASTEXITCODE -ne 0) {
     Fail "Pyright type check failed."
 }

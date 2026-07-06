@@ -138,7 +138,8 @@ fi
 printf "Running Python checks...\n"
 python -m ruff format --check src/python tests/python
 python -m ruff check src/python tests/python
-python -m pyright
+PYTHON_EXECUTABLE="$(python -c "import sys; print(sys.executable)")"
+python -m pyright --pythonpath "$PYTHON_EXECUTABLE"
 python -m pytest
 
 printf "${GREEN}Project checks passed for both TypeScript and Python.${NC}\n"

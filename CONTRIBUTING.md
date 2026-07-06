@@ -60,7 +60,7 @@ Good Python changes usually:
 - keep imports tidy and unused names removed
 - pass `ruff format --check src/python tests/python`
 - pass `ruff check src/python tests/python`
-- pass `pyright`
+- pass `pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"`
 - pass `python -m pytest`
 
 ## Typescript/Node Development Conventions

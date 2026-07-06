@@ -75,7 +75,7 @@ npm start
 python -m tax_pulse_project_team_1.main
 python -m ruff format --check src/python tests/python
 python -m ruff check src/python tests/python
-python -m pyright
+python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"
 python -m pytest
 ```
 
@@ -163,7 +163,7 @@ Success means:
 
 - `node --version` matches [`.nvmrc`](./.nvmrc) and the `nodejs` entry in [`.tool-versions`](./.tool-versions)
 - `python --version` matches the `python` entry in [`.tool-versions`](./.tool-versions) and `requires-python` in [`pyproject.toml`](./pyproject.toml)
-- `python -m ruff format --check src/python tests/python`, `python -m ruff check src/python tests/python`, and `python -m pyright` all pass
+- `python -m ruff format --check src/python tests/python`, `python -m ruff check src/python tests/python`, and `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"` all pass
 - Running the setup script completes with both hello checks green
 
 ## Security Information
