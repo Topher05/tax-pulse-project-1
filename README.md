@@ -50,9 +50,10 @@ Each script:
 - fails if the active Node or Python version differs from the manifest pin
 - installs TypeScript dependencies from [`package.json`](./package.json)
 - installs the Python package in editable mode with dev dependencies
+- verifies the Python dev tools, including Ruff and Pyright
 - runs a `hello` check for both the Node and Python stacks
 - runs TypeScript type checks and smoke tests
-- runs Python smoke tests
+- runs Python Ruff checks, Pyright, and smoke tests
 
 On Windows, if `setup.ps1` installs `nvm for Windows` or Python for the first time, close and reopen PowerShell before rerunning version checks or `nvm`/`py` commands. 
 
@@ -72,6 +73,9 @@ npm start
 
 ```bash
 python -m tax_pulse_project_team_1.main
+python -m ruff format --check src/python tests/python
+python -m ruff check src/python tests/python
+python -m pyright
 python -m pytest
 ```
 
@@ -159,6 +163,7 @@ Success means:
 
 - `node --version` matches [`.nvmrc`](./.nvmrc) and the `nodejs` entry in [`.tool-versions`](./.tool-versions)
 - `python --version` matches the `python` entry in [`.tool-versions`](./.tool-versions) and `requires-python` in [`pyproject.toml`](./pyproject.toml)
+- `python -m ruff format --check src/python tests/python`, `python -m ruff check src/python tests/python`, and `python -m pyright` all pass
 - Running the setup script completes with both hello checks green
 
 ## Security Information
