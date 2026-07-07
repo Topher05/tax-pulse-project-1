@@ -28,9 +28,12 @@ Intake, so that a new cycle is recorded against a client and planning period.
   caller-selected `stage`.
 - Repository create persistence writes `tax_plan_cycle.stage` as `Intake`, stores the
   submitted `due_date`, and returns the generated case ID.
+- The same create transaction writes the initial `stage_transition` row for the generated
+  case ID.
+- Because the current `stage_transition.from_stage` column is non-null, the initial entry
+  is represented as `Intake` to `Intake` with the supplied actor and current timestamp.
 - The legacy repository `insert` path remains for compatibility but also writes `Intake`
   so repository persistence cannot choose a different initial stage.
-- Stage transition persistence remains deferred outside this repository-only step.
 
 **Project Scope Connection:**
 

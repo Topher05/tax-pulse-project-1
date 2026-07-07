@@ -37,6 +37,7 @@ repository.create({
   owner: "advisor-123",
   priority: "low",
   dueDate: "2026-09-30",
+  actor: "advisor-123",
 });
 
 repository.create({
@@ -46,6 +47,7 @@ repository.create({
   owner: "advisor-123",
   priority: "low",
   dueDate: "2026-09-30",
+  actor: "advisor-123",
   // @ts-expect-error create persists Intake and does not accept caller-selected stage
   stage: "Review",
 });
@@ -57,6 +59,7 @@ void repository.create({
   owner: "advisor-123",
   priority: "low",
   dueDate: "2026-09-30",
+  actor: "advisor-123",
 });
 
 repository.insert({

@@ -2,7 +2,10 @@ import { and, asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
-import { taxPlanCycle as taxPlanCycleTable } from "./db/schema.js";
+import {
+  stageTransition as stageTransitionTable,
+  taxPlanCycle as taxPlanCycleTable,
+} from "./db/schema.js";
 import { taxPlanCycleSchema, type TaxPlanCycle } from "./taxPlanCycle.js";
 
 export interface TaxPlanCycleReadInput {
@@ -22,6 +25,7 @@ export interface TaxPlanCycleRepositoryCreateInput {
   owner: TaxPlanCycle["owner"];
   priority: TaxPlanCycle["priority"];
   dueDate: TaxPlanCycle["due_date"];
+  actor: string;
 }
 
 export interface TaxPlanCycleInsertInput {
@@ -95,29 +99,40 @@ export function createTaxPlanCycleRepository(
     dueDate: string;
     onHold: boolean;
     holdReason: string | null;
+    actor: string;
   }): Promise<string> {
-    const rows = await db
-      .insert(taxPlanCycleTable)
-      .values({
-        clientId: input.clientId,
-        tenantId: input.tenantId,
-        planningPeriod: input.planningPeriod,
-        stage: "Intake",
-        owner: input.owner,
-        priority: input.priority,
-        dueDate: input.dueDate,
-        onHold: input.onHold,
-        holdReason: input.holdReason,
-      })
-      .returning({ caseId: taxPlanCycleTable.id });
+    return await db.transaction(async (tx) => {
+      const rows = await tx
+        .insert(taxPlanCycleTable)
+        .values({
+          clientId: input.clientId,
+          tenantId: input.tenantId,
+          planningPeriod: input.planningPeriod,
+          stage: "Intake",
+          owner: input.owner,
+          priority: input.priority,
+          dueDate: input.dueDate,
+          onHold: input.onHold,
+          holdReason: input.holdReason,
+        })
+        .returning({ caseId: taxPlanCycleTable.id });
 
-    const caseId = rows[0]?.caseId;
+      const caseId = rows[0]?.caseId;
 
-    if (!caseId) {
-      throw new Error("Tax Plan Cycle insert did not return a generated case ID.");
-    }
+      if (!caseId) {
+        throw new Error("Tax Plan Cycle insert did not return a generated case ID.");
+      }
 
-    return caseId;
+      await tx.insert(stageTransitionTable).values({
+        caseId,
+        fromStage: "Intake",
+        toStage: "Intake",
+        actor: input.actor,
+        occurredAt: new Date(),
+      });
+
+      return caseId;
+    });
   }
 
   return {
@@ -131,6 +146,7 @@ export function createTaxPlanCycleRepository(
         dueDate: input.dueDate,
         onHold: false,
         holdReason: null,
+        actor: input.actor,
       });
     },
 
@@ -144,6 +160,7 @@ export function createTaxPlanCycleRepository(
         dueDate: cycle.due_date,
         onHold: cycle.on_hold,
         holdReason: cycle.hold_reason ?? null,
+        actor: cycle.owner,
       });
     },
 

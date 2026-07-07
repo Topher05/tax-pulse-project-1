@@ -145,6 +145,7 @@ describe("tax plan cycle repository", () => {
       owner: "advisor-003",
       priority: "low",
       dueDate: "2026-09-30",
+      actor: "advisor-003",
     });
 
     expect(caseId).toMatch(
@@ -172,6 +173,29 @@ describe("tax plan cycle repository", () => {
         caseId,
       }),
     ).resolves.toBeNull();
+
+    const transitionRows = await client.query(
+      `
+        SELECT
+          case_id,
+          from_stage,
+          to_stage,
+          actor,
+          occurred_at
+        FROM stage_transition
+        WHERE case_id = $1
+      `,
+      [caseId],
+    );
+
+    expect(transitionRows.rows).toHaveLength(1);
+    expect(transitionRows.rows[0]).toMatchObject({
+      case_id: caseId,
+      from_stage: "Intake",
+      to_stage: "Intake",
+      actor: "advisor-003",
+    });
+    expect(transitionRows.rows[0]?.occurred_at).toBeInstanceOf(Date);
   });
 
   test("lists a tenant's queue by due date and flags overdue cycles", async () => {
