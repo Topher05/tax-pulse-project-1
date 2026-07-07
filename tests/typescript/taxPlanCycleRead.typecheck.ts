@@ -18,6 +18,18 @@ void readHelper.findByCaseId({
   caseId: "case-123",
 });
 
+// @ts-expect-error tenantId is required for queue reads
+repository.listQueue({});
+
+void repository.listQueue({
+  tenantId: "tenant-123",
+});
+
+void repository.listQueue({
+  tenantId: "tenant-123",
+  asOfDate: "2026-07-15",
+});
+
 repository.insert({
   tenantId: "tenant-123",
   planningPeriod: "2026-Q1",

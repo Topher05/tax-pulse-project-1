@@ -3,6 +3,62 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## martins-okorie-jira46 - SCRUM-46
+
+**Branch:** `martins-okorie-jira46`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Epic:** SCRUM-13 - Domain Model & Walking Skeleton
+
+**Summary:** Test the Plan Cycle Queue ordering and overdue flag
+
+**CSV Description:** As a Backend Developer, I want the Plan Cycle Queue query covered
+against real PostgreSQL, so that ordering and overdue logic are correct.
+
+**Acceptance Criteria:**
+
+- A query returns a tenant's cases ordered by `due_date` ascending.
+- Cases past their `due_date` are flagged overdue in the result.
+- A Testcontainers test asserts both ordering and the overdue flag.
+
+**How This Ties Into the Code:**
+
+- `TaxPlanCycleRepository.listQueue` reads tenant-scoped Tax Plan Cycles through
+  Drizzle and orders them by `due_date` ascending.
+- The queue read model adds `is_overdue`, computed with the SCRUM-46 rule
+  `due_date < asOfDate`.
+- `TaxPlanCycleQueueInput` accepts the required tenant boundary and an optional
+  deterministic `asOfDate` override for tests.
+- The Testcontainers integration suite inserts synthetic queue data for two tenants
+  and verifies ordering, tenant isolation, and overdue flags against PostgreSQL.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory uses the Plan Cycle Queue to help advisors scan tenant-scoped cases
+by upcoming due date. This ticket protects that workflow by proving the queue reads the
+right firm's cases in the right order and clearly marks overdue Tax Plan Cycles without
+introducing a separate case status field.
+
+**Changed Files:**
+
+- `src/typescript/taxPlanCycleRepository.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/taxPlanCycleRepository.integration.ts`
+- `tests/typescript/taxPlanCycleRead.typecheck.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm test` passed with local socket permissions; 8 files and 49 tests passed.
+- `npm run test:migration` passed with local PostgreSQL socket permissions; 7 tests
+  passed.
+- `npm run db:check` passed.
+- `npm run test:integration` is wired for the SCRUM-46 Testcontainers coverage but
+  could not run in this shell because Testcontainers could not find a working container
+  runtime strategy.
+
 ## martins-okorie-jira33 - SCRUM-33
 
 **Branch:** `martins-okorie-jira33`

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
@@ -10,15 +10,25 @@ export interface TaxPlanCycleReadInput {
   caseId: string;
 }
 
+export interface TaxPlanCycleQueueInput {
+  tenantId: string;
+  asOfDate?: string;
+}
+
 export interface TaxPlanCycleInsertInput {
   tenantId: string;
   planningPeriod: string;
   cycle: Omit<TaxPlanCycle, "id">;
 }
 
+export type TaxPlanCycleQueueItem = TaxPlanCycle & {
+  is_overdue: boolean;
+};
+
 export interface TaxPlanCycleRepository {
   insert(input: TaxPlanCycleInsertInput): Promise<string>;
   findByCaseId(input: TaxPlanCycleReadInput): Promise<TaxPlanCycle | null>;
+  listQueue(input: TaxPlanCycleQueueInput): Promise<TaxPlanCycleQueueItem[]>;
 }
 
 export type TaxPlanCycleReadHelper = Pick<TaxPlanCycleRepository, "findByCaseId">;
@@ -43,6 +53,22 @@ function toTaxPlanCycle(row: {
     on_hold: row.onHold,
     ...(row.holdReason === null ? {} : { hold_reason: row.holdReason }),
   });
+}
+
+function todayIsoDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function toTaxPlanCycleQueueItem(
+  row: Parameters<typeof toTaxPlanCycle>[0],
+  asOfDate: string,
+): TaxPlanCycleQueueItem {
+  const cycle = toTaxPlanCycle(row);
+
+  return {
+    ...cycle,
+    is_overdue: cycle.due_date < asOfDate,
+  };
 }
 
 export function createTaxPlanCycleRepository(
@@ -100,6 +126,25 @@ export function createTaxPlanCycleRepository(
       const row = rows[0];
 
       return row ? toTaxPlanCycle(row) : null;
+    },
+
+    async listQueue({ tenantId, asOfDate = todayIsoDate() }) {
+      const rows = await db
+        .select({
+          id: taxPlanCycleTable.id,
+          clientId: taxPlanCycleTable.clientId,
+          stage: taxPlanCycleTable.stage,
+          owner: taxPlanCycleTable.owner,
+          priority: taxPlanCycleTable.priority,
+          dueDate: taxPlanCycleTable.dueDate,
+          onHold: taxPlanCycleTable.onHold,
+          holdReason: taxPlanCycleTable.holdReason,
+        })
+        .from(taxPlanCycleTable)
+        .where(eq(taxPlanCycleTable.tenantId, tenantId))
+        .orderBy(asc(taxPlanCycleTable.dueDate));
+
+      return rows.map((row) => toTaxPlanCycleQueueItem(row, asOfDate));
     },
   };
 }
