@@ -253,7 +253,7 @@ describe("tax plan cycle repository", () => {
     expect(transitionRows.rows[0]?.occurred_at).toBeInstanceOf(Date);
   });
 
-  test("POST creates a tenant-scoped Intake cycle and initial transition", async () => {
+  test("POST creates a tenant-scoped Intake cycle that GET reads back", async () => {
     if (!client) {
       throw new Error("Database client was not initialized.");
     }
@@ -301,6 +301,45 @@ describe("tax plan cycle repository", () => {
           caseId: body.case_id,
         }),
       ).resolves.toBeNull();
+
+      const readResponse = await fetch(
+        `${baseUrl}/tax-plan-cycles/${body.case_id}`,
+      );
+
+      expect(readResponse.status).toBe(200);
+      await expect(readResponse.json()).resolves.toEqual({
+        id: body.case_id,
+        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        stage: "Intake",
+        owner: "advisor-route-owner-001",
+        priority: "medium",
+        due_date: "2026-10-15",
+        on_hold: false,
+      });
+
+      const otherTenantCaseId = await repository.create({
+        tenantId: sampleTenantIds[1],
+        planningPeriod: "2026-Q3",
+        clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+        owner: "advisor-other-tenant-001",
+        priority: "high",
+        dueDate: "2026-11-15",
+        actor: "advisor-other-tenant-001",
+      });
+      const crossTenantReadResponse = await fetch(
+        `${baseUrl}/tax-plan-cycles/${otherTenantCaseId}`,
+      );
+
+      expect(crossTenantReadResponse.status).toBe(404);
+      expect(crossTenantReadResponse.headers.get("content-type")).toContain(
+        "application/problem+json",
+      );
+      await expect(crossTenantReadResponse.json()).resolves.toEqual({
+        type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+        title: "Tax Plan Cycle Not Found",
+        status: 404,
+        detail: "No tax plan cycle was found for the requested case ID.",
+      });
 
       const transitionRows = await dbClient.query(
         `

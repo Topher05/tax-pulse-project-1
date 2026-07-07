@@ -23,22 +23,24 @@ the API, so that I can confirm the end-to-end spine works.
 
 **How This Ties Into the Code:**
 
-- `TaxPlanCycleRepository.findByCaseId` reads the generated cycle ID through Drizzle
-  while requiring the caller's `tenantId`.
-- The read query filters on both `tax_plan_cycle.tenant_id` and `tax_plan_cycle.id`, so
-  cross-tenant IDs resolve to `null` instead of leaking another firm's cycle.
-- Repository row mapping returns the existing `TaxPlanCycle` shape with `id`,
+- `createTaxPlanCycleRouter` serves `GET /tax-plan-cycles/:caseId`, validates the path
+  parameter, reads `tenantId` from request context, and delegates to the controller.
+- `createTaxPlanCycleCreateController` passes reads through to
+  `TaxPlanCycleRepository.findByCaseId` with both the request tenant and generated case
+  ID.
+- Missing rows and cross-tenant rows return the same 404 Problem Details response, so
+  the API does not reveal whether another tenant owns the requested case ID.
+- Successful reads return the existing `TaxPlanCycle` JSON shape with `id`,
   `client_id`, `stage`, `priority`, `due_date`, `on_hold`, and optional `hold_reason`.
 - The implementation does not add a separate `status`; workflow condition remains the
   persisted cycle `stage`.
-- The existing read helper remains a compatibility wrapper around the repository method.
 
 **Project Scope Connection:**
 
 TaxPulse Advisory depends on tenant-scoped Tax Plan Cycle reads so each firm can fetch
-only its own cases. This repository slice protects the database boundary before API
-wiring by requiring the tenant and generated case ID together and by returning the same
-stage-based domain shape used throughout the Core Case Service.
+only its own cases. This API slice wires the Core Case Service read path to the
+repository boundary, preserving tenant isolation and returning the stage-based domain
+shape used throughout the workflow.
 
 **Changed Files:**
 
@@ -48,6 +50,8 @@ stage-based domain shape used throughout the Core Case Service.
 **Validation Notes:**
 
 - `npm run typecheck` passed.
+- `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts` passed; 1 file and 7
+  tests passed.
 - `npm run test:integration -- tests/typescript/taxPlanCycleRepository.integration.ts`
   first failed in the sandbox because Testcontainers could not find a working container
   runtime strategy.
