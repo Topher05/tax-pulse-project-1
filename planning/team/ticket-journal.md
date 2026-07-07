@@ -3,6 +3,62 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## martins-okorie-jira46 - SCRUM-46
+
+**Branch:** `martins-okorie-jira46`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Epic:** SCRUM-13 - Domain Model & Walking Skeleton
+
+**Summary:** Test the Plan Cycle Queue ordering and overdue flag
+
+**CSV Description:** As a Backend Developer, I want the Plan Cycle Queue query covered
+against real PostgreSQL, so that ordering and overdue logic are correct.
+
+**Acceptance Criteria:**
+
+- A query returns a tenant's cases ordered by `due_date` ascending.
+- Cases past their `due_date` are flagged overdue in the result.
+- A Testcontainers test asserts both ordering and the overdue flag.
+
+**How This Ties Into the Code:**
+
+- `TaxPlanCycleRepository.listQueue` reads tenant-scoped Tax Plan Cycles through
+  Drizzle and orders them by `due_date` ascending.
+- The queue read model adds `is_overdue`, computed with the SCRUM-46 rule
+  `due_date < asOfDate`.
+- `TaxPlanCycleQueueInput` accepts the required tenant boundary and an optional
+  deterministic `asOfDate` override for tests.
+- The Testcontainers integration suite inserts synthetic queue data for two tenants
+  and verifies ordering, tenant isolation, and overdue flags against PostgreSQL.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory uses the Plan Cycle Queue to help advisors scan tenant-scoped cases
+by upcoming due date. This ticket protects that workflow by proving the queue reads the
+right firm's cases in the right order and clearly marks overdue Tax Plan Cycles without
+introducing a separate case status field.
+
+**Changed Files:**
+
+- `src/typescript/taxPlanCycleRepository.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/taxPlanCycleRepository.integration.ts`
+- `tests/typescript/taxPlanCycleRead.typecheck.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm test` passed with local socket permissions; 8 files and 49 tests passed.
+- `npm run test:migration` passed with local PostgreSQL socket permissions; 7 tests
+  passed.
+- `npm run db:check` passed.
+- `npm run test:integration` is wired for the SCRUM-46 Testcontainers coverage but
+  could not run in this shell because Testcontainers could not find a working container
+  runtime strategy.
+
 ## martins-okorie-jira33 - SCRUM-33
 
 **Branch:** `martins-okorie-jira33`
@@ -326,8 +382,10 @@ the PostgreSQL tables, so that persistence is type-safe and migration-driven.
 - `drizzle.config.ts` points Drizzle Kit at the TypeScript schema and writes generated
   migration evidence into `drizzle/`.
 - `migrations/20260626120000_create_tax_plan_cycle.sql` now matches SCRUM-42 by
-  omitting `case_id` from `tax_plan_cycle`, while SCRUM-43 transition history keeps
-  `stage_transition.case_id` as a foreign key to `tax_plan_cycle.client_id`.
+  focusing on `tax_plan_cycle`, while `migrations/20260627120000_create_stage_transition.sql`
+  keeps the SCRUM-43 transition history DDL in its own migration.
+- `stage_transition.case_id` remains a foreign key to the generated `tax_plan_cycle.id`
+  case identifier.
 - `applyMigrations` now creates `schema_migrations`, records applied SQL files, and
   skips already-applied migrations so reruns are idempotent.
 - Migration tests verify the table contract, Drizzle-generated SQL evidence, migration
@@ -348,6 +406,7 @@ skeleton.
 - `drizzle/`
 - `migrations/20260625120000_create_tenants.sql`
 - `migrations/20260626120000_create_tax_plan_cycle.sql`
+- `migrations/20260627120000_create_stage_transition.sql`
 - `package-lock.json`
 - `package.json`
 - `src/typescript/db/schema.ts`
@@ -366,6 +425,8 @@ skeleton.
 - `npm test` passed with local socket permissions; 8 files and 49 tests passed.
 - `npm run test:migration` passed with local PostgreSQL socket permissions; 7 tests
   passed.
+- The handwritten stage transition migration was split into its own idempotent file
+  for readability while preserving the existing table shape.
 - Python validation commands could not run in this shell because `python`/`python3`
   are Python 3.13.2 and do not have Ruff, Pyright, or pytest installed, while
   `pyproject.toml` requires Python 3.13.14 exactly.
