@@ -27,6 +27,7 @@ const sampleCycleIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11",
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
 ] as const;
+const missingCycleId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d99";
 
 const sampleClientIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
@@ -158,6 +159,13 @@ describe("tax plan cycle repository", () => {
       readHelper.findByCaseId({
         tenantId: sampleTenantIds[0],
         caseId: sampleCycleIds[1],
+      }),
+    ).resolves.toBeNull();
+
+    await expect(
+      readHelper.findByCaseId({
+        tenantId: sampleTenantIds[0],
+        caseId: missingCycleId,
       }),
     ).resolves.toBeNull();
 

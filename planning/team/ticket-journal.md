@@ -3,6 +3,57 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## christopher-martus-jira54 - SCRUM-54
+
+**Branch:** `christopher-martus-jira54`
+
+**Owner:** Christopher Martus
+
+**Epic:** SCRUM-13 - Domain Model & Walking Skeleton
+
+**Summary:** Wire read-cycle and cover the create-then-read path
+
+**CSV Description:** As an Advisor, I want to read a created Tax Plan Cycle back through
+the API, so that I can confirm the end-to-end spine works.
+
+**Acceptance Criteria:**
+
+- GET by case ID returns the persisted cycle including stage and due_date.
+- The create-then-read test confirms the persisted cycle can be fetched back.
+
+**How This Ties Into the Code:**
+
+- `TaxPlanCycleRepository.findByCaseId` reads the generated cycle ID through Drizzle
+  while requiring the caller's `tenantId`.
+- The read query filters on both `tax_plan_cycle.tenant_id` and `tax_plan_cycle.id`, so
+  cross-tenant IDs resolve to `null` instead of leaking another firm's cycle.
+- Repository row mapping returns the existing `TaxPlanCycle` shape with `id`,
+  `client_id`, `stage`, `priority`, `due_date`, `on_hold`, and optional `hold_reason`.
+- The implementation does not add a separate `status`; workflow condition remains the
+  persisted cycle `stage`.
+- The existing read helper remains a compatibility wrapper around the repository method.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory depends on tenant-scoped Tax Plan Cycle reads so each firm can fetch
+only its own cases. This repository slice protects the database boundary before API
+wiring by requiring the tenant and generated case ID together and by returning the same
+stage-based domain shape used throughout the Core Case Service.
+
+**Changed Files:**
+
+- `tests/typescript/taxPlanCycleRepository.integration.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm run test:integration -- tests/typescript/taxPlanCycleRepository.integration.ts`
+  first failed in the sandbox because Testcontainers could not find a working container
+  runtime strategy.
+- The same repository integration command passed with Docker/Testcontainers access; 1
+  file and 4 tests passed.
+
 ## christopher-martus-jira53 - SCRUM-53
 
 **Branch:** `christopher-martus-jira53`
