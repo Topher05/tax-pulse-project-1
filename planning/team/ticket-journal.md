@@ -35,6 +35,9 @@ the API, so that I can confirm the end-to-end spine works.
 - The PostgreSQL-backed integration test now creates a cycle through the API, reads it
   back through the GET endpoint, and asserts the returned ID, `stage`, `due_date`, and
   absence of a separate `status` field.
+- Cross-tenant integration coverage creates a cycle as one synthetic tenant, attempts
+  to read the same case ID as a second synthetic tenant, and verifies the API returns
+  the same 404 response used for missing cycles rather than a 403 or existence leak.
 - The implementation does not add a separate `status`; workflow condition remains the
   persisted cycle `stage`.
 
@@ -59,7 +62,7 @@ shape used throughout the workflow.
   first failed in the sandbox because Testcontainers could not find a working container
   runtime strategy.
 - The same repository integration command passed with Docker/Testcontainers access; 1
-  file and 4 tests passed.
+  file and 5 tests passed.
 
 ## christopher-martus-jira53 - SCRUM-53
 
