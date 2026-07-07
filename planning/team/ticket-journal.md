@@ -32,6 +32,10 @@ Intake, so that a new cycle is recorded against a client and planning period.
   case ID.
 - Because the current `stage_transition.from_stage` column is non-null, the initial entry
   is represented as `Intake` to `Intake` with the supplied actor and current timestamp.
+- `taxPlanCycleCreateSchema` now validates the POST body shape without a caller-selected
+  `stage`, while requiring `planning_period`, owner, priority, client ID, and due date.
+- `createTaxPlanCycleRouter` reads tenant and actor context, then delegates to the
+  repository-backed create controller, which returns the generated `case_id`.
 - The legacy repository `insert` path remains for compatibility but also writes `Intake`
   so repository persistence cannot choose a different initial stage.
 
@@ -44,19 +48,27 @@ flow for route/controller wiring and initial transition history.
 
 **Changed Files:**
 
+- `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
+- `src/typescript/taxPlanCycle.ts`
+- `src/typescript/taxPlanCycleCreateController.ts`
 - `src/typescript/taxPlanCycleRepository.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
 - `tests/typescript/taxPlanCycleRead.typecheck.ts`
 - `tests/typescript/taxPlanCycleRepository.integration.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
 - `planning/team/ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm run typecheck` passed.
+- `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed; 2 files and 12 tests passed.
 - `npm run test:integration -- tests/typescript/taxPlanCycleRepository.integration.ts`
   first failed in the sandbox because Testcontainers could not find a container runtime.
 - The same repository integration command passed with Docker/Testcontainers access; 1 file
-  and 3 tests passed.
+  and 4 tests passed.
 
 ## martins-okorie-jira46 - SCRUM-46
 

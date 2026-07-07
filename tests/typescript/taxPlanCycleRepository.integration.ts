@@ -1,11 +1,18 @@
 import { randomUUID } from "node:crypto";
+import { once } from "node:events";
+import type { AddressInfo } from "node:net";
 
+import type { RequestHandler } from "express";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
 import {
+  createApp,
+  createLogger,
+  createTaxPlanCycleCreateController,
   createTaxPlanCycleReadHelper,
   createTaxPlanCycleRepository,
+  createTaxPlanCycleRouter,
 } from "../../src/typescript/index.js";
 import { applyMigrations } from "../../src/typescript/postgresMigrations.js";
 import { applySeed } from "../../src/typescript/runSeed.js";
@@ -42,12 +49,52 @@ const queueClientIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d54",
 ] as const;
 
+const silentLogger = createLogger({ level: "silent" });
+
 function createTestSchemaName(): string {
   return `taxpulse_repo_${randomUUID().replace(/-/g, "")}`;
 }
 
 function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
+}
+
+const attachRequestContext: RequestHandler = (req, _res, next) => {
+  (req as typeof req & { tenant: { id: string } }).tenant = {
+    id: sampleTenantIds[0],
+  };
+  (req as typeof req & { user: { id: string } }).user = {
+    id: "advisor-route-actor-001",
+  };
+  next();
+};
+
+async function withRouteServer(
+  repository: ReturnType<typeof createTaxPlanCycleRepository>,
+  run: (baseUrl: string) => Promise<void>,
+): Promise<void> {
+  const app = createApp({
+    logger: silentLogger,
+    registerRoutes: (app) => {
+      app.use(attachRequestContext);
+      app.use(
+        createTaxPlanCycleRouter({
+          controller: createTaxPlanCycleCreateController(repository),
+        }),
+      );
+    },
+  });
+
+  const server = app.listen(0);
+  await once(server, "listening");
+
+  try {
+    const address = server.address() as AddressInfo;
+    await run(`http://127.0.0.1:${address.port}`);
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
 }
 
 describe("tax plan cycle repository", () => {
@@ -196,6 +243,80 @@ describe("tax plan cycle repository", () => {
       actor: "advisor-003",
     });
     expect(transitionRows.rows[0]?.occurred_at).toBeInstanceOf(Date);
+  });
+
+  test("POST creates a tenant-scoped Intake cycle and initial transition", async () => {
+    if (!client) {
+      throw new Error("Database client was not initialized.");
+    }
+
+    const dbClient = client;
+    const repository = createTaxPlanCycleRepository(client);
+
+    await withRouteServer(repository, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+          planning_period: "2026-Q2",
+          owner: "advisor-route-owner-001",
+          priority: "medium",
+          due_date: "2026-10-15",
+        }),
+      });
+      const body = (await response.json()) as { case_id: string };
+
+      expect(response.status).toBe(202);
+      expect(body.case_id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      );
+
+      await expect(
+        repository.findByCaseId({
+          tenantId: sampleTenantIds[0],
+          caseId: body.case_id,
+        }),
+      ).resolves.toEqual({
+        id: body.case_id,
+        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        stage: "Intake",
+        owner: "advisor-route-owner-001",
+        priority: "medium",
+        due_date: "2026-10-15",
+        on_hold: false,
+      });
+
+      await expect(
+        repository.findByCaseId({
+          tenantId: sampleTenantIds[1],
+          caseId: body.case_id,
+        }),
+      ).resolves.toBeNull();
+
+      const transitionRows = await dbClient.query(
+        `
+          SELECT
+            case_id,
+            from_stage,
+            to_stage,
+            actor,
+            occurred_at
+          FROM stage_transition
+          WHERE case_id = $1
+        `,
+        [body.case_id],
+      );
+
+      expect(transitionRows.rows).toHaveLength(1);
+      expect(transitionRows.rows[0]).toMatchObject({
+        case_id: body.case_id,
+        from_stage: "Intake",
+        to_stage: "Intake",
+        actor: "advisor-route-actor-001",
+      });
+      expect(transitionRows.rows[0]?.occurred_at).toBeInstanceOf(Date);
+    });
   });
 
   test("lists a tenant's queue by due date and flags overdue cycles", async () => {

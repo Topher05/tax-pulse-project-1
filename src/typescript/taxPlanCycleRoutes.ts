@@ -31,6 +31,9 @@ interface TenantScopedRequest extends Request {
   tenant: {
     id: string;
   };
+  user?: {
+    id: string;
+  };
 }
 
 function toValidationIssue(issue: ZodIssue): ValidationErrorIssue {
@@ -41,6 +44,10 @@ function toValidationIssue(issue: ZodIssue): ValidationErrorIssue {
     message: issue.message,
     code: issue.code,
   };
+}
+
+function getActorId(req: Request, fallbackActor: string): string {
+  return (req as TenantScopedRequest).user?.id ?? fallbackActor;
 }
 
 export function createTaxPlanCycleRouter(
@@ -118,7 +125,12 @@ export function createTaxPlanCycleRouter(
       }
 
       try {
-        const result = await controller.create(parsedBody.data);
+        const tenantId = (req as TenantScopedRequest).tenant.id;
+        const result = await controller.create({
+          ...parsedBody.data,
+          tenantId,
+          actor: getActorId(req, parsedBody.data.owner),
+        });
         res.status(202).json(result);
       } catch (error) {
         next(error);

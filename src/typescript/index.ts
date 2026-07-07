@@ -68,8 +68,10 @@ import { createLogger } from "./logger.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 
 export {
+  createTaxPlanCycleCreateController,
   taxPlanCycleCreateController,
   taxPlanCycleCreateResultSchema,
+  type TaxPlanCycleCreateControllerInput,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateResult,
 } from "./taxPlanCycleCreateController.js";
