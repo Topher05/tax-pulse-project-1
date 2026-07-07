@@ -44,16 +44,20 @@ export const coreCaseOpenApiSchemaRegistrations = [
 
 const fakeTaxPlanCycleCreateExample = {
   client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
-  stage: "Intake",
+  planning_period: "2026-Q4",
   owner: "advisor-123",
   priority: "medium",
   due_date: "2026-12-31",
-  on_hold: false,
 };
 
 const fakeTaxPlanCycleExample = {
   id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
-  ...fakeTaxPlanCycleCreateExample,
+  client_id: fakeTaxPlanCycleCreateExample.client_id,
+  stage: "Intake",
+  owner: fakeTaxPlanCycleCreateExample.owner,
+  priority: fakeTaxPlanCycleCreateExample.priority,
+  due_date: fakeTaxPlanCycleCreateExample.due_date,
+  on_hold: false,
 };
 
 const validationErrorExample = {
@@ -64,9 +68,9 @@ const validationErrorExample = {
   code: "VALIDATION_ERROR",
   issues: [
     {
-      path: ["stage"],
-      message: "Invalid option: expected one of the canonical stages",
-      code: "invalid_value",
+      path: ["owner"],
+      message: "Too small: expected string to have >=1 characters",
+      code: "too_small",
     },
   ],
 };
@@ -145,7 +149,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           tags: ["Core Case Service"],
           summary: "Create a tenant-scoped Tax Plan Cycle",
           description:
-            "Accepts a Tax Plan Cycle create payload. Workflow condition is represented by stage; " +
+            "Accepts a Tax Plan Cycle create payload. New cycles enter Intake; " +
             "no separate status field is used.",
           requestBody: {
             required: true,
@@ -158,11 +162,11 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           },
           responses: {
             "202": {
-              description: "The Tax Plan Cycle create request was accepted.",
+              description: "The Tax Plan Cycle was created.",
               content: {
                 "application/json": {
                   schema: createAcceptedSchema,
-                  example: { accepted: true },
+                  example: { case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01" },
                 },
               },
             },

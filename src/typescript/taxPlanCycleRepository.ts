@@ -2,7 +2,10 @@ import { and, asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
-import { taxPlanCycle as taxPlanCycleTable } from "./db/schema.js";
+import {
+  stageTransition as stageTransitionTable,
+  taxPlanCycle as taxPlanCycleTable,
+} from "./db/schema.js";
 import { taxPlanCycleSchema, type TaxPlanCycle } from "./taxPlanCycle.js";
 
 export interface TaxPlanCycleReadInput {
@@ -13,6 +16,16 @@ export interface TaxPlanCycleReadInput {
 export interface TaxPlanCycleQueueInput {
   tenantId: string;
   asOfDate?: string;
+}
+
+export interface TaxPlanCycleRepositoryCreateInput {
+  tenantId: string;
+  planningPeriod: string;
+  clientId: TaxPlanCycle["client_id"];
+  owner: TaxPlanCycle["owner"];
+  priority: TaxPlanCycle["priority"];
+  dueDate: TaxPlanCycle["due_date"];
+  actor: string;
 }
 
 export interface TaxPlanCycleInsertInput {
@@ -26,6 +39,7 @@ export type TaxPlanCycleQueueItem = TaxPlanCycle & {
 };
 
 export interface TaxPlanCycleRepository {
+  create(input: TaxPlanCycleRepositoryCreateInput): Promise<string>;
   insert(input: TaxPlanCycleInsertInput): Promise<string>;
   findByCaseId(input: TaxPlanCycleReadInput): Promise<TaxPlanCycle | null>;
   listQueue(input: TaxPlanCycleQueueInput): Promise<TaxPlanCycleQueueItem[]>;
@@ -76,20 +90,30 @@ export function createTaxPlanCycleRepository(
 ): TaxPlanCycleRepository {
   const db = drizzle(client);
 
-  return {
-    async insert({ tenantId, planningPeriod, cycle }) {
-      const rows = await db
+  async function persistCycle(input: {
+    tenantId: string;
+    planningPeriod: string;
+    clientId: string;
+    owner: string;
+    priority: string;
+    dueDate: string;
+    onHold: boolean;
+    holdReason: string | null;
+    actor: string;
+  }): Promise<string> {
+    return await db.transaction(async (tx) => {
+      const rows = await tx
         .insert(taxPlanCycleTable)
         .values({
-          clientId: cycle.client_id,
-          tenantId,
-          planningPeriod,
-          stage: cycle.stage,
-          owner: cycle.owner,
-          priority: cycle.priority,
-          dueDate: cycle.due_date,
-          onHold: cycle.on_hold,
-          holdReason: cycle.hold_reason ?? null,
+          clientId: input.clientId,
+          tenantId: input.tenantId,
+          planningPeriod: input.planningPeriod,
+          stage: "Intake",
+          owner: input.owner,
+          priority: input.priority,
+          dueDate: input.dueDate,
+          onHold: input.onHold,
+          holdReason: input.holdReason,
         })
         .returning({ caseId: taxPlanCycleTable.id });
 
@@ -99,7 +123,45 @@ export function createTaxPlanCycleRepository(
         throw new Error("Tax Plan Cycle insert did not return a generated case ID.");
       }
 
+      await tx.insert(stageTransitionTable).values({
+        caseId,
+        fromStage: "Intake",
+        toStage: "Intake",
+        actor: input.actor,
+        occurredAt: new Date(),
+      });
+
       return caseId;
+    });
+  }
+
+  return {
+    async create(input) {
+      return await persistCycle({
+        tenantId: input.tenantId,
+        planningPeriod: input.planningPeriod,
+        clientId: input.clientId,
+        owner: input.owner,
+        priority: input.priority,
+        dueDate: input.dueDate,
+        onHold: false,
+        holdReason: null,
+        actor: input.actor,
+      });
+    },
+
+    async insert({ tenantId, planningPeriod, cycle }) {
+      return await persistCycle({
+        tenantId,
+        planningPeriod,
+        clientId: cycle.client_id,
+        owner: cycle.owner,
+        priority: cycle.priority,
+        dueDate: cycle.due_date,
+        onHold: cycle.on_hold,
+        holdReason: cycle.hold_reason ?? null,
+        actor: cycle.owner,
+      });
     },
 
     async findByCaseId({ tenantId, caseId }) {

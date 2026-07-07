@@ -55,11 +55,13 @@ export const taxPlanCycleSchema = taxPlanCycleBaseSchema.superRefine(
   requireHoldReasonWhenOnHold,
 );
 
-export const taxPlanCycleCreateSchema = taxPlanCycleBaseSchema
-  .omit({
-    id: true,
-  })
-  .superRefine(requireHoldReasonWhenOnHold);
+export const taxPlanCycleCreateSchema = z.strictObject({
+  client_id: z.uuid(),
+  planning_period: z.string().min(1),
+  owner: z.string().min(1),
+  priority: taxPlanCyclePrioritySchema,
+  due_date: z.iso.date(),
+});
 export const taxPlanCycleReadParamsSchema = z.object({
   caseId: z.uuid(),
 });
