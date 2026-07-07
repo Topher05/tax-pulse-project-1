@@ -32,6 +32,9 @@ the API, so that I can confirm the end-to-end spine works.
   the API does not reveal whether another tenant owns the requested case ID.
 - Successful reads return the existing `TaxPlanCycle` JSON shape with `id`,
   `client_id`, `stage`, `priority`, `due_date`, `on_hold`, and optional `hold_reason`.
+- The PostgreSQL-backed integration test now creates a cycle through the API, reads it
+  back through the GET endpoint, and asserts the returned ID, `stage`, `due_date`, and
+  absence of a separate `status` field.
 - The implementation does not add a separate `status`; workflow condition remains the
   persisted cycle `stage`.
 
@@ -50,8 +53,8 @@ shape used throughout the workflow.
 **Validation Notes:**
 
 - `npm run typecheck` passed.
-- `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts` passed; 1 file and 7
-  tests passed.
+- Route unit tests were not rerun for this commit because only the PostgreSQL-backed
+  integration test and journal changed.
 - `npm run test:integration -- tests/typescript/taxPlanCycleRepository.integration.ts`
   first failed in the sandbox because Testcontainers could not find a working container
   runtime strategy.

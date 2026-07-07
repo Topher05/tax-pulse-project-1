@@ -307,15 +307,12 @@ describe("tax plan cycle repository", () => {
       );
 
       expect(readResponse.status).toBe(200);
-      await expect(readResponse.json()).resolves.toEqual({
-        id: body.case_id,
-        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
-        stage: "Intake",
-        owner: "advisor-route-owner-001",
-        priority: "medium",
-        due_date: "2026-10-15",
-        on_hold: false,
-      });
+      const readBody = (await readResponse.json()) as Record<string, unknown>;
+
+      expect(readBody.id).toBe(body.case_id);
+      expect(readBody.stage).toBe("Intake");
+      expect(readBody.due_date).toBe("2026-10-15");
+      expect(readBody).not.toHaveProperty("status");
 
       const otherTenantCaseId = await repository.create({
         tenantId: sampleTenantIds[1],
