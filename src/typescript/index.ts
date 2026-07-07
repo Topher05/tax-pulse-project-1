@@ -59,6 +59,7 @@ export {
   type TaxPlanCycleReadHelper,
   type TaxPlanCycleReadInput,
   type TaxPlanCycleRepository,
+  type TaxPlanCycleRepositoryCreateInput,
 } from "./taxPlanCycleRepository.js";
 
 import { createApp } from "./app.js";

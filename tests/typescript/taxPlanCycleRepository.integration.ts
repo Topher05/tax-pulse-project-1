@@ -131,24 +131,20 @@ describe("tax plan cycle repository", () => {
     });
   });
 
-  test("inserts a cycle through Drizzle and reads it back", async () => {
+  test("creates a cycle in Intake through Drizzle and reads it back", async () => {
     if (!client) {
       throw new Error("Database client was not initialized.");
     }
 
     const repository = createTaxPlanCycleRepository(client);
 
-    const caseId = await repository.insert({
+    const caseId = await repository.create({
       tenantId: sampleTenantIds[0],
       planningPeriod: "2026-Q1",
-      cycle: {
-        client_id: sampleClientIds[2],
-        stage: "Intake",
-        owner: "advisor-003",
-        priority: "low",
-        due_date: "2026-09-30",
-        on_hold: false,
-      },
+      clientId: sampleClientIds[2],
+      owner: "advisor-003",
+      priority: "low",
+      dueDate: "2026-09-30",
     });
 
     expect(caseId).toMatch(
