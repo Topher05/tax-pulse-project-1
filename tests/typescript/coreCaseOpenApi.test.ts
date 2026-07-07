@@ -195,6 +195,30 @@ describe("Core Case Service OpenAPI document", () => {
     expect(properties.status).toBeUndefined();
   });
 
+  test("documents read responses with stage and due_date but no status field", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const readOperation = requiredRecord(
+      requiredRecord(paths, "/tax-plan-cycles/{caseId}"),
+      "get",
+    );
+    const responses = requiredRecord(readOperation, "responses");
+    const okResponse = requiredRecord(responses, "200");
+    const content = requiredRecord(okResponse, "content");
+    const jsonContent = requiredRecord(content, "application/json");
+    const schema = requiredRecord(jsonContent, "schema");
+    const properties = requiredRecord(schema, "properties");
+    const example = requiredRecord(jsonContent, "example");
+
+    expect(Object.keys(properties)).toEqual(
+      expect.arrayContaining(["id", "client_id", "stage", "due_date"]),
+    );
+    expect(properties.status).toBeUndefined();
+    expect(example.stage).toBe("Intake");
+    expect(example.due_date).toBe("2026-12-31");
+    expect(example.status).toBeUndefined();
+  });
+
   test("registers the same zod schema objects used by routes and domain exports", () => {
     expect(coreCaseOpenApiSchemaRegistrations).toEqual(
       expect.arrayContaining([

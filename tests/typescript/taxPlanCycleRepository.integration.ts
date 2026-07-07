@@ -260,7 +260,7 @@ describe("tax plan cycle repository", () => {
     expect(transitionRows.rows[0]?.occurred_at).toBeInstanceOf(Date);
   });
 
-  test("POST creates a tenant-scoped Intake cycle that GET reads back", async () => {
+  test("create then read returns the persisted cycle", async () => {
     if (!client) {
       throw new Error("Database client was not initialized.");
     }
@@ -370,7 +370,7 @@ describe("tax plan cycle repository", () => {
     });
   });
 
-  test("returns 404 when tenant B reads tenant A's created cycle", async () => {
+  test("reading another tenant's cycle ID returns 404", async () => {
     if (!client) {
       throw new Error("Database client was not initialized.");
     }

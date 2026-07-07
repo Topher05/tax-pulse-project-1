@@ -38,6 +38,9 @@ the API, so that I can confirm the end-to-end spine works.
 - Cross-tenant integration coverage creates a cycle as one synthetic tenant, attempts
   to read the same case ID as a second synthetic tenant, and verifies the API returns
   the same 404 response used for missing cycles rather than a 403 or existence leak.
+- Final contract cleanup documents the GET read response in the README, verifies the
+  OpenAPI 200 response includes `stage` and `due_date`, and keeps the contract free of
+  a separate cycle `status` field.
 - The implementation does not add a separate `status`; workflow condition remains the
   persisted cycle `stage`.
 
@@ -50,14 +53,16 @@ shape used throughout the workflow.
 
 **Changed Files:**
 
+- `README.md`
+- `tests/typescript/coreCaseOpenApi.test.ts`
 - `tests/typescript/taxPlanCycleRepository.integration.ts`
 - `planning/team/ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm run typecheck` passed.
-- Route unit tests were not rerun for this commit because only the PostgreSQL-backed
-  integration test and journal changed.
+- `npx vitest run tests/typescript/coreCaseOpenApi.test.ts` passed; 1 file and 6
+  tests passed.
 - `npm run test:integration -- tests/typescript/taxPlanCycleRepository.integration.ts`
   first failed in the sandbox because Testcontainers could not find a working container
   runtime strategy.
