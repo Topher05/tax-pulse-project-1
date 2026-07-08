@@ -3,9 +3,9 @@ import { describe, expect, test } from "vitest";
 import type { Client } from "pg";
 import { applyMigrations, withDatabaseClient, } from "../../src/typescript/postgresMigrations.js";
 import {
-  role,
+  roles,
   roleNameEnum,
-  user,
+  users,
   userStatus,
   userStatusEnum,
 } from "../../src/typescript/db/schema.js";
@@ -44,10 +44,13 @@ const sampleUserIds = [
 ] as const;
 
 /*
-* User and role do not work nicely in drizzle, renaming entity to not match psql keywords
+ * Confirm drizzle schema accuracy to old migration files
+ * Need to have test file cross-ref with new schema
+ * Have testcontainer and seeding strategy
+ * User and role do not work nicely in drizzle, renaming entity to not match psql keywords
  * Refactor to leverage testContainer templating
  * Add relationship tests for user and role
- * Figure out why drizzle table hook is inoperable
+ * Figure out why drizzle table hook is inoperable (DONE)
  * Update npm notations for applying drizzle commands, update readme as well
  * Review migration setup, what is different
  * Generate new seed, consider faker &/or drizzle-seed
