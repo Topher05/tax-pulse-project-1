@@ -519,17 +519,17 @@ TaxPulse identities and their roles are stored per tenant.
 - A migration creates a `user` table with `tenant_id`, `email` unique per tenant, and
   `status`.
 - A `role` table enumerates Firm Admin, Advisor, Client, and TaxPulse Platform Admin.
-- A user is assigned exactly one role via a foreign key.
+- A `user_status` table enumerates invited, active, and disabled.
+- A user is assigned exactly one role and one status via foreign keys.
 
 **How This Ties Into the Code:**
 
-- `src/typescript/db/schema.ts` now defines `role` and `user` alongside the existing
-  tenant and cycle tables.
+- `src/typescript/db/schema.ts` now defines `role`, `user_status`, and `user`
+  alongside the existing tenant and cycle tables.
 - `role.role` is modeled as a Postgres enum-backed lookup column for the four canonical
-  role labels, and `user.status` is modeled as an account lifecycle enum with the
-  initial `invited`, `active`, and `disabled` states.
-- `user.role_id` points at the lookup table rather than duplicating the role label on
-  the user row, which keeps the join boundary explicit for auth and roster features.
+  role labels, while `user_status.status` captures the three account lifecycle states.
+- `role.id` and `user_status.id` now use integer identity primary keys, and `user`
+  points at both lookup tables through `role_id` and `status_id`.
 - The Mermaid ER diagram for the new auth tables is:
 
 ```mermaid
@@ -544,16 +544,21 @@ erDiagram
   }
 
   ROLE {
-    uuid id PK
+    int id PK
     user_role_name role
+  }
+
+  USER_STATUS {
+    int id PK
+    user_status_value status
   }
 
   USER {
     uuid id PK
     uuid tenant_id FK
     text email
-    user_status status
-    uuid role_id FK
+    int role_id FK
+    int status_id FK
   }
 ```
 
@@ -570,11 +575,10 @@ separate case status field.
 - `drizzle/0001_user_role.sql`
 - `drizzle/meta/_journal.json`
 - `drizzle/meta/0000_snapshot.json`
-- `migrations/20260628120000_create_user_and_role.sql`
-- `package.json`
 - `src/typescript/db/schema.ts`
 - `src/typescript/index.ts`
 - `tests/typescript/userRoleMigration.test.ts`
+- `planning/prompt-journal/cl-journal.md`
 - `planning/team/ticket-journal.md`
 
 **Validation Notes:**
