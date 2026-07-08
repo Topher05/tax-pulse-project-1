@@ -128,6 +128,10 @@ export const stageTransition = pgTable(
     occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
   },
   (table) => [
+    primaryKey({
+      name: "stage_transition_id_pk",
+      columns: [table.id],
+    }),
     foreignKey({
       name: "stage_transition_case_id_fk",
       columns: [table.caseId],

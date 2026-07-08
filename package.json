@@ -14,6 +14,7 @@
     "db:monitor": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
     "db:force": "drizzle-kit push",
+    "db:up": "drizzle-kit up",
     "dev": "tsx src/typescript/index.ts",
     "migrate": "tsx src/typescript/runMigrations.ts",
     "seed": "tsx src/typescript/runSeed.ts",

@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1783374889066,
-      "tag": "0000_glamorous_umar",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1783533889964,
-      "tag": "0001_exotic_maddog",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1783541638494,
-      "tag": "0002_tiresome_chimera",
+      "when": 1783547231782,
+      "tag": "0000_fast_talisman",
       "breakpoints": true
     }
   ]
