@@ -261,6 +261,14 @@ describeMigration("tax plan cycle migration", () => {
 
       await client.query(
         `
+          INSERT INTO tenants (id, name, created_at)
+          VALUES ($1, $2, $3)
+        `,
+        ["tenant-001", "North Shore Advisors", "2026-06-29T12:00:00Z"],
+      );
+
+      await client.query(
+        `
           INSERT INTO tax_plan_cycle (
             id,
             client_id,
@@ -351,6 +359,14 @@ describeMigration("tax plan cycle migration", () => {
     await withTestSchema(async (client) => {
       await applyMigrations(client);
       await seedSampleTenant(client);
+
+      await client.query(
+        `
+          INSERT INTO tenants (id, name, created_at)
+          VALUES ($1, $2, $3)
+        `,
+        ["tenant-001", "North Shore Advisors", "2026-06-29T12:00:00Z"],
+      );
 
       await expect(
         client.query(

@@ -34,7 +34,7 @@ export {
   type CoreCaseOpenApiSchemaRegistration,
 } from "./coreCaseOpenApi.js";
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
-export { stageTransition, taxPlanCycle, tenants } from "./db/schema.js";
+export { role, stageTransition, taxPlanCycle, tenants, user } from "./db/schema.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
