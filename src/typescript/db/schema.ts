@@ -8,6 +8,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  integer,
   text,
   timestamp,
   uniqueIndex,
@@ -34,7 +35,7 @@ export const roleNameEnum = pgEnum("user_role_name", [
   "TaxPulse Platform Admin",
 ]);
 
-export const userStatusEnum = pgEnum("user_status", [
+export const userStatusEnum = pgEnum("user_status_value", [
   "invited",
   "active",
   "disabled",
@@ -43,10 +44,19 @@ export const userStatusEnum = pgEnum("user_status", [
 export const role = pgTable(
   "role",
   {
-    id: uuid("id").default(sql`uuidv7()`).primaryKey(),
+    id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
     role: roleNameEnum("role").notNull(),
   },
   (table) => [uniqueIndex("role_role_key").on(table.role)],
+);
+
+export const userStatus = pgTable(
+  "user_status",
+  {
+    id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+    status: userStatusEnum("status").notNull(),
+  },
+  (table) => [uniqueIndex("user_status_status_key").on(table.status)],
 );
 
 export const user = pgTable(
@@ -55,8 +65,8 @@ export const user = pgTable(
     id: uuid("id").default(sql`uuidv7()`).primaryKey(),
     tenantId: uuid("tenant_id").notNull(),
     email: text("email").notNull(),
-    status: userStatusEnum("status").notNull(),
-    roleId: uuid("role_id").notNull(),
+    roleId: integer("role_id").notNull(),
+    statusId: integer("status_id").notNull(),
   },
   (table) => [
     foreignKey({
@@ -68,6 +78,11 @@ export const user = pgTable(
       name: "user_role_id_fk",
       columns: [table.roleId],
       foreignColumns: [role.id],
+    }),
+    foreignKey({
+      name: "user_status_id_fk",
+      columns: [table.statusId],
+      foreignColumns: [userStatus.id],
     }),
     uniqueIndex("user_tenant_id_email_key").on(table.tenantId, table.email),
   ],
