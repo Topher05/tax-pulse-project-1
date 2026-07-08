@@ -536,7 +536,7 @@ TaxPulse identities and their roles are stored per tenant.
 erDiagram
   TENANTS ||--o{ USER : has
   ROLE ||--o{ USER : assigns
-
+  USER_STATUS ||--o{ USER : assigns
   TENANTS {
     uuid id PK
     text name
