@@ -120,6 +120,7 @@ export const taxPlanCycle = pgTable(
 export const stageTransition = pgTable(
   "stage_transition",
   {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
     caseId: uuid("case_id").notNull(),
     fromStage: text("from_stage").notNull(),
     toStage: text("to_stage").notNull(),
