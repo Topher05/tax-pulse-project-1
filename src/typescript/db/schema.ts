@@ -41,13 +41,13 @@ export const userStatusEnum = pgEnum("user_status_value", [
   "disabled",
 ]);
 
-export const role = pgTable(
-  "role",
+export const roles = pgTable(
+  "roles",
   {
     id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
     role: roleNameEnum("role").notNull(),
   },
-  (table) => [uniqueIndex("role_role_key").on(table.role)],
+  (table) => [uniqueIndex("roles_role_key").on(table.role)],
 );
 
 export const userStatus = pgTable(
@@ -59,8 +59,8 @@ export const userStatus = pgTable(
   (table) => [uniqueIndex("user_status_status_key").on(table.status)],
 );
 
-export const user = pgTable(
-  "user",
+export const users = pgTable(
+  "users",
   {
     id: uuid("id").default(sql`uuidv7()`).primaryKey(),
     tenantId: uuid("tenant_id").notNull(),
@@ -70,23 +70,25 @@ export const user = pgTable(
   },
   (table) => [
     foreignKey({
-      name: "user_tenant_id_fk",
+      name: "users_tenant_id_fk",
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }),
     foreignKey({
-      name: "user_role_id_fk",
+      name: "users_role_id_fk",
       columns: [table.roleId],
-      foreignColumns: [role.id],
+      foreignColumns: [roles.id],
     }),
     foreignKey({
-      name: "user_status_id_fk",
+      name: "users_status_id_fk",
       columns: [table.statusId],
       foreignColumns: [userStatus.id],
     }),
-    uniqueIndex("user_tenant_id_email_key").on(table.tenantId, table.email),
+    uniqueIndex("users_tenant_id_email_key").on(table.tenantId, table.email),
   ],
 );
+
+export { roles as role, users as user };
 
 export const taxPlanCycle = pgTable(
   "tax_plan_cycle",

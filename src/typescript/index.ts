@@ -35,12 +35,14 @@ export {
 } from "./coreCaseOpenApi.js";
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
-  role,
+  roles,
   stageTransition,
   taxPlanCycle,
   tenants,
-  user,
+  users,
   userStatus,
+  role,
+  user,
 } from "./db/schema.js";
 
 export {

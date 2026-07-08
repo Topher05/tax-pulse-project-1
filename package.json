@@ -10,10 +10,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "db:check": "drizzle-kit check",
-    "db:generate": "drizzle-kit generate",
+    "db:gen": "drizzle-kit generate",
     "db:monitor": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
-    "db:force": "drizzle-kit push",
+    "db:force": "drizzle-kit push --force",
     "dev": "tsx src/typescript/index.ts",
     "migrate": "tsx src/typescript/runMigrations.ts",
     "seed": "tsx src/typescript/runSeed.ts",

@@ -44,6 +44,7 @@ const sampleUserIds = [
 ] as const;
 
 /*
+* User and role do not work nicely in drizzle, renaming entity to not match psql keywords
  * Refactor to leverage testContainer templating
  * Add relationship tests for user and role
  * Figure out why drizzle table hook is inoperable
