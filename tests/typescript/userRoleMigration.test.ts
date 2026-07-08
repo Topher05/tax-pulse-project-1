@@ -47,7 +47,12 @@ const sampleUserIds = [
  * Refactor to leverage testContainer templating
  * Add relationship tests for user and role
  * Figure out why drizzle table hook is inoperable
+ * Update npm notations for applying drizzle commands, update readme as well
+ * Review migration setup, what is different
+ * Generate new seed, consider faker &/or drizzle-seed
  * Do setup of repository layer for structuring before things scale further
+ * Idea: Impose guardrail to prevent the AI from writing direct sql without using drizzle implementation
+ * Idea: Expose MCP or llms.txt hook to source documentation for ref for codex
  */
 
 function createTestSchemaName(): string {
