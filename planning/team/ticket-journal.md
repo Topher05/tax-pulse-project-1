@@ -500,3 +500,88 @@ preserving tenant-scoped reads.
 - `npm test` still fails in this local environment when migration tests use the
   configured `DATABASE_URL` because that PostgreSQL instance does not provide
   `uuidv7()`.
+
+## caleb-latimer-jira55 - SCRUM-55
+
+**Branch:** `caleb-latimer-jira55`
+
+**Owner:** Caleb Latimer
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Create the user and role tables
+
+**CSV Description:** As a Backend Developer, I want user and role tables, so that
+TaxPulse identities and their roles are stored per tenant.
+
+**Acceptance Criteria:**
+
+- A migration creates a `user` table with `tenant_id`, `email` unique per tenant, and
+  `status`.
+- A `role` table enumerates Firm Admin, Advisor, Client, and TaxPulse Platform Admin.
+- A user is assigned exactly one role via a foreign key.
+
+**How This Ties Into the Code:**
+
+- `src/typescript/db/schema.ts` now defines `role` and `user` alongside the existing
+  tenant and cycle tables.
+- `role.role` is modeled as a Postgres enum-backed lookup column for the four canonical
+  role labels, and `user.status` is modeled as an account lifecycle enum with the
+  initial `invited`, `active`, and `disabled` states.
+- `user.role_id` points at the lookup table rather than duplicating the role label on
+  the user row, which keeps the join boundary explicit for auth and roster features.
+- The Mermaid ER diagram for the new auth tables is:
+
+```mermaid
+erDiagram
+  TENANTS ||--o{ USER : has
+  ROLE ||--o{ USER : assigns
+
+  TENANTS {
+    uuid id PK
+    text name
+    timestamptz created_at
+  }
+
+  ROLE {
+    uuid id PK
+    user_role_name role
+  }
+
+  USER {
+    uuid id PK
+    uuid tenant_id FK
+    text email
+    user_status status
+    uuid role_id FK
+  }
+```
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs tenant-isolated identities before the auth, roster, and JWT
+work can land. This ticket creates the persistence boundary for firm staff, clients,
+and platform admins while preserving least-privilege, scoped access, and the project
+rule that workflow condition stays in the Tax Plan Cycle stage rather than in a
+separate case status field.
+
+**Changed Files:**
+
+- `drizzle/0001_user_role.sql`
+- `drizzle/meta/_journal.json`
+- `drizzle/meta/0000_snapshot.json`
+- `migrations/20260628120000_create_user_and_role.sql`
+- `package.json`
+- `src/typescript/db/schema.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/userRoleMigration.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- Implementation was completed in the workspace.
+- Review action items:
+  - `npm run db:check`
+  - `npm run typecheck`
+  - `npm test`
+  - `npm run test:migration`

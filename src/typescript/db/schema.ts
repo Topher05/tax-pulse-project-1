@@ -5,10 +5,12 @@ import {
   date,
   foreignKey,
   index,
+  pgEnum,
   pgTable,
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -24,6 +26,52 @@ export const tenants = pgTable("tenants", {
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const roleNameEnum = pgEnum("user_role_name", [
+  "Firm Admin",
+  "Advisor",
+  "Client",
+  "TaxPulse Platform Admin",
+]);
+
+export const userStatusEnum = pgEnum("user_status", [
+  "invited",
+  "active",
+  "disabled",
+]);
+
+export const role = pgTable(
+  "role",
+  {
+    id: uuid("id").default(sql`uuidv7()`).primaryKey(),
+    role: roleNameEnum("role").notNull(),
+  },
+  (table) => [uniqueIndex("role_role_key").on(table.role)],
+);
+
+export const user = pgTable(
+  "user",
+  {
+    id: uuid("id").default(sql`uuidv7()`).primaryKey(),
+    tenantId: uuid("tenant_id").notNull(),
+    email: text("email").notNull(),
+    status: userStatusEnum("status").notNull(),
+    roleId: uuid("role_id").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "user_tenant_id_fk",
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }),
+    foreignKey({
+      name: "user_role_id_fk",
+      columns: [table.roleId],
+      foreignColumns: [role.id],
+    }),
+    uniqueIndex("user_tenant_id_email_key").on(table.tenantId, table.email),
+  ],
+);
 
 export const taxPlanCycle = pgTable(
   "tax_plan_cycle",
