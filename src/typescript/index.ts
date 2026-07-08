@@ -41,8 +41,6 @@ export {
   tenants,
   users,
   userStatus,
-  role,
-  user,
 } from "./db/schema.js";
 
 export {

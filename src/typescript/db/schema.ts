@@ -88,8 +88,6 @@ export const users = pgTable(
   ],
 );
 
-export { roles as role, users as user };
-
 export const taxPlanCycle = pgTable(
   "tax_plan_cycle",
   {
