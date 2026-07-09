@@ -62,6 +62,9 @@ type PgErrorLike = {
 };
 
 /*
+* Break this file into specific tests on a per-table basis, break the tests between unit and integration
+* Tests will have user/user.test.ts, user/user_integration tests etc for user, roles and user status
+* Refactor tennants and tennats migration tests as well
  * Confirm drizzle schema accuracy to old migration files
  * Need to have test file cross-ref with new schema
  * Have testcontainer and seeding strategy
