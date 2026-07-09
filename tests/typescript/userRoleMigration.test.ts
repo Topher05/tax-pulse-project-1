@@ -1,7 +1,6 @@
 import type { Client } from "pg";
 import { describe, expect, test } from "vitest";
 
-import { applyDrizzleMigrations } from "../../src/typescript/postgresMigrations.js";
 import {
   roleNameEnum,
   roles,
@@ -10,10 +9,13 @@ import {
   userStatusEnum,
   users,
 } from "../../src/typescript/db/schema.js";
-import { quoteIdentifier, withDrizzleTestSchema } from "./migrationTestUtils.js";
-
-const databaseUrl = process.env.DATABASE_URL?.trim();
-const describeMigration = databaseUrl ? describe : describe.skip;
+import {
+  roleRows,
+  tenantRows,
+  userRows,
+  userStatusRows,
+} from "../../src/typescript/db/seed.model.js";
+import { quoteIdentifier, withDockerDrizzleSeededDatabase } from "./migrationTestUtils.js";
 
 const expectedTenantColumns = ["id", "name", "created_at"];
 const expectedTenantColumnTypes = {
@@ -43,16 +45,6 @@ const expectedUserColumnTypes = {
   status_id: "integer",
 } as const;
 
-const sampleTenantIds = [
-  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d51",
-  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d52",
-] as const;
-
-const sampleUserIds = [
-  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
-  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
-] as const;
-
 type PgErrorLike = {
   code?: string;
   constraint?: string;
@@ -60,7 +52,6 @@ type PgErrorLike = {
   column?: string;
   message?: string;
 };
-
 /*
 * Break this file into specific tests on a per-table basis, break the tests between unit and integration
 * Tests will have user/user.test.ts, user/user_integration tests etc for user, roles and user status
@@ -79,7 +70,6 @@ type PgErrorLike = {
  * Idea: Impose guardrail to prevent the AI from writing direct sql without using drizzle implementation
  * Idea: Expose MCP or llms.txt hook to source documentation for ref for codex
  */
-
 async function getTableStructure(
   client: Client,
   tableName: string,
@@ -144,23 +134,6 @@ async function getTableStructure(
   };
 }
 
-async function insertSampleTenants(client: Client): Promise<void> {
-  await client.query(
-    `
-      INSERT INTO tenants (id, name, created_at)
-      VALUES ($1, $2, $3), ($4, $5, $6)
-    `,
-    [
-      sampleTenantIds[0],
-      "North Shore Advisors",
-      "2026-06-29T12:00:00Z",
-      sampleTenantIds[1],
-      "Harbor View Planning",
-      "2026-06-29T12:30:00Z",
-    ],
-  );
-}
-
 async function expectPgError(
   action: Promise<unknown>,
   expected: {
@@ -195,7 +168,7 @@ async function expectPgError(
   throw new Error(`Expected query to fail with ${expected.code}`);
 }
 
-describeMigration("user, role, and tenant migration", () => {
+describe("user, role, and tenant migration", () => {
   test("exports the auth tables and enums", () => {
     expect(tenants).toBeDefined();
     expect(roles).toBeDefined();
@@ -210,16 +183,14 @@ describeMigration("user, role, and tenant migration", () => {
     expect(userStatusEnum.enumValues).toEqual(["invited", "active", "disabled"]);
   });
 
-  test("creates tenant, lookup, and user tables with the current Drizzle schema", async () => {
-    await withDrizzleTestSchema(async (client) => {
-      await applyDrizzleMigrations(client);
-
+  test("creates tenant, lookup, and user tables with the current Drizzle schema and seeded rows", async () => {
+    await withDockerDrizzleSeededDatabase(async (client) => {
       const tenantStructure = await getTableStructure(client, "tenants");
       const roleStructure = await getTableStructure(client, "roles");
       const userStatusStructure = await getTableStructure(client, "user_status");
       const userStructure = await getTableStructure(client, "users");
 
-      expect(tenantStructure.rowCount).toBe(0);
+      expect(tenantStructure.rowCount).toBe(tenantRows.length);
       expect(tenantStructure.columns).toEqual(expectedTenantColumns);
       expect(tenantStructure.columnTypes).toEqual(expectedTenantColumnTypes);
       expect(tenantStructure.constraints.tenants_pkey?.type).toBe("p");
@@ -227,7 +198,7 @@ describeMigration("user, role, and tenant migration", () => {
         "PRIMARY KEY (id)",
       );
 
-      expect(roleStructure.rowCount).toBe(0);
+      expect(roleStructure.rowCount).toBe(roleRows.length);
       expect(roleStructure.columns).toEqual(expectedRoleColumns);
       expect(roleStructure.columnTypes).toEqual(expectedRoleColumnTypes);
       expect(roleStructure.constraints.roles_pkey?.type).toBe("p");
@@ -236,16 +207,18 @@ describeMigration("user, role, and tenant migration", () => {
       );
       expect(roleStructure.indexes).toContain("roles_role_key");
 
-      expect(userStatusStructure.rowCount).toBe(0);
+      expect(userStatusStructure.rowCount).toBe(userStatusRows.length);
       expect(userStatusStructure.columns).toEqual(expectedUserStatusColumns);
-      expect(userStatusStructure.columnTypes).toEqual(expectedUserStatusColumnTypes);
-      expect(userStatusStructure.constraints.user_status_pkey?.type).toBe("p");
-      expect(userStatusStructure.constraints.user_status_pkey?.definition).toContain(
-        "PRIMARY KEY (id)",
+      expect(userStatusStructure.columnTypes).toEqual(
+        expectedUserStatusColumnTypes,
       );
+      expect(userStatusStructure.constraints.user_status_pkey?.type).toBe("p");
+      expect(
+        userStatusStructure.constraints.user_status_pkey?.definition,
+      ).toContain("PRIMARY KEY (id)");
       expect(userStatusStructure.indexes).toContain("user_status_status_key");
 
-      expect(userStructure.rowCount).toBe(0);
+      expect(userStructure.rowCount).toBe(userRows.length);
       expect(userStructure.columns).toEqual(expectedUserColumns);
       expect(userStructure.columnTypes).toEqual(expectedUserColumnTypes);
       expect(userStructure.constraints.users_pkey?.type).toBe("p");
@@ -253,70 +226,62 @@ describeMigration("user, role, and tenant migration", () => {
       expect(userStructure.constraints.users_role_id_fk?.type).toBe("f");
       expect(userStructure.constraints.users_status_id_fk?.type).toBe("f");
       expect(userStructure.indexes).toContain("users_tenant_id_email_key");
+
+      const tenantRowsResult = await client.query(
+        `
+          SELECT id, name
+          FROM tenants
+          ORDER BY id
+        `,
+      );
+      expect(tenantRowsResult.rows).toEqual(
+        tenantRows.map((row) => ({
+          id: row.id,
+          name: row.name,
+        })),
+      );
+
+      const roleRowsResult = await client.query(
+        `
+          SELECT id, role
+          FROM roles
+          ORDER BY id
+        `,
+      );
+      expect(roleRowsResult.rows).toEqual(roleRows);
+
+      const userStatusRowsResult = await client.query(
+        `
+          SELECT id, status
+          FROM user_status
+          ORDER BY id
+        `,
+      );
+      expect(userStatusRowsResult.rows).toEqual(userStatusRows);
+
+      const userRowsResult = await client.query(
+        `
+          SELECT id, tenant_id, email, role_id, status_id
+          FROM users
+          ORDER BY id
+        `,
+      );
+      expect(userRowsResult.rows).toEqual(userRows);
     });
   });
 
   test("enforces primary keys, unique indexes, foreign keys, and enum column types", async () => {
-    await withDrizzleTestSchema(async (client) => {
-      await applyDrizzleMigrations(client);
-      await insertSampleTenants(client);
-
-      await client.query(
-        `
-          INSERT INTO roles (id, role) VALUES
-            (1, 'Firm Admin'),
-            (2, 'Advisor'),
-            (3, 'Client'),
-            (4, 'TaxPulse Platform Admin')
-        `,
-      );
-      await client.query(
-        `
-          INSERT INTO user_status (id, status) VALUES
-            (1, 'invited'),
-            (2, 'active'),
-            (3, 'disabled')
-        `,
-      );
-
-      await client.query(
-        `
-          INSERT INTO users (
-            id,
-            tenant_id,
-            email,
-            role_id,
-            status_id
-          ) VALUES
-            ($1, $2, $3, $4, $5),
-            ($6, $7, $8, $9, $10)
-        `,
-        [
-          sampleUserIds[0],
-          sampleTenantIds[0],
-          "alex@example.com",
-          1,
-          1,
-          sampleUserIds[1],
-          sampleTenantIds[1],
-          "alex@example.com",
-          2,
-          2,
-        ],
-      );
-
+    await withDockerDrizzleSeededDatabase(async (client) => {
       await expectPgError(
         client.query(`INSERT INTO roles (id, role) VALUES (1, 'Firm Admin')`),
         { code: "23505", constraint: "roles_pkey" },
       );
       await expectPgError(
-        client.query(
-          `INSERT INTO roles (id, role) VALUES (5, 'Firm Admin')`,
-        ),
+        client.query(`INSERT INTO roles (id, role) VALUES (999, 'Firm Admin')`),
         { code: "23505", constraint: "roles_role_key" },
       );
       await expectPgError(
-        client.query(`INSERT INTO roles (id, role) VALUES (6, 'Not a role')`),
+        client.query(`INSERT INTO roles (id, role) VALUES (1000, 'Not a role')`),
         { code: "22P02", messageIncludes: "invalid input value for enum" },
       );
 
@@ -328,13 +293,13 @@ describeMigration("user, role, and tenant migration", () => {
       );
       await expectPgError(
         client.query(
-          `INSERT INTO user_status (id, status) VALUES (4, 'invited')`,
+          `INSERT INTO user_status (id, status) VALUES (999, 'invited')`,
         ),
         { code: "23505", constraint: "user_status_status_key" },
       );
       await expectPgError(
         client.query(
-          `INSERT INTO user_status (id, status) VALUES (5, 'archived')`,
+          `INSERT INTO user_status (id, status) VALUES (1000, 'archived')`,
         ),
         { code: "22P02", messageIncludes: "invalid input value for enum" },
       );
@@ -343,13 +308,20 @@ describeMigration("user, role, and tenant migration", () => {
         client.query(
           `
             INSERT INTO users (
+              id,
               tenant_id,
               email,
               role_id,
               status_id
-            ) VALUES ($1, $2, $3, $4)
+            ) VALUES ($1, $2, $3, $4, $5)
           `,
-          [sampleTenantIds[0], "alex@example.com", 3, 3],
+          [
+            "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9dff",
+            userRows[0].tenantId,
+            userRows[0].email,
+            userRows[0].roleId,
+            userRows[0].statusId,
+          ],
         ),
         { code: "23505", constraint: "users_tenant_id_email_key" },
       );
@@ -377,7 +349,7 @@ describeMigration("user, role, and tenant migration", () => {
               status_id
             ) VALUES ($1, $2, $3, $4)
           `,
-          [sampleTenantIds[0], "role-missing@example.com", 999, 1],
+          [userRows[0].tenantId, "role-missing@example.com", 999, 1],
         ),
         { code: "23503", constraint: "users_role_id_fk" },
       );
@@ -391,7 +363,7 @@ describeMigration("user, role, and tenant migration", () => {
               status_id
             ) VALUES ($1, $2, $3, $4)
           `,
-          [sampleTenantIds[0], "status-missing@example.com", 1, 999],
+          [userRows[0].tenantId, "status-missing@example.com", 1, 999],
         ),
         { code: "23503", constraint: "users_status_id_fk" },
       );
@@ -419,7 +391,7 @@ describeMigration("user, role, and tenant migration", () => {
               status_id
             ) VALUES ($1, $2, $3, $4)
           `,
-          [sampleTenantIds[0], "type-bad-role@example.com", "bad-role", 1],
+          [userRows[0].tenantId, "type-bad-role@example.com", "bad-role", 1],
         ),
         {
           code: "22P02",
@@ -436,7 +408,7 @@ describeMigration("user, role, and tenant migration", () => {
               status_id
             ) VALUES ($1, $2, $3, $4)
           `,
-          [sampleTenantIds[0], "type-bad-status@example.com", 1, "bad-status"],
+          [userRows[0].tenantId, "type-bad-status@example.com", 1, "bad-status"],
         ),
         {
           code: "22P02",

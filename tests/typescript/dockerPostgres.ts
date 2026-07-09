@@ -15,6 +15,10 @@ export interface DockerPostgresContainer {
   stop(): Promise<void>;
 }
 
+export interface DockerPostgresBootstrapOptions {
+  bootstrap?: (connectionUri: string) => Promise<void>;
+}
+
 const defaultDockerPostgresImage = "postgres:18-alpine";
 const defaultDockerPostgresDb = "taxpulse";
 const defaultDockerPostgresUser = "postgres";
@@ -51,7 +55,6 @@ function toPostgresConnectionUri(
   return `postgres://${encodedUser}:${encodedPassword}@${host}:${hostPort}/${database}`;
 }
 
-// Testcontainers owns the lifecycle; this helper only resolves a ready-to-use URI.
 async function waitForConnection(connectionUri: string): Promise<void> {
   const timeoutMs = 30_000;
   const deadline = Date.now() + timeoutMs;
@@ -94,7 +97,9 @@ function createPostgresContainer(
     .withStartupTimeout(45_000);
 }
 
-export async function startDockerPostgresContainer(): Promise<DockerPostgresContainer> {
+export async function startDockerPostgresContainer(
+  options: DockerPostgresBootstrapOptions = {},
+): Promise<DockerPostgresContainer> {
   const config = getDockerPostgresConfig();
   const startedContainer: StartedTestContainer = await createPostgresContainer(
     config.image,
@@ -112,7 +117,13 @@ export async function startDockerPostgresContainer(): Promise<DockerPostgresCont
     config.database,
   );
 
-  await waitForConnection(connectionUri);
+  try {
+    await waitForConnection(connectionUri);
+    await options.bootstrap?.(connectionUri);
+  } catch (error) {
+    await startedContainer.stop().catch(() => undefined);
+    throw error;
+  }
 
   return {
     connectionUri,

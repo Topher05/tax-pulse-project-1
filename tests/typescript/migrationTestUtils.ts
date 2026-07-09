@@ -1,8 +1,13 @@
 import { randomUUID } from "node:crypto";
 
-import type { Client } from "pg";
+import { Client } from "pg";
 
-import { withDatabaseClient } from "../../src/typescript/postgresMigrations.js";
+import {
+  applyDrizzleMigrations,
+  withDatabaseClient,
+} from "../../src/typescript/postgresMigrations.js";
+import { applySeed } from "../../src/typescript/db/seed.js";
+import { startDockerPostgresContainer } from "./dockerPostgres.js";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 
@@ -50,4 +55,38 @@ export async function withDrizzleTestSchema<T>(
       await dropDrizzlePublicTypes(client);
     }
   });
+}
+
+export async function withDockerDrizzleSeededDatabase<T>(
+  callback: (client: Client) => Promise<T>,
+): Promise<T> {
+  const container = await startDockerPostgresContainer({
+    bootstrap: async (connectionUri: string) => {
+      const bootstrapClient = new Client({
+        connectionString: connectionUri,
+      });
+
+      await bootstrapClient.connect();
+
+      try {
+        await applyDrizzleMigrations(bootstrapClient);
+        await applySeed(bootstrapClient);
+      } finally {
+        await bootstrapClient.end();
+      }
+    },
+  });
+  const client = new Client({
+    connectionString: container.connectionUri,
+  });
+
+  await client.connect();
+
+  try {
+    return await callback(client);
+  } finally {
+    await client.query("RESET search_path").catch(() => undefined);
+    await client.end().catch(() => undefined);
+    await container.stop();
+  }
 }
