@@ -4,22 +4,12 @@ import { ZodError } from "zod";
 import {
   taxPlanCycleSchema,
   type TaxPlanCycle,
-} from "../../src/typescript/index.js";
+} from "../../../src/typescript/index.js";
+import { wellFormedCycle } from "./taxPlanCycle.test.model.js";
 
 describe("taxPlanCycleSchema", () => {
-  const wellFormedCycle: TaxPlanCycle = {
-    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
-    client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
-    stage: "Review",
-    owner: "advisor-123",
-    priority: "high",
-    due_date: "2026-12-31",
-    on_hold: false,
-  };
-
   test("parses a well-formed cycle and reuses the inferred type", () => {
-    const parsedCycle: TaxPlanCycle =
-      taxPlanCycleSchema.parse(wellFormedCycle);
+    const parsedCycle: TaxPlanCycle = taxPlanCycleSchema.parse(wellFormedCycle);
 
     expect(parsedCycle).toEqual(wellFormedCycle);
   });
