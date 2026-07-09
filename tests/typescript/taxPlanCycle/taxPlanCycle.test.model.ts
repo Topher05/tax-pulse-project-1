@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import {
   taxPlanCyclePrioritySchema,
+  taxPlanCycleSchema,
   taxPlanCycleStageSchema,
 } from "../../../src/typescript/taxPlanCycle.js";
 
@@ -145,3 +146,13 @@ export const stageTransitionDbRowSchema = z
   }));
 
 export const stageTransitionDbRowsSchema = z.array(stageTransitionDbRowSchema);
+
+export const taxPlanCycleRepositoryQueueItemSchema = taxPlanCycleSchema.and(
+  z.object({
+    is_overdue: z.boolean(),
+  }),
+);
+
+export const taxPlanCycleRepositoryQueueItemsSchema = z.array(
+  taxPlanCycleRepositoryQueueItemSchema,
+);

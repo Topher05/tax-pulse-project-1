@@ -5,7 +5,14 @@ import {
   taxPlanCycleSchema,
   type TaxPlanCycle,
 } from "../../../src/typescript/index.js";
-import { wellFormedCycle } from "./taxPlanCycle.test.model.js";
+import {
+  expectedStageTransitionRows,
+  expectedTaxPlanCycleRows,
+  stageTransitionDbRowsSchema,
+  taxPlanCycleDbRowsSchema,
+  taxPlanCycleRepositoryQueueItemsSchema,
+  wellFormedCycle,
+} from "./taxPlanCycle.test.model.js";
 
 describe("taxPlanCycleSchema", () => {
   test("parses a well-formed cycle and reuses the inferred type", () => {
@@ -36,5 +43,33 @@ describe("taxPlanCycleSchema", () => {
       expect(result.error).toBeInstanceOf(ZodError);
       expect(result.error.issues[0]?.path).toEqual(["stage"]);
     }
+  });
+
+  test("parses tax plan cycle db rows into the expected public shape", () => {
+    expect(taxPlanCycleDbRowsSchema.parse(expectedTaxPlanCycleRows)).toEqual(
+      expectedTaxPlanCycleRows,
+    );
+  });
+
+  test("parses stage transition db rows into hydrated Date objects", () => {
+    expect(stageTransitionDbRowsSchema.parse(expectedStageTransitionRows)).toEqual(
+      expectedStageTransitionRows,
+    );
+  });
+
+  test("parses repository queue items with overdue flags", () => {
+    expect(
+      taxPlanCycleRepositoryQueueItemsSchema.parse([
+        {
+          ...wellFormedCycle,
+          is_overdue: true,
+        },
+      ]),
+    ).toEqual([
+      {
+        ...wellFormedCycle,
+        is_overdue: true,
+      },
+    ]);
   });
 });

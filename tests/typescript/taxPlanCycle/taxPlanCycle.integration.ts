@@ -1,16 +1,24 @@
 import { asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { once } from "node:events";
 import { join } from "node:path";
+import type { AddressInfo } from "node:net";
 import { Client } from "pg";
+import type { RequestHandler } from "express";
 import { describe, expect, test } from "vitest";
-import { z } from "zod";
 
-import { stageTransition, taxPlanCycle, tenants } from "../../../src/typescript/db/schema.js";
 import {
+  createApp,
+  createLogger,
+  createTaxPlanCycleCreateController,
   createTaxPlanCycleReadHelper,
   createTaxPlanCycleRepository,
+  createTaxPlanCycleRouter,
+  stageTransition,
+  taxPlanCycle,
   taxPlanCycleSchema,
+  tenants,
 } from "../../../src/typescript/index.js";
 import {
   applyDrizzleMigrations,
@@ -32,8 +40,14 @@ import {
   sampleStageTransitionId,
   sampleTenant,
   stageTransitionDbRowsSchema,
+  taxPlanCycleRepositoryQueueItemsSchema,
   taxPlanCycleDbRowsSchema,
 } from "./taxPlanCycle.test.model.js";
+
+const sampleTenantIds = [
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+  "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02",
+] as const;
 
 const repositoryTenantIds = {
   primary: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d41",
@@ -60,15 +74,45 @@ const repositoryQueueClientIds = {
   otherTenant: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d50",
 } as const;
 
-const taxPlanCycleRepositoryQueueItemSchema = taxPlanCycleSchema.and(
-  z.object({
-    is_overdue: z.boolean(),
-  }),
-);
+const silentLogger = createLogger({ level: "silent" });
 
-const taxPlanCycleRepositoryQueueItemsSchema = z.array(
-  taxPlanCycleRepositoryQueueItemSchema,
-);
+const attachRequestContext: RequestHandler = (req, _res, next) => {
+  (req as typeof req & { tenant: { id: string } }).tenant = {
+    id: sampleTenant.id,
+  };
+  (req as typeof req & { user: { id: string } }).user = {
+    id: "advisor-route-actor-001",
+  };
+  next();
+};
+
+async function withRouteServer(
+  repository: ReturnType<typeof createTaxPlanCycleRepository>,
+  run: (baseUrl: string) => Promise<void>,
+): Promise<void> {
+  const app = createApp({
+    logger: silentLogger,
+    registerRoutes: (app) => {
+      app.use(attachRequestContext);
+      app.use(
+        createTaxPlanCycleRouter({
+          controller: createTaxPlanCycleCreateController(repository),
+        }),
+      );
+    },
+  });
+
+  const server = app.listen(0);
+  await once(server, "listening");
+
+  try {
+    const address = server.address() as AddressInfo;
+    await run(`http://127.0.0.1:${address.port}`);
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+}
 
 async function withTaxPlanCycleIntegrationDatabase<T>(
   callback: (client: Client) => Promise<T>,
@@ -298,7 +342,7 @@ describe("taxPlanCycle integration", () => {
         taxPlanCycleSchema.parse({
           id: secondaryCaseId,
           client_id: repositoryClientIds.secondary,
-          stage: "Review",
+          stage: "Intake",
           owner: "advisor-repo-002",
           priority: "medium",
           due_date: "2026-08-15",
@@ -413,6 +457,228 @@ describe("taxPlanCycle integration", () => {
           is_overdue: false,
         },
       ]);
+    });
+  });
+
+  test("scopes reads to the request tenant by generated case ID", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleReadHelper(client);
+
+      await db.insert(tenants).values([
+        {
+          id: sampleTenantIds[0],
+          name: "Generated Sample Tenant One",
+          createdAt: new Date("2026-06-29T13:00:00Z"),
+        },
+        {
+          id: sampleTenantIds[1],
+          name: "Generated Sample Tenant Two",
+          createdAt: new Date("2026-06-29T13:30:00Z"),
+        },
+      ]);
+
+      await db.insert(taxPlanCycle).values([
+        {
+          id: sampleCycleIds[0],
+          clientId: sampleClientIds[0],
+          tenantId: sampleTenantIds[0],
+          planningPeriod: "2026-Q3",
+          stage: "Review",
+          owner: "advisor-001",
+          priority: "high",
+          dueDate: "2026-07-15",
+          onHold: false,
+        },
+        {
+          id: sampleCycleIds[1],
+          clientId: sampleClientIds[1],
+          tenantId: sampleTenantIds[1],
+          planningPeriod: "2026-Q4",
+          stage: "Intake",
+          owner: "advisor-002",
+          priority: "medium",
+          dueDate: "2026-08-15",
+          onHold: true,
+          holdReason: "Awaiting client documents",
+        },
+      ]);
+
+      await expect(
+        repository.findByCaseId({
+          tenantId: sampleTenantIds[0],
+          caseId: sampleCycleIds[0],
+        }),
+      ).resolves.toEqual({
+        id: sampleCycleIds[0],
+        client_id: sampleClientIds[0],
+        stage: "Review",
+        owner: "advisor-001",
+        priority: "high",
+        due_date: "2026-07-15",
+        on_hold: false,
+      });
+
+      await expect(
+        repository.findByCaseId({
+          tenantId: sampleTenantIds[0],
+          caseId: sampleCycleIds[1],
+        }),
+      ).resolves.toBeNull();
+
+      await expect(
+        repository.findByCaseId({
+          tenantId: sampleTenantIds[1],
+          caseId: sampleCycleIds[1],
+        }),
+      ).resolves.toEqual({
+        id: sampleCycleIds[1],
+        client_id: sampleClientIds[1],
+        stage: "Intake",
+        owner: "advisor-002",
+        priority: "medium",
+        due_date: "2026-08-15",
+        on_hold: true,
+        hold_reason: "Awaiting client documents",
+      });
+    });
+  });
+
+  test("creates a cycle in Intake through Drizzle and reads it back", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+
+      await seedSampleTenant(client);
+
+      const caseId = await repository.create({
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q1",
+        clientId: repositoryClientIds.primary,
+        owner: "advisor-003",
+        priority: "low",
+        dueDate: "2026-09-30",
+        actor: "advisor-003",
+      });
+
+      expect(caseId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      );
+
+      await expect(
+        repository.findByCaseId({
+          tenantId: sampleTenant.id,
+          caseId,
+        }),
+      ).resolves.toEqual({
+        id: caseId,
+        client_id: repositoryClientIds.primary,
+        stage: "Intake",
+        owner: "advisor-003",
+        priority: "low",
+        due_date: "2026-09-30",
+        on_hold: false,
+      });
+
+      await expect(
+        repository.findByCaseId({
+          tenantId: sampleTenantIds[1],
+          caseId,
+        }),
+      ).resolves.toBeNull();
+
+      const transitionRows = await db
+        .select({
+          id: stageTransition.id,
+          case_id: stageTransition.caseId,
+          from_stage: stageTransition.fromStage,
+          to_stage: stageTransition.toStage,
+          actor: stageTransition.actor,
+          occurred_at: stageTransition.occurredAt,
+        })
+        .from(stageTransition)
+        .where(eq(stageTransition.caseId, caseId));
+
+      expect(stageTransitionDbRowsSchema.parse(transitionRows)).toHaveLength(1);
+      expect(transitionRows[0]).toMatchObject({
+        case_id: caseId,
+        from_stage: "Intake",
+        to_stage: "Intake",
+        actor: "advisor-003",
+      });
+      expect(transitionRows[0]?.occurred_at).toBeInstanceOf(Date);
+    });
+  });
+
+  test("POST creates a tenant-scoped Intake cycle and initial transition", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+
+      await seedSampleTenant(client);
+
+      await withRouteServer(repository, async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+            planning_period: "2026-Q2",
+            owner: "advisor-route-owner-001",
+            priority: "medium",
+            due_date: "2026-10-15",
+          }),
+        });
+        const body = (await response.json()) as { case_id: string };
+
+        expect(response.status).toBe(202);
+        expect(body.case_id).toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+        );
+
+        await expect(
+          repository.findByCaseId({
+            tenantId: sampleTenant.id,
+            caseId: body.case_id,
+          }),
+        ).resolves.toEqual({
+          id: body.case_id,
+          client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+          stage: "Intake",
+          owner: "advisor-route-owner-001",
+          priority: "medium",
+          due_date: "2026-10-15",
+          on_hold: false,
+        });
+
+        await expect(
+          repository.findByCaseId({
+            tenantId: sampleTenantIds[1],
+            caseId: body.case_id,
+          }),
+        ).resolves.toBeNull();
+
+        const transitionRows = await db
+          .select({
+            id: stageTransition.id,
+            case_id: stageTransition.caseId,
+            from_stage: stageTransition.fromStage,
+            to_stage: stageTransition.toStage,
+            actor: stageTransition.actor,
+            occurred_at: stageTransition.occurredAt,
+          })
+          .from(stageTransition)
+          .where(eq(stageTransition.caseId, body.case_id));
+
+        expect(stageTransitionDbRowsSchema.parse(transitionRows)).toHaveLength(1);
+        expect(transitionRows[0]).toMatchObject({
+          case_id: body.case_id,
+          from_stage: "Intake",
+          to_stage: "Intake",
+          actor: "advisor-route-actor-001",
+        });
+        expect(transitionRows[0]?.occurred_at).toBeInstanceOf(Date);
+      });
     });
   });
 

@@ -3,6 +3,73 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## christopher-martus-jira53 - SCRUM-53
+
+**Branch:** `christopher-martus-jira53`
+
+**Owner:** Christopher Martus
+
+**Epic:** SCRUM-13 - Domain Model & Walking Skeleton
+
+**Summary:** Wire create-cycle to persist in Intake stage
+
+**CSV Description:** As an Advisor, I want creating a Tax Plan Cycle to persist it in
+Intake, so that a new cycle is recorded against a client and planning period.
+
+**Acceptance Criteria:**
+
+- POST creates a cycle in Intake stage for a given client and planning period and returns
+  its case ID.
+- A creation also writes the initial stage_transition row.
+
+**How This Ties Into the Code:**
+
+- `TaxPlanCycleRepository.create` now accepts tenant-scoped creation data without a
+  caller-selected `stage`.
+- Repository create persistence writes `tax_plan_cycle.stage` as `Intake`, stores the
+  submitted `due_date`, and returns the generated case ID.
+- The same create transaction writes the initial `stage_transition` row for the generated
+  case ID.
+- Because the current `stage_transition.from_stage` column is non-null, the initial entry
+  is represented as `Intake` to `Intake` with the supplied actor and current timestamp.
+- `taxPlanCycleCreateSchema` now validates the POST body shape without a caller-selected
+  `stage`, while requiring `planning_period`, owner, priority, client ID, and due date.
+- `createTaxPlanCycleRouter` reads tenant and actor context, then delegates to the
+  repository-backed create controller, which returns the generated `case_id`.
+- The legacy repository `insert` path remains for compatibility but also writes `Intake`
+  so repository persistence cannot choose a different initial stage.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory starts each tenant-scoped Tax Plan Cycle in Intake so advisors have a
+single workflow source of truth in the case stage. This repository slice preserves tenant
+isolation and avoids introducing a separate status field while preparing the create-cycle
+flow for route/controller wiring and initial transition history.
+
+**Changed Files:**
+
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycle.ts`
+- `src/typescript/taxPlanCycleCreateController.ts`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/taxPlanCycleRead.typecheck.ts`
+- `tests/typescript/taxPlanCycleRepository.integration.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed; 2 files and 12 tests passed.
+- `npm run test:integration -- tests/typescript/taxPlanCycleRepository.integration.ts`
+  first failed in the sandbox because Testcontainers could not find a container runtime.
+- The same repository integration command passed with Docker/Testcontainers access; 1 file
+  and 4 tests passed.
+
 ## martins-okorie-jira46 - SCRUM-46
 
 **Branch:** `martins-okorie-jira46`

@@ -19,21 +19,28 @@ const silentLogger = createLogger({ level: "silent" });
 
 const validCreateBody: TaxPlanCycleCreateInput = {
   client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
-  stage: "Review",
+  planning_period: "2026-Q4",
   owner: "advisor-123",
   priority: "high",
   due_date: "2026-12-31",
-  on_hold: false,
 };
 
 const validReadCycle: TaxPlanCycle = {
   id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
-  ...validCreateBody,
+  client_id: validCreateBody.client_id,
+  stage: "Review",
+  owner: validCreateBody.owner,
+  priority: validCreateBody.priority,
+  due_date: validCreateBody.due_date,
+  on_hold: false,
 };
 
 const attachTenant: RequestHandler = (req, _res, next) => {
   (req as typeof req & { tenant: { id: string } }).tenant = {
     id: "tenant-001",
+  };
+  (req as typeof req & { user: { id: string } }).user = {
+    id: "actor-001",
   };
   next();
 };
@@ -65,7 +72,7 @@ async function withRouteServer(
 describe("createTaxPlanCycleRouter", () => {
   test("returns 400 Problem Details for malformed creates", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
-      accepted: true,
+      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
     }));
     const findByCaseId = vi.fn<
       TaxPlanCycleCreateController["findByCaseId"]
@@ -96,8 +103,8 @@ describe("createTaxPlanCycleRouter", () => {
       });
       expect(body.issues).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ path: ["stage"] }),
           expect.objectContaining({ path: ["owner"] }),
+          expect.objectContaining({ code: "unrecognized_keys" }),
         ]),
       );
       expect(create).not.toHaveBeenCalled();
@@ -106,7 +113,7 @@ describe("createTaxPlanCycleRouter", () => {
 
   test("passes valid creates to the controller layer", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
-      accepted: true,
+      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
     }));
     const findByCaseId = vi.fn<
       TaxPlanCycleCreateController["findByCaseId"]
@@ -120,9 +127,15 @@ describe("createTaxPlanCycleRouter", () => {
       });
 
       expect(response.status).toBe(202);
-      await expect(response.json()).resolves.toEqual({ accepted: true });
+      await expect(response.json()).resolves.toEqual({
+        case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+      });
       expect(create).toHaveBeenCalledTimes(1);
-      expect(create).toHaveBeenCalledWith(validCreateBody);
+      expect(create).toHaveBeenCalledWith({
+        ...validCreateBody,
+        tenantId: "tenant-001",
+        actor: "actor-001",
+      });
     });
   });
 
@@ -162,7 +175,7 @@ describe("createTaxPlanCycleRouter", () => {
 
   test("returns a tenant-scoped cycle by case ID", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
-      accepted: true,
+      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
     }));
     const findByCaseId = vi.fn<
       TaxPlanCycleCreateController["findByCaseId"]
@@ -186,7 +199,7 @@ describe("createTaxPlanCycleRouter", () => {
 
   test("returns 404 Problem Details for an unknown case ID", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
-      accepted: true,
+      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
     }));
     const findByCaseId = vi.fn<
       TaxPlanCycleCreateController["findByCaseId"]
@@ -216,7 +229,7 @@ describe("createTaxPlanCycleRouter", () => {
 
   test("returns 404 when a case exists outside the request tenant", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
-      accepted: true,
+      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
     }));
     const findByCaseId = vi.fn<
       TaxPlanCycleCreateController["findByCaseId"]
@@ -240,7 +253,7 @@ describe("createTaxPlanCycleRouter", () => {
 
   test("returns 400 Problem Details for an invalid case ID path parameter", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
-      accepted: true,
+      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
     }));
     const findByCaseId = vi.fn<
       TaxPlanCycleCreateController["findByCaseId"]

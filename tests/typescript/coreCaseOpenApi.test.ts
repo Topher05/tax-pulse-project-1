@@ -13,7 +13,6 @@ import {
   taxPlanCycleCreateSchema,
   taxPlanCycleReadParamsSchema,
   taxPlanCycleSchema,
-  taxPlanCycleStages,
 } from "../../src/typescript/index.js";
 
 const silentLogger = createLogger({ level: "silent" });
@@ -181,20 +180,19 @@ describe("Core Case Service OpenAPI document", () => {
     const jsonContent = requiredRecord(content, "application/json");
     const createSchema = requiredRecord(jsonContent, "schema");
     const properties = requiredRecord(createSchema, "properties");
-    const stageSchema = requiredRecord(properties, "stage");
 
     expect(Object.keys(properties)).toEqual(
       expect.arrayContaining([
         "client_id",
-        "stage",
+        "planning_period",
         "owner",
         "priority",
         "due_date",
-        "on_hold",
       ]),
     );
+    expect(properties.stage).toBeUndefined();
+    expect(properties.on_hold).toBeUndefined();
     expect(properties.status).toBeUndefined();
-    expect(stageSchema.enum).toEqual([...taxPlanCycleStages]);
   });
 
   test("registers the same zod schema objects used by routes and domain exports", () => {
