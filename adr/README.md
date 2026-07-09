@@ -8,3 +8,4 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0003: AsyncIO Testing Utility](./0003-asyncio-testing.md)
 - [ADR-0004: Testcontainers](./0004-Testcontainers.md)
 - [ADR-0005: Use drizzle-seed for deterministic synthetic seed data](./0005-drizzle-seed-installation.md)
+- [ADR-0006: Use Vitest coverage-v8 for TypeScript coverage reporting](./0006-vitest-coverage-v8.md)

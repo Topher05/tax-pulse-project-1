@@ -83,6 +83,18 @@ python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')
 python -m pytest
 ```
 
+### TypeScript Coverage
+
+Vitest with `@vitest/coverage-v8` is the standard coverage path for the TypeScript
+suite. Use this command to generate local coverage output and reporting:
+
+```bash
+npm run test:cov
+```
+
+Coverage reporting follows the Vitest workflow, so the generated report reflects the
+same test harness used by `npm run test:vitest`.
+
 ## Contributor Workflow
 
 Use these docs as the source of truth for branch naming, PR shape, and review checks:
