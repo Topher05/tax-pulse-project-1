@@ -4,8 +4,14 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { Client } from "pg";
 import { describe, expect, test } from "vitest";
+import { z } from "zod";
 
 import { stageTransition, taxPlanCycle, tenants } from "../../../src/typescript/db/schema.js";
+import {
+  createTaxPlanCycleReadHelper,
+  createTaxPlanCycleRepository,
+  taxPlanCycleSchema,
+} from "../../../src/typescript/index.js";
 import {
   applyDrizzleMigrations,
   drizzleAppliedMigrationsTableName,
@@ -28,6 +34,41 @@ import {
   stageTransitionDbRowsSchema,
   taxPlanCycleDbRowsSchema,
 } from "./taxPlanCycle.test.model.js";
+
+const repositoryTenantIds = {
+  primary: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d41",
+  secondary: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d42",
+} as const;
+
+const repositoryClientIds = {
+  primary: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d45",
+  secondary: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d46",
+} as const;
+
+const repositoryQueueTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d47";
+const repositoryQueueOtherTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d48";
+const repositoryQueueCycleIds = {
+  overdue: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d49",
+  onHold: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d4a",
+  future: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d4b",
+  otherTenant: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d4c",
+} as const;
+const repositoryQueueClientIds = {
+  overdue: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d4d",
+  onHold: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d4e",
+  future: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d4f",
+  otherTenant: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d50",
+} as const;
+
+const taxPlanCycleRepositoryQueueItemSchema = taxPlanCycleSchema.and(
+  z.object({
+    is_overdue: z.boolean(),
+  }),
+);
+
+const taxPlanCycleRepositoryQueueItemsSchema = z.array(
+  taxPlanCycleRepositoryQueueItemSchema,
+);
 
 async function withTaxPlanCycleIntegrationDatabase<T>(
   callback: (client: Client) => Promise<T>,
@@ -175,6 +216,203 @@ describe("taxPlanCycle integration", () => {
       expect(taxPlanCycleDbRowsSchema.parse(rows)).toEqual(
         expectedTaxPlanCycleRows,
       );
+
+    });
+  });
+
+  test("scopes repository reads and preserves insert round-trips", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+      const readHelper = createTaxPlanCycleReadHelper(client);
+
+      await db.insert(tenants).values([
+        {
+          id: repositoryTenantIds.primary,
+          name: "Repository Primary Tenant",
+          createdAt: new Date("2026-06-29T15:00:00Z"),
+        },
+        {
+          id: repositoryTenantIds.secondary,
+          name: "Repository Secondary Tenant",
+          createdAt: new Date("2026-06-29T15:30:00Z"),
+        },
+      ]);
+
+      const primaryCaseId = await repository.insert({
+        tenantId: repositoryTenantIds.primary,
+        planningPeriod: "2026-Q1",
+        cycle: {
+          client_id: repositoryClientIds.primary,
+          stage: "Intake",
+          owner: "advisor-repo-001",
+          priority: "low",
+          due_date: "2026-09-30",
+          on_hold: false,
+        },
+      });
+      const secondaryCaseId = await repository.insert({
+        tenantId: repositoryTenantIds.secondary,
+        planningPeriod: "2026-Q2",
+        cycle: {
+          client_id: repositoryClientIds.secondary,
+          stage: "Review",
+          owner: "advisor-repo-002",
+          priority: "medium",
+          due_date: "2026-08-15",
+          on_hold: true,
+          hold_reason: "Awaiting client documents",
+        },
+      });
+
+      await expect(
+        readHelper.findByCaseId({
+          tenantId: repositoryTenantIds.primary,
+          caseId: primaryCaseId,
+        }),
+      ).resolves.toEqual(
+        taxPlanCycleSchema.parse({
+          id: primaryCaseId,
+          client_id: repositoryClientIds.primary,
+          stage: "Intake",
+          owner: "advisor-repo-001",
+          priority: "low",
+          due_date: "2026-09-30",
+          on_hold: false,
+        }),
+      );
+
+      await expect(
+        readHelper.findByCaseId({
+          tenantId: repositoryTenantIds.primary,
+          caseId: secondaryCaseId,
+        }),
+      ).resolves.toBeNull();
+
+      await expect(
+        readHelper.findByCaseId({
+          tenantId: repositoryTenantIds.secondary,
+          caseId: secondaryCaseId,
+        }),
+      ).resolves.toEqual(
+        taxPlanCycleSchema.parse({
+          id: secondaryCaseId,
+          client_id: repositoryClientIds.secondary,
+          stage: "Review",
+          owner: "advisor-repo-002",
+          priority: "medium",
+          due_date: "2026-08-15",
+          on_hold: true,
+          hold_reason: "Awaiting client documents",
+        }),
+      );
+    });
+  });
+
+  test("lists a tenant's queue by due date and flags overdue cycles", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+
+      await db.insert(tenants).values([
+        {
+          id: repositoryQueueTenantId,
+          name: "Queue Tenant Advisors",
+          createdAt: new Date("2026-06-29T16:00:00Z"),
+        },
+        {
+          id: repositoryQueueOtherTenantId,
+          name: "Other Queue Tenant",
+          createdAt: new Date("2026-06-29T16:30:00Z"),
+        },
+      ]);
+
+      await db.insert(taxPlanCycle).values([
+        {
+          id: repositoryQueueCycleIds.overdue,
+          clientId: repositoryQueueClientIds.overdue,
+          tenantId: repositoryQueueTenantId,
+          planningPeriod: "2026-Q1",
+          stage: "Intake",
+          owner: "advisor-queue-001",
+          priority: "medium",
+          dueDate: "2026-07-10",
+          onHold: false,
+        },
+        {
+          id: repositoryQueueCycleIds.onHold,
+          clientId: repositoryQueueClientIds.onHold,
+          tenantId: repositoryQueueTenantId,
+          planningPeriod: "2026-Q2",
+          stage: "Review",
+          owner: "advisor-queue-002",
+          priority: "high",
+          dueDate: "2026-07-15",
+          onHold: true,
+          holdReason: "Client upload pending",
+        },
+        {
+          id: repositoryQueueCycleIds.future,
+          clientId: repositoryQueueClientIds.future,
+          tenantId: repositoryQueueTenantId,
+          planningPeriod: "2026-Q3",
+          stage: "Modeling",
+          owner: "advisor-queue-003",
+          priority: "low",
+          dueDate: "2026-07-20",
+          onHold: false,
+        },
+        {
+          id: repositoryQueueCycleIds.otherTenant,
+          clientId: repositoryQueueClientIds.otherTenant,
+          tenantId: repositoryQueueOtherTenantId,
+          planningPeriod: "2026-Q4",
+          stage: "Executed",
+          owner: "advisor-queue-004",
+          priority: "medium",
+          dueDate: "2026-07-01",
+          onHold: false,
+        },
+      ]);
+
+      const rows = await repository.listQueue({
+        tenantId: repositoryQueueTenantId,
+        asOfDate: "2026-07-15",
+      });
+
+      expect(taxPlanCycleRepositoryQueueItemsSchema.parse(rows)).toEqual([
+        {
+          id: repositoryQueueCycleIds.overdue,
+          client_id: repositoryQueueClientIds.overdue,
+          stage: "Intake",
+          owner: "advisor-queue-001",
+          priority: "medium",
+          due_date: "2026-07-10",
+          on_hold: false,
+          is_overdue: true,
+        },
+        {
+          id: repositoryQueueCycleIds.onHold,
+          client_id: repositoryQueueClientIds.onHold,
+          stage: "Review",
+          owner: "advisor-queue-002",
+          priority: "high",
+          due_date: "2026-07-15",
+          on_hold: true,
+          hold_reason: "Client upload pending",
+          is_overdue: false,
+        },
+        {
+          id: repositoryQueueCycleIds.future,
+          client_id: repositoryQueueClientIds.future,
+          stage: "Modeling",
+          owner: "advisor-queue-003",
+          priority: "low",
+          due_date: "2026-07-20",
+          on_hold: false,
+          is_overdue: false,
+        },
+      ]);
     });
   });
 
