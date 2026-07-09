@@ -23,9 +23,6 @@ the same Drizzle table definitions. The seed data remains deterministic and synt
 with explicit values for lookup tables and known foreign-key relationships for the
 tenant, user, tax plan cycle, and stage transition records.
 
-The existing `runSeed.ts` entrypoint remains only as a compatibility wrapper so older
-references continue to work while the project moves to the new seed module.
-
 ## Consequences
 This makes seed behavior:
 - easier to keep aligned with the schema,
