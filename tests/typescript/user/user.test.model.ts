@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export const expectedUserColumns = ["id", "tenant_id", "email", "role_id", "status_id"];
 export const expectedUserColumnTypes = {
   id: "uuid",
@@ -52,3 +54,13 @@ export const expectedUserRows = userRows.map((row) => ({
   role_id: row.roleId,
   status_id: row.statusId,
 }));
+
+export const userRowSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  email: z.string().email(),
+  role_id: z.number().int(),
+  status_id: z.number().int(),
+});
+
+export const userRowsSchema = z.array(userRowSchema);

@@ -72,7 +72,27 @@ type PgErrorLike = {
   table?: string;
   column?: string;
   message?: string;
+  cause?: unknown;
+  originalError?: unknown;
 };
+
+function findPgErrorLike(error: unknown): PgErrorLike {
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    const candidate = current as PgErrorLike;
+
+    if (candidate.code || candidate.constraint || candidate.table || candidate.column) {
+      return candidate;
+    }
+
+    current = candidate.cause ?? candidate.originalError;
+  }
+
+  return {};
+}
 
 export async function expectPgError(
   action: Promise<unknown>,
@@ -87,7 +107,7 @@ export async function expectPgError(
   try {
     await action;
   } catch (error) {
-    const pgError = error as PgErrorLike;
+    const pgError = findPgErrorLike(error);
 
     if (pgError.code !== expected.code) {
       throw new Error(

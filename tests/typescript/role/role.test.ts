@@ -1,11 +1,15 @@
 import type { Client } from "pg";
+import { asc } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { describe, expect, test } from "vitest";
 
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 import { getTableStructure, expectPgError } from "../bootstrap/tableTestUtils.js";
+import { roles } from "../../../src/typescript/db/schema.js";
 import {
   expectedRoleColumnTypes,
   expectedRoleColumns,
+  roleRowsSchema,
   roleRows,
 } from "./role.test.model.js";
 
@@ -22,9 +26,10 @@ async function withRoleDatabase<T>(
   });
 }
 
-describe.skip("role module", () => {
+describe("role module", () => {
   test("tracks the roles table contract and seeded rows", async () => {
     await withRoleDatabase(async (client) => {
+      const db = drizzle(client);
       const structure = await getTableStructure(client, "roles");
 
       expect(structure.columns).toEqual(expectedRoleColumns);
@@ -32,26 +37,28 @@ describe.skip("role module", () => {
       expect(structure.constraints.roles_pkey?.type).toBe("p");
       expect(structure.indexes).toContain("roles_role_key");
 
-      const rows = await client.query(
-        `
-          SELECT id, role
-          FROM roles
-          ORDER BY id
-        `,
-      );
+      const rows = await db
+        .select({
+          id: roles.id,
+          role: roles.role,
+        })
+        .from(roles)
+        .orderBy(asc(roles.id));
 
-      expect(rows.rows).toEqual(roleRows);
+      expect(roleRowsSchema.parse(rows)).toEqual(roleRows);
     });
   });
 
   test("rejects duplicate lookup values and invalid role values", async () => {
     await withRoleDatabase(async (client) => {
+      const db = drizzle(client);
+
       await expectPgError(
-        client.query(`INSERT INTO roles (id, role) VALUES (1, 'Firm Admin')`),
+        db.insert(roles).values({ id: 1, role: "Firm Admin" }),
         { code: "23505", constraint: "roles_pkey" },
       );
       await expectPgError(
-        client.query(`INSERT INTO roles (id, role) VALUES (999, 'Firm Admin')`),
+        db.insert(roles).values({ id: 999, role: "Firm Admin" }),
         { code: "23505", constraint: "roles_role_key" },
       );
       await expectPgError(
