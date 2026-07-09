@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { applyDrizzleMigrations } from "../../src/typescript/postgresMigrations.js";
-import { withDrizzleTestSchema } from "./migrationTestUtils.js";
+import { withDrizzleTestSchema } from "./bootstrap/migrationTestUtils.js";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 const describeMigration = databaseUrl ? describe : describe.skip;

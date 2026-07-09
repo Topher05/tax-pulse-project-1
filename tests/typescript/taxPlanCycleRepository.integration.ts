@@ -7,12 +7,12 @@ import {
 } from "../../src/typescript/index.js";
 import { applyDrizzleMigrations } from "../../src/typescript/postgresMigrations.js";
 import { applySeed } from "../../src/typescript/db/seed.js";
-import { startDockerPostgresContainer } from "./dockerPostgres.js";
+import { startDockerPostgresContainer } from "./bootstrap/dockerPostgres.js";
 import {
   createTestSchemaName,
   dropDrizzlePublicTypes,
   quoteIdentifier,
-} from "./migrationTestUtils.js";
+} from "./bootstrap/migrationTestUtils.js";
 
 const sampleTenantIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",

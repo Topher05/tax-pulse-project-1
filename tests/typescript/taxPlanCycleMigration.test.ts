@@ -7,7 +7,7 @@ import {
   drizzleAppliedMigrationsTableName,
   drizzleMigrationsDirectory,
 } from "../../src/typescript/postgresMigrations.js";
-import { quoteIdentifier, withDrizzleTestSchema } from "./migrationTestUtils.js";
+import { quoteIdentifier, withDrizzleTestSchema } from "./bootstrap/migrationTestUtils.js";
 import type { Client } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();

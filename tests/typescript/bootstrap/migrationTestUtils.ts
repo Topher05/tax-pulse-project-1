@@ -5,8 +5,8 @@ import { Client } from "pg";
 import {
   applyDrizzleMigrations,
   withDatabaseClient,
-} from "../../src/typescript/postgresMigrations.js";
-import { applySeed } from "../../src/typescript/db/seed.js";
+} from "../../../src/typescript/postgresMigrations.js";
+import { applySeed } from "../../../src/typescript/db/seed.js";
 import { startDockerPostgresContainer } from "./dockerPostgres.js";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
