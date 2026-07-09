@@ -1,9 +1,12 @@
 import type { Client } from "pg";
+import { asc } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { describe, expect, test } from "vitest";
 
+import { users } from "../../../src/typescript/db/schema.js";
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 import { expectPgError, getTableStructure } from "../bootstrap/tableTestUtils.js";
-import { userRows } from "./user.test.model.js";
+import { expectedUserRows, userRows, userRowsSchema } from "./user.test.model.js";
 
 async function stubUserIntegrationState(_client: Client): Promise<void> {
   return;
@@ -18,9 +21,10 @@ async function withUserIntegrationDatabase<T>(
   });
 }
 
-describe.skip("user integration tests", () => {
-  test("tracks user relationships and FK constraints", async () => {
+describe("user integration tests", () => {
+  test("tracks user relationships and FK constraints", { timeout: 15000 }, async () => {
     await withUserIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
       const structure = await getTableStructure(client, "users");
 
       expect(structure.constraints.users_tenant_id_fk?.type).toBe("f");
@@ -28,68 +32,50 @@ describe.skip("user integration tests", () => {
       expect(structure.constraints.users_status_id_fk?.type).toBe("f");
       expect(structure.indexes).toContain("users_tenant_id_email_key");
 
-      const rows = await client.query(
-        `
-          SELECT id, tenant_id, email, role_id, status_id
-          FROM users
-          ORDER BY id
-        `,
-      );
+      const rows = await db
+        .select({
+          id: users.id,
+          tenant_id: users.tenantId,
+          email: users.email,
+          role_id: users.roleId,
+          status_id: users.statusId,
+        })
+        .from(users)
+        .orderBy(asc(users.id));
 
-      expect(rows.rows).toEqual(
-        userRows.map((row) => ({
-          id: row.id,
-          tenant_id: row.tenantId,
-          email: row.email,
-          role_id: row.roleId,
-          status_id: row.statusId,
-        })),
-      );
+      expect(userRowsSchema.parse(rows)).toEqual(expectedUserRows);
     });
   });
 
-  test("rejects missing tenant, role, and status foreign keys", async () => {
+  test("rejects missing tenant, role, and status foreign keys", { timeout: 15000 }, async () => {
     await withUserIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+
       await expectPgError(
-        client.query(
-          `
-            INSERT INTO users (
-              tenant_id,
-              email,
-              role_id,
-              status_id
-            ) VALUES ($1, $2, $3, $4)
-          `,
-          ["00000000-0000-0000-0000-000000000001", "new@example.com", 1, 1],
-        ),
+        db.insert(users).values({
+          tenantId: "00000000-0000-0000-0000-000000000001",
+          email: "new@example.com",
+          roleId: 1,
+          statusId: 1,
+        }),
         { code: "23503", constraint: "users_tenant_id_fk" },
       );
       await expectPgError(
-        client.query(
-          `
-            INSERT INTO users (
-              tenant_id,
-              email,
-              role_id,
-              status_id
-            ) VALUES ($1, $2, $3, $4)
-          `,
-          [userRows[0].tenantId, "role-missing@example.com", 999, 1],
-        ),
+        db.insert(users).values({
+          tenantId: userRows[0].tenantId,
+          email: "role-missing@example.com",
+          roleId: 999,
+          statusId: 1,
+        }),
         { code: "23503", constraint: "users_role_id_fk" },
       );
       await expectPgError(
-        client.query(
-          `
-            INSERT INTO users (
-              tenant_id,
-              email,
-              role_id,
-              status_id
-            ) VALUES ($1, $2, $3, $4)
-          `,
-          [userRows[0].tenantId, "status-missing@example.com", 1, 999],
-        ),
+        db.insert(users).values({
+          tenantId: userRows[0].tenantId,
+          email: "status-missing@example.com",
+          roleId: 1,
+          statusId: 999,
+        }),
         { code: "23503", constraint: "users_status_id_fk" },
       );
     });

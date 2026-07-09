@@ -1,12 +1,16 @@
 import type { Client } from "pg";
+import { asc } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { describe, expect, test } from "vitest";
 
+import { userStatus } from "../../../src/typescript/db/schema.js";
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 import { getTableStructure, expectPgError } from "../bootstrap/tableTestUtils.js";
 import {
   expectedUserStatusColumnTypes,
   expectedUserStatusColumns,
   userStatusRows,
+  userStatusRowsSchema,
 } from "./userStatus.test.model.js";
 
 async function stubUserStatusState(_client: Client): Promise<void> {
@@ -22,9 +26,10 @@ async function withUserStatusDatabase<T>(
   });
 }
 
-describe.skip("user status module", () => {
-  test("tracks the user_status table contract and seeded rows", async () => {
+describe("user status module", () => {
+  test("tracks the user_status table contract and seeded rows", { timeout: 15000 }, async () => {
     await withUserStatusDatabase(async (client) => {
+      const db = drizzle(client);
       const structure = await getTableStructure(client, "user_status");
 
       expect(structure.columns).toEqual(expectedUserStatusColumns);
@@ -32,19 +37,19 @@ describe.skip("user status module", () => {
       expect(structure.constraints.user_status_pkey?.type).toBe("p");
       expect(structure.indexes).toContain("user_status_status_key");
 
-      const rows = await client.query(
-        `
-          SELECT id, status
-          FROM user_status
-          ORDER BY id
-        `,
-      );
+      const rows = await db
+        .select({
+          id: userStatus.id,
+          status: userStatus.status,
+        })
+        .from(userStatus)
+        .orderBy(asc(userStatus.id));
 
-      expect(rows.rows).toEqual(userStatusRows);
+      expect(userStatusRowsSchema.parse(rows)).toEqual(userStatusRows);
     });
   });
 
-  test("rejects duplicate lookup values and invalid status values", async () => {
+  test("rejects duplicate lookup values and invalid status values", { timeout: 15000 }, async () => {
     await withUserStatusDatabase(async (client) => {
       await expectPgError(
         client.query(
