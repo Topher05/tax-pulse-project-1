@@ -8,7 +8,7 @@ import {
   createTaxPlanCycleRepository,
 } from "../../src/typescript/index.js";
 import { applyMigrations } from "../../src/typescript/postgresMigrations.js";
-import { applySeed } from "../../src/typescript/runSeed.js";
+import { applySeed } from "../../src/typescript/db/seed.js";
 import { startDockerPostgresContainer } from "./dockerPostgres.js";
 
 const sampleTenantIds = [

@@ -222,9 +222,9 @@ async function seedSampleTenants(client: Client): Promise<void> {
 
 describeMigration("user and role migration", () => {
   test("exports the auth tables and enums", () => {
-    expect(role).toBeDefined();
+    expect(roles).toBeDefined();
     expect(userStatus).toBeDefined();
-    expect(user).toBeDefined();
+    expect(users).toBeDefined();
     expect(roleNameEnum.enumValues).toEqual([
       "Firm Admin",
       "Advisor",
