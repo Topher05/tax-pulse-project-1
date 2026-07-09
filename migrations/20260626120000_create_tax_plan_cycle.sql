@@ -1,3 +1,5 @@
+-- Deprecated: legacy hand-written migration kept for reference only.
+-- Current migrations live in `src/typescript/db/drizzle-migrations/`.
 CREATE TABLE IF NOT EXISTS tax_plan_cycle (
   id UUID CONSTRAINT tax_plan_cycle_id_pk PRIMARY KEY DEFAULT uuidv7(),
   client_id UUID NOT NULL,

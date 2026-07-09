@@ -1,3 +1,5 @@
+// scaffold-only integration coverage kept as a placeholder for
+// eventual role repository work; do not expand this file until that refactor lands.
 import type { Client } from "pg";
 import { describe, test } from "vitest";
 

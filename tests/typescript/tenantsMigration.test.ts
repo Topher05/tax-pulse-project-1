@@ -1,3 +1,6 @@
+// Deprecated: this migration-focused test is expected to disappear or be refactored in the next set of tennant based changes once the
+// legacy migration path is fully retired.
+// Leans on legacy migration approach pre-drizzle & zod integrations
 import { describe, expect, test } from "vitest";
 
 import { applyDrizzleMigrations } from "../../src/typescript/postgresMigrations.js";

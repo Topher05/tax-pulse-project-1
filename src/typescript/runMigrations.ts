@@ -1,3 +1,5 @@
+// Deprecated: manual SQL migration runner kept for compatibility while the
+// Drizzle migration flow remains the primary path.
 import { fileURLToPath } from "node:url";
 
 import {
