@@ -3,6 +3,72 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## christopher-martus-jira54 - SCRUM-54
+
+**Branch:** `christopher-martus-jira54`
+
+**Owner:** Christopher Martus
+
+**Epic:** SCRUM-13 - Domain Model & Walking Skeleton
+
+**Summary:** Wire read-cycle and cover the create-then-read path
+
+**CSV Description:** As an Advisor, I want to read a created Tax Plan Cycle back through
+the API, so that I can confirm the end-to-end spine works.
+
+**Acceptance Criteria:**
+
+- GET by case ID returns the persisted cycle including stage and due_date.
+- The create-then-read test confirms the persisted cycle can be fetched back.
+
+**How This Ties Into the Code:**
+
+- `createTaxPlanCycleRouter` serves `GET /tax-plan-cycles/:caseId`, validates the path
+  parameter, reads `tenantId` from request context, and delegates to the controller.
+- `createTaxPlanCycleCreateController` passes reads through to
+  `TaxPlanCycleRepository.findByCaseId` with both the request tenant and generated case
+  ID.
+- Missing rows and cross-tenant rows return the same 404 Problem Details response, so
+  the API does not reveal whether another tenant owns the requested case ID.
+- Successful reads return the existing `TaxPlanCycle` JSON shape with `id`,
+  `client_id`, `stage`, `priority`, `due_date`, `on_hold`, and optional `hold_reason`.
+- The PostgreSQL-backed integration test now creates a cycle through the API, reads it
+  back through the GET endpoint, and asserts the returned ID, `stage`, `due_date`, and
+  absence of a separate `status` field.
+- Cross-tenant integration coverage creates a cycle as one synthetic tenant, attempts
+  to read the same case ID as a second synthetic tenant, and verifies the API returns
+  the same 404 response used for missing cycles rather than a 403 or existence leak.
+- Final contract cleanup documents the GET read response in the README, verifies the
+  OpenAPI 200 response includes `stage` and `due_date`, and keeps the contract free of
+  a separate cycle `status` field.
+- The implementation does not add a separate `status`; workflow condition remains the
+  persisted cycle `stage`.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory depends on tenant-scoped Tax Plan Cycle reads so each firm can fetch
+only its own cases. This API slice wires the Core Case Service read path to the
+repository boundary, preserving tenant isolation and returning the stage-based domain
+shape used throughout the workflow.
+
+**Changed Files:**
+
+- `README.md`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/taxPlanCycleRepository.integration.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/coreCaseOpenApi.test.ts` passed; 1 file and 6
+  tests passed.
+- `npm run test:integration -- tests/typescript/taxPlanCycleRepository.integration.ts`
+  first failed in the sandbox because Testcontainers could not find a working container
+  runtime strategy.
+- The same repository integration command passed with Docker/Testcontainers access; 1
+  file and 5 tests passed.
+
 ## christopher-martus-jira53 - SCRUM-53
 
 **Branch:** `christopher-martus-jira53`

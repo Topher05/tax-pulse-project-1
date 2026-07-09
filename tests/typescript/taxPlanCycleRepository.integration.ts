@@ -27,6 +27,7 @@ const sampleCycleIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11",
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
 ] as const;
+const missingCycleId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d99";
 
 const sampleClientIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
@@ -59,24 +60,31 @@ function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
 }
 
-const attachRequestContext: RequestHandler = (req, _res, next) => {
-  (req as typeof req & { tenant: { id: string } }).tenant = {
-    id: sampleTenantIds[0],
+function createAttachRequestContext(
+  tenantId: string = sampleTenantIds[0],
+  userId: string = "advisor-route-actor-001",
+): RequestHandler {
+  return (req, _res, next) => {
+    (req as typeof req & { tenant: { id: string } }).tenant = {
+      id: tenantId,
+    };
+    (req as typeof req & { user: { id: string } }).user = {
+      id: userId,
+    };
+    next();
   };
-  (req as typeof req & { user: { id: string } }).user = {
-    id: "advisor-route-actor-001",
-  };
-  next();
-};
+}
 
 async function withRouteServer(
   repository: ReturnType<typeof createTaxPlanCycleRepository>,
   run: (baseUrl: string) => Promise<void>,
+  tenantId: string = sampleTenantIds[0],
+  userId: string = "advisor-route-actor-001",
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
-      app.use(attachRequestContext);
+      app.use(createAttachRequestContext(tenantId, userId));
       app.use(
         createTaxPlanCycleRouter({
           controller: createTaxPlanCycleCreateController(repository),
@@ -158,6 +166,13 @@ describe("tax plan cycle repository", () => {
       readHelper.findByCaseId({
         tenantId: sampleTenantIds[0],
         caseId: sampleCycleIds[1],
+      }),
+    ).resolves.toBeNull();
+
+    await expect(
+      readHelper.findByCaseId({
+        tenantId: sampleTenantIds[0],
+        caseId: missingCycleId,
       }),
     ).resolves.toBeNull();
 
@@ -245,7 +260,7 @@ describe("tax plan cycle repository", () => {
     expect(transitionRows.rows[0]?.occurred_at).toBeInstanceOf(Date);
   });
 
-  test("POST creates a tenant-scoped Intake cycle and initial transition", async () => {
+  test("create then read returns the persisted cycle", async () => {
     if (!client) {
       throw new Error("Database client was not initialized.");
     }
@@ -294,6 +309,42 @@ describe("tax plan cycle repository", () => {
         }),
       ).resolves.toBeNull();
 
+      const readResponse = await fetch(
+        `${baseUrl}/tax-plan-cycles/${body.case_id}`,
+      );
+
+      expect(readResponse.status).toBe(200);
+      const readBody = (await readResponse.json()) as Record<string, unknown>;
+
+      expect(readBody.id).toBe(body.case_id);
+      expect(readBody.stage).toBe("Intake");
+      expect(readBody.due_date).toBe("2026-10-15");
+      expect(readBody).not.toHaveProperty("status");
+
+      const otherTenantCaseId = await repository.create({
+        tenantId: sampleTenantIds[1],
+        planningPeriod: "2026-Q3",
+        clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+        owner: "advisor-other-tenant-001",
+        priority: "high",
+        dueDate: "2026-11-15",
+        actor: "advisor-other-tenant-001",
+      });
+      const crossTenantReadResponse = await fetch(
+        `${baseUrl}/tax-plan-cycles/${otherTenantCaseId}`,
+      );
+
+      expect(crossTenantReadResponse.status).toBe(404);
+      expect(crossTenantReadResponse.headers.get("content-type")).toContain(
+        "application/problem+json",
+      );
+      await expect(crossTenantReadResponse.json()).resolves.toEqual({
+        type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+        title: "Tax Plan Cycle Not Found",
+        status: 404,
+        detail: "No tax plan cycle was found for the requested case ID.",
+      });
+
       const transitionRows = await dbClient.query(
         `
           SELECT
@@ -317,6 +368,65 @@ describe("tax plan cycle repository", () => {
       });
       expect(transitionRows.rows[0]?.occurred_at).toBeInstanceOf(Date);
     });
+  });
+
+  test("reading another tenant's cycle ID returns 404", async () => {
+    if (!client) {
+      throw new Error("Database client was not initialized.");
+    }
+
+    const repository = createTaxPlanCycleRepository(client);
+    let createdCaseId: string | undefined;
+
+    await withRouteServer(
+      repository,
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d63",
+            planning_period: "2026-Q4",
+            owner: "advisor-tenant-a-001",
+            priority: "high",
+            due_date: "2026-12-15",
+          }),
+        });
+        const body = (await response.json()) as { case_id: string };
+
+        expect(response.status).toBe(202);
+        createdCaseId = body.case_id;
+      },
+      sampleTenantIds[0],
+      "advisor-tenant-a-001",
+    );
+
+    if (!createdCaseId) {
+      throw new Error("Create response did not include a case ID.");
+    }
+
+    await withRouteServer(
+      repository,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${createdCaseId}`,
+        );
+
+        expect(response.status).toBe(404);
+        expect(response.status).not.toBe(403);
+        expect(response.headers.get("content-type")).toContain(
+          "application/problem+json",
+        );
+        await expect(response.json()).resolves.toEqual({
+          type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+          title: "Tax Plan Cycle Not Found",
+          status: 404,
+          detail: "No tax plan cycle was found for the requested case ID.",
+        });
+      },
+      sampleTenantIds[1],
+      "advisor-tenant-b-001",
+    );
   });
 
   test("lists a tenant's queue by due date and flags overdue cycles", async () => {

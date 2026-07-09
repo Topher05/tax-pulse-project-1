@@ -113,6 +113,20 @@ operations:
 - `POST /tax-plan-cycles`
 - `GET /tax-plan-cycles/{caseId}`
 
+Successful reads return the persisted Tax Plan Cycle for the request tenant:
+
+```json
+{
+  "id": "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+  "client_id": "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+  "stage": "Intake",
+  "owner": "advisor-123",
+  "priority": "medium",
+  "due_date": "2026-12-31",
+  "on_hold": false
+}
+```
+
 The Tax Plan Cycle schemas are generated from the same Zod definitions used by the
 routes. Workflow condition is represented by `stage`; there is no separate case
 `status` field.
