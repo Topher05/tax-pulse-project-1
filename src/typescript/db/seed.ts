@@ -1,9 +1,9 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { sql } from "drizzle-orm";
 import { fileURLToPath } from "node:url";
 import type { Client } from "pg";
 
 import {
+  applyDrizzleMigrations,
   getDatabaseUrlFromEnv,
   withDatabaseClient,
 } from "../postgresMigrations.js";
@@ -28,44 +28,41 @@ import {
 export async function applySeed(client: Client): Promise<void> {
   const db = drizzle(client);
 
-  await db.delete(stageTransition);
-  await db.delete(taxPlanCycle);
-  await db.delete(users);
-  await db.delete(userStatus);
-  await db.delete(roles);
-  await db.delete(tenants);
+  await client.query("BEGIN");
 
-  await db.insert(tenants).values([...tenantRows]);
-  await db.insert(roles).values([...roleRows]);
-  await db.insert(userStatus).values([...userStatusRows]);
-  await db.insert(users).values([...userRows]);
-  await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
-  await db.insert(stageTransition).values([...stageTransitionRows]);
+  try {
+    await client.query(`
+      TRUNCATE TABLE
+        "stage_transition",
+        "tax_plan_cycle",
+        "users",
+        "user_status",
+        "roles",
+        "tenants"
+      RESTART IDENTITY CASCADE
+    `);
 
-  await db.execute(
-    sql`
-      SELECT setval(
-        pg_get_serial_sequence('roles', 'id'),
-        (SELECT COALESCE(MAX(id), 1) FROM roles),
-        true
-      )
-    `,
-  );
-  await db.execute(
-    sql`
-      SELECT setval(
-        pg_get_serial_sequence('user_status', 'id'),
-        (SELECT COALESCE(MAX(id), 1) FROM user_status),
-        true
-      )
-    `,
-  );
+    await db.insert(tenants).values([...tenantRows]);
+    await db.insert(roles).values([...roleRows]);
+    await db.insert(userStatus).values([...userStatusRows]);
+    await db.insert(users).values([...userRows]);
+    await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
+    await db.insert(stageTransition).values([...stageTransitionRows]);
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  }
 }
 
 export async function main(): Promise<void> {
   const databaseUrl = getDatabaseUrlFromEnv();
 
   await withDatabaseClient(databaseUrl, async (client) => {
+    await client.query(`DROP SCHEMA IF EXISTS public CASCADE`);
+    await client.query(`CREATE SCHEMA public`);
+    await applyDrizzleMigrations(client);
     await applySeed(client);
   });
 
@@ -74,8 +71,7 @@ export async function main(): Promise<void> {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch((error: unknown) => {
-        console.info('Failed seed') // Comment from me dont remove for now
-
+    console.info('Failed seed') // Comment from me dont remove for now
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
   });
