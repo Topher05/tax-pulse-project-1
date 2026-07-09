@@ -528,22 +528,23 @@ TaxPulse identities and their roles are stored per tenant.
   alongside the existing tenant and cycle tables.
 - `role.role` is modeled as a Postgres enum-backed lookup column for the four canonical
   role labels, while `user_status.status` captures the three account lifecycle states.
-- `role.id` and `user_status.id` now use integer identity primary keys, and `user`
+- `role.id` and `user_status.id` now use integer identity primary keys, and `users`
   points at both lookup tables through `role_id` and `status_id`.
-- The Mermaid ER diagram for the new auth tables is:
+- The Mermaid ER diagram for the auth lookup tables is:
 
 ```mermaid
 erDiagram
-  TENANTS ||--o{ USER : has
-  ROLE ||--o{ USER : assigns
-  USER_STATUS ||--o{ USER : assigns
+  TENANTS ||--o{ USERS : has
+  ROLES ||--o{ USERS : assigns
+  USER_STATUS ||--o{ USERS : sets
+
   TENANTS {
     uuid id PK
     text name
     timestamptz created_at
   }
 
-  ROLE {
+  ROLES {
     int id PK
     user_role_name role
   }
@@ -553,7 +554,7 @@ erDiagram
     user_status_value status
   }
 
-  USER {
+  USERS {
     uuid id PK
     uuid tenant_id FK
     text email
