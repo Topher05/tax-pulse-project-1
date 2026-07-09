@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
@@ -7,9 +5,14 @@ import {
   createTaxPlanCycleReadHelper,
   createTaxPlanCycleRepository,
 } from "../../src/typescript/index.js";
-import { applyMigrations } from "../../src/typescript/postgresMigrations.js";
+import { applyDrizzleMigrations } from "../../src/typescript/postgresMigrations.js";
 import { applySeed } from "../../src/typescript/db/seed.js";
 import { startDockerPostgresContainer } from "./dockerPostgres.js";
+import {
+  createTestSchemaName,
+  dropDrizzlePublicTypes,
+  quoteIdentifier,
+} from "./migrationTestUtils.js";
 
 const sampleTenantIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
@@ -42,14 +45,6 @@ const queueClientIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d54",
 ] as const;
 
-function createTestSchemaName(): string {
-  return `taxpulse_repo_${randomUUID().replace(/-/g, "")}`;
-}
-
-function quoteIdentifier(identifier: string): string {
-  return `"${identifier.replace(/"/g, '""')}"`;
-}
-
 describe("tax plan cycle repository", () => {
   let container:
     | Awaited<ReturnType<typeof startDockerPostgresContainer>>
@@ -63,13 +58,13 @@ describe("tax plan cycle repository", () => {
       connectionString: container.connectionUri,
     });
     await client.connect();
-
-    schemaName = createTestSchemaName();
+    schemaName = createTestSchemaName("taxpulse_repo");
     const quotedSchemaName = quoteIdentifier(schemaName);
 
+    await dropDrizzlePublicTypes(client);
     await client.query(`CREATE SCHEMA ${quotedSchemaName}`);
     await client.query(`SET search_path TO ${quotedSchemaName}, public`);
-    await applyMigrations(client);
+    await applyDrizzleMigrations(client);
     await applySeed(client);
   });
 
@@ -79,6 +74,7 @@ describe("tax plan cycle repository", () => {
 
       await client.query("SET search_path TO public").catch(() => undefined);
       await client.query(`DROP SCHEMA IF EXISTS ${quotedSchemaName} CASCADE`);
+      await dropDrizzlePublicTypes(client).catch(() => undefined);
     }
 
     await client?.end().catch(() => undefined);

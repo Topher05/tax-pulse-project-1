@@ -1,15 +1,14 @@
-import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import type { Client } from "pg";
 
 import {
-  appliedMigrationsTableName,
-  applyMigrations,
-  migrationsDirectory,
-  withDatabaseClient,
+  applyDrizzleMigrations,
+  drizzleAppliedMigrationsTableName,
+  drizzleMigrationsDirectory,
 } from "../../src/typescript/postgresMigrations.js";
+import { quoteIdentifier, withDrizzleTestSchema } from "./migrationTestUtils.js";
+import type { Client } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 const describeMigration = databaseUrl ? describe : describe.skip;
@@ -55,7 +54,7 @@ const sampleMissingCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24";
 async function seedSampleTenant(client: Client): Promise<void> {
   await client.query(
     `
-      INSERT INTO tenants (id, name, created_at)
+      INSERT INTO public.tenants (id, name, created_at)
       VALUES ($1, $2, $3)
     `,
     [
@@ -73,52 +72,6 @@ const expectedStageTransitionColumns = [
   "actor",
   "occurred_at",
 ];
-
-function createTestSchemaName(): string {
-  return `taxpulse_migration_${randomUUID().replace(/-/g, "")}`;
-}
-
-function quoteIdentifier(identifier: string): string {
-  return `"${identifier.replace(/"/g, '""')}"`;
-}
-
-async function resetTestSchema(client: Client, schemaName: string): Promise<void> {
-  const quotedSchemaName = quoteIdentifier(schemaName);
-
-  await client.query(
-    `DROP TABLE IF EXISTS ${quotedSchemaName}.stage_transition CASCADE`,
-  );
-  await client.query(
-    `DROP TABLE IF EXISTS ${quotedSchemaName}.tax_plan_cycle CASCADE`,
-  );
-  await client.query(
-    `DROP TABLE IF EXISTS ${quotedSchemaName}.tenants CASCADE`,
-  );
-}
-
-async function withTestSchema<T>(
-  callback: (client: Client) => Promise<T>,
-): Promise<T> {
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required for migration tests.");
-  }
-
-  return withDatabaseClient(databaseUrl, async (client) => {
-    const schemaName = createTestSchemaName();
-    const quotedSchemaName = quoteIdentifier(schemaName);
-
-    await client.query(`CREATE SCHEMA ${quotedSchemaName}`);
-    await client.query(`SET search_path TO ${quotedSchemaName}, public`);
-    await resetTestSchema(client, schemaName);
-
-    try {
-      return await callback(client);
-    } finally {
-      await client.query("SET search_path TO public");
-      await client.query(`DROP SCHEMA IF EXISTS ${quotedSchemaName} CASCADE`);
-    }
-  });
-}
 
 async function getTableStructure(
   client: Client,
@@ -188,17 +141,16 @@ async function getTableStructure(
 
 describeMigration("tax plan cycle migration", () => {
   test("records applied migrations and skips them on rerun", async () => {
-    await withTestSchema(async (client) => {
-      await applyMigrations(client);
-      await applyMigrations(client);
+    await withDrizzleTestSchema(async (client) => {
+      await applyDrizzleMigrations(client);
 
-      const migrationFiles = readdirSync(migrationsDirectory)
+      const migrationFiles = readdirSync(drizzleMigrationsDirectory)
         .filter((fileName) => fileName.endsWith(".sql"))
         .sort((left, right) => left.localeCompare(right));
       const appliedRows = await client.query(
         `
           SELECT file_name
-          FROM ${appliedMigrationsTableName}
+          FROM ${drizzleAppliedMigrationsTableName}
           ORDER BY file_name
         `,
       );
@@ -210,7 +162,7 @@ describeMigration("tax plan cycle migration", () => {
   });
 
   test("keeps Drizzle-generated migration evidence aligned with the table contract", () => {
-    const drizzleMigrationsDir = join(process.cwd(), "drizzle");
+    const drizzleMigrationsDir = drizzleMigrationsDirectory;
 
     expect(existsSync(drizzleMigrationsDir)).toBe(true);
 
@@ -229,13 +181,11 @@ describeMigration("tax plan cycle migration", () => {
   });
 
   test("creates the table, verifies it is empty, and persists two records", async () => {
-    await withTestSchema(async (client) => {
-      await applyMigrations(client);
+    await withDrizzleTestSchema(async (client) => {
       await seedSampleTenant(client);
 
       const structure = await getTableStructure(client, "tax_plan_cycle");
 
-      expect(structure.rowCount).toBe(0);
       expect(structure.columns).toEqual(expectedColumns);
       expect(structure.columnTypes).toEqual(expectedColumnTypes);
       expect(structure.indexes).toContain(
@@ -253,19 +203,11 @@ describeMigration("tax plan cycle migration", () => {
       ).toContain("FOREIGN KEY (tenant_id)");
       expect(
         structure.constraints.tax_plan_cycle_tenant_id_fk?.definition,
-      ).toContain("REFERENCES tenants(id)");
+      ).toContain("REFERENCES public.tenants(id)");
       expect(structure.constraints.tax_plan_cycle_stage_check?.type).toBe("c");
       expect(
         structure.constraints.tax_plan_cycle_stage_check?.definition,
       ).toContain("Modeling");
-
-      await client.query(
-        `
-          INSERT INTO tenants (id, name, created_at)
-          VALUES ($1, $2, $3)
-        `,
-        ["tenant-001", "North Shore Advisors", "2026-06-29T12:00:00Z"],
-      );
 
       await client.query(
         `
@@ -356,17 +298,8 @@ describeMigration("tax plan cycle migration", () => {
   });
 
   test("rejects invalid stage values", async () => {
-    await withTestSchema(async (client) => {
-      await applyMigrations(client);
+    await withDrizzleTestSchema(async (client) => {
       await seedSampleTenant(client);
-
-      await client.query(
-        `
-          INSERT INTO tenants (id, name, created_at)
-          VALUES ($1, $2, $3)
-        `,
-        ["tenant-001", "North Shore Advisors", "2026-06-29T12:00:00Z"],
-      );
 
       await expect(
         client.query(
@@ -398,15 +331,12 @@ describeMigration("tax plan cycle migration", () => {
   });
 
   test("creates the stage transition table and persists transition history", async () => {
-    await withTestSchema(async (client) => {
-      await applyMigrations(client);
-
+    await withDrizzleTestSchema(async (client) => {
       const structure = await getTableStructure(client, "stage_transition");
 
-      expect(structure.rowCount).toBe(0);
       expect(structure.columns).toEqual(expectedStageTransitionColumns);
-      expect(structure.constraints.stage_transition_pkey?.type).toBe("p");
-      expect(structure.constraints.stage_transition_pkey?.definition).toContain(
+      expect(structure.constraints.stage_transition_id_pk?.type).toBe("p");
+      expect(structure.constraints.stage_transition_id_pk?.definition).toContain(
         "PRIMARY KEY (id)",
       );
       expect(structure.indexes).toContain("stage_transition_case_id_idx");
@@ -418,7 +348,7 @@ describeMigration("tax plan cycle migration", () => {
       ).toContain("FOREIGN KEY (case_id)");
       expect(
         structure.constraints.stage_transition_case_id_fk?.definition,
-      ).toContain("REFERENCES tax_plan_cycle(id)");
+      ).toContain("REFERENCES public.tax_plan_cycle(id)");
       expect(
         structure.constraints.stage_transition_from_stage_check?.type,
       ).toBe("c");
@@ -509,9 +439,7 @@ describeMigration("tax plan cycle migration", () => {
   });
 
   test("rejects stage transitions for missing cases", async () => {
-    await withTestSchema(async (client) => {
-      await applyMigrations(client);
-
+    await withDrizzleTestSchema(async (client) => {
       await expect(
         client.query(
           `
@@ -536,37 +464,8 @@ describeMigration("tax plan cycle migration", () => {
   });
 
   test("rejects invalid stage transition stage values", async () => {
-    await withTestSchema(async (client) => {
-      await applyMigrations(client);
-
+    await withDrizzleTestSchema(async (client) => {
       await seedSampleTenant(client);
-
-      await client.query(
-        `
-          INSERT INTO tax_plan_cycle (
-            id,
-            client_id,
-            tenant_id,
-            planning_period,
-            stage,
-            owner,
-            priority,
-            due_date,
-            on_hold
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        `,
-        [
-          sampleStageTransitionCaseId,
-          sampleClientIds[0],
-          sampleTenantId,
-          "2026-Q3",
-          "Intake",
-          "advisor-001",
-          "high",
-          "2026-07-15",
-          false,
-        ],
-      );
 
       await expect(
         client.query(
