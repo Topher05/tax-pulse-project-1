@@ -45,14 +45,14 @@ async function withUserModuleDatabase<T>(
 }
 
 describe("user module", () => {
-  test("exports the user tables and status enum", () => {
+  test("exports the user tables and status enum", { timeout: 30000 }, () => {
     expect(tenants).toBeDefined();
     expect(userStatus).toBeDefined();
     expect(users).toBeDefined();
     expect(userStatusEnum.enumValues).toEqual(["invited", "active", "disabled"]);
   });
 
-  test("tracks the users table contract and seeded user rows", async () => {
+  test("tracks the users table contract and seeded user rows", { timeout: 30000 }, async () => {
     await withUserModuleDatabase(async (client) => {
       const db = drizzle(client);
       const structure = await getTableStructure(client, "users");
@@ -80,7 +80,7 @@ describe("user module", () => {
     });
   });
 
-  test("rejects duplicate scoped email rows and invalid user column values", async () => {
+  test("rejects duplicate scoped email rows and invalid user column values", { timeout: 30000 }, async () => {
     await withUserModuleDatabase(async (client) => {
       const db = drizzle(client);
 

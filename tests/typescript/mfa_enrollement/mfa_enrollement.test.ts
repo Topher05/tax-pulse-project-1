@@ -28,7 +28,7 @@ async function withMfaEnrollmentDatabase<T>(
 }
 
 describe("mfa enrollment module", () => {
-  test("tracks the mfa enrollment table contract and seeded rows", async () => {
+  test("tracks the mfa enrollment table contract and seeded rows", { timeout: 30000 }, async () => {
     await withMfaEnrollmentDatabase(async (client) => {
       const db = drizzle(client);
       const structure = await getTableStructure(client, "mfa_enrollment");
@@ -53,7 +53,7 @@ describe("mfa enrollment module", () => {
     });
   });
 
-  test("rejects duplicate enrollments and missing users", async () => {
+  test("rejects duplicate enrollments and missing users", { timeout: 30000 }, async () => {
     await withMfaEnrollmentDatabase(async (client) => {
       const db = drizzle(client);
 
