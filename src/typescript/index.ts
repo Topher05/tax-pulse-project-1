@@ -35,6 +35,8 @@ export {
 } from "./coreCaseOpenApi.js";
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
+  credential,
+  mfaEnrollment,
   roles,
   stageTransition,
   taxPlanCycle,

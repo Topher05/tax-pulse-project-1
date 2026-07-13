@@ -7,3 +7,4 @@ __pycache__/
 .venv/
 .env
 planning/prompt-journal/*
+coverage/

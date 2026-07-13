@@ -720,6 +720,97 @@ separate case status field.
 - Implementation was completed in the workspace.
 - Review action items:
   - `npm run db:check`
-  - `npm run typecheck`
-  - `npm test`
-  - `npm run test:migration`
+- `npm run typecheck`
+- `npm test`
+- `npm run test:migration`
+
+## caleb-latimer-jira56 - SCRUM-56
+
+**Branch:** `caleb-latimer-jira56`
+
+**Owner:** Caleb Latimer
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Create the credential and mfa_enrollment tables
+
+**CSV Description:** As a Backend Developer, I want credential and mfa_enrollment
+tables, so that password hashes and second factors are stored apart from user profile
+data.
+
+**Acceptance Criteria:**
+
+- A Drizzle migration creates a `credential` table keyed to a user with a CUID primary
+  key and an argon2id password hash column.
+- A Drizzle migration creates an `mfa_enrollment` table with a per-user TOTP secret
+  and enrolled flag.
+- Neither table stores a plaintext password or recovery code.
+
+**How This Ties Into The Code:**
+
+- `src/typescript/db/schema.ts` now defines `credential` and `mfa_enrollment` with
+  camelCase TypeScript field names, matching the repo's TypeScript default style.
+- `credential` stores `id`, `userId`, and `passwordHash`, while `mfa_enrollment`
+  stores `userId`, `totpSecret`, and `isEnrolled` with a `false` default.
+- `src/typescript/db/seed.ts` now seeds synthetic credential hashes and TOTP secrets
+  alongside the existing tenant, user, role, and cycle fixtures.
+- `tests/typescript/credential/*` and `tests/typescript/mfa_enrollement/*` now cover
+  the table contracts, seeded rows, FK enforcement, and one-row-per-user behavior.
+- `package.json` wires the new auth schema tests into `npm run test:migration` so the
+  dedicated migration suite exercises the new tables with the existing repository
+  contracts.
+- The Mermaid ER diagram for the auth storage split is:
+
+```mermaid
+erDiagram
+  USERS ||--|| CREDENTIAL : has
+  USERS ||--|| MFA_ENROLLMENT : enrolls
+
+  USERS {
+    uuid id PK
+    uuid tenantId FK
+    text email
+    int roleId FK
+    int statusId FK
+  }
+
+  CREDENTIAL {
+    varchar(25) id PK
+    uuid userId FK
+    varchar(255) passwordHash
+  }
+
+  MFA_ENROLLMENT {
+    uuid userId PK, FK
+    varchar(512) totpSecret
+    boolean isEnrolled
+  }
+```
+
+**Project Scope Connection:**
+
+TaxPulse Advisory keeps credentials and second factors out of the user profile record
+so identity data, password hashes, and MFA enrollment can evolve independently while
+preserving least privilege and the project's audit-friendly auth boundary.
+
+**Changed Files:**
+
+- `package.json`
+- `planning/prompt-journal/cl-journal.md`
+- `planning/team/ticket-journal.md`
+- `src/typescript/db/schema.ts`
+- `src/typescript/db/seed.model.ts`
+- `src/typescript/db/seed.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/credential/credential.integration.ts`
+- `tests/typescript/credential/credential.test.model.ts`
+- `tests/typescript/credential/credential.test.ts`
+- `tests/typescript/mfa_enrollement/mfa_enrollement.integration.ts`
+- `tests/typescript/mfa_enrollement/mfa_enrollement.test.model.ts`
+- `tests/typescript/mfa_enrollement/mfa_enrollement.test.ts`
+
+**Validation Notes:**
+
+- Schema, seed, and test scaffolding were added in the workspace.
+- Drizzle generation and Node-based validation were left as follow-up action items per
+  the user's request not to run node scripts in this turn.

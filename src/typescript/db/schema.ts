@@ -12,6 +12,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  varchar,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -85,6 +86,39 @@ export const users = pgTable(
       foreignColumns: [userStatus.id],
     }),
     uniqueIndex("users_tenant_id_email_key").on(table.tenantId, table.email),
+  ],
+);
+
+export const credential = pgTable(
+  "credential",
+  {
+    id: varchar("id", { length: 25 }).primaryKey(),
+    userId: uuid("userId").notNull(),
+    passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "credential_userId_fk",
+      columns: [table.userId],
+      foreignColumns: [users.id],
+    }),
+    uniqueIndex("credential_userId_key").on(table.userId),
+  ],
+);
+
+export const mfaEnrollment = pgTable(
+  "mfa_enrollment",
+  {
+    userId: uuid("userId").primaryKey(),
+    totpSecret: varchar("totpSecret", { length: 512 }).notNull(),
+    isEnrolled: boolean("isEnrolled").default(false).notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "mfa_enrollment_userId_fk",
+      columns: [table.userId],
+      foreignColumns: [users.id],
+    }),
   ],
 );
 
