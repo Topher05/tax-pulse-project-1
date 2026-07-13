@@ -48,6 +48,8 @@ export {
   taxPlanCycleCreateSchema,
   taxPlanCyclePrioritySchema,
   taxPlanCycleReadParamsSchema,
+  taxPlanCycleTransitionParamsSchema,
+  taxPlanCycleTransitionSchema,
   taxPlanCycleSchema,
   taxPlanCycleStageSchema,
   taxPlanCycleStages,
@@ -55,6 +57,8 @@ export {
   type TaxPlanCycleCreateInput,
   type TaxPlanCyclePriority,
   type TaxPlanCycleReadParams,
+  type TaxPlanCycleTransitionInput,
+  type TaxPlanCycleTransitionParams,
   type TaxPlanCycleStage,
 } from "./taxPlanCycle.js";
 export {
@@ -67,7 +71,13 @@ export {
   type TaxPlanCycleReadInput,
   type TaxPlanCycleRepository,
   type TaxPlanCycleRepositoryCreateInput,
+  type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
 } from "./taxPlanCycleRepository.js";
+export {
+  createTaxPlanCycleTransitionController,
+  taxPlanCycleTransitionController,
+  type TaxPlanCycleTransitionController,
+} from "./taxPlanCycleTransitionController.js";
 
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";

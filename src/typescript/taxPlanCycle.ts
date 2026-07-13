@@ -65,6 +65,12 @@ export const taxPlanCycleCreateSchema = z.strictObject({
 export const taxPlanCycleReadParamsSchema = z.object({
   caseId: z.uuid(),
 });
+export const taxPlanCycleTransitionParamsSchema = z.object({
+  id: z.uuid(),
+});
+export const taxPlanCycleTransitionSchema = z.strictObject({
+  to_stage: taxPlanCycleStageSchema,
+});
 
 export type TaxPlanCycleStage = z.infer<typeof taxPlanCycleStageSchema>;
 export type TaxPlanCyclePriority = z.infer<typeof taxPlanCyclePrioritySchema>;
@@ -72,4 +78,10 @@ export type TaxPlanCycle = z.infer<typeof taxPlanCycleSchema>;
 export type TaxPlanCycleCreateInput = z.infer<typeof taxPlanCycleCreateSchema>;
 export type TaxPlanCycleReadParams = z.infer<
   typeof taxPlanCycleReadParamsSchema
+>;
+export type TaxPlanCycleTransitionParams = z.infer<
+  typeof taxPlanCycleTransitionParamsSchema
+>;
+export type TaxPlanCycleTransitionInput = z.infer<
+  typeof taxPlanCycleTransitionSchema
 >;
