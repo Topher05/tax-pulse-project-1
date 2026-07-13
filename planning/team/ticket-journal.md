@@ -633,3 +633,93 @@ preserving tenant-scoped reads.
 - `npm test` still fails in this local environment when migration tests use the
   configured `DATABASE_URL` because that PostgreSQL instance does not provide
   `uuidv7()`.
+
+## caleb-latimer-jira55 - SCRUM-55
+
+**Branch:** `caleb-latimer-jira55`
+
+**Owner:** Caleb Latimer
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Create the user and role tables
+
+**CSV Description:** As a Backend Developer, I want user and role tables, so that
+TaxPulse identities and their roles are stored per tenant.
+
+**Acceptance Criteria:**
+
+- A migration creates a `user` table with `tenant_id`, `email` unique per tenant, and
+  `status`.
+- A `role` table enumerates Firm Admin, Advisor, Client, and TaxPulse Platform Admin.
+- A `user_status` table enumerates invited, active, and disabled.
+- A user is assigned exactly one role and one status via foreign keys.
+
+**How This Ties Into the Code:**
+
+- `src/typescript/db/schema.ts` now defines `role`, `user_status`, and `user`
+  alongside the existing tenant and cycle tables.
+- `role.role` is modeled as a Postgres enum-backed lookup column for the four canonical
+  role labels, while `user_status.status` captures the three account lifecycle states.
+- `role.id` and `user_status.id` now use integer identity primary keys, and `users`
+  points at both lookup tables through `role_id` and `status_id`.
+- The Mermaid ER diagram for the auth lookup tables is:
+
+```mermaid
+erDiagram
+  TENANTS ||--o{ USERS : has
+  ROLES ||--o{ USERS : assigns
+  USER_STATUS ||--o{ USERS : sets
+
+  TENANTS {
+    uuid id PK
+    text name
+    timestamptz created_at
+  }
+
+  ROLES {
+    int id PK
+    user_role_name role
+  }
+
+  USER_STATUS {
+    int id PK
+    user_status_value status
+  }
+
+  USERS {
+    uuid id PK
+    uuid tenant_id FK
+    text email
+    int role_id FK
+    int status_id FK
+  }
+```
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs tenant-isolated identities before the auth, roster, and JWT
+work can land. This ticket creates the persistence boundary for firm staff, clients,
+and platform admins while preserving least-privilege, scoped access, and the project
+rule that workflow condition stays in the Tax Plan Cycle stage rather than in a
+separate case status field.
+
+**Changed Files:**
+
+- `drizzle/0001_user_role.sql`
+- `drizzle/meta/_journal.json`
+- `drizzle/meta/0000_snapshot.json`
+- `src/typescript/db/schema.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/userRoleMigration.test.ts`
+- `planning/prompt-journal/cl-journal.md`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- Implementation was completed in the workspace.
+- Review action items:
+  - `npm run db:check`
+  - `npm run typecheck`
+  - `npm test`
+  - `npm run test:migration`

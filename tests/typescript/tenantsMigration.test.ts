@@ -1,11 +1,10 @@
-import { randomUUID } from "node:crypto";
+// Deprecated: this migration-focused test is expected to disappear or be refactored in the next set of tennant based changes once the
+// legacy migration path is fully retired.
+// Leans on legacy migration approach pre-drizzle & zod integrations
 import { describe, expect, test } from "vitest";
-import type { Client } from "pg";
 
-import {
-  applyMigrations,
-  withDatabaseClient,
-} from "../../src/typescript/postgresMigrations.js";
+import { applyDrizzleMigrations } from "../../src/typescript/postgresMigrations.js";
+import { withDrizzleTestSchema } from "./bootstrap/migrationTestUtils.js";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 const describeMigration = databaseUrl ? describe : describe.skip;
@@ -22,56 +21,10 @@ const sampleTenantIds = [
   "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02",
 ] as const;
 
-function createTestSchemaName(): string {
-  return `taxpulse_migration_${randomUUID().replace(/-/g, "")}`;
-}
-
-function quoteIdentifier(identifier: string): string {
-  return `"${identifier.replace(/"/g, '""')}"`;
-}
-
-async function resetTestSchema(client: Client, schemaName: string): Promise<void> {
-  const quotedSchemaName = quoteIdentifier(schemaName);
-
-  await client.query(
-    `DROP TABLE IF EXISTS ${quotedSchemaName}.stage_transition CASCADE`,
-  );
-  await client.query(
-    `DROP TABLE IF EXISTS ${quotedSchemaName}.tax_plan_cycle CASCADE`,
-  );
-  await client.query(
-    `DROP TABLE IF EXISTS ${quotedSchemaName}.tenants CASCADE`,
-  );
-}
-
-async function withTestSchema<T>(
-  callback: (client: Client) => Promise<T>,
-): Promise<T> {
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required for migration tests.");
-  }
-
-  return withDatabaseClient(databaseUrl, async (client) => {
-    const schemaName = createTestSchemaName();
-    const quotedSchemaName = quoteIdentifier(schemaName);
-
-    await client.query(`CREATE SCHEMA ${quotedSchemaName}`);
-    await client.query(`SET search_path TO ${quotedSchemaName}, public`);
-    await resetTestSchema(client, schemaName);
-
-    try {
-      return await callback(client);
-    } finally {
-      await client.query("SET search_path TO public");
-      await client.query(`DROP SCHEMA IF EXISTS ${quotedSchemaName} CASCADE`);
-    }
-  });
-}
-
 describeMigration("tenants migration", () => {
   test("creates the table and persists two tenants", async () => {
-    await withTestSchema(async (client) => {
-      await applyMigrations(client);
+    await withDrizzleTestSchema(async (client) => {
+      await applyDrizzleMigrations(client);
 
       const columnsResult = await client.query(
         `

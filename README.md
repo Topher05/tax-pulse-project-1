@@ -83,6 +83,18 @@ python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')
 python -m pytest
 ```
 
+### TypeScript Coverage
+
+Vitest with `@vitest/coverage-v8` is the standard coverage path for the TypeScript
+suite. Use this command to generate local coverage output and reporting:
+
+```bash
+npm run test:cov
+```
+
+Coverage reporting follows the Vitest workflow, so the generated report reflects the
+same test harness used by `npm run test:vitest`.
+
 ## Contributor Workflow
 
 Use these docs as the source of truth for branch naming, PR shape, and review checks:
@@ -182,7 +194,7 @@ Notes:
 - Drizzle definitions are the typed schema contract; the SQL migration runner applies
   the top-level `migrations/` files and records applied files in `schema_migrations`.
 - Keep any local seed data synthetic and clearly fake.
-- If a `seed.sql` file is present in the repository root, use it for local-only sample data rather than hand-editing production-like records.
+- A shared seed data lives in `src/typescript/db/seed.ts` and is executed with `npm run seed`; keep any generated sample data synthetic and clearly fake.
 - Start Docker before running `npm run test:integration` or any command that depends on Testcontainers.
 
 ## Contributing and Codex Context

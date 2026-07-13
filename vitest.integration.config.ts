@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     hookTimeout: 90_000,
     testTimeout: 90_000,
-    setupFiles: ["tests/typescript/testSetup.ts"],
+    setupFiles: ["tests/typescript/bootstrap/testSetup.ts"],
     exclude: [
       "**/.pytest_cache/**",
       "**/.ruff_cache/**",

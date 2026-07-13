@@ -8,8 +8,13 @@ loadEnv();
 const repoRoot = process.cwd();
 
 export const migrationsDirectory = resolve(repoRoot, "migrations");
+export const drizzleMigrationsDirectory = resolve(
+  repoRoot,
+  "src/typescript/db/drizzle-migrations",
+);
 const migrationNamePattern = /^\d{14}_[a-z0-9][a-z0-9_-]*\.sql$/;
 export const appliedMigrationsTableName = "schema_migrations";
+export const drizzleAppliedMigrationsTableName = "drizzle_schema_migrations";
 
 export function getDatabaseUrlFromEnv(): string {
   const databaseUrl = process.env.DATABASE_URL?.trim();
@@ -25,13 +30,16 @@ export function getDatabaseUrlFromEnv(): string {
 
 export function listMigrationFiles(
   migrationsDir: string = migrationsDirectory,
+  options: { validateNames?: boolean } = {},
 ): string[] {
+  const validateNames = options.validateNames ?? true;
+
   return readdirSync(migrationsDir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".sql"))
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right))
     .map((fileName) => {
-      if (!migrationNamePattern.test(fileName)) {
+      if (validateNames && !migrationNamePattern.test(fileName)) {
         throw new Error(
           `Invalid migration file name "${fileName}". ` +
             "Use YYYYMMDDHHMMSS_description.sql.",
@@ -57,15 +65,43 @@ export async function withDatabaseClient<T>(
   }
 }
 
+// Deprecated: this legacy SQL migration path exists for compatibility with
+// older hand-written migrations. Prefer `applyDrizzleMigrations` for new work.
 export async function applyMigrations(client: Client): Promise<void> {
-  const migrationFiles = listMigrationFiles();
+  const migrationFiles = listMigrationFiles(migrationsDirectory);
 
   if (migrationFiles.length === 0) {
     throw new Error(`No SQL migrations found in ${migrationsDirectory}`);
   }
 
+  await applySqlMigrations(client, migrationFiles, appliedMigrationsTableName);
+}
+
+export async function applyDrizzleMigrations(client: Client): Promise<void> {
+  const migrationFiles = listMigrationFiles(drizzleMigrationsDirectory, {
+    validateNames: false,
+  });
+
+  if (migrationFiles.length === 0) {
+    throw new Error(
+      `No SQL migrations found in ${drizzleMigrationsDirectory}`,
+    );
+  }
+
+  await applySqlMigrations(
+    client,
+    migrationFiles,
+    drizzleAppliedMigrationsTableName,
+  );
+}
+
+async function applySqlMigrations(
+  client: Client,
+  migrationFiles: string[],
+  appliedMigrationsTable: string,
+): Promise<void> {
   await client.query(`
-    CREATE TABLE IF NOT EXISTS ${appliedMigrationsTableName} (
+    CREATE TABLE IF NOT EXISTS ${appliedMigrationsTable} (
       file_name TEXT PRIMARY KEY,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
@@ -77,7 +113,7 @@ export async function applyMigrations(client: Client): Promise<void> {
     const appliedResult = await client.query(
       `
         SELECT 1
-        FROM ${appliedMigrationsTableName}
+        FROM ${appliedMigrationsTable}
         WHERE file_name = $1
       `,
       [fileName],
@@ -99,7 +135,7 @@ export async function applyMigrations(client: Client): Promise<void> {
       await client.query(migrationSql);
       await client.query(
         `
-          INSERT INTO ${appliedMigrationsTableName} (file_name)
+          INSERT INTO ${appliedMigrationsTable} (file_name)
           VALUES ($1)
         `,
         [fileName],
