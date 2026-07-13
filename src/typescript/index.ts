@@ -29,6 +29,14 @@ export {
   type CreateLoggerOptions,
 } from "./logger.js";
 export {
+  defaultPasswordHashingConfig,
+  hashPassword,
+  resolvePasswordHashingConfig,
+  type HashPasswordOptions,
+  type PasswordHashingConfig,
+  type PasswordHashingConfigOverrides,
+} from "./passwordHashing.js";
+export {
   coreCaseOpenApiSchemaRegistrations,
   createCoreCaseOpenApiDocument,
   type CoreCaseOpenApiSchemaRegistration,

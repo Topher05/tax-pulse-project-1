@@ -3,6 +3,66 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## development - SCRUM-57
+
+**Branch:** `development`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Epic:** SCRUM-14 - Secure APIs — Auth, Audit & Boundaries
+
+**Summary:** Hash and store passwords with argon2id
+
+**CSV Description:** As a Security Engineer, I want passwords hashed with argon2id on
+registration, so that no credential is ever stored in plaintext.
+
+**Acceptance Criteria:**
+
+- Registration hashes the password with argon2id and stores only the hash in the
+  credential table.
+- The work-factor parameters are configurable and documented.
+- A test asserts the stored value is a valid argon2id hash, not the plaintext.
+
+**How This Ties Into the Code:**
+
+- `hashPassword` produces encoded Argon2id password hashes using configurable
+  work-factor parameters.
+- `resolvePasswordHashingConfig` reads the documented `TAXPULSE_ARGON2_*`
+  environment overrides and rejects invalid non-positive or non-integer values.
+- Salt length is enforced by generating a per-hash random salt before calling Argon2id.
+- The hashing API is exported from the TypeScript package boundary for the future
+  registration flow.
+- SCRUM-57's credential-table storage criterion remains blocked until SCRUM-56 creates
+  the `credential` table and registration persistence path.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory's multi-tenant authentication boundary must never store plaintext
+credentials. This foundation gives the future registration flow a single Argon2id
+hashing contract with documented work-factor controls while preserving the current
+schema boundary and avoiding overlap with SCRUM-56.
+
+**Changed Files:**
+
+- `README.md`
+- `package-lock.json`
+- `package.json`
+- `planning/team/ticket-journal.md`
+- `src/typescript/index.ts`
+- `src/typescript/passwordHashing.ts`
+- `tests/typescript/passwordHashing.test.ts`
+
+**Validation Notes:**
+
+- `npm install argon2` completed, updating the Node manifest and lockfile. The local
+  shell emitted an engine warning because it is running Node 24 while the repo pins
+  Node 22.0.0.
+- `npm run typecheck` passed.
+- `npm test` first failed in the sandbox because existing HTTP tests could not bind
+  local ephemeral ports (`listen EPERM`).
+- `npm run test` passed with local socket permissions; 7 files passed, 2 migration
+  suites were skipped by their environment guards, and 46 tests passed.
+
 ## christopher-martus-jira54 - SCRUM-54
 
 **Branch:** `christopher-martus-jira54`

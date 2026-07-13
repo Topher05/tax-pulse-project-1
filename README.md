@@ -131,6 +131,30 @@ The Tax Plan Cycle schemas are generated from the same Zod definitions used by t
 routes. Workflow condition is represented by `stage`; there is no separate case
 `status` field.
 
+## Password Hashing Configuration
+
+SCRUM-57 introduces a reusable Argon2id hashing helper for the future registration
+flow. The current implementation hashes passwords and exposes the configuration surface,
+but it does not persist credentials because the `credential` table belongs to SCRUM-56
+and is not present yet.
+
+Default work-factor parameters:
+
+- `memoryCostKiB`: `65536`
+- `timeCost`: `3`
+- `parallelism`: `4`
+- `hashLength`: `32`
+- `saltLength`: `16`
+
+Override these values with environment variables when a deployment needs different
+capacity or latency tradeoffs:
+
+- `TAXPULSE_ARGON2_MEMORY_COST_KIB`
+- `TAXPULSE_ARGON2_TIME_COST`
+- `TAXPULSE_ARGON2_PARALLELISM`
+- `TAXPULSE_ARGON2_HASH_LENGTH`
+- `TAXPULSE_ARGON2_SALT_LENGTH`
+
 ## Migration Commands
 
 The PostgreSQL migration workflow keeps typed Drizzle schema definitions in
