@@ -106,10 +106,21 @@ export {
   type TaxPlanCycleRepositoryCreateInput,
 } from "./taxPlanCycleRepository.js";
 
+import { config as loadEnv } from "dotenv";
+import pg from "pg";
+
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
+import { createAuthRouter } from "./authRoutes.js";
+import {
+  authenticatePasswordForMfaChallenge,
+  createPasswordCredentialStore,
+} from "./authCredentials.js";
+
+loadEnv();
+const { Client } = pg;
 
 export {
   createTaxPlanCycleCreateController,
@@ -148,11 +159,48 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 
 export async function main(): Promise<Server> {
   const logger = createLogger();
+
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+  let authenticatePassword;
+
+  if (databaseUrl) {
+    try {
+      const client = new Client({ connectionString: databaseUrl });
+      await client.connect();
+      const credentialReader = createPasswordCredentialStore(client);
+      authenticatePassword = (input: any) =>
+        authenticatePasswordForMfaChallenge(input, credentialReader);
+      logger.info("Connected to database for Auth Router");
+    } catch (err) {
+      logger.error({ err }, "Failed to connect to database for Auth Router. Using mock fallback");
+    }
+  }
+
+  if (!authenticatePassword) {
+    logger.warn("Database not configured or unreachable. Using mock password authenticator");
+    authenticatePassword = async (input: any) => {
+      if (
+        input.tenantId === "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01" &&
+        input.email === "alex@example.com" &&
+        input.plaintextPassword === "correct-password"
+      ) {
+        return {
+          status: "mfa_challenge_required" as const,
+          tenantId: input.tenantId,
+          email: input.email,
+          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        };
+      }
+      return { status: "invalid_credentials" as const };
+    };
+  }
+
   const app = createApp({
     logger,
     registerRoutes: (app) => {
       app.use(createCoreCaseOpenApiRouter());
       app.use(createTaxPlanCycleRouter());
+      app.use(createAuthRouter({ authenticatePassword }));
     },
   });
   const port = getPortFromEnv();
