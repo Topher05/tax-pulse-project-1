@@ -153,6 +153,12 @@ encoded hash in the `credential` table. Login callers use
 hash; a correct password returns `mfa_challenge_required` and does not issue an access
 token directly.
 
+`POST /auth/login` accepts `tenant_id`, `email`, and `password`. Invalid credentials
+return the same `401` Problem Details response for wrong passwords and unknown emails,
+so the API does not reveal whether an email exists. Valid passwords return `202` with
+`mfa_challenge_required`, `tenant_id`, `email`, and `user_id`; access tokens are issued
+only after the MFA flow succeeds.
+
 Default work-factor parameters:
 
 - `memoryCostKiB`: `65536`

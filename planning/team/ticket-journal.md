@@ -3,6 +3,61 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## martins-okorie-jira58 - SCRUM-58
+
+**Branch:** `martins-okorie-jira58`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Epic:** SCRUM-14 - Secure APIs — Auth, Audit & Boundaries
+
+**Summary:** Verify password on login
+
+**CSV Description:** As a Security Engineer, I want login to verify the password
+against the argon2id hash, so that only valid credentials proceed to the second factor.
+
+**Acceptance Criteria:**
+
+- Login verifies the submitted password against the stored hash.
+- A wrong password returns 401 without revealing whether the email exists.
+- A correct password advances to the MFA challenge rather than issuing a token directly.
+
+**How This Ties Into the Code:**
+
+- `verifyPasswordHash` wraps Argon2id verification and returns `false` for malformed
+  stored values.
+- `authenticatePasswordForMfaChallenge` checks submitted login passwords against stored
+  credential hashes and returns either `invalid_credentials` or
+  `mfa_challenge_required`.
+- `createAuthRouter` exposes `POST /auth/login`, validates the submitted `tenant_id`,
+  `email`, and `password`, and maps `invalid_credentials` to a shared 401 Problem
+  Details response.
+- Wrong passwords and unknown emails receive the same 401 response body so the route
+  does not disclose whether the email exists.
+- Successful password verification returns a 202 MFA challenge payload with no token
+  field, leaving token issuance to the later MFA verification step.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires password login to be only the first step of authentication.
+This route preserves the tenant-scoped auth boundary, avoids account enumeration through
+login errors, and advances valid passwords into the MFA flow before any token is issued.
+
+**Changed Files:**
+
+- `README.md`
+- `planning/team/ticket-journal.md`
+- `src/typescript/authRoutes.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authRoutes.test.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/authRoutes.test.ts tests/typescript/authCredentials.test.ts tests/typescript/passwordHashing.test.ts`
+  passed with 3 files and 10 tests after granting localhost socket access for the HTTP
+  route test server.
+
 ## martins-okorie-jira57 - SCRUM-57
 
 **Branch:** `martins-okorie-jira57`

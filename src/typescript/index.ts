@@ -54,6 +54,16 @@ export {
   type StoredPasswordCredential,
 } from "./authCredentials.js";
 export {
+  createAuthRouter,
+  passwordLoginRequestSchema,
+  type AuthValidationErrorIssue,
+  type AuthValidationErrorResponse,
+  type CreateAuthRouterOptions,
+  type MfaChallengeResponse,
+  type PasswordAuthenticator,
+  type PasswordLoginRequest,
+} from "./authRoutes.js";
+export {
   coreCaseOpenApiSchemaRegistrations,
   createCoreCaseOpenApiDocument,
   type CoreCaseOpenApiSchemaRegistration,
