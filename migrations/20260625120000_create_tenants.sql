@@ -1,3 +1,5 @@
+-- Deprecated: legacy hand-written migration kept for reference only.
+-- Current migrations live in `src/typescript/db/drizzle-migrations/`.
 DROP TABLE IF EXISTS stage_transition;
 
 DROP TABLE IF EXISTS tax_plan_cycle;
