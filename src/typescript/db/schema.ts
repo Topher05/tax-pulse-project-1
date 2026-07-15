@@ -137,7 +137,7 @@ export const refreshToken = pgTable(
     foreignKey({
       name: "refresh_token_user_id_fk",
       columns: [table.userId],
-      foreignColumns: [userStatus.id],
+      foreignColumns: [users.id],
     }),
     uniqueIndex("refresh_token_token_hash_key").on(table.tokenHash),
     index("refresh_token_user_id_expires_at_idx").on(table.userId, table.expiresAt),
