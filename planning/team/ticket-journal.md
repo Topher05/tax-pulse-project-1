@@ -36,6 +36,7 @@ against the argon2id hash, so that only valid credentials proceed to the second 
   does not disclose whether the email exists.
 - Successful password verification returns a 202 MFA challenge payload with no token
   field, leaving token issuance to the later MFA verification step.
+- `index.ts` is configured to register the `createAuthRouter` and automatically switch between live database verification and a mock authenticator fallback for local development if the database is unreachable.
 
 **Project Scope Connection:**
 
@@ -57,6 +58,8 @@ login errors, and advances valid passwords into the MFA flow before any token is
 - `npx vitest run tests/typescript/authRoutes.test.ts tests/typescript/authCredentials.test.ts tests/typescript/passwordHashing.test.ts`
   passed with 3 files and 10 tests after granting localhost socket access for the HTTP
   route test server.
+- Wired `createAuthRouter` inside the server's startup script `index.ts`.
+- Started development server with `npm run dev` and verified the `/auth/login` endpoint using `curl` and Postman collections, successfully generating a 202 Accepted response for valid mock credentials and a 401 Unauthorized Problem Details response for invalid passwords.
 
 ## martins-okorie-jira57 - SCRUM-57
 
