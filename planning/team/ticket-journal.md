@@ -3,9 +3,9 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
-## development - SCRUM-57
+## martins-okorie-jira57 - SCRUM-57
 
-**Branch:** `development`
+**Branch:** `martins-okorie-jira57`
 
 **Owner:** Chimaobi Martins Okorie
 
@@ -27,20 +27,28 @@ registration, so that no credential is ever stored in plaintext.
 
 - `hashPassword` produces encoded Argon2id password hashes using configurable
   work-factor parameters.
+- `verifyPasswordHash` validates submitted passwords against encoded Argon2id hashes and
+  returns `false` for malformed stored values instead of leaking parser errors.
+- `registerPasswordCredential` hashes the submitted registration password and writes only
+  the encoded hash to the credential persistence boundary.
+- `createPasswordCredentialStore` is the concrete Drizzle adapter for the `credential`
+  table; its insert row contains `id`, `userId`, and `passwordHash`, never the submitted
+  plaintext password.
+- `authenticatePasswordForMfaChallenge` verifies login passwords and returns
+  `mfa_challenge_required` for valid credentials without minting a token directly.
 - `resolvePasswordHashingConfig` reads the documented `TAXPULSE_ARGON2_*`
   environment overrides and rejects invalid non-positive or non-integer values.
 - Salt length is enforced by generating a per-hash random salt before calling Argon2id.
-- The hashing API is exported from the TypeScript package boundary for the future
-  registration flow.
-- SCRUM-57's credential-table storage criterion remains blocked until SCRUM-56 creates
-  the `credential` table and registration persistence path.
+- The hashing and credential APIs are exported from the TypeScript package boundary for
+  the registration and login flows.
 
 **Project Scope Connection:**
 
 TaxPulse Advisory's multi-tenant authentication boundary must never store plaintext
-credentials. This foundation gives the future registration flow a single Argon2id
-hashing contract with documented work-factor controls while preserving the current
-schema boundary and avoiding overlap with SCRUM-56.
+credentials. This work gives registration and login a single Argon2id credential
+contract with documented work-factor controls, keeps the persisted credential scoped to
+the user record, and hands successful password authentication to MFA before any token is
+issued.
 
 **Changed Files:**
 
@@ -48,20 +56,23 @@ schema boundary and avoiding overlap with SCRUM-56.
 - `package-lock.json`
 - `package.json`
 - `planning/team/ticket-journal.md`
+- `src/typescript/authCredentials.ts`
 - `src/typescript/index.ts`
 - `src/typescript/passwordHashing.ts`
+- `tests/typescript/authCredentials.test.ts`
 - `tests/typescript/passwordHashing.test.ts`
 
 **Validation Notes:**
 
-- `npm install argon2` completed, updating the Node manifest and lockfile. The local
-  shell emitted an engine warning because it is running Node 24 while the repo pins
-  Node 22.0.0.
+- `git fetch origin development` and `git merge origin/development` completed before the
+  SCRUM-57 service changes, so this branch builds on the latest dev work available at
+  the time of implementation.
 - `npm run typecheck` passed.
-- `npm test` first failed in the sandbox because existing HTTP tests could not bind
-  local ephemeral ports (`listen EPERM`).
-- `npm run test` passed with local socket permissions; 7 files passed, 2 migration
-  suites were skipped by their environment guards, and 46 tests passed.
+- `npx vitest run tests/typescript/authCredentials.test.ts tests/typescript/passwordHashing.test.ts`
+  passed with 2 files and 7 tests.
+- `npm run test` passed typecheck and the SCRUM-57 unit tests, then failed in existing
+  Testcontainers-backed credential, MFA, role, and user suites because this environment
+  could not find a working container runtime strategy.
 
 ## christopher-martus-jira54 - SCRUM-54
 

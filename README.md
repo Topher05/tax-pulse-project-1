@@ -145,10 +145,13 @@ routes. Workflow condition is represented by `stage`; there is no separate case
 
 ## Password Hashing Configuration
 
-SCRUM-57 introduces a reusable Argon2id hashing helper for the future registration
-flow. The current implementation hashes passwords and exposes the configuration surface,
-but it does not persist credentials because the `credential` table belongs to SCRUM-56
-and is not present yet.
+SCRUM-57 introduces reusable Argon2id password credential helpers for registration and
+login. Registration callers use `registerPasswordCredential` with
+`createPasswordCredentialStore` to hash the submitted password and persist only the
+encoded hash in the `credential` table. Login callers use
+`authenticatePasswordForMfaChallenge` to verify the submitted password against the stored
+hash; a correct password returns `mfa_challenge_required` and does not issue an access
+token directly.
 
 Default work-factor parameters:
 

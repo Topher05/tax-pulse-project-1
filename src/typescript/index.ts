@@ -32,10 +32,27 @@ export {
   defaultPasswordHashingConfig,
   hashPassword,
   resolvePasswordHashingConfig,
+  verifyPasswordHash,
   type HashPasswordOptions,
   type PasswordHashingConfig,
   type PasswordHashingConfigOverrides,
 } from "./passwordHashing.js";
+export {
+  authenticatePasswordForMfaChallenge,
+  createPasswordCredentialStore,
+  registerPasswordCredential,
+  type InvalidPasswordCredentialResult,
+  type MfaChallengeRequiredResult,
+  type PasswordAuthenticationResult,
+  type PasswordCredentialLoginInput,
+  type PasswordCredentialLoginRecord,
+  type PasswordCredentialLookupInput,
+  type PasswordCredentialReader,
+  type PasswordCredentialRegistrationInput,
+  type PasswordCredentialStore,
+  type PasswordCredentialWriter,
+  type StoredPasswordCredential,
+} from "./authCredentials.js";
 export {
   coreCaseOpenApiSchemaRegistrations,
   createCoreCaseOpenApiDocument,

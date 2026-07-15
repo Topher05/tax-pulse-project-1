@@ -5,6 +5,7 @@ import {
   defaultPasswordHashingConfig,
   hashPassword,
   resolvePasswordHashingConfig,
+  verifyPasswordHash,
 } from "../../src/typescript/index.js";
 
 describe("password hashing", () => {
@@ -17,6 +18,9 @@ describe("password hashing", () => {
     expect(passwordHash).not.toBe(plaintextPassword);
     expect(passwordHash).not.toContain(plaintextPassword);
     await expect(verify(passwordHash, plaintextPassword)).resolves.toBe(true);
+    await expect(verifyPasswordHash(passwordHash, plaintextPassword)).resolves.toBe(true);
+    await expect(verifyPasswordHash(passwordHash, "wrong-password")).resolves.toBe(false);
+    await expect(verifyPasswordHash("not-an-argon2-hash", plaintextPassword)).resolves.toBe(false);
   });
 
   test("parses configured argon2id work-factor overrides from the environment", () => {

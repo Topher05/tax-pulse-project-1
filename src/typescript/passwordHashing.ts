@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-import { argon2id, hash } from "argon2";
+import { argon2id, hash, verify } from "argon2";
 
 export interface PasswordHashingConfig {
   memoryCostKiB: number;
@@ -73,6 +73,17 @@ export async function hashPassword(
     hashLength: config.hashLength,
     salt: randomBytes(config.saltLength),
   });
+}
+
+export async function verifyPasswordHash(
+  passwordHash: string,
+  plaintextPassword: string,
+): Promise<boolean> {
+  try {
+    return await verify(passwordHash, plaintextPassword);
+  } catch {
+    return false;
+  }
 }
 
 function validatePasswordHashingConfig(config: PasswordHashingConfig): void {
