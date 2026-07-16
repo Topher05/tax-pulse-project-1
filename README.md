@@ -145,30 +145,16 @@ routes. Workflow condition is represented by `stage`; there is no separate case
 
 ## Password Hashing Configuration
 
-SCRUM-57 introduces reusable Argon2id password credential helpers for registration and
-login. Registration callers use `registerPasswordCredential` with
-`createPasswordCredentialStore` to hash the submitted password and persist only the
-encoded hash in the `credential` table. Login callers use
-`authenticatePasswordForMfaChallenge` to verify the submitted password against the stored
-hash; a correct password returns `mfa_challenge_required` and does not issue an access
-token directly.
+The auth helpers use Argon2id password hashes. See
+[`ADR-0007`](./adr/0007-argon2id-password-login.md) for the dependency and architecture
+rationale.
 
-`POST /auth/login` accepts `tenant_id`, `email`, and `password`. Invalid credentials
-return the same `401` Problem Details response for wrong passwords and unknown emails,
-so the API does not reveal whether an email exists. Valid passwords return `202` with
-`mfa_challenge_required`, `tenant_id`, `email`, and `user_id`; access tokens are issued
-only after the MFA flow succeeds.
+`POST /auth/login` accepts `tenant_id`, `email`, and `password`. Valid passwords return
+`202` with an MFA challenge payload, and invalid credentials return a shared `401`
+Problem Details response.
 
-Default work-factor parameters:
-
-- `memoryCostKiB`: `65536`
-- `timeCost`: `3`
-- `parallelism`: `4`
-- `hashLength`: `32`
-- `saltLength`: `16`
-
-Override these values with environment variables when a deployment needs different
-capacity or latency tradeoffs:
+The defaults work out of the box. Override these values only when a deployment needs
+different capacity or latency tradeoffs:
 
 - `TAXPULSE_ARGON2_MEMORY_COST_KIB`
 - `TAXPULSE_ARGON2_TIME_COST`

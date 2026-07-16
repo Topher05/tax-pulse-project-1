@@ -1,48 +1,77 @@
+import { verify } from "argon2";
 import { describe, expect, test } from "vitest";
 
 import {
   authenticatePasswordForMfaChallenge,
+  defaultPasswordHashingConfig,
+  hashPassword,
   registerPasswordCredential,
+  resolvePasswordHashingConfig,
   verifyPasswordHash,
-  type PasswordCredentialLoginRecord,
-  type PasswordCredentialReader,
-  type PasswordCredentialWriter,
-  type StoredPasswordCredential,
-} from "../../src/typescript/index.js";
+} from "../../../src/typescript/index.js";
+import {
+  authEmail,
+  authTenantId,
+  authUserId,
+  fastPasswordHashConfig,
+  InMemoryCredentialStore,
+} from "./auth.test.model.js";
 
-const fastHashConfig = {
-  memoryCostKiB: 4_096,
-  timeCost: 2,
-  parallelism: 1,
-  hashLength: 24,
-  saltLength: 12,
-};
+describe("password hashing", () => {
+  test("hashes plaintext passwords as encoded argon2id hashes", async () => {
+    const plaintextPassword = "synthetic-client-password-57";
 
-class InMemoryCredentialStore implements PasswordCredentialWriter, PasswordCredentialReader {
-  readonly credentials: StoredPasswordCredential[] = [];
+    const passwordHash = await hashPassword(plaintextPassword);
 
-  constructor(private readonly loginRecords: PasswordCredentialLoginRecord[] = []) {}
+    expect(passwordHash).toMatch(/^\$argon2id\$/);
+    expect(passwordHash).not.toBe(plaintextPassword);
+    expect(passwordHash).not.toContain(plaintextPassword);
+    await expect(verify(passwordHash, plaintextPassword)).resolves.toBe(true);
+    await expect(verifyPasswordHash(passwordHash, plaintextPassword)).resolves.toBe(true);
+    await expect(verifyPasswordHash(passwordHash, "wrong-password")).resolves.toBe(false);
+    await expect(
+      verifyPasswordHash("not-an-argon2-hash", plaintextPassword),
+    ).resolves.toBe(false);
+  });
 
-  async createPasswordCredential(
-    credential: StoredPasswordCredential,
-  ): Promise<StoredPasswordCredential> {
-    this.credentials.push(credential);
-    return credential;
-  }
+  test("parses configured argon2id work-factor overrides from the environment", () => {
+    expect(
+      resolvePasswordHashingConfig({
+        TAXPULSE_ARGON2_MEMORY_COST_KIB: "32768",
+        TAXPULSE_ARGON2_TIME_COST: "2",
+        TAXPULSE_ARGON2_PARALLELISM: "1",
+        TAXPULSE_ARGON2_HASH_LENGTH: "24",
+        TAXPULSE_ARGON2_SALT_LENGTH: "12",
+      }),
+    ).toEqual({
+      memoryCostKiB: 32_768,
+      timeCost: 2,
+      parallelism: 1,
+      hashLength: 24,
+      saltLength: 12,
+    });
+  });
 
-  async findPasswordCredentialByEmail(input: {
-    tenantId: string;
-    email: string;
-  }): Promise<PasswordCredentialLoginRecord | null> {
-    return (
-      this.loginRecords.find(
-        (record) => record.tenantId === input.tenantId && record.email === input.email,
-      ) ?? null
-    );
-  }
-}
+  test("uses documented defaults when environment overrides are absent", () => {
+    expect(resolvePasswordHashingConfig({})).toEqual(defaultPasswordHashingConfig);
+  });
 
-describe("auth credentials", () => {
+  test("rejects invalid work-factor environment overrides", () => {
+    expect(() =>
+      resolvePasswordHashingConfig({
+        TAXPULSE_ARGON2_MEMORY_COST_KIB: "0",
+      }),
+    ).toThrow("TAXPULSE_ARGON2_MEMORY_COST_KIB must be a positive integer.");
+
+    expect(() =>
+      resolvePasswordHashingConfig({
+        TAXPULSE_ARGON2_TIME_COST: "1.5",
+      }),
+    ).toThrow("TAXPULSE_ARGON2_TIME_COST must be a positive integer.");
+  });
+});
+
+describe("password credential service", () => {
   test("hashes registration passwords before writing credential rows", async () => {
     const plaintextPassword = "synthetic-registration-password-57";
     const store = new InMemoryCredentialStore();
@@ -50,11 +79,11 @@ describe("auth credentials", () => {
     const storedCredential = await registerPasswordCredential(
       {
         credentialId: "cm7zq8f4k0057a1b2c3d4e5f6",
-        userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d57",
+        userId: authUserId,
         plaintextPassword,
       },
       store,
-      { config: fastHashConfig },
+      { config: fastPasswordHashConfig },
     );
 
     expect(store.credentials).toEqual([storedCredential]);
@@ -76,25 +105,25 @@ describe("auth credentials", () => {
     const passwordHash = await registerPasswordCredential(
       {
         credentialId: "cm7zq8f4k0058a1b2c3d4e5f6",
-        userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d58",
+        userId: authUserId,
         plaintextPassword: "synthetic-login-password-57",
       },
       new InMemoryCredentialStore(),
-      { config: fastHashConfig },
+      { config: fastPasswordHashConfig },
     ).then((credential) => credential.passwordHash);
     const store = new InMemoryCredentialStore([
       {
-        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
-        email: "alex@example.com",
-        userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d58",
+        tenantId: authTenantId,
+        email: authEmail,
+        userId: authUserId,
         passwordHash,
       },
     ]);
 
     const result = await authenticatePasswordForMfaChallenge(
       {
-        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
-        email: "alex@example.com",
+        tenantId: authTenantId,
+        email: authEmail,
         plaintextPassword: "synthetic-login-password-57",
       },
       store,
@@ -102,9 +131,9 @@ describe("auth credentials", () => {
 
     expect(result).toEqual({
       status: "mfa_challenge_required",
-      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
-      email: "alex@example.com",
-      userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d58",
+      tenantId: authTenantId,
+      email: authEmail,
+      userId: authUserId,
     });
     expect(result).not.toHaveProperty("token");
   });
@@ -113,16 +142,16 @@ describe("auth credentials", () => {
     const storedCredential = await registerPasswordCredential(
       {
         credentialId: "cm7zq8f4k0059a1b2c3d4e5f6",
-        userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d59",
+        userId: authUserId,
         plaintextPassword: "synthetic-login-password-57",
       },
       new InMemoryCredentialStore(),
-      { config: fastHashConfig },
+      { config: fastPasswordHashConfig },
     );
     const store = new InMemoryCredentialStore([
       {
-        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
-        email: "alex@example.com",
+        tenantId: authTenantId,
+        email: authEmail,
         userId: storedCredential.userId,
         passwordHash: storedCredential.passwordHash,
       },
@@ -131,8 +160,8 @@ describe("auth credentials", () => {
     await expect(
       authenticatePasswordForMfaChallenge(
         {
-          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
-          email: "alex@example.com",
+          tenantId: authTenantId,
+          email: authEmail,
           plaintextPassword: "wrong-password",
         },
         store,
@@ -141,7 +170,7 @@ describe("auth credentials", () => {
     await expect(
       authenticatePasswordForMfaChallenge(
         {
-          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          tenantId: authTenantId,
           email: "unknown@example.com",
           plaintextPassword: "synthetic-login-password-57",
         },

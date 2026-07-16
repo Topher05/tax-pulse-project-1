@@ -3,11 +3,11 @@ import type { NextFunction, Request, Response } from "express";
 import { z, type ZodIssue } from "zod";
 
 import {
-  authenticatePasswordForMfaChallenge,
   type PasswordAuthenticationResult,
   type PasswordCredentialLoginInput,
   type PasswordCredentialReader,
-} from "./authCredentials.js";
+} from "./authModel.js";
+import { authenticatePasswordForMfaChallenge } from "./authService.js";
 import { ProblemHttpError, type ProblemDetails } from "./errors.js";
 
 export const passwordLoginRequestSchema = z

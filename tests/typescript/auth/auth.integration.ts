@@ -9,7 +9,8 @@ import {
   createLogger,
   type AuthValidationErrorResponse,
   type PasswordAuthenticator,
-} from "../../src/typescript/index.js";
+} from "../../../src/typescript/index.js";
+import { authEmail, authTenantId } from "./auth.test.model.js";
 
 const silentLogger = createLogger({ level: "silent" });
 
@@ -36,7 +37,7 @@ async function withAuthServer(
   }
 }
 
-describe("createAuthRouter", () => {
+describe("auth route integration", () => {
   test("returns 400 Problem Details for malformed login bodies", async () => {
     const authenticatePassword = vi.fn<PasswordAuthenticator>();
 
@@ -81,8 +82,8 @@ describe("createAuthRouter", () => {
       status: "invalid_credentials",
     }));
     const loginBody = {
-      tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
-      email: "alex@example.com",
+      tenant_id: authTenantId,
+      email: authEmail,
       password: "wrong-password",
     };
 
@@ -123,8 +124,8 @@ describe("createAuthRouter", () => {
   test("advances valid password logins to MFA challenge without issuing a token", async () => {
     const authenticatePassword = vi.fn<PasswordAuthenticator>(async () => ({
       status: "mfa_challenge_required",
-      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
-      email: "alex@example.com",
+      tenantId: authTenantId,
+      email: authEmail,
       userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
     }));
 
@@ -133,8 +134,8 @@ describe("createAuthRouter", () => {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
-          email: "alex@example.com",
+          tenant_id: authTenantId,
+          email: authEmail,
           password: "correct-password",
         }),
       });
@@ -142,14 +143,14 @@ describe("createAuthRouter", () => {
 
       expect(response.status).toBe(202);
       expect(authenticatePassword).toHaveBeenCalledWith({
-        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
-        email: "alex@example.com",
+        tenantId: authTenantId,
+        email: authEmail,
         plaintextPassword: "correct-password",
       });
       expect(body).toEqual({
         status: "mfa_challenge_required",
-        tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
-        email: "alex@example.com",
+        tenant_id: authTenantId,
+        email: authEmail,
         user_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
       });
       expect(body).not.toHaveProperty("token");

@@ -26,9 +26,10 @@ against the argon2id hash, so that only valid credentials proceed to the second 
 
 - `verifyPasswordHash` wraps Argon2id verification and returns `false` for malformed
   stored values.
-- `authenticatePasswordForMfaChallenge` checks submitted login passwords against stored
-  credential hashes and returns either `invalid_credentials` or
-  `mfa_challenge_required`.
+- `authModel.ts` holds the password credential and authentication result contracts,
+  while `authService.ts` checks submitted login passwords against stored credential
+  hashes and returns either `invalid_credentials` or `mfa_challenge_required`.
+- `authCredentials.ts` now focuses on Drizzle-backed credential persistence and lookup.
 - `createAuthRouter` exposes `POST /auth/login`, validates the submitted `tenant_id`,
   `email`, and `password`, and maps `invalid_credentials` to a shared 401 Problem
   Details response.
@@ -47,17 +48,28 @@ login errors, and advances valid passwords into the MFA flow before any token is
 **Changed Files:**
 
 - `README.md`
+- `adr/0007-argon2id-password-login.md`
+- `adr/README.md`
 - `planning/team/ticket-journal.md`
+- `src/typescript/authCredentials.ts`
+- `src/typescript/authModel.ts`
 - `src/typescript/authRoutes.ts`
+- `src/typescript/authService.ts`
 - `src/typescript/index.ts`
-- `tests/typescript/authRoutes.test.ts`
+- `tests/typescript/auth/auth.integration.ts`
+- `tests/typescript/auth/auth.test.model.ts`
+- `tests/typescript/auth/auth.test.ts`
 
 **Validation Notes:**
 
 - `npm run typecheck` passed.
-- `npx vitest run tests/typescript/authRoutes.test.ts tests/typescript/authCredentials.test.ts tests/typescript/passwordHashing.test.ts`
-  passed with 3 files and 10 tests after granting localhost socket access for the HTTP
-  route test server.
+- `npx vitest run tests/typescript/auth/auth.test.ts` passed with 7 unit tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/auth/auth.integration.ts`
+  passed with 3 route integration tests after granting localhost socket access for the
+  ephemeral Express test server.
+- `npm test` was run with elevated local socket access; all non-containerized tests
+  passed, and the remaining 10 failures were existing Testcontainers-backed table
+  contract tests unable to find a working Docker container runtime strategy.
 - Wired `createAuthRouter` inside the server's startup script `index.ts`.
 - Started development server with `npm run dev` and verified the `/auth/login` endpoint using `curl` and Postman collections, successfully generating a 202 Accepted response for valid mock credentials and a 401 Unauthorized Problem Details response for invalid passwords.
 

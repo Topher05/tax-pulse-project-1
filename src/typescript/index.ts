@@ -38,9 +38,6 @@ export {
   type PasswordHashingConfigOverrides,
 } from "./passwordHashing.js";
 export {
-  authenticatePasswordForMfaChallenge,
-  createPasswordCredentialStore,
-  registerPasswordCredential,
   type InvalidPasswordCredentialResult,
   type MfaChallengeRequiredResult,
   type PasswordAuthenticationResult,
@@ -52,7 +49,12 @@ export {
   type PasswordCredentialStore,
   type PasswordCredentialWriter,
   type StoredPasswordCredential,
-} from "./authCredentials.js";
+} from "./authModel.js";
+export {
+  authenticatePasswordForMfaChallenge,
+  registerPasswordCredential,
+} from "./authService.js";
+export { createPasswordCredentialStore } from "./authCredentials.js";
 export {
   createAuthRouter,
   passwordLoginRequestSchema,
@@ -114,10 +116,8 @@ import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 import { createAuthRouter } from "./authRoutes.js";
-import {
-  authenticatePasswordForMfaChallenge,
-  createPasswordCredentialStore,
-} from "./authCredentials.js";
+import { createPasswordCredentialStore } from "./authCredentials.js";
+import { authenticatePasswordForMfaChallenge } from "./authService.js";
 
 loadEnv();
 const { Client } = pg;
