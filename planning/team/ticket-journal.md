@@ -95,22 +95,29 @@ registration, so that no credential is ever stored in plaintext.
 
 **How This Ties Into the Code:**
 
-- `hashPassword` produces encoded Argon2id password hashes using configurable
-  work-factor parameters.
-- `verifyPasswordHash` validates submitted passwords against encoded Argon2id hashes and
-  returns `false` for malformed stored values instead of leaking parser errors.
-- `registerPasswordCredential` hashes the submitted registration password and writes only
-  the encoded hash to the credential persistence boundary.
-- `createPasswordCredentialStore` is the concrete Drizzle adapter for the `credential`
-  table; its insert row contains `id`, `userId`, and `passwordHash`, never the submitted
-  plaintext password.
-- `authenticatePasswordForMfaChallenge` verifies login passwords and returns
+- `passwordHashing.ts` provides `hashPassword` to produce encoded Argon2id hashes with
+  configurable work-factor parameters, and `verifyPasswordHash` to validate submitted
+  passwords against stored hashes (returning `false` for malformed values instead of
+  leaking parser errors).
+- `authModel.ts` defines the credential and authentication result contracts:
+  `PasswordCredentialRegistrationInput`, `StoredPasswordCredential`,
+  `PasswordCredentialWriter`, `PasswordCredentialReader`,
+  `PasswordCredentialLoginInput`, and the `PasswordAuthenticationResult` union
+  (`invalid_credentials` | `mfa_challenge_required`).
+- `authService.ts` implements `registerPasswordCredential`, which hashes the submitted
+  password via `hashPassword` and delegates persistence to a `PasswordCredentialWriter`,
+  and `authenticatePasswordForMfaChallenge`, which verifies login passwords and returns
   `mfa_challenge_required` for valid credentials without minting a token directly.
+- `authCredentials.ts` contains `createPasswordCredentialStore`, the concrete Drizzle
+  adapter for the `credential` table; its insert row contains `id`, `userId`, and
+  `passwordHash`, never the submitted plaintext password. It also re-exports the
+  contracts from `authModel.ts` and the service functions from `authService.ts` for
+  backward compatibility.
 - `resolvePasswordHashingConfig` reads the documented `TAXPULSE_ARGON2_*`
   environment overrides and rejects invalid non-positive or non-integer values.
 - Salt length is enforced by generating a per-hash random salt before calling Argon2id.
-- The hashing and credential APIs are exported from the TypeScript package boundary for
-  the registration and login flows.
+- The hashing and credential APIs are exported from the TypeScript package boundary
+  (`index.ts`) for the registration and login flows.
 
 **Project Scope Connection:**
 
@@ -127,10 +134,12 @@ issued.
 - `package.json`
 - `planning/team/ticket-journal.md`
 - `src/typescript/authCredentials.ts`
+- `src/typescript/authModel.ts`
+- `src/typescript/authService.ts`
 - `src/typescript/index.ts`
 - `src/typescript/passwordHashing.ts`
-- `tests/typescript/authCredentials.test.ts`
-- `tests/typescript/passwordHashing.test.ts`
+- `tests/typescript/auth/auth.test.model.ts`
+- `tests/typescript/auth/auth.test.ts`
 
 **Validation Notes:**
 
@@ -138,8 +147,9 @@ issued.
   SCRUM-57 service changes, so this branch builds on the latest dev work available at
   the time of implementation.
 - `npm run typecheck` passed.
-- `npx vitest run tests/typescript/authCredentials.test.ts tests/typescript/passwordHashing.test.ts`
-  passed with 2 files and 7 tests.
+- `npx vitest run tests/typescript/auth/auth.test.ts` passed with 7 unit tests covering
+  password hashing, credential registration, MFA challenge flow, and invalid credential
+  handling.
 - `npm run test` passed typecheck and the SCRUM-57 unit tests, then failed in existing
   Testcontainers-backed credential, MFA, role, and user suites because this environment
   could not find a working container runtime strategy.
