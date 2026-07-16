@@ -3,6 +3,85 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## dylan-harle-jira59 - SCRUM-59
+
+**Branch:** `dylan-harle-jira59`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Enroll a user in TOTP MFA
+
+**CSV Description:** As a Security Engineer, I want users to enroll a TOTP second
+factor, so that login requires more than a password.
+
+**Acceptance Criteria:**
+
+- An enroll endpoint generates a TOTP secret and returns a provisioning URI.
+- Enrollment is confirmed by submitting a valid current code before the factor is
+  activated.
+- The secret is stored in `mfa_enrollment` and the user is marked enrolled.
+
+**How This Ties Into the Code:**
+
+- `mfaEnrollment.ts` defines the enrollment and confirmation schemas, TOTP provider
+  boundary, controller behavior, and Problem Details errors for pending enrollment,
+  already-enrolled users, invalid codes, and tenant/user mismatches.
+- `createDefaultMfaTotpProvider` uses `otplib` to generate a base32 TOTP secret,
+  produce an `otpauth://totp/` provisioning URI, and verify submitted current codes.
+- `mfaEnrollmentRepository.ts` persists enrollment state through Drizzle against the
+  existing `mfa_enrollment` table and verifies tenant isolation through the `users`
+  table before any enrollment state is read or written.
+- `createMfaEnrollmentRouter` exposes `POST /mfa/enroll` and
+  `POST /mfa/enroll/confirm`. The routes accept the `tenant_id` and `user_id`
+  returned by the SCRUM-58 `/auth/login` MFA challenge response, while preserving
+  `req.tenant` and `req.user` fallback support for future auth middleware.
+- `index.ts` wires the MFA router to a database-backed `MfaEnrollmentRepository` when
+  `DATABASE_URL` is configured and uses a clearly synthetic local mock repository when
+  the database is unavailable, matching the SCRUM-58 local auth fallback.
+- `coreCaseOpenApi.ts` documents the MFA enrollment endpoints and shows the login
+  challenge identifiers flowing into enrollment and confirmation.
+- The implementation does not add a new `users` column or a tenant column on
+  `mfa_enrollment`; `mfa_enrollment.isEnrolled` remains the enrollment marker.
+- SCRUM-60 still owns the final MFA challenge verification at login and token issuance.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires more than a password before authentication completes. This
+ticket creates the TOTP enrollment path that stores each user's second factor separately
+from profile and password credential data, keeps enrollment tenant-scoped through the
+user record, and prepares the login flow for SCRUM-60 without issuing tokens early.
+
+**Changed Files:**
+
+- `package-lock.json`
+- `package.json`
+- `planning/team/ticket-journal.md`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/mfaEnrollment.ts`
+- `src/typescript/mfaEnrollmentRepository.ts`
+- `src/typescript/mfaEnrollmentRoutes.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/mfaEnrollment.test.ts`
+- `tests/typescript/mfaEnrollmentRoutes.test.ts`
+
+**Validation Notes:**
+
+- `npm install` completed after merging SCRUM-57/58 dependencies so local
+  `node_modules` included `argon2` and `otplib`.
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/mfaEnrollment.test.ts tests/typescript/mfaEnrollmentRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 4 files and 27 tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/auth/auth.integration.ts`
+  passed with 1 file and 3 tests.
+- `npm test` passed typecheck and 77 tests, then failed 1 existing PostgreSQL-backed
+  tenant migration test because this local database does not provide `uuidv7()`.
+- `npm install` reported existing npm audit findings; no broad dependency remediation
+  was performed as part of this ticket.
+
+
 ## martins-okorie-jira58 - SCRUM-58
 
 **Branch:** `martins-okorie-jira58`
