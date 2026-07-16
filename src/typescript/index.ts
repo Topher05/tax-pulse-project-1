@@ -44,6 +44,25 @@ export {
   users,
   userStatus,
 } from "./db/schema.js";
+export {
+  createDefaultMfaTotpProvider,
+  createMfaEnrollmentController,
+  mfaEnrollConfirmRequestSchema,
+  mfaEnrollConfirmResultSchema,
+  mfaEnrollRequestSchema,
+  mfaEnrollResultSchema,
+  type CreateMfaEnrollmentControllerOptions,
+  type MfaEnrollmentController,
+  type MfaEnrollmentRecord,
+  type MfaEnrollmentRepository,
+  type MfaEnrollConfirmRequest,
+  type MfaEnrollConfirmResult,
+  type MfaEnrollRequest,
+  type MfaEnrollResult,
+  type MfaTenantUser,
+  type MfaTotpProvider,
+} from "./mfaEnrollment.js";
+export { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
@@ -74,6 +93,7 @@ export {
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
+import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 
 export {
@@ -84,6 +104,12 @@ export {
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateResult,
 } from "./taxPlanCycleCreateController.js";
+export {
+  createMfaEnrollmentRouter,
+  type CreateMfaEnrollmentRouterOptions,
+  type MfaValidationErrorIssue,
+  type MfaValidationErrorResponse,
+} from "./mfaEnrollmentRoutes.js";
 export {
   createTaxPlanCycleRouter,
   type CreateTaxPlanCycleRouterOptions,
@@ -117,6 +143,7 @@ export async function main(): Promise<Server> {
     logger,
     registerRoutes: (app) => {
       app.use(createCoreCaseOpenApiRouter());
+      app.use(createMfaEnrollmentRouter());
       app.use(createTaxPlanCycleRouter());
     },
   });
