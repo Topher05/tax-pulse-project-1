@@ -7,6 +7,8 @@ import {
   createMfaEnrollmentController,
   mfaEnrollConfirmRequestSchema,
   mfaEnrollRequestSchema,
+  type MfaEnrollConfirmRequest,
+  type MfaEnrollRequest,
   type MfaEnrollmentController,
 } from "./mfaEnrollment.js";
 
@@ -60,13 +62,16 @@ function validationError(input: {
   });
 }
 
-function getAuthenticatedContext(req: Request): {
+function getAuthenticatedContext(
+  req: Request,
+  body: MfaEnrollRequest | MfaEnrollConfirmRequest,
+): {
   tenantId: string;
   userId: string;
 } {
   const request = req as AuthenticatedTenantRequest;
-  const tenantId = request.tenant?.id;
-  const userId = request.user?.id;
+  const tenantId = body.tenant_id ?? request.tenant?.id;
+  const userId = body.user_id ?? request.user?.id;
 
   if (!tenantId || !userId) {
     throw new ProblemHttpError({
@@ -111,7 +116,7 @@ export function createMfaEnrollmentRouter(
       }
 
       try {
-        const context = getAuthenticatedContext(req);
+        const context = getAuthenticatedContext(req, parsedBody.data);
         const result = await controller.enroll(context);
 
         res.status(202).json(result);
@@ -137,7 +142,7 @@ export function createMfaEnrollmentRouter(
       }
 
       try {
-        const context = getAuthenticatedContext(req);
+        const context = getAuthenticatedContext(req, parsedBody.data);
         const result = await controller.confirm({
           ...context,
           code: parsedBody.data.code,

@@ -8,6 +8,8 @@ import {
   withDatabaseClient,
 } from "../postgresMigrations.js";
 import {
+  credential,
+  mfaEnrollment,
   roles,
   stageTransition,
   taxPlanCycle,
@@ -17,6 +19,8 @@ import {
 } from "./schema.js";
 import {
   buildTaxPlanCycleInsertRows,
+  credentialRows,
+  mfaEnrollmentRows,
   roleRows,
   stageTransitionRows,
   taxPlanCycleRows,
@@ -35,6 +39,8 @@ export async function applySeed(client: Client): Promise<void> {
       TRUNCATE TABLE
         "stage_transition",
         "tax_plan_cycle",
+        "mfa_enrollment",
+        "credential",
         "users",
         "user_status",
         "roles",
@@ -46,6 +52,8 @@ export async function applySeed(client: Client): Promise<void> {
     await db.insert(roles).values([...roleRows]);
     await db.insert(userStatus).values([...userStatusRows]);
     await db.insert(users).values([...userRows]);
+    await db.insert(credential).values([...credentialRows]);
+    await db.insert(mfaEnrollment).values([...mfaEnrollmentRows]);
     await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
     await db.insert(stageTransition).values([...stageTransitionRows]);
 

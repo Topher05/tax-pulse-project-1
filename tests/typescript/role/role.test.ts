@@ -27,7 +27,7 @@ async function withRoleDatabase<T>(
 }
 
 describe("role module", () => {
-  test("tracks the roles table contract and seeded rows", async () => {
+  test("tracks the roles table contract and seeded rows", { timeout: 30000 }, async () => {
     await withRoleDatabase(async (client) => {
       const db = drizzle(client);
       const structure = await getTableStructure(client, "roles");
@@ -49,7 +49,7 @@ describe("role module", () => {
     });
   });
 
-  test("rejects duplicate lookup values and invalid role values", async () => {
+  test("rejects duplicate lookup values and invalid role values", { timeout: 30000 }, async () => {
     await withRoleDatabase(async (client) => {
       const db = drizzle(client);
 

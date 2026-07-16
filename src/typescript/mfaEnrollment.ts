@@ -3,13 +3,44 @@ import { z } from "zod";
 
 import { ProblemHttpError } from "./errors.js";
 
-export const mfaEnrollRequestSchema = z.object({}).strict();
+const mfaChallengeContextSchema = z
+  .object({
+    tenant_id: z.string().uuid().optional(),
+    user_id: z.string().uuid().optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (
+      (value.tenant_id === undefined) !== (value.user_id === undefined)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "tenant_id and user_id must be provided together.",
+        path: value.tenant_id === undefined ? ["tenant_id"] : ["user_id"],
+      });
+    }
+  });
+
+export const mfaEnrollRequestSchema = mfaChallengeContextSchema;
 
 export const mfaEnrollConfirmRequestSchema = z
   .object({
+    tenant_id: z.string().uuid().optional(),
+    user_id: z.string().uuid().optional(),
     code: z.string().regex(/^\d{6}$/, "TOTP code must be exactly 6 digits."),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (
+      (value.tenant_id === undefined) !== (value.user_id === undefined)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "tenant_id and user_id must be provided together.",
+        path: value.tenant_id === undefined ? ["tenant_id"] : ["user_id"],
+      });
+    }
+  });
 
 export const mfaEnrollResultSchema = z.object({
   provisioning_uri: z.string().startsWith("otpauth://totp/"),

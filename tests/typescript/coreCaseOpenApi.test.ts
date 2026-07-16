@@ -9,6 +9,10 @@ import {
   createCoreCaseOpenApiDocument,
   createCoreCaseOpenApiRouter,
   createLogger,
+  mfaEnrollConfirmRequestSchema,
+  mfaEnrollConfirmResultSchema,
+  mfaEnrollRequestSchema,
+  mfaEnrollResultSchema,
   taxPlanCycleCreateResultSchema,
   taxPlanCycleCreateSchema,
   taxPlanCycleReadParamsSchema,
@@ -168,6 +172,42 @@ describe("Core Case Service OpenAPI document", () => {
     expect(readOperation.tags).toEqual(["Core Case Service"]);
   });
 
+  test("documents MFA enrollment operations using challenge identifiers", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const enrollOperation = requiredRecord(
+      requiredRecord(paths, "/mfa/enroll"),
+      "post",
+    );
+    const confirmOperation = requiredRecord(
+      requiredRecord(paths, "/mfa/enroll/confirm"),
+      "post",
+    );
+    const enrollRequestBody = requiredRecord(enrollOperation, "requestBody");
+    const enrollContent = requiredRecord(enrollRequestBody, "content");
+    const enrollJson = requiredRecord(enrollContent, "application/json");
+    const enrollExample = requiredRecord(enrollJson, "example");
+    const confirmRequestBody = requiredRecord(confirmOperation, "requestBody");
+    const confirmContent = requiredRecord(confirmRequestBody, "content");
+    const confirmJson = requiredRecord(confirmContent, "application/json");
+    const confirmExample = requiredRecord(confirmJson, "example");
+
+    expect(enrollOperation.operationId).toBe("enrollMfaTotp");
+    expect(confirmOperation.operationId).toBe("confirmMfaTotpEnrollment");
+    expect(enrollOperation.tags).toEqual(["MFA Enrollment"]);
+    expect(confirmOperation.tags).toEqual(["MFA Enrollment"]);
+    expect(enrollOperation.description).toContain("POST /auth/login");
+    expect(enrollExample).toMatchObject({
+      tenant_id: expect.any(String),
+      user_id: expect.any(String),
+    });
+    expect(confirmExample).toMatchObject({
+      tenant_id: enrollExample.tenant_id,
+      user_id: enrollExample.user_id,
+      code: "123456",
+    });
+  });
+
   test("generates case schemas from zod without a separate status field", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
@@ -237,6 +277,22 @@ describe("Core Case Service OpenAPI document", () => {
         expect.objectContaining({
           name: "TaxPlanCycleCreateAccepted",
           schema: taxPlanCycleCreateResultSchema,
+        }),
+        expect.objectContaining({
+          name: "MfaEnrollRequest",
+          schema: mfaEnrollRequestSchema,
+        }),
+        expect.objectContaining({
+          name: "MfaEnrollAccepted",
+          schema: mfaEnrollResultSchema,
+        }),
+        expect.objectContaining({
+          name: "MfaEnrollConfirmRequest",
+          schema: mfaEnrollConfirmRequestSchema,
+        }),
+        expect.objectContaining({
+          name: "MfaEnrollConfirmed",
+          schema: mfaEnrollConfirmResultSchema,
         }),
       ]),
     );
