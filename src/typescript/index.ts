@@ -138,6 +138,13 @@ import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
+import { createMfaEnrollmentController } from "./mfaEnrollment.js";
+import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
+import type {
+  MfaEnrollmentRecord,
+  MfaEnrollmentRepository,
+  MfaTenantUser,
+} from "./mfaEnrollment.js";
 
 loadEnv();
 const { Client } = pg;
@@ -188,12 +195,14 @@ export async function main(): Promise<Server> {
 
   const databaseUrl = process.env.DATABASE_URL?.trim();
   let authenticatePassword;
+  let mfaEnrollmentRepository: MfaEnrollmentRepository | undefined;
 
   if (databaseUrl) {
     try {
       const client = new Client({ connectionString: databaseUrl });
       await client.connect();
       const credentialReader = createPasswordCredentialStore(client);
+      mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
       authenticatePassword = (input: any) =>
         authenticatePasswordForMfaChallenge(input, credentialReader);
       logger.info("Connected to database for Auth Router");
@@ -221,11 +230,56 @@ export async function main(): Promise<Server> {
     };
   }
 
+  if (!mfaEnrollmentRepository) {
+    const fakeTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01";
+    const fakeUser: MfaTenantUser = {
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+      email: "alex@example.com",
+    };
+    const enrollments = new Map<string, MfaEnrollmentRecord>();
+
+    mfaEnrollmentRepository = {
+      async findTenantUser({ tenantId, userId }) {
+        if (tenantId === fakeTenantId && userId === fakeUser.id) {
+          return fakeUser;
+        }
+
+        return null;
+      },
+      async findEnrollment({ userId }) {
+        return enrollments.get(userId) ?? null;
+      },
+      async savePendingEnrollment({ userId, totpSecret }) {
+        enrollments.set(userId, {
+          userId,
+          totpSecret,
+          isEnrolled: false,
+        });
+      },
+      async markEnrolled({ userId }) {
+        const enrollment = enrollments.get(userId);
+
+        if (enrollment) {
+          enrollments.set(userId, {
+            ...enrollment,
+            isEnrolled: true,
+          });
+        }
+      },
+    };
+  }
+
+  const mfaEnrollmentController = createMfaEnrollmentController({
+    repository: mfaEnrollmentRepository,
+  });
+
   const app = createApp({
     logger,
     registerRoutes: (app) => {
       app.use(createCoreCaseOpenApiRouter());
-      app.use(createMfaEnrollmentRouter());
+      app.use(createMfaEnrollmentRouter({
+        controller: mfaEnrollmentController,
+      }));
       app.use(createTaxPlanCycleRouter());
       app.use(createAuthRouter({ authenticatePassword }));
     },
