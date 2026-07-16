@@ -22,6 +22,18 @@ export type SeedUserRow = {
   statusId: number;
 };
 
+export type SeedCredentialRow = {
+  id: string;
+  userId: string;
+  passwordHash: string;
+};
+
+export type SeedMfaEnrollmentRow = {
+  userId: string;
+  totpSecret: string;
+  isEnrolled: boolean;
+};
+
 export type SeedTaxPlanCycleRow = {
   id: string;
   clientId: string;
@@ -127,6 +139,67 @@ export const userRows = [
     statusId: userStatusRows[2].id,
   },
 ] as const satisfies readonly SeedUserRow[];
+
+export const credentialRows = [
+  {
+    id: "cm7zq8f4k0000a1b2c3d4e5f6",
+    userId: userRows[0].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtMQ$YXV0aC1oYXNoLW9uZS0wMQ",
+  },
+  {
+    id: "cm7zq8f4k0001a1b2c3d4e5f6",
+    userId: userRows[1].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtMg$YXV0aC1oYXNoLW9uZS0wMg",
+  },
+  {
+    id: "cm7zq8f4k0002a1b2c3d4e5f6",
+    userId: userRows[2].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtMw$YXV0aC1oYXNoLW9uZS0wMw",
+  },
+  {
+    id: "cm7zq8f4k0003a1b2c3d4e5f6",
+    userId: userRows[3].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtNA$YXV0aC1oYXNoLW9uZS0wNA",
+  },
+  {
+    id: "cm7zq8f4k0004a1b2c3d4e5f6",
+    userId: userRows[4].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtNQ$YXV0aC1oYXNoLW9uZS0wNQ",
+  },
+] as const satisfies readonly SeedCredentialRow[];
+
+export const mfaEnrollmentRows = [
+  {
+    userId: userRows[0].id,
+    totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+    isEnrolled: false,
+  },
+  {
+    userId: userRows[1].id,
+    totpSecret: "KRSXG5DSNFXGOIDSMVZXI2LOM5XXE3DE",
+    isEnrolled: true,
+  },
+  {
+    userId: userRows[2].id,
+    totpSecret: "NBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXQ",
+    isEnrolled: true,
+  },
+  {
+    userId: userRows[3].id,
+    totpSecret: "OVSWY3DPEHPK3PXPJBSWY3DPEHPK3PXR",
+    isEnrolled: false,
+  },
+  {
+    userId: userRows[4].id,
+    totpSecret: "PBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXS",
+    isEnrolled: true,
+  },
+] as const satisfies readonly SeedMfaEnrollmentRow[];
 
 export const taxPlanCycleRows = [
   {

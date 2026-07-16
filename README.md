@@ -143,6 +143,25 @@ The Tax Plan Cycle schemas are generated from the same Zod definitions used by t
 routes. Workflow condition is represented by `stage`; there is no separate case
 `status` field.
 
+## Password Hashing Configuration
+
+The auth helpers use Argon2id password hashes. See
+[`ADR-0007`](./adr/0007-argon2id-password-login.md) for the dependency and architecture
+rationale.
+
+`POST /auth/login` accepts `tenant_id`, `email`, and `password`. Valid passwords return
+`202` with an MFA challenge payload, and invalid credentials return a shared `401`
+Problem Details response.
+
+The defaults work out of the box. Override these values only when a deployment needs
+different capacity or latency tradeoffs:
+
+- `TAXPULSE_ARGON2_MEMORY_COST_KIB`
+- `TAXPULSE_ARGON2_TIME_COST`
+- `TAXPULSE_ARGON2_PARALLELISM`
+- `TAXPULSE_ARGON2_HASH_LENGTH`
+- `TAXPULSE_ARGON2_SALT_LENGTH`
+
 ## Migration Commands
 
 The PostgreSQL migration workflow keeps typed Drizzle schema definitions in

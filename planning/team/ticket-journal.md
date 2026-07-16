@@ -3,6 +3,147 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## martins-okorie-jira58 - SCRUM-58
+
+**Branch:** `martins-okorie-jira58`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Epic:** SCRUM-14 - Secure APIs — Auth, Audit & Boundaries
+
+**Summary:** Verify password on login
+
+**CSV Description:** As a Security Engineer, I want login to verify the password
+against the argon2id hash, so that only valid credentials proceed to the second factor.
+
+**Acceptance Criteria:**
+
+- Login verifies the submitted password against the stored hash.
+- A wrong password returns 401 without revealing whether the email exists.
+- A correct password advances to the MFA challenge rather than issuing a token directly.
+
+**How This Ties Into the Code:**
+
+- `verifyPasswordHash` wraps Argon2id verification and returns `false` for malformed
+  stored values.
+- `authModel.ts` holds the password credential and authentication result contracts,
+  while `authService.ts` checks submitted login passwords against stored credential
+  hashes and returns either `invalid_credentials` or `mfa_challenge_required`.
+- `authCredentials.ts` now focuses on Drizzle-backed credential persistence and lookup.
+- `createAuthRouter` exposes `POST /auth/login`, validates the submitted `tenant_id`,
+  `email`, and `password`, and maps `invalid_credentials` to a shared 401 Problem
+  Details response.
+- Wrong passwords and unknown emails receive the same 401 response body so the route
+  does not disclose whether the email exists.
+- Successful password verification returns a 202 MFA challenge payload with no token
+  field, leaving token issuance to the later MFA verification step.
+- `index.ts` is configured to register the `createAuthRouter` and automatically switch between live database verification and a mock authenticator fallback for local development if the database is unreachable.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires password login to be only the first step of authentication.
+This route preserves the tenant-scoped auth boundary, avoids account enumeration through
+login errors, and advances valid passwords into the MFA flow before any token is issued.
+
+**Changed Files:**
+
+- `README.md`
+- `adr/0007-argon2id-password-login.md`
+- `adr/README.md`
+- `planning/team/ticket-journal.md`
+- `src/typescript/authCredentials.ts`
+- `src/typescript/authModel.ts`
+- `src/typescript/authRoutes.ts`
+- `src/typescript/authService.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/auth/auth.integration.ts`
+- `tests/typescript/auth/auth.test.model.ts`
+- `tests/typescript/auth/auth.test.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auth/auth.test.ts` passed with 7 unit tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/auth/auth.integration.ts`
+  passed with 3 route integration tests after granting localhost socket access for the
+  ephemeral Express test server.
+- `npm test` was run with elevated local socket access; all non-containerized tests
+  passed, and the remaining 10 failures were existing Testcontainers-backed table
+  contract tests unable to find a working Docker container runtime strategy.
+- Wired `createAuthRouter` inside the server's startup script `index.ts`.
+- Started development server with `npm run dev` and verified the `/auth/login` endpoint using `curl` and Postman collections, successfully generating a 202 Accepted response for valid mock credentials and a 401 Unauthorized Problem Details response for invalid passwords.
+
+## martins-okorie-jira57 - SCRUM-57
+
+**Branch:** `martins-okorie-jira57`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Epic:** SCRUM-14 - Secure APIs — Auth, Audit & Boundaries
+
+**Summary:** Hash and store passwords with argon2id
+
+**CSV Description:** As a Security Engineer, I want passwords hashed with argon2id on
+registration, so that no credential is ever stored in plaintext.
+
+**Acceptance Criteria:**
+
+- Registration hashes the password with argon2id and stores only the hash in the
+  credential table.
+- The work-factor parameters are configurable and documented.
+- A test asserts the stored value is a valid argon2id hash, not the plaintext.
+
+**How This Ties Into the Code:**
+
+- `hashPassword` produces encoded Argon2id password hashes using configurable
+  work-factor parameters.
+- `verifyPasswordHash` validates submitted passwords against encoded Argon2id hashes and
+  returns `false` for malformed stored values instead of leaking parser errors.
+- `registerPasswordCredential` hashes the submitted registration password and writes only
+  the encoded hash to the credential persistence boundary.
+- `createPasswordCredentialStore` is the concrete Drizzle adapter for the `credential`
+  table; its insert row contains `id`, `userId`, and `passwordHash`, never the submitted
+  plaintext password.
+- `authenticatePasswordForMfaChallenge` verifies login passwords and returns
+  `mfa_challenge_required` for valid credentials without minting a token directly.
+- `resolvePasswordHashingConfig` reads the documented `TAXPULSE_ARGON2_*`
+  environment overrides and rejects invalid non-positive or non-integer values.
+- Salt length is enforced by generating a per-hash random salt before calling Argon2id.
+- The hashing and credential APIs are exported from the TypeScript package boundary for
+  the registration and login flows.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory's multi-tenant authentication boundary must never store plaintext
+credentials. This work gives registration and login a single Argon2id credential
+contract with documented work-factor controls, keeps the persisted credential scoped to
+the user record, and hands successful password authentication to MFA before any token is
+issued.
+
+**Changed Files:**
+
+- `README.md`
+- `package-lock.json`
+- `package.json`
+- `planning/team/ticket-journal.md`
+- `src/typescript/authCredentials.ts`
+- `src/typescript/index.ts`
+- `src/typescript/passwordHashing.ts`
+- `tests/typescript/authCredentials.test.ts`
+- `tests/typescript/passwordHashing.test.ts`
+
+**Validation Notes:**
+
+- `git fetch origin development` and `git merge origin/development` completed before the
+  SCRUM-57 service changes, so this branch builds on the latest dev work available at
+  the time of implementation.
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/authCredentials.test.ts tests/typescript/passwordHashing.test.ts`
+  passed with 2 files and 7 tests.
+- `npm run test` passed typecheck and the SCRUM-57 unit tests, then failed in existing
+  Testcontainers-backed credential, MFA, role, and user suites because this environment
+  could not find a working container runtime strategy.
+
 ## christopher-martus-jira54 - SCRUM-54
 
 **Branch:** `christopher-martus-jira54`
@@ -726,12 +867,6 @@ separate case status field.
 
 ## caleb-latimer-jira67 - SCRUM-67
 
-**Branch:** `caleb-latimer-jira67`
-
-**Owner:** Caleb Latimer
-
-**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
-
 **Summary:** Wire the role-gated transition endpoint enforcing the permission matrix
 
 **CSV Description:** As a Security Engineer, I want the stage-transition validator
@@ -793,9 +928,6 @@ sequenceDiagram
     end
   end
 ```
-
-**Project Scope Connection:**
-
 TaxPulse Advisory depends on stage-gated workflow changes and immutable audit history
 for compliance. This ticket adds the secure API boundary for advancing a Tax Plan
 Cycle while preserving tenant isolation, role gating, and the stage-based workflow
@@ -821,3 +953,97 @@ model.
 - The targeted integration rerun could not complete in this shell because the local
   Node launcher hit the existing Windows `EPERM` path-resolution issue, and the
   escalated rerun was declined.
+**Branch:** `caleb-latimer-jira67`
+- `npm run typecheck`
+- `npm test`
+- `npm run test:migration`
+
+## caleb-latimer-jira56 - SCRUM-56
+
+**Branch:** `caleb-latimer-jira56`
+
+**Owner:** Caleb Latimer
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Create the credential and mfa_enrollment tables
+
+**CSV Description:** As a Backend Developer, I want credential and mfa_enrollment
+tables, so that password hashes and second factors are stored apart from user profile
+data.
+
+**Acceptance Criteria:**
+
+- A Drizzle migration creates a `credential` table keyed to a user with a CUID primary
+  key and an argon2id password hash column.
+- A Drizzle migration creates an `mfa_enrollment` table with a per-user TOTP secret
+  and enrolled flag.
+- Neither table stores a plaintext password or recovery code.
+
+**How This Ties Into The Code:**
+
+- `src/typescript/db/schema.ts` now defines `credential` and `mfa_enrollment` with
+  camelCase TypeScript field names, matching the repo's TypeScript default style.
+- `credential` stores `id`, `userId`, and `passwordHash`, while `mfa_enrollment`
+  stores `userId`, `totpSecret`, and `isEnrolled` with a `false` default.
+- `src/typescript/db/seed.ts` now seeds synthetic credential hashes and TOTP secrets
+  alongside the existing tenant, user, role, and cycle fixtures.
+- `tests/typescript/credential/*` and `tests/typescript/mfa_enrollement/*` now cover
+  the table contracts, seeded rows, FK enforcement, and one-row-per-user behavior.
+- `package.json` wires the new auth schema tests into `npm run test:migration` so the
+  dedicated migration suite exercises the new tables with the existing repository
+  contracts.
+- The Mermaid ER diagram for the auth storage split is:
+
+```mermaid
+erDiagram
+  USERS ||--|| CREDENTIAL : has
+  USERS ||--|| MFA_ENROLLMENT : enrolls
+
+  USERS {
+    uuid id PK
+    uuid tenantId FK
+    text email
+    int roleId FK
+    int statusId FK
+  }
+
+  CREDENTIAL {
+    varchar(25) id PK
+    uuid userId FK
+    varchar(255) passwordHash
+  }
+
+  MFA_ENROLLMENT {
+    uuid userId PK, FK
+    varchar(512) totpSecret
+    boolean isEnrolled
+  }
+```
+
+**Project Scope Connection:**
+TaxPulse Advisory keeps credentials and second factors out of the user profile record
+so identity data, password hashes, and MFA enrollment can evolve independently while
+preserving least privilege and the project's audit-friendly auth boundary.
+
+**Changed Files:**
+
+- `package.json`
+- `planning/prompt-journal/cl-journal.md`
+- `planning/team/ticket-journal.md`
+- `src/typescript/db/schema.ts`
+- `src/typescript/db/seed.model.ts`
+- `src/typescript/db/seed.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/credential/credential.integration.ts`
+- `tests/typescript/credential/credential.test.model.ts`
+- `tests/typescript/credential/credential.test.ts`
+- `tests/typescript/mfa_enrollement/mfa_enrollement.integration.ts`
+- `tests/typescript/mfa_enrollement/mfa_enrollement.test.model.ts`
+- `tests/typescript/mfa_enrollement/mfa_enrollement.test.ts`
+
+**Validation Notes:**
+
+- Schema, seed, and test scaffolding were added in the workspace.
+- Drizzle generation and Node-based validation were left as follow-up action items per
+  the user's request not to run node scripts in this turn.

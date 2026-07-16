@@ -111,7 +111,8 @@ export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router 
     async (req: Request, res: Response, next: NextFunction) => {
       console.log("Post reached")
       const parsedBody = passwordLoginRequestSchema.safeParse(req.body);
-    console.log(parsedBody)
+      console.log(parsedBody)
+
       if (!parsedBody.success) {
         next(
           new ProblemHttpError({
