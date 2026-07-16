@@ -59,6 +59,157 @@ tenant and role claims from the trusted authentication boundary.
   Testcontainers suites for the same unavailable runtime; the existing tenants migration
   test also fails because legacy migration SQL hard-codes `public` references.
 
+## martins-okorie-jira58 - SCRUM-58
+
+**Branch:** `martins-okorie-jira58`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Epic:** SCRUM-14 - Secure APIs — Auth, Audit & Boundaries
+
+**Summary:** Verify password on login
+
+**CSV Description:** As a Security Engineer, I want login to verify the password
+against the argon2id hash, so that only valid credentials proceed to the second factor.
+
+**Acceptance Criteria:**
+
+- Login verifies the submitted password against the stored hash.
+- A wrong password returns 401 without revealing whether the email exists.
+- A correct password advances to the MFA challenge rather than issuing a token directly.
+
+**How This Ties Into the Code:**
+
+- `verifyPasswordHash` wraps Argon2id verification and returns `false` for malformed
+  stored values.
+- `authModel.ts` holds the password credential and authentication result contracts,
+  while `authService.ts` checks submitted login passwords against stored credential
+  hashes and returns either `invalid_credentials` or `mfa_challenge_required`.
+- `authCredentials.ts` now focuses on Drizzle-backed credential persistence and lookup.
+- `createAuthRouter` exposes `POST /auth/login`, validates the submitted `tenant_id`,
+  `email`, and `password`, and maps `invalid_credentials` to a shared 401 Problem
+  Details response.
+- Wrong passwords and unknown emails receive the same 401 response body so the route
+  does not disclose whether the email exists.
+- Successful password verification returns a 202 MFA challenge payload with no token
+  field, leaving token issuance to the later MFA verification step.
+- `index.ts` is configured to register the `createAuthRouter` and automatically switch between live database verification and a mock authenticator fallback for local development if the database is unreachable.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires password login to be only the first step of authentication.
+This route preserves the tenant-scoped auth boundary, avoids account enumeration through
+login errors, and advances valid passwords into the MFA flow before any token is issued.
+
+**Changed Files:**
+
+- `README.md`
+- `adr/0007-argon2id-password-login.md`
+- `adr/README.md`
+- `planning/team/ticket-journal.md`
+- `src/typescript/authCredentials.ts`
+- `src/typescript/authModel.ts`
+- `src/typescript/authRoutes.ts`
+- `src/typescript/authService.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/auth/auth.integration.ts`
+- `tests/typescript/auth/auth.test.model.ts`
+- `tests/typescript/auth/auth.test.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auth/auth.test.ts` passed with 7 unit tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/auth/auth.integration.ts`
+  passed with 3 route integration tests after granting localhost socket access for the
+  ephemeral Express test server.
+- `npm test` was run with elevated local socket access; all non-containerized tests
+  passed, and the remaining 10 failures were existing Testcontainers-backed table
+  contract tests unable to find a working Docker container runtime strategy.
+- Wired `createAuthRouter` inside the server's startup script `index.ts`.
+- Started development server with `npm run dev` and verified the `/auth/login` endpoint using `curl` and Postman collections, successfully generating a 202 Accepted response for valid mock credentials and a 401 Unauthorized Problem Details response for invalid passwords.
+
+## martins-okorie-jira57 - SCRUM-57
+
+**Branch:** `martins-okorie-jira57`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Epic:** SCRUM-14 - Secure APIs — Auth, Audit & Boundaries
+
+**Summary:** Hash and store passwords with argon2id
+
+**CSV Description:** As a Security Engineer, I want passwords hashed with argon2id on
+registration, so that no credential is ever stored in plaintext.
+
+**Acceptance Criteria:**
+
+- Registration hashes the password with argon2id and stores only the hash in the
+  credential table.
+- The work-factor parameters are configurable and documented.
+- A test asserts the stored value is a valid argon2id hash, not the plaintext.
+
+**How This Ties Into the Code:**
+
+- `passwordHashing.ts` provides `hashPassword` to produce encoded Argon2id hashes with
+  configurable work-factor parameters, and `verifyPasswordHash` to validate submitted
+  passwords against stored hashes (returning `false` for malformed values instead of
+  leaking parser errors).
+- `authModel.ts` defines the credential and authentication result contracts:
+  `PasswordCredentialRegistrationInput`, `StoredPasswordCredential`,
+  `PasswordCredentialWriter`, `PasswordCredentialReader`,
+  `PasswordCredentialLoginInput`, and the `PasswordAuthenticationResult` union
+  (`invalid_credentials` | `mfa_challenge_required`).
+- `authService.ts` implements `registerPasswordCredential`, which hashes the submitted
+  password via `hashPassword` and delegates persistence to a `PasswordCredentialWriter`,
+  and `authenticatePasswordForMfaChallenge`, which verifies login passwords and returns
+  `mfa_challenge_required` for valid credentials without minting a token directly.
+- `authCredentials.ts` contains `createPasswordCredentialStore`, the concrete Drizzle
+  adapter for the `credential` table; its insert row contains `id`, `userId`, and
+  `passwordHash`, never the submitted plaintext password. It also re-exports the
+  contracts from `authModel.ts` and the service functions from `authService.ts` for
+  backward compatibility.
+- `resolvePasswordHashingConfig` reads the documented `TAXPULSE_ARGON2_*`
+  environment overrides and rejects invalid non-positive or non-integer values.
+- Salt length is enforced by generating a per-hash random salt before calling Argon2id.
+- The hashing and credential APIs are exported from the TypeScript package boundary
+  (`index.ts`) for the registration and login flows.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory's multi-tenant authentication boundary must never store plaintext
+credentials. This work gives registration and login a single Argon2id credential
+contract with documented work-factor controls, keeps the persisted credential scoped to
+the user record, and hands successful password authentication to MFA before any token is
+issued.
+
+**Changed Files:**
+
+- `README.md`
+- `package-lock.json`
+- `package.json`
+- `planning/team/ticket-journal.md`
+- `src/typescript/authCredentials.ts`
+- `src/typescript/authModel.ts`
+- `src/typescript/authService.ts`
+- `src/typescript/index.ts`
+- `src/typescript/passwordHashing.ts`
+- `tests/typescript/auth/auth.test.model.ts`
+- `tests/typescript/auth/auth.test.ts`
+
+**Validation Notes:**
+
+- `git fetch origin development` and `git merge origin/development` completed before the
+  SCRUM-57 service changes, so this branch builds on the latest dev work available at
+  the time of implementation.
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auth/auth.test.ts` passed with 7 unit tests covering
+  password hashing, credential registration, MFA challenge flow, and invalid credential
+  handling.
+- `npm run test` passed typecheck and the SCRUM-57 unit tests, then failed in existing
+  Testcontainers-backed credential, MFA, role, and user suites because this environment
+  could not find a working container runtime strategy.
+
 ## christopher-martus-jira54 - SCRUM-54
 
 **Branch:** `christopher-martus-jira54`
