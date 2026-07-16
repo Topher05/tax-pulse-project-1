@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { refreshToken } from "./db/schema.js";
 
 export interface JwtConfig {
   issuer: string;
@@ -64,5 +63,5 @@ export function getJwtConfigFromEnv(
     signingSecret: parsed.JWT_SIGNING_SECRET,
     accessTokenLifetimeSeconds: parsed.JWT_ACCESS_TOKEN_TTL_SECONDS,
     refreshTokenLifetimeSeconds: parsed.JWT_REFRESH_TOKEN_TTL_SECONDS,
-  }
+  };
 }

@@ -17,7 +17,6 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { taxPlanCycleStages } from "../taxPlanCycle.js";
-import { time } from "node:console";
 
 const stageValuesSql = sql.join(
   taxPlanCycleStages.map((stage) => sql.raw(`'${stage.replace(/'/g, "''")}'`)),
@@ -129,7 +128,7 @@ export const refreshToken = pgTable(
     id: uuid("id").default(sql`uuidv7()`).primaryKey(),
     userId: uuid("user_id").notNull(),
     tokenHash: varchar("token_hash", { length: 64 }).notNull(),
-    issuedAt: timestamp("issued_at", {withTimezone: true }).notNull(),
+    issuedAt: timestamp("issued_at", { withTimezone: true }).notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },

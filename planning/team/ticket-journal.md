@@ -3,6 +3,62 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## christopher-martus-jira61 - SCRUM-61
+
+**Branch:** `christopher-martus-jira61`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-61
+
+**Summary:** Issue access and refresh JWTs with role and tenant claims
+
+**Description:** Issue post-authentication access tokens carrying verified identity claims
+and opaque refresh tokens whose SHA-256 hashes are persisted for later revocation.
+
+**Acceptance Criteria:**
+
+- Access JWTs include `sub`, `role`, `tenant_id`, `iss`, `iat`, and `exp`.
+- Refresh-token state is persisted without retaining the bearer token value.
+- Persisted refresh tokens can be revoked with `revoked_at` recorded.
+
+**Code Connection:**
+
+- `tokenService` accepts only an `AuthenticatedPrincipal`, signs HS256 access JWTs, and
+  generates 256-bit opaque refresh tokens.
+- `refreshTokenRepository` persists SHA-256 hashes and conditionally records revocation.
+- JWT configuration requires one shared issuer and a minimum 32-byte signing secret.
+- SCRUM-60 should invoke `tokenService.issue({ userId, role, tenantId })` only after
+  successful MFA verification has loaded the server-trusted principal.
+
+**Project Scope Connection:**
+
+This establishes a shared identity-token contract for the Node service and future FastAPI
+validation while retaining refresh-token revocation state in PostgreSQL and preserving
+tenant and role claims from the trusted authentication boundary.
+
+**Changed Files:**
+
+- `src/typescript/authConfig.ts`
+- `src/typescript/authTypes.ts`
+- `src/typescript/refreshTokenRepository.ts`
+- `src/typescript/tokenService.ts`
+- `tests/typescript/authConfig.test.ts`
+- `tests/typescript/tokenService.test.ts`
+- `tests/typescript/refreshToken.integration.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/authConfig.test.ts tests/typescript/tokenService.test.ts`
+  passed: 2 files, 11 tests.
+- `npm run db:check` passed.
+- PostgreSQL integration coverage is present but cannot run in this execution environment:
+  Docker/Testcontainers reports no working container runtime.
+- `npm test` passed type checking and the non-container tests, but failed its existing
+  Testcontainers suites for the same unavailable runtime; the existing tenants migration
+  test also fails because legacy migration SQL hard-codes `public` references.
+
 ## christopher-martus-jira54 - SCRUM-54
 
 **Branch:** `christopher-martus-jira54`

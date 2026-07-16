@@ -37,6 +37,7 @@ export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
   credential,
   mfaEnrollment,
+  refreshToken,
   roles,
   stageTransition,
   taxPlanCycle,
@@ -44,6 +45,24 @@ export {
   users,
   userStatus,
 } from "./db/schema.js";
+export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
+export {
+  type AccessTokenClaims,
+  type AuthenticatedPrincipal,
+  type IssuedTokenPair,
+  type UserRole,
+} from "./authTypes.js";
+export {
+  createRefreshTokenRepository,
+  type PersistRefreshTokenInput,
+  type RefreshTokenRepository,
+  type RevokeRefreshTokenByHashInput,
+} from "./refreshTokenRepository.js";
+export {
+  createTokenService,
+  type CreateTokenServiceOptions,
+  type TokenService,
+} from "./tokenService.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
@@ -75,6 +94,7 @@ import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
+import { getJwtConfigFromEnv } from "./authConfig.js";
 
 export {
   createTaxPlanCycleCreateController,
@@ -112,6 +132,7 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 }
 
 export async function main(): Promise<Server> {
+  getJwtConfigFromEnv();
   const logger = createLogger();
   const app = createApp({
     logger,
