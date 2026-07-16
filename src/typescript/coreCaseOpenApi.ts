@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { ZodType } from "zod";
 
+import {
+  authMfaLoginRequestSchema,
+  authMfaLoginResultSchema,
+} from "./authMfaLogin.js";
 import { taxPlanCycleCreateResultSchema } from "./taxPlanCycleCreateController.js";
 import {
   mfaEnrollConfirmRequestSchema,
@@ -47,6 +51,14 @@ export const coreCaseOpenApiSchemaRegistrations = [
     schema: taxPlanCycleCreateResultSchema,
   },
   {
+    name: "AuthMfaLoginRequest",
+    schema: authMfaLoginRequestSchema,
+  },
+  {
+    name: "AuthMfaLoginResult",
+    schema: authMfaLoginResultSchema,
+  },
+  {
     name: "MfaEnrollRequest",
     schema: mfaEnrollRequestSchema,
   },
@@ -90,6 +102,15 @@ const fakeMfaEnrollRequestExample = {
 const fakeMfaConfirmRequestExample = {
   ...fakeMfaEnrollRequestExample,
   code: "123456",
+};
+
+const fakeAuthMfaLoginResultExample = {
+  access_token:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+    "eyJzdWIiOiIwMThkNmMxYS0zZjliLTdjMjgtOGQxYS0wZjRhM2I4YzlkNjEiLCJ0ZW5hbnRfaWQiOiIwMThkNmMxYS0zZjliLTdjMjgtOGQxYS0wZjRhM2I4YzlkMDEiLCJpc3MiOiJUYXhQdWxzZSBDb3JlIENhc2UgU2VydmljZSIsImlhdCI6MTc4MDAwMDAwMCwiZXhwIjoxNzgwMDAwOTAwfQ." +
+    "synthetic-signature-example",
+  token_type: "Bearer",
+  expires_in: 900,
 };
 
 const validationErrorExample = {
@@ -158,6 +179,12 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
+  const authMfaLoginRequestOpenApiSchema = toOpenApiSchema(
+    authMfaLoginRequestSchema,
+  );
+  const authMfaLoginResultOpenApiSchema = toOpenApiSchema(
+    authMfaLoginResultSchema,
+  );
   const mfaEnrollRequestOpenApiSchema = toOpenApiSchema(mfaEnrollRequestSchema);
   const mfaEnrollAcceptedSchema = toOpenApiSchema(mfaEnrollResultSchema);
   const mfaEnrollConfirmRequestOpenApiSchema = toOpenApiSchema(
@@ -182,11 +209,95 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
         description: "Tenant-scoped Tax Plan Cycle operations.",
       },
       {
+        name: "Authentication",
+        description: "Password and MFA login operations.",
+      },
+      {
         name: "MFA Enrollment",
         description: "TOTP second-factor enrollment operations.",
       },
     ],
     paths: {
+      "/auth/login/mfa": {
+        post: {
+          operationId: "verifyLoginMfaTotp",
+          tags: ["Authentication"],
+          summary: "Verify TOTP MFA and issue an access JWT",
+          description:
+            "Consumes the tenant and user challenge identifiers returned from " +
+            "POST /auth/login, verifies the user's enrolled TOTP factor, and " +
+            "returns a signed bearer access token.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: authMfaLoginRequestOpenApiSchema,
+                example: fakeMfaConfirmRequestExample,
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description:
+                "The TOTP code was accepted and an access token was issued.",
+              content: {
+                "application/json": {
+                  schema: authMfaLoginResultOpenApiSchema,
+                  example: fakeAuthMfaLoginResultExample,
+                },
+              },
+            },
+            "400": {
+              description:
+                "The MFA login verification request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    ...validationErrorExample,
+                    issues: [
+                      {
+                        path: ["code"],
+                        message: "TOTP code must be exactly 6 digits.",
+                        code: "invalid_format",
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description:
+                "The MFA challenge identifiers or submitted TOTP code were invalid.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-failed",
+                    title: "Authentication Failed",
+                    status: 401,
+                    detail: "The submitted MFA challenge or code is invalid.",
+                  },
+                },
+              },
+            },
+            "500": {
+              description: "An unexpected service error occurred.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "about:blank",
+                    title: "Internal Server Error",
+                    status: 500,
+                    detail: "An unexpected error occurred.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       "/mfa/enroll": {
         post: {
           operationId: "enrollMfaTotp",

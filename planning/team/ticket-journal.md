@@ -81,6 +81,66 @@ user record, and prepares the login flow for SCRUM-60 without issuing tokens ear
 - `npm install` reported existing npm audit findings; no broad dependency remediation
   was performed as part of this ticket.
 
+## dylan-harle-jira60 - SCRUM-60
+
+**Branch:** `dylan-harle-jira60`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Challenge and verify the MFA code at login
+
+**CSV Description:** As a Security Engineer, I want login to require a valid TOTP
+code, so that a stolen password alone cannot authenticate.
+
+**Acceptance Criteria:**
+
+- After password verification, login requires a second-factor code.
+- An invalid or expired code returns 401 and does not issue a token.
+- A valid code proceeds to JWT issuance.
+
+**How This Ties Into the Code:**
+
+- `authMfaLogin.ts` adds the second login step for the existing SCRUM-58 password
+  flow, consuming `tenant_id`, `user_id`, and a six-digit TOTP code.
+- The controller reuses the SCRUM-59 `MfaEnrollmentRepository` and TOTP provider to
+  require a tenant-scoped enrolled factor before issuing any token.
+- `createHmacJwtIssuer` issues a real HS256 access JWT with `sub`, `tenant_id`,
+  `iss`, `iat`, and `exp` claims using `TAXPULSE_JWT_SECRET`,
+  `TAXPULSE_JWT_ISSUER`, and `TAXPULSE_ACCESS_TOKEN_TTL_SECONDS`.
+- `authMfaLoginRoutes.ts` exposes `POST /auth/login/mfa`, returning one generic
+  401 Problem Details response for unknown challenge identifiers, missing or
+  unenrolled MFA, and invalid or expired TOTP codes.
+- `coreCaseOpenApi.ts` documents the MFA login verification request, bearer token
+  response, and validation/authentication failure cases.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires password authentication to be insufficient on its own.
+This ticket completes the password-to-MFA login path by requiring an enrolled TOTP
+factor before access JWT issuance while leaving refresh-token persistence and broader
+JWT middleware to SCRUM-61.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `src/typescript/authMfaLogin.ts`
+- `src/typescript/authMfaLoginRoutes.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authMfaLogin.test.ts`
+- `tests/typescript/authMfaLoginRoutes.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/mfaEnrollment.test.ts tests/typescript/mfaEnrollmentRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 6 files and 35 tests.
+- `npm test` passed typecheck and 85 tests, then failed 1 existing PostgreSQL-backed
+  tenant migration test because this local database does not provide `uuidv7()`.
+
 
 ## martins-okorie-jira58 - SCRUM-58
 
