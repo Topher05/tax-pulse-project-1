@@ -56,6 +56,29 @@ export {
 } from "./authService.js";
 export { createPasswordCredentialStore } from "./authCredentials.js";
 export {
+  authMfaLoginRequestSchema,
+  authMfaLoginResultSchema,
+  createAuthMfaLoginController,
+  createHmacJwtIssuer,
+  createHmacJwtIssuerFromEnv,
+  resolveJwtIssuerConfig,
+  type AccessTokenClaims,
+  type AccessTokenIssuer,
+  type AuthMfaLoginController,
+  type AuthMfaLoginRequest,
+  type AuthMfaLoginResult,
+  type CreateAuthMfaLoginControllerOptions,
+  type HmacJwtIssuerOptions,
+  type JwtIssuerConfig,
+  type JwtIssuerEnv,
+} from "./authMfaLogin.js";
+export {
+  createAuthMfaLoginRouter,
+  type AuthMfaValidationErrorIssue,
+  type AuthMfaValidationErrorResponse,
+  type CreateAuthMfaLoginRouterOptions,
+} from "./authMfaLoginRoutes.js";
+export {
   createAuthRouter,
   passwordLoginRequestSchema,
   type AuthValidationErrorIssue,
@@ -136,7 +159,12 @@ import { createLogger } from "./logger.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 import { createAuthRouter } from "./authRoutes.js";
+import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
+import {
+  createAuthMfaLoginController,
+  createHmacJwtIssuerFromEnv,
+} from "./authMfaLogin.js";
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
 import { createMfaEnrollmentController } from "./mfaEnrollment.js";
 import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
@@ -272,6 +300,10 @@ export async function main(): Promise<Server> {
   const mfaEnrollmentController = createMfaEnrollmentController({
     repository: mfaEnrollmentRepository,
   });
+  const authMfaLoginController = createAuthMfaLoginController({
+    jwtIssuer: createHmacJwtIssuerFromEnv(),
+    repository: mfaEnrollmentRepository,
+  });
 
   const app = createApp({
     logger,
@@ -282,6 +314,9 @@ export async function main(): Promise<Server> {
       }));
       app.use(createTaxPlanCycleRouter());
       app.use(createAuthRouter({ authenticatePassword }));
+      app.use(createAuthMfaLoginRouter({
+        controller: authMfaLoginController,
+      }));
     },
   });
   const port = getPortFromEnv();
