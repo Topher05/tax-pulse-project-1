@@ -4,6 +4,8 @@ import type { AddressInfo } from "node:net";
 import { describe, expect, test } from "vitest";
 
 import {
+  authMfaLoginRequestSchema,
+  authMfaLoginResultSchema,
   coreCaseOpenApiSchemaRegistrations,
   createApp,
   createCoreCaseOpenApiDocument,
@@ -175,6 +177,10 @@ describe("Core Case Service OpenAPI document", () => {
   test("documents MFA enrollment operations using challenge identifiers", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
+    const loginMfaOperation = requiredRecord(
+      requiredRecord(paths, "/auth/login/mfa"),
+      "post",
+    );
     const enrollOperation = requiredRecord(
       requiredRecord(paths, "/mfa/enroll"),
       "post",
@@ -191,7 +197,23 @@ describe("Core Case Service OpenAPI document", () => {
     const confirmContent = requiredRecord(confirmRequestBody, "content");
     const confirmJson = requiredRecord(confirmContent, "application/json");
     const confirmExample = requiredRecord(confirmJson, "example");
+    const loginMfaResponses = requiredRecord(loginMfaOperation, "responses");
+    const loginMfaOkResponse = requiredRecord(loginMfaResponses, "200");
+    const loginMfaOkContent = requiredRecord(loginMfaOkResponse, "content");
+    const loginMfaOkJson = requiredRecord(
+      loginMfaOkContent,
+      "application/json",
+    );
+    const loginMfaExample = requiredRecord(loginMfaOkJson, "example");
 
+    expect(loginMfaOperation.operationId).toBe("verifyLoginMfaTotp");
+    expect(loginMfaOperation.tags).toEqual(["Authentication"]);
+    expect(loginMfaOperation.description).toContain("POST /auth/login");
+    expect(loginMfaExample).toMatchObject({
+      access_token: expect.any(String),
+      token_type: "Bearer",
+      expires_in: expect.any(Number),
+    });
     expect(enrollOperation.operationId).toBe("enrollMfaTotp");
     expect(confirmOperation.operationId).toBe("confirmMfaTotpEnrollment");
     expect(enrollOperation.tags).toEqual(["MFA Enrollment"]);
@@ -262,6 +284,14 @@ describe("Core Case Service OpenAPI document", () => {
   test("registers the same zod schema objects used by routes and domain exports", () => {
     expect(coreCaseOpenApiSchemaRegistrations).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          name: "AuthMfaLoginRequest",
+          schema: authMfaLoginRequestSchema,
+        }),
+        expect.objectContaining({
+          name: "AuthMfaLoginResult",
+          schema: authMfaLoginResultSchema,
+        }),
         expect.objectContaining({
           name: "TaxPlanCycleCreateRequest",
           schema: taxPlanCycleCreateSchema,
