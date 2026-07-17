@@ -59,18 +59,10 @@ export {
   authMfaLoginRequestSchema,
   authMfaLoginResultSchema,
   createAuthMfaLoginController,
-  createHmacJwtIssuer,
-  createHmacJwtIssuerFromEnv,
-  resolveJwtIssuerConfig,
-  type AccessTokenClaims,
-  type AccessTokenIssuer,
   type AuthMfaLoginController,
   type AuthMfaLoginRequest,
   type AuthMfaLoginResult,
   type CreateAuthMfaLoginControllerOptions,
-  type HmacJwtIssuerOptions,
-  type JwtIssuerConfig,
-  type JwtIssuerEnv,
 } from "./authMfaLogin.js";
 export {
   createAuthMfaLoginRouter,
@@ -97,6 +89,7 @@ export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
   credential,
   mfaEnrollment,
+  refreshToken,
   roles,
   stageTransition,
   taxPlanCycle,
@@ -104,6 +97,24 @@ export {
   users,
   userStatus,
 } from "./db/schema.js";
+export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
+export {
+  type AccessTokenClaims,
+  type AuthenticatedPrincipal,
+  type IssuedTokenPair,
+  type UserRole,
+} from "./authTypes.js";
+export {
+  createRefreshTokenRepository,
+  type PersistRefreshTokenInput,
+  type RefreshTokenRepository,
+  type RevokeRefreshTokenByHashInput,
+} from "./refreshTokenRepository.js";
+export {
+  createTokenService,
+  type CreateTokenServiceOptions,
+  type TokenService,
+} from "./tokenService.js";
 export {
   createDefaultMfaTotpProvider,
   createMfaEnrollmentController,
@@ -158,21 +169,18 @@ import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
+import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
 import {
   createAuthMfaLoginController,
-  createHmacJwtIssuerFromEnv,
 } from "./authMfaLogin.js";
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
 import { createMfaEnrollmentController } from "./mfaEnrollment.js";
 import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
-import type {
-  MfaEnrollmentRecord,
-  MfaEnrollmentRepository,
-  MfaTenantUser,
-} from "./mfaEnrollment.js";
+import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
+import { createTokenService } from "./tokenService.js";
 
 loadEnv();
 const { Client } = pg;
@@ -219,89 +227,34 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 }
 
 export async function main(): Promise<Server> {
+  const jwtConfig = getJwtConfigFromEnv();
   const logger = createLogger();
 
   const databaseUrl = process.env.DATABASE_URL?.trim();
-  let authenticatePassword;
-  let mfaEnrollmentRepository: MfaEnrollmentRepository | undefined;
-
-  if (databaseUrl) {
-    try {
-      const client = new Client({ connectionString: databaseUrl });
-      await client.connect();
-      const credentialReader = createPasswordCredentialStore(client);
-      mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
-      authenticatePassword = (input: any) =>
-        authenticatePasswordForMfaChallenge(input, credentialReader);
-      logger.info("Connected to database for Auth Router");
-    } catch (err) {
-      logger.error({ err }, "Failed to connect to database for Auth Router. Using mock fallback");
-    }
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required to register authentication routes.");
   }
 
-  if (!authenticatePassword) {
-    logger.warn("Database not configured or unreachable. Using mock password authenticator");
-    authenticatePassword = async (input: any) => {
-      if (
-        input.tenantId === "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01" &&
-        input.email === "alex@example.com" &&
-        input.plaintextPassword === "correct-password"
-      ) {
-        return {
-          status: "mfa_challenge_required" as const,
-          tenantId: input.tenantId,
-          email: input.email,
-          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
-        };
-      }
-      return { status: "invalid_credentials" as const };
-    };
-  }
+  const client = new Client({ connectionString: databaseUrl });
+  await client.connect();
 
-  if (!mfaEnrollmentRepository) {
-    const fakeTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01";
-    const fakeUser: MfaTenantUser = {
-      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
-      email: "alex@example.com",
-    };
-    const enrollments = new Map<string, MfaEnrollmentRecord>();
+  const credentialReader = createPasswordCredentialStore(client);
+  const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
+  const refreshTokenRepository = createRefreshTokenRepository(client);
+  const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
+    authenticatePasswordForMfaChallenge(input, credentialReader);
+  const tokenService = createTokenService({
+    config: jwtConfig,
+    refreshTokenRepository,
+  });
 
-    mfaEnrollmentRepository = {
-      async findTenantUser({ tenantId, userId }) {
-        if (tenantId === fakeTenantId && userId === fakeUser.id) {
-          return fakeUser;
-        }
-
-        return null;
-      },
-      async findEnrollment({ userId }) {
-        return enrollments.get(userId) ?? null;
-      },
-      async savePendingEnrollment({ userId, totpSecret }) {
-        enrollments.set(userId, {
-          userId,
-          totpSecret,
-          isEnrolled: false,
-        });
-      },
-      async markEnrolled({ userId }) {
-        const enrollment = enrollments.get(userId);
-
-        if (enrollment) {
-          enrollments.set(userId, {
-            ...enrollment,
-            isEnrolled: true,
-          });
-        }
-      },
-    };
-  }
+  logger.info("Connected to database for authentication routes");
 
   const mfaEnrollmentController = createMfaEnrollmentController({
     repository: mfaEnrollmentRepository,
   });
   const authMfaLoginController = createAuthMfaLoginController({
-    jwtIssuer: createHmacJwtIssuerFromEnv(),
+    tokenService,
     repository: mfaEnrollmentRepository,
   });
 

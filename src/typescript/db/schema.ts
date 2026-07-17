@@ -122,6 +122,27 @@ export const mfaEnrollment = pgTable(
   ],
 );
 
+export const refreshToken = pgTable(
+  "refresh_token",
+  {
+    id: uuid("id").default(sql`uuidv7()`).primaryKey(),
+    userId: uuid("user_id").notNull(),
+    tokenHash: varchar("token_hash", { length: 64 }).notNull(),
+    issuedAt: timestamp("issued_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      name: "refresh_token_user_id_fk",
+      columns: [table.userId],
+      foreignColumns: [users.id],
+    }),
+    uniqueIndex("refresh_token_token_hash_key").on(table.tokenHash),
+    index("refresh_token_user_id_expires_at_idx").on(table.userId, table.expiresAt),
+  ],
+);
+
 export const taxPlanCycle = pgTable(
   "tax_plan_cycle",
   {
