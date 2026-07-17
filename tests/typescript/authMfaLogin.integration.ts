@@ -82,4 +82,44 @@ describe("MFA login token issuance integration", () => {
       expect(rows[0]?.tokenHash).not.toBe(result.refresh_token);
     });
   });
+
+  test("rejects a disabled user before token issuance", { timeout: 90_000 }, async () => {
+    await withDockerDrizzleSeededDatabase(async (client) => {
+      const disabledUser = userRows[4];
+
+      if (!disabledUser) {
+        throw new Error("Expected synthetic disabled user.");
+      }
+
+      const controller = createAuthMfaLoginController({
+        tokenService: createTokenService({
+          config,
+          refreshTokenRepository: createRefreshTokenRepository(client),
+          randomBytes: () => Buffer.alloc(32, 12),
+        }),
+        repository: createMfaEnrollmentRepository(client),
+        totpProvider: {
+          generateSecret: () => "unused",
+          generateProvisioningUri: () => "otpauth://totp/unused",
+          verifyCode: async () => true,
+        },
+      });
+
+      await expect(
+        controller.verify({
+          tenant_id: disabledUser.tenantId,
+          user_id: disabledUser.id,
+          code: "123456",
+        }),
+      ).rejects.toMatchObject({ status: 401 });
+
+      const db = drizzle(client);
+      const rows = await db
+        .select({ id: refreshToken.id })
+        .from(refreshToken)
+        .where(eq(refreshToken.userId, disabledUser.id));
+
+      expect(rows).toEqual([]);
+    });
+  });
 });

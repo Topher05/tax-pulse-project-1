@@ -169,6 +169,8 @@ and opaque refresh tokens whose SHA-256 hashes are persisted for later revocatio
 - JWT configuration requires one shared issuer and a minimum 32-byte signing secret.
 - The SCRUM-60 MFA controller invokes `tokenService.issue({ userId, role, tenantId })`
   after valid TOTP verification using the server-trusted principal loaded from PostgreSQL.
+- The trusted MFA lookup joins `user_status` and admits only active users, so disabled
+  and invited accounts cannot receive access or refresh tokens.
 
 **Project Scope Connection:**
 
