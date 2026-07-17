@@ -20,6 +20,8 @@ export interface AccessTokenClaims {
 export interface IssuedTokenPair {
   accessToken: string;
   refreshToken: string;
+  accessTokenExpiresInSeconds: number;
+  refreshTokenExpiresInSeconds: number;
   accessTokenExpiresAt: Date;
   refreshTokenExpiresAt: Date;
 }

@@ -211,8 +211,10 @@ describe("Core Case Service OpenAPI document", () => {
     expect(loginMfaOperation.description).toContain("POST /auth/login");
     expect(loginMfaExample).toMatchObject({
       access_token: expect.any(String),
+      refresh_token: expect.any(String),
       token_type: "Bearer",
       expires_in: expect.any(Number),
+      refresh_expires_in: expect.any(Number),
     });
     expect(enrollOperation.operationId).toBe("enrollMfaTotp");
     expect(confirmOperation.operationId).toBe("confirmMfaTotpEnrollment");

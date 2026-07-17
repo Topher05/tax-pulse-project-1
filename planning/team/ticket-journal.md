@@ -167,8 +167,8 @@ and opaque refresh tokens whose SHA-256 hashes are persisted for later revocatio
   generates 256-bit opaque refresh tokens.
 - `refreshTokenRepository` persists SHA-256 hashes and conditionally records revocation.
 - JWT configuration requires one shared issuer and a minimum 32-byte signing secret.
-- SCRUM-60 should invoke `tokenService.issue({ userId, role, tenantId })` only after
-  successful MFA verification has loaded the server-trusted principal.
+- The SCRUM-60 MFA controller invokes `tokenService.issue({ userId, role, tenantId })`
+  after valid TOTP verification using the server-trusted principal loaded from PostgreSQL.
 
 **Project Scope Connection:**
 
@@ -179,10 +179,21 @@ tenant and role claims from the trusted authentication boundary.
 **Changed Files:**
 
 - `src/typescript/authConfig.ts`
+- `src/typescript/authMfaLogin.ts`
 - `src/typescript/authTypes.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/mfaEnrollment.ts`
+- `src/typescript/mfaEnrollmentRepository.ts`
 - `src/typescript/refreshTokenRepository.ts`
 - `src/typescript/tokenService.ts`
 - `tests/typescript/authConfig.test.ts`
+- `tests/typescript/authMfaLogin.integration.ts`
+- `tests/typescript/authMfaLogin.test.ts`
+- `tests/typescript/authMfaLoginRoutes.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/mfaEnrollment.test.ts`
+- `tests/typescript/mfaEnrollmentRoutes.test.ts`
 - `tests/typescript/tokenService.test.ts`
 - `tests/typescript/refreshToken.integration.ts`
 
@@ -192,11 +203,11 @@ tenant and role claims from the trusted authentication boundary.
 - `npx vitest run tests/typescript/authConfig.test.ts tests/typescript/tokenService.test.ts`
   passed: 2 files, 11 tests.
 - `npm run db:check` passed.
-- PostgreSQL integration coverage is present but cannot run in this execution environment:
-  Docker/Testcontainers reports no working container runtime.
-- `npm test` passed type checking and the non-container tests, but failed its existing
-  Testcontainers suites for the same unavailable runtime; the existing tenants migration
-  test also fails because legacy migration SQL hard-codes `public` references.
+- `npm run test:integration -- tests/typescript/authMfaLogin.integration.ts` passed with
+  Docker/Testcontainers access: 1 file, 1 test.
+- `npm test` passed 95 of 96 tests with Docker access; the remaining existing
+  `tenantsMigration` test fails because legacy migration SQL references `public.roles`
+  while the test uses an isolated schema.
 
 ## martins-okorie-jira58 - SCRUM-58
 

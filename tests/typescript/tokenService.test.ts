@@ -76,6 +76,8 @@ describe("token service", () => {
     });
     expect(pair.accessTokenExpiresAt).toEqual(new Date("2026-07-16T12:15:00.000Z"));
     expect(pair.refreshTokenExpiresAt).toEqual(new Date("2026-08-15T12:00:00.000Z"));
+    expect(pair.accessTokenExpiresInSeconds).toBe(900);
+    expect(pair.refreshTokenExpiresInSeconds).toBe(2_592_000);
     expect(state.persisted).toEqual([
       {
         userId: principal.userId,

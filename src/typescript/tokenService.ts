@@ -76,6 +76,8 @@ export function createTokenService(options: CreateTokenServiceOptions): TokenSer
       return {
         accessToken,
         refreshToken: rawRefreshToken,
+        accessTokenExpiresInSeconds: options.config.accessTokenLifetimeSeconds,
+        refreshTokenExpiresInSeconds: options.config.refreshTokenLifetimeSeconds,
         accessTokenExpiresAt,
         refreshTokenExpiresAt,
       };

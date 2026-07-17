@@ -111,6 +111,8 @@ const fakeAuthMfaLoginResultExample = {
     "synthetic-signature-example",
   token_type: "Bearer",
   expires_in: 900,
+  refresh_token: "synthetic-opaque-refresh-token",
+  refresh_expires_in: 2592000,
 };
 
 const validationErrorExample = {
@@ -222,11 +224,11 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
         post: {
           operationId: "verifyLoginMfaTotp",
           tags: ["Authentication"],
-          summary: "Verify TOTP MFA and issue an access JWT",
+          summary: "Verify TOTP MFA and issue access and refresh tokens",
           description:
             "Consumes the tenant and user challenge identifiers returned from " +
             "POST /auth/login, verifies the user's enrolled TOTP factor, and " +
-            "returns a signed bearer access token.",
+            "returns a signed bearer access token and opaque refresh token.",
           requestBody: {
             required: true,
             content: {
@@ -239,7 +241,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           responses: {
             "200": {
               description:
-                "The TOTP code was accepted and an access token was issued.",
+                "The TOTP code was accepted and a token pair was issued.",
               content: {
                 "application/json": {
                   schema: authMfaLoginResultOpenApiSchema,

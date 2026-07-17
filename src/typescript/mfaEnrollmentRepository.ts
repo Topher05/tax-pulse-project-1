@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
-import { mfaEnrollment, users } from "./db/schema.js";
+import { mfaEnrollment, roles, users } from "./db/schema.js";
 import type {
   MfaEnrollmentRecord,
   MfaEnrollmentRepository,
@@ -20,8 +20,11 @@ export function createMfaEnrollmentRepository(
         .select({
           id: users.id,
           email: users.email,
+          tenantId: users.tenantId,
+          role: roles.role,
         })
         .from(users)
+        .innerJoin(roles, eq(users.roleId, roles.id))
         .where(and(eq(users.tenantId, tenantId), eq(users.id, userId)))
         .limit(1);
 

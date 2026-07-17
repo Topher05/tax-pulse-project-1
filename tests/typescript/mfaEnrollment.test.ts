@@ -16,6 +16,8 @@ class InMemoryMfaEnrollmentRepository implements MfaEnrollmentRepository {
   tenantUser: MfaTenantUser | null = {
     id: userId,
     email: "alex@example.com",
+    tenantId,
+    role: "Firm Admin",
   };
 
   enrollment: MfaEnrollmentRecord | null = null;
