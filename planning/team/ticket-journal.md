@@ -3,6 +3,84 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## dylan-harle-jira65 - SCRUM-65
+
+**Branch:** `dylan-harle-jira65`
+
+**Owner:** Reyhan Daniels
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Create the append-only `audit_entry` table
+
+**CSV Description:** As a Backend Developer, I want an append-only `audit_entry` table,
+so that who-did-what-when is recorded immutably per case.
+
+**Acceptance Criteria:**
+
+- A migration creates `audit_entry` with `case_id`, `actor`, `action`, `outcome`,
+  and `occurred_at`.
+- A database rule or trigger blocks `UPDATE` and `DELETE` on `audit_entry`.
+- A test asserts an attempted update fails.
+
+**How This Ties Into the Code:**
+
+- `src/typescript/db/schema.ts` now defines `auditEntry` as a Drizzle table backed by
+  `audit_entry`, with `case_id` referencing the generated `tax_plan_cycle.id` case
+  identifier established after SCRUM-43/SCRUM-52.
+- `src/typescript/db/drizzle-migrations/0004_lively_sugar_man.sql` creates the table,
+  per-case read index, foreign key, and an `audit_entry_prevent_mutation` trigger
+  function wired by `audit_entry_block_update_delete`.
+- `src/typescript/db/seed.ts` includes `audit_entry` in the reset truncation list but
+  does not seed audit rows, leaving actual audit writes to later workflow tickets.
+- `tests/typescript/audit/auditEntry.test.ts` verifies the table contract, valid
+  insert, missing-case FK rejection, and failed `UPDATE`/`DELETE` attempts.
+- `adr/0008-append-only-audit-entry.md` records the database-owned append-only audit
+  table decision, including the trigger-based immutability boundary and future-ticket
+  handoff.
+- This ticket does not change JWT issuance, JWT middleware, auth negative paths, or
+  FastAPI JWT validation from SCRUM-61 through SCRUM-64. It also does not implement
+  stage-transition audit writes from SCRUM-66 or role-gated denied-attempt auditing
+  from SCRUM-67.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires immutable audit history for case activity. This ticket adds
+the database-owned append-only storage foundation for per-case audit evidence while
+preserving the current stage-based workflow model and avoiding any dependency on the
+separate authentication/JWT chain.
+
+**Changed Files:**
+
+- `package.json`
+- `adr/0008-append-only-audit-entry.md`
+- `adr/README.md`
+- `planning/team/ticket-journal.md`
+- `src/typescript/db/drizzle-migrations/0004_lively_sugar_man.sql`
+- `src/typescript/db/drizzle-migrations/meta/0004_snapshot.json`
+- `src/typescript/db/drizzle-migrations/meta/_journal.json`
+- `src/typescript/db/schema.ts`
+- `src/typescript/db/seed.ts`
+- `tests/typescript/audit/auditEntry.test.ts`
+
+**Validation Notes:**
+
+- `npm run db:gen` could not run in the default sandbox because Node could not resolve
+  its install directory due to `EPERM: operation not permitted, lstat
+  'C:\Users\Drybones'`; the migration and metadata were added manually in the active
+  Drizzle migration path.
+- After SCRUM-61 introduced `refresh_token` as Drizzle migrations `0002` and `0003`,
+  `npm run db:gen` was rerun with elevated local filesystem access and regenerated the
+  audit table as forward migration `0004_lively_sugar_man`.
+- `npm run typecheck` passed with elevated local filesystem access after the same Node
+  sandbox permission issue.
+- `npm run db:check` passed with elevated local filesystem access.
+- `npm run test:migration` ran with elevated local filesystem access; the new
+  `tests/typescript/audit/auditEntry.test.ts` passed all 3 tests, and the overall
+  suite reported 14 passing tests with 1 existing failure in
+  `tests/typescript/tenantsMigration.test.ts` because the configured local PostgreSQL
+  database does not provide `uuidv7()`.
+
 ## dylan-harle-jira59 - SCRUM-59
 
 **Branch:** `dylan-harle-jira59`
