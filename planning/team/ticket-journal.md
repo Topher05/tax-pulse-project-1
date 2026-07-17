@@ -28,7 +28,7 @@ so that who-did-what-when is recorded immutably per case.
 - `src/typescript/db/schema.ts` now defines `auditEntry` as a Drizzle table backed by
   `audit_entry`, with `case_id` referencing the generated `tax_plan_cycle.id` case
   identifier established after SCRUM-43/SCRUM-52.
-- `src/typescript/db/drizzle-migrations/0002_audit_entry.sql` creates the table,
+- `src/typescript/db/drizzle-migrations/0004_lively_sugar_man.sql` creates the table,
   per-case read index, foreign key, and an `audit_entry_prevent_mutation` trigger
   function wired by `audit_entry_block_update_delete`.
 - `src/typescript/db/seed.ts` includes `audit_entry` in the reset truncation list but
@@ -56,8 +56,8 @@ separate authentication/JWT chain.
 - `adr/0008-append-only-audit-entry.md`
 - `adr/README.md`
 - `planning/team/ticket-journal.md`
-- `src/typescript/db/drizzle-migrations/0002_audit_entry.sql`
-- `src/typescript/db/drizzle-migrations/meta/0002_snapshot.json`
+- `src/typescript/db/drizzle-migrations/0004_lively_sugar_man.sql`
+- `src/typescript/db/drizzle-migrations/meta/0004_snapshot.json`
 - `src/typescript/db/drizzle-migrations/meta/_journal.json`
 - `src/typescript/db/schema.ts`
 - `src/typescript/db/seed.ts`
@@ -69,6 +69,9 @@ separate authentication/JWT chain.
   its install directory due to `EPERM: operation not permitted, lstat
   'C:\Users\Drybones'`; the migration and metadata were added manually in the active
   Drizzle migration path.
+- After SCRUM-61 introduced `refresh_token` as Drizzle migrations `0002` and `0003`,
+  `npm run db:gen` was rerun with elevated local filesystem access and regenerated the
+  audit table as forward migration `0004_lively_sugar_man`.
 - `npm run typecheck` passed with elevated local filesystem access after the same Node
   sandbox permission issue.
 - `npm run db:check` passed with elevated local filesystem access.
