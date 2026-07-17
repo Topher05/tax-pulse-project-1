@@ -151,6 +151,35 @@ export const taxPlanCycle = pgTable(
   ],
 );
 
+export const auditEntry = pgTable(
+  "audit_entry",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    caseId: uuid("case_id").notNull(),
+    actor: text("actor").notNull(),
+    action: text("action").notNull(),
+    outcome: text("outcome").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "audit_entry_id_pk",
+      columns: [table.id],
+    }),
+    foreignKey({
+      name: "audit_entry_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    index("audit_entry_case_id_occurred_at_idx").on(
+      table.caseId,
+      table.occurredAt,
+    ),
+  ],
+);
+
 export const stageTransition = pgTable(
   "stage_transition",
   {
