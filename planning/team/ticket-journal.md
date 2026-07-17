@@ -3,6 +3,145 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## dylan-harle-jira59 - SCRUM-59
+
+**Branch:** `dylan-harle-jira59`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Enroll a user in TOTP MFA
+
+**CSV Description:** As a Security Engineer, I want users to enroll a TOTP second
+factor, so that login requires more than a password.
+
+**Acceptance Criteria:**
+
+- An enroll endpoint generates a TOTP secret and returns a provisioning URI.
+- Enrollment is confirmed by submitting a valid current code before the factor is
+  activated.
+- The secret is stored in `mfa_enrollment` and the user is marked enrolled.
+
+**How This Ties Into the Code:**
+
+- `mfaEnrollment.ts` defines the enrollment and confirmation schemas, TOTP provider
+  boundary, controller behavior, and Problem Details errors for pending enrollment,
+  already-enrolled users, invalid codes, and tenant/user mismatches.
+- `createDefaultMfaTotpProvider` uses `otplib` to generate a base32 TOTP secret,
+  produce an `otpauth://totp/` provisioning URI, and verify submitted current codes.
+- `mfaEnrollmentRepository.ts` persists enrollment state through Drizzle against the
+  existing `mfa_enrollment` table and verifies tenant isolation through the `users`
+  table before any enrollment state is read or written.
+- `createMfaEnrollmentRouter` exposes `POST /mfa/enroll` and
+  `POST /mfa/enroll/confirm`. The routes accept the `tenant_id` and `user_id`
+  returned by the SCRUM-58 `/auth/login` MFA challenge response, while preserving
+  `req.tenant` and `req.user` fallback support for future auth middleware.
+- `index.ts` wires the MFA router to a database-backed `MfaEnrollmentRepository` when
+  `DATABASE_URL` is configured and uses a clearly synthetic local mock repository when
+  the database is unavailable, matching the SCRUM-58 local auth fallback.
+- `coreCaseOpenApi.ts` documents the MFA enrollment endpoints and shows the login
+  challenge identifiers flowing into enrollment and confirmation.
+- The implementation does not add a new `users` column or a tenant column on
+  `mfa_enrollment`; `mfa_enrollment.isEnrolled` remains the enrollment marker.
+- SCRUM-60 still owns the final MFA challenge verification at login and token issuance.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires more than a password before authentication completes. This
+ticket creates the TOTP enrollment path that stores each user's second factor separately
+from profile and password credential data, keeps enrollment tenant-scoped through the
+user record, and prepares the login flow for SCRUM-60 without issuing tokens early.
+
+**Changed Files:**
+
+- `package-lock.json`
+- `package.json`
+- `planning/team/ticket-journal.md`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/mfaEnrollment.ts`
+- `src/typescript/mfaEnrollmentRepository.ts`
+- `src/typescript/mfaEnrollmentRoutes.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/mfaEnrollment.test.ts`
+- `tests/typescript/mfaEnrollmentRoutes.test.ts`
+
+**Validation Notes:**
+
+- `npm install` completed after merging SCRUM-57/58 dependencies so local
+  `node_modules` included `argon2` and `otplib`.
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/mfaEnrollment.test.ts tests/typescript/mfaEnrollmentRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 4 files and 27 tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/auth/auth.integration.ts`
+  passed with 1 file and 3 tests.
+- `npm test` passed typecheck and 77 tests, then failed 1 existing PostgreSQL-backed
+  tenant migration test because this local database does not provide `uuidv7()`.
+- `npm install` reported existing npm audit findings; no broad dependency remediation
+  was performed as part of this ticket.
+
+## dylan-harle-jira60 - SCRUM-60
+
+**Branch:** `dylan-harle-jira60`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Challenge and verify the MFA code at login
+
+**CSV Description:** As a Security Engineer, I want login to require a valid TOTP
+code, so that a stolen password alone cannot authenticate.
+
+**Acceptance Criteria:**
+
+- After password verification, login requires a second-factor code.
+- An invalid or expired code returns 401 and does not issue a token.
+- A valid code proceeds to JWT issuance.
+
+**How This Ties Into the Code:**
+
+- `authMfaLogin.ts` adds the second login step for the existing SCRUM-58 password
+  flow, consuming `tenant_id`, `user_id`, and a six-digit TOTP code.
+- The controller reuses the SCRUM-59 `MfaEnrollmentRepository` and TOTP provider to
+  require a tenant-scoped enrolled factor before issuing any token.
+- `createHmacJwtIssuer` issues a real HS256 access JWT with `sub`, `tenant_id`,
+  `iss`, `iat`, and `exp` claims using `TAXPULSE_JWT_SECRET`,
+  `TAXPULSE_JWT_ISSUER`, and `TAXPULSE_ACCESS_TOKEN_TTL_SECONDS`.
+- `authMfaLoginRoutes.ts` exposes `POST /auth/login/mfa`, returning one generic
+  401 Problem Details response for unknown challenge identifiers, missing or
+  unenrolled MFA, and invalid or expired TOTP codes.
+- `coreCaseOpenApi.ts` documents the MFA login verification request, bearer token
+  response, and validation/authentication failure cases.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires password authentication to be insufficient on its own.
+This ticket completes the password-to-MFA login path by requiring an enrolled TOTP
+factor before access JWT issuance while leaving refresh-token persistence and broader
+JWT middleware to SCRUM-61.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `src/typescript/authMfaLogin.ts`
+- `src/typescript/authMfaLoginRoutes.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authMfaLogin.test.ts`
+- `tests/typescript/authMfaLoginRoutes.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/mfaEnrollment.test.ts tests/typescript/mfaEnrollmentRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 6 files and 35 tests.
+- `npm test` passed typecheck and 85 tests, then failed 1 existing PostgreSQL-backed
+  tenant migration test because this local database does not provide `uuidv7()`.
+
+
 ## christopher-martus-jira61 - SCRUM-61
 
 **Branch:** `christopher-martus-jira61`

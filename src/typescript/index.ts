@@ -56,6 +56,28 @@ export {
 } from "./authService.js";
 export { createPasswordCredentialStore } from "./authCredentials.js";
 export {
+  authMfaLoginRequestSchema,
+  authMfaLoginResultSchema,
+  createAuthMfaLoginController,
+  createHmacJwtIssuer,
+  createHmacJwtIssuerFromEnv,
+  resolveJwtIssuerConfig,
+  type AccessTokenIssuer,
+  type AuthMfaLoginController,
+  type AuthMfaLoginRequest,
+  type AuthMfaLoginResult,
+  type CreateAuthMfaLoginControllerOptions,
+  type HmacJwtIssuerOptions,
+  type JwtIssuerConfig,
+  type JwtIssuerEnv,
+} from "./authMfaLogin.js";
+export {
+  createAuthMfaLoginRouter,
+  type AuthMfaValidationErrorIssue,
+  type AuthMfaValidationErrorResponse,
+  type CreateAuthMfaLoginRouterOptions,
+} from "./authMfaLoginRoutes.js";
+export {
   createAuthRouter,
   passwordLoginRequestSchema,
   type AuthValidationErrorIssue,
@@ -100,6 +122,25 @@ export {
   type CreateTokenServiceOptions,
   type TokenService,
 } from "./tokenService.js";
+export {
+  createDefaultMfaTotpProvider,
+  createMfaEnrollmentController,
+  mfaEnrollConfirmRequestSchema,
+  mfaEnrollConfirmResultSchema,
+  mfaEnrollRequestSchema,
+  mfaEnrollResultSchema,
+  type CreateMfaEnrollmentControllerOptions,
+  type MfaEnrollmentController,
+  type MfaEnrollmentRecord,
+  type MfaEnrollmentRepository,
+  type MfaEnrollConfirmRequest,
+  type MfaEnrollConfirmResult,
+  type MfaEnrollRequest,
+  type MfaEnrollResult,
+  type MfaTenantUser,
+  type MfaTotpProvider,
+} from "./mfaEnrollment.js";
+export { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
@@ -133,11 +174,24 @@ import pg from "pg";
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
+import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
+import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
+import {
+  createAuthMfaLoginController,
+  createHmacJwtIssuerFromEnv,
+} from "./authMfaLogin.js";
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
+import { createMfaEnrollmentController } from "./mfaEnrollment.js";
+import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
+import type {
+  MfaEnrollmentRecord,
+  MfaEnrollmentRepository,
+  MfaTenantUser,
+} from "./mfaEnrollment.js";
 
 loadEnv();
 const { Client } = pg;
@@ -150,6 +204,12 @@ export {
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateResult,
 } from "./taxPlanCycleCreateController.js";
+export {
+  createMfaEnrollmentRouter,
+  type CreateMfaEnrollmentRouterOptions,
+  type MfaValidationErrorIssue,
+  type MfaValidationErrorResponse,
+} from "./mfaEnrollmentRoutes.js";
 export {
   createTaxPlanCycleRouter,
   type CreateTaxPlanCycleRouterOptions,
@@ -183,12 +243,14 @@ export async function main(): Promise<Server> {
 
   const databaseUrl = process.env.DATABASE_URL?.trim();
   let authenticatePassword;
+  let mfaEnrollmentRepository: MfaEnrollmentRepository | undefined;
 
   if (databaseUrl) {
     try {
       const client = new Client({ connectionString: databaseUrl });
       await client.connect();
       const credentialReader = createPasswordCredentialStore(client);
+      mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
       authenticatePassword = (input: any) =>
         authenticatePasswordForMfaChallenge(input, credentialReader);
       logger.info("Connected to database for Auth Router");
@@ -216,12 +278,65 @@ export async function main(): Promise<Server> {
     };
   }
 
+  if (!mfaEnrollmentRepository) {
+    const fakeTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01";
+    const fakeUser: MfaTenantUser = {
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+      email: "alex@example.com",
+    };
+    const enrollments = new Map<string, MfaEnrollmentRecord>();
+
+    mfaEnrollmentRepository = {
+      async findTenantUser({ tenantId, userId }) {
+        if (tenantId === fakeTenantId && userId === fakeUser.id) {
+          return fakeUser;
+        }
+
+        return null;
+      },
+      async findEnrollment({ userId }) {
+        return enrollments.get(userId) ?? null;
+      },
+      async savePendingEnrollment({ userId, totpSecret }) {
+        enrollments.set(userId, {
+          userId,
+          totpSecret,
+          isEnrolled: false,
+        });
+      },
+      async markEnrolled({ userId }) {
+        const enrollment = enrollments.get(userId);
+
+        if (enrollment) {
+          enrollments.set(userId, {
+            ...enrollment,
+            isEnrolled: true,
+          });
+        }
+      },
+    };
+  }
+
+  const mfaEnrollmentController = createMfaEnrollmentController({
+    repository: mfaEnrollmentRepository,
+  });
+  const authMfaLoginController = createAuthMfaLoginController({
+    jwtIssuer: createHmacJwtIssuerFromEnv(),
+    repository: mfaEnrollmentRepository,
+  });
+
   const app = createApp({
     logger,
     registerRoutes: (app) => {
       app.use(createCoreCaseOpenApiRouter());
+      app.use(createMfaEnrollmentRouter({
+        controller: mfaEnrollmentController,
+      }));
       app.use(createTaxPlanCycleRouter());
       app.use(createAuthRouter({ authenticatePassword }));
+      app.use(createAuthMfaLoginRouter({
+        controller: authMfaLoginController,
+      }));
     },
   });
   const port = getPortFromEnv();
