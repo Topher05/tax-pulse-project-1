@@ -15,6 +15,7 @@ import {
   createTaxPlanCycleReadHelper,
   createTaxPlanCycleRepository,
   createTaxPlanCycleRouter,
+  auditEntry,
   stageTransition,
   taxPlanCycle,
   taxPlanCycleSchema,
@@ -607,6 +608,26 @@ describe("taxPlanCycle integration", () => {
         actor: "advisor-003",
       });
       expect(transitionRows[0]?.occurred_at).toBeInstanceOf(Date);
+
+      const auditRows = await db
+        .select({
+          case_id: auditEntry.caseId,
+          actor: auditEntry.actor,
+          action: auditEntry.action,
+          outcome: auditEntry.outcome,
+          occurred_at: auditEntry.occurredAt,
+        })
+        .from(auditEntry)
+        .where(eq(auditEntry.caseId, caseId));
+
+      expect(auditRows).toHaveLength(1);
+      expect(auditRows[0]).toMatchObject({
+        case_id: caseId,
+        actor: "advisor-003",
+        action: "stage_transition:Intake->Intake",
+        outcome: "succeeded",
+      });
+      expect(auditRows[0]?.occurred_at).toEqual(transitionRows[0]?.occurred_at);
     });
   });
 
@@ -678,7 +699,81 @@ describe("taxPlanCycle integration", () => {
           actor: "advisor-route-actor-001",
         });
         expect(transitionRows[0]?.occurred_at).toBeInstanceOf(Date);
+
+        const auditRows = await db
+          .select({
+            case_id: auditEntry.caseId,
+            actor: auditEntry.actor,
+            action: auditEntry.action,
+            outcome: auditEntry.outcome,
+            occurred_at: auditEntry.occurredAt,
+          })
+          .from(auditEntry)
+          .where(eq(auditEntry.caseId, body.case_id));
+
+        expect(auditRows).toHaveLength(1);
+        expect(auditRows[0]).toMatchObject({
+          case_id: body.case_id,
+          actor: "advisor-route-actor-001",
+          action: "stage_transition:Intake->Intake",
+          outcome: "succeeded",
+        });
+        expect(auditRows[0]?.occurred_at).toEqual(transitionRows[0]?.occurred_at);
       });
+    });
+  });
+
+  test("rolls back a transition when its audit entry fails in the same transaction", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+
+      await seedSampleTenant(client);
+
+      await expectPgError(
+        db.transaction(async (tx) => {
+          await tx.insert(taxPlanCycle).values({
+            id: sampleStageTransitionCaseId,
+            clientId: sampleClientIds[0],
+            tenantId: sampleTenant.id,
+            planningPeriod: "2026-Q3",
+            stage: "Intake",
+            owner: "advisor-001",
+            priority: "high",
+            dueDate: "2026-07-15",
+            onHold: false,
+          });
+
+          await tx.insert(stageTransition).values({
+            id: sampleStageTransitionId,
+            caseId: sampleStageTransitionCaseId,
+            fromStage: "Intake",
+            toStage: "Data Aggregation",
+            actor: "advisor-001",
+            occurredAt: new Date("2026-07-01T14:00:00.000Z"),
+          });
+
+          await tx.insert(auditEntry).values({
+            caseId: sampleMissingCaseId,
+            actor: "advisor-001",
+            action: "stage_transition:Intake->Data Aggregation",
+            outcome: "succeeded",
+            occurredAt: new Date("2026-07-01T14:00:00.000Z"),
+          });
+        }),
+        { code: "23503", constraint: "audit_entry_case_id_fk" },
+      );
+
+      const transitionRows = await db
+        .select({ id: stageTransition.id })
+        .from(stageTransition)
+        .where(eq(stageTransition.caseId, sampleStageTransitionCaseId));
+      const auditRows = await db
+        .select({ id: auditEntry.id })
+        .from(auditEntry)
+        .where(eq(auditEntry.caseId, sampleStageTransitionCaseId));
+
+      expect(transitionRows).toEqual([]);
+      expect(auditRows).toEqual([]);
     });
   });
 
