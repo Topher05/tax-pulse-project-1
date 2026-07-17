@@ -2,6 +2,7 @@ import { generateSecret, generateURI, verify } from "otplib";
 import { z } from "zod";
 
 import { ProblemHttpError } from "./errors.js";
+import type { UserRole } from "./authTypes.js";
 
 const mfaChallengeContextSchema = z
   .object({
@@ -62,6 +63,8 @@ export type MfaEnrollConfirmResult = z.infer<
 export interface MfaTenantUser {
   id: string;
   email: string;
+  tenantId: string;
+  role: UserRole;
 }
 
 export interface MfaEnrollmentRecord {
