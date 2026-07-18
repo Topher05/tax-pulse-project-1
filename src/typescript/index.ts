@@ -100,6 +100,10 @@ export {
 } from "./db/schema.js";
 export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
 export {
+  createJwtAuthenticationMiddleware,
+  type CreateJwtAuthenticationMiddlewareOptions,
+} from "./jwtAuthentication.js";
+export {
   type AccessTokenClaims,
   type AuthenticatedPrincipal,
   type IssuedTokenPair,
