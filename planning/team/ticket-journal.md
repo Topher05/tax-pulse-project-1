@@ -3,11 +3,75 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## dylan-harle-jira66 - SCRUM-66
+
+**Branch:** `dylan-harle-jira66`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Write an audit entry on every stage transition
+
+**CSV Description:** As a Firm Admin, I want every stage transition written to the
+audit trail, so that the Plan Cycle is compliance-defensible.
+
+**Acceptance Criteria:**
+
+- Each successful stage transition writes an append-only audit entry of
+  who-did-what-when.
+- The audit write commits with the transition in the same transaction.
+- A test asserts a transition produces exactly one audit entry.
+
+**How This Ties Into the Code:**
+
+- `createTaxPlanCycleRepository` now writes an `audit_entry` row in the same Drizzle
+  transaction that creates the initial `stage_transition` row for a newly created Tax
+  Plan Cycle.
+- The audit entry reuses the transition's generated case ID, actor, and timestamp, with
+  action `stage_transition:Intake->Intake` and outcome `succeeded`.
+- The implementation builds on SCRUM-65's append-only `audit_entry` table, SCRUM-43's
+  `stage_transition` table, and SCRUM-53's create-cycle transaction path.
+- SCRUM-62 through SCRUM-64 are not required for this ticket; actor remains the string
+  already supplied through the current route/controller/repository flow.
+- This ticket does not add role gates, denied-attempt audit entries, or transition
+  endpoint enforcement. Those remain SCRUM-67 territory.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs durable, immutable evidence for workflow activity. This ticket
+connects the existing transition history write path to the append-only audit trail so
+successful case stage movement is recorded as compliance evidence without depending on
+later authorization middleware.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+
+**Validation Notes:**
+
+- `npm run db:check` passed; no Drizzle schema migration was generated or needed for
+  SCRUM-66.
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 13 tests, including repository/route audit-entry assertions and the
+  transition-plus-audit rollback test.
+- `npx vitest run tests/typescript/audit/auditEntry.test.ts` passed with 3 tests.
+- `npm run test:migration` ran; the audit migration tests passed, and the overall suite
+  reported 14 passing tests with 1 existing failure in
+  `tests/typescript/tenantsMigration.test.ts` because the configured local PostgreSQL
+  database does not provide `uuidv7()`.
+- `npm test` ran; typecheck and 98 tests passed, with the same existing
+  `tests/typescript/tenantsMigration.test.ts` `uuidv7()` failure.
+
 ## dylan-harle-jira65 - SCRUM-65
 
 **Branch:** `dylan-harle-jira65`
 
-**Owner:** Reyhan Daniels
+**Owner:** Dylan Harle
 
 **Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
 
@@ -84,6 +148,7 @@ separate authentication/JWT chain.
 ## dylan-harle-jira59 - SCRUM-59
 
 **Branch:** `dylan-harle-jira59`
+
 
 **Owner:** Dylan Harle
 
