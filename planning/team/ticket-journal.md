@@ -1316,3 +1316,55 @@ preserving least privilege and the project's audit-friendly auth boundary.
 - Schema, seed, and test scaffolding were added in the workspace.
 - Drizzle generation and Node-based validation were left as follow-up action items per
   the user's request not to run node scripts in this turn.
+
+## christopher-martus-jira62 - SCRUM-62
+
+**Branch:** `christopher-martus-jira62`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-62
+
+**Summary:** Add JWT validation middleware to protected routes
+
+**Description:** Validate bearer access JWTs before protected Core Case Service routes
+use tenant or user context.
+
+**Acceptance Criteria:**
+
+- Access-token signature, expiry, issuer, and required claims are verified.
+- Missing, malformed, invalid-signature, expired, wrong-issuer, and invalid-claim
+  tokens return a consistent 401 Problem Details response.
+- Verified `sub`, `role`, and `tenant_id` claims are available to downstream handlers.
+
+**Code Connection:**
+
+- `createJwtAuthenticationMiddleware` uses SCRUM-61's `jose` HS256 contract and the
+  configured `JWT_ISSUER` and `JWT_SIGNING_SECRET`; it does not hard-code credentials.
+- It attaches `authenticatedPrincipal: { userId, role, tenantId }` and preserves the
+  existing `req.user.id` and `req.tenant.id` route context compatibility fields.
+- Only `GET/POST /tax-plan-cycles` are protected. Health, OpenAPI, login, and MFA
+  enrollment routes remain public.
+
+**Project Scope Connection:**
+
+The Core Case Service now establishes a verified tenant and user boundary before
+operational Tax Plan Cycle processing, without adding authorization policy, tenant query
+filtering, token issuance, refresh-token access, revocation, or other auth mechanisms.
+
+**Changed Files:**
+
+- `src/typescript/jwtAuthentication.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/jwtAuthentication.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/jwtAuthentication.test.ts` passed: 12 tests.
+- `npx vitest run tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts tests/typescript/taxPlanCycleRoutes.test.ts` passed: 9 tests.
+- `npm test` passed typechecking and 100 tests. Its 13 unrelated PostgreSQL migration
+  tests could not run because this environment has no working Testcontainers container
+  runtime.
