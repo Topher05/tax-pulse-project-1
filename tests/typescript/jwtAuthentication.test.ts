@@ -27,6 +27,7 @@ async function createAccessToken(input: {
   role?: unknown;
   tenantId?: unknown;
   expirationTime?: string | number;
+  includeExpiration?: boolean;
   includeRole?: boolean;
   includeTenantId?: boolean;
   includeSubject?: boolean;
@@ -49,8 +50,11 @@ async function createAccessToken(input: {
 
   const token = new SignJWT(claims)
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-    .setIssuer(input.issuer ?? config.issuer)
-    .setExpirationTime(input.expirationTime ?? "15m");
+    .setIssuer(input.issuer ?? config.issuer);
+
+  if (input.includeExpiration ?? true) {
+    token.setExpirationTime(input.expirationTime ?? "15m");
+  }
 
   if (input.includeSubject ?? true) {
     if (input.subject !== undefined) {
@@ -99,6 +103,7 @@ const invalidTokenOptions: Record<string, Parameters<typeof createAccessToken>[0
   },
   "expired token": { expirationTime: 0 },
   "wrong issuer": { issuer: "https://other.taxpulse.example" },
+  "missing expiry": { includeExpiration: false },
   "invalid role type": { role: 42 },
   "invalid tenant_id type": { tenantId: 42 },
 };
@@ -153,6 +158,7 @@ describe("createJwtAuthenticationMiddleware", () => {
     "invalid signature",
     "expired token",
     "wrong issuer",
+    "missing expiry",
     "missing role",
     "missing tenant_id",
     "missing sub",

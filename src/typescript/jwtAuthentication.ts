@@ -79,6 +79,7 @@ export function createJwtAuthenticationMiddleware({
       const { payload } = await jwtVerify(token, signingKey, {
         algorithms: ["HS256"],
         issuer: config.issuer,
+        requiredClaims: ["exp"],
       });
       const principal = toAuthenticatedPrincipal(payload);
 
