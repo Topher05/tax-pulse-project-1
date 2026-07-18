@@ -172,6 +172,7 @@ import pg from "pg";
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
+import { createJwtAuthenticationMiddleware } from "./jwtAuthentication.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
@@ -270,6 +271,10 @@ export async function main(): Promise<Server> {
       app.use(createMfaEnrollmentRouter({
         controller: mfaEnrollmentController,
       }));
+      app.use(
+        "/tax-plan-cycles",
+        createJwtAuthenticationMiddleware({ config: jwtConfig }),
+      );
       app.use(createTaxPlanCycleRouter());
       app.use(createAuthRouter({ authenticatePassword }));
       app.use(createAuthMfaLoginRouter({
