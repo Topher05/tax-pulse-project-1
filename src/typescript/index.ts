@@ -175,6 +175,8 @@ import { createLogger } from "./logger.js";
 import { createJwtAuthenticationMiddleware } from "./jwtAuthentication.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
+import { createTaxPlanCycleCreateController } from "./taxPlanCycleCreateController.js";
+import { createTaxPlanCycleRepository } from "./taxPlanCycleRepository.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
@@ -247,6 +249,10 @@ export async function main(): Promise<Server> {
   const credentialReader = createPasswordCredentialStore(client);
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
+  const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const taxPlanCycleController = createTaxPlanCycleCreateController(
+    taxPlanCycleRepository,
+  );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
     authenticatePasswordForMfaChallenge(input, credentialReader);
   const tokenService = createTokenService({
@@ -275,7 +281,7 @@ export async function main(): Promise<Server> {
         "/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config: jwtConfig }),
       );
-      app.use(createTaxPlanCycleRouter());
+      app.use(createTaxPlanCycleRouter({ controller: taxPlanCycleController }));
       app.use(createAuthRouter({ authenticatePassword }));
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
