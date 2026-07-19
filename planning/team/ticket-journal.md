@@ -1368,3 +1368,59 @@ filtering, token issuance, refresh-token access, revocation, or other auth mecha
 - `npm test` passed typechecking and 100 tests. Its 13 unrelated PostgreSQL migration
   tests could not run because this environment has no working Testcontainers container
   runtime.
+
+## dylan-harle-jira63 - SCRUM-63
+
+**Branch:** `dylan-harle-jira63`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-63
+
+**Summary:** Cover auth negative paths and reject SSO callbacks
+
+**Description:** As a Security Engineer, I want negative-path auth tests including a
+rejected SSO callback, so that only the supported email+password+MFA flow can
+authenticate.
+
+**Acceptance Criteria:**
+
+- Tests assert wrong password, missing MFA, and tampered token each return 401.
+- A request to a hypothetical SSO/OIDC callback route returns 404; SSO is out of scope.
+- The negative-path suite runs locally and is green.
+
+**Code Connection:**
+
+- `authNegativePaths.test.ts` composes the existing password login router, MFA login
+  router, and SCRUM-62 JWT middleware around an in-memory protected route.
+- Wrong-password login returns the existing invalid-credentials 401 response.
+- A successful password step returns only the existing MFA challenge response; without
+  completing `/auth/login/mfa`, protected route access still returns the JWT middleware
+  401 response.
+- A tampered bearer token returns the same authentication-required 401 used by SCRUM-62.
+- `POST /auth/callback/oidc` remains unregistered and returns 404, confirming no SSO or
+  OIDC callback flow was added.
+
+**Project Scope Connection:**
+
+This ticket is test-only coverage over the supported email+password+MFA authentication
+boundary. It does not add SSO, introduce alternate authentication routes, change token
+issuance, change JWT validation, or alter protected Core Case Service behavior. Later
+tickets greater than 62 remain functionally unaffected: SCRUM-64 can still validate the
+shared JWT contract in FastAPI, SCRUM-67 and SCRUM-69 can still consume SCRUM-62's
+authenticated tenant/user context, and no inspected later ticket depends on an SSO route.
+
+**Changed Files:**
+
+- `tests/typescript/authNegativePaths.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run tests/typescript/authNegativePaths.test.ts` passed: 4 tests.
+- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/jwtAuthentication.test.ts` passed: 23 tests.
+- `npm run typecheck` passed.
+- `npm test` passed typechecking and the new SCRUM-63 suite inside the full Vitest run.
+  The full run ended with 118 passing tests and 1 existing migration failure in
+  `tests/typescript/tenantsMigration.test.ts` because PostgreSQL reported
+  `function uuidv7() does not exist`.
