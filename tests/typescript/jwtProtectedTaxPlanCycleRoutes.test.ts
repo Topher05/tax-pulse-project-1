@@ -6,7 +6,9 @@ import { SignJWT } from "jose";
 import { describe, expect, test, vi } from "vitest";
 
 import {
+  TAXPULSE_COST_UNITS_HEADER,
   createApp,
+  createCostAccountingMiddleware,
   createJwtAuthenticationMiddleware,
   createLogger,
   createTenantRateLimitMiddleware,
@@ -56,6 +58,7 @@ async function createAccessToken(tenantId = "tenant-from-jwt"): Promise<string> 
 async function withProtectedTaxPlanCycleServer(
   controller: TaxPlanCycleCreateController,
   run: (baseUrl: string) => Promise<void>,
+  costAccountingMiddleware?: RequestHandler,
   rateLimitMiddleware?: RequestHandler,
 ): Promise<void> {
   const app = createApp({
@@ -65,6 +68,9 @@ async function withProtectedTaxPlanCycleServer(
         "/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config }),
       );
+      if (costAccountingMiddleware) {
+        server.use("/tax-plan-cycles", costAccountingMiddleware);
+      }
       if (rateLimitMiddleware) {
         server.use("/tax-plan-cycles", rateLimitMiddleware);
       }
@@ -141,6 +147,37 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
     });
   });
 
+  test("emits operation-specific cost headers for protected Tax Plan Cycle requests", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: cycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
+    const token = await createAccessToken();
+
+    await withProtectedTaxPlanCycleServer(
+      { create, findByCaseId },
+      async (baseUrl) => {
+        const createResponse = await fetch(`${baseUrl}/tax-plan-cycles`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(validCreateBody),
+        });
+        const readResponse = await fetch(`${baseUrl}/tax-plan-cycles/${cycle.id}`, {
+          headers: { authorization: `Bearer ${token}` },
+        });
+
+        expect(createResponse.status).toBe(202);
+        expect(createResponse.headers.get(TAXPULSE_COST_UNITS_HEADER)).toBe("2");
+        expect(readResponse.status).toBe(200);
+        expect(readResponse.headers.get(TAXPULSE_COST_UNITS_HEADER)).toBe("1");
+      },
+      createCostAccountingMiddleware(),
+    );
+  });
+
   test("rate limits Tax Plan Cycle requests using the verified JWT tenant claim", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
       case_id: cycle.id,
@@ -180,6 +217,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
 
         expect(tenantAFirst.status).toBe(202);
         expect(tenantASecond.status).toBe(429);
+        expect(tenantASecond.headers.get(TAXPULSE_COST_UNITS_HEADER)).toBe("2");
         expect(tenantASecond.headers.get("retry-after")).toBeDefined();
         await expect(tenantASecond.json()).resolves.toMatchObject({
           type: "https://taxpulse.example/problems/rate-limit-exceeded",
@@ -192,6 +230,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           actor: "user-from-jwt",
         });
       },
+      createCostAccountingMiddleware(),
       createTenantRateLimitMiddleware({ limit: 1, windowMs: 60_000 }),
     );
   });
