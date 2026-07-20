@@ -9,6 +9,8 @@ import {
   createJwtAuthenticationMiddleware,
   createLogger,
   createTaxPlanCycleRouter,
+  redactedAuditAmount,
+  type AuditEntryReader,
   type JwtConfig,
   type TaxPlanCycle,
   type TaxPlanCycleCreateController,
@@ -53,6 +55,7 @@ async function createAccessToken(): Promise<string> {
 
 async function withProtectedTaxPlanCycleServer(
   controller: TaxPlanCycleCreateController,
+  auditEntryReader: AuditEntryReader | undefined,
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
   const app = createApp({
@@ -62,7 +65,7 @@ async function withProtectedTaxPlanCycleServer(
         "/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config }),
       );
-      server.use(createTaxPlanCycleRouter({ controller }));
+      server.use(createTaxPlanCycleRouter({ auditEntryReader, controller }));
     },
   });
   const server = app.listen(0);
@@ -84,14 +87,18 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
     }));
     const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
 
-    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, async (baseUrl) => {
+    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(validCreateBody),
       });
+      const auditResponse = await fetch(
+        `${baseUrl}/tax-plan-cycles/${cycle.id}/audit-entries`,
+      );
 
       expect(response.status).toBe(401);
+      expect(auditResponse.status).toBe(401);
       await expect(response.json()).resolves.toMatchObject({
         type: "https://taxpulse.example/problems/authentication-required",
         status: 401,
@@ -106,9 +113,21 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
       case_id: cycle.id,
     }));
     const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
+    const listByCase = vi.fn<AuditEntryReader["listByCase"]>(() =>
+      Promise.resolve([
+        {
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+          case_id: cycle.id,
+          actor: "advisor-001",
+          action: `income amount ${redactedAuditAmount} recorded`,
+          outcome: "succeeded",
+          occurred_at: "2026-07-20T14:00:00.000Z",
+        },
+      ]),
+    );
     const token = await createAccessToken();
 
-    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, async (baseUrl) => {
+    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, { listByCase }, async (baseUrl) => {
       const createResponse = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: {
@@ -120,15 +139,24 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
       const readResponse = await fetch(`${baseUrl}/tax-plan-cycles/${cycle.id}`, {
         headers: { authorization: `Bearer ${token}` },
       });
+      const auditResponse = await fetch(
+        `${baseUrl}/tax-plan-cycles/${cycle.id}/audit-entries`,
+        { headers: { authorization: `Bearer ${token}` } },
+      );
 
       expect(createResponse.status).toBe(202);
       expect(readResponse.status).toBe(200);
+      expect(auditResponse.status).toBe(200);
       expect(create).toHaveBeenCalledWith({
         ...validCreateBody,
         tenantId: "tenant-from-jwt",
         actor: "user-from-jwt",
       });
       expect(findByCaseId).toHaveBeenCalledWith({
+        tenantId: "tenant-from-jwt",
+        caseId: cycle.id,
+      });
+      expect(listByCase).toHaveBeenCalledWith({
         tenantId: "tenant-from-jwt",
         caseId: cycle.id,
       });
