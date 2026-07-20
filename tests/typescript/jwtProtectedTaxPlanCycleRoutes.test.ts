@@ -59,10 +59,12 @@ async function createAccessToken(tenantId = "tenant-from-jwt"): Promise<string> 
 
 async function withProtectedTaxPlanCycleServer(
   controller: TaxPlanCycleCreateController,
-  auditEntryReader: AuditEntryReader | undefined,
   run: (baseUrl: string) => Promise<void>,
-  costAccountingMiddleware?: RequestHandler,
-  rateLimitMiddleware?: RequestHandler,
+  options: {
+    auditEntryReader?: AuditEntryReader;
+    costAccountingMiddleware?: RequestHandler;
+    rateLimitMiddleware?: RequestHandler;
+  } = {},
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
@@ -71,13 +73,16 @@ async function withProtectedTaxPlanCycleServer(
         "/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config }),
       );
-      if (costAccountingMiddleware) {
-        server.use("/tax-plan-cycles", costAccountingMiddleware);
+      if (options.costAccountingMiddleware) {
+        server.use("/tax-plan-cycles", options.costAccountingMiddleware);
       }
-      if (rateLimitMiddleware) {
-        server.use("/tax-plan-cycles", rateLimitMiddleware);
+      if (options.rateLimitMiddleware) {
+        server.use("/tax-plan-cycles", options.rateLimitMiddleware);
       }
-      server.use(createTaxPlanCycleRouter({ auditEntryReader, controller }));
+      server.use(createTaxPlanCycleRouter({
+        auditEntryReader: options.auditEntryReader,
+        controller,
+      }));
     },
   });
   const server = app.listen(0, "127.0.0.1");
@@ -99,7 +104,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
     }));
     const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
 
-    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -139,7 +144,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
     );
     const token = await createAccessToken();
 
-    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, { listByCase }, async (baseUrl) => {
+    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, async (baseUrl) => {
       const createResponse = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: {
@@ -172,7 +177,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
         tenantId: "tenant-from-jwt",
         caseId: cycle.id,
       });
-    });
+    }, { auditEntryReader: { listByCase } });
   });
 
   test("emits operation-specific cost headers for protected Tax Plan Cycle requests", async () => {
@@ -202,7 +207,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
         expect(readResponse.status).toBe(200);
         expect(readResponse.headers.get(TAXPULSE_COST_UNITS_HEADER)).toBe("1");
       },
-      createCostAccountingMiddleware(),
+      { costAccountingMiddleware: createCostAccountingMiddleware() },
     );
   });
 
@@ -258,8 +263,13 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           actor: "user-from-jwt",
         });
       },
-      createCostAccountingMiddleware(),
-      createTenantRateLimitMiddleware({ limit: 1, windowMs: 60_000 }),
+      {
+        costAccountingMiddleware: createCostAccountingMiddleware(),
+        rateLimitMiddleware: createTenantRateLimitMiddleware({
+          limit: 1,
+          windowMs: 60_000,
+        }),
+      },
     );
   });
 });
