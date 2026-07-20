@@ -104,6 +104,12 @@ export {
   type CreateJwtAuthenticationMiddlewareOptions,
 } from "./jwtAuthentication.js";
 export {
+  createTenantRateLimitMiddleware,
+  type CreateTenantRateLimitMiddlewareOptions,
+  type TenantRateLimitBucket,
+  type TenantRateLimitStore,
+} from "./tenantRateLimiting.js";
+export {
   type AccessTokenClaims,
   type AuthenticatedPrincipal,
   type IssuedTokenPair,
@@ -173,6 +179,7 @@ import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
 import { createJwtAuthenticationMiddleware } from "./jwtAuthentication.js";
+import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 import { createTaxPlanCycleCreateController } from "./taxPlanCycleCreateController.js";
@@ -280,6 +287,7 @@ export async function main(): Promise<Server> {
       app.use(
         "/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config: jwtConfig }),
+        createTenantRateLimitMiddleware(),
       );
       app.use(createTaxPlanCycleRouter({ controller: taxPlanCycleController }));
       app.use(createAuthRouter({ authenticatePassword }));
