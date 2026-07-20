@@ -1424,3 +1424,52 @@ authenticated tenant/user context, and no inspected later ticket depends on an S
   The full run ended with 118 passing tests and 1 existing migration failure in
   `tests/typescript/tenantsMigration.test.ts` because PostgreSQL reported
   `function uuidv7() does not exist`.
+
+## christopher-martus-jira72 - SCRUM-72
+
+**Branch:** `christopher-martus-jira72`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-72
+
+**Summary:** Document service ownership boundaries in an ADR
+
+**Description:** As a Backend Developer, document which entity each service owns so
+that TaxPulse bounded contexts remain clear as the system grows.
+
+**Acceptance Criteria:**
+
+- The ADR states that the Core Case Service owns the case and the Tax Engine owns
+  calculations.
+- The ADR names the store each context writes to.
+- The ADR is linked from the ADR index.
+
+**Code Connection:**
+
+- ADR-0009 defines Core Case Service ownership of Tax Plan Cycles and persisted
+  scenarios in its Drizzle-backed PostgreSQL store.
+- ADR-0009 defines Tax Engine ownership of calculation rules and execution, while
+  documenting that it currently does not write calculation results to a persistent
+  store.
+- The Core Case Service calls the Tax Engine through its supported API and persists
+  returned scenario figures as case-owned data.
+
+**Project Scope Connection:**
+
+This decision preserves tenant, workflow, access, and audit boundaries in the Core
+Case Service while allowing the Tax Engine to evolve its calculation behavior
+independently. It records current persistence responsibilities without inventing a
+Tax Engine store before one is selected.
+
+**Changed Files:**
+
+- `adr/0009-service-ownership-boundaries.md`
+- `adr/README.md`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- Confirmed the ADR uses the repository template sections and names both ownership
+  boundaries and the current write-store arrangement.
+- Confirmed `adr/README.md` links ADR-0009.
