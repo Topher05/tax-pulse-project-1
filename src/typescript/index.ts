@@ -56,6 +56,19 @@ export {
 } from "./authService.js";
 export { createPasswordCredentialStore } from "./authCredentials.js";
 export {
+  auditEntryOutputSchema,
+  redactAuditText,
+  redactedAuditAmount,
+  serializeAuditEntryForOutput,
+  type AuditEntryOutput,
+  type StoredAuditEntry,
+} from "./auditEntryOutput.js";
+export {
+  createAuditEntryRepository,
+  type AuditEntryListInput,
+  type AuditEntryReader,
+} from "./auditEntryRepository.js";
+export {
   authMfaLoginRequestSchema,
   authMfaLoginResultSchema,
   createAuthMfaLoginController,
@@ -181,6 +194,7 @@ import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
+import { createAuditEntryRepository } from "./auditEntryRepository.js";
 import {
   createAuthMfaLoginController,
 } from "./authMfaLogin.js";
@@ -250,6 +264,7 @@ export async function main(): Promise<Server> {
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const auditEntryRepository = createAuditEntryRepository(client);
   const taxPlanCycleController = createTaxPlanCycleCreateController(
     taxPlanCycleRepository,
   );
@@ -281,7 +296,10 @@ export async function main(): Promise<Server> {
         "/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config: jwtConfig }),
       );
-      app.use(createTaxPlanCycleRouter({ controller: taxPlanCycleController }));
+      app.use(createTaxPlanCycleRouter({
+        auditEntryReader: auditEntryRepository,
+        controller: taxPlanCycleController,
+      }));
       app.use(createAuthRouter({ authenticatePassword }));
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
