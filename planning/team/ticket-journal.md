@@ -3,6 +3,64 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## christopher-martus-jira64 - SCRUM-64
+
+**Branch:** `christopher-martus-jira64`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-64
+
+**Summary:** Validate shared JWTs in a FastAPI dependency
+
+**Description:** Add a FastAPI dependency that validates the HS256 access JWTs issued
+by the Node service so the Tax Calculation Engine trusts the same identity scheme.
+
+**Acceptance Criteria:**
+
+- The dependency validates JWT signature, expiry, and issuer using the shared key.
+- Expired or tampered tokens return 401.
+- Valid tokens expose role and tenant_id to downstream handlers.
+
+**Code Connection:**
+
+- `JwtValidationConfig.from_environment` reads the shared `JWT_ISSUER` and
+  `JWT_SIGNING_SECRET` values without an import-time environment dependency and enforces
+  the Node service's minimum 32-byte secret requirement.
+- `create_jwt_authentication_dependency` uses FastAPI's bearer security dependency and
+  PyJWT to accept only HS256 JWTs, validate issuer and expiry, and return the typed
+  `AuthenticatedPrincipal` containing verified role and tenant_id claims.
+- Authentication failures, including missing credentials, invalid signatures, expired
+  tokens, wrong issuers, and invalid downstream claims, use one 401 response with the
+  `WWW-Authenticate: Bearer` header.
+- SCRUM-84 remains responsible for attaching this reusable dependency to the Tax
+  Calculation endpoint; no calculation route is added here.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs a shared identity boundary across the Node Core Case Service and
+the Python Tax Calculation Engine. This ticket provides that focused FastAPI boundary
+while preserving tenant isolation and leaving calculation endpoint composition to the
+later API ticket.
+
+**Changed Files:**
+
+- `pyproject.toml`
+- `src/python/tax_pulse_project_team_1/jwt_authentication.py`
+- `tests/python/test_jwt_authentication.py`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m ruff check src/python tests/python` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"`
+  passed with 0 errors.
+- `python -m pytest tests/python/test_jwt_authentication.py` passed with 15 tests.
+- `python -m pytest` passed with 20 tests. FastAPI's installed TestClient emitted its
+  upstream httpx deprecation warning; pytest also could not update the pre-existing
+  repository `.pytest_cache` due to local access permissions.
+
 ## dylan-harle-jira66 - SCRUM-66
 
 **Branch:** `dylan-harle-jira66`
