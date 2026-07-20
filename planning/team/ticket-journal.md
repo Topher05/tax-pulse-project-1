@@ -3,6 +3,72 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## development - SCRUM-68
+
+**Branch:** `development`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-68
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Redact income and deduction figures in audit output
+
+**Description:** As a Firm Admin, I want dollar figures redacted in audit output, so
+that sensitive amounts are not exposed in the trail.
+
+**Acceptance Criteria:**
+
+- Income and deduction dollar figures are redacted when an audit entry is rendered.
+- Redaction is applied at read/serialization time, leaving the stored action intact.
+- A test asserts a redacted figure never appears in the audit output.
+
+**Code Connection:**
+
+- `auditEntryOutput` centralizes audit-entry serialization and redacts financial
+  amounts from rendered `action` and `outcome` text while preserving actor, case,
+  timestamp, stages, dates, counts, and identifiers.
+- `createAuditEntryRepository` reads `audit_entry` rows through a tenant-scoped join to
+  `tax_plan_cycle` and returns only serialized, redacted audit output.
+- `GET /tax-plan-cycles/:caseId/audit-entries` validates the existing tenant-scoped
+  cycle before listing audit entries, so missing or cross-tenant cases reuse the
+  existing 404 behavior and do not leak audit rows.
+- This intentionally does not implement SCRUM-67's transition endpoint, role matrix,
+  legal-transition enforcement, or denied-attempt audit writes. Future SCRUM-67 audit
+  entries can use the same audit reader.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs immutable audit history without exposing sensitive tax amounts
+to every rendered trail consumer. This ticket keeps the append-only stored audit row
+intact for compliance while applying least-exposure redaction at the API serialization
+boundary.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `src/typescript/auditEntryOutput.ts`
+- `src/typescript/auditEntryRepository.ts`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `tests/typescript/auditEntryOutput.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auditEntryOutput.test.ts tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+  passed with 14 tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 14 tests, including the redacted-output and intact-storage assertion.
+- `npm test` ran; typecheck passed and Vitest reported 123 passing tests
+- Initial Node validation commands failed inside the default Windows sandbox with
+  `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands passed
+  when rerun with approved elevated filesystem access.
+
 ## dylan-harle-jira66 - SCRUM-66
 
 **Branch:** `dylan-harle-jira66`
