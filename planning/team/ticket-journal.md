@@ -1482,3 +1482,114 @@ authenticated tenant/user context, and no inspected later ticket depends on an S
   The full run ended with 118 passing tests and 1 existing migration failure in
   `tests/typescript/tenantsMigration.test.ts` because PostgreSQL reported
   `function uuidv7() does not exist`.
+
+## martins-okorie-jira69 - SCRUM-69
+
+**Branch:** `martins-okorie-jira69`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-69
+
+**Summary:** Enforce per-tenant rate limiting
+
+**Description:** As a Platform Engineer, I want per-tenant rate limiting, so that one
+firm cannot exhaust shared capacity.
+
+**Acceptance Criteria:**
+
+- Requests exceeding a per-tenant limit return 429 with a Retry-After header.
+- Rate-limit counters are isolated per tenant_id.
+- A test asserts one tenant's burst does not throttle another tenant.
+
+**Code Connection:**
+
+- `createTenantRateLimitMiddleware` enforces an in-memory default of 60 requests per
+  tenant per 60 seconds, with injectable limit, window, clock, and store options for
+  focused tests.
+- The middleware keys counters from `req.tenant.id`, which SCRUM-62's JWT middleware
+  derives from the verified `tenant_id` access-token claim.
+- Exceeded limits set `Retry-After` and return a 429 Problem Details response using the
+  TaxPulse problem type `https://taxpulse.example/problems/rate-limit-exceeded`.
+- `main()` wires the limiter after JWT authentication and before the Tax Plan Cycle
+  router, so public health, OpenAPI, login, and MFA routes are not rate-limited by this
+  ticket.
+
+**Project Scope Connection:**
+
+Per-tenant rate limiting protects shared Core Case Service capacity while preserving the
+project's tenant isolation boundary. The implementation is process-local for the MVP and
+does not add schema changes, a distributed cache dependency, broader auth policy, public
+route throttling, or a separate Tax Plan Cycle status field.
+
+**Changed Files:**
+
+- `src/typescript/tenantRateLimiting.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/tenantRateLimiting.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/tenantRateLimiting.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts` passed: 7 tests.
+- `npm run test` passed typechecking and all non-container route/unit coverage needed for
+  SCRUM-69. The full Vitest run ended with 111 passing tests and 13 existing
+  Testcontainers-backed migration failures because this environment could not find a
+  working container runtime strategy.
+
+## martins-okorie-jira70 - SCRUM-70
+
+**Branch:** `martins-okorie-jira70`
+
+**Owner:** Reyhan Daniels
+
+**Jira Key:** SCRUM-70
+
+**Summary:** Emit cost-accounting headers per request
+
+**Description:** As a Platform Engineer, I want cost-accounting headers on responses, so
+that per-request usage is observable.
+
+**Acceptance Criteria:**
+
+- Responses include a header reporting the request's accounted cost units.
+- The cost value reflects the operation performed.
+- A test asserts the header is present on a representative endpoint.
+
+**Code Connection:**
+
+- `createCostAccountingMiddleware` sets `X-TaxPulse-Cost-Units` from a default resolver
+  for Tax Plan Cycle operations.
+- The default cost model accounts `GET /tax-plan-cycles/:caseId` as 1 unit and
+  `POST /tax-plan-cycles` as 2 units.
+- `main()` wires cost accounting after SCRUM-62 JWT authentication and before SCRUM-69
+  tenant rate limiting, so protected Tax Plan Cycle success responses and rate-limited
+  attempts can report the attempted operation's cost.
+- The middleware supports an injected resolver for focused tests without adding storage,
+  billing, or quota state.
+
+**Project Scope Connection:**
+
+Cost-accounting headers make Core Case Service usage observable per request while staying
+inside the secure Tax Plan Cycle boundary created by SCRUM-62 and SCRUM-69. This ticket
+does not add persistence, billing records, tenant quota enforcement, OpenAPI changes,
+migrations, public-route headers, or a separate Tax Plan Cycle status field.
+
+**Changed Files:**
+
+- `src/typescript/costAccounting.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/costAccounting.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/costAccounting.test.ts tests/typescript/tenantRateLimiting.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts` passed: 11 tests.
+- `npm run test` passed typechecking and all non-container route/unit coverage needed for
+  SCRUM-70. The full Vitest run ended with 115 passing tests and 13 existing
+  Testcontainers-backed migration failures because this environment could not find a
+  working container runtime strategy.
