@@ -3,6 +3,72 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## development - SCRUM-68
+
+**Branch:** `development`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-68
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Redact income and deduction figures in audit output
+
+**Description:** As a Firm Admin, I want dollar figures redacted in audit output, so
+that sensitive amounts are not exposed in the trail.
+
+**Acceptance Criteria:**
+
+- Income and deduction dollar figures are redacted when an audit entry is rendered.
+- Redaction is applied at read/serialization time, leaving the stored action intact.
+- A test asserts a redacted figure never appears in the audit output.
+
+**Code Connection:**
+
+- `auditEntryOutput` centralizes audit-entry serialization and redacts financial
+  amounts from rendered `action` and `outcome` text while preserving actor, case,
+  timestamp, stages, dates, counts, and identifiers.
+- `createAuditEntryRepository` reads `audit_entry` rows through a tenant-scoped join to
+  `tax_plan_cycle` and returns only serialized, redacted audit output.
+- `GET /tax-plan-cycles/:caseId/audit-entries` validates the existing tenant-scoped
+  cycle before listing audit entries, so missing or cross-tenant cases reuse the
+  existing 404 behavior and do not leak audit rows.
+- This intentionally does not implement SCRUM-67's transition endpoint, role matrix,
+  legal-transition enforcement, or denied-attempt audit writes. Future SCRUM-67 audit
+  entries can use the same audit reader.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs immutable audit history without exposing sensitive tax amounts
+to every rendered trail consumer. This ticket keeps the append-only stored audit row
+intact for compliance while applying least-exposure redaction at the API serialization
+boundary.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `src/typescript/auditEntryOutput.ts`
+- `src/typescript/auditEntryRepository.ts`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `tests/typescript/auditEntryOutput.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auditEntryOutput.test.ts tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+  passed with 14 tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 14 tests, including the redacted-output and intact-storage assertion.
+- `npm test` ran; typecheck passed and Vitest reported 123 passing tests
+- Initial Node validation commands failed inside the default Windows sandbox with
+  `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands passed
+  when rerun with approved elevated filesystem access.
+
 ## dylan-harle-jira66 - SCRUM-66
 
 **Branch:** `dylan-harle-jira66`
@@ -1314,6 +1380,116 @@ preserving least privilege and the project's audit-friendly auth boundary.
 **Validation Notes:**
 
 - Schema, seed, and test scaffolding were added in the workspace.
+- Drizzle generation and Node-based validation were left as follow-up action items per
+  the user's request not to run node scripts in this turn.
+
+## christopher-martus-jira62 - SCRUM-62
+
+**Branch:** `christopher-martus-jira62`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-62
+
+**Summary:** Add JWT validation middleware to protected routes
+
+**Description:** Validate bearer access JWTs before protected Core Case Service routes
+use tenant or user context.
+
+**Acceptance Criteria:**
+
+- Access-token signature, expiry, issuer, and required claims are verified.
+- Missing, malformed, invalid-signature, expired, wrong-issuer, and invalid-claim
+  tokens return a consistent 401 Problem Details response.
+- Verified `sub`, `role`, and `tenant_id` claims are available to downstream handlers.
+
+**Code Connection:**
+
+- `createJwtAuthenticationMiddleware` uses SCRUM-61's `jose` HS256 contract and the
+  configured `JWT_ISSUER` and `JWT_SIGNING_SECRET`; it does not hard-code credentials.
+- It attaches `authenticatedPrincipal: { userId, role, tenantId }` and preserves the
+  existing `req.user.id` and `req.tenant.id` route context compatibility fields.
+- Only `GET/POST /tax-plan-cycles` are protected. Health, OpenAPI, login, and MFA
+  enrollment routes remain public.
+
+**Project Scope Connection:**
+
+The Core Case Service now establishes a verified tenant and user boundary before
+operational Tax Plan Cycle processing, without adding authorization policy, tenant query
+filtering, token issuance, refresh-token access, revocation, or other auth mechanisms.
+
+**Changed Files:**
+
+- `src/typescript/jwtAuthentication.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/jwtAuthentication.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/jwtAuthentication.test.ts` passed: 12 tests.
+- `npx vitest run tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts tests/typescript/taxPlanCycleRoutes.test.ts` passed: 9 tests.
+- `npm test` passed typechecking and 100 tests. Its 13 unrelated PostgreSQL migration
+  tests could not run because this environment has no working Testcontainers container
+  runtime.
+
+## dylan-harle-jira63 - SCRUM-63
+
+**Branch:** `dylan-harle-jira63`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-63
+
+**Summary:** Cover auth negative paths and reject SSO callbacks
+
+**Description:** As a Security Engineer, I want negative-path auth tests including a
+rejected SSO callback, so that only the supported email+password+MFA flow can
+authenticate.
+
+**Acceptance Criteria:**
+
+- Tests assert wrong password, missing MFA, and tampered token each return 401.
+- A request to a hypothetical SSO/OIDC callback route returns 404; SSO is out of scope.
+- The negative-path suite runs locally and is green.
+
+**Code Connection:**
+
+- `authNegativePaths.test.ts` composes the existing password login router, MFA login
+  router, and SCRUM-62 JWT middleware around an in-memory protected route.
+- Wrong-password login returns the existing invalid-credentials 401 response.
+- A successful password step returns only the existing MFA challenge response; without
+  completing `/auth/login/mfa`, protected route access still returns the JWT middleware
+  401 response.
+- A tampered bearer token returns the same authentication-required 401 used by SCRUM-62.
+- `POST /auth/callback/oidc` remains unregistered and returns 404, confirming no SSO or
+  OIDC callback flow was added.
+
+**Project Scope Connection:**
+
+This ticket is test-only coverage over the supported email+password+MFA authentication
+boundary. It does not add SSO, introduce alternate authentication routes, change token
+issuance, change JWT validation, or alter protected Core Case Service behavior. Later
+tickets greater than 62 remain functionally unaffected: SCRUM-64 can still validate the
+shared JWT contract in FastAPI, SCRUM-67 and SCRUM-69 can still consume SCRUM-62's
+authenticated tenant/user context, and no inspected later ticket depends on an SSO route.
+
+**Changed Files:**
+
+- `tests/typescript/authNegativePaths.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run tests/typescript/authNegativePaths.test.ts` passed: 4 tests.
+- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/jwtAuthentication.test.ts` passed: 23 tests.
+- `npm run typecheck` passed.
+- `npm test` passed typechecking and the new SCRUM-63 suite inside the full Vitest run.
+  The full run ended with 118 passing tests and 1 existing migration failure in
+  `tests/typescript/tenantsMigration.test.ts` because PostgreSQL reported
+  `function uuidv7() does not exist`.
 - Drizzle generation and Node-based validation were left as follow-up action items per
   the user's request not to run node scripts in this turn.
 

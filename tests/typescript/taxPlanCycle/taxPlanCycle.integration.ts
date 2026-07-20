@@ -10,12 +10,14 @@ import { describe, expect, test } from "vitest";
 
 import {
   createApp,
+  createAuditEntryRepository,
   createLogger,
   createTaxPlanCycleCreateController,
   createTaxPlanCycleReadHelper,
   createTaxPlanCycleRepository,
   createTaxPlanCycleRouter,
   auditEntry,
+  redactedAuditAmount,
   stageTransition,
   taxPlanCycle,
   taxPlanCycleSchema,
@@ -628,6 +630,69 @@ describe("taxPlanCycle integration", () => {
         outcome: "succeeded",
       });
       expect(auditRows[0]?.occurred_at).toEqual(transitionRows[0]?.occurred_at);
+    });
+  });
+
+  test("redacts audit output without mutating stored audit entries", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const auditRepository = createAuditEntryRepository(client);
+
+      await seedSampleTenant(client);
+
+      await db.insert(taxPlanCycle).values({
+        id: sampleStageTransitionCaseId,
+        clientId: sampleClientIds[0],
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q3",
+        stage: "Data Aggregation",
+        owner: "advisor-001",
+        priority: "high",
+        dueDate: "2026-07-15",
+        onHold: false,
+      });
+
+      await db.insert(auditEntry).values({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d72",
+        caseId: sampleStageTransitionCaseId,
+        actor: "advisor-001",
+        action: "income amount 125000 collected and deduction amount $18,500 reviewed",
+        outcome: "succeeded with withholding 1,400",
+        occurredAt: new Date("2026-07-20T14:00:00.000Z"),
+      });
+
+      const output = await auditRepository.listByCase({
+        tenantId: sampleTenant.id,
+        caseId: sampleStageTransitionCaseId,
+      });
+      const storedRows = await db
+        .select({
+          action: auditEntry.action,
+          outcome: auditEntry.outcome,
+        })
+        .from(auditEntry)
+        .where(eq(auditEntry.caseId, sampleStageTransitionCaseId));
+
+      expect(output).toEqual([
+        {
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d72",
+          case_id: sampleStageTransitionCaseId,
+          actor: "advisor-001",
+          action: `income amount ${redactedAuditAmount} collected and deduction amount ${redactedAuditAmount} reviewed`,
+          outcome: `succeeded with withholding ${redactedAuditAmount}`,
+          occurred_at: "2026-07-20T14:00:00.000Z",
+        },
+      ]);
+      expect(JSON.stringify(output)).not.toContain("125000");
+      expect(JSON.stringify(output)).not.toContain("$18,500");
+      expect(JSON.stringify(output)).not.toContain("1,400");
+      expect(storedRows).toEqual([
+        {
+          action:
+            "income amount 125000 collected and deduction amount $18,500 reviewed",
+          outcome: "succeeded with withholding 1,400",
+        },
+      ]);
     });
   });
 
