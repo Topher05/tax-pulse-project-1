@@ -1490,3 +1490,224 @@ authenticated tenant/user context, and no inspected later ticket depends on an S
   The full run ended with 118 passing tests and 1 existing migration failure in
   `tests/typescript/tenantsMigration.test.ts` because PostgreSQL reported
   `function uuidv7() does not exist`.
+- Drizzle generation and Node-based validation were left as follow-up action items per
+  the user's request not to run node scripts in this turn.
+
+## christopher-martus-jira62 - SCRUM-62
+
+**Branch:** `christopher-martus-jira62`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-62
+
+**Summary:** Add JWT validation middleware to protected routes
+
+**Description:** Validate bearer access JWTs before protected Core Case Service routes
+use tenant or user context.
+
+**Acceptance Criteria:**
+
+- Access-token signature, expiry, issuer, and required claims are verified.
+- Missing, malformed, invalid-signature, expired, wrong-issuer, and invalid-claim
+  tokens return a consistent 401 Problem Details response.
+- Verified `sub`, `role`, and `tenant_id` claims are available to downstream handlers.
+
+**Code Connection:**
+
+- `createJwtAuthenticationMiddleware` uses SCRUM-61's `jose` HS256 contract and the
+  configured `JWT_ISSUER` and `JWT_SIGNING_SECRET`; it does not hard-code credentials.
+- It attaches `authenticatedPrincipal: { userId, role, tenantId }` and preserves the
+  existing `req.user.id` and `req.tenant.id` route context compatibility fields.
+- Only `GET/POST /tax-plan-cycles` are protected. Health, OpenAPI, login, and MFA
+  enrollment routes remain public.
+
+**Project Scope Connection:**
+
+The Core Case Service now establishes a verified tenant and user boundary before
+operational Tax Plan Cycle processing, without adding authorization policy, tenant query
+filtering, token issuance, refresh-token access, revocation, or other auth mechanisms.
+
+**Changed Files:**
+
+- `src/typescript/jwtAuthentication.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/jwtAuthentication.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/jwtAuthentication.test.ts` passed: 12 tests.
+- `npx vitest run tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts tests/typescript/taxPlanCycleRoutes.test.ts` passed: 9 tests.
+- `npm test` passed typechecking and 100 tests. Its 13 unrelated PostgreSQL migration
+  tests could not run because this environment has no working Testcontainers container
+  runtime.
+
+## dylan-harle-jira63 - SCRUM-63
+
+**Branch:** `dylan-harle-jira63`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-63
+
+**Summary:** Cover auth negative paths and reject SSO callbacks
+
+**Description:** As a Security Engineer, I want negative-path auth tests including a
+rejected SSO callback, so that only the supported email+password+MFA flow can
+authenticate.
+
+**Acceptance Criteria:**
+
+- Tests assert wrong password, missing MFA, and tampered token each return 401.
+- A request to a hypothetical SSO/OIDC callback route returns 404; SSO is out of scope.
+- The negative-path suite runs locally and is green.
+
+**Code Connection:**
+
+- `authNegativePaths.test.ts` composes the existing password login router, MFA login
+  router, and SCRUM-62 JWT middleware around an in-memory protected route.
+- Wrong-password login returns the existing invalid-credentials 401 response.
+- A successful password step returns only the existing MFA challenge response; without
+  completing `/auth/login/mfa`, protected route access still returns the JWT middleware
+  401 response.
+- A tampered bearer token returns the same authentication-required 401 used by SCRUM-62.
+- `POST /auth/callback/oidc` remains unregistered and returns 404, confirming no SSO or
+  OIDC callback flow was added.
+
+**Project Scope Connection:**
+
+This ticket is test-only coverage over the supported email+password+MFA authentication
+boundary. It does not add SSO, introduce alternate authentication routes, change token
+issuance, change JWT validation, or alter protected Core Case Service behavior. Later
+tickets greater than 62 remain functionally unaffected: SCRUM-64 can still validate the
+shared JWT contract in FastAPI, SCRUM-67 and SCRUM-69 can still consume SCRUM-62's
+authenticated tenant/user context, and no inspected later ticket depends on an SSO route.
+
+**Changed Files:**
+
+- `tests/typescript/authNegativePaths.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run tests/typescript/authNegativePaths.test.ts` passed: 4 tests.
+- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/jwtAuthentication.test.ts` passed: 23 tests.
+- `npm run typecheck` passed.
+- `npm test` passed typechecking and the new SCRUM-63 suite inside the full Vitest run.
+  The full run ended with 118 passing tests and 1 existing migration failure in
+  `tests/typescript/tenantsMigration.test.ts` because PostgreSQL reported
+  `function uuidv7() does not exist`.
+
+## martins-okorie-jira69 - SCRUM-69
+
+**Branch:** `martins-okorie-jira69`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-69
+
+**Summary:** Enforce per-tenant rate limiting
+
+**Description:** As a Platform Engineer, I want per-tenant rate limiting, so that one
+firm cannot exhaust shared capacity.
+
+**Acceptance Criteria:**
+
+- Requests exceeding a per-tenant limit return 429 with a Retry-After header.
+- Rate-limit counters are isolated per tenant_id.
+- A test asserts one tenant's burst does not throttle another tenant.
+
+**Code Connection:**
+
+- `createTenantRateLimitMiddleware` enforces an in-memory default of 60 requests per
+  tenant per 60 seconds, with injectable limit, window, clock, and store options for
+  focused tests.
+- The middleware keys counters from `req.tenant.id`, which SCRUM-62's JWT middleware
+  derives from the verified `tenant_id` access-token claim.
+- Exceeded limits set `Retry-After` and return a 429 Problem Details response using the
+  TaxPulse problem type `https://taxpulse.example/problems/rate-limit-exceeded`.
+- `main()` wires the limiter after JWT authentication and before the Tax Plan Cycle
+  router, so public health, OpenAPI, login, and MFA routes are not rate-limited by this
+  ticket.
+
+**Project Scope Connection:**
+
+Per-tenant rate limiting protects shared Core Case Service capacity while preserving the
+project's tenant isolation boundary. The implementation is process-local for the MVP and
+does not add schema changes, a distributed cache dependency, broader auth policy, public
+route throttling, or a separate Tax Plan Cycle status field.
+
+**Changed Files:**
+
+- `src/typescript/tenantRateLimiting.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/tenantRateLimiting.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/tenantRateLimiting.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts` passed: 7 tests.
+- `npm run test` passed typechecking and all non-container route/unit coverage needed for
+  SCRUM-69. The full Vitest run ended with 111 passing tests and 13 existing
+  Testcontainers-backed migration failures because this environment could not find a
+  working container runtime strategy.
+
+## martins-okorie-jira70 - SCRUM-70
+
+**Branch:** `martins-okorie-jira70`
+
+**Owner:** Reyhan Daniels
+
+**Jira Key:** SCRUM-70
+
+**Summary:** Emit cost-accounting headers per request
+
+**Description:** As a Platform Engineer, I want cost-accounting headers on responses, so
+that per-request usage is observable.
+
+**Acceptance Criteria:**
+
+- Responses include a header reporting the request's accounted cost units.
+- The cost value reflects the operation performed.
+- A test asserts the header is present on a representative endpoint.
+
+**Code Connection:**
+
+- `createCostAccountingMiddleware` sets `X-TaxPulse-Cost-Units` from a default resolver
+  for Tax Plan Cycle operations.
+- The default cost model accounts `GET /tax-plan-cycles/:caseId` as 1 unit and
+  `POST /tax-plan-cycles` as 2 units.
+- `main()` wires cost accounting after SCRUM-62 JWT authentication and before SCRUM-69
+  tenant rate limiting, so protected Tax Plan Cycle success responses and rate-limited
+  attempts can report the attempted operation's cost.
+- The middleware supports an injected resolver for focused tests without adding storage,
+  billing, or quota state.
+
+**Project Scope Connection:**
+
+Cost-accounting headers make Core Case Service usage observable per request while staying
+inside the secure Tax Plan Cycle boundary created by SCRUM-62 and SCRUM-69. This ticket
+does not add persistence, billing records, tenant quota enforcement, OpenAPI changes,
+migrations, public-route headers, or a separate Tax Plan Cycle status field.
+
+**Changed Files:**
+
+- `src/typescript/costAccounting.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/costAccounting.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/costAccounting.test.ts tests/typescript/tenantRateLimiting.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts` passed: 11 tests.
+- `npm run test` passed typechecking and all non-container route/unit coverage needed for
+  SCRUM-70. The full Vitest run ended with 115 passing tests and 13 existing
+  Testcontainers-backed migration failures because this environment could not find a
+  working container runtime strategy.

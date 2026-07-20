@@ -1,13 +1,17 @@
 import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
+import type { RequestHandler } from "express";
 import { SignJWT } from "jose";
 import { describe, expect, test, vi } from "vitest";
 
 import {
+  TAXPULSE_COST_UNITS_HEADER,
   createApp,
+  createCostAccountingMiddleware,
   createJwtAuthenticationMiddleware,
   createLogger,
+  createTenantRateLimitMiddleware,
   createTaxPlanCycleRouter,
   redactedAuditAmount,
   type AuditEntryReader,
@@ -41,10 +45,10 @@ const cycle: TaxPlanCycle = {
   on_hold: false,
 };
 
-async function createAccessToken(): Promise<string> {
+async function createAccessToken(tenantId = "tenant-from-jwt"): Promise<string> {
   return await new SignJWT({
     role: "Advisor",
-    tenant_id: "tenant-from-jwt",
+    tenant_id: tenantId,
   })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setSubject("user-from-jwt")
@@ -57,6 +61,8 @@ async function withProtectedTaxPlanCycleServer(
   controller: TaxPlanCycleCreateController,
   auditEntryReader: AuditEntryReader | undefined,
   run: (baseUrl: string) => Promise<void>,
+  costAccountingMiddleware?: RequestHandler,
+  rateLimitMiddleware?: RequestHandler,
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
@@ -65,10 +71,16 @@ async function withProtectedTaxPlanCycleServer(
         "/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config }),
       );
+      if (costAccountingMiddleware) {
+        server.use("/tax-plan-cycles", costAccountingMiddleware);
+      }
+      if (rateLimitMiddleware) {
+        server.use("/tax-plan-cycles", rateLimitMiddleware);
+      }
       server.use(createTaxPlanCycleRouter({ auditEntryReader, controller }));
     },
   });
-  const server = app.listen(0);
+  const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
 
   try {
@@ -161,5 +173,93 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
         caseId: cycle.id,
       });
     });
+  });
+
+  test("emits operation-specific cost headers for protected Tax Plan Cycle requests", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: cycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
+    const token = await createAccessToken();
+
+    await withProtectedTaxPlanCycleServer(
+      { create, findByCaseId },
+      async (baseUrl) => {
+        const createResponse = await fetch(`${baseUrl}/tax-plan-cycles`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(validCreateBody),
+        });
+        const readResponse = await fetch(`${baseUrl}/tax-plan-cycles/${cycle.id}`, {
+          headers: { authorization: `Bearer ${token}` },
+        });
+
+        expect(createResponse.status).toBe(202);
+        expect(createResponse.headers.get(TAXPULSE_COST_UNITS_HEADER)).toBe("2");
+        expect(readResponse.status).toBe(200);
+        expect(readResponse.headers.get(TAXPULSE_COST_UNITS_HEADER)).toBe("1");
+      },
+      createCostAccountingMiddleware(),
+    );
+  });
+
+  test("rate limits Tax Plan Cycle requests using the verified JWT tenant claim", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: cycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
+    const tenantAToken = await createAccessToken("tenant-rate-a");
+    const tenantBToken = await createAccessToken("tenant-rate-b");
+
+    await withProtectedTaxPlanCycleServer(
+      { create, findByCaseId },
+      async (baseUrl) => {
+        const requestBody = JSON.stringify(validCreateBody);
+        const tenantAFirst = await fetch(`${baseUrl}/tax-plan-cycles`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${tenantAToken}`,
+            "content-type": "application/json",
+          },
+          body: requestBody,
+        });
+        const tenantASecond = await fetch(`${baseUrl}/tax-plan-cycles`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${tenantAToken}`,
+            "content-type": "application/json",
+          },
+          body: requestBody,
+        });
+        const tenantBFirst = await fetch(`${baseUrl}/tax-plan-cycles`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${tenantBToken}`,
+            "content-type": "application/json",
+          },
+          body: requestBody,
+        });
+
+        expect(tenantAFirst.status).toBe(202);
+        expect(tenantASecond.status).toBe(429);
+        expect(tenantASecond.headers.get(TAXPULSE_COST_UNITS_HEADER)).toBe("2");
+        expect(tenantASecond.headers.get("retry-after")).toBeDefined();
+        await expect(tenantASecond.json()).resolves.toMatchObject({
+          type: "https://taxpulse.example/problems/rate-limit-exceeded",
+          status: 429,
+        });
+        expect(tenantBFirst.status).toBe(202);
+        expect(create).toHaveBeenCalledWith({
+          ...validCreateBody,
+          tenantId: "tenant-rate-b",
+          actor: "user-from-jwt",
+        });
+      },
+      createCostAccountingMiddleware(),
+      createTenantRateLimitMiddleware({ limit: 1, windowMs: 60_000 }),
+    );
   });
 });
