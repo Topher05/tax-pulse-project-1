@@ -345,6 +345,8 @@ export function createTaxPlanCycleRouter(
     },
   );
 
+  // TODO: Refactor :id to be  Rename :id to case Id in the controller, code and tests it should match for consistency
+  // TODO: Refactor error handling to give 401 error in case of invalid token
   router.patch(
     "/cycles/:id/transition",
     async (req: Request, res: Response, next: NextFunction) => {

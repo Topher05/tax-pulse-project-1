@@ -28,6 +28,7 @@ import {
   tenants,
   type AuditEntryWriter,
 } from "../../../src/typescript/index.js";
+import { applySeed } from "../../../src/typescript/db/seed.js";
 import {
   applyDrizzleMigrations,
   drizzleAppliedMigrationsTableName,
@@ -93,6 +94,17 @@ const authConfig: JwtConfig = {
   accessTokenLifetimeSeconds: 900,
   refreshTokenLifetimeSeconds: 2_592_000,
 };
+const advisorEditPermissions = { Advisor: ["EDIT"] } as const;
+const briannaAuthPrincipal = {
+  tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02",
+  userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+  email: "brianna@example.com",
+  role: "Advisor" as const,
+  password: "correct-password",
+  totpSecret: "KRSXG5DSNFXGOIDSMVZXI2LOM5XXE3DE",
+  totpCode: "123456",
+} as const;
+const briannaSeedCycleId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
 
 async function createAccessToken(input: {
   tenantId: string;
@@ -901,7 +913,7 @@ describe("taxPlanCycle integration", () => {
       await withTransitionRouteServer(
         repository,
         auditEntryWriter,
-        {},
+        advisorEditPermissions,
         async (baseUrl) => {
           const response = await fetch(
             `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71/transition`,
@@ -1123,7 +1135,7 @@ describe("taxPlanCycle integration", () => {
       await withTransitionRouteServer(
         repository,
         auditEntryWriter,
-        {},
+        advisorEditPermissions,
         async (baseUrl) => {
           const response = await fetch(
             `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75/transition`,
@@ -1228,7 +1240,7 @@ describe("taxPlanCycle integration", () => {
       await withTransitionRouteServer(
         repository,
         auditEntryWriter,
-        {},
+        advisorEditPermissions,
         async (baseUrl) => {
           const response = await fetch(
             `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77/transition`,
@@ -1268,6 +1280,143 @@ describe("taxPlanCycle integration", () => {
           expect(auditRows).toHaveLength(0);
         },
       );
+    });
+  });
+
+  test("runs the Brianna auth and cycle flow end to end with bearer auth", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+
+      await applySeed(client);
+
+      const accessToken = await createAccessToken(briannaAuthPrincipal);
+
+      await withTransitionRouteServer(
+        repository,
+        auditEntryWriter,
+        advisorEditPermissions,
+        async (baseUrl) => {
+          const authHeaders = {
+            authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          };
+
+          const existingResponse = await fetch(
+            `${baseUrl}/tax-plan-cycles/${briannaSeedCycleId}`,
+            {
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+          expect(existingResponse.status).toBe(200);
+          expect(
+            taxPlanCycleSchema.parse(await existingResponse.json()),
+          ).toMatchObject({
+            id: briannaSeedCycleId,
+            stage: "Intake",
+            owner: "advisor-002",
+            priority: "medium",
+            due_date: "2026-08-15",
+            on_hold: true,
+            hold_reason: "Awaiting client documents",
+          });
+
+          const createResponse = await fetch(
+            `${baseUrl}/tax-plan-cycles`,
+            {
+              method: "POST",
+              headers: authHeaders,
+              body: JSON.stringify({
+                client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d91",
+                planning_period: "2026-Q3",
+                owner: "brianna@example.com",
+                priority: "medium",
+                due_date: "2026-08-15",
+              }),
+            },
+          );
+
+          expect(createResponse.status).toBe(202);
+          const createBody = (await createResponse.json()) as {
+            case_id: string;
+          };
+          expect(createBody.case_id).toMatch(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+          );
+
+          const createdCaseResponse = await fetch(
+            `${baseUrl}/tax-plan-cycles/${createBody.case_id}`,
+            {
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+          expect(createdCaseResponse.status).toBe(200);
+          expect(
+            taxPlanCycleSchema.parse(await createdCaseResponse.json()),
+          ).toMatchObject({
+            id: createBody.case_id,
+            client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d91",
+            stage: "Intake",
+            owner: "brianna@example.com",
+            priority: "medium",
+            due_date: "2026-08-15",
+            on_hold: false,
+          });
+
+          const patchResponse = await fetch(
+            `${baseUrl}/cycles/${createBody.case_id}/transition`,
+            {
+              method: "PATCH",
+              headers: authHeaders,
+              body: JSON.stringify({ to_stage: "Data Aggregation" }),
+            },
+          );
+
+          expect(patchResponse.status).toBe(200);
+          expect(
+            taxPlanCycleSchema.parse(await patchResponse.json()),
+          ).toMatchObject({
+            id: createBody.case_id,
+            stage: "Data Aggregation",
+            owner: "brianna@example.com",
+          });
+
+          const rereadResponse = await fetch(
+            `${baseUrl}/tax-plan-cycles/${createBody.case_id}`,
+            {
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+          expect(rereadResponse.status).toBe(200);
+          expect(
+            taxPlanCycleSchema.parse(await rereadResponse.json()),
+          ).toMatchObject({
+            id: createBody.case_id,
+            stage: "Data Aggregation",
+            owner: "brianna@example.com",
+          });
+        },
+      );
+
+      const persistedCycle = await repository.findByCaseId({
+        tenantId: briannaAuthPrincipal.tenantId,
+        caseId: briannaSeedCycleId,
+      });
+
+      expect(persistedCycle).toMatchObject({
+        id: briannaSeedCycleId,
+        stage: "Intake",
+      });
     });
   });
 

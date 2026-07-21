@@ -57,6 +57,7 @@ export function createAuthMfaLoginRouter({
   router.post(
     "/auth/login/mfa",
     async (req: Request, res: Response, next: NextFunction) => {
+      console.log("Reached MFA endpoint")
       const parsedBody = authMfaLoginRequestSchema.safeParse(req.body);
 
       if (!parsedBody.success) {
