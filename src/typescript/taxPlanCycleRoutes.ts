@@ -52,6 +52,12 @@ function getActorId(req: Request, fallbackActor: string): string {
   return (req as TenantScopedRequest).user?.id ?? fallbackActor;
 }
 
+function getIdempotencyKey(req: Request): string | undefined {
+  const idempotencyKey = req.header("Idempotency-Key")?.trim();
+
+  return idempotencyKey ? idempotencyKey : undefined;
+}
+
 export function createTaxPlanCycleRouter(
   options: CreateTaxPlanCycleRouterOptions = {},
 ): Router {
@@ -183,10 +189,12 @@ export function createTaxPlanCycleRouter(
 
       try {
         const tenantId = (req as TenantScopedRequest).tenant.id;
+        const idempotencyKey = getIdempotencyKey(req);
         const result = await controller.create({
           ...parsedBody.data,
           tenantId,
           actor: getActorId(req, parsedBody.data.owner),
+          ...(idempotencyKey ? { idempotencyKey } : {}),
         });
         res.status(202).json(result);
       } catch (error) {
