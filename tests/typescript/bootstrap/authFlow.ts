@@ -202,6 +202,13 @@ export function createJwtDerivedUserContext(
     Advisor: ["EDIT"],
   },
 ): RequestHandler {
+  const effectivePermissionsForRole: Partial<
+    Record<UserRole, ReadonlyArray<string>>
+  > = {
+    Advisor: ["EDIT"],
+    ...permissionsForRole,
+  };
+
   return (req, _res, next) => {
     const principal = req.authenticatedPrincipal;
 
@@ -219,7 +226,7 @@ export function createJwtDerivedUserContext(
     }).user = {
       id: principal.userId,
       role: principal.role,
-      permissions: [...(permissionsForRole[principal.role] ?? [])],
+      permissions: [...(effectivePermissionsForRole[principal.role] ?? [])],
     };
 
     next();

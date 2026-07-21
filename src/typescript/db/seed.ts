@@ -7,6 +7,7 @@ import {
   getDatabaseUrlFromEnv,
   withDatabaseClient,
 } from "../postgresMigrations.js";
+
 import {
   credential,
   mfaEnrollment,
@@ -17,6 +18,7 @@ import {
   userStatus,
   users,
 } from "./schema.js";
+
 import {
   buildTaxPlanCycleInsertRows,
   credentialRows,
