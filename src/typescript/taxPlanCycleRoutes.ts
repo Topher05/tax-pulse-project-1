@@ -52,10 +52,19 @@ function getActorId(req: Request, fallbackActor: string): string {
   return (req as TenantScopedRequest).user?.id ?? fallbackActor;
 }
 
-function getIdempotencyKey(req: Request): string | undefined {
+function getIdempotencyKey(req: Request): string {
   const idempotencyKey = req.header("Idempotency-Key")?.trim();
 
-  return idempotencyKey ? idempotencyKey : undefined;
+  if (!idempotencyKey) {
+    throw new ProblemHttpError({
+      type: "https://taxpulse.example/problems/idempotency-key-required",
+      title: "Idempotency Key Required",
+      status: 400,
+      detail: "A non-empty Idempotency-Key header is required to create a Tax Plan Cycle.",
+    });
+  }
+
+  return idempotencyKey;
 }
 
 export function createTaxPlanCycleRouter(
@@ -194,7 +203,7 @@ export function createTaxPlanCycleRouter(
           ...parsedBody.data,
           tenantId,
           actor: getActorId(req, parsedBody.data.owner),
-          ...(idempotencyKey ? { idempotencyKey } : {}),
+          idempotencyKey,
         });
         res.status(202).json(result);
       } catch (error) {

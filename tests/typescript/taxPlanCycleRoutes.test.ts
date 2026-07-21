@@ -126,7 +126,10 @@ describe("createTaxPlanCycleRouter", () => {
     await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "Idempotency-Key": "create-cycle-key-000",
+        },
         body: JSON.stringify(validCreateBody),
       });
 
@@ -139,7 +142,60 @@ describe("createTaxPlanCycleRouter", () => {
         ...validCreateBody,
         tenantId: "tenant-001",
         actor: "actor-001",
+        idempotencyKey: "create-cycle-key-000",
       });
+    });
+  });
+
+  test("returns 400 Problem Details when the Idempotency-Key header is missing", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+    }));
+    const findByCaseId = vi.fn<
+      TaxPlanCycleCreateController["findByCaseId"]
+    >(() => null);
+
+    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(validCreateBody),
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.headers.get("content-type")).toContain(
+        "application/problem+json",
+      );
+      await expect(response.json()).resolves.toEqual({
+        type: "https://taxpulse.example/problems/idempotency-key-required",
+        title: "Idempotency Key Required",
+        status: 400,
+        detail: "A non-empty Idempotency-Key header is required to create a Tax Plan Cycle.",
+      });
+      expect(create).not.toHaveBeenCalled();
+    });
+  });
+
+  test("returns 400 Problem Details when the Idempotency-Key header is blank", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+    }));
+    const findByCaseId = vi.fn<
+      TaxPlanCycleCreateController["findByCaseId"]
+    >(() => null);
+
+    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "Idempotency-Key": "   ",
+        },
+        body: JSON.stringify(validCreateBody),
+      });
+
+      expect(response.status).toBe(400);
+      expect(create).not.toHaveBeenCalled();
     });
   });
 
@@ -191,7 +247,10 @@ describe("createTaxPlanCycleRouter", () => {
     await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "Idempotency-Key": "create-cycle-key-409",
+        },
         body: JSON.stringify(validCreateBody),
       });
 
