@@ -1,3 +1,8 @@
+import type {
+  TaxPlanCyclePriority,
+  TaxPlanCycleStage,
+} from "../taxPlanCycle.js";
+
 export type SeedTenantRow = {
   id: string;
   name: string;
@@ -39,9 +44,9 @@ export type SeedTaxPlanCycleRow = {
   clientId: string;
   tenantId: string;
   planningPeriod: string;
-  stage: string;
+  stage: TaxPlanCycleStage;
   owner: string;
-  priority: string;
+  priority: TaxPlanCyclePriority;
   dueDate: Date;
   onHold: boolean;
   holdReason?: string | null;
@@ -50,10 +55,28 @@ export type SeedTaxPlanCycleRow = {
 export type SeedStageTransitionRow = {
   id: string;
   caseId: string;
-  fromStage: string;
-  toStage: string;
+  fromStage: TaxPlanCycleStage;
+  toStage: TaxPlanCycleStage;
   actor: string;
   occurredAt: Date;
+};
+
+export type SeedAuditEntryRow = {
+  id: string;
+  caseId: string;
+  actor: string;
+  action: string;
+  outcome: string;
+  occurredAt: Date;
+};
+
+export type SeedRefreshTokenRow = {
+  id: string;
+  userId: string;
+  tokenHash: string;
+  issuedAt: Date;
+  expiresAt: Date;
+  revokedAt: Date | null;
 };
 
 export type SeedTaxPlanCycleInsertRow = Omit<SeedTaxPlanCycleRow, "dueDate"> & {
@@ -212,7 +235,7 @@ export const taxPlanCycleRows = [
     priority: "high",
     dueDate: new Date("2026-07-15T00:00:00Z"),
     onHold: false,
-    holdReason: undefined,
+    holdReason: null,
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
@@ -236,7 +259,7 @@ export const taxPlanCycleRows = [
     priority: "low",
     dueDate: new Date("2026-09-30T00:00:00Z"),
     onHold: false,
-    holdReason: undefined,
+    holdReason: null,
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d14",
@@ -248,7 +271,7 @@ export const taxPlanCycleRows = [
     priority: "medium",
     dueDate: new Date("2026-10-15T00:00:00Z"),
     onHold: false,
-    holdReason: undefined,
+    holdReason: null,
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d15",
