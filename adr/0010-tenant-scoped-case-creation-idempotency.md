@@ -24,6 +24,12 @@ operation is the generated `case_id`.
 Repeated create requests with the same tenant ID and idempotency key return the stored
 original `case_id` instead of creating another Tax Plan Cycle.
 
+Concurrent create requests with the same tenant ID and idempotency key are serialized with
+a PostgreSQL transaction-scoped advisory lock derived from the tenant/key pair. The request
+that acquires the lock first creates the Tax Plan Cycle and idempotency record; later
+same-key requests wait for the first transaction, read the stored `case_id`, and return it
+without inserting duplicate cycle, transition, audit, or idempotency rows.
+
 The idempotency record lives in the Core Case Service PostgreSQL store because it protects
 the same transactional case creation path that owns Tax Plan Cycles, stage transitions, and
 audit entries.
@@ -35,7 +41,7 @@ audit entries.
 * The idempotency key namespace is tenant-scoped, preserving isolation between firms.
 * Missing or blank idempotency keys are rejected before case creation runs.
 * The stored response is intentionally minimal: only the generated case ID is persisted.
-* Full concurrent same-key coordination remains a follow-up concern for SCRUM-77.
+* Same-key concurrent creates are serialized at the PostgreSQL transaction boundary.
 
 ## Alternatives considered
 
@@ -45,6 +51,9 @@ audit entries.
   same key value to be reusable independently by different tenants.
 * **Store idempotency records outside PostgreSQL.** Rejected because Redis or another cache
   would not provide the same durable transaction boundary as the case creation write path.
+* **Rely only on the unique tenant/key index for concurrency.** Rejected because the losing
+  concurrent request would fail after attempting duplicate side effects instead of waiting
+  for and returning the first successful result.
 * **Persist the full HTTP response body.** Rejected for this ticket because the accepted
   create response only contains `case_id`; storing more data would add complexity without
   improving current behavior.
