@@ -478,15 +478,15 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           tags: ["Core Case Service"],
           summary: "Create a tenant-scoped Tax Plan Cycle",
           description:
-            "Accepts a Tax Plan Cycle create payload. New cycles enter Intake; " +
-            "no separate status field is used.",
+            "Accepts a Tax Plan Cycle create payload with a required retry key. " +
+            "New cycles enter Intake; no separate status field is used.",
           parameters: [
             {
               name: "Idempotency-Key",
               in: "header",
-              required: false,
+              required: true,
               description:
-                "Optional retry key. Reusing the same key for the same tenant returns the original case ID.",
+                "Required retry key. Reusing the same key for the same tenant returns the original case ID.",
               schema: {
                 type: "string",
               },
@@ -513,7 +513,8 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
               },
             },
             "400": {
-              description: "The create request body failed validation.",
+              description:
+                "The create request body failed validation or the Idempotency-Key header was missing.",
               content: {
                 "application/problem+json": {
                   schema: problemDetailsSchema,

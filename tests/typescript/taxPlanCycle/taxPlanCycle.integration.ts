@@ -567,6 +567,7 @@ describe("taxPlanCycle integration", () => {
         priority: "low",
         dueDate: "2026-09-30",
         actor: "advisor-003",
+        idempotencyKey: "repository-create-key-001",
       });
 
       expect(caseId).toMatch(
@@ -711,7 +712,10 @@ describe("taxPlanCycle integration", () => {
       await withRouteServer(repository, async (baseUrl) => {
         const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            "Idempotency-Key": "case-create-key-000",
+          },
           body: JSON.stringify({
             client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
             planning_period: "2026-Q2",
