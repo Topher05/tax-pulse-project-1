@@ -36,6 +36,7 @@ export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
   transitionController?: TaxPlanCycleTransitionController;
   auditEntryReader?: AuditEntryReader;
+  auditLogger?: Pick<Console, "info">;
 }
 
 interface TenantScopedRequest extends Request {
@@ -163,7 +164,6 @@ export function createTaxPlanCycleRouter(
       }
     },
   );
-
 
   router.get(
     "/tax-plan-cycles/:caseId",
