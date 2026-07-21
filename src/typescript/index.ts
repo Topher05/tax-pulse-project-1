@@ -69,6 +69,11 @@ export {
   type AuditEntryReader,
 } from "./auditEntryRepository.js";
 export {
+  createAuditEntryWriter,
+  type AuditEntryWriteInput,
+  type AuditEntryWriter,
+} from "./auditEntryRepository.js";
+export {
   authMfaLoginRequestSchema,
   authMfaLoginResultSchema,
   createAuthMfaLoginController,
@@ -220,7 +225,10 @@ import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
-import { createAuditEntryRepository } from "./auditEntryRepository.js";
+import {
+  createAuditEntryRepository,
+  createAuditEntryWriter,
+} from "./auditEntryRepository.js";
 import {
   createAuthMfaLoginController,
 } from "./authMfaLogin.js";
@@ -291,6 +299,7 @@ export async function main(): Promise<Server> {
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
   const auditEntryRepository = createAuditEntryRepository(client);
+  const auditEntryWriter = createAuditEntryWriter(client);
   const taxPlanCycleController = createTaxPlanCycleCreateController(
     taxPlanCycleRepository,
   );
@@ -326,6 +335,7 @@ export async function main(): Promise<Server> {
       );
       app.use(createTaxPlanCycleRouter({
         auditEntryReader: auditEntryRepository,
+        auditEntryWriter,
         controller: taxPlanCycleController,
       }));
       app.use(createAuthRouter({ authenticatePassword }));

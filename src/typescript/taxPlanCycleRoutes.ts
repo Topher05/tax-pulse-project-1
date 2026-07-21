@@ -6,7 +6,10 @@ import {
   taxPlanCycleCreateController,
   type TaxPlanCycleCreateController,
 } from "./taxPlanCycleCreateController.js";
-import type { AuditEntryReader } from "./auditEntryRepository.js";
+import type {
+  AuditEntryReader,
+  AuditEntryWriter,
+} from "./auditEntryRepository.js";
 import { ProblemHttpError, type ProblemDetails } from "./errors.js";
 import {
   taxPlanCycleCreateSchema,
@@ -36,6 +39,7 @@ export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
   transitionController?: TaxPlanCycleTransitionController;
   auditEntryReader?: AuditEntryReader;
+  auditEntryWriter?: AuditEntryWriter;
   auditLogger?: Pick<Console, "info">;
 }
 
@@ -49,6 +53,51 @@ interface TenantScopedRequest extends Request {
     permissions?: string[];
   };
 }
+
+type TransitionAccessRule =
+  | {
+      role: "Firm Admin";
+    }
+  | {
+      role: "Advisor";
+      permission: "EDIT";
+    };
+
+const transitionAccessMatrix: Partial<
+  Record<
+    TaxPlanCycleStage,
+    Partial<Record<TaxPlanCycleStage, ReadonlyArray<TransitionAccessRule>>>
+  >
+> = {
+  Intake: {
+    "Data Aggregation": [
+      { role: "Advisor", permission: "EDIT" },
+      { role: "Firm Admin" },
+    ],
+  },
+  "Data Aggregation": {
+    Modeling: [
+      { role: "Advisor", permission: "EDIT" },
+      { role: "Firm Admin" },
+    ],
+  },
+  Modeling: {
+    Review: [
+      { role: "Advisor", permission: "EDIT" },
+      { role: "Firm Admin" },
+    ],
+  },
+  Review: {
+    Modeling: [{ role: "Firm Admin" }],
+    "Client Approval": [{ role: "Firm Admin" }],
+  },
+  "Client Approval": {
+    Executed: [{ role: "Firm Admin" }],
+  },
+  Executed: {
+    Archived: [{ role: "Firm Admin" }],
+  },
+};
 
 function toValidationIssue(issue: ZodIssue): ValidationErrorIssue {
   return {
@@ -75,13 +124,26 @@ function isAdvisorWithEditPermission(
 
 function isTransitionAuthorized(
   currentStage: TaxPlanCycleStage,
+  requestedStage: TaxPlanCycleStage,
   user: TenantScopedRequest["user"],
 ): boolean {
-  if (currentStage === "Review") {
-    return user?.role === "Firm Admin";
+  const allowedRoles = transitionAccessMatrix[currentStage]?.[requestedStage];
+
+  if (!allowedRoles) {
+    return false;
   }
 
-  return isAdvisorWithEditPermission(user);
+  return allowedRoles.some((rule) => {
+    if (rule.role !== user?.role) {
+      return false;
+    }
+
+    if (rule.role === "Firm Admin") {
+      return true;
+    }
+
+    return isAdvisorWithEditPermission(user);
+  });
 }
 
 function logDeniedTransitionAttempt(
@@ -92,13 +154,38 @@ function logDeniedTransitionAttempt(
     action: string;
     outcome: string;
   },
-): void {
+): Date {
+  const occurredAt = new Date();
+
   auditLogger.info({
     case_id: input.caseId,
     actor: input.actor,
     action: input.action,
     outcome: input.outcome,
-    occurred_at: new Date().toISOString(),
+    occurred_at: occurredAt.toISOString(),
+  });
+
+  return occurredAt;
+}
+
+async function writeDeniedTransitionAttempt(
+  auditLogger: Pick<Console, "info">,
+  auditEntryWriter: AuditEntryWriter,
+  input: {
+    caseId: string;
+    actor: string;
+    action: string;
+    outcome: "403" | "422";
+  },
+): Promise<void> {
+  const occurredAt = logDeniedTransitionAttempt(auditLogger, input);
+
+  await auditEntryWriter.record({
+    caseId: input.caseId,
+    actor: input.actor,
+    action: input.action,
+    outcome: input.outcome,
+    occurredAt,
   });
 }
 
@@ -109,6 +196,8 @@ export function createTaxPlanCycleRouter(
   const controller = options.controller ?? taxPlanCycleCreateController;
   const transitionController = options.transitionController ?? taxPlanCycleTransitionController;
   const auditLogger = options.auditLogger ?? console;
+  const auditEntryWriter =
+    options.auditEntryWriter ?? deprecatedNoopAuditEntryWriter;
   const auditEntryReader = options.auditEntryReader ?? {
     listByCase: async () => [],
   };
@@ -310,8 +399,14 @@ export function createTaxPlanCycleRouter(
         const requestedStage = parsedBody.data.to_stage;
         const action = `transition ${cycle.stage} -> ${requestedStage}`;
 
-        if (!isTransitionAuthorized(cycle.stage, (req as TenantScopedRequest).user)) {
-          logDeniedTransitionAttempt(auditLogger, {
+        if (
+          !isTransitionAuthorized(
+            cycle.stage,
+            requestedStage,
+            (req as TenantScopedRequest).user,
+          )
+        ) {
+          await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
             caseId: parsedParams.data.id,
             actor,
             action,
@@ -329,7 +424,7 @@ export function createTaxPlanCycleRouter(
         }
 
         if (!isLegalTaxPlanCycleStageTransition(cycle.stage, requestedStage)) {
-          logDeniedTransitionAttempt(auditLogger, {
+          await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
             caseId: parsedParams.data.id,
             actor,
             action,
@@ -374,3 +469,10 @@ export function createTaxPlanCycleRouter(
 
   return router;
 }
+
+/** @deprecated Legacy fallback stub. Inject a real audit writer instead. */
+const deprecatedNoopAuditEntryWriter: AuditEntryWriter = {
+  async record() {
+    return undefined;
+  },
+};
