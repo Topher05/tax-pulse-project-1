@@ -11,18 +11,22 @@ import { describe, expect, test } from "vitest";
 import {
   createApp,
   createAuditEntryRepository,
+  createAuditEntryWriter,
   createLogger,
+  createJwtAuthenticationMiddleware,
   createTaxPlanCycleCreateController,
   createTaxPlanCycleReadHelper,
   createTaxPlanCycleRepository,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
+  type JwtConfig,
   auditEntry,
   redactedAuditAmount,
   stageTransition,
   taxPlanCycle,
   taxPlanCycleSchema,
   tenants,
+  type AuditEntryWriter,
 } from "../../../src/typescript/index.js";
 import {
   applyDrizzleMigrations,
@@ -30,6 +34,10 @@ import {
   drizzleMigrationsDirectory,
 } from "../../../src/typescript/postgresMigrations.js";
 import { startDockerPostgresContainer } from "../bootstrap/dockerPostgres.js";
+import {
+  createJwtDerivedUserContext,
+  obtainAccessTokenViaLoginAndMfa,
+} from "../bootstrap/authFlow.js";
 import { expectPgError, getTableStructure } from "../bootstrap/tableTestUtils.js";
 import {
   expectedStageTransitionColumns,
@@ -79,6 +87,37 @@ const repositoryQueueClientIds = {
 } as const;
 
 const silentLogger = createLogger({ level: "silent" });
+const authConfig: JwtConfig = {
+  issuer: "https://auth.taxpulse.example",
+  signingSecret: "a-unique-test-secret-that-is-more-than-32-bytes",
+  accessTokenLifetimeSeconds: 900,
+  refreshTokenLifetimeSeconds: 2_592_000,
+};
+
+async function createAccessToken(input: {
+  tenantId: string;
+  userId: string;
+  email: string;
+  role: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
+  password: string;
+  totpSecret: string;
+  totpCode: string;
+}): Promise<string> {
+  const result = await obtainAccessTokenViaLoginAndMfa({
+    config: authConfig,
+    principal: {
+      tenantId: input.tenantId,
+      userId: input.userId,
+      email: input.email,
+      role: input.role,
+      password: input.password,
+      totpSecret: input.totpSecret,
+      totpCode: input.totpCode,
+    },
+  });
+
+  return result.access_token;
+}
 
 const attachRequestContext: RequestHandler = (req, _res, next) => {
   (req as typeof req & { tenant: { id: string } }).tenant = {
@@ -89,31 +128,6 @@ const attachRequestContext: RequestHandler = (req, _res, next) => {
   };
   next();
 };
-
-function createTransitionRequestContext(input: {
-  tenantId: string;
-  userId: string;
-  role: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
-  permissions?: string[];
-}): RequestHandler {
-  return (req, _res, next) => {
-    (req as typeof req & { tenant: { id: string } }).tenant = {
-      id: input.tenantId,
-    };
-    (req as typeof req & {
-      user: {
-        id: string;
-        role: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
-        permissions?: string[];
-      };
-    }).user = {
-      id: input.userId,
-      role: input.role,
-      permissions: input.permissions,
-    };
-    next();
-  };
-}
 
 async function withRouteServer(
   repository: ReturnType<typeof createTaxPlanCycleRepository>,
@@ -145,19 +159,27 @@ async function withRouteServer(
 
 async function withTransitionRouteServer(
   repository: ReturnType<typeof createTaxPlanCycleRepository>,
-  requestContext: RequestHandler,
+  auditEntryWriter: AuditEntryWriter,
+  permissionsForRole: Partial<
+    Record<
+      "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin",
+      ReadonlyArray<string>
+    >
+  >,
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
-      app.use(requestContext);
+      app.use(createJwtAuthenticationMiddleware({ config: authConfig }));
+      app.use(createJwtDerivedUserContext(permissionsForRole));
       app.use(
         createTaxPlanCycleRouter({
           controller: createTaxPlanCycleCreateController(repository),
           transitionController: createTaxPlanCycleTransitionController(
             repository,
           ),
+          auditEntryWriter,
         }),
       );
     },
@@ -851,6 +873,16 @@ describe("taxPlanCycle integration", () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {
       const db = drizzle(client);
       const repository = createTaxPlanCycleRepository(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+      const accessToken = await createAccessToken({
+        tenantId: sampleTenant.id,
+        userId: "advisor-transition-001",
+        email: "advisor-transition-001@example.com",
+        role: "Advisor",
+        password: "correct-password",
+        totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+        totpCode: "123456",
+      });
 
       await seedSampleTenant(client);
 
@@ -868,18 +900,17 @@ describe("taxPlanCycle integration", () => {
 
       await withTransitionRouteServer(
         repository,
-        createTransitionRequestContext({
-          tenantId: sampleTenant.id,
-          userId: "advisor-transition-001",
-          role: "Advisor",
-          permissions: ["EDIT"],
-        }),
+        auditEntryWriter,
+        {},
         async (baseUrl) => {
           const response = await fetch(
             `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71/transition`,
             {
               method: "PATCH",
-              headers: { "content-type": "application/json" },
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+                "content-type": "application/json",
+              },
               body: JSON.stringify({ to_stage: "Modeling" }),
             },
           );
@@ -935,6 +966,20 @@ describe("taxPlanCycle integration", () => {
             to_stage: "Modeling",
             actor: "advisor-transition-001",
           });
+
+          const auditRows = await db
+            .select({
+              id: auditEntry.id,
+              case_id: auditEntry.caseId,
+              actor: auditEntry.actor,
+              action: auditEntry.action,
+              outcome: auditEntry.outcome,
+              occurred_at: auditEntry.occurredAt,
+            })
+            .from(auditEntry)
+            .where(eq(auditEntry.caseId, "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71"));
+
+          expect(auditRows).toHaveLength(0);
         },
       );
     });
@@ -944,6 +989,16 @@ describe("taxPlanCycle integration", () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {
       const db = drizzle(client);
       const repository = createTaxPlanCycleRepository(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+      const accessToken = await createAccessToken({
+        tenantId: sampleTenant.id,
+        userId: "advisor-transition-002",
+        email: "advisor-transition-002@example.com",
+        role: "Advisor",
+        password: "correct-password",
+        totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+        totpCode: "123456",
+      });
 
       await seedSampleTenant(client);
 
@@ -961,18 +1016,17 @@ describe("taxPlanCycle integration", () => {
 
       await withTransitionRouteServer(
         repository,
-        createTransitionRequestContext({
-          tenantId: sampleTenant.id,
-          userId: "advisor-transition-002",
-          role: "Advisor",
-          permissions: ["EDIT"],
-        }),
+        auditEntryWriter,
+        { Advisor: [] },
         async (baseUrl) => {
           const response = await fetch(
             `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73/transition`,
             {
               method: "PATCH",
-              headers: { "content-type": "application/json" },
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+                "content-type": "application/json",
+              },
               body: JSON.stringify({ to_stage: "Client Approval" }),
             },
           );
@@ -1011,6 +1065,27 @@ describe("taxPlanCycle integration", () => {
             );
 
           expect(transitionRows).toHaveLength(0);
+
+          const auditRows = await db
+            .select({
+              id: auditEntry.id,
+              case_id: auditEntry.caseId,
+              actor: auditEntry.actor,
+              action: auditEntry.action,
+              outcome: auditEntry.outcome,
+              occurred_at: auditEntry.occurredAt,
+            })
+            .from(auditEntry)
+            .where(eq(auditEntry.caseId, "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73"));
+
+          expect(auditRows).toHaveLength(1);
+          expect(auditRows[0]).toMatchObject({
+            case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73",
+            actor: "advisor-transition-002",
+            action: "transition Review -> Client Approval",
+            outcome: "403",
+          });
+          expect(auditRows[0]?.occurred_at).toBeInstanceOf(Date);
         },
       );
     });
@@ -1020,6 +1095,16 @@ describe("taxPlanCycle integration", () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {
       const db = drizzle(client);
       const repository = createTaxPlanCycleRepository(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+      const accessToken = await createAccessToken({
+        tenantId: sampleTenant.id,
+        userId: "advisor-transition-003",
+        email: "advisor-transition-003@example.com",
+        role: "Advisor",
+        password: "correct-password",
+        totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+        totpCode: "123456",
+      });
 
       await seedSampleTenant(client);
 
@@ -1037,18 +1122,17 @@ describe("taxPlanCycle integration", () => {
 
       await withTransitionRouteServer(
         repository,
-        createTransitionRequestContext({
-          tenantId: sampleTenant.id,
-          userId: "advisor-transition-003",
-          role: "Advisor",
-          permissions: ["EDIT"],
-        }),
+        auditEntryWriter,
+        {},
         async (baseUrl) => {
           const response = await fetch(
             `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75/transition`,
             {
               method: "PATCH",
-              headers: { "content-type": "application/json" },
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+                "content-type": "application/json",
+              },
               body: JSON.stringify({ to_stage: "Archived" }),
             },
           );
@@ -1087,8 +1171,104 @@ describe("taxPlanCycle integration", () => {
             );
 
           expect(transitionRows).toHaveLength(0);
+
+          const auditRows = await db
+            .select({
+              id: auditEntry.id,
+              case_id: auditEntry.caseId,
+              actor: auditEntry.actor,
+              action: auditEntry.action,
+              outcome: auditEntry.outcome,
+              occurred_at: auditEntry.occurredAt,
+            })
+            .from(auditEntry)
+            .where(eq(auditEntry.caseId, "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75"));
+
+          expect(auditRows).toHaveLength(1);
+          expect(auditRows[0]).toMatchObject({
+            case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+            actor: "advisor-transition-003",
+            action: "transition Data Aggregation -> Archived",
+            outcome: "422",
+          });
+          expect(auditRows[0]?.occurred_at).toBeInstanceOf(Date);
         },
       );
+  });
+
+  test("PATCH returns 404 for cross-tenant cycle transitions without writing audit entries", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+      const accessToken = await createAccessToken({
+        tenantId: repositoryTenantIds.secondary,
+        userId: "advisor-transition-004",
+        email: "advisor-transition-004@example.com",
+        role: "Advisor",
+        password: "correct-password",
+        totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+        totpCode: "123456",
+      });
+
+      await seedSampleTenant(client);
+
+      await db.insert(taxPlanCycle).values({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77",
+        clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d78",
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q4",
+        stage: "Data Aggregation",
+        owner: "advisor-transition-004",
+        priority: "medium",
+        dueDate: "2026-10-30",
+        onHold: false,
+      });
+
+      await withTransitionRouteServer(
+        repository,
+        auditEntryWriter,
+        {},
+        async (baseUrl) => {
+          const response = await fetch(
+            `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77/transition`,
+            {
+              method: "PATCH",
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({ to_stage: "Modeling" }),
+            },
+          );
+
+          expect(response.status).toBe(404);
+
+          const transitionRows = await db
+            .select({
+              id: stageTransition.id,
+              case_id: stageTransition.caseId,
+            })
+            .from(stageTransition)
+            .where(
+              eq(
+                stageTransition.caseId,
+                "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77",
+              ),
+            );
+          const auditRows = await db
+            .select({
+              id: auditEntry.id,
+              case_id: auditEntry.caseId,
+            })
+            .from(auditEntry)
+            .where(eq(auditEntry.caseId, "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77"));
+
+          expect(transitionRows).toHaveLength(0);
+          expect(auditRows).toHaveLength(0);
+        },
+      );
+    });
   });
 
   test("rejects invalid stage values", async () => {
@@ -1249,7 +1429,7 @@ describe("taxPlanCycle integration", () => {
       );
     });
   });
-    test("rolls back a transition when its audit entry fails in the same transaction", async () => {
+  test("rolls back a transition when its audit entry fails in the same transaction", async () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {
       const db = drizzle(client);
 
@@ -1301,4 +1481,6 @@ describe("taxPlanCycle integration", () => {
       expect(transitionRows).toEqual([]);
       expect(auditRows).toEqual([]);
     });
+  });
+});
 });

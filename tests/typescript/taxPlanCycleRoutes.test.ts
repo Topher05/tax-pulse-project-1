@@ -7,8 +7,10 @@ import { describe, expect, test, vi } from "vitest";
 import {
   ProblemHttpError,
   createApp,
+  createJwtAuthenticationMiddleware,
   createLogger,
   createTaxPlanCycleRouter,
+  type JwtConfig,
   redactedAuditAmount,
   type TaxPlanCycle,
   type TaxPlanCycleCreateController,
@@ -16,10 +18,21 @@ import {
   type TaxPlanCycleTransitionController,
   type AuditEntryOutput,
   type AuditEntryReader,
+  type AuditEntryWriter,
   type ValidationErrorResponse,
 } from "../../src/typescript/index.js";
+import {
+  createJwtDerivedUserContext,
+  obtainAccessTokenViaLoginAndMfa,
+} from "./bootstrap/authFlow.js";
 
 const silentLogger = createLogger({ level: "silent" });
+const authConfig: JwtConfig = {
+  issuer: "https://auth.taxpulse.example",
+  signingSecret: "a-unique-test-secret-that-is-more-than-32-bytes",
+  accessTokenLifetimeSeconds: 900,
+  refreshTokenLifetimeSeconds: 2_592_000,
+};
 
 const validCreateBody: TaxPlanCycleCreateInput = {
   client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
@@ -39,28 +52,29 @@ const validReadCycle: TaxPlanCycle = {
   on_hold: false,
 };
 
-const attachTenant: RequestHandler = (req, _res, next) => {
-  (req as typeof req & { tenant: { id: string } }).tenant = {
-    id: "tenant-001",
-  };
-  (req as typeof req & { user: { id: string } }).user = {
-    id: "actor-001",
-  };
-  next();
-};
+async function createAccessToken(input: {
+  tenantId: string;
+  userId: string;
+  email: string;
+  role: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
+  password: string;
+  totpSecret: string;
+  totpCode: string;
+}): Promise<string> {
+  const result = await obtainAccessTokenViaLoginAndMfa({
+    config: authConfig,
+    principal: {
+      tenantId: input.tenantId,
+      userId: input.userId,
+      email: input.email,
+      role: input.role,
+      password: input.password,
+      totpSecret: input.totpSecret,
+      totpCode: input.totpCode,
+    },
+  });
 
-function createTransitionContext(
-  user: { id: string; role: string; permissions?: string[] },
-): RequestHandler {
-  return (req, _res, next) => {
-    (req as typeof req & { tenant: { id: string } }).tenant = {
-      id: "tenant-001",
-    };
-    (req as typeof req & {
-      user: { id: string; role: string; permissions?: string[] };
-    }).user = user;
-    next();
-  };
+  return result.access_token;
 }
 
 async function withRouteServer(
@@ -71,7 +85,7 @@ async function withRouteServer(
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
-      app.use(attachTenant);
+      app.use(createJwtAuthenticationMiddleware({ config: authConfig }));
       app.use(createTaxPlanCycleRouter({ auditEntryReader, controller }));
     },
   });
@@ -92,19 +106,24 @@ async function withTransitionRouteServer(
   options: {
     controller: TaxPlanCycleCreateController;
     transitionController: TaxPlanCycleTransitionController;
+    auditEntryWriter: AuditEntryWriter;
     auditLogger: Pick<Console, "info">;
-    requestContext: RequestHandler;
+    permissionsForRole?: Partial<
+      Record<"Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin", ReadonlyArray<string>>
+    >;
   },
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
-      app.use(options.requestContext);
+      app.use(createJwtAuthenticationMiddleware({ config: authConfig }));
+      app.use(createJwtDerivedUserContext(options.permissionsForRole));
       app.use(
         createTaxPlanCycleRouter({
           controller: options.controller,
           transitionController: options.transitionController,
+          auditEntryWriter: options.auditEntryWriter,
           auditLogger: options.auditLogger,
         }),
       );
@@ -132,10 +151,23 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => null);
 
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
     await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          "content-type": "application/json",
+        },
         body: JSON.stringify({
           ...validCreateBody,
           stage: "Unknown",
@@ -173,10 +205,23 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => null);
 
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
     await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          "content-type": "application/json",
+        },
         body: JSON.stringify(validCreateBody),
       });
 
@@ -206,10 +251,23 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => null);
 
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
     await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          "content-type": "application/json",
+        },
         body: JSON.stringify(validCreateBody),
       });
 
@@ -235,9 +293,20 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => validReadCycle);
 
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
     await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(
         `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01`,
+        { headers: { authorization: `Bearer ${accessToken}` } },
       );
 
       expect(response.status).toBe(200);
@@ -259,9 +328,20 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => null);
 
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
     await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(
         `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02`,
+        { headers: { authorization: `Bearer ${accessToken}` } },
       );
 
       expect(response.status).toBe(404);
@@ -289,9 +369,20 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => null);
 
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
     await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(
         `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e03`,
+        { headers: { authorization: `Bearer ${accessToken}` } },
       );
 
       expect(response.status).toBe(404);
@@ -313,8 +404,20 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => validReadCycle);
 
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
     await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/tax-plan-cycles/%20`);
+      const response = await fetch(`${baseUrl}/tax-plan-cycles/%20`, {
+        headers: { authorization: `Bearer ${accessToken}` },
+      });
       const body = (await response.json()) as ValidationErrorResponse;
 
       expect(response.status).toBe(400);
@@ -354,12 +457,23 @@ describe("createTaxPlanCycleRouter", () => {
       Promise.resolve([auditEntry]),
     );
 
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
     await withRouteServer(
       { create, findByCaseId },
       { listByCase },
       async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/audit-entries`,
+          { headers: { authorization: `Bearer ${accessToken}` } },
         );
 
         expect(response.status).toBe(200);
@@ -390,12 +504,23 @@ describe("createTaxPlanCycleRouter", () => {
       Promise.resolve([]),
     );
 
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
     await withRouteServer(
       { create, findByCaseId },
       { listByCase },
       async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/audit-entries`,
+          { headers: { authorization: `Bearer ${accessToken}` } },
         );
 
         expect(response.status).toBe(404);
@@ -430,30 +555,40 @@ describe("transitionTaxPlanCycleRouter", () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
       case_id: updatedCycle.id,
     }));
-    const findByCaseId = vi.fn<
-      TaxPlanCycleCreateController["findByCaseId"]
-    >(() => reviewCycle);
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => reviewCycle,
+    );
     const transition = vi.fn<TaxPlanCycleTransitionController["transition"]>(
       () => updatedCycle,
     );
     const auditLogger = { info: vi.fn() };
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "firm-admin-001",
+      email: "firm-admin@example.com",
+      role: "Firm Admin",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
 
     await withTransitionRouteServer(
       {
         controller: { create, findByCaseId },
         transitionController: { transition, findByCaseId },
+        auditEntryWriter: auditWriter,
         auditLogger,
-        requestContext: createTransitionContext({
-          id: "firm-admin-001",
-          role: "Firm Admin",
-        }),
       },
       async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/cycles/${reviewCycle.id}/transition`,
           {
             method: "PATCH",
-            headers: { "content-type": "application/json" },
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
             body: JSON.stringify({ to_stage: "Client Approval" }),
           },
         );
@@ -471,6 +606,7 @@ describe("transitionTaxPlanCycleRouter", () => {
           actor: "firm-admin-001",
         });
         expect(auditLogger.info).not.toHaveBeenCalled();
+        expect(auditWriter.record).not.toHaveBeenCalled();
         expect(create).not.toHaveBeenCalled();
       },
     );
@@ -484,31 +620,40 @@ describe("transitionTaxPlanCycleRouter", () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
       case_id: updatedCycle.id,
     }));
-    const findByCaseId = vi.fn<
-      TaxPlanCycleCreateController["findByCaseId"]
-    >(() => dataAggregationCycle);
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => dataAggregationCycle,
+    );
     const transition = vi.fn<TaxPlanCycleTransitionController["transition"]>(
       () => updatedCycle,
     );
     const auditLogger = { info: vi.fn() };
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "advisor-edit-001",
+      email: "advisor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
 
     await withTransitionRouteServer(
       {
         controller: { create, findByCaseId },
         transitionController: { transition, findByCaseId },
+        auditEntryWriter: auditWriter,
         auditLogger,
-        requestContext: createTransitionContext({
-          id: "advisor-edit-001",
-          role: "Advisor",
-          permissions: ["EDIT"],
-        }),
       },
       async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/cycles/${dataAggregationCycle.id}/transition`,
           {
             method: "PATCH",
-            headers: { "content-type": "application/json" },
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
             body: JSON.stringify({ to_stage: "Modeling" }),
           },
         );
@@ -526,6 +671,7 @@ describe("transitionTaxPlanCycleRouter", () => {
           actor: "advisor-edit-001",
         });
         expect(auditLogger.info).not.toHaveBeenCalled();
+        expect(auditWriter.record).not.toHaveBeenCalled();
         expect(create).not.toHaveBeenCalled();
       },
     );
@@ -535,31 +681,41 @@ describe("transitionTaxPlanCycleRouter", () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
       case_id: reviewCycle.id,
     }));
-    const findByCaseId = vi.fn<
-      TaxPlanCycleCreateController["findByCaseId"]
-    >(() => reviewCycle);
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => reviewCycle,
+    );
     const transition = vi.fn<TaxPlanCycleTransitionController["transition"]>(
       () => reviewCycle,
     );
     const auditLogger = { info: vi.fn() };
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "advisor-no-access-001",
+      email: "advisor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
 
     await withTransitionRouteServer(
       {
         controller: { create, findByCaseId },
         transitionController: { transition, findByCaseId },
+        auditEntryWriter: auditWriter,
         auditLogger,
-        requestContext: createTransitionContext({
-          id: "advisor-no-access-001",
-          role: "Advisor",
-          permissions: ["EDIT"],
-        }),
+        permissionsForRole: { Advisor: [] },
       },
       async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/cycles/${reviewCycle.id}/transition`,
           {
             method: "PATCH",
-            headers: { "content-type": "application/json" },
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
             body: JSON.stringify({ to_stage: "Client Approval" }),
           },
         );
@@ -585,6 +741,15 @@ describe("transitionTaxPlanCycleRouter", () => {
             occurred_at: expect.any(String),
           }),
         );
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: reviewCycle.id,
+            actor: "advisor-no-access-001",
+            action: "transition Review -> Client Approval",
+            outcome: "403",
+            occurredAt: expect.any(Date),
+          }),
+        );
         expect(transition).not.toHaveBeenCalled();
         expect(create).not.toHaveBeenCalled();
       },
@@ -595,31 +760,40 @@ describe("transitionTaxPlanCycleRouter", () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
       case_id: dataAggregationCycle.id,
     }));
-    const findByCaseId = vi.fn<
-      TaxPlanCycleCreateController["findByCaseId"]
-    >(() => dataAggregationCycle);
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => dataAggregationCycle,
+    );
     const transition = vi.fn<TaxPlanCycleTransitionController["transition"]>(
       () => dataAggregationCycle,
     );
     const auditLogger = { info: vi.fn() };
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "advisor-edit-002",
+      email: "advisor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
 
     await withTransitionRouteServer(
       {
         controller: { create, findByCaseId },
         transitionController: { transition, findByCaseId },
+        auditEntryWriter: auditWriter,
         auditLogger,
-        requestContext: createTransitionContext({
-          id: "advisor-edit-002",
-          role: "Advisor",
-          permissions: ["EDIT"],
-        }),
       },
       async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/cycles/${dataAggregationCycle.id}/transition`,
           {
             method: "PATCH",
-            headers: { "content-type": "application/json" },
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
             body: JSON.stringify({ to_stage: "Archived" }),
           },
         );
@@ -644,6 +818,15 @@ describe("transitionTaxPlanCycleRouter", () => {
             occurred_at: expect.any(String),
           }),
         );
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: dataAggregationCycle.id,
+            actor: "advisor-edit-002",
+            action: "transition Data Aggregation -> Archived",
+            outcome: "422",
+            occurredAt: expect.any(Date),
+          }),
+        );
         expect(transition).not.toHaveBeenCalled();
         expect(create).not.toHaveBeenCalled();
       },
@@ -654,31 +837,40 @@ describe("transitionTaxPlanCycleRouter", () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
       case_id: dataAggregationCycle.id,
     }));
-    const findByCaseId = vi.fn<
-      TaxPlanCycleCreateController["findByCaseId"]
-    >(() => dataAggregationCycle);
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => dataAggregationCycle,
+    );
     const transition = vi.fn<TaxPlanCycleTransitionController["transition"]>(
       () => dataAggregationCycle,
     );
     const auditLogger = { info: vi.fn() };
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "advisor-edit-003",
+      email: "advisor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
 
     await withTransitionRouteServer(
       {
         controller: { create, findByCaseId },
         transitionController: { transition, findByCaseId },
+        auditEntryWriter: auditWriter,
         auditLogger,
-        requestContext: createTransitionContext({
-          id: "advisor-edit-003",
-          role: "Advisor",
-          permissions: ["EDIT"],
-        }),
       },
       async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/cycles/${dataAggregationCycle.id}/transition`,
           {
             method: "PATCH",
-            headers: { "content-type": "application/json" },
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
             body: JSON.stringify({ to_stage: "Unknown" }),
           },
         );
@@ -698,6 +890,7 @@ describe("transitionTaxPlanCycleRouter", () => {
         expect(findByCaseId).not.toHaveBeenCalled();
         expect(transition).not.toHaveBeenCalled();
         expect(auditLogger.info).not.toHaveBeenCalled();
+        expect(auditWriter.record).not.toHaveBeenCalled();
       },
     );
   });

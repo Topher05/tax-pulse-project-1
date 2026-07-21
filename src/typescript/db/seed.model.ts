@@ -49,7 +49,7 @@ export type SeedTaxPlanCycleRow = {
   priority: TaxPlanCyclePriority;
   dueDate: Date;
   onHold: boolean;
-  holdReason?: string | null;
+  holdReason: string | null;
 };
 
 export type SeedStageTransitionRow = {
@@ -334,6 +334,5 @@ export function buildTaxPlanCycleInsertRows(): SeedTaxPlanCycleInsertRow[] {
   return taxPlanCycleRows.map((row) => ({
     ...row,
     dueDate: row.dueDate.toISOString().replace(/T.+/, ""),
-    holdReason: row.holdReason ?? null,
   }));
 }
