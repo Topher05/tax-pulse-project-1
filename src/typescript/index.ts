@@ -56,6 +56,34 @@ export {
 } from "./authService.js";
 export { createPasswordCredentialStore } from "./authCredentials.js";
 export {
+  auditEntryOutputSchema,
+  redactAuditText,
+  redactedAuditAmount,
+  serializeAuditEntryForOutput,
+  type AuditEntryOutput,
+  type StoredAuditEntry,
+} from "./auditEntryOutput.js";
+export {
+  createAuditEntryRepository,
+  type AuditEntryListInput,
+  type AuditEntryReader,
+} from "./auditEntryRepository.js";
+export {
+  authMfaLoginRequestSchema,
+  authMfaLoginResultSchema,
+  createAuthMfaLoginController,
+  type AuthMfaLoginController,
+  type AuthMfaLoginRequest,
+  type AuthMfaLoginResult,
+  type CreateAuthMfaLoginControllerOptions,
+} from "./authMfaLogin.js";
+export {
+  createAuthMfaLoginRouter,
+  type AuthMfaValidationErrorIssue,
+  type AuthMfaValidationErrorResponse,
+  type CreateAuthMfaLoginRouterOptions,
+} from "./authMfaLoginRoutes.js";
+export {
   createAuthRouter,
   passwordLoginRequestSchema,
   type AuthValidationErrorIssue,
@@ -72,8 +100,10 @@ export {
 } from "./coreCaseOpenApi.js";
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
+  auditEntry,
   credential,
   mfaEnrollment,
+  refreshToken,
   roles,
   stageTransition,
   taxPlanCycle,
@@ -81,6 +111,61 @@ export {
   users,
   userStatus,
 } from "./db/schema.js";
+export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
+export {
+  createJwtAuthenticationMiddleware,
+  type CreateJwtAuthenticationMiddlewareOptions,
+} from "./jwtAuthentication.js";
+export {
+  TAXPULSE_COST_UNITS_HEADER,
+  createCostAccountingMiddleware,
+  defaultCostUnitResolver,
+  type CostAccountingRequest,
+  type CostUnitResolver,
+  type CreateCostAccountingMiddlewareOptions,
+} from "./costAccounting.js";
+export {
+  createTenantRateLimitMiddleware,
+  type CreateTenantRateLimitMiddlewareOptions,
+  type TenantRateLimitBucket,
+  type TenantRateLimitStore,
+} from "./tenantRateLimiting.js";
+export {
+  type AccessTokenClaims,
+  type AuthenticatedPrincipal,
+  type IssuedTokenPair,
+  type UserRole,
+} from "./authTypes.js";
+export {
+  createRefreshTokenRepository,
+  type PersistRefreshTokenInput,
+  type RefreshTokenRepository,
+  type RevokeRefreshTokenByHashInput,
+} from "./refreshTokenRepository.js";
+export {
+  createTokenService,
+  type CreateTokenServiceOptions,
+  type TokenService,
+} from "./tokenService.js";
+export {
+  createDefaultMfaTotpProvider,
+  createMfaEnrollmentController,
+  mfaEnrollConfirmRequestSchema,
+  mfaEnrollConfirmResultSchema,
+  mfaEnrollRequestSchema,
+  mfaEnrollResultSchema,
+  type CreateMfaEnrollmentControllerOptions,
+  type MfaEnrollmentController,
+  type MfaEnrollmentRecord,
+  type MfaEnrollmentRepository,
+  type MfaEnrollConfirmRequest,
+  type MfaEnrollConfirmResult,
+  type MfaEnrollRequest,
+  type MfaEnrollResult,
+  type MfaTenantUser,
+  type MfaTotpProvider,
+} from "./mfaEnrollment.js";
+export { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
@@ -124,10 +209,26 @@ import pg from "pg";
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
+import { createJwtAuthenticationMiddleware } from "./jwtAuthentication.js";
+import { createCostAccountingMiddleware } from "./costAccounting.js";
+import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
+import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
+import { createTaxPlanCycleCreateController } from "./taxPlanCycleCreateController.js";
+import { createTaxPlanCycleRepository } from "./taxPlanCycleRepository.js";
+import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
+import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
+import { createAuditEntryRepository } from "./auditEntryRepository.js";
+import {
+  createAuthMfaLoginController,
+} from "./authMfaLogin.js";
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
+import { createMfaEnrollmentController } from "./mfaEnrollment.js";
+import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
+import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
+import { createTokenService } from "./tokenService.js";
 
 loadEnv();
 const { Client } = pg;
@@ -140,6 +241,12 @@ export {
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateResult,
 } from "./taxPlanCycleCreateController.js";
+export {
+  createMfaEnrollmentRouter,
+  type CreateMfaEnrollmentRouterOptions,
+  type MfaValidationErrorIssue,
+  type MfaValidationErrorResponse,
+} from "./mfaEnrollmentRoutes.js";
 export {
   createTaxPlanCycleRouter,
   type CreateTaxPlanCycleRouterOptions,
@@ -168,49 +275,63 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 }
 
 export async function main(): Promise<Server> {
+  const jwtConfig = getJwtConfigFromEnv();
   const logger = createLogger();
 
   const databaseUrl = process.env.DATABASE_URL?.trim();
-  let authenticatePassword;
-
-  if (databaseUrl) {
-    try {
-      const client = new Client({ connectionString: databaseUrl });
-      await client.connect();
-      const credentialReader = createPasswordCredentialStore(client);
-      authenticatePassword = (input: any) =>
-        authenticatePasswordForMfaChallenge(input, credentialReader);
-      logger.info("Connected to database for Auth Router");
-    } catch (err) {
-      logger.error({ err }, "Failed to connect to database for Auth Router. Using mock fallback");
-    }
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required to register authentication routes.");
   }
 
-  if (!authenticatePassword) {
-    logger.warn("Database not configured or unreachable. Using mock password authenticator");
-    authenticatePassword = async (input: any) => {
-      if (
-        input.tenantId === "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01" &&
-        input.email === "alex@example.com" &&
-        input.plaintextPassword === "correct-password"
-      ) {
-        return {
-          status: "mfa_challenge_required" as const,
-          tenantId: input.tenantId,
-          email: input.email,
-          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
-        };
-      }
-      return { status: "invalid_credentials" as const };
-    };
-  }
+  const client = new Client({ connectionString: databaseUrl });
+  await client.connect();
+
+  const credentialReader = createPasswordCredentialStore(client);
+  const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
+  const refreshTokenRepository = createRefreshTokenRepository(client);
+  const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const auditEntryRepository = createAuditEntryRepository(client);
+  const taxPlanCycleController = createTaxPlanCycleCreateController(
+    taxPlanCycleRepository,
+  );
+  const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
+    authenticatePasswordForMfaChallenge(input, credentialReader);
+  const tokenService = createTokenService({
+    config: jwtConfig,
+    refreshTokenRepository,
+  });
+
+  logger.info("Connected to database for authentication routes");
+
+  const mfaEnrollmentController = createMfaEnrollmentController({
+    repository: mfaEnrollmentRepository,
+  });
+  const authMfaLoginController = createAuthMfaLoginController({
+    tokenService,
+    repository: mfaEnrollmentRepository,
+  });
 
   const app = createApp({
     logger,
     registerRoutes: (app) => {
       app.use(createCoreCaseOpenApiRouter());
-      app.use(createTaxPlanCycleRouter());
+      app.use(createMfaEnrollmentRouter({
+        controller: mfaEnrollmentController,
+      }));
+      app.use(
+        "/tax-plan-cycles",
+        createJwtAuthenticationMiddleware({ config: jwtConfig }),
+        createCostAccountingMiddleware(),
+        createTenantRateLimitMiddleware(),
+      );
+      app.use(createTaxPlanCycleRouter({
+        auditEntryReader: auditEntryRepository,
+        controller: taxPlanCycleController,
+      }));
       app.use(createAuthRouter({ authenticatePassword }));
+      app.use(createAuthMfaLoginRouter({
+        controller: authMfaLoginController,
+      }));
     },
   });
   const port = getPortFromEnv();

@@ -1,0 +1,67 @@
+import { z } from "zod";
+
+export interface JwtConfig {
+  issuer: string;
+  signingSecret: string;
+  accessTokenLifetimeSeconds: number;
+  refreshTokenLifetimeSeconds: number;
+}
+
+const jwtEnvironmentSchema = z
+  .object({
+    JWT_ISSUER: z
+      .string()
+      .trim()
+      .min(1, "JWT_ISSUER is required.")
+      .url("JWT_ISSUER must be a valid URL."),
+    JWT_SIGNING_SECRET: z
+      .string()
+      .min(1, "JWT_SIGNING_SECRET is required.")
+      .refine(
+        (secret) => Buffer.byteLength(secret, "utf8") >= 32,
+        "JWT_SIGNING_SECRET must contain at least 32 UTF-8 bytes.",
+      ),
+    JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce
+      .number()
+      .int("JWT_ACCESS_TOKEN_TTL_SECONDS must be a whole number.")
+      .min(1, "JWT_ACCESS_TOKEN_TTL_SECONDS must be positive.")
+      .max(3600, "JWT_ACCESS_TOKEN_TTL_SECONDS must be at most 3600.")
+      .default(900),
+
+    JWT_REFRESH_TOKEN_TTL_SECONDS: z.coerce
+      .number()
+      .int("JWT_REFRESH_TOKEN_TTL_SECONDS must be a whole number.")
+      .min(1, "JWT_REFRESH_TOKEN_TTL_SECONDS must be positive.")
+      .default(2_592_000),
+  })
+  .superRefine((config, context) => {
+    if (
+      config.JWT_REFRESH_TOKEN_TTL_SECONDS <=
+      config.JWT_ACCESS_TOKEN_TTL_SECONDS
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["JWT_REFRESH_TOKEN_TTL_SECONDS"],
+        message:
+          "JWT_REFRESH_TOKEN_TTL_SECONDS must be greater than JWT_ACCESS_TOKEN_TTL_SECONDS.",
+      });
+    }
+  });
+
+export function getJwtConfigFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): JwtConfig {
+  const parsed = jwtEnvironmentSchema.parse({
+    JWT_ISSUER: env.JWT_ISSUER,
+    JWT_SIGNING_SECRET: env.JWT_SIGNING_SECRET,
+    JWT_ACCESS_TOKEN_TTL_SECONDS: env.JWT_ACCESS_TOKEN_TTL_SECONDS,
+    JWT_REFRESH_TOKEN_TTL_SECONDS: env.JWT_REFRESH_TOKEN_TTL_SECONDS,
+  });
+
+  return {
+    issuer: parsed.JWT_ISSUER,
+    signingSecret: parsed.JWT_SIGNING_SECRET,
+    accessTokenLifetimeSeconds: parsed.JWT_ACCESS_TOKEN_TTL_SECONDS,
+    refreshTokenLifetimeSeconds: parsed.JWT_REFRESH_TOKEN_TTL_SECONDS,
+  };
+}

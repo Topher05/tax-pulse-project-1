@@ -6,6 +6,7 @@ import {
   taxPlanCycleCreateController,
   type TaxPlanCycleCreateController,
 } from "./taxPlanCycleCreateController.js";
+import type { AuditEntryReader } from "./auditEntryRepository.js";
 import { ProblemHttpError, type ProblemDetails } from "./errors.js";
 import {
   taxPlanCycleCreateSchema,
@@ -34,7 +35,7 @@ export interface ValidationErrorResponse extends ProblemDetails {
 export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
   transitionController?: TaxPlanCycleTransitionController;
-  auditLogger?: Pick<Console, "info">;
+  auditEntryReader?: AuditEntryReader;
 }
 
 interface TenantScopedRequest extends Request {
@@ -107,6 +108,62 @@ export function createTaxPlanCycleRouter(
   const controller = options.controller ?? taxPlanCycleCreateController;
   const transitionController = options.transitionController ?? taxPlanCycleTransitionController;
   const auditLogger = options.auditLogger ?? console;
+  const auditEntryReader = options.auditEntryReader ?? {
+    listByCase: async () => [],
+  };
+
+  router.get(
+    "/tax-plan-cycles/:caseId/audit-entries",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedParams = taxPlanCycleReadParamsSchema.safeParse(req.params);
+
+      if (!parsedParams.success) {
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Request path parameters failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: parsedParams.error.issues.map(toValidationIssue),
+            },
+          }),
+        );
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant.id;
+        const cycle = await controller.findByCaseId({
+          tenantId,
+          caseId: parsedParams.data.caseId,
+        });
+
+        if (cycle === null) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Cycle Not Found",
+              status: 404,
+              detail: "No tax plan cycle was found for the requested case ID.",
+            }),
+          );
+          return;
+        }
+
+        const auditEntries = await auditEntryReader.listByCase({
+          tenantId,
+          caseId: parsedParams.data.caseId,
+        });
+
+        res.status(200).json({ audit_entries: auditEntries });
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
 
   router.get(
     "/tax-plan-cycles/:caseId",

@@ -122,6 +122,27 @@ export const mfaEnrollment = pgTable(
   ],
 );
 
+export const refreshToken = pgTable(
+  "refresh_token",
+  {
+    id: uuid("id").default(sql`uuidv7()`).primaryKey(),
+    userId: uuid("user_id").notNull(),
+    tokenHash: varchar("token_hash", { length: 64 }).notNull(),
+    issuedAt: timestamp("issued_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      name: "refresh_token_user_id_fk",
+      columns: [table.userId],
+      foreignColumns: [users.id],
+    }),
+    uniqueIndex("refresh_token_token_hash_key").on(table.tokenHash),
+    index("refresh_token_user_id_expires_at_idx").on(table.userId, table.expiresAt),
+  ],
+);
+
 export const taxPlanCycle = pgTable(
   "tax_plan_cycle",
   {
@@ -148,6 +169,35 @@ export const taxPlanCycle = pgTable(
     }),
     check("tax_plan_cycle_stage_check", sql`${table.stage} IN (${stageValuesSql})`),
     index("tax_plan_cycle_tenant_id_due_date_idx").on(table.tenantId, table.dueDate),
+  ],
+);
+
+export const auditEntry = pgTable(
+  "audit_entry",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    caseId: uuid("case_id").notNull(),
+    actor: text("actor").notNull(),
+    action: text("action").notNull(),
+    outcome: text("outcome").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "audit_entry_id_pk",
+      columns: [table.id],
+    }),
+    foreignKey({
+      name: "audit_entry_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    index("audit_entry_case_id_occurred_at_idx").on(
+      table.caseId,
+      table.occurredAt,
+    ),
   ],
 );
 

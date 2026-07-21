@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
 import {
+  auditEntry as auditEntryTable,
   stageTransition as stageTransitionTable,
   taxPlanCycle as taxPlanCycleTable,
 } from "./db/schema.js";
@@ -133,12 +134,24 @@ export function createTaxPlanCycleRepository(
         throw new Error("Tax Plan Cycle insert did not return a generated case ID.");
       }
 
+      const occurredAt = new Date();
+      const fromStage = "Intake";
+      const toStage = "Intake";
+
       await tx.insert(stageTransitionTable).values({
         caseId,
-        fromStage: "Intake",
-        toStage: "Intake",
+        fromStage,
+        toStage,
         actor: input.actor,
-        occurredAt: new Date(),
+        occurredAt,
+      });
+
+      await tx.insert(auditEntryTable).values({
+        caseId,
+        actor: input.actor,
+        action: `stage_transition:${fromStage}->${toStage}`,
+        outcome: "succeeded",
+        occurredAt,
       });
 
       return caseId;
