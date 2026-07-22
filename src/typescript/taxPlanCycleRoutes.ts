@@ -345,7 +345,6 @@ export function createTaxPlanCycleRouter(
     },
   );
 
-  // TODO: Keep the transition route and caseId naming aligned across controller and tests.
   router.patch(
     "/tax-plan-cycles/:caseId/transition",
     async (req: Request, res: Response, next: NextFunction) => {
