@@ -30,11 +30,11 @@ export function defaultCostUnitResolver({
   method,
   path,
 }: CostAccountingRequest): number | undefined {
-  if (method === "POST" && path === "/tax-plan-cycles") {
+  if (method === "POST" && path === "/v1/tax-plan-cycles") {
     return 2;
   }
 
-  if (method === "GET" && /^\/tax-plan-cycles\/[^/]+$/.test(path)) {
+  if (method === "GET" && /^\/v1\/tax-plan-cycles\/[^/]+$/.test(path)) {
     return 1;
   }
 
