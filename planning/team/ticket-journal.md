@@ -61,6 +61,78 @@ later API ticket.
   upstream httpx deprecation warning; pytest also could not update the pre-existing
   repository `.pytest_cache` due to local access permissions.
 
+
+# Shared Team Ticket Journal
+
+This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
+and ties each ticket back to the code, tests, and validation evidence produced for it.
+
+## development - SCRUM-68
+
+**Branch:** `development`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-68
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Redact income and deduction figures in audit output
+
+**Description:** As a Firm Admin, I want dollar figures redacted in audit output, so
+that sensitive amounts are not exposed in the trail.
+
+**Acceptance Criteria:**
+
+- Income and deduction dollar figures are redacted when an audit entry is rendered.
+- Redaction is applied at read/serialization time, leaving the stored action intact.
+- A test asserts a redacted figure never appears in the audit output.
+
+**Code Connection:**
+
+- `auditEntryOutput` centralizes audit-entry serialization and redacts financial
+  amounts from rendered `action` and `outcome` text while preserving actor, case,
+  timestamp, stages, dates, counts, and identifiers.
+- `createAuditEntryRepository` reads `audit_entry` rows through a tenant-scoped join to
+  `tax_plan_cycle` and returns only serialized, redacted audit output.
+- `GET /tax-plan-cycles/:caseId/audit-entries` validates the existing tenant-scoped
+  cycle before listing audit entries, so missing or cross-tenant cases reuse the
+  existing 404 behavior and do not leak audit rows.
+- This intentionally does not implement SCRUM-67's transition endpoint, role matrix,
+  legal-transition enforcement, or denied-attempt audit writes. Future SCRUM-67 audit
+  entries can use the same audit reader.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs immutable audit history without exposing sensitive tax amounts
+to every rendered trail consumer. This ticket keeps the append-only stored audit row
+intact for compliance while applying least-exposure redaction at the API serialization
+boundary.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `src/typescript/auditEntryOutput.ts`
+- `src/typescript/auditEntryRepository.ts`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `tests/typescript/auditEntryOutput.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auditEntryOutput.test.ts tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+  passed with 14 tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 14 tests, including the redacted-output and intact-storage assertion.
+- `npm test` ran; typecheck passed and Vitest reported 123 passing tests
+- Initial Node validation commands failed inside the default Windows sandbox with
+  `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands passed
+  when rerun with approved elevated filesystem access.
+
 ## dylan-harle-jira66 - SCRUM-66
 
 **Branch:** `dylan-harle-jira66`
@@ -1471,6 +1543,59 @@ authenticated tenant/user context, and no inspected later ticket depends on an S
 **Changed Files:**
 
 - `tests/typescript/authNegativePaths.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run tests/typescript/authNegativePaths.test.ts` passed: 4 tests.
+- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/jwtAuthentication.test.ts` passed: 23 tests.
+- `npm run typecheck` passed.
+- `npm test` passed typechecking and the new SCRUM-63 suite inside the full Vitest run.
+  The full run ended with 118 passing tests and 1 existing migration failure in
+  `tests/typescript/tenantsMigration.test.ts` because PostgreSQL reported
+  `function uuidv7() does not exist`.
+
+## christopher-martus-jira72 - SCRUM-72
+
+**Branch:** `christopher-martus-jira72`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-72
+
+**Summary:** Document service ownership boundaries in an ADR
+
+**Description:** As a Backend Developer, document which entity each service owns so
+that TaxPulse bounded contexts remain clear as the system grows.
+
+**Acceptance Criteria:**
+
+- The ADR states that the Core Case Service owns the case and the Tax Engine owns
+  calculations.
+- The ADR names the store each context writes to.
+- The ADR is linked from the ADR index.
+
+**Code Connection:**
+
+- ADR-0009 defines Core Case Service ownership of Tax Plan Cycles and persisted
+  scenarios in its Drizzle-backed PostgreSQL store.
+- ADR-0009 defines Tax Engine ownership of calculation rules and execution, while
+  documenting that it currently does not write calculation results to a persistent
+  store.
+- The Core Case Service calls the Tax Engine through its supported API and persists
+  returned scenario figures as case-owned data.
+
+**Project Scope Connection:**
+
+This decision preserves tenant, workflow, access, and audit boundaries in the Core
+Case Service while allowing the Tax Engine to evolve its calculation behavior
+independently. It records current persistence responsibilities without inventing a
+Tax Engine store before one is selected.
+
+**Changed Files:**
+
+- `adr/0009-service-ownership-boundaries.md`
+- `adr/README.md`
 - `planning/team/ticket-journal.md`
 
 **Validation Notes:**

@@ -9,9 +9,12 @@ import {
   createApp,
   createLogger,
   createTaxPlanCycleRouter,
+  redactedAuditAmount,
   type TaxPlanCycle,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateInput,
+  type AuditEntryOutput,
+  type AuditEntryReader,
   type ValidationErrorResponse,
 } from "../../src/typescript/index.js";
 
@@ -47,13 +50,14 @@ const attachTenant: RequestHandler = (req, _res, next) => {
 
 async function withRouteServer(
   controller: TaxPlanCycleCreateController,
+  auditEntryReader: AuditEntryReader | undefined,
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
       app.use(attachTenant);
-      app.use(createTaxPlanCycleRouter({ controller }));
+      app.use(createTaxPlanCycleRouter({ auditEntryReader, controller }));
     },
   });
 
@@ -78,7 +82,7 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => null);
 
-    await withRouteServer({ create, findByCaseId }, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -119,7 +123,7 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => null);
 
-    await withRouteServer({ create, findByCaseId }, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -152,7 +156,7 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => null);
 
-    await withRouteServer({ create, findByCaseId }, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -181,7 +185,7 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => validReadCycle);
 
-    await withRouteServer({ create, findByCaseId }, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(
         `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01`,
       );
@@ -205,7 +209,7 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => null);
 
-    await withRouteServer({ create, findByCaseId }, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(
         `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02`,
       );
@@ -235,7 +239,7 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => null);
 
-    await withRouteServer({ create, findByCaseId }, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(
         `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e03`,
       );
@@ -259,7 +263,7 @@ describe("createTaxPlanCycleRouter", () => {
       TaxPlanCycleCreateController["findByCaseId"]
     >(() => validReadCycle);
 
-    await withRouteServer({ create, findByCaseId }, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles/%20`);
       const body = (await response.json()) as ValidationErrorResponse;
 
@@ -279,5 +283,74 @@ describe("createTaxPlanCycleRouter", () => {
       ]);
       expect(findByCaseId).not.toHaveBeenCalled();
     });
+  });
+
+  test("returns redacted audit output for a tenant-scoped case", async () => {
+    const auditEntry: AuditEntryOutput = {
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+      case_id: validReadCycle.id,
+      actor: "advisor-001",
+      action: `income amount ${redactedAuditAmount} recorded`,
+      outcome: `deduction amount ${redactedAuditAmount} accepted`,
+      occurred_at: "2026-07-20T14:00:00.000Z",
+    };
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: validReadCycle.id,
+    }));
+    const findByCaseId = vi.fn<
+      TaxPlanCycleCreateController["findByCaseId"]
+    >(() => validReadCycle);
+    const listByCase = vi.fn<AuditEntryReader["listByCase"]>(() =>
+      Promise.resolve([auditEntry]),
+    );
+
+    await withRouteServer(
+      { create, findByCaseId },
+      { listByCase },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/audit-entries`,
+        );
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toEqual({
+          audit_entries: [auditEntry],
+        });
+        expect(findByCaseId).toHaveBeenCalledWith({
+          tenantId: "tenant-001",
+          caseId: validReadCycle.id,
+        });
+        expect(listByCase).toHaveBeenCalledWith({
+          tenantId: "tenant-001",
+          caseId: validReadCycle.id,
+        });
+        expect(create).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  test("does not read audit entries for an unknown or cross-tenant case", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: validReadCycle.id,
+    }));
+    const findByCaseId = vi.fn<
+      TaxPlanCycleCreateController["findByCaseId"]
+    >(() => null);
+    const listByCase = vi.fn<AuditEntryReader["listByCase"]>(() =>
+      Promise.resolve([]),
+    );
+
+    await withRouteServer(
+      { create, findByCaseId },
+      { listByCase },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/audit-entries`,
+        );
+
+        expect(response.status).toBe(404);
+        expect(listByCase).not.toHaveBeenCalled();
+      },
+    );
   });
 });
