@@ -56,10 +56,150 @@ export type SeedStageTransitionRow = {
   occurredAt: Date;
 };
 
+export type SeedFilingStatus =
+  | "single"
+  | "married_filing_jointly"
+  | "married_filing_separately"
+  | "head_of_household"
+  | "qualifying_surviving_spouse";
+
+export type SeedFederalTaxBracketRow = {
+  taxYear: number;
+  filingStatus: SeedFilingStatus;
+  rate: string;
+  lowerBound: string;
+  upperBound: string | null;
+};
+
+export type SeedStateTaxBracketRow = SeedFederalTaxBracketRow & {
+  stateCode: "CA";
+};
+
 export type SeedTaxPlanCycleInsertRow = Omit<SeedTaxPlanCycleRow, "dueDate"> & {
   dueDate: string;
   holdReason: string | null;
 };
+
+const federalRates = ["0.1000", "0.1200", "0.2200", "0.2400", "0.3200", "0.3500", "0.3700"] as const;
+const californiaRates = [
+  "0.0100",
+  "0.0200",
+  "0.0400",
+  "0.0600",
+  "0.0800",
+  "0.0930",
+  "0.1030",
+  "0.1130",
+  "0.1230",
+] as const;
+
+function createFederalBracketRows(
+  filingStatus: SeedFilingStatus,
+  bounds: readonly (readonly [string, string | null])[],
+): SeedFederalTaxBracketRow[] {
+  return bounds.map(([lowerBound, upperBound], index) => ({
+    taxYear: 2026,
+    filingStatus,
+    rate: federalRates[index]!,
+    lowerBound,
+    upperBound,
+  }));
+}
+
+function createCaliforniaBracketRows(
+  filingStatus: SeedFilingStatus,
+  bounds: readonly (readonly [string, string | null])[],
+): SeedStateTaxBracketRow[] {
+  return bounds.map(([lowerBound, upperBound], index) => ({
+    taxYear: 2025,
+    stateCode: "CA",
+    filingStatus,
+    rate: californiaRates[index]!,
+    lowerBound,
+    upperBound,
+  }));
+}
+
+// Source: IRS Publication 505 (2026), Tax Rate Schedules.
+// https://www.irs.gov/publications/p505
+export const federalTaxBracketRows = [
+  ...createFederalBracketRows("single", [
+    ["0.00", "12400.00"],
+    ["12400.00", "50400.00"],
+    ["50400.00", "105700.00"],
+    ["105700.00", "201775.00"],
+    ["201775.00", "256225.00"],
+    ["256225.00", "640600.00"],
+    ["640600.00", null],
+  ]),
+  ...createFederalBracketRows("married_filing_jointly", [
+    ["0.00", "24800.00"],
+    ["24800.00", "100800.00"],
+    ["100800.00", "211400.00"],
+    ["211400.00", "403550.00"],
+    ["403550.00", "512450.00"],
+    ["512450.00", "768700.00"],
+    ["768700.00", null],
+  ]),
+  ...createFederalBracketRows("married_filing_separately", [
+    ["0.00", "12400.00"],
+    ["12400.00", "50400.00"],
+    ["50400.00", "105700.00"],
+    ["105700.00", "201775.00"],
+    ["201775.00", "256225.00"],
+    ["256225.00", "384350.00"],
+    ["384350.00", null],
+  ]),
+  ...createFederalBracketRows("head_of_household", [
+    ["0.00", "17700.00"],
+    ["17700.00", "67450.00"],
+    ["67450.00", "105700.00"],
+    ["105700.00", "201750.00"],
+    ["201750.00", "256200.00"],
+    ["256200.00", "640600.00"],
+    ["640600.00", null],
+  ]),
+  ...createFederalBracketRows("qualifying_surviving_spouse", [
+    ["0.00", "24800.00"],
+    ["24800.00", "100800.00"],
+    ["100800.00", "211400.00"],
+    ["211400.00", "403550.00"],
+    ["403550.00", "512450.00"],
+    ["512450.00", "768700.00"],
+    ["768700.00", null],
+  ]),
+] satisfies readonly SeedFederalTaxBracketRow[];
+
+// Source: California 2025 Form 540 tax rate schedules. California's 2026
+// estimated-tax instructions direct taxpayers to use the 2025 tax table.
+// https://www.ftb.ca.gov/forms/2025/2025-540-booklet.html
+export const californiaTaxBracketRows = [
+  ...createCaliforniaBracketRows("single", [
+    ["0.00", "11079.00"], ["11079.00", "26264.00"], ["26264.00", "41452.00"],
+    ["41452.00", "57542.00"], ["57542.00", "72724.00"], ["72724.00", "371479.00"],
+    ["371479.00", "445771.00"], ["445771.00", "742953.00"], ["742953.00", null],
+  ]),
+  ...createCaliforniaBracketRows("married_filing_separately", [
+    ["0.00", "11079.00"], ["11079.00", "26264.00"], ["26264.00", "41452.00"],
+    ["41452.00", "57542.00"], ["57542.00", "72724.00"], ["72724.00", "371479.00"],
+    ["371479.00", "445771.00"], ["445771.00", "742953.00"], ["742953.00", null],
+  ]),
+  ...createCaliforniaBracketRows("married_filing_jointly", [
+    ["0.00", "22158.00"], ["22158.00", "52528.00"], ["52528.00", "82904.00"],
+    ["82904.00", "115084.00"], ["115084.00", "145448.00"], ["145448.00", "742958.00"],
+    ["742958.00", "891542.00"], ["891542.00", "1485906.00"], ["1485906.00", null],
+  ]),
+  ...createCaliforniaBracketRows("head_of_household", [
+    ["0.00", "22173.00"], ["22173.00", "52530.00"], ["52530.00", "67716.00"],
+    ["67716.00", "83805.00"], ["83805.00", "98990.00"], ["98990.00", "505208.00"],
+    ["505208.00", "606251.00"], ["606251.00", "1010417.00"], ["1010417.00", null],
+  ]),
+  ...createCaliforniaBracketRows("qualifying_surviving_spouse", [
+    ["0.00", "22158.00"], ["22158.00", "52528.00"], ["52528.00", "82904.00"],
+    ["82904.00", "115084.00"], ["115084.00", "145448.00"], ["145448.00", "742958.00"],
+    ["742958.00", "891542.00"], ["891542.00", "1485906.00"], ["1485906.00", null],
+  ]),
+] satisfies readonly SeedStateTaxBracketRow[];
 
 export const tenantRows = [
   {

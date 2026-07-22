@@ -44,7 +44,7 @@ describe("bracket reference migrations", () => {
       expect(federalStructure.indexes).toContain(
         "federal_tax_bracket_year_status_lower_bound_idx",
       );
-      expect(federalStructure.rowCount).toBe(0);
+      expect(federalStructure.rowCount).toBe(35);
 
       expect(stateStructure.columns).toEqual(expectedStateColumns);
       expect(stateStructure.columnTypes).toMatchObject({
@@ -63,7 +63,7 @@ describe("bracket reference migrations", () => {
       expect(stateStructure.indexes).toContain(
         "state_tax_bracket_year_state_status_lower_bound_idx",
       );
-      expect(stateStructure.rowCount).toBe(0);
+      expect(stateStructure.rowCount).toBe(45);
     });
   });
 

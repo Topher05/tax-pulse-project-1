@@ -9,9 +9,11 @@ import {
 } from "../postgresMigrations.js";
 import {
   credential,
+  federalTaxBracket,
   mfaEnrollment,
   roles,
   stageTransition,
+  stateTaxBracket,
   taxPlanCycle,
   tenants,
   userStatus,
@@ -19,7 +21,9 @@ import {
 } from "./schema.js";
 import {
   buildTaxPlanCycleInsertRows,
+  californiaTaxBracketRows,
   credentialRows,
+  federalTaxBracketRows,
   mfaEnrollmentRows,
   roleRows,
   stageTransitionRows,
@@ -40,6 +44,8 @@ export async function applySeed(client: Client): Promise<void> {
         "audit_entry",
         "stage_transition",
         "tax_plan_cycle",
+        "state_tax_bracket",
+        "federal_tax_bracket",
         "mfa_enrollment",
         "credential",
         "users",
@@ -57,6 +63,8 @@ export async function applySeed(client: Client): Promise<void> {
     await db.insert(mfaEnrollment).values([...mfaEnrollmentRows]);
     await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
     await db.insert(stageTransition).values([...stageTransitionRows]);
+    await db.insert(federalTaxBracket).values([...federalTaxBracketRows]);
+    await db.insert(stateTaxBracket).values([...californiaTaxBracketRows]);
 
     await client.query("COMMIT");
   } catch (error) {
