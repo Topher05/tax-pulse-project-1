@@ -309,7 +309,7 @@ export async function main(): Promise<Server> {
         controller: mfaEnrollmentController,
       }));
       app.use(
-        "/tax-plan-cycles",
+        "/v1/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config: jwtConfig }),
         createCostAccountingMiddleware(),
         createTenantRateLimitMiddleware(),
