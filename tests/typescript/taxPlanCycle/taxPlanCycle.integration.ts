@@ -916,7 +916,7 @@ describe("taxPlanCycle integration", () => {
         advisorEditPermissions,
         async (baseUrl) => {
           const response = await fetch(
-            `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71/transition`,
+            `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71/transition`,
             {
               method: "PATCH",
               headers: {
@@ -1032,7 +1032,7 @@ describe("taxPlanCycle integration", () => {
         { Advisor: [] },
         async (baseUrl) => {
           const response = await fetch(
-            `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73/transition`,
+            `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73/transition`,
             {
               method: "PATCH",
               headers: {
@@ -1138,7 +1138,7 @@ describe("taxPlanCycle integration", () => {
         advisorEditPermissions,
         async (baseUrl) => {
           const response = await fetch(
-            `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75/transition`,
+            `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75/transition`,
             {
               method: "PATCH",
               headers: {
@@ -1243,7 +1243,7 @@ describe("taxPlanCycle integration", () => {
         advisorEditPermissions,
         async (baseUrl) => {
           const response = await fetch(
-            `${baseUrl}/cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77/transition`,
+            `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77/transition`,
             {
               method: "PATCH",
               headers: {
@@ -1371,7 +1371,7 @@ describe("taxPlanCycle integration", () => {
           });
 
           const patchResponse = await fetch(
-            `${baseUrl}/cycles/${createBody.case_id}/transition`,
+            `${baseUrl}/tax-plan-cycles/${createBody.case_id}/transition`,
             {
               method: "PATCH",
               headers: authHeaders,

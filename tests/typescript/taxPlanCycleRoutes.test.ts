@@ -142,6 +142,41 @@ async function withTransitionRouteServer(
   }
 }
 
+async function withTransitionRouteServerWithoutAuth(
+  options: {
+    controller: TaxPlanCycleCreateController;
+    transitionController: TaxPlanCycleTransitionController;
+    auditEntryWriter: AuditEntryWriter;
+    auditLogger: Pick<Console, "info">;
+  },
+  run: (baseUrl: string) => Promise<void>,
+): Promise<void> {
+  const app = createApp({
+    logger: silentLogger,
+    registerRoutes: (app) => {
+      app.use(
+        createTaxPlanCycleRouter({
+          controller: options.controller,
+          transitionController: options.transitionController,
+          auditEntryWriter: options.auditEntryWriter,
+          auditLogger: options.auditLogger,
+        }),
+      );
+    },
+  });
+
+  const server = app.listen(0);
+  await once(server, "listening");
+
+  try {
+    const address = server.address() as AddressInfo;
+    await run(`http://127.0.0.1:${address.port}`);
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+}
+
 describe("createTaxPlanCycleRouter", () => {
   test("returns 400 Problem Details for malformed creates", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
@@ -547,6 +582,12 @@ describe("transitionTaxPlanCycleRouter", () => {
     stage: "Data Aggregation",
   };
 
+  const intakeCycle: TaxPlanCycle = {
+    ...reviewCycle,
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e53",
+    stage: "Intake",
+  };
+
   test("allows Firm Admins to transition review-stage cycles", async () => {
     const updatedCycle: TaxPlanCycle = {
       ...reviewCycle,
@@ -582,7 +623,7 @@ describe("transitionTaxPlanCycleRouter", () => {
       },
       async (baseUrl) => {
         const response = await fetch(
-          `${baseUrl}/cycles/${reviewCycle.id}/transition`,
+          `${baseUrl}/tax-plan-cycles/${reviewCycle.id}/transition`,
           {
             method: "PATCH",
             headers: {
@@ -647,7 +688,7 @@ describe("transitionTaxPlanCycleRouter", () => {
       },
       async (baseUrl) => {
         const response = await fetch(
-          `${baseUrl}/cycles/${dataAggregationCycle.id}/transition`,
+          `${baseUrl}/tax-plan-cycles/${dataAggregationCycle.id}/transition`,
           {
             method: "PATCH",
             headers: {
@@ -672,6 +713,83 @@ describe("transitionTaxPlanCycleRouter", () => {
         });
         expect(auditLogger.info).not.toHaveBeenCalled();
         expect(auditWriter.record).not.toHaveBeenCalled();
+        expect(create).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  test("returns 422 Problem Details when an authorized advisor requests an illegal transition", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: intakeCycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => intakeCycle,
+    );
+    const transition = vi.fn<TaxPlanCycleTransitionController["transition"]>(
+      () => intakeCycle,
+    );
+    const auditLogger = { info: vi.fn() };
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "advisor-illegal-001",
+      email: "advisor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
+    await withTransitionRouteServer(
+      {
+        controller: { create, findByCaseId },
+        transitionController: { transition, findByCaseId },
+        auditEntryWriter: auditWriter,
+        auditLogger,
+      },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${intakeCycle.id}/transition`,
+          {
+            method: "PATCH",
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({ to_stage: "Modeling" }),
+          },
+        );
+        const body = (await response.json()) as ValidationErrorResponse;
+
+        expect(response.status).toBe(422);
+        expect(response.headers.get("content-type")).toContain(
+          "application/problem+json",
+        );
+        expect(body).toMatchObject({
+          type: "https://taxpulse.example/problems/invalid-transition",
+          title: "Invalid Transition",
+          status: 422,
+          detail: "The requested stage transition is not legal.",
+        });
+        expect(auditLogger.info).toHaveBeenCalledWith(
+          expect.objectContaining({
+            case_id: intakeCycle.id,
+            actor: "advisor-illegal-001",
+            action: "transition Intake -> Modeling",
+            outcome: "422",
+            occurred_at: expect.any(String),
+          }),
+        );
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: intakeCycle.id,
+            actor: "advisor-illegal-001",
+            action: "transition Intake -> Modeling",
+            outcome: "422",
+            occurredAt: expect.any(Date),
+          }),
+        );
+        expect(transition).not.toHaveBeenCalled();
         expect(create).not.toHaveBeenCalled();
       },
     );
@@ -709,7 +827,7 @@ describe("transitionTaxPlanCycleRouter", () => {
       },
       async (baseUrl) => {
         const response = await fetch(
-          `${baseUrl}/cycles/${reviewCycle.id}/transition`,
+          `${baseUrl}/tax-plan-cycles/${reviewCycle.id}/transition`,
           {
             method: "PATCH",
             headers: {
@@ -787,7 +905,7 @@ describe("transitionTaxPlanCycleRouter", () => {
       },
       async (baseUrl) => {
         const response = await fetch(
-          `${baseUrl}/cycles/${dataAggregationCycle.id}/transition`,
+          `${baseUrl}/tax-plan-cycles/${dataAggregationCycle.id}/transition`,
           {
             method: "PATCH",
             headers: {
@@ -864,7 +982,7 @@ describe("transitionTaxPlanCycleRouter", () => {
       },
       async (baseUrl) => {
         const response = await fetch(
-          `${baseUrl}/cycles/${dataAggregationCycle.id}/transition`,
+          `${baseUrl}/tax-plan-cycles/${dataAggregationCycle.id}/transition`,
           {
             method: "PATCH",
             headers: {
@@ -891,6 +1009,54 @@ describe("transitionTaxPlanCycleRouter", () => {
         expect(transition).not.toHaveBeenCalled();
         expect(auditLogger.info).not.toHaveBeenCalled();
         expect(auditWriter.record).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  test("returns 401 Problem Details when patching without auth context", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: dataAggregationCycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => dataAggregationCycle,
+    );
+    const transition = vi.fn<TaxPlanCycleTransitionController["transition"]>(
+      () => dataAggregationCycle,
+    );
+    const auditLogger = { info: vi.fn() };
+    const auditWriter = { record: vi.fn() };
+
+    await withTransitionRouteServerWithoutAuth(
+      {
+        controller: { create, findByCaseId },
+        transitionController: { transition, findByCaseId },
+        auditEntryWriter: auditWriter,
+        auditLogger,
+      },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${dataAggregationCycle.id}/transition`,
+          {
+            method: "PATCH",
+            headers: {
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({ to_stage: "Modeling" }),
+          },
+        );
+
+        expect(response.status).toBe(401);
+        await expect(response.json()).resolves.toMatchObject({
+          type: "https://taxpulse.example/problems/authentication-required",
+          title: "Authentication Required",
+          status: 401,
+          detail: "A valid access token is required.",
+        });
+        expect(findByCaseId).not.toHaveBeenCalled();
+        expect(transition).not.toHaveBeenCalled();
+        expect(auditLogger.info).not.toHaveBeenCalled();
+        expect(auditWriter.record).not.toHaveBeenCalled();
+        expect(create).not.toHaveBeenCalled();
       },
     );
   });
