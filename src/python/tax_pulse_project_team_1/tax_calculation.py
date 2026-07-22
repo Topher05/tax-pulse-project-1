@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Final, Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
     {
@@ -20,8 +20,8 @@ ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
 class TaxCalculationRequest(BaseModel):
     """Request model for tax calculation inputs."""
 
-    income: float
-    deductions: float
+    income: float = Field(ge=0)
+    deductions: float = Field(ge=0)
     state: str
     filing_status: str
 

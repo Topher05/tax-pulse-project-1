@@ -40,6 +40,23 @@ def test_tax_calculation_request_rejects_invalid_filing_status_with_custom_messa
     assert "single" in message
 
 
+@pytest.mark.parametrize(("field", "value"), [("income", -1), ("deductions", -1)])
+def test_tax_calculation_request_rejects_negative_amounts(field: str, value: float) -> None:
+    request = {
+        "income": 100000,
+        "deductions": 12000,
+        "state": "CA",
+        "filing_status": "single",
+    }
+    request[field] = value
+
+    with pytest.raises(ValidationError) as exc_info:
+        TaxCalculationRequest.model_validate(request)
+
+    assert field in str(exc_info.value)
+    assert "greater than or equal to 0" in str(exc_info.value)
+
+
 @pytest.mark.asyncio
 async def test_calculate_tax_returns_placeholder_result_shape() -> None:
     request = TaxCalculationRequest(
