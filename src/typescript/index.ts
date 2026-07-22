@@ -119,7 +119,9 @@ export {
 export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
 export {
   createJwtAuthenticationMiddleware,
+  createJwtDerivedUserContext,
   type CreateJwtAuthenticationMiddlewareOptions,
+  type CreateJwtDerivedUserContextOptions,
 } from "./jwtAuthentication.js";
 export {
   TAXPULSE_COST_UNITS_HEADER,
@@ -214,12 +216,13 @@ import pg from "pg";
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
-import { createJwtAuthenticationMiddleware } from "./jwtAuthentication.js";
+import { createJwtAuthenticationMiddleware, createJwtDerivedUserContext } from "./jwtAuthentication.js";
 import { createCostAccountingMiddleware } from "./costAccounting.js";
 import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 import { createTaxPlanCycleCreateController } from "./taxPlanCycleCreateController.js";
+import { createTaxPlanCycleTransitionController } from "./taxPlanCycleTransitionController.js";
 import { createTaxPlanCycleRepository } from "./taxPlanCycleRepository.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
@@ -303,6 +306,9 @@ export async function main(): Promise<Server> {
   const taxPlanCycleController = createTaxPlanCycleCreateController(
     taxPlanCycleRepository,
   );
+  const taxPlanCycleTransitionController = createTaxPlanCycleTransitionController(
+    taxPlanCycleRepository,
+  );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
     authenticatePasswordForMfaChallenge(input, credentialReader);
   const tokenService = createTokenService({
@@ -330,6 +336,7 @@ export async function main(): Promise<Server> {
       app.use(
         "/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config: jwtConfig }),
+        createJwtDerivedUserContext(),
         createCostAccountingMiddleware(),
         createTenantRateLimitMiddleware(),
       );
@@ -337,6 +344,7 @@ export async function main(): Promise<Server> {
         auditEntryReader: auditEntryRepository,
         auditEntryWriter,
         controller: taxPlanCycleController,
+        transitionController: taxPlanCycleTransitionController,
       }));
       app.use(createAuthRouter({ authenticatePassword }));
       app.use(createAuthMfaLoginRouter({
