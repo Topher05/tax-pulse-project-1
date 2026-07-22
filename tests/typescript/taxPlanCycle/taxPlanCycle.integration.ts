@@ -36,7 +36,7 @@ import {
 } from "../../../src/typescript/postgresMigrations.js";
 import { startDockerPostgresContainer } from "../bootstrap/dockerPostgres.js";
 import {
-  createJwtDerivedUserContext,
+  hydrateUserClaims,
   obtainAccessTokenViaLoginAndMfa,
 } from "../bootstrap/authFlow.js";
 import { expectPgError, getTableStructure } from "../bootstrap/tableTestUtils.js";
@@ -184,7 +184,7 @@ async function withTransitionRouteServer(
     logger: silentLogger,
     registerRoutes: (app) => {
       app.use(createJwtAuthenticationMiddleware({ config: authConfig }));
-      app.use(createJwtDerivedUserContext(permissionsForRole));
+      app.use(hydrateUserClaims(permissionsForRole));
       app.use(
         createTaxPlanCycleRouter({
           controller: createTaxPlanCycleCreateController(repository),

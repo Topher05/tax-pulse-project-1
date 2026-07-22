@@ -197,7 +197,7 @@ export async function obtainAccessTokenViaLoginAndMfa(
   return result;
 }
 
-export function createJwtDerivedUserContext(
+export function hydrateUserClaims(
   permissionsForRole: Partial<Record<UserRole, ReadonlyArray<string>>> = {
     Advisor: ["EDIT"],
   },

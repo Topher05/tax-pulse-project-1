@@ -10,7 +10,7 @@ import {
   createApp,
   createCostAccountingMiddleware,
   createJwtAuthenticationMiddleware,
-  createJwtDerivedUserContext,
+  hydrateUserClaims,
   createLogger,
   createTenantRateLimitMiddleware,
   createTaxPlanCycleRouter,
@@ -76,7 +76,7 @@ async function withProtectedTaxPlanCycleServer(
       );
       server.use(
         "/tax-plan-cycles",
-        createJwtDerivedUserContext(),
+        hydrateUserClaims(),
       );
       if (options.costAccountingMiddleware) {
         server.use("/tax-plan-cycles", options.costAccountingMiddleware);

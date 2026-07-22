@@ -119,9 +119,9 @@ export {
 export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
 export {
   createJwtAuthenticationMiddleware,
-  createJwtDerivedUserContext,
+  hydrateUserClaims,
   type CreateJwtAuthenticationMiddlewareOptions,
-  type CreateJwtDerivedUserContextOptions,
+  type CreateHydrateUserClaimsOptions,
 } from "./jwtAuthentication.js";
 export {
   TAXPULSE_COST_UNITS_HEADER,
@@ -216,7 +216,7 @@ import pg from "pg";
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
-import { createJwtAuthenticationMiddleware, createJwtDerivedUserContext } from "./jwtAuthentication.js";
+import { createJwtAuthenticationMiddleware, hydrateUserClaims } from "./jwtAuthentication.js";
 import { createCostAccountingMiddleware } from "./costAccounting.js";
 import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
@@ -336,7 +336,7 @@ export async function main(): Promise<Server> {
       app.use(
         "/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config: jwtConfig }),
-        createJwtDerivedUserContext(),
+        hydrateUserClaims(),
         createCostAccountingMiddleware(),
         createTenantRateLimitMiddleware(),
       );

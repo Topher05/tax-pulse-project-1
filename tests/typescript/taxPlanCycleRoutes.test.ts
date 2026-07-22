@@ -22,7 +22,7 @@ import {
   type ValidationErrorResponse,
 } from "../../src/typescript/index.js";
 import {
-  createJwtDerivedUserContext,
+  hydrateUserClaims,
   obtainAccessTokenViaLoginAndMfa,
 } from "./bootstrap/authFlow.js";
 
@@ -118,7 +118,7 @@ async function withTransitionRouteServer(
     logger: silentLogger,
     registerRoutes: (app) => {
       app.use(createJwtAuthenticationMiddleware({ config: authConfig }));
-      app.use(createJwtDerivedUserContext(options.permissionsForRole));
+      app.use(hydrateUserClaims(options.permissionsForRole));
       app.use(
         createTaxPlanCycleRouter({
           controller: options.controller,

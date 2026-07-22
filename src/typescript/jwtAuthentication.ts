@@ -24,7 +24,7 @@ export interface CreateJwtAuthenticationMiddlewareOptions {
   config: JwtConfig;
 }
 
-export interface CreateJwtDerivedUserContextOptions {
+export interface CreateHydrateUserClaimsOptions {
   permissionsForRole?: Partial<Record<UserRole, ReadonlyArray<string>>>;
 }
 
@@ -70,7 +70,7 @@ function toAuthenticatedPrincipal(
   };
 }
 
-export function createJwtDerivedUserContext(
+export function hydrateUserClaims(
   permissionsForRole: Partial<Record<UserRole, ReadonlyArray<string>>> = {
     Advisor: ["EDIT"],
   },
