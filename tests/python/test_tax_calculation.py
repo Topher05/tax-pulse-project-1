@@ -3,7 +3,6 @@ from pydantic import ValidationError
 from tax_pulse_project_team_1 import (
     TaxCalculationRequest,
     TaxCalculationResponse,
-    TaxCalculationResult,
     calculate_tax,
 )
 
@@ -106,7 +105,7 @@ def test_tax_calculation_response_rejects_invalid_outputs(
 
 
 @pytest.mark.asyncio
-async def test_calculate_tax_returns_placeholder_result_shape() -> None:
+async def test_calculate_tax_returns_response_contract_placeholder() -> None:
     request = TaxCalculationRequest(
         income=100000,
         deductions=12000,
@@ -116,14 +115,11 @@ async def test_calculate_tax_returns_placeholder_result_shape() -> None:
 
     result = await calculate_tax(request)
 
-    assert isinstance(result, TaxCalculationResult)
+    assert isinstance(result, TaxCalculationResponse)
     assert result.model_dump() == {
-        "income": 100000.0,
-        "deductions": 12000.0,
-        "state": "CA",
-        "filing_status": "single",
-        "taxable_income": 88000.0,
-        "estimated_tax": 8800.0,
-        "currency": "USD",
-        "calculation_status": "placeholder",
+        "federal_liability": 0.0,
+        "state_liability": 0.0,
+        "effective_rate": 0.0,
+        "marginal_rate": 0.0,
+        "quarterly_estimate": 0.0,
     }
