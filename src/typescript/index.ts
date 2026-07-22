@@ -102,15 +102,24 @@ export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
   auditEntry,
   credential,
+  federalTaxBracket,
   mfaEnrollment,
   refreshToken,
   roles,
   stageTransition,
+  stateTaxBracket,
   taxPlanCycle,
   tenants,
   users,
   userStatus,
 } from "./db/schema.js";
+export {
+  createBracketReferenceRepository,
+  type BracketReferenceLookupInput,
+  type BracketReferenceLookupResult,
+  type BracketReferenceRepository,
+  type TaxBracketReference,
+} from "./bracketReferenceRepository.js";
 export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
 export {
   createJwtAuthenticationMiddleware,
