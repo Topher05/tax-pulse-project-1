@@ -1754,11 +1754,23 @@ queue read model, so that the DynamoDB view stays consistent with the case.
 - Diagram:
 
 ```mermaid
-erDiagram
-    NODE_CORE_CASE_SERVICE ||--o{ POSTGRESQL_CYCLE_STORE : persists_cycle_changes
-    NODE_CORE_CASE_SERVICE ||--o{ PYTHON_QUEUE_PROJECTOR : emits_cycle_changes
-    PYTHON_QUEUE_PROJECTOR }o--|| POSTGRESQL_CYCLE_STORE : reads_source_cycle
-    PYTHON_QUEUE_PROJECTOR ||--o{ DYNAMODB_QUEUE_STORE : upserts_queue_projection
+flowchart LR
+    NODE["Node Core Case Service"]
+
+    subgraph PY_QUEUE["Python queue_projection feature"]
+        direction TB
+        MODELS["models.py<br/>dataclasses"]
+        SERVICE["service.py<br/>projection + upsert seam"]
+        SERVICE -->|uses| MODELS
+    end
+
+    PG[(PostgreSQL<br/>cycle source store)]
+    DDB[(DynamoDB<br/>queue projection store)]
+
+    NODE -->|persists cycle changes| PG
+    NODE -->|emits cycle changes| SERVICE
+    SERVICE -->|reads canonical cycle state| PG
+    SERVICE -->|upserts queue projection| DDB
 ```
 
 **Project Scope Connection:**
@@ -1785,3 +1797,51 @@ view.
   host interpreter because `jwt` is not installed there.
 - `npx pyright --version` could not be executed here because Node launched through
   `cmd` still hits the repository path `EPERM` `lstat` issue at `C:\Users\Exia`.
+
+## caleb-latimer-jira74-refactor - SCRUM-74
+
+**Branch:** `caleb-latimer-jira74`
+
+**Owner:** Caleb Latimer
+
+**Jira Key:** SCRUM-74
+
+**Summary:** Refactor the queue projection into a feature package
+
+**Description:** As a Backend Developer, I want the queue projection isolated by
+feature, so that the models and logic stay separated as the projection layer grows.
+
+**Acceptance Criteria:**
+
+- Projection models live in a dedicated feature module.
+- Projection logic lives in a separate service module.
+- Tests are grouped by feature and still cover the Express-aligned contract.
+
+**Code Connection:**
+
+- `src/python/tax_pulse_project_team_1/queue_projection/models.py` owns the source and
+  projection dataclasses.
+- `src/python/tax_pulse_project_team_1/queue_projection/service.py` owns the pure
+  projection and stubbed upsert behavior.
+- `src/python/tax_pulse_project_team_1/queue_projection/__init__.py` provides the
+  public feature export surface.
+- `tests/python/queue_projection/test_models.py` and
+  `tests/python/queue_projection/test_service.py` split the model-shape coverage from
+  the projection behavior coverage.
+
+**Project Scope Connection:**
+
+This refactor keeps the SCRUM-74 queue projection aligned with the Express entity while
+making the Python code easier to extend without implying a FastAPI runtime that the
+repo does not yet have. It preserves the DynamoDB stub seam and the tenant-scoped
+projection boundary.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/queue_projection/__init__.py`
+- `src/python/tax_pulse_project_team_1/queue_projection/models.py`
+- `src/python/tax_pulse_project_team_1/queue_projection/service.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/queue_projection/test_models.py`
+- `tests/python/queue_projection/test_service.py`
+- `planning/team/ticket-journal.md`
