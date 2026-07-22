@@ -103,6 +103,7 @@ Use these docs as the source of truth for branch naming, PR shape, and review ch
 - [`.github/pull_request_template.md`](./.github/pull_request_template.md) for the PR structure
 - [`planning/ai-review-checklist.md`](./planning/ai-review-checklist.md) for review verification items
 - [`planning/sample-pr.md`](./planning/sample-pr.md) for a completed example PR
+- [`docs/storage-decision-matrix.md`](./docs/storage-decision-matrix.md) for the authoritative placement of transactional, projection, cache, and idempotency data
 
 When preparing a change:
 
