@@ -6,8 +6,6 @@ import type { RequestHandler } from "express";
 import {
   createApp,
   createAuthMfaLoginController,
-  createAuthMfaLoginRouter,
-  createAuthRouter,
   createLogger,
   createTokenService,
   type AuthMfaLoginResult,
@@ -135,8 +133,47 @@ async function withBootstrapAuthServer(
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (expressApp) => {
-      expressApp.use(createAuthRouter({ authenticatePassword }));
-      expressApp.use(createAuthMfaLoginRouter({ controller }));
+      expressApp.post("/auth/login", async (req, res, next) => {
+        try {
+          const result = await authenticatePassword({
+            tenantId: String(req.body?.tenant_id ?? ""),
+            email: String(req.body?.email ?? ""),
+            plaintextPassword: String(req.body?.password ?? ""),
+          });
+
+          if (result.status === "invalid_credentials") {
+            res.status(401).json({
+              type: "https://taxpulse.example/problems/invalid-credentials",
+              title: "Invalid Credentials",
+              status: 401,
+              detail: "The email or password is invalid.",
+            });
+            return;
+          }
+
+          res.status(202).json({
+            status: result.status,
+            tenant_id: result.tenantId,
+            email: result.email,
+            user_id: result.userId,
+          });
+        } catch (error) {
+          next(error);
+        }
+      });
+      expressApp.post("/auth/login/mfa", async (req, res, next) => {
+        try {
+          const result = await controller.verify({
+            tenant_id: String(req.body?.tenant_id ?? ""),
+            user_id: String(req.body?.user_id ?? ""),
+            code: String(req.body?.code ?? ""),
+          });
+
+          res.status(200).json(result);
+        } catch (error) {
+          next(error);
+        }
+      });
     },
   });
 
