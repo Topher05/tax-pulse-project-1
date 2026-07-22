@@ -70,19 +70,22 @@ async function withProtectedTaxPlanCycleServer(
     logger: silentLogger,
     registerRoutes: (server) => {
       server.use(
-        "/tax-plan-cycles",
+        "/v1/tax-plan-cycles",
         createJwtAuthenticationMiddleware({ config }),
       );
       if (options.costAccountingMiddleware) {
-        server.use("/tax-plan-cycles", options.costAccountingMiddleware);
+        server.use("/v1/tax-plan-cycles", options.costAccountingMiddleware);
       }
       if (options.rateLimitMiddleware) {
-        server.use("/tax-plan-cycles", options.rateLimitMiddleware);
+        server.use("/v1/tax-plan-cycles", options.rateLimitMiddleware);
       }
-      server.use(createTaxPlanCycleRouter({
-        auditEntryReader: options.auditEntryReader,
-        controller,
-      }));
+      server.use(
+        "/v1",
+        createTaxPlanCycleRouter({
+          auditEntryReader: options.auditEntryReader,
+          controller,
+        }),
+      );
     },
   });
   const server = app.listen(0, "127.0.0.1");
@@ -105,13 +108,13 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
     const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
 
     await withProtectedTaxPlanCycleServer({ create, findByCaseId }, async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+      const response = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(validCreateBody),
       });
       const auditResponse = await fetch(
-        `${baseUrl}/tax-plan-cycles/${cycle.id}/audit-entries`,
+        `${baseUrl}/v1/tax-plan-cycles/${cycle.id}/audit-entries`,
       );
 
       expect(response.status).toBe(401);
@@ -145,7 +148,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
     const token = await createAccessToken();
 
     await withProtectedTaxPlanCycleServer({ create, findByCaseId }, async (baseUrl) => {
-      const createResponse = await fetch(`${baseUrl}/tax-plan-cycles`, {
+      const createResponse = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
         method: "POST",
         headers: {
           authorization: `Bearer ${token}`,
@@ -153,11 +156,11 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
         },
         body: JSON.stringify(validCreateBody),
       });
-      const readResponse = await fetch(`${baseUrl}/tax-plan-cycles/${cycle.id}`, {
+      const readResponse = await fetch(`${baseUrl}/v1/tax-plan-cycles/${cycle.id}`, {
         headers: { authorization: `Bearer ${token}` },
       });
       const auditResponse = await fetch(
-        `${baseUrl}/tax-plan-cycles/${cycle.id}/audit-entries`,
+        `${baseUrl}/v1/tax-plan-cycles/${cycle.id}/audit-entries`,
         { headers: { authorization: `Bearer ${token}` } },
       );
 
@@ -190,7 +193,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
     await withProtectedTaxPlanCycleServer(
       { create, findByCaseId },
       async (baseUrl) => {
-        const createResponse = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        const createResponse = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
           method: "POST",
           headers: {
             authorization: `Bearer ${token}`,
@@ -198,7 +201,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           },
           body: JSON.stringify(validCreateBody),
         });
-        const readResponse = await fetch(`${baseUrl}/tax-plan-cycles/${cycle.id}`, {
+        const readResponse = await fetch(`${baseUrl}/v1/tax-plan-cycles/${cycle.id}`, {
           headers: { authorization: `Bearer ${token}` },
         });
 
@@ -223,7 +226,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
       { create, findByCaseId },
       async (baseUrl) => {
         const requestBody = JSON.stringify(validCreateBody);
-        const tenantAFirst = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        const tenantAFirst = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
           method: "POST",
           headers: {
             authorization: `Bearer ${tenantAToken}`,
@@ -231,7 +234,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           },
           body: requestBody,
         });
-        const tenantASecond = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        const tenantASecond = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
           method: "POST",
           headers: {
             authorization: `Bearer ${tenantAToken}`,
@@ -239,7 +242,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           },
           body: requestBody,
         });
-        const tenantBFirst = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        const tenantBFirst = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
           method: "POST",
           headers: {
             authorization: `Bearer ${tenantBToken}`,

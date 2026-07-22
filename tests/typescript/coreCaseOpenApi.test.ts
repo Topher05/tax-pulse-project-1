@@ -160,11 +160,11 @@ describe("Core Case Service OpenAPI document", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
     const createOperation = requiredRecord(
-      requiredRecord(paths, "/tax-plan-cycles"),
+      requiredRecord(paths, "/v1/tax-plan-cycles"),
       "post",
     );
     const readOperation = requiredRecord(
-      requiredRecord(paths, "/tax-plan-cycles/{caseId}"),
+      requiredRecord(paths, "/v1/tax-plan-cycles/{caseId}"),
       "get",
     );
 
@@ -236,7 +236,7 @@ describe("Core Case Service OpenAPI document", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
     const createOperation = requiredRecord(
-      requiredRecord(paths, "/tax-plan-cycles"),
+      requiredRecord(paths, "/v1/tax-plan-cycles"),
       "post",
     );
     const requestBody = requiredRecord(createOperation, "requestBody");
@@ -263,7 +263,7 @@ describe("Core Case Service OpenAPI document", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
     const readOperation = requiredRecord(
-      requiredRecord(paths, "/tax-plan-cycles/{caseId}"),
+      requiredRecord(paths, "/v1/tax-plan-cycles/{caseId}"),
       "get",
     );
     const responses = requiredRecord(readOperation, "responses");

@@ -98,6 +98,7 @@ async function withRouteServer(
     registerRoutes: (app) => {
       app.use(attachRequestContext);
       app.use(
+        "/v1",
         createTaxPlanCycleRouter({
           controller: createTaxPlanCycleCreateController(repository),
         }),
@@ -704,7 +705,7 @@ describe("taxPlanCycle integration", () => {
       await seedSampleTenant(client);
 
       await withRouteServer(repository, async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        const response = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
