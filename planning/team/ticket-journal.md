@@ -1718,3 +1718,70 @@ migrations, public-route headers, or a separate Tax Plan Cycle status field.
   SCRUM-70. The full Vitest run ended with 115 passing tests and 13 existing
   Testcontainers-backed migration failures because this environment could not find a
   working container runtime strategy.
+
+## caleb-latimer-jira74 - SCRUM-74
+
+**Branch:** `caleb-latimer-jira74`
+
+**Owner:** Caleb Latimer
+
+**Jira Key:** SCRUM-74
+
+**Summary:** Project Tax Plan Cycle changes into the queue projection
+
+**Description:** As a Backend Developer, I want cycle changes projected into the
+queue read model, so that the DynamoDB view stays consistent with the case.
+
+**Acceptance Criteria:**
+
+- Creating or updating a cycle upserts its queue projection item.
+- The overdue flag is recomputed from `due_date` on each projection.
+- A test asserts the projection matches the source cycle after a stage change.
+
+**Code Connection:**
+
+- `TaxPlanCycleRecord` and `TaxPlanCycleQueueProjectionItem` define the source and
+  queue-read-model shapes used by the Python projection seam.
+- `project_tax_plan_cycle_to_queue_item` rebuilds the denormalized queue item from the
+  source cycle on every call and recomputes `overdue` from `due_date` instead of
+  persisting stale state.
+- `upsert_tax_plan_cycle_queue_projection` is the DynamoDB write boundary for SCRUM-73
+  and is intentionally stubbed with the inline marker `Blocked by Scrum-74 pending impl`
+  until the table contract lands.
+- `tests/python/test_queue_projection.py` covers overdue recomputation, the upsert
+  seam, and the stage-change regression case that keeps the queue projection aligned
+  with the source cycle.
+- Diagram:
+
+```mermaid
+erDiagram
+    NODE_CORE_CASE_SERVICE ||--o{ POSTGRESQL_CYCLE_STORE : persists_cycle_changes
+    NODE_CORE_CASE_SERVICE ||--o{ PYTHON_QUEUE_PROJECTOR : emits_cycle_changes
+    PYTHON_QUEUE_PROJECTOR }o--|| POSTGRESQL_CYCLE_STORE : reads_source_cycle
+    PYTHON_QUEUE_PROJECTOR ||--o{ DYNAMODB_QUEUE_STORE : upserts_queue_projection
+```
+
+**Project Scope Connection:**
+
+This ticket keeps PostgreSQL as the source of truth for cycle data while adding the
+Python-side queue projection seam that will eventually feed DynamoDB. It does not add
+or imply a FastAPI runtime, does not assume SCRUM-73's table contract exists yet, and
+preserves tenant-isolated cycle data by projecting per-cycle state into the queue
+view.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/queue_projection.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/test_queue_projection.py`
+- `planning/team/ticket-journal.md`
+- `planning/prompt-journal/cl-journal.md`
+
+**Validation Notes:**
+
+- `py -3.12 -m pytest tests/python/test_queue_projection.py` passed: 3 tests.
+- `py -3.12 -m pytest tests/python/test_smoke.py` passed: 1 test.
+- `py -3.12 -m pytest tests/python/test_jwt_authentication.py` could not run in this
+  host interpreter because `jwt` is not installed there.
+- `npx pyright --version` could not be executed here because Node launched through
+  `cmd` still hits the repository path `EPERM` `lstat` issue at `C:\Users\Exia`.
