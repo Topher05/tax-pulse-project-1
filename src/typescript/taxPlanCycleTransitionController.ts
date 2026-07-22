@@ -26,6 +26,9 @@ export function createTaxPlanCycleTransitionController(
 /** @deprecated Legacy fallback stub. Inject a real repository-backed controller instead. */
 export const taxPlanCycleTransitionController: TaxPlanCycleTransitionController =
   {
-    transition: () => null,
+    transition: () => {
+      console.log('CALLS FAKE')
+      return null
+    },
     findByCaseId: () => null,
   };

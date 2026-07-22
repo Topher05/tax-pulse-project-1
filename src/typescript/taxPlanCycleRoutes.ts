@@ -43,6 +43,15 @@ export interface CreateTaxPlanCycleRouterOptions {
   auditLogger?: Pick<Console, "info">;
 }
 
+function authenticationRequired(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/authentication-required",
+    title: "Authentication Required",
+    status: 401,
+    detail: "A valid access token is required.",
+  });
+}
+
 interface TenantScopedRequest extends Request {
   tenant: {
     id: string;
@@ -124,26 +133,27 @@ function isAdvisorWithEditPermission(
 
 function isTransitionAuthorized(
   currentStage: TaxPlanCycleStage,
-  requestedStage: TaxPlanCycleStage,
   user: TenantScopedRequest["user"],
 ): boolean {
-  const allowedRoles = transitionAccessMatrix[currentStage]?.[requestedStage];
+  const allowedTransitions = transitionAccessMatrix[currentStage];
 
-  if (!allowedRoles) {
+  if (!allowedTransitions || !user?.role) {
     return false;
   }
 
-  return allowedRoles.some((rule) => {
-    if (rule.role !== user?.role) {
-      return false;
-    }
+  return Object.values(allowedTransitions).some((allowedRoles) =>
+    allowedRoles.some((rule) => {
+      if (rule.role !== user.role) {
+        return false;
+      }
 
-    if (rule.role === "Firm Admin") {
-      return true;
-    }
+      if (rule.role === "Firm Admin") {
+        return true;
+      }
 
-    return isAdvisorWithEditPermission(user);
-  });
+      return isAdvisorWithEditPermission(user);
+    }),
+  );
 }
 
 function logDeniedTransitionAttempt(
@@ -345,10 +355,9 @@ export function createTaxPlanCycleRouter(
     },
   );
 
-  // TODO: Refactor :id to be  Rename :id to case Id in the controller, code and tests it should match for consistency
-  // TODO: Refactor error handling to give 401 error in case of invalid token
+  // TODO: Keep the transition route and caseId naming aligned across controller and tests.
   router.patch(
-    "/cycles/:id/transition",
+    "/tax-plan-cycles/:caseId/transition",
     async (req: Request, res: Response, next: NextFunction) => {
       const parsedParams = taxPlanCycleTransitionParamsSchema.safeParse(
         req.params,
@@ -379,11 +388,18 @@ export function createTaxPlanCycleRouter(
       }
 
       try {
-        const tenantId = (req as TenantScopedRequest).tenant.id;
-        const actor = getActorId(req, "unknown-user");
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (!tenantId || !user?.role || !user.id) {
+          next(authenticationRequired());
+          return;
+        }
+
+        const actor = user.id;
         const cycle = await controller.findByCaseId({
           tenantId,
-          caseId: parsedParams.data.id,
+          caseId: parsedParams.data.caseId,
         });
 
         if (cycle === null) {
@@ -401,15 +417,9 @@ export function createTaxPlanCycleRouter(
         const requestedStage = parsedBody.data.to_stage;
         const action = `transition ${cycle.stage} -> ${requestedStage}`;
 
-        if (
-          !isTransitionAuthorized(
-            cycle.stage,
-            requestedStage,
-            (req as TenantScopedRequest).user,
-          )
-        ) {
+        if (!isTransitionAuthorized(cycle.stage, user)) {
           await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
-            caseId: parsedParams.data.id,
+            caseId: parsedParams.data.caseId,
             actor,
             action,
             outcome: "403",
@@ -427,7 +437,7 @@ export function createTaxPlanCycleRouter(
 
         if (!isLegalTaxPlanCycleStageTransition(cycle.stage, requestedStage)) {
           await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
-            caseId: parsedParams.data.id,
+            caseId: parsedParams.data.caseId,
             actor,
             action,
             outcome: "422",
@@ -445,7 +455,7 @@ export function createTaxPlanCycleRouter(
 
         const transitioned = await transitionController.transition({
           tenantId,
-          caseId: parsedParams.data.id,
+          caseId: parsedParams.data.caseId,
           toStage: requestedStage,
           actor,
         });

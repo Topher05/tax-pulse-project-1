@@ -66,7 +66,7 @@ export const taxPlanCycleReadParamsSchema = z.object({
   caseId: z.uuid(),
 });
 export const taxPlanCycleTransitionParamsSchema = z.object({
-  id: z.uuid(),
+  caseId: z.uuid(),
 });
 export const taxPlanCycleTransitionSchema = z.strictObject({
   to_stage: taxPlanCycleStageSchema,

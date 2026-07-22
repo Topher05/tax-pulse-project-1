@@ -217,6 +217,7 @@ export function createTaxPlanCycleRepository(
     },
 
     async transition({ tenantId, caseId, toStage, actor }) {
+      console.log('CALLS REAL')
       return await db.transaction(async (tx) => {
         const rows = await tx
           .select({
