@@ -9,6 +9,7 @@ import {
   pgTable,
   primaryKey,
   integer,
+  numeric,
   text,
   timestamp,
   uniqueIndex,
@@ -28,6 +29,57 @@ export const tenants = pgTable("tenants", {
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const federalTaxBracket = pgTable(
+  "federal_tax_bracket",
+  {
+    id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+    taxYear: integer("tax_year").notNull(),
+    filingStatus: text("filing_status").notNull(),
+    rate: numeric("rate", { precision: 5, scale: 4 }).notNull(),
+    lowerBound: numeric("lower_bound", { precision: 14, scale: 2 }).notNull(),
+    upperBound: numeric("upper_bound", { precision: 14, scale: 2 }),
+  },
+  (table) => [
+    uniqueIndex("federal_tax_bracket_year_status_lower_bound_key").on(
+      table.taxYear,
+      table.filingStatus,
+      table.lowerBound,
+    ),
+    index("federal_tax_bracket_year_status_lower_bound_idx").on(
+      table.taxYear,
+      table.filingStatus,
+      table.lowerBound,
+    ),
+  ],
+);
+
+export const stateTaxBracket = pgTable(
+  "state_tax_bracket",
+  {
+    id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+    taxYear: integer("tax_year").notNull(),
+    stateCode: varchar("state_code", { length: 2 }).notNull(),
+    filingStatus: text("filing_status").notNull(),
+    rate: numeric("rate", { precision: 5, scale: 4 }).notNull(),
+    lowerBound: numeric("lower_bound", { precision: 14, scale: 2 }).notNull(),
+    upperBound: numeric("upper_bound", { precision: 14, scale: 2 }),
+  },
+  (table) => [
+    uniqueIndex("state_tax_bracket_year_state_status_lower_bound_key").on(
+      table.taxYear,
+      table.stateCode,
+      table.filingStatus,
+      table.lowerBound,
+    ),
+    index("state_tax_bracket_year_state_status_lower_bound_idx").on(
+      table.taxYear,
+      table.stateCode,
+      table.filingStatus,
+      table.lowerBound,
+    ),
+  ],
+);
 
 export const roleNameEnum = pgEnum("user_role_name", [
   "Firm Admin",
