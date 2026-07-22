@@ -222,6 +222,8 @@ import { createTokenService } from "./tokenService.js";
 
 loadEnv();
 const { Client } = pg;
+const taxPlanCycleApiPrefix = "/v1";
+const taxPlanCycleApiBasePath = `${taxPlanCycleApiPrefix}/tax-plan-cycles`;
 
 export {
   createTaxPlanCycleCreateController,
@@ -308,16 +310,20 @@ export async function main(): Promise<Server> {
       app.use(createMfaEnrollmentRouter({
         controller: mfaEnrollmentController,
       }));
+      // CL Version-scoped auth middleware for Tax Plan Cycle routes; review before removing or widening this guard.
       app.use(
-        "/v1/tax-plan-cycles",
+        taxPlanCycleApiBasePath,
         createJwtAuthenticationMiddleware({ config: jwtConfig }),
         createCostAccountingMiddleware(),
         createTenantRateLimitMiddleware(),
       );
-      app.use(createTaxPlanCycleRouter({
-        auditEntryReader: auditEntryRepository,
-        controller: taxPlanCycleController,
-      }));
+      app.use(
+        taxPlanCycleApiPrefix,
+        createTaxPlanCycleRouter({
+          auditEntryReader: auditEntryRepository,
+          controller: taxPlanCycleController,
+        }),
+      );
       app.use(createAuthRouter({ authenticatePassword }));
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
