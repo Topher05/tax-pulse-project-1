@@ -1,8 +1,584 @@
+# Shared Team Ticket Journal
+
+This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
+and ties each ticket back to the code, tests, and validation evidence produced for it.
+
+## caleb-latimer-jira67 - SCRUM-67
+
+**Branch:** `caleb-latimer-jira67`
+
+**Owner:** Caleb Latimer
+
+**Summary:** Wire the role-gated transition endpoint enforcing the permission matrix
+
+**CSV Description:** As a Security Engineer, I want the stage-transition validator
+exposed as a role-gated endpoint, so that only authorized roles advance a Tax Plan
+Cycle and denials are audited.
+
+**Acceptance Criteria:**
+
+- `PATCH /cycles/{id}/transition` validates the requested move, checks role access, and
+  advances the stage only for authorized, legal transitions.
+- Unauthorized role attempts return `403` and illegal moves return `422`.
+- Successful transitions write the `stage_transition` row in the same transaction.
+- Denied attempts emit a console audit stub with `case_id`, `actor`, `action`,
+  `outcome`, and `occurred_at`.
+
+**How This Ties Into the Code:**
+
+- `createTaxPlanCycleRouter` now serves `PATCH /cycles/:id/transition`, validates the
+  path/body with Zod, loads the current cycle through the existing read path, and
+  enforces the role gate before any mutation.
+- `taxPlanCycleRepository.transition` updates the cycle stage and inserts the
+  `stage_transition` row inside a single transaction, then returns the updated cycle.
+- `taxPlanCycleTransitionController` wraps the repository for the new route boundary,
+  while the route keeps the current stage-transition validator as the legality check.
+- Denied attempts call a console audit stub that emits
+  `{ case_id, actor, action, outcome, occurred_at }` until the real `audit_entry`
+  writer exists.
+- The route returns `403` for unauthorized users and `422` for illegal transitions
+  without mutating the cycle.
+- Mermaid sequence diagram:
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant API as Express PATCH /cycles/{id}/transition
+  participant Auth as Request context / role gate
+  participant Val as Stage transition validator
+  participant Repo as Drizzle repository
+  participant Audit as Console audit stub
+  participant DB as PostgreSQL
+
+  User->>API: PATCH transition request
+  API->>Auth: resolve tenant, actor, role, permissions
+  alt unauthorized role
+    Auth-->>API: 403 Forbidden
+    API->>Audit: log {case_id, actor, action, outcome, occurred_at}
+    API-->>User: 403 Problem Details
+  else authorized role
+    API->>Val: validate requested transition
+    alt illegal move
+      Val-->>API: 422 Unprocessable Entity
+      API->>Audit: log {case_id, actor, action, outcome, occurred_at}
+      API-->>User: 422 Problem Details
+    else legal move
+      Val-->>API: allowed
+      API->>Repo: update stage + insert stage_transition in one txn
+      Repo->>DB: commit
+      API-->>User: success response with updated cycle
+    end
+  end
+```
+TaxPulse Advisory depends on stage-gated workflow changes and immutable audit history
+for compliance. This ticket adds the secure API boundary for advancing a Tax Plan
+Cycle while preserving tenant isolation, role gating, and the stage-based workflow
+model.
+
+**Changed Files:**
+
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycle.ts`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `src/typescript/taxPlanCycleTransitionController.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `planning/prompt-journal/cl-journal.md`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm test` passed the new route coverage, but the full Vitest run still timed out in
+  pre-existing `role` and `user` tests at the 5 second test limit.
+- The targeted integration rerun could not complete in this shell because the local
+  Node launcher hit the existing Windows `EPERM` path-resolution issue, and the
+  escalated rerun was declined.
+- `npm run typecheck`
+- `npm test`
+- `npm run test:migration`
+
+## christopher-martus-jira64 - SCRUM-64
+
+**Branch:** `christopher-martus-jira64`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-64
+
+**Summary:** Validate shared JWTs in a FastAPI dependency
+
+**Description:** Add a FastAPI dependency that validates the HS256 access JWTs issued
+by the Node service so the Tax Calculation Engine trusts the same identity scheme.
+
+**Acceptance Criteria:**
+
+- The dependency validates JWT signature, expiry, and issuer using the shared key.
+- Expired or tampered tokens return 401.
+- Valid tokens expose role and tenant_id to downstream handlers.
+
+**Code Connection:**
+
+- `JwtValidationConfig.from_environment` reads the shared `JWT_ISSUER` and
+  `JWT_SIGNING_SECRET` values without an import-time environment dependency and enforces
+  the Node service's minimum 32-byte secret requirement.
+- `create_jwt_authentication_dependency` uses FastAPI's bearer security dependency and
+  PyJWT to accept only HS256 JWTs, validate issuer and expiry, and return the typed
+  `AuthenticatedPrincipal` containing verified role and tenant_id claims.
+- Authentication failures, including missing credentials, invalid signatures, expired
+  tokens, wrong issuers, and invalid downstream claims, use one 401 response with the
+  `WWW-Authenticate: Bearer` header.
+- SCRUM-84 remains responsible for attaching this reusable dependency to the Tax
+  Calculation endpoint; no calculation route is added here.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs a shared identity boundary across the Node Core Case Service and
+the Python Tax Calculation Engine. This ticket provides that focused FastAPI boundary
+while preserving tenant isolation and leaving calculation endpoint composition to the
+later API ticket.
+
+**Changed Files:**
+
+- `pyproject.toml`
+- `src/python/tax_pulse_project_team_1/jwt_authentication.py`
+- `tests/python/test_jwt_authentication.py`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m ruff check src/python tests/python` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"`
+  passed with 0 errors.
+- `python -m pytest tests/python/test_jwt_authentication.py` passed with 15 tests.
+- `python -m pytest` passed with 20 tests. FastAPI's installed TestClient emitted its
+  upstream httpx deprecation warning; pytest also could not update the pre-existing
+  repository `.pytest_cache` due to local access permissions.
+
 
 # Shared Team Ticket Journal
 
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
+
+## development - SCRUM-68
+
+**Branch:** `development`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-68
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Redact income and deduction figures in audit output
+
+**Description:** As a Firm Admin, I want dollar figures redacted in audit output, so
+that sensitive amounts are not exposed in the trail.
+
+**Acceptance Criteria:**
+
+- Income and deduction dollar figures are redacted when an audit entry is rendered.
+- Redaction is applied at read/serialization time, leaving the stored action intact.
+- A test asserts a redacted figure never appears in the audit output.
+
+**Code Connection:**
+
+- `auditEntryOutput` centralizes audit-entry serialization and redacts financial
+  amounts from rendered `action` and `outcome` text while preserving actor, case,
+  timestamp, stages, dates, counts, and identifiers.
+- `createAuditEntryRepository` reads `audit_entry` rows through a tenant-scoped join to
+  `tax_plan_cycle` and returns only serialized, redacted audit output.
+- `GET /tax-plan-cycles/:caseId/audit-entries` validates the existing tenant-scoped
+  cycle before listing audit entries, so missing or cross-tenant cases reuse the
+  existing 404 behavior and do not leak audit rows.
+- This intentionally does not implement SCRUM-67's transition endpoint, role matrix,
+  legal-transition enforcement, or denied-attempt audit writes. Future SCRUM-67 audit
+  entries can use the same audit reader.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs immutable audit history without exposing sensitive tax amounts
+to every rendered trail consumer. This ticket keeps the append-only stored audit row
+intact for compliance while applying least-exposure redaction at the API serialization
+boundary.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `src/typescript/auditEntryOutput.ts`
+- `src/typescript/auditEntryRepository.ts`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `tests/typescript/auditEntryOutput.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auditEntryOutput.test.ts tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+  passed with 14 tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 14 tests, including the redacted-output and intact-storage assertion.
+- `npm test` ran; typecheck passed and Vitest reported 123 passing tests
+- Initial Node validation commands failed inside the default Windows sandbox with
+  `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands passed
+  when rerun with approved elevated filesystem access.
+
+## dylan-harle-jira66 - SCRUM-66
+
+**Branch:** `dylan-harle-jira66`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Write an audit entry on every stage transition
+
+**CSV Description:** As a Firm Admin, I want every stage transition written to the
+audit trail, so that the Plan Cycle is compliance-defensible.
+
+**Acceptance Criteria:**
+
+- Each successful stage transition writes an append-only audit entry of
+  who-did-what-when.
+- The audit write commits with the transition in the same transaction.
+- A test asserts a transition produces exactly one audit entry.
+
+**How This Ties Into the Code:**
+
+- `createTaxPlanCycleRepository` now writes an `audit_entry` row in the same Drizzle
+  transaction that creates the initial `stage_transition` row for a newly created Tax
+  Plan Cycle.
+- The audit entry reuses the transition's generated case ID, actor, and timestamp, with
+  action `stage_transition:Intake->Intake` and outcome `succeeded`.
+- The implementation builds on SCRUM-65's append-only `audit_entry` table, SCRUM-43's
+  `stage_transition` table, and SCRUM-53's create-cycle transaction path.
+- SCRUM-62 through SCRUM-64 are not required for this ticket; actor remains the string
+  already supplied through the current route/controller/repository flow.
+- This ticket does not add role gates, denied-attempt audit entries, or transition
+  endpoint enforcement. Those remain SCRUM-67 territory.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs durable, immutable evidence for workflow activity. This ticket
+connects the existing transition history write path to the append-only audit trail so
+successful case stage movement is recorded as compliance evidence without depending on
+later authorization middleware.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+
+**Validation Notes:**
+
+- `npm run db:check` passed; no Drizzle schema migration was generated or needed for
+  SCRUM-66.
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 13 tests, including repository/route audit-entry assertions and the
+  transition-plus-audit rollback test.
+- `npx vitest run tests/typescript/audit/auditEntry.test.ts` passed with 3 tests.
+- `npm run test:migration` ran; the audit migration tests passed, and the overall suite
+  reported 14 passing tests with 1 existing failure in
+  `tests/typescript/tenantsMigration.test.ts` because the configured local PostgreSQL
+  database does not provide `uuidv7()`.
+- `npm test` ran; typecheck and 98 tests passed, with the same existing
+  `tests/typescript/tenantsMigration.test.ts` `uuidv7()` failure.
+
+## dylan-harle-jira65 - SCRUM-65
+
+**Branch:** `dylan-harle-jira65`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Create the append-only `audit_entry` table
+
+**CSV Description:** As a Backend Developer, I want an append-only `audit_entry` table,
+so that who-did-what-when is recorded immutably per case.
+
+**Acceptance Criteria:**
+
+- A migration creates `audit_entry` with `case_id`, `actor`, `action`, `outcome`,
+  and `occurred_at`.
+- A database rule or trigger blocks `UPDATE` and `DELETE` on `audit_entry`.
+- A test asserts an attempted update fails.
+
+**How This Ties Into the Code:**
+
+- `src/typescript/db/schema.ts` now defines `auditEntry` as a Drizzle table backed by
+  `audit_entry`, with `case_id` referencing the generated `tax_plan_cycle.id` case
+  identifier established after SCRUM-43/SCRUM-52.
+- `src/typescript/db/drizzle-migrations/0004_lively_sugar_man.sql` creates the table,
+  per-case read index, foreign key, and an `audit_entry_prevent_mutation` trigger
+  function wired by `audit_entry_block_update_delete`.
+- `src/typescript/db/seed.ts` includes `audit_entry` in the reset truncation list but
+  does not seed audit rows, leaving actual audit writes to later workflow tickets.
+- `tests/typescript/audit/auditEntry.test.ts` verifies the table contract, valid
+  insert, missing-case FK rejection, and failed `UPDATE`/`DELETE` attempts.
+- `adr/0008-append-only-audit-entry.md` records the database-owned append-only audit
+  table decision, including the trigger-based immutability boundary and future-ticket
+  handoff.
+- This ticket does not change JWT issuance, JWT middleware, auth negative paths, or
+  FastAPI JWT validation from SCRUM-61 through SCRUM-64. It also does not implement
+  stage-transition audit writes from SCRUM-66 or role-gated denied-attempt auditing
+  from SCRUM-67.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires immutable audit history for case activity. This ticket adds
+the database-owned append-only storage foundation for per-case audit evidence while
+preserving the current stage-based workflow model and avoiding any dependency on the
+separate authentication/JWT chain.
+
+**Changed Files:**
+
+- `package.json`
+- `adr/0008-append-only-audit-entry.md`
+- `adr/README.md`
+- `planning/team/ticket-journal.md`
+- `src/typescript/db/drizzle-migrations/0004_lively_sugar_man.sql`
+- `src/typescript/db/drizzle-migrations/meta/0004_snapshot.json`
+- `src/typescript/db/drizzle-migrations/meta/_journal.json`
+- `src/typescript/db/schema.ts`
+- `src/typescript/db/seed.ts`
+- `tests/typescript/audit/auditEntry.test.ts`
+
+**Validation Notes:**
+
+- `npm run db:gen` could not run in the default sandbox because Node could not resolve
+  its install directory due to `EPERM: operation not permitted, lstat
+  'C:\Users\Drybones'`; the migration and metadata were added manually in the active
+  Drizzle migration path.
+- After SCRUM-61 introduced `refresh_token` as Drizzle migrations `0002` and `0003`,
+  `npm run db:gen` was rerun with elevated local filesystem access and regenerated the
+  audit table as forward migration `0004_lively_sugar_man`.
+- `npm run typecheck` passed with elevated local filesystem access after the same Node
+  sandbox permission issue.
+- `npm run db:check` passed with elevated local filesystem access.
+- `npm run test:migration` ran with elevated local filesystem access; the new
+  `tests/typescript/audit/auditEntry.test.ts` passed all 3 tests, and the overall
+  suite reported 14 passing tests with 1 existing failure in
+  `tests/typescript/tenantsMigration.test.ts` because the configured local PostgreSQL
+  database does not provide `uuidv7()`.
+
+## dylan-harle-jira59 - SCRUM-59
+
+**Branch:** `dylan-harle-jira59`
+
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Enroll a user in TOTP MFA
+
+**CSV Description:** As a Security Engineer, I want users to enroll a TOTP second
+factor, so that login requires more than a password.
+
+**Acceptance Criteria:**
+
+- An enroll endpoint generates a TOTP secret and returns a provisioning URI.
+- Enrollment is confirmed by submitting a valid current code before the factor is
+  activated.
+- The secret is stored in `mfa_enrollment` and the user is marked enrolled.
+
+**How This Ties Into the Code:**
+
+- `mfaEnrollment.ts` defines the enrollment and confirmation schemas, TOTP provider
+  boundary, controller behavior, and Problem Details errors for pending enrollment,
+  already-enrolled users, invalid codes, and tenant/user mismatches.
+- `createDefaultMfaTotpProvider` uses `otplib` to generate a base32 TOTP secret,
+  produce an `otpauth://totp/` provisioning URI, and verify submitted current codes.
+- `mfaEnrollmentRepository.ts` persists enrollment state through Drizzle against the
+  existing `mfa_enrollment` table and verifies tenant isolation through the `users`
+  table before any enrollment state is read or written.
+- `createMfaEnrollmentRouter` exposes `POST /mfa/enroll` and
+  `POST /mfa/enroll/confirm`. The routes accept the `tenant_id` and `user_id`
+  returned by the SCRUM-58 `/auth/login` MFA challenge response, while preserving
+  `req.tenant` and `req.user` fallback support for future auth middleware.
+- `index.ts` wires the MFA router to a database-backed `MfaEnrollmentRepository` when
+  `DATABASE_URL` is configured and uses a clearly synthetic local mock repository when
+  the database is unavailable, matching the SCRUM-58 local auth fallback.
+- `coreCaseOpenApi.ts` documents the MFA enrollment endpoints and shows the login
+  challenge identifiers flowing into enrollment and confirmation.
+- The implementation does not add a new `users` column or a tenant column on
+  `mfa_enrollment`; `mfa_enrollment.isEnrolled` remains the enrollment marker.
+- SCRUM-60 still owns the final MFA challenge verification at login and token issuance.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires more than a password before authentication completes. This
+ticket creates the TOTP enrollment path that stores each user's second factor separately
+from profile and password credential data, keeps enrollment tenant-scoped through the
+user record, and prepares the login flow for SCRUM-60 without issuing tokens early.
+
+**Changed Files:**
+
+- `package-lock.json`
+- `package.json`
+- `planning/team/ticket-journal.md`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/mfaEnrollment.ts`
+- `src/typescript/mfaEnrollmentRepository.ts`
+- `src/typescript/mfaEnrollmentRoutes.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/mfaEnrollment.test.ts`
+- `tests/typescript/mfaEnrollmentRoutes.test.ts`
+
+**Validation Notes:**
+
+- `npm install` completed after merging SCRUM-57/58 dependencies so local
+  `node_modules` included `argon2` and `otplib`.
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/mfaEnrollment.test.ts tests/typescript/mfaEnrollmentRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 4 files and 27 tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/auth/auth.integration.ts`
+  passed with 1 file and 3 tests.
+- `npm test` passed typecheck and 77 tests, then failed 1 existing PostgreSQL-backed
+  tenant migration test because this local database does not provide `uuidv7()`.
+- `npm install` reported existing npm audit findings; no broad dependency remediation
+  was performed as part of this ticket.
+
+## dylan-harle-jira60 - SCRUM-60
+
+**Branch:** `dylan-harle-jira60`
+
+**Owner:** Dylan Harle
+
+**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+
+**Summary:** Challenge and verify the MFA code at login
+
+**CSV Description:** As a Security Engineer, I want login to require a valid TOTP
+code, so that a stolen password alone cannot authenticate.
+
+**Acceptance Criteria:**
+
+- After password verification, login requires a second-factor code.
+- An invalid or expired code returns 401 and does not issue a token.
+- A valid code proceeds to JWT issuance.
+
+**How This Ties Into the Code:**
+
+- `authMfaLogin.ts` adds the second login step for the existing SCRUM-58 password
+  flow, consuming `tenant_id`, `user_id`, and a six-digit TOTP code.
+- The controller reuses the SCRUM-59 `MfaEnrollmentRepository` and TOTP provider to
+  require a tenant-scoped enrolled factor before issuing any token.
+- `createHmacJwtIssuer` issues a real HS256 access JWT with `sub`, `tenant_id`,
+  `iss`, `iat`, and `exp` claims using `TAXPULSE_JWT_SECRET`,
+  `TAXPULSE_JWT_ISSUER`, and `TAXPULSE_ACCESS_TOKEN_TTL_SECONDS`.
+- `authMfaLoginRoutes.ts` exposes `POST /auth/login/mfa`, returning one generic
+  401 Problem Details response for unknown challenge identifiers, missing or
+  unenrolled MFA, and invalid or expired TOTP codes.
+- `coreCaseOpenApi.ts` documents the MFA login verification request, bearer token
+  response, and validation/authentication failure cases.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory requires password authentication to be insufficient on its own.
+This ticket completes the password-to-MFA login path by requiring an enrolled TOTP
+factor before access JWT issuance while leaving refresh-token persistence and broader
+JWT middleware to SCRUM-61.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `src/typescript/authMfaLogin.ts`
+- `src/typescript/authMfaLoginRoutes.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authMfaLogin.test.ts`
+- `tests/typescript/authMfaLoginRoutes.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/mfaEnrollment.test.ts tests/typescript/mfaEnrollmentRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 6 files and 35 tests.
+- `npm test` passed typecheck and 85 tests, then failed 1 existing PostgreSQL-backed
+  tenant migration test because this local database does not provide `uuidv7()`.
+
+
+## christopher-martus-jira61 - SCRUM-61
+
+**Branch:** `christopher-martus-jira61`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-61
+
+**Summary:** Issue access and refresh JWTs with role and tenant claims
+
+**Description:** Issue post-authentication access tokens carrying verified identity claims
+and opaque refresh tokens whose SHA-256 hashes are persisted for later revocation.
+
+**Acceptance Criteria:**
+
+- Access JWTs include `sub`, `role`, `tenant_id`, `iss`, `iat`, and `exp`.
+- Refresh-token state is persisted without retaining the bearer token value.
+- Persisted refresh tokens can be revoked with `revoked_at` recorded.
+
+**Code Connection:**
+
+- `tokenService` accepts only an `AuthenticatedPrincipal`, signs HS256 access JWTs, and
+  generates 256-bit opaque refresh tokens.
+- `refreshTokenRepository` persists SHA-256 hashes and conditionally records revocation.
+- JWT configuration requires one shared issuer and a minimum 32-byte signing secret.
+- The SCRUM-60 MFA controller invokes `tokenService.issue({ userId, role, tenantId })`
+  after valid TOTP verification using the server-trusted principal loaded from PostgreSQL.
+- The trusted MFA lookup joins `user_status` and admits only active users, so disabled
+  and invited accounts cannot receive access or refresh tokens.
+
+**Project Scope Connection:**
+
+This establishes a shared identity-token contract for the Node service and future FastAPI
+validation while retaining refresh-token revocation state in PostgreSQL and preserving
+tenant and role claims from the trusted authentication boundary.
+
+**Changed Files:**
+
+- `src/typescript/authConfig.ts`
+- `src/typescript/authMfaLogin.ts`
+- `src/typescript/authTypes.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/mfaEnrollment.ts`
+- `src/typescript/mfaEnrollmentRepository.ts`
+- `src/typescript/refreshTokenRepository.ts`
+- `src/typescript/tokenService.ts`
+- `tests/typescript/authConfig.test.ts`
+- `tests/typescript/authMfaLogin.integration.ts`
+- `tests/typescript/authMfaLogin.test.ts`
+- `tests/typescript/authMfaLoginRoutes.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/mfaEnrollment.test.ts`
+- `tests/typescript/mfaEnrollmentRoutes.test.ts`
+- `tests/typescript/tokenService.test.ts`
+- `tests/typescript/refreshToken.integration.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/authConfig.test.ts tests/typescript/tokenService.test.ts`
+  passed: 2 files, 11 tests.
+- `npm run db:check` passed.
+- `npm run test:integration -- tests/typescript/authMfaLogin.integration.ts` passed with
+  Docker/Testcontainers access: 1 file, 1 test.
+- `npm test` passed 95 of 96 tests with Docker access; the remaining existing
+  `tenantsMigration` test fails because legacy migration SQL references `public.roles`
+  while the test uses an isolated schema.
 
 ## martins-okorie-jira58 - SCRUM-58
 
@@ -10,7 +586,7 @@ and ties each ticket back to the code, tests, and validation evidence produced f
 
 **Owner:** Chimaobi Martins Okorie
 
-**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
+**Epic:** SCRUM-14 - Secure APIs — Auth, Audit & Boundaries
 
 **Summary:** Verify password on login
 
@@ -80,7 +656,7 @@ login errors, and advances valid passwords into the MFA flow before any token is
 
 **Owner:** Chimaobi Martins Okorie
 
-**Epic:** SCRUM-14 - Secure APIs â€” Auth, Audit & Boundaries
+**Epic:** SCRUM-14 - Secure APIs — Auth, Audit & Boundaries
 
 **Summary:** Hash and store passwords with argon2id
 
@@ -96,22 +672,29 @@ registration, so that no credential is ever stored in plaintext.
 
 **How This Ties Into the Code:**
 
-- `hashPassword` produces encoded Argon2id password hashes using configurable
-  work-factor parameters.
-- `verifyPasswordHash` validates submitted passwords against encoded Argon2id hashes and
-  returns `false` for malformed stored values instead of leaking parser errors.
-- `registerPasswordCredential` hashes the submitted registration password and writes only
-  the encoded hash to the credential persistence boundary.
-- `createPasswordCredentialStore` is the concrete Drizzle adapter for the `credential`
-  table; its insert row contains `id`, `userId`, and `passwordHash`, never the submitted
-  plaintext password.
-- `authenticatePasswordForMfaChallenge` verifies login passwords and returns
+- `passwordHashing.ts` provides `hashPassword` to produce encoded Argon2id hashes with
+  configurable work-factor parameters, and `verifyPasswordHash` to validate submitted
+  passwords against stored hashes (returning `false` for malformed values instead of
+  leaking parser errors).
+- `authModel.ts` defines the credential and authentication result contracts:
+  `PasswordCredentialRegistrationInput`, `StoredPasswordCredential`,
+  `PasswordCredentialWriter`, `PasswordCredentialReader`,
+  `PasswordCredentialLoginInput`, and the `PasswordAuthenticationResult` union
+  (`invalid_credentials` | `mfa_challenge_required`).
+- `authService.ts` implements `registerPasswordCredential`, which hashes the submitted
+  password via `hashPassword` and delegates persistence to a `PasswordCredentialWriter`,
+  and `authenticatePasswordForMfaChallenge`, which verifies login passwords and returns
   `mfa_challenge_required` for valid credentials without minting a token directly.
+- `authCredentials.ts` contains `createPasswordCredentialStore`, the concrete Drizzle
+  adapter for the `credential` table; its insert row contains `id`, `userId`, and
+  `passwordHash`, never the submitted plaintext password. It also re-exports the
+  contracts from `authModel.ts` and the service functions from `authService.ts` for
+  backward compatibility.
 - `resolvePasswordHashingConfig` reads the documented `TAXPULSE_ARGON2_*`
   environment overrides and rejects invalid non-positive or non-integer values.
 - Salt length is enforced by generating a per-hash random salt before calling Argon2id.
-- The hashing and credential APIs are exported from the TypeScript package boundary for
-  the registration and login flows.
+- The hashing and credential APIs are exported from the TypeScript package boundary
+  (`index.ts`) for the registration and login flows.
 
 **Project Scope Connection:**
 
@@ -128,10 +711,12 @@ issued.
 - `package.json`
 - `planning/team/ticket-journal.md`
 - `src/typescript/authCredentials.ts`
+- `src/typescript/authModel.ts`
+- `src/typescript/authService.ts`
 - `src/typescript/index.ts`
 - `src/typescript/passwordHashing.ts`
-- `tests/typescript/authCredentials.test.ts`
-- `tests/typescript/passwordHashing.test.ts`
+- `tests/typescript/auth/auth.test.model.ts`
+- `tests/typescript/auth/auth.test.ts`
 
 **Validation Notes:**
 
@@ -139,8 +724,9 @@ issued.
   SCRUM-57 service changes, so this branch builds on the latest dev work available at
   the time of implementation.
 - `npm run typecheck` passed.
-- `npx vitest run tests/typescript/authCredentials.test.ts tests/typescript/passwordHashing.test.ts`
-  passed with 2 files and 7 tests.
+- `npx vitest run tests/typescript/auth/auth.test.ts` passed with 7 unit tests covering
+  password hashing, credential registration, MFA challenge flow, and invalid credential
+  handling.
 - `npm run test` passed typecheck and the SCRUM-57 unit tests, then failed in existing
   Testcontainers-backed credential, MFA, role, and user suites because this environment
   could not find a working container runtime strategy.
@@ -862,99 +1448,6 @@ separate case status field.
 - Implementation was completed in the workspace.
 - Review action items:
   - `npm run db:check`
-  - `npm run typecheck`
-  - `npm test`
-  - `npm run test:migration`
-
-## caleb-latimer-jira67 - SCRUM-67
-
-**Summary:** Wire the role-gated transition endpoint enforcing the permission matrix
-
-**CSV Description:** As a Security Engineer, I want the stage-transition validator
-exposed as a role-gated endpoint, so that only authorized roles advance a Tax Plan
-Cycle and denials are audited.
-
-**Acceptance Criteria:**
-
-- `PATCH /cycles/{id}/transition` validates the requested move, checks role access, and
-  advances the stage only for authorized, legal transitions.
-- Unauthorized role attempts return `403` and illegal moves return `422`.
-- Successful transitions write the `stage_transition` row in the same transaction.
-- Denied attempts emit a console audit stub with `case_id`, `actor`, `action`,
-  `outcome`, and `occurred_at`.
-
-**How This Ties Into the Code:**
-
-- `createTaxPlanCycleRouter` now serves `PATCH /cycles/:id/transition`, validates the
-  path/body with Zod, loads the current cycle through the existing read path, and
-  enforces the role gate before any mutation.
-- `taxPlanCycleRepository.transition` updates the cycle stage and inserts the
-  `stage_transition` row inside a single transaction, then returns the updated cycle.
-- `taxPlanCycleTransitionController` wraps the repository for the new route boundary,
-  while the route keeps the current stage-transition validator as the legality check.
-- Denied attempts call a console audit stub that emits
-  `{ case_id, actor, action, outcome, occurred_at }` until the real `audit_entry`
-  writer exists.
-- The route returns `403` for unauthorized users and `422` for illegal transitions
-  without mutating the cycle.
-- Mermaid sequence diagram:
-
-```mermaid
-sequenceDiagram
-  actor User
-  participant API as Express PATCH /cycles/{id}/transition
-  participant Auth as Request context / role gate
-  participant Val as Stage transition validator
-  participant Repo as Drizzle repository
-  participant Audit as Console audit stub
-  participant DB as PostgreSQL
-
-  User->>API: PATCH transition request
-  API->>Auth: resolve tenant, actor, role, permissions
-  alt unauthorized role
-    Auth-->>API: 403 Forbidden
-    API->>Audit: log {case_id, actor, action, outcome, occurred_at}
-    API-->>User: 403 Problem Details
-  else authorized role
-    API->>Val: validate requested transition
-    alt illegal move
-      Val-->>API: 422 Unprocessable Entity
-      API->>Audit: log {case_id, actor, action, outcome, occurred_at}
-      API-->>User: 422 Problem Details
-    else legal move
-      Val-->>API: allowed
-      API->>Repo: update stage + insert stage_transition in one txn
-      Repo->>DB: commit
-      API-->>User: success response with updated cycle
-    end
-  end
-```
-TaxPulse Advisory depends on stage-gated workflow changes and immutable audit history
-for compliance. This ticket adds the secure API boundary for advancing a Tax Plan
-Cycle while preserving tenant isolation, role gating, and the stage-based workflow
-model.
-
-**Changed Files:**
-
-- `src/typescript/index.ts`
-- `src/typescript/taxPlanCycle.ts`
-- `src/typescript/taxPlanCycleRepository.ts`
-- `src/typescript/taxPlanCycleRoutes.ts`
-- `src/typescript/taxPlanCycleTransitionController.ts`
-- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
-- `tests/typescript/taxPlanCycleRoutes.test.ts`
-- `planning/prompt-journal/cl-journal.md`
-- `planning/team/ticket-journal.md`
-
-**Validation Notes:**
-
-- `npm run typecheck` passed.
-- `npm test` passed the new route coverage, but the full Vitest run still timed out in
-  pre-existing `role` and `user` tests at the 5 second test limit.
-- The targeted integration rerun could not complete in this shell because the local
-  Node launcher hit the existing Windows `EPERM` path-resolution issue, and the
-  escalated rerun was declined.
-**Branch:** `caleb-latimer-jira67`
 - `npm run typecheck`
 - `npm test`
 - `npm run test:migration`
@@ -1023,6 +1516,7 @@ erDiagram
 ```
 
 **Project Scope Connection:**
+
 TaxPulse Advisory keeps credentials and second factors out of the user profile record
 so identity data, password hashes, and MFA enrollment can evolve independently while
 preserving least privilege and the project's audit-friendly auth boundary.
@@ -1048,423 +1542,6 @@ preserving least privilege and the project's audit-friendly auth boundary.
 - Schema, seed, and test scaffolding were added in the workspace.
 - Drizzle generation and Node-based validation were left as follow-up action items per
   the user's request not to run node scripts in this turn.
-
-## development - SCRUM-68
-
-**Branch:** `development`
-
-**Owner:** Dylan Harle
-
-**Jira Key:** SCRUM-68
-
-**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
-
-**Summary:** Redact income and deduction figures in audit output
-
-**Description:** As a Firm Admin, I want dollar figures redacted in audit output, so
-that sensitive amounts are not exposed in the trail.
-
-**Acceptance Criteria:**
-
-- Income and deduction dollar figures are redacted when an audit entry is rendered.
-- Redaction is applied at read/serialization time, leaving the stored action intact.
-- A test asserts a redacted figure never appears in the audit output.
-
-**Code Connection:**
-
-- `auditEntryOutput` centralizes audit-entry serialization and redacts financial
-  amounts from rendered `action` and `outcome` text while preserving actor, case,
-  timestamp, stages, dates, counts, and identifiers.
-- `createAuditEntryRepository` reads `audit_entry` rows through a tenant-scoped join to
-  `tax_plan_cycle` and returns only serialized, redacted audit output.
-- `GET /tax-plan-cycles/:caseId/audit-entries` validates the existing tenant-scoped
-  cycle before listing audit entries, so missing or cross-tenant cases reuse the
-  existing 404 behavior and do not leak audit rows.
-- This intentionally does not implement SCRUM-67's transition endpoint, role matrix,
-  legal-transition enforcement, or denied-attempt audit writes. Future SCRUM-67 audit
-  entries can use the same audit reader.
-
-**Project Scope Connection:**
-
-TaxPulse Advisory needs immutable audit history without exposing sensitive tax amounts
-to every rendered trail consumer. This ticket keeps the append-only stored audit row
-intact for compliance while applying least-exposure redaction at the API serialization
-boundary.
-
-**Changed Files:**
-
-- `planning/team/ticket-journal.md`
-- `src/typescript/auditEntryOutput.ts`
-- `src/typescript/auditEntryRepository.ts`
-- `src/typescript/index.ts`
-- `src/typescript/taxPlanCycleRoutes.ts`
-- `tests/typescript/auditEntryOutput.test.ts`
-- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
-- `tests/typescript/taxPlanCycleRoutes.test.ts`
-- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
-
-**Validation Notes:**
-
-- `npm run typecheck` passed.
-- `npx vitest run tests/typescript/auditEntryOutput.test.ts tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
-  passed with 14 tests.
-- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
-  passed with 14 tests, including the redacted-output and intact-storage assertion.
-- `npm test` ran; typecheck passed and Vitest reported 123 passing tests
-- Initial Node validation commands failed inside the default Windows sandbox with
-  `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands passed
-  when rerun with approved elevated filesystem access.
-
-## dylan-harle-jira66 - SCRUM-66
-
-**Branch:** `dylan-harle-jira66`
-
-**Owner:** Dylan Harle
-
-**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
-
-**Summary:** Write an audit entry on every stage transition
-
-**CSV Description:** As a Firm Admin, I want every stage transition written to the
-audit trail, so that the Plan Cycle is compliance-defensible.
-
-**Acceptance Criteria:**
-
-- Each successful stage transition writes an append-only audit entry of
-  who-did-what-when.
-- The audit write commits with the transition in the same transaction.
-- A test asserts a transition produces exactly one audit entry.
-
-**How This Ties Into the Code:**
-
-- `createTaxPlanCycleRepository` now writes an `audit_entry` row in the same Drizzle
-  transaction that creates the initial `stage_transition` row for a newly created Tax
-  Plan Cycle.
-- The audit entry reuses the transition's generated case ID, actor, and timestamp, with
-  action `stage_transition:Intake->Intake` and outcome `succeeded`.
-- The implementation builds on SCRUM-65's append-only `audit_entry` table, SCRUM-43's
-  `stage_transition` table, and SCRUM-53's create-cycle transaction path.
-- SCRUM-62 through SCRUM-64 are not required for this ticket; actor remains the string
-  already supplied through the current route/controller/repository flow.
-- This ticket does not add role gates, denied-attempt audit entries, or transition
-  endpoint enforcement. Those remain SCRUM-67 territory.
-
-**Project Scope Connection:**
-
-TaxPulse Advisory needs durable, immutable evidence for workflow activity. This ticket
-connects the existing transition history write path to the append-only audit trail so
-successful case stage movement is recorded as compliance evidence without depending on
-later authorization middleware.
-
-**Changed Files:**
-
-- `planning/team/ticket-journal.md`
-- `src/typescript/index.ts`
-- `src/typescript/taxPlanCycleRepository.ts`
-- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
-
-**Validation Notes:**
-
-- `npm run db:check` passed; no Drizzle schema migration was generated or needed for
-  SCRUM-66.
-- `npm run typecheck` passed.
-- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
-  passed with 13 tests, including repository/route audit-entry assertions and the
-  transition-plus-audit rollback test.
-- `npx vitest run tests/typescript/audit/auditEntry.test.ts` passed with 3 tests.
-- `npm run test:migration` ran; the audit migration tests passed, and the overall suite
-  reported 14 passing tests with 1 existing failure in
-  `tests/typescript/tenantsMigration.test.ts` because the configured local PostgreSQL
-  database does not provide `uuidv7()`.
-- `npm test` ran; typecheck and 98 tests passed, with the same existing
-  `tests/typescript/tenantsMigration.test.ts` `uuidv7()` failure.
-
-## dylan-harle-jira65 - SCRUM-65
-
-**Branch:** `dylan-harle-jira65`
-
-**Owner:** Dylan Harle
-
-**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
-
-**Summary:** Create the append-only `audit_entry` table
-
-**CSV Description:** As a Backend Developer, I want an append-only `audit_entry` table,
-so that who-did-what-when is recorded immutably per case.
-
-**Acceptance Criteria:**
-
-- A migration creates `audit_entry` with `case_id`, `actor`, `action`, `outcome`,
-  and `occurred_at`.
-- A database rule or trigger blocks `UPDATE` and `DELETE` on `audit_entry`.
-- A test asserts an attempted update fails.
-
-**How This Ties Into the Code:**
-
-- `src/typescript/db/schema.ts` now defines `auditEntry` as a Drizzle table backed by
-  `audit_entry`, with `case_id` referencing the generated `tax_plan_cycle.id` case
-  identifier established after SCRUM-43/SCRUM-52.
-- `src/typescript/db/drizzle-migrations/0004_lively_sugar_man.sql` creates the table,
-  per-case read index, foreign key, and an `audit_entry_prevent_mutation` trigger
-  function wired by `audit_entry_block_update_delete`.
-- `src/typescript/db/seed.ts` includes `audit_entry` in the reset truncation list but
-  does not seed audit rows, leaving actual audit writes to later workflow tickets.
-- `tests/typescript/audit/auditEntry.test.ts` verifies the table contract, valid
-  insert, missing-case FK rejection, and failed `UPDATE`/`DELETE` attempts.
-- `adr/0008-append-only-audit-entry.md` records the database-owned append-only audit
-  table decision, including the trigger-based immutability boundary and future-ticket
-  handoff.
-- This ticket does not change JWT issuance, JWT middleware, auth negative paths, or
-  FastAPI JWT validation from SCRUM-61 through SCRUM-64. It also does not implement
-  stage-transition audit writes from SCRUM-66 or role-gated denied-attempt auditing
-  from SCRUM-67.
-
-**Project Scope Connection:**
-
-TaxPulse Advisory requires immutable audit history for case activity. This ticket adds
-the database-owned append-only storage foundation for per-case audit evidence while
-preserving the current stage-based workflow model and avoiding any dependency on the
-separate authentication/JWT chain.
-
-**Changed Files:**
-
-- `package.json`
-- `adr/0008-append-only-audit-entry.md`
-- `adr/README.md`
-- `planning/team/ticket-journal.md`
-- `src/typescript/db/drizzle-migrations/0004_lively_sugar_man.sql`
-- `src/typescript/db/drizzle-migrations/meta/0004_snapshot.json`
-- `src/typescript/db/drizzle-migrations/meta/_journal.json`
-- `src/typescript/db/schema.ts`
-- `src/typescript/db/seed.ts`
-- `tests/typescript/audit/auditEntry.test.ts`
-
-**Validation Notes:**
-
-- `npm run db:gen` could not run in the default sandbox because Node could not resolve
-  its install directory due to `EPERM: operation not permitted, lstat
-  'C:\Users\Drybones'`; the migration and metadata were added manually in the active
-  Drizzle migration path.
-- After SCRUM-61 introduced `refresh_token` as Drizzle migrations `0002` and `0003`,
-  `npm run db:gen` was rerun with elevated local filesystem access and regenerated the
-  audit table as forward migration `0004_lively_sugar_man`.
-- `npm run typecheck` passed with elevated local filesystem access after the same Node
-  sandbox permission issue.
-- `npm run db:check` passed with elevated local filesystem access.
-- `npm run test:migration` ran with elevated local filesystem access; the new
-  `tests/typescript/audit/auditEntry.test.ts` passed all 3 tests, and the overall
-  suite reported 14 passing tests with 1 existing failure in
-  `tests/typescript/tenantsMigration.test.ts` because the configured local PostgreSQL
-  database does not provide `uuidv7()`.
-
-## dylan-harle-jira59 - SCRUM-59
-
-**Branch:** `dylan-harle-jira59`
-
-
-**Owner:** Dylan Harle
-
-**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
-
-**Summary:** Enroll a user in TOTP MFA
-
-**CSV Description:** As a Security Engineer, I want users to enroll a TOTP second
-factor, so that login requires more than a password.
-
-**Acceptance Criteria:**
-
-- An enroll endpoint generates a TOTP secret and returns a provisioning URI.
-- Enrollment is confirmed by submitting a valid current code before the factor is
-  activated.
-- The secret is stored in `mfa_enrollment` and the user is marked enrolled.
-
-**How This Ties Into the Code:**
-
-- `mfaEnrollment.ts` defines the enrollment and confirmation schemas, TOTP provider
-  boundary, controller behavior, and Problem Details errors for pending enrollment,
-  already-enrolled users, invalid codes, and tenant/user mismatches.
-- `createDefaultMfaTotpProvider` uses `otplib` to generate a base32 TOTP secret,
-  produce an `otpauth://totp/` provisioning URI, and verify submitted current codes.
-- `mfaEnrollmentRepository.ts` persists enrollment state through Drizzle against the
-  existing `mfa_enrollment` table and verifies tenant isolation through the `users`
-  table before any enrollment state is read or written.
-- `createMfaEnrollmentRouter` exposes `POST /mfa/enroll` and
-  `POST /mfa/enroll/confirm`. The routes accept the `tenant_id` and `user_id`
-  returned by the SCRUM-58 `/auth/login` MFA challenge response, while preserving
-  `req.tenant` and `req.user` fallback support for future auth middleware.
-- `index.ts` wires the MFA router to a database-backed `MfaEnrollmentRepository` when
-  `DATABASE_URL` is configured and uses a clearly synthetic local mock repository when
-  the database is unavailable, matching the SCRUM-58 local auth fallback.
-- `coreCaseOpenApi.ts` documents the MFA enrollment endpoints and shows the login
-  challenge identifiers flowing into enrollment and confirmation.
-- The implementation does not add a new `users` column or a tenant column on
-  `mfa_enrollment`; `mfa_enrollment.isEnrolled` remains the enrollment marker.
-- SCRUM-60 still owns the final MFA challenge verification at login and token issuance.
-
-**Project Scope Connection:**
-
-TaxPulse Advisory requires more than a password before authentication completes. This
-ticket creates the TOTP enrollment path that stores each user's second factor separately
-from profile and password credential data, keeps enrollment tenant-scoped through the
-user record, and prepares the login flow for SCRUM-60 without issuing tokens early.
-
-**Changed Files:**
-
-- `package-lock.json`
-- `package.json`
-- `planning/team/ticket-journal.md`
-- `src/typescript/coreCaseOpenApi.ts`
-- `src/typescript/index.ts`
-- `src/typescript/mfaEnrollment.ts`
-- `src/typescript/mfaEnrollmentRepository.ts`
-- `src/typescript/mfaEnrollmentRoutes.ts`
-- `tests/typescript/coreCaseOpenApi.test.ts`
-- `tests/typescript/mfaEnrollment.test.ts`
-- `tests/typescript/mfaEnrollmentRoutes.test.ts`
-
-**Validation Notes:**
-
-- `npm install` completed after merging SCRUM-57/58 dependencies so local
-  `node_modules` included `argon2` and `otplib`.
-- `npm run typecheck` passed.
-- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/mfaEnrollment.test.ts tests/typescript/mfaEnrollmentRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
-  passed with 4 files and 27 tests.
-- `npx vitest run --config vitest.integration.config.ts tests/typescript/auth/auth.integration.ts`
-  passed with 1 file and 3 tests.
-- `npm test` passed typecheck and 77 tests, then failed 1 existing PostgreSQL-backed
-  tenant migration test because this local database does not provide `uuidv7()`.
-- `npm install` reported existing npm audit findings; no broad dependency remediation
-  was performed as part of this ticket.
-
-## dylan-harle-jira60 - SCRUM-60
-
-**Branch:** `dylan-harle-jira60`
-
-**Owner:** Dylan Harle
-
-**Epic:** SCRUM-14 - Secure APIs - Auth, Audit & Boundaries
-
-**Summary:** Challenge and verify the MFA code at login
-
-**CSV Description:** As a Security Engineer, I want login to require a valid TOTP
-code, so that a stolen password alone cannot authenticate.
-
-**Acceptance Criteria:**
-
-- After password verification, login requires a second-factor code.
-- An invalid or expired code returns 401 and does not issue a token.
-- A valid code proceeds to JWT issuance.
-
-**How This Ties Into the Code:**
-
-- `authMfaLogin.ts` adds the second login step for the existing SCRUM-58 password
-  flow, consuming `tenant_id`, `user_id`, and a six-digit TOTP code.
-- The controller reuses the SCRUM-59 `MfaEnrollmentRepository` and TOTP provider to
-  require a tenant-scoped enrolled factor before issuing any token.
-- `createHmacJwtIssuer` issues a real HS256 access JWT with `sub`, `tenant_id`,
-  `iss`, `iat`, and `exp` claims using `TAXPULSE_JWT_SECRET`,
-  `TAXPULSE_JWT_ISSUER`, and `TAXPULSE_ACCESS_TOKEN_TTL_SECONDS`.
-- `authMfaLoginRoutes.ts` exposes `POST /auth/login/mfa`, returning one generic
-  401 Problem Details response for unknown challenge identifiers, missing or
-  unenrolled MFA, and invalid or expired TOTP codes.
-- `coreCaseOpenApi.ts` documents the MFA login verification request, bearer token
-  response, and validation/authentication failure cases.
-
-**Project Scope Connection:**
-
-TaxPulse Advisory requires password authentication to be insufficient on its own.
-This ticket completes the password-to-MFA login path by requiring an enrolled TOTP
-factor before access JWT issuance while leaving refresh-token persistence and broader
-JWT middleware to SCRUM-61.
-
-**Changed Files:**
-
-- `planning/team/ticket-journal.md`
-- `src/typescript/authMfaLogin.ts`
-- `src/typescript/authMfaLoginRoutes.ts`
-- `src/typescript/coreCaseOpenApi.ts`
-- `src/typescript/index.ts`
-- `tests/typescript/authMfaLogin.test.ts`
-- `tests/typescript/authMfaLoginRoutes.test.ts`
-- `tests/typescript/coreCaseOpenApi.test.ts`
-
-**Validation Notes:**
-
-- `npm run typecheck` passed.
-- `npx vitest run tests/typescript/auth/auth.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/mfaEnrollment.test.ts tests/typescript/mfaEnrollmentRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
-  passed with 6 files and 35 tests.
-- `npm test` passed typecheck and 85 tests, then failed 1 existing PostgreSQL-backed
-  tenant migration test because this local database does not provide `uuidv7()`.
-
-
-## christopher-martus-jira61 - SCRUM-61
-
-**Branch:** `christopher-martus-jira61`
-
-**Owner:** Christopher Martus
-
-**Jira Key:** SCRUM-61
-
-**Summary:** Issue access and refresh JWTs with role and tenant claims
-
-**Description:** Issue post-authentication access tokens carrying verified identity claims
-and opaque refresh tokens whose SHA-256 hashes are persisted for later revocation.
-
-**Acceptance Criteria:**
-
-- Access JWTs include `sub`, `role`, `tenant_id`, `iss`, `iat`, and `exp`.
-- Refresh-token state is persisted without retaining the bearer token value.
-- Persisted refresh tokens can be revoked with `revoked_at` recorded.
-
-**Code Connection:**
-
-- `tokenService` accepts only an `AuthenticatedPrincipal`, signs HS256 access JWTs, and
-  generates 256-bit opaque refresh tokens.
-- `refreshTokenRepository` persists SHA-256 hashes and conditionally records revocation.
-- JWT configuration requires one shared issuer and a minimum 32-byte signing secret.
-- The SCRUM-60 MFA controller invokes `tokenService.issue({ userId, role, tenantId })`
-  after valid TOTP verification using the server-trusted principal loaded from PostgreSQL.
-- The trusted MFA lookup joins `user_status` and admits only active users, so disabled
-  and invited accounts cannot receive access or refresh tokens.
-
-**Project Scope Connection:**
-
-This establishes a shared identity-token contract for the Node service and future FastAPI
-validation while retaining refresh-token revocation state in PostgreSQL and preserving
-tenant and role claims from the trusted authentication boundary.
-
-**Changed Files:**
-
-- `src/typescript/authConfig.ts`
-- `src/typescript/authMfaLogin.ts`
-- `src/typescript/authTypes.ts`
-- `src/typescript/coreCaseOpenApi.ts`
-- `src/typescript/index.ts`
-- `src/typescript/mfaEnrollment.ts`
-- `src/typescript/mfaEnrollmentRepository.ts`
-- `src/typescript/refreshTokenRepository.ts`
-- `src/typescript/tokenService.ts`
-- `tests/typescript/authConfig.test.ts`
-- `tests/typescript/authMfaLogin.integration.ts`
-- `tests/typescript/authMfaLogin.test.ts`
-- `tests/typescript/authMfaLoginRoutes.test.ts`
-- `tests/typescript/coreCaseOpenApi.test.ts`
-- `tests/typescript/mfaEnrollment.test.ts`
-- `tests/typescript/mfaEnrollmentRoutes.test.ts`
-- `tests/typescript/tokenService.test.ts`
-- `tests/typescript/refreshToken.integration.ts`
-
-**Validation Notes:**
-
-- `npm run typecheck` passed.
-- `npx vitest run tests/typescript/authConfig.test.ts tests/typescript/tokenService.test.ts`
-  passed: 2 files, 11 tests.
-- `npm run db:check` passed.
-- `npm run test:integration -- tests/typescript/authMfaLogin.integration.ts` passed with
-  Docker/Testcontainers access: 1 file, 1 test.
-- `npm test` passed 95 of 96 tests with Docker access; the remaining existing
-  `tenantsMigration` test fails because legacy migration SQL references `public.roles`
-  while the test uses an isolated schema.
 
 ## christopher-martus-jira62 - SCRUM-62
 
