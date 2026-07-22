@@ -34,6 +34,16 @@ class TaxCalculationRequest(BaseModel):
         return value
 
 
+class TaxCalculationResponse(BaseModel):
+    """Response contract for calculated tax liabilities and rates."""
+
+    federal_liability: float = Field(ge=0)
+    state_liability: float = Field(ge=0)
+    effective_rate: float = Field(ge=0, le=1)
+    marginal_rate: float = Field(ge=0, le=1)
+    quarterly_estimate: float = Field(ge=0)
+
+
 class TaxCalculationResult(BaseModel):
     """Placeholder result model for the async tax calculation seam."""
 
