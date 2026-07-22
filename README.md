@@ -119,11 +119,12 @@ The Core Case Service publishes its OpenAPI 3.0 JSON document at:
 GET /openapi.json
 ```
 
-The document currently describes the unversioned Tax Plan Cycle create and read
+The document currently describes the versioned Tax Plan Cycle create and read
 operations:
 
 - `POST /tax-plan-cycles`
 - `GET /tax-plan-cycles/{caseId}`
+- `PATCH /tax-plan-cycles/{caseId}/transition`
 
 Successful reads return the persisted Tax Plan Cycle for the request tenant:
 

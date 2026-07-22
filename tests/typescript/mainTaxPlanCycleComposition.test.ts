@@ -70,7 +70,7 @@ describe("main Tax Plan Cycle composition", () => {
     const token = await createAccessToken();
 
     try {
-      const createResponse = await fetch(`http://127.0.0.1:${address.port}/tax-plan-cycles`, {
+      const createResponse = await fetch(`http://127.0.0.1:${address.port}/v1/tax-plan-cycles`, {
         method: "POST",
         headers: {
           authorization: `Bearer ${token}`,
@@ -85,12 +85,20 @@ describe("main Tax Plan Cycle composition", () => {
         }),
       });
       const readResponse = await fetch(
-        `http://127.0.0.1:${address.port}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91`,
+        `http://127.0.0.1:${address.port}/v1/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91`,
         { headers: { authorization: `Bearer ${token}` } },
+      );
+      const unversionedResponse = await fetch(
+        `http://127.0.0.1:${address.port}/tax-plan-cycles`,
+      );
+      const unknownVersionResponse = await fetch(
+        `http://127.0.0.1:${address.port}/v2/tax-plan-cycles`,
       );
 
       expect(createResponse.status).toBe(202);
       expect(readResponse.status).toBe(200);
+      expect(unversionedResponse.status).toBe(404);
+      expect(unknownVersionResponse.status).toBe(404);
       expect(createTaxPlanCycleRepository).toHaveBeenCalledTimes(1);
       expect(repository.create).toHaveBeenCalledWith({
         tenantId: "tenant-from-jwt",
