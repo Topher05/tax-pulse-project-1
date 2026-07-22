@@ -7,14 +7,18 @@ name = "tax-pulse-project-team-1"
 version = "0.0.0"
 description = "TaxPulse project workspace"
 requires-python = "==3.13.14"
+dependencies = [
+  "boto3>=1.35,<2",
+  "pydantic>=2,<3",
+]
 
 [project.optional-dependencies]
 dev = [
-  "pydantic>=2,<3",
   "pytest>=8.0",
   "pytest-asyncio>=0.23",
   "pyright[nodejs]>=1.1",
   "ruff>=0.8",
+  "testcontainers[localstack]>=4.9,<5",
 ]
 
 [project.scripts]
