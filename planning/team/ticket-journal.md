@@ -3,6 +3,75 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## dylan-harle-jira73 - SCRUM-73
+
+**Branch:** `dylan-harle-jira73`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-73
+
+**Epic:** SCRUM-15 - Polyglot Backend & Contracts
+
+**Summary:** Define the DynamoDB queue projection table
+
+**Description:** As a Backend Developer, I want a DynamoDB table for the Plan Cycle
+Queue projection, so that the queue is read from a denormalized store.
+
+**Acceptance Criteria:**
+
+- A DynamoDB table holds a denormalized queue projection keyed by `tenant_id` with
+  case sort key.
+- Each item carries case ID, client, stage, owner, priority, due_date, and overdue
+  flag.
+- The table definition is created against a local DynamoDB for tests.
+
+**Code Connection:**
+
+- `PlanCycleQueueProjectionItem` defines the Python/Pydantic queue projection item
+  shape with `tenant_id`, `case_id`, `client`, `stage`, `owner`, `priority`,
+  `due_date`, and `is_overdue`.
+- The Python DynamoDB module defines the table contract
+  `taxpulse_plan_cycle_queue_projection`, keyed by `tenant_id` as the partition key
+  and `case_id` as the sort key, using pay-per-request billing.
+- `create_dynamodb_client` points to `TAXPULSE_DYNAMODB_ENDPOINT_URL` or an injected
+  endpoint for LocalStack, and otherwise leaves boto3 on its normal AWS credential
+  provider chain for a future real AWS deployment.
+- Python tests start LocalStack through Testcontainers, create the table locally, and
+  write/query synthetic tenant-scoped projection items without touching paid AWS.
+- The LocalStack test fixture defaults to `localstack/localstack:3.8.1` because the
+  current `latest` image requires a LocalStack auth token/license; teams with a token
+  can override `TAXPULSE_LOCALSTACK_IMAGE` and pass `LOCALSTACK_AUTH_TOKEN`.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs a denormalized, tenant-scoped read model for the Plan Cycle
+Queue before later projection and caching tickets can move reads away from the
+transactional PostgreSQL case table. This ticket establishes the DynamoDB-compatible
+table shape in the Python side of the polyglot backend while keeping all validation
+against LocalStack rather than paid AWS.
+
+**Changed Files:**
+
+- `adr/0010-python-dynamodb-queue-projection-localstack.md`
+- `adr/README.md`
+- `pyproject.toml`
+- `planning/team/ticket-journal.md`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `src/python/tax_pulse_project_team_1/dynamodb/__init__.py`
+- `src/python/tax_pulse_project_team_1/dynamodb/plan_cycle_queue_projection.py`
+- `tests/python/test_plan_cycle_queue_projection.py`
+
+**Validation Notes:**
+
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m ruff check src/python tests/python` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"`
+  passed.
+- `python -m pytest tests/python/test_plan_cycle_queue_projection.py` passed with 6
+  tests using Docker/Testcontainers LocalStack access.
+- `python -m pytest` passed with 11 tests.
+
 ## development - SCRUM-68
 
 **Branch:** `development`
