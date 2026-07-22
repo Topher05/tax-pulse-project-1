@@ -138,7 +138,6 @@ export function createDefaultMfaTotpProvider(
         secret,
         token: code,
       });
-
       return result.valid;
     },
   };

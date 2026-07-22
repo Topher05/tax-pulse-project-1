@@ -3,6 +3,166 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## caleb-latimer-jira67 - SCRUM-67
+
+**Branch:** `caleb-latimer-jira67`
+
+**Owner:** Caleb Latimer
+
+**Summary:** Wire the role-gated transition endpoint enforcing the permission matrix
+
+**CSV Description:** As a Security Engineer, I want the stage-transition validator
+exposed as a role-gated endpoint, so that only authorized roles advance a Tax Plan
+Cycle and denials are audited.
+
+**Acceptance Criteria:**
+
+- `PATCH /cycles/{id}/transition` validates the requested move, checks role access, and
+  advances the stage only for authorized, legal transitions.
+- Unauthorized role attempts return `403` and illegal moves return `422`.
+- Successful transitions write the `stage_transition` row in the same transaction.
+- Denied attempts emit a console audit stub with `case_id`, `actor`, `action`,
+  `outcome`, and `occurred_at`.
+
+**How This Ties Into the Code:**
+
+- `createTaxPlanCycleRouter` now serves `PATCH /cycles/:id/transition`, validates the
+  path/body with Zod, loads the current cycle through the existing read path, and
+  enforces the role gate before any mutation.
+- `taxPlanCycleRepository.transition` updates the cycle stage and inserts the
+  `stage_transition` row inside a single transaction, then returns the updated cycle.
+- `taxPlanCycleTransitionController` wraps the repository for the new route boundary,
+  while the route keeps the current stage-transition validator as the legality check.
+- Denied attempts call a console audit stub that emits
+  `{ case_id, actor, action, outcome, occurred_at }` until the real `audit_entry`
+  writer exists.
+- The route returns `403` for unauthorized users and `422` for illegal transitions
+  without mutating the cycle.
+- Mermaid sequence diagram:
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant API as Express PATCH /cycles/{id}/transition
+  participant Auth as Request context / role gate
+  participant Val as Stage transition validator
+  participant Repo as Drizzle repository
+  participant Audit as Console audit stub
+  participant DB as PostgreSQL
+
+  User->>API: PATCH transition request
+  API->>Auth: resolve tenant, actor, role, permissions
+  alt unauthorized role
+    Auth-->>API: 403 Forbidden
+    API->>Audit: log {case_id, actor, action, outcome, occurred_at}
+    API-->>User: 403 Problem Details
+  else authorized role
+    API->>Val: validate requested transition
+    alt illegal move
+      Val-->>API: 422 Unprocessable Entity
+      API->>Audit: log {case_id, actor, action, outcome, occurred_at}
+      API-->>User: 422 Problem Details
+    else legal move
+      Val-->>API: allowed
+      API->>Repo: update stage + insert stage_transition in one txn
+      Repo->>DB: commit
+      API-->>User: success response with updated cycle
+    end
+  end
+```
+TaxPulse Advisory depends on stage-gated workflow changes and immutable audit history
+for compliance. This ticket adds the secure API boundary for advancing a Tax Plan
+Cycle while preserving tenant isolation, role gating, and the stage-based workflow
+model.
+
+**Changed Files:**
+
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycle.ts`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `src/typescript/taxPlanCycleTransitionController.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `planning/prompt-journal/cl-journal.md`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm test` passed the new route coverage, but the full Vitest run still timed out in
+  pre-existing `role` and `user` tests at the 5 second test limit.
+- The targeted integration rerun could not complete in this shell because the local
+  Node launcher hit the existing Windows `EPERM` path-resolution issue, and the
+  escalated rerun was declined.
+- `npm run typecheck`
+- `npm test`
+- `npm run test:migration`
+
+## christopher-martus-jira64 - SCRUM-64
+
+**Branch:** `christopher-martus-jira64`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-64
+
+**Summary:** Validate shared JWTs in a FastAPI dependency
+
+**Description:** Add a FastAPI dependency that validates the HS256 access JWTs issued
+by the Node service so the Tax Calculation Engine trusts the same identity scheme.
+
+**Acceptance Criteria:**
+
+- The dependency validates JWT signature, expiry, and issuer using the shared key.
+- Expired or tampered tokens return 401.
+- Valid tokens expose role and tenant_id to downstream handlers.
+
+**Code Connection:**
+
+- `JwtValidationConfig.from_environment` reads the shared `JWT_ISSUER` and
+  `JWT_SIGNING_SECRET` values without an import-time environment dependency and enforces
+  the Node service's minimum 32-byte secret requirement.
+- `create_jwt_authentication_dependency` uses FastAPI's bearer security dependency and
+  PyJWT to accept only HS256 JWTs, validate issuer and expiry, and return the typed
+  `AuthenticatedPrincipal` containing verified role and tenant_id claims.
+- Authentication failures, including missing credentials, invalid signatures, expired
+  tokens, wrong issuers, and invalid downstream claims, use one 401 response with the
+  `WWW-Authenticate: Bearer` header.
+- SCRUM-84 remains responsible for attaching this reusable dependency to the Tax
+  Calculation endpoint; no calculation route is added here.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs a shared identity boundary across the Node Core Case Service and
+the Python Tax Calculation Engine. This ticket provides that focused FastAPI boundary
+while preserving tenant isolation and leaving calculation endpoint composition to the
+later API ticket.
+
+**Changed Files:**
+
+- `pyproject.toml`
+- `src/python/tax_pulse_project_team_1/jwt_authentication.py`
+- `tests/python/test_jwt_authentication.py`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m ruff check src/python tests/python` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"`
+  passed with 0 errors.
+- `python -m pytest tests/python/test_jwt_authentication.py` passed with 15 tests.
+- `python -m pytest` passed with 20 tests. FastAPI's installed TestClient emitted its
+  upstream httpx deprecation warning; pytest also could not update the pre-existing
+  repository `.pytest_cache` due to local access permissions.
+
+
+# Shared Team Ticket Journal
+
+This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
+and ties each ticket back to the code, tests, and validation evidence produced for it.
+
 ## development - SCRUM-68
 
 **Branch:** `development`

@@ -35,6 +35,13 @@ export interface TaxPlanCycleInsertInput {
   cycle: Omit<TaxPlanCycle, "id">;
 }
 
+export interface TaxPlanCycleTransitionInput {
+  tenantId: string;
+  caseId: string;
+  toStage: TaxPlanCycle["stage"];
+  actor: string;
+}
+
 export type TaxPlanCycleQueueItem = TaxPlanCycle & {
   is_overdue: boolean;
 };
@@ -43,6 +50,9 @@ export interface TaxPlanCycleRepository {
   create(input: TaxPlanCycleRepositoryCreateInput): Promise<string>;
   insert(input: TaxPlanCycleInsertInput): Promise<string>;
   findByCaseId(input: TaxPlanCycleReadInput): Promise<TaxPlanCycle | null>;
+  transition(
+    input: TaxPlanCycleTransitionInput,
+  ): Promise<TaxPlanCycle | null>;
   listQueue(input: TaxPlanCycleQueueInput): Promise<TaxPlanCycleQueueItem[]>;
 }
 
@@ -201,6 +211,61 @@ export function createTaxPlanCycleRepository(
       const row = rows[0];
 
       return row ? toTaxPlanCycle(row) : null;
+    },
+
+    async transition({ tenantId, caseId, toStage, actor }) {
+      return await db.transaction(async (tx) => {
+        const rows = await tx
+          .select({
+            id: taxPlanCycleTable.id,
+            clientId: taxPlanCycleTable.clientId,
+            stage: taxPlanCycleTable.stage,
+            owner: taxPlanCycleTable.owner,
+            priority: taxPlanCycleTable.priority,
+            dueDate: taxPlanCycleTable.dueDate,
+            onHold: taxPlanCycleTable.onHold,
+            holdReason: taxPlanCycleTable.holdReason,
+          })
+          .from(taxPlanCycleTable)
+          .where(
+            and(
+              eq(taxPlanCycleTable.tenantId, tenantId),
+              eq(taxPlanCycleTable.id, caseId),
+            ),
+          )
+          .limit(1);
+
+        const currentRow = rows[0];
+
+        if (!currentRow) {
+          return null;
+        }
+
+        await tx
+          .update(taxPlanCycleTable)
+          .set({
+            stage: toStage,
+          })
+          .where(
+            and(
+              eq(taxPlanCycleTable.tenantId, tenantId),
+              eq(taxPlanCycleTable.id, caseId),
+            ),
+          );
+
+        await tx.insert(stageTransitionTable).values({
+          caseId,
+          fromStage: currentRow.stage,
+          toStage,
+          actor,
+          occurredAt: new Date(),
+        });
+
+        return toTaxPlanCycle({
+          ...currentRow,
+          stage: toStage,
+        });
+      });
     },
 
     async listQueue({ tenantId, asOfDate = todayIsoDate() }) {
