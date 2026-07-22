@@ -134,22 +134,10 @@ export function createDefaultMfaTotpProvider(
         secret,
       }),
     async verifyCode({ code, secret }) {
-      console.log("Entered and probably failed")
-      console.log(code)
-      console.log("+",secret,"+")
-      const stepMs = 30_000;
-const now = Date.now();
-
-console.log({
-  serverNow: new Date(now).toISOString(),
-  serverWindow: Math.floor(now / stepMs),
-  serverSecondsLeft: Math.ceil((stepMs - (now % stepMs)) / 1000),
-});
       const result = await verify({
         secret,
         token: code,
       });
-      console.log(result)
       return result.valid;
     },
   };

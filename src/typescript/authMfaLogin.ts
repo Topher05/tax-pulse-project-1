@@ -53,16 +53,11 @@ export function createAuthMfaLoginController({
 }: CreateAuthMfaLoginControllerOptions): AuthMfaLoginController {
   return {
     async verify({ tenant_id, user_id, code }) {
-      console.log("Ticked")
-      console.log(tenant_id)
-      console.log(user_id)
-      console.log(code)
-
       const user = await repository.findTenantUser({
         tenantId: tenant_id,
         userId: user_id,
       });
-      
+
       if (user === null) {
         throw authenticationFailedProblem();
       }
@@ -73,7 +68,6 @@ export function createAuthMfaLoginController({
         throw authenticationFailedProblem();
       }
 
-      // Is coming back false even with valid properties hmac translation? Base 32?
       const isValid = await totpProvider.verifyCode({
         code,
         secret: enrollment.totpSecret,
@@ -89,7 +83,6 @@ export function createAuthMfaLoginController({
         tenantId: user.tenantId,
       });
 
-      console.log("Exiting verify")
       return authMfaLoginResultSchema.parse({
         access_token: pair.accessToken,
         refresh_token: pair.refreshToken,

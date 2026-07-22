@@ -160,7 +160,6 @@ export function createTaxPlanCycleRepository(
 
   return {
     async create(input) {
-      console.log("RUNNING CREATE QUERY!!!: ", input)
       return await persistCycle({
         tenantId: input.tenantId,
         planningPeriod: input.planningPeriod,
@@ -175,7 +174,6 @@ export function createTaxPlanCycleRepository(
     },
 
     async insert({ tenantId, planningPeriod, cycle }) {
-      console.log("RUNNING INSERT QUERY!!!: ", tenantId, " ", planningPeriod, " ", cycle)
       return await persistCycle({
         tenantId,
         planningPeriod,
@@ -190,7 +188,6 @@ export function createTaxPlanCycleRepository(
     },
 
     async findByCaseId({ tenantId, caseId }) {
-      console.log("RUNNING QUERY!!!: ", tenantId, " ", caseId)
       const rows = await db
         .select({
           id: taxPlanCycleTable.id,
@@ -217,7 +214,6 @@ export function createTaxPlanCycleRepository(
     },
 
     async transition({ tenantId, caseId, toStage, actor }) {
-      console.log('CALLS REAL')
       return await db.transaction(async (tx) => {
         const rows = await tx
           .select({

@@ -109,9 +109,7 @@ export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router 
   router.post(
     "/auth/login",
     async (req: Request, res: Response, next: NextFunction) => {
-      console.log("Post reached")
       const parsedBody = passwordLoginRequestSchema.safeParse(req.body);
-      console.log(parsedBody)
 
       if (!parsedBody.success) {
         next(
@@ -131,8 +129,6 @@ export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router 
 
       try {
         const result = await authenticatePassword(toLoginInput(parsedBody.data));
-        console.log("Testing")
-        console.log(result)
         if (result.status === "invalid_credentials") {
           next(invalidCredentialsError());
           return;
@@ -140,7 +136,6 @@ export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router 
 
         res.status(202).json(toMfaChallengeResponse(result));
       } catch (error) {
-        console.log("Main failure path")
         next(error);
       }
     },

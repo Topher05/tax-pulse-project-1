@@ -27,15 +27,12 @@ export async function authenticatePasswordForMfaChallenge(
   input: PasswordCredentialLoginInput,
   reader: PasswordCredentialReader,
 ): Promise<PasswordAuthenticationResult> {
-  console.log("In credential finder")
-  console.log(input)
   const credential = await reader.findPasswordCredentialByEmail({
     tenantId: input.tenantId,
     email: input.email,
   });
 
   if (!credential) {
-    console.log('Fails here')
     return { status: "invalid_credentials" };
   }
 

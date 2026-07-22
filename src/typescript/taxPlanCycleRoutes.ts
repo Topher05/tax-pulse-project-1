@@ -268,8 +268,6 @@ export function createTaxPlanCycleRouter(
     "/tax-plan-cycles/:caseId",
     async (req: Request, res: Response, next: NextFunction) => {
       const parsedParams = taxPlanCycleReadParamsSchema.safeParse(req.params);
-      console.log('Get case found')
-      console.log(parsedParams) // Contains case id, where does tennant id live?
       if (!parsedParams.success) {
         next(
           new ProblemHttpError({
@@ -283,18 +281,11 @@ export function createTaxPlanCycleRouter(
             },
           }),
         );
-        console.log('Exit A')
         return;
       }
 
       try {
-        console.log("Starting Search for ID....")
-        const foo = req as TenantScopedRequest
-        console.log(req?.tenant)
-        console.log("Req casting works")
-        const tenantId = (req as TenantScopedRequest).tenant.id; // Fails and triggers catch, tenant is undefined via postman, does it need to be sent as a header
-        console.log(tenantId)
-        console.log("ID is above")
+        const tenantId = (req as TenantScopedRequest).tenant.id;
         const cycle = await controller.findByCaseId({
           tenantId,
           caseId: parsedParams.data.caseId,
@@ -314,7 +305,6 @@ export function createTaxPlanCycleRouter(
 
         res.status(200).json(cycle);
       } catch (error) {
-        console.log('Exit B') // Get fails here with 400 find out why, theory is that it's due to tenantId
         next(error);
       }
     },
