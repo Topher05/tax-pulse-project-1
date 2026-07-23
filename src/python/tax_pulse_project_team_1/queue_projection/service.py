@@ -44,7 +44,7 @@ def upsert_tax_plan_cycle_queue_projection(
     """Stub the DynamoDB upsert seam until SCRUM-73 delivers the table contract."""
 
     projection = project_tax_plan_cycle_to_queue_item(tenant_id, source, as_of=as_of)
-    # Blocked by Scrum-73 pending impl
+    # Blocked by Scrum-73 pending impl, merge complete, cycling back to integrate
     if writer is not None:
         writer(projection)
     return projection
