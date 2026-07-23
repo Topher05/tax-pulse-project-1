@@ -45,13 +45,317 @@ queue projections, or a separate Tax Plan Cycle status field.
 
 - `docs/storage-decision-matrix.md`
 - `README.md`
+
+## dylan-harle-jira76 - SCRUM-76
+
+**Branch:** `dylan-harle-jira76`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-76
+
+**Epic:** SCRUM-15 - Polyglot Backend & Contracts
+
+**Summary:** Store idempotency keys for case creation
+
+**Description:** As a Backend Developer, I want an idempotency-key store, so that a
+retried create returns the original result.
+
+**Acceptance Criteria:**
+
+- An idempotency record keyed by Idempotency-Key persists the first result.
+- A repeat request with the same key returns the stored original result.
+- Distinct keys create distinct cycles.
+
+**Code Connection:**
+
+- `POST /tax-plan-cycles` requires a trimmed, non-empty `Idempotency-Key` header and passes
+  it through the create controller.
+- `createTaxPlanCycleRepository` stores the successful first create result in
+  `tax_plan_cycle_idempotency_key`, scoped by tenant and idempotency key.
+- Repeated creates with the same tenant/key return the stored original `case_id`; distinct
+  keys continue to create distinct Tax Plan Cycles with their own transition and audit rows.
+- The OpenAPI document now advertises the required `Idempotency-Key` header on the create
+  operation.
+- ADR-0010 records the decision to store tenant-scoped case creation idempotency records in
+  the Core Case Service PostgreSQL store.
+
+**Project Scope Connection:**
+
+Idempotent case creation builds directly on SCRUM-53's persistent Intake create path while
+preserving tenant isolation, the stage-based workflow model, and the existing immutable
+audit/transition side effects. This ticket establishes the stored result foundation for
+SCRUM-77's later concurrent-create guard.
+
+**Changed Files:**
+
 - `planning/team/ticket-journal.md`
+- `adr/0010-tenant-scoped-case-creation-idempotency.md`
+- `adr/README.md`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/db/drizzle-migrations/0005_store_case_creation_idempotency_keys.sql`
+- `src/typescript/db/schema.ts`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycleCreateController.ts`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
 
 **Validation Notes:**
 
 - Verified the matrix against the SCRUM-78 acceptance criteria and ADR-0009 service
   ownership decision.
 - Verified the README uses a relative link to the matrix.
+- Required-header refactor validation: `npm run typecheck` passed.
+- Required-header refactor validation:
+  `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts tests/typescript/mainTaxPlanCycleComposition.test.ts`
+  passed with 24 tests.
+- Required-header refactor validation:
+  `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 16 tests.
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 17 tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 16 tests, including same-key replay and distinct-key create coverage.
+- `npm test` passed typechecking and reported 133 passing tests; it ended with the known
+  `tests/typescript/tenantsMigration.test.ts` PostgreSQL 17 `uuidv7()` failure that is
+  outside this ticket.
+- Initial Node validation commands failed inside the default Windows sandbox with
+  `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands ran with
+  approved elevated filesystem access.
+
+## dylan-harle-jira77 - SCRUM-77
+
+**Branch:** `dylan-harle-jira77`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-77
+
+**Epic:** SCRUM-15 - Polyglot Backend & Contracts
+
+**Summary:** Guard concurrent creates with the idempotency key
+
+**Description:** As a Backend Developer, I want concurrent creates with the same key to
+produce one cycle, so that retries under load never duplicate cases.
+
+**Acceptance Criteria:**
+
+- Two concurrent requests with the same Idempotency-Key create exactly one cycle.
+- The second request waits for or reads the first result rather than inserting again.
+- A concurrency test asserts a single cycle is created.
+
+**Code Connection:**
+
+- `createTaxPlanCycleRepository.create` still requires the SCRUM-76 `idempotencyKey` input.
+- Required-key creates now run in a transaction that acquires a PostgreSQL advisory lock
+  scoped to the tenant ID and idempotency key before reading or writing the idempotency row.
+- The first same-key transaction inserts the Intake cycle, initial transition, audit entry,
+  and idempotency row; later same-key transactions read the stored `case_id` and skip all
+  duplicate side effects.
+- The repository's internal `insert` helper remains a no-key fixture/seed path and does not
+  change public create behavior.
+- ADR-0010 now documents the advisory-lock concurrency decision.
+
+**Project Scope Connection:**
+
+This completes the retry-safety path established by SCRUM-76 while preserving tenant
+isolation, the stage-based workflow model, and immutable transition/audit side effects.
+The lock key is tenant-scoped so firms cannot observe or block each other's idempotency
+keys.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `adr/0010-tenant-scoped-case-creation-idempotency.md`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+
+**Validation Notes:**
+
+- Initial Node validation commands failed inside the default Windows sandbox with
+  `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands ran with
+  approved elevated filesystem access.
+- Merge-conflict validation: `npm run typecheck` passed.
+- Merge-conflict validation:
+  `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts tests/typescript/mainTaxPlanCycleComposition.test.ts`
+  passed with 31 tests.
+- Merge-conflict validation:
+  `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 22 tests, including the concurrent same-key create coverage.
+- Merge-conflict validation: `npm run test` passed typechecking and 142 tests, then
+  `tests/typescript/tenantsMigration.test.ts` timed out under full-suite load; rerunning
+  `npx vitest run tests/typescript/tenantsMigration.test.ts` passed.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 17 tests, including the concurrent same-key create coverage.
+
+## dylan-harle-jira73 - SCRUM-73
+
+**Branch:** `dylan-harle-jira73`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-73
+
+**Epic:** SCRUM-15 - Polyglot Backend & Contracts
+
+**Summary:** Define the DynamoDB queue projection table
+
+**Description:** As a Backend Developer, I want a DynamoDB table for the Plan Cycle
+Queue projection, so that the queue is read from a denormalized store.
+
+**Acceptance Criteria:**
+
+- A DynamoDB table holds a denormalized queue projection keyed by `tenant_id` with
+  case sort key.
+- Each item carries case ID, client, stage, owner, priority, due_date, and overdue
+  flag.
+- The table definition is created against a local DynamoDB for tests.
+
+**Code Connection:**
+
+- `PlanCycleQueueProjectionItem` defines the Python/Pydantic queue projection item
+  shape with `tenant_id`, `case_id`, `client`, `stage`, `owner`, `priority`,
+  `due_date`, and `is_overdue`.
+- The Python DynamoDB module defines the table contract
+  `taxpulse_plan_cycle_queue_projection`, keyed by `tenant_id` as the partition key
+  and `case_id` as the sort key, using pay-per-request billing.
+- `create_dynamodb_client` points to `TAXPULSE_DYNAMODB_ENDPOINT_URL` or an injected
+  endpoint for LocalStack, and otherwise leaves boto3 on its normal AWS credential
+  provider chain for a future real AWS deployment.
+- Python tests start LocalStack through Testcontainers, create the table locally, and
+  write/query synthetic tenant-scoped projection items without touching paid AWS.
+- The LocalStack test fixture defaults to `localstack/localstack:3.8.1` because the
+  current `latest` image requires a LocalStack auth token/license; teams with a token
+  can override `TAXPULSE_LOCALSTACK_IMAGE` and pass `LOCALSTACK_AUTH_TOKEN`.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs a denormalized, tenant-scoped read model for the Plan Cycle
+Queue before later projection and caching tickets can move reads away from the
+transactional PostgreSQL case table. This ticket establishes the DynamoDB-compatible
+table shape in the Python side of the polyglot backend while keeping all validation
+against LocalStack rather than paid AWS.
+
+**Changed Files:**
+
+- `adr/0010-python-dynamodb-queue-projection-localstack.md`
+- `adr/README.md`
+- `pyproject.toml`
+- `planning/team/ticket-journal.md`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `src/python/tax_pulse_project_team_1/dynamodb/__init__.py`
+- `src/python/tax_pulse_project_team_1/dynamodb/plan_cycle_queue_projection.py`
+- `tests/python/test_plan_cycle_queue_projection.py`
+
+**Validation Notes:**
+
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m ruff check src/python tests/python` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"`
+  passed.
+- `python -m pytest tests/python/test_plan_cycle_queue_projection.py` passed with 6
+  tests using Docker/Testcontainers LocalStack access.
+- `python -m pytest` passed with 11 tests.
+
+## caleb-latimer-jira67 - SCRUM-67
+
+**Branch:** `caleb-latimer-jira67`
+
+**Owner:** Caleb Latimer
+
+**Summary:** Wire the role-gated transition endpoint enforcing the permission matrix
+
+**CSV Description:** As a Security Engineer, I want the stage-transition validator
+exposed as a role-gated endpoint, so that only authorized roles advance a Tax Plan
+Cycle and denials are audited.
+
+**Acceptance Criteria:**
+
+- `PATCH /cycles/{id}/transition` validates the requested move, checks role access, and
+  advances the stage only for authorized, legal transitions.
+- Unauthorized role attempts return `403` and illegal moves return `422`.
+- Successful transitions write the `stage_transition` row in the same transaction.
+- Denied attempts emit a console audit stub with `case_id`, `actor`, `action`,
+  `outcome`, and `occurred_at`.
+
+**How This Ties Into the Code:**
+
+- `createTaxPlanCycleRouter` now serves `PATCH /cycles/:id/transition`, validates the
+  path/body with Zod, loads the current cycle through the existing read path, and
+  enforces the role gate before any mutation.
+- `taxPlanCycleRepository.transition` updates the cycle stage and inserts the
+  `stage_transition` row inside a single transaction, then returns the updated cycle.
+- `taxPlanCycleTransitionController` wraps the repository for the new route boundary,
+  while the route keeps the current stage-transition validator as the legality check.
+- Denied attempts call a console audit stub that emits
+  `{ case_id, actor, action, outcome, occurred_at }` until the real `audit_entry`
+  writer exists.
+- The route returns `403` for unauthorized users and `422` for illegal transitions
+  without mutating the cycle.
+- Mermaid sequence diagram:
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant API as Express PATCH /cycles/{id}/transition
+  participant Auth as Request context / role gate
+  participant Val as Stage transition validator
+  participant Repo as Drizzle repository
+  participant Audit as Console audit stub
+  participant DB as PostgreSQL
+
+  User->>API: PATCH transition request
+  API->>Auth: resolve tenant, actor, role, permissions
+  alt unauthorized role
+    Auth-->>API: 403 Forbidden
+    API->>Audit: log {case_id, actor, action, outcome, occurred_at}
+    API-->>User: 403 Problem Details
+  else authorized role
+    API->>Val: validate requested transition
+    alt illegal move
+      Val-->>API: 422 Unprocessable Entity
+      API->>Audit: log {case_id, actor, action, outcome, occurred_at}
+      API-->>User: 422 Problem Details
+    else legal move
+      Val-->>API: allowed
+      API->>Repo: update stage + insert stage_transition in one txn
+      Repo->>DB: commit
+      API-->>User: success response with updated cycle
+    end
+  end
+```
+TaxPulse Advisory depends on stage-gated workflow changes and immutable audit history
+for compliance. This ticket adds the secure API boundary for advancing a Tax Plan
+Cycle while preserving tenant isolation, role gating, and the stage-based workflow
+model.
+
+**Changed Files:**
+
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycle.ts`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `src/typescript/taxPlanCycleTransitionController.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `planning/prompt-journal/cl-journal.md`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm test` passed the new route coverage, but the full Vitest run still timed out in
+  pre-existing `role` and `user` tests at the 5 second test limit.
+- The targeted integration rerun could not complete in this shell because the local
+  Node launcher hit the existing Windows `EPERM` path-resolution issue, and the
+  escalated rerun was declined.
+- `npm run typecheck`
+- `npm test`
+- `npm run test:migration`
 
 ## christopher-martus-jira64 - SCRUM-64
 
@@ -111,11 +415,6 @@ later API ticket.
   upstream httpx deprecation warning; pytest also could not update the pre-existing
   repository `.pytest_cache` due to local access permissions.
 
-
-# Shared Team Ticket Journal
-
-This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
-and ties each ticket back to the code, tests, and validation evidence produced for it.
 
 ## development - SCRUM-68
 
@@ -1768,3 +2067,130 @@ migrations, public-route headers, or a separate Tax Plan Cycle status field.
   SCRUM-70. The full Vitest run ended with 115 passing tests and 13 existing
   Testcontainers-backed migration failures because this environment could not find a
   working container runtime strategy.
+
+## caleb-latimer-jira74 - SCRUM-74
+
+**Branch:** `caleb-latimer-jira74`
+
+**Owner:** Caleb Latimer
+
+**Jira Key:** SCRUM-74
+
+**Summary:** Project Tax Plan Cycle changes into the queue projection
+
+**Description:** As a Backend Developer, I want cycle changes projected into the
+queue read model, so that the DynamoDB view stays consistent with the case.
+
+**Acceptance Criteria:**
+
+- Creating or updating a cycle upserts its queue projection item.
+- The overdue flag is recomputed from `due_date` on each projection.
+- A test asserts the projection matches the source cycle after a stage change.
+
+**Code Connection:**
+
+- `TaxPlanCycleRecord` and `TaxPlanCycleQueueProjectionItem` define the source and
+  queue-read-model shapes used by the Python projection seam.
+- `project_tax_plan_cycle_to_queue_item` rebuilds the denormalized queue item from the
+  source cycle on every call and recomputes `overdue` from `due_date` instead of
+  persisting stale state.
+- `upsert_tax_plan_cycle_queue_projection` is the DynamoDB write boundary for SCRUM-73
+  and is intentionally stubbed with the inline marker `Blocked by Scrum-74 pending impl`
+  until the table contract lands.
+- `tests/python/test_queue_projection.py` covers overdue recomputation, the upsert
+  seam, and the stage-change regression case that keeps the queue projection aligned
+  with the source cycle.
+- Diagram:
+
+```mermaid
+flowchart LR
+    NODE["Node Core Case Service"]
+
+    subgraph PY_QUEUE["Python queue_projection feature"]
+        direction TB
+        MODELS["models.py<br/>dataclasses"]
+        SERVICE["service.py<br/>projection + upsert seam"]
+        SERVICE -->|uses| MODELS
+    end
+
+    PG[(PostgreSQL<br/>cycle source store)]
+    DDB[(DynamoDB<br/>queue projection store)]
+
+    NODE -->|persists cycle changes| PG
+    NODE -->|emits cycle changes| SERVICE
+    SERVICE -->|reads canonical cycle state| PG
+    SERVICE -->|upserts queue projection| DDB
+```
+
+**Project Scope Connection:**
+
+This ticket keeps PostgreSQL as the source of truth for cycle data while adding the
+Python-side queue projection seam that will eventually feed DynamoDB. It does not add
+or imply a FastAPI runtime, does not assume SCRUM-73's table contract exists yet, and
+preserves tenant-isolated cycle data by projecting per-cycle state into the queue
+view.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/queue_projection.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/test_queue_projection.py`
+- `planning/team/ticket-journal.md`
+- `planning/prompt-journal/cl-journal.md`
+
+**Validation Notes:**
+
+- `py -3.12 -m pytest tests/python/test_queue_projection.py` passed: 3 tests.
+- `py -3.12 -m pytest tests/python/test_smoke.py` passed: 1 test.
+- `py -3.12 -m pytest tests/python/test_jwt_authentication.py` could not run in this
+  host interpreter because `jwt` is not installed there.
+- `npx pyright --version` could not be executed here because Node launched through
+  `cmd` still hits the repository path `EPERM` `lstat` issue at `C:\Users\Exia`.
+
+## caleb-latimer-jira74-refactor - SCRUM-74
+
+**Branch:** `caleb-latimer-jira74`
+
+**Owner:** Caleb Latimer
+
+**Jira Key:** SCRUM-74
+
+**Summary:** Refactor the queue projection into a feature package
+
+**Description:** As a Backend Developer, I want the queue projection isolated by
+feature, so that the models and logic stay separated as the projection layer grows.
+
+**Acceptance Criteria:**
+
+- Projection models live in a dedicated feature module.
+- Projection logic lives in a separate service module.
+- Tests are grouped by feature and still cover the Express-aligned contract.
+
+**Code Connection:**
+
+- `src/python/tax_pulse_project_team_1/queue_projection/models.py` owns the source and
+  projection dataclasses.
+- `src/python/tax_pulse_project_team_1/queue_projection/service.py` owns the pure
+  projection and stubbed upsert behavior.
+- `src/python/tax_pulse_project_team_1/queue_projection/__init__.py` provides the
+  public feature export surface.
+- `tests/python/queue_projection/test_models.py` and
+  `tests/python/queue_projection/test_service.py` split the model-shape coverage from
+  the projection behavior coverage.
+
+**Project Scope Connection:**
+
+This refactor keeps the SCRUM-74 queue projection aligned with the Express entity while
+making the Python code easier to extend without implying a FastAPI runtime that the
+repo does not yet have. It preserves the DynamoDB stub seam and the tenant-scoped
+projection boundary.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/queue_projection/__init__.py`
+- `src/python/tax_pulse_project_team_1/queue_projection/models.py`
+- `src/python/tax_pulse_project_team_1/queue_projection/service.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/queue_projection/test_models.py`
+- `tests/python/queue_projection/test_service.py`
+- `planning/team/ticket-journal.md`
