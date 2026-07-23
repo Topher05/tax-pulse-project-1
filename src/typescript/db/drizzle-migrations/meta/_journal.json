@@ -43,6 +43,13 @@
       "when": 1784750881216,
       "tag": "0005_fair_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784844932534,
+      "tag": "0006_scenario",
+      "breakpoints": true
     }
   ]
 }

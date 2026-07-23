@@ -69,13 +69,20 @@ Compute scenario comparisons. It does not expose an HTTP endpoint or calculate d
 
 - `src/typescript/scenario.ts`
 - `src/typescript/db/schema.ts`
+- `src/typescript/db/drizzle-migrations/0006_scenario.sql`
+- `src/typescript/db/drizzle-migrations/meta/0006_snapshot.json`
+- `src/typescript/db/drizzle-migrations/meta/_journal.json`
 - `tests/typescript/scenario.test.ts`
+- `tests/typescript/scenarioMigration.test.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm run typecheck` passed.
 - `npx vitest run tests/typescript/scenario.test.ts` passed (2 tests).
+- `npm run db:check` passed.
+- `npx vitest run tests/typescript/scenarioMigration.test.ts` is blocked because this
+  environment has no working container runtime for Testcontainers.
 
 ## christopher-martus-jira79 - SCRUM-79
 
