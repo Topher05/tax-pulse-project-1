@@ -28,7 +28,7 @@ export interface TaxPlanCycleRepositoryCreateInput {
   priority: TaxPlanCycle["priority"];
   dueDate: TaxPlanCycle["due_date"];
   actor: string;
-  idempotencyKey?: string;
+  idempotencyKey: string;
 }
 
 export interface TaxPlanCycleInsertInput {
@@ -202,7 +202,7 @@ export function createTaxPlanCycleRepository(
         onHold: false,
         holdReason: null,
         actor: input.actor,
-        ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
+        idempotencyKey: input.idempotencyKey,
       });
     },
 

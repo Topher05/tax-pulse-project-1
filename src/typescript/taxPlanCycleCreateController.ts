@@ -17,7 +17,7 @@ export type TaxPlanCycleCreateResult = z.infer<
 export type TaxPlanCycleCreateControllerInput = TaxPlanCycleCreateInput & {
   tenantId: string;
   actor: string;
-  idempotencyKey?: string;
+  idempotencyKey: string;
 };
 
 export interface TaxPlanCycleCreateController {
@@ -42,7 +42,7 @@ export function createTaxPlanCycleCreateController(
         priority: input.priority,
         dueDate: input.due_date,
         actor: input.actor,
-        ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
+        idempotencyKey: input.idempotencyKey,
       });
 
       return { case_id: caseId };

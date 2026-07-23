@@ -660,6 +660,7 @@ describe("taxPlanCycle integration", () => {
         priority: "low",
         dueDate: "2026-09-30",
         actor: "advisor-003",
+        idempotencyKey: "repository-create-key-001",
       });
 
       expect(caseId).toMatch(
@@ -804,7 +805,10 @@ describe("taxPlanCycle integration", () => {
       await withRouteServer(repository, async (baseUrl) => {
         const response = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            "Idempotency-Key": "case-create-key-000",
+          },
           body: JSON.stringify({
             client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
             planning_period: "2026-Q2",
@@ -910,13 +914,13 @@ describe("taxPlanCycle integration", () => {
           body: JSON.stringify(createBody),
         };
 
-        const firstResponse = await fetch(`${baseUrl}/tax-plan-cycles`, request);
+        const firstResponse = await fetch(`${baseUrl}/v1/tax-plan-cycles`, request);
+        expect(firstResponse.status).toBe(202);
         const firstBody = (await firstResponse.json()) as { case_id: string };
-        const repeatResponse = await fetch(`${baseUrl}/tax-plan-cycles`, request);
+        const repeatResponse = await fetch(`${baseUrl}/v1/tax-plan-cycles`, request);
+        expect(repeatResponse.status).toBe(202);
         const repeatBody = (await repeatResponse.json()) as { case_id: string };
 
-        expect(firstResponse.status).toBe(202);
-        expect(repeatResponse.status).toBe(202);
         expect(repeatBody).toEqual(firstBody);
 
         const cycleRows = await db
@@ -969,7 +973,7 @@ describe("taxPlanCycle integration", () => {
           due_date: "2026-11-15",
         };
 
-        const firstResponse = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        const firstResponse = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
           method: "POST",
           headers: {
             "content-type": "application/json",
@@ -977,7 +981,7 @@ describe("taxPlanCycle integration", () => {
           },
           body: JSON.stringify(createBody),
         });
-        const secondResponse = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        const secondResponse = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
           method: "POST",
           headers: {
             "content-type": "application/json",
@@ -1336,6 +1340,7 @@ describe("taxPlanCycle integration", () => {
           expect(auditRows[0]?.occurred_at).toBeInstanceOf(Date);
         },
       );
+    });
   });
 
   test("PATCH returns 404 for cross-tenant cycle transitions without writing audit entries", async () => {
@@ -1459,7 +1464,10 @@ describe("taxPlanCycle integration", () => {
             `${baseUrl}/tax-plan-cycles`,
             {
               method: "POST",
-              headers: authHeaders,
+              headers: {
+                ...authHeaders,
+                "Idempotency-Key": "brianna-cycle-create-key-001",
+              },
               body: JSON.stringify({
                 client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d91",
                 planning_period: "2026-Q3",
@@ -1761,5 +1769,4 @@ describe("taxPlanCycle integration", () => {
       expect(auditRows).toEqual([]);
     });
   });
-});
 });

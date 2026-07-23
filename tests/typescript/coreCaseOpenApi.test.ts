@@ -263,7 +263,7 @@ describe("Core Case Service OpenAPI document", () => {
         expect.objectContaining({
           name: "Idempotency-Key",
           in: "header",
-          required: false,
+          required: true,
         }),
       ]),
     );

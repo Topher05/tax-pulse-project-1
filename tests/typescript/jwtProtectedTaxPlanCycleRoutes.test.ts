@@ -158,6 +158,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
         headers: {
           authorization: `Bearer ${token}`,
           "content-type": "application/json",
+          "Idempotency-Key": "jwt-create-key-001",
         },
         body: JSON.stringify(validCreateBody),
       });
@@ -176,6 +177,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
         ...validCreateBody,
         tenantId: "tenant-from-jwt",
         actor: "user-from-jwt",
+        idempotencyKey: "jwt-create-key-001",
       });
       expect(findByCaseId).toHaveBeenCalledWith({
         tenantId: "tenant-from-jwt",
@@ -203,6 +205,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           headers: {
             authorization: `Bearer ${token}`,
             "content-type": "application/json",
+            "Idempotency-Key": "jwt-create-key-002",
           },
           body: JSON.stringify(validCreateBody),
         });
@@ -236,6 +239,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           headers: {
             authorization: `Bearer ${tenantAToken}`,
             "content-type": "application/json",
+            "Idempotency-Key": "rate-limit-key-a-001",
           },
           body: requestBody,
         });
@@ -244,6 +248,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           headers: {
             authorization: `Bearer ${tenantAToken}`,
             "content-type": "application/json",
+            "Idempotency-Key": "rate-limit-key-a-002",
           },
           body: requestBody,
         });
@@ -252,6 +257,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           headers: {
             authorization: `Bearer ${tenantBToken}`,
             "content-type": "application/json",
+            "Idempotency-Key": "rate-limit-key-b-001",
           },
           body: requestBody,
         });
@@ -269,6 +275,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           ...validCreateBody,
           tenantId: "tenant-rate-b",
           actor: "user-from-jwt",
+          idempotencyKey: "rate-limit-key-b-001",
         });
       },
       {

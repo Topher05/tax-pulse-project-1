@@ -75,6 +75,7 @@ describe("main Tax Plan Cycle composition", () => {
         headers: {
           authorization: `Bearer ${token}`,
           "content-type": "application/json",
+          "Idempotency-Key": "main-composition-key-001",
         },
         body: JSON.stringify({
           client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
@@ -108,6 +109,7 @@ describe("main Tax Plan Cycle composition", () => {
         priority: "high",
         dueDate: "2026-12-31",
         actor: "user-from-jwt",
+        idempotencyKey: "main-composition-key-001",
       });
       expect(repository.findByCaseId).toHaveBeenCalledWith({
         tenantId: "tenant-from-jwt",

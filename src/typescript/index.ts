@@ -344,12 +344,15 @@ export async function main(): Promise<Server> {
         createCostAccountingMiddleware(),
         createTenantRateLimitMiddleware(),
       );
-      app.use(createTaxPlanCycleRouter({
-        auditEntryReader: auditEntryRepository,
-        auditEntryWriter,
-        controller: taxPlanCycleController,
-        transitionController: taxPlanCycleTransitionController,
-      }));
+      app.use(
+        taxPlanCycleApiPrefix,
+        createTaxPlanCycleRouter({
+          auditEntryReader: auditEntryRepository,
+          auditEntryWriter,
+          controller: taxPlanCycleController,
+          transitionController: taxPlanCycleTransitionController,
+        }),
+      );
       app.use(createAuthRouter({ authenticatePassword }));
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,

@@ -26,13 +26,13 @@ retried create returns the original result.
 
 **Code Connection:**
 
-- `POST /tax-plan-cycles` reads a trimmed optional `Idempotency-Key` header and passes it
-  through the create controller without changing no-header create behavior.
+- `POST /tax-plan-cycles` requires a trimmed, non-empty `Idempotency-Key` header and passes
+  it through the create controller.
 - `createTaxPlanCycleRepository` stores the successful first create result in
   `tax_plan_cycle_idempotency_key`, scoped by tenant and idempotency key.
 - Repeated creates with the same tenant/key return the stored original `case_id`; distinct
   keys continue to create distinct Tax Plan Cycles with their own transition and audit rows.
-- The OpenAPI document now advertises the optional `Idempotency-Key` header on the create
+- The OpenAPI document now advertises the required `Idempotency-Key` header on the create
   operation.
 - ADR-0010 records the decision to store tenant-scoped case creation idempotency records in
   the Core Case Service PostgreSQL store.
@@ -62,6 +62,13 @@ SCRUM-77's later concurrent-create guard.
 
 **Validation Notes:**
 
+- Required-header refactor validation: `npm run typecheck` passed.
+- Required-header refactor validation:
+  `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts tests/typescript/mainTaxPlanCycleComposition.test.ts`
+  passed with 24 tests.
+- Required-header refactor validation:
+  `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 16 tests.
 - `npm run typecheck` passed.
 - `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
   passed with 17 tests.
