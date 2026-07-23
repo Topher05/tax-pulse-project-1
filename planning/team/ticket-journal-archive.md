@@ -1,4 +1,8 @@
-# Shared Team Ticket Journal
+# Archived Shared Team Ticket Journal
+
+> **Deprecated:** This file is retained as the read-only historical record of ticket
+> work completed before the per-developer journal migration. Record new work in the
+> appropriate journal listed in [`README.md`](README.md).
 
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
