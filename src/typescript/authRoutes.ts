@@ -129,7 +129,6 @@ export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router 
 
       try {
         const result = await authenticatePassword(toLoginInput(parsedBody.data));
-
         if (result.status === "invalid_credentials") {
           next(invalidCredentialsError());
           return;

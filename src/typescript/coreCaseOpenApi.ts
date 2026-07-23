@@ -472,7 +472,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           },
         },
       },
-      "/tax-plan-cycles": {
+      "/v1/tax-plan-cycles": {
         post: {
           operationId: "createTaxPlanCycle",
           tags: ["Core Case Service"],
@@ -554,7 +554,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           },
         },
       },
-      "/tax-plan-cycles/{caseId}": {
+      "/v1/tax-plan-cycles/{caseId}": {
         get: {
           operationId: "readTaxPlanCycle",
           tags: ["Core Case Service"],
