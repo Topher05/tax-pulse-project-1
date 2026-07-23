@@ -69,6 +69,11 @@ export {
   type AuditEntryReader,
 } from "./auditEntryRepository.js";
 export {
+  createAuditEntryWriter,
+  type AuditEntryWriteInput,
+  type AuditEntryWriter,
+} from "./auditEntryRepository.js";
+export {
   authMfaLoginRequestSchema,
   authMfaLoginResultSchema,
   createAuthMfaLoginController,
@@ -115,7 +120,9 @@ export {
 export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
 export {
   createJwtAuthenticationMiddleware,
+  hydrateUserClaims,
   type CreateJwtAuthenticationMiddlewareOptions,
+  type CreateHydrateUserClaimsOptions,
 } from "./jwtAuthentication.js";
 export {
   TAXPULSE_COST_UNITS_HEADER,
@@ -173,6 +180,8 @@ export {
   taxPlanCycleCreateSchema,
   taxPlanCyclePrioritySchema,
   taxPlanCycleReadParamsSchema,
+  taxPlanCycleTransitionParamsSchema,
+  taxPlanCycleTransitionSchema,
   taxPlanCycleSchema,
   taxPlanCycleStageSchema,
   taxPlanCycleStages,
@@ -180,6 +189,8 @@ export {
   type TaxPlanCycleCreateInput,
   type TaxPlanCyclePriority,
   type TaxPlanCycleReadParams,
+  type TaxPlanCycleTransitionInput,
+  type TaxPlanCycleTransitionParams,
   type TaxPlanCycleStage,
 } from "./taxPlanCycle.js";
 export {
@@ -192,7 +203,13 @@ export {
   type TaxPlanCycleReadInput,
   type TaxPlanCycleRepository,
   type TaxPlanCycleRepositoryCreateInput,
+  type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
 } from "./taxPlanCycleRepository.js";
+export {
+  createTaxPlanCycleTransitionController,
+  taxPlanCycleTransitionController,
+  type TaxPlanCycleTransitionController,
+} from "./taxPlanCycleTransitionController.js";
 
 import { config as loadEnv } from "dotenv";
 import pg from "pg";
@@ -200,18 +217,22 @@ import pg from "pg";
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 import { createLogger } from "./logger.js";
-import { createJwtAuthenticationMiddleware } from "./jwtAuthentication.js";
+import { createJwtAuthenticationMiddleware, hydrateUserClaims } from "./jwtAuthentication.js";
 import { createCostAccountingMiddleware } from "./costAccounting.js";
 import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
 import { createTaxPlanCycleCreateController } from "./taxPlanCycleCreateController.js";
+import { createTaxPlanCycleTransitionController } from "./taxPlanCycleTransitionController.js";
 import { createTaxPlanCycleRepository } from "./taxPlanCycleRepository.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
-import { createAuditEntryRepository } from "./auditEntryRepository.js";
+import {
+  createAuditEntryRepository,
+  createAuditEntryWriter,
+} from "./auditEntryRepository.js";
 import {
   createAuthMfaLoginController,
 } from "./authMfaLogin.js";
@@ -223,6 +244,8 @@ import { createTokenService } from "./tokenService.js";
 
 loadEnv();
 const { Client } = pg;
+const taxPlanCycleApiPrefix = "/v1";
+const taxPlanCycleApiBasePath = `${taxPlanCycleApiPrefix}/tax-plan-cycles`;
 
 export {
   createTaxPlanCycleCreateController,
@@ -282,7 +305,11 @@ export async function main(): Promise<Server> {
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
   const auditEntryRepository = createAuditEntryRepository(client);
+  const auditEntryWriter = createAuditEntryWriter(client);
   const taxPlanCycleController = createTaxPlanCycleCreateController(
+    taxPlanCycleRepository,
+  );
+  const taxPlanCycleTransitionController = createTaxPlanCycleTransitionController(
     taxPlanCycleRepository,
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
@@ -309,15 +336,19 @@ export async function main(): Promise<Server> {
       app.use(createMfaEnrollmentRouter({
         controller: mfaEnrollmentController,
       }));
+      // CL Version-scoped auth middleware for Tax Plan Cycle routes; review before removing or widening this guard.
       app.use(
-        "/tax-plan-cycles",
+        taxPlanCycleApiBasePath,
         createJwtAuthenticationMiddleware({ config: jwtConfig }),
+        hydrateUserClaims(),
         createCostAccountingMiddleware(),
         createTenantRateLimitMiddleware(),
       );
       app.use(createTaxPlanCycleRouter({
         auditEntryReader: auditEntryRepository,
+        auditEntryWriter,
         controller: taxPlanCycleController,
+        transitionController: taxPlanCycleTransitionController,
       }));
       app.use(createAuthRouter({ authenticatePassword }));
       app.use(createAuthMfaLoginRouter({

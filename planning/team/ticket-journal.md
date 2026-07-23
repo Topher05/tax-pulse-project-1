@@ -74,6 +74,230 @@ SCRUM-77's later concurrent-create guard.
   `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands ran with
   approved elevated filesystem access.
 
+## dylan-harle-jira73 - SCRUM-73
+
+**Branch:** `dylan-harle-jira73`
+
+**Owner:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-73
+
+**Epic:** SCRUM-15 - Polyglot Backend & Contracts
+
+**Summary:** Define the DynamoDB queue projection table
+
+**Description:** As a Backend Developer, I want a DynamoDB table for the Plan Cycle
+Queue projection, so that the queue is read from a denormalized store.
+
+**Acceptance Criteria:**
+
+- A DynamoDB table holds a denormalized queue projection keyed by `tenant_id` with
+  case sort key.
+- Each item carries case ID, client, stage, owner, priority, due_date, and overdue
+  flag.
+- The table definition is created against a local DynamoDB for tests.
+
+**Code Connection:**
+
+- `PlanCycleQueueProjectionItem` defines the Python/Pydantic queue projection item
+  shape with `tenant_id`, `case_id`, `client`, `stage`, `owner`, `priority`,
+  `due_date`, and `is_overdue`.
+- The Python DynamoDB module defines the table contract
+  `taxpulse_plan_cycle_queue_projection`, keyed by `tenant_id` as the partition key
+  and `case_id` as the sort key, using pay-per-request billing.
+- `create_dynamodb_client` points to `TAXPULSE_DYNAMODB_ENDPOINT_URL` or an injected
+  endpoint for LocalStack, and otherwise leaves boto3 on its normal AWS credential
+  provider chain for a future real AWS deployment.
+- Python tests start LocalStack through Testcontainers, create the table locally, and
+  write/query synthetic tenant-scoped projection items without touching paid AWS.
+- The LocalStack test fixture defaults to `localstack/localstack:3.8.1` because the
+  current `latest` image requires a LocalStack auth token/license; teams with a token
+  can override `TAXPULSE_LOCALSTACK_IMAGE` and pass `LOCALSTACK_AUTH_TOKEN`.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs a denormalized, tenant-scoped read model for the Plan Cycle
+Queue before later projection and caching tickets can move reads away from the
+transactional PostgreSQL case table. This ticket establishes the DynamoDB-compatible
+table shape in the Python side of the polyglot backend while keeping all validation
+against LocalStack rather than paid AWS.
+
+**Changed Files:**
+
+- `adr/0010-python-dynamodb-queue-projection-localstack.md`
+- `adr/README.md`
+- `pyproject.toml`
+- `planning/team/ticket-journal.md`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `src/python/tax_pulse_project_team_1/dynamodb/__init__.py`
+- `src/python/tax_pulse_project_team_1/dynamodb/plan_cycle_queue_projection.py`
+- `tests/python/test_plan_cycle_queue_projection.py`
+
+**Validation Notes:**
+
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m ruff check src/python tests/python` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"`
+  passed.
+- `python -m pytest tests/python/test_plan_cycle_queue_projection.py` passed with 6
+  tests using Docker/Testcontainers LocalStack access.
+- `python -m pytest` passed with 11 tests.
+
+## caleb-latimer-jira67 - SCRUM-67
+
+**Branch:** `caleb-latimer-jira67`
+
+**Owner:** Caleb Latimer
+
+**Summary:** Wire the role-gated transition endpoint enforcing the permission matrix
+
+**CSV Description:** As a Security Engineer, I want the stage-transition validator
+exposed as a role-gated endpoint, so that only authorized roles advance a Tax Plan
+Cycle and denials are audited.
+
+**Acceptance Criteria:**
+
+- `PATCH /cycles/{id}/transition` validates the requested move, checks role access, and
+  advances the stage only for authorized, legal transitions.
+- Unauthorized role attempts return `403` and illegal moves return `422`.
+- Successful transitions write the `stage_transition` row in the same transaction.
+- Denied attempts emit a console audit stub with `case_id`, `actor`, `action`,
+  `outcome`, and `occurred_at`.
+
+**How This Ties Into the Code:**
+
+- `createTaxPlanCycleRouter` now serves `PATCH /cycles/:id/transition`, validates the
+  path/body with Zod, loads the current cycle through the existing read path, and
+  enforces the role gate before any mutation.
+- `taxPlanCycleRepository.transition` updates the cycle stage and inserts the
+  `stage_transition` row inside a single transaction, then returns the updated cycle.
+- `taxPlanCycleTransitionController` wraps the repository for the new route boundary,
+  while the route keeps the current stage-transition validator as the legality check.
+- Denied attempts call a console audit stub that emits
+  `{ case_id, actor, action, outcome, occurred_at }` until the real `audit_entry`
+  writer exists.
+- The route returns `403` for unauthorized users and `422` for illegal transitions
+  without mutating the cycle.
+- Mermaid sequence diagram:
+
+```mermaid
+sequenceDiagram
+  actor User
+  participant API as Express PATCH /cycles/{id}/transition
+  participant Auth as Request context / role gate
+  participant Val as Stage transition validator
+  participant Repo as Drizzle repository
+  participant Audit as Console audit stub
+  participant DB as PostgreSQL
+
+  User->>API: PATCH transition request
+  API->>Auth: resolve tenant, actor, role, permissions
+  alt unauthorized role
+    Auth-->>API: 403 Forbidden
+    API->>Audit: log {case_id, actor, action, outcome, occurred_at}
+    API-->>User: 403 Problem Details
+  else authorized role
+    API->>Val: validate requested transition
+    alt illegal move
+      Val-->>API: 422 Unprocessable Entity
+      API->>Audit: log {case_id, actor, action, outcome, occurred_at}
+      API-->>User: 422 Problem Details
+    else legal move
+      Val-->>API: allowed
+      API->>Repo: update stage + insert stage_transition in one txn
+      Repo->>DB: commit
+      API-->>User: success response with updated cycle
+    end
+  end
+```
+TaxPulse Advisory depends on stage-gated workflow changes and immutable audit history
+for compliance. This ticket adds the secure API boundary for advancing a Tax Plan
+Cycle while preserving tenant isolation, role gating, and the stage-based workflow
+model.
+
+**Changed Files:**
+
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycle.ts`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `src/typescript/taxPlanCycleTransitionController.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+- `planning/prompt-journal/cl-journal.md`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm test` passed the new route coverage, but the full Vitest run still timed out in
+  pre-existing `role` and `user` tests at the 5 second test limit.
+- The targeted integration rerun could not complete in this shell because the local
+  Node launcher hit the existing Windows `EPERM` path-resolution issue, and the
+  escalated rerun was declined.
+- `npm run typecheck`
+- `npm test`
+- `npm run test:migration`
+
+## christopher-martus-jira64 - SCRUM-64
+
+**Branch:** `christopher-martus-jira64`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-64
+
+**Summary:** Validate shared JWTs in a FastAPI dependency
+
+**Description:** Add a FastAPI dependency that validates the HS256 access JWTs issued
+by the Node service so the Tax Calculation Engine trusts the same identity scheme.
+
+**Acceptance Criteria:**
+
+- The dependency validates JWT signature, expiry, and issuer using the shared key.
+- Expired or tampered tokens return 401.
+- Valid tokens expose role and tenant_id to downstream handlers.
+
+**Code Connection:**
+
+- `JwtValidationConfig.from_environment` reads the shared `JWT_ISSUER` and
+  `JWT_SIGNING_SECRET` values without an import-time environment dependency and enforces
+  the Node service's minimum 32-byte secret requirement.
+- `create_jwt_authentication_dependency` uses FastAPI's bearer security dependency and
+  PyJWT to accept only HS256 JWTs, validate issuer and expiry, and return the typed
+  `AuthenticatedPrincipal` containing verified role and tenant_id claims.
+- Authentication failures, including missing credentials, invalid signatures, expired
+  tokens, wrong issuers, and invalid downstream claims, use one 401 response with the
+  `WWW-Authenticate: Bearer` header.
+- SCRUM-84 remains responsible for attaching this reusable dependency to the Tax
+  Calculation endpoint; no calculation route is added here.
+
+**Project Scope Connection:**
+
+TaxPulse Advisory needs a shared identity boundary across the Node Core Case Service and
+the Python Tax Calculation Engine. This ticket provides that focused FastAPI boundary
+while preserving tenant isolation and leaving calculation endpoint composition to the
+later API ticket.
+
+**Changed Files:**
+
+- `pyproject.toml`
+- `src/python/tax_pulse_project_team_1/jwt_authentication.py`
+- `tests/python/test_jwt_authentication.py`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m ruff check src/python tests/python` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"`
+  passed with 0 errors.
+- `python -m pytest tests/python/test_jwt_authentication.py` passed with 15 tests.
+- `python -m pytest` passed with 20 tests. FastAPI's installed TestClient emitted its
+  upstream httpx deprecation warning; pytest also could not update the pre-existing
+  repository `.pytest_cache` due to local access permissions.
+
+
 ## development - SCRUM-68
 
 **Branch:** `development`
@@ -1725,3 +1949,130 @@ migrations, public-route headers, or a separate Tax Plan Cycle status field.
   SCRUM-70. The full Vitest run ended with 115 passing tests and 13 existing
   Testcontainers-backed migration failures because this environment could not find a
   working container runtime strategy.
+
+## caleb-latimer-jira74 - SCRUM-74
+
+**Branch:** `caleb-latimer-jira74`
+
+**Owner:** Caleb Latimer
+
+**Jira Key:** SCRUM-74
+
+**Summary:** Project Tax Plan Cycle changes into the queue projection
+
+**Description:** As a Backend Developer, I want cycle changes projected into the
+queue read model, so that the DynamoDB view stays consistent with the case.
+
+**Acceptance Criteria:**
+
+- Creating or updating a cycle upserts its queue projection item.
+- The overdue flag is recomputed from `due_date` on each projection.
+- A test asserts the projection matches the source cycle after a stage change.
+
+**Code Connection:**
+
+- `TaxPlanCycleRecord` and `TaxPlanCycleQueueProjectionItem` define the source and
+  queue-read-model shapes used by the Python projection seam.
+- `project_tax_plan_cycle_to_queue_item` rebuilds the denormalized queue item from the
+  source cycle on every call and recomputes `overdue` from `due_date` instead of
+  persisting stale state.
+- `upsert_tax_plan_cycle_queue_projection` is the DynamoDB write boundary for SCRUM-73
+  and is intentionally stubbed with the inline marker `Blocked by Scrum-74 pending impl`
+  until the table contract lands.
+- `tests/python/test_queue_projection.py` covers overdue recomputation, the upsert
+  seam, and the stage-change regression case that keeps the queue projection aligned
+  with the source cycle.
+- Diagram:
+
+```mermaid
+flowchart LR
+    NODE["Node Core Case Service"]
+
+    subgraph PY_QUEUE["Python queue_projection feature"]
+        direction TB
+        MODELS["models.py<br/>dataclasses"]
+        SERVICE["service.py<br/>projection + upsert seam"]
+        SERVICE -->|uses| MODELS
+    end
+
+    PG[(PostgreSQL<br/>cycle source store)]
+    DDB[(DynamoDB<br/>queue projection store)]
+
+    NODE -->|persists cycle changes| PG
+    NODE -->|emits cycle changes| SERVICE
+    SERVICE -->|reads canonical cycle state| PG
+    SERVICE -->|upserts queue projection| DDB
+```
+
+**Project Scope Connection:**
+
+This ticket keeps PostgreSQL as the source of truth for cycle data while adding the
+Python-side queue projection seam that will eventually feed DynamoDB. It does not add
+or imply a FastAPI runtime, does not assume SCRUM-73's table contract exists yet, and
+preserves tenant-isolated cycle data by projecting per-cycle state into the queue
+view.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/queue_projection.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/test_queue_projection.py`
+- `planning/team/ticket-journal.md`
+- `planning/prompt-journal/cl-journal.md`
+
+**Validation Notes:**
+
+- `py -3.12 -m pytest tests/python/test_queue_projection.py` passed: 3 tests.
+- `py -3.12 -m pytest tests/python/test_smoke.py` passed: 1 test.
+- `py -3.12 -m pytest tests/python/test_jwt_authentication.py` could not run in this
+  host interpreter because `jwt` is not installed there.
+- `npx pyright --version` could not be executed here because Node launched through
+  `cmd` still hits the repository path `EPERM` `lstat` issue at `C:\Users\Exia`.
+
+## caleb-latimer-jira74-refactor - SCRUM-74
+
+**Branch:** `caleb-latimer-jira74`
+
+**Owner:** Caleb Latimer
+
+**Jira Key:** SCRUM-74
+
+**Summary:** Refactor the queue projection into a feature package
+
+**Description:** As a Backend Developer, I want the queue projection isolated by
+feature, so that the models and logic stay separated as the projection layer grows.
+
+**Acceptance Criteria:**
+
+- Projection models live in a dedicated feature module.
+- Projection logic lives in a separate service module.
+- Tests are grouped by feature and still cover the Express-aligned contract.
+
+**Code Connection:**
+
+- `src/python/tax_pulse_project_team_1/queue_projection/models.py` owns the source and
+  projection dataclasses.
+- `src/python/tax_pulse_project_team_1/queue_projection/service.py` owns the pure
+  projection and stubbed upsert behavior.
+- `src/python/tax_pulse_project_team_1/queue_projection/__init__.py` provides the
+  public feature export surface.
+- `tests/python/queue_projection/test_models.py` and
+  `tests/python/queue_projection/test_service.py` split the model-shape coverage from
+  the projection behavior coverage.
+
+**Project Scope Connection:**
+
+This refactor keeps the SCRUM-74 queue projection aligned with the Express entity while
+making the Python code easier to extend without implying a FastAPI runtime that the
+repo does not yet have. It preserves the DynamoDB stub seam and the tenant-scoped
+projection boundary.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/queue_projection/__init__.py`
+- `src/python/tax_pulse_project_team_1/queue_projection/models.py`
+- `src/python/tax_pulse_project_team_1/queue_projection/service.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/queue_projection/test_models.py`
+- `tests/python/queue_projection/test_service.py`
+- `planning/team/ticket-journal.md`

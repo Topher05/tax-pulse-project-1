@@ -11,11 +11,15 @@ import { describe, expect, test } from "vitest";
 import {
   createApp,
   createAuditEntryRepository,
+  createAuditEntryWriter,
   createLogger,
+  createJwtAuthenticationMiddleware,
   createTaxPlanCycleCreateController,
   createTaxPlanCycleReadHelper,
   createTaxPlanCycleRepository,
   createTaxPlanCycleRouter,
+  createTaxPlanCycleTransitionController,
+  type JwtConfig,
   auditEntry,
   redactedAuditAmount,
   stageTransition,
@@ -23,13 +27,19 @@ import {
   taxPlanCycleIdempotencyKey,
   taxPlanCycleSchema,
   tenants,
+  type AuditEntryWriter,
 } from "../../../src/typescript/index.js";
+import { applySeed } from "../../../src/typescript/db/seed.js";
 import {
   applyDrizzleMigrations,
   drizzleAppliedMigrationsTableName,
   drizzleMigrationsDirectory,
 } from "../../../src/typescript/postgresMigrations.js";
 import { startDockerPostgresContainer } from "../bootstrap/dockerPostgres.js";
+import {
+  hydrateUserClaims,
+  obtainAccessTokenViaLoginAndMfa,
+} from "../bootstrap/authFlow.js";
 import { expectPgError, getTableStructure } from "../bootstrap/tableTestUtils.js";
 import {
   expectedStageTransitionColumns,
@@ -79,6 +89,48 @@ const repositoryQueueClientIds = {
 } as const;
 
 const silentLogger = createLogger({ level: "silent" });
+const authConfig: JwtConfig = {
+  issuer: "https://auth.taxpulse.example",
+  signingSecret: "a-unique-test-secret-that-is-more-than-32-bytes",
+  accessTokenLifetimeSeconds: 900,
+  refreshTokenLifetimeSeconds: 2_592_000,
+};
+const advisorEditPermissions = { Advisor: ["EDIT"] } as const;
+const briannaAuthPrincipal = {
+  tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02",
+  userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+  email: "brianna@example.com",
+  role: "Advisor" as const,
+  password: "correct-password",
+  totpSecret: "KRSXG5DSNFXGOIDSMVZXI2LOM5XXE3DE",
+  totpCode: "123456",
+} as const;
+const briannaSeedCycleId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
+
+async function createAccessToken(input: {
+  tenantId: string;
+  userId: string;
+  email: string;
+  role: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
+  password: string;
+  totpSecret: string;
+  totpCode: string;
+}): Promise<string> {
+  const result = await obtainAccessTokenViaLoginAndMfa({
+    config: authConfig,
+    principal: {
+      tenantId: input.tenantId,
+      userId: input.userId,
+      email: input.email,
+      role: input.role,
+      password: input.password,
+      totpSecret: input.totpSecret,
+      totpCode: input.totpCode,
+    },
+  });
+
+  return result.access_token;
+}
 
 const attachRequestContext: RequestHandler = (req, _res, next) => {
   (req as typeof req & { tenant: { id: string } }).tenant = {
@@ -99,8 +151,49 @@ async function withRouteServer(
     registerRoutes: (app) => {
       app.use(attachRequestContext);
       app.use(
+        "/v1",
         createTaxPlanCycleRouter({
           controller: createTaxPlanCycleCreateController(repository),
+        }),
+      );
+    },
+  });
+
+  const server = app.listen(0);
+  await once(server, "listening");
+
+  try {
+    const address = server.address() as AddressInfo;
+    await run(`http://127.0.0.1:${address.port}`);
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+}
+
+async function withTransitionRouteServer(
+  repository: ReturnType<typeof createTaxPlanCycleRepository>,
+  auditEntryWriter: AuditEntryWriter,
+  permissionsForRole: Partial<
+    Record<
+      "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin",
+      ReadonlyArray<string>
+    >
+  >,
+  run: (baseUrl: string) => Promise<void>,
+): Promise<void> {
+  const app = createApp({
+    logger: silentLogger,
+    registerRoutes: (app) => {
+      app.use(createJwtAuthenticationMiddleware({ config: authConfig }));
+      app.use(hydrateUserClaims(permissionsForRole));
+      app.use(
+        createTaxPlanCycleRouter({
+          controller: createTaxPlanCycleCreateController(repository),
+          transitionController: createTaxPlanCycleTransitionController(
+            repository,
+          ),
+          auditEntryWriter,
         }),
       );
     },
@@ -709,7 +802,7 @@ describe("taxPlanCycle integration", () => {
       await seedSampleTenant(client);
 
       await withRouteServer(repository, async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        const response = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -918,57 +1011,542 @@ describe("taxPlanCycle integration", () => {
     });
   });
 
-  test("rolls back a transition when its audit entry fails in the same transaction", async () => {
+  test("PATCH transitions a cycle and persists the stage transition", async () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {
       const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+      const accessToken = await createAccessToken({
+        tenantId: sampleTenant.id,
+        userId: "advisor-transition-001",
+        email: "advisor-transition-001@example.com",
+        role: "Advisor",
+        password: "correct-password",
+        totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+        totpCode: "123456",
+      });
 
       await seedSampleTenant(client);
 
-      await expectPgError(
-        db.transaction(async (tx) => {
-          await tx.insert(taxPlanCycle).values({
-            id: sampleStageTransitionCaseId,
-            clientId: sampleClientIds[0],
-            tenantId: sampleTenant.id,
-            planningPeriod: "2026-Q3",
-            stage: "Intake",
-            owner: "advisor-001",
+      await db.insert(taxPlanCycle).values({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+        clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d72",
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q4",
+        stage: "Data Aggregation",
+        owner: "advisor-transition-001",
+        priority: "high",
+        dueDate: "2026-10-15",
+        onHold: false,
+      });
+
+      await withTransitionRouteServer(
+        repository,
+        auditEntryWriter,
+        advisorEditPermissions,
+        async (baseUrl) => {
+          const response = await fetch(
+            `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71/transition`,
+            {
+              method: "PATCH",
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({ to_stage: "Modeling" }),
+            },
+          );
+          const body = (await response.json()) as {
+            id: string;
+            stage: string;
+          };
+
+          expect(response.status).toBe(200);
+          expect(body).toMatchObject({
+            id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+            stage: "Modeling",
+          });
+
+          await expect(
+            repository.findByCaseId({
+              tenantId: sampleTenant.id,
+              caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+            }),
+          ).resolves.toEqual({
+            id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+            client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d72",
+            stage: "Modeling",
+            owner: "advisor-transition-001",
             priority: "high",
-            dueDate: "2026-07-15",
-            onHold: false,
+            due_date: "2026-10-15",
+            on_hold: false,
           });
 
-          await tx.insert(stageTransition).values({
-            id: sampleStageTransitionId,
-            caseId: sampleStageTransitionCaseId,
-            fromStage: "Intake",
-            toStage: "Data Aggregation",
-            actor: "advisor-001",
-            occurredAt: new Date("2026-07-01T14:00:00.000Z"),
+          const transitionRows = await db
+            .select({
+              id: stageTransition.id,
+              case_id: stageTransition.caseId,
+              from_stage: stageTransition.fromStage,
+              to_stage: stageTransition.toStage,
+              actor: stageTransition.actor,
+              occurred_at: stageTransition.occurredAt,
+            })
+            .from(stageTransition)
+            .where(
+              eq(
+                stageTransition.caseId,
+                "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+              ),
+            );
+
+          expect(stageTransitionDbRowsSchema.parse(transitionRows)).toHaveLength(
+            1,
+          );
+          expect(transitionRows[0]).toMatchObject({
+            case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+            from_stage: "Data Aggregation",
+            to_stage: "Modeling",
+            actor: "advisor-transition-001",
           });
 
-          await tx.insert(auditEntry).values({
-            caseId: sampleMissingCaseId,
-            actor: "advisor-001",
-            action: "stage_transition:Intake->Data Aggregation",
-            outcome: "succeeded",
-            occurredAt: new Date("2026-07-01T14:00:00.000Z"),
+          const auditRows = await db
+            .select({
+              id: auditEntry.id,
+              case_id: auditEntry.caseId,
+              actor: auditEntry.actor,
+              action: auditEntry.action,
+              outcome: auditEntry.outcome,
+              occurred_at: auditEntry.occurredAt,
+            })
+            .from(auditEntry)
+            .where(eq(auditEntry.caseId, "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71"));
+
+          expect(auditRows).toHaveLength(0);
+        },
+      );
+    });
+  });
+
+  test("PATCH rejects unauthorized review transitions without mutating the cycle", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+      const accessToken = await createAccessToken({
+        tenantId: sampleTenant.id,
+        userId: "advisor-transition-002",
+        email: "advisor-transition-002@example.com",
+        role: "Advisor",
+        password: "correct-password",
+        totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+        totpCode: "123456",
+      });
+
+      await seedSampleTenant(client);
+
+      await db.insert(taxPlanCycle).values({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73",
+        clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d74",
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q4",
+        stage: "Review",
+        owner: "advisor-transition-002",
+        priority: "medium",
+        dueDate: "2026-10-20",
+        onHold: false,
+      });
+
+      await withTransitionRouteServer(
+        repository,
+        auditEntryWriter,
+        { Advisor: [] },
+        async (baseUrl) => {
+          const response = await fetch(
+            `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73/transition`,
+            {
+              method: "PATCH",
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({ to_stage: "Client Approval" }),
+            },
+          );
+
+          expect(response.status).toBe(403);
+          await expect(
+            repository.findByCaseId({
+              tenantId: sampleTenant.id,
+              caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73",
+            }),
+          ).resolves.toEqual({
+            id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73",
+            client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d74",
+            stage: "Review",
+            owner: "advisor-transition-002",
+            priority: "medium",
+            due_date: "2026-10-20",
+            on_hold: false,
           });
-        }),
-        { code: "23503", constraint: "audit_entry_case_id_fk" },
+
+          const transitionRows = await db
+            .select({
+              id: stageTransition.id,
+              case_id: stageTransition.caseId,
+              from_stage: stageTransition.fromStage,
+              to_stage: stageTransition.toStage,
+              actor: stageTransition.actor,
+              occurred_at: stageTransition.occurredAt,
+            })
+            .from(stageTransition)
+            .where(
+              eq(
+                stageTransition.caseId,
+                "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73",
+              ),
+            );
+
+          expect(transitionRows).toHaveLength(0);
+
+          const auditRows = await db
+            .select({
+              id: auditEntry.id,
+              case_id: auditEntry.caseId,
+              actor: auditEntry.actor,
+              action: auditEntry.action,
+              outcome: auditEntry.outcome,
+              occurred_at: auditEntry.occurredAt,
+            })
+            .from(auditEntry)
+            .where(eq(auditEntry.caseId, "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73"));
+
+          expect(auditRows).toHaveLength(1);
+          expect(auditRows[0]).toMatchObject({
+            case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73",
+            actor: "advisor-transition-002",
+            action: "transition Review -> Client Approval",
+            outcome: "403",
+          });
+          expect(auditRows[0]?.occurred_at).toBeInstanceOf(Date);
+        },
+      );
+    });
+  });
+
+  test("PATCH rejects illegal transitions without mutating the cycle", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+      const accessToken = await createAccessToken({
+        tenantId: sampleTenant.id,
+        userId: "advisor-transition-003",
+        email: "advisor-transition-003@example.com",
+        role: "Advisor",
+        password: "correct-password",
+        totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+        totpCode: "123456",
+      });
+
+      await seedSampleTenant(client);
+
+      await db.insert(taxPlanCycle).values({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+        clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d76",
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q4",
+        stage: "Data Aggregation",
+        owner: "advisor-transition-003",
+        priority: "low",
+        dueDate: "2026-10-25",
+        onHold: false,
+      });
+
+      await withTransitionRouteServer(
+        repository,
+        auditEntryWriter,
+        advisorEditPermissions,
+        async (baseUrl) => {
+          const response = await fetch(
+            `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75/transition`,
+            {
+              method: "PATCH",
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({ to_stage: "Archived" }),
+            },
+          );
+
+          expect(response.status).toBe(422);
+          await expect(
+            repository.findByCaseId({
+              tenantId: sampleTenant.id,
+              caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+            }),
+          ).resolves.toEqual({
+            id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+            client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d76",
+            stage: "Data Aggregation",
+            owner: "advisor-transition-003",
+            priority: "low",
+            due_date: "2026-10-25",
+            on_hold: false,
+          });
+
+          const transitionRows = await db
+            .select({
+              id: stageTransition.id,
+              case_id: stageTransition.caseId,
+              from_stage: stageTransition.fromStage,
+              to_stage: stageTransition.toStage,
+              actor: stageTransition.actor,
+              occurred_at: stageTransition.occurredAt,
+            })
+            .from(stageTransition)
+            .where(
+              eq(
+                stageTransition.caseId,
+                "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+              ),
+            );
+
+          expect(transitionRows).toHaveLength(0);
+
+          const auditRows = await db
+            .select({
+              id: auditEntry.id,
+              case_id: auditEntry.caseId,
+              actor: auditEntry.actor,
+              action: auditEntry.action,
+              outcome: auditEntry.outcome,
+              occurred_at: auditEntry.occurredAt,
+            })
+            .from(auditEntry)
+            .where(eq(auditEntry.caseId, "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75"));
+
+          expect(auditRows).toHaveLength(1);
+          expect(auditRows[0]).toMatchObject({
+            case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+            actor: "advisor-transition-003",
+            action: "transition Data Aggregation -> Archived",
+            outcome: "422",
+          });
+          expect(auditRows[0]?.occurred_at).toBeInstanceOf(Date);
+        },
+      );
+  });
+
+  test("PATCH returns 404 for cross-tenant cycle transitions without writing audit entries", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+      const accessToken = await createAccessToken({
+        tenantId: repositoryTenantIds.secondary,
+        userId: "advisor-transition-004",
+        email: "advisor-transition-004@example.com",
+        role: "Advisor",
+        password: "correct-password",
+        totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+        totpCode: "123456",
+      });
+
+      await seedSampleTenant(client);
+
+      await db.insert(taxPlanCycle).values({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77",
+        clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d78",
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q4",
+        stage: "Data Aggregation",
+        owner: "advisor-transition-004",
+        priority: "medium",
+        dueDate: "2026-10-30",
+        onHold: false,
+      });
+
+      await withTransitionRouteServer(
+        repository,
+        auditEntryWriter,
+        advisorEditPermissions,
+        async (baseUrl) => {
+          const response = await fetch(
+            `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77/transition`,
+            {
+              method: "PATCH",
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({ to_stage: "Modeling" }),
+            },
+          );
+
+          expect(response.status).toBe(404);
+
+          const transitionRows = await db
+            .select({
+              id: stageTransition.id,
+              case_id: stageTransition.caseId,
+            })
+            .from(stageTransition)
+            .where(
+              eq(
+                stageTransition.caseId,
+                "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77",
+              ),
+            );
+          const auditRows = await db
+            .select({
+              id: auditEntry.id,
+              case_id: auditEntry.caseId,
+            })
+            .from(auditEntry)
+            .where(eq(auditEntry.caseId, "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d77"));
+
+          expect(transitionRows).toHaveLength(0);
+          expect(auditRows).toHaveLength(0);
+        },
+      );
+    });
+  });
+
+  test("runs the Brianna auth and cycle flow end to end with bearer auth", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+
+      await applySeed(client);
+
+      const accessToken = await createAccessToken(briannaAuthPrincipal);
+
+      await withTransitionRouteServer(
+        repository,
+        auditEntryWriter,
+        advisorEditPermissions,
+        async (baseUrl) => {
+          const authHeaders = {
+            authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          };
+
+          const existingResponse = await fetch(
+            `${baseUrl}/tax-plan-cycles/${briannaSeedCycleId}`,
+            {
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+          expect(existingResponse.status).toBe(200);
+          expect(
+            taxPlanCycleSchema.parse(await existingResponse.json()),
+          ).toMatchObject({
+            id: briannaSeedCycleId,
+            stage: "Intake",
+            owner: "advisor-002",
+            priority: "medium",
+            due_date: "2026-08-15",
+            on_hold: true,
+            hold_reason: "Awaiting client documents",
+          });
+
+          const createResponse = await fetch(
+            `${baseUrl}/tax-plan-cycles`,
+            {
+              method: "POST",
+              headers: authHeaders,
+              body: JSON.stringify({
+                client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d91",
+                planning_period: "2026-Q3",
+                owner: "brianna@example.com",
+                priority: "medium",
+                due_date: "2026-08-15",
+              }),
+            },
+          );
+
+          expect(createResponse.status).toBe(202);
+          const createBody = (await createResponse.json()) as {
+            case_id: string;
+          };
+          expect(createBody.case_id).toMatch(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+          );
+
+          const createdCaseResponse = await fetch(
+            `${baseUrl}/tax-plan-cycles/${createBody.case_id}`,
+            {
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+          expect(createdCaseResponse.status).toBe(200);
+          expect(
+            taxPlanCycleSchema.parse(await createdCaseResponse.json()),
+          ).toMatchObject({
+            id: createBody.case_id,
+            client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d91",
+            stage: "Intake",
+            owner: "brianna@example.com",
+            priority: "medium",
+            due_date: "2026-08-15",
+            on_hold: false,
+          });
+
+          const patchResponse = await fetch(
+            `${baseUrl}/tax-plan-cycles/${createBody.case_id}/transition`,
+            {
+              method: "PATCH",
+              headers: authHeaders,
+              body: JSON.stringify({ to_stage: "Data Aggregation" }),
+            },
+          );
+
+          expect(patchResponse.status).toBe(200);
+          expect(
+            taxPlanCycleSchema.parse(await patchResponse.json()),
+          ).toMatchObject({
+            id: createBody.case_id,
+            stage: "Data Aggregation",
+            owner: "brianna@example.com",
+          });
+
+          const rereadResponse = await fetch(
+            `${baseUrl}/tax-plan-cycles/${createBody.case_id}`,
+            {
+              headers: {
+                authorization: `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+          expect(rereadResponse.status).toBe(200);
+          expect(
+            taxPlanCycleSchema.parse(await rereadResponse.json()),
+          ).toMatchObject({
+            id: createBody.case_id,
+            stage: "Data Aggregation",
+            owner: "brianna@example.com",
+          });
+        },
       );
 
-      const transitionRows = await db
-        .select({ id: stageTransition.id })
-        .from(stageTransition)
-        .where(eq(stageTransition.caseId, sampleStageTransitionCaseId));
-      const auditRows = await db
-        .select({ id: auditEntry.id })
-        .from(auditEntry)
-        .where(eq(auditEntry.caseId, sampleStageTransitionCaseId));
+      const persistedCycle = await repository.findByCaseId({
+        tenantId: briannaAuthPrincipal.tenantId,
+        caseId: briannaSeedCycleId,
+      });
 
-      expect(transitionRows).toEqual([]);
-      expect(auditRows).toEqual([]);
+      expect(persistedCycle).toMatchObject({
+        id: briannaSeedCycleId,
+        stage: "Intake",
+      });
     });
   });
 
@@ -1130,4 +1708,58 @@ describe("taxPlanCycle integration", () => {
       );
     });
   });
+  test("rolls back a transition when its audit entry fails in the same transaction", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+
+      await seedSampleTenant(client);
+
+      await expectPgError(
+        db.transaction(async (tx) => {
+          await tx.insert(taxPlanCycle).values({
+            id: sampleStageTransitionCaseId,
+            clientId: sampleClientIds[0],
+            tenantId: sampleTenant.id,
+            planningPeriod: "2026-Q3",
+            stage: "Intake",
+            owner: "advisor-001",
+            priority: "high",
+            dueDate: "2026-07-15",
+            onHold: false,
+          });
+
+          await tx.insert(stageTransition).values({
+            id: sampleStageTransitionId,
+            caseId: sampleStageTransitionCaseId,
+            fromStage: "Intake",
+            toStage: "Data Aggregation",
+            actor: "advisor-001",
+            occurredAt: new Date("2026-07-01T14:00:00.000Z"),
+          });
+
+          await tx.insert(auditEntry).values({
+            caseId: sampleMissingCaseId,
+            actor: "advisor-001",
+            action: "stage_transition:Intake->Data Aggregation",
+            outcome: "succeeded",
+            occurredAt: new Date("2026-07-01T14:00:00.000Z"),
+          });
+        }),
+        { code: "23503", constraint: "audit_entry_case_id_fk" },
+      );
+
+      const transitionRows = await db
+        .select({ id: stageTransition.id })
+        .from(stageTransition)
+        .where(eq(stageTransition.caseId, sampleStageTransitionCaseId));
+      const auditRows = await db
+        .select({ id: auditEntry.id })
+        .from(auditEntry)
+        .where(eq(auditEntry.caseId, sampleStageTransitionCaseId));
+
+      expect(transitionRows).toEqual([]);
+      expect(auditRows).toEqual([]);
+    });
+  });
+});
 });
