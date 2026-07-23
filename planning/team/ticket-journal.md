@@ -3,7 +3,77 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
-<<<<<<< HEAD
+## dylan-harle-jira76 - SCRUM-76
+
+**Branch:** `dylan-harle-jira76`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-76
+
+**Epic:** SCRUM-15 - Polyglot Backend & Contracts
+
+**Summary:** Store idempotency keys for case creation
+
+**Description:** As a Backend Developer, I want an idempotency-key store, so that a
+retried create returns the original result.
+
+**Acceptance Criteria:**
+
+- An idempotency record keyed by Idempotency-Key persists the first result.
+- A repeat request with the same key returns the stored original result.
+- Distinct keys create distinct cycles.
+
+**Code Connection:**
+
+- `POST /tax-plan-cycles` reads a trimmed optional `Idempotency-Key` header and passes it
+  through the create controller without changing no-header create behavior.
+- `createTaxPlanCycleRepository` stores the successful first create result in
+  `tax_plan_cycle_idempotency_key`, scoped by tenant and idempotency key.
+- Repeated creates with the same tenant/key return the stored original `case_id`; distinct
+  keys continue to create distinct Tax Plan Cycles with their own transition and audit rows.
+- The OpenAPI document now advertises the optional `Idempotency-Key` header on the create
+  operation.
+- ADR-0010 records the decision to store tenant-scoped case creation idempotency records in
+  the Core Case Service PostgreSQL store.
+
+**Project Scope Connection:**
+
+Idempotent case creation builds directly on SCRUM-53's persistent Intake create path while
+preserving tenant isolation, the stage-based workflow model, and the existing immutable
+audit/transition side effects. This ticket establishes the stored result foundation for
+SCRUM-77's later concurrent-create guard.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `adr/0010-tenant-scoped-case-creation-idempotency.md`
+- `adr/README.md`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/db/drizzle-migrations/0005_store_case_creation_idempotency_keys.sql`
+- `src/typescript/db/schema.ts`
+- `src/typescript/index.ts`
+- `src/typescript/taxPlanCycleCreateController.ts`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `src/typescript/taxPlanCycleRoutes.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+- `tests/typescript/taxPlanCycleRoutes.test.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 17 tests.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 16 tests, including same-key replay and distinct-key create coverage.
+- `npm test` passed typechecking and reported 133 passing tests; it ended with the known
+  `tests/typescript/tenantsMigration.test.ts` PostgreSQL 17 `uuidv7()` failure that is
+  outside this ticket.
+- Initial Node validation commands failed inside the default Windows sandbox with
+  `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands ran with
+  approved elevated filesystem access.
+
 ## dylan-harle-jira73 - SCRUM-73
 
 **Branch:** `dylan-harle-jira73`
@@ -72,7 +142,7 @@ against LocalStack rather than paid AWS.
 - `python -m pytest tests/python/test_plan_cycle_queue_projection.py` passed with 6
   tests using Docker/Testcontainers LocalStack access.
 - `python -m pytest` passed with 11 tests.
-=======
+
 ## caleb-latimer-jira67 - SCRUM-67
 
 **Branch:** `caleb-latimer-jira67`
@@ -227,12 +297,6 @@ later API ticket.
   upstream httpx deprecation warning; pytest also could not update the pre-existing
   repository `.pytest_cache` due to local access permissions.
 
-
-# Shared Team Ticket Journal
-
-This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
-and ties each ticket back to the code, tests, and validation evidence produced for it.
->>>>>>> origin/development
 
 ## development - SCRUM-68
 

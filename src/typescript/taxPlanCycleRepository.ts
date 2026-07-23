@@ -6,6 +6,7 @@ import {
   auditEntry as auditEntryTable,
   stageTransition as stageTransitionTable,
   taxPlanCycle as taxPlanCycleTable,
+  taxPlanCycleIdempotencyKey as taxPlanCycleIdempotencyKeyTable,
 } from "./db/schema.js";
 import { taxPlanCycleSchema, type TaxPlanCycle } from "./taxPlanCycle.js";
 
@@ -27,6 +28,7 @@ export interface TaxPlanCycleRepositoryCreateInput {
   priority: TaxPlanCycle["priority"];
   dueDate: TaxPlanCycle["due_date"];
   actor: string;
+  idempotencyKey?: string;
 }
 
 export interface TaxPlanCycleInsertInput {
@@ -111,7 +113,29 @@ export function createTaxPlanCycleRepository(
     onHold: boolean;
     holdReason: string | null;
     actor: string;
+    idempotencyKey?: string;
   }): Promise<string> {
+    if (input.idempotencyKey) {
+      const existingRows = await db
+        .select({ caseId: taxPlanCycleIdempotencyKeyTable.caseId })
+        .from(taxPlanCycleIdempotencyKeyTable)
+        .where(
+          and(
+            eq(taxPlanCycleIdempotencyKeyTable.tenantId, input.tenantId),
+            eq(
+              taxPlanCycleIdempotencyKeyTable.idempotencyKey,
+              input.idempotencyKey,
+            ),
+          ),
+        )
+        .limit(1);
+      const existingCaseId = existingRows[0]?.caseId;
+
+      if (existingCaseId) {
+        return existingCaseId;
+      }
+    }
+
     return await db.transaction(async (tx) => {
       const rows = await tx
         .insert(taxPlanCycleTable)
@@ -154,6 +178,14 @@ export function createTaxPlanCycleRepository(
         occurredAt,
       });
 
+      if (input.idempotencyKey) {
+        await tx.insert(taxPlanCycleIdempotencyKeyTable).values({
+          tenantId: input.tenantId,
+          idempotencyKey: input.idempotencyKey,
+          caseId,
+        });
+      }
+
       return caseId;
     });
   }
@@ -170,6 +202,7 @@ export function createTaxPlanCycleRepository(
         onHold: false,
         holdReason: null,
         actor: input.actor,
+        ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
       });
     },
 

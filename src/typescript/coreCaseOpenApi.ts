@@ -480,6 +480,19 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           description:
             "Accepts a Tax Plan Cycle create payload. New cycles enter Intake; " +
             "no separate status field is used.",
+          parameters: [
+            {
+              name: "Idempotency-Key",
+              in: "header",
+              required: false,
+              description:
+                "Optional retry key. Reusing the same key for the same tenant returns the original case ID.",
+              schema: {
+                type: "string",
+              },
+              example: "case-create-key-001",
+            },
+          ],
           requestBody: {
             required: true,
             content: {

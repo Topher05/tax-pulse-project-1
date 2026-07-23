@@ -24,6 +24,7 @@ import {
   redactedAuditAmount,
   stageTransition,
   taxPlanCycle,
+  taxPlanCycleIdempotencyKey,
   taxPlanCycleSchema,
   tenants,
   type AuditEntryWriter,
@@ -274,6 +275,10 @@ describe("taxPlanCycle integration", () => {
     expect(migrationSql).toContain('CREATE TABLE "tax_plan_cycle"');
     expect(migrationSql).not.toContain('CONSTRAINT "tax_plan_cycle_case_id_key" UNIQUE');
     expect(migrationSql).toContain('CREATE TABLE "stage_transition"');
+    expect(migrationSql).toContain('CREATE TABLE "tax_plan_cycle_idempotency_key"');
+    expect(migrationSql).toContain(
+      'CREATE UNIQUE INDEX "tax_plan_cycle_idempotency_key_tenant_key_idx"',
+    );
     expect(migrationSql).toContain(
       'FOREIGN KEY ("case_id") REFERENCES "public"."tax_plan_cycle"("id")',
     );
@@ -881,6 +886,130 @@ describe("taxPlanCycle integration", () => {
     });
   });
 
+  test("POST with the same Idempotency-Key returns the original case ID", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+
+      await seedSampleTenant(client);
+
+      await withRouteServer(repository, async (baseUrl) => {
+        const createBody = {
+          client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+          planning_period: "2026-Q2",
+          owner: "advisor-route-owner-002",
+          priority: "medium",
+          due_date: "2026-10-20",
+        };
+        const request = {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "Idempotency-Key": "case-create-key-001",
+          },
+          body: JSON.stringify(createBody),
+        };
+
+        const firstResponse = await fetch(`${baseUrl}/tax-plan-cycles`, request);
+        const firstBody = (await firstResponse.json()) as { case_id: string };
+        const repeatResponse = await fetch(`${baseUrl}/tax-plan-cycles`, request);
+        const repeatBody = (await repeatResponse.json()) as { case_id: string };
+
+        expect(firstResponse.status).toBe(202);
+        expect(repeatResponse.status).toBe(202);
+        expect(repeatBody).toEqual(firstBody);
+
+        const cycleRows = await db
+          .select({ id: taxPlanCycle.id })
+          .from(taxPlanCycle)
+          .where(eq(taxPlanCycle.tenantId, sampleTenant.id));
+        const transitionRows = await db
+          .select({ id: stageTransition.id })
+          .from(stageTransition)
+          .where(eq(stageTransition.caseId, firstBody.case_id));
+        const auditRows = await db
+          .select({ id: auditEntry.id })
+          .from(auditEntry)
+          .where(eq(auditEntry.caseId, firstBody.case_id));
+        const idempotencyRows = await db
+          .select({
+            tenantId: taxPlanCycleIdempotencyKey.tenantId,
+            idempotencyKey: taxPlanCycleIdempotencyKey.idempotencyKey,
+            caseId: taxPlanCycleIdempotencyKey.caseId,
+          })
+          .from(taxPlanCycleIdempotencyKey);
+
+        expect(cycleRows).toEqual([{ id: firstBody.case_id }]);
+        expect(transitionRows).toHaveLength(1);
+        expect(auditRows).toHaveLength(1);
+        expect(idempotencyRows).toEqual([
+          {
+            tenantId: sampleTenant.id,
+            idempotencyKey: "case-create-key-001",
+            caseId: firstBody.case_id,
+          },
+        ]);
+      });
+    });
+  });
+
+  test("POST with distinct Idempotency-Key values creates distinct cycles", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+
+      await seedSampleTenant(client);
+
+      await withRouteServer(repository, async (baseUrl) => {
+        const createBody = {
+          client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d63",
+          planning_period: "2026-Q3",
+          owner: "advisor-route-owner-003",
+          priority: "high",
+          due_date: "2026-11-15",
+        };
+
+        const firstResponse = await fetch(`${baseUrl}/tax-plan-cycles`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "Idempotency-Key": "case-create-key-002",
+          },
+          body: JSON.stringify(createBody),
+        });
+        const secondResponse = await fetch(`${baseUrl}/tax-plan-cycles`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "Idempotency-Key": "case-create-key-003",
+          },
+          body: JSON.stringify(createBody),
+        });
+        const firstBody = (await firstResponse.json()) as { case_id: string };
+        const secondBody = (await secondResponse.json()) as { case_id: string };
+
+        expect(firstResponse.status).toBe(202);
+        expect(secondResponse.status).toBe(202);
+        expect(secondBody.case_id).not.toBe(firstBody.case_id);
+
+        const cycleRows = await db
+          .select({ id: taxPlanCycle.id })
+          .from(taxPlanCycle)
+          .where(eq(taxPlanCycle.tenantId, sampleTenant.id));
+        const idempotencyRows = await db
+          .select({ caseId: taxPlanCycleIdempotencyKey.caseId })
+          .from(taxPlanCycleIdempotencyKey);
+
+        expect(cycleRows).toHaveLength(2);
+        expect(idempotencyRows).toEqual(
+          expect.arrayContaining([
+            { caseId: firstBody.case_id },
+            { caseId: secondBody.case_id },
+          ]),
+        );
+      });
+    });
+  });
 
   test("PATCH transitions a cycle and persists the stage transition", async () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {

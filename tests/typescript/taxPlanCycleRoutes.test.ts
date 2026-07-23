@@ -273,6 +273,38 @@ describe("createTaxPlanCycleRouter", () => {
     });
   });
 
+  test("passes a non-empty Idempotency-Key header to the controller layer", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+    }));
+    const findByCaseId = vi.fn<
+      TaxPlanCycleCreateController["findByCaseId"]
+    >(() => null);
+
+    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "Idempotency-Key": " create-cycle-key-001 ",
+        },
+        body: JSON.stringify(validCreateBody),
+      });
+
+      expect(response.status).toBe(202);
+      await expect(response.json()).resolves.toEqual({
+        case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+      });
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(create).toHaveBeenCalledWith({
+        ...validCreateBody,
+        tenantId: "tenant-001",
+        actor: "actor-001",
+        idempotencyKey: "create-cycle-key-001",
+      });
+    });
+  });
+
   test("returns shared Problem Details when the controller rejects a create", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => {
       throw new ProblemHttpError({
