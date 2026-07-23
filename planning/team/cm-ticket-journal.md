@@ -58,7 +58,8 @@ scenarios are persisted per cycle.
 
 - The first implementation slice defines the shared TypeScript schemas for manually
   entered calculation figures and stored calculation results, plus the matching Drizzle
-  table contract. The migration and repository enforcement follow in later slices.
+  table contract. The migration creates that table, and the tenant-scoped repository
+  locks the parent case while counting inserts so a sixth scenario is rejected safely.
 
 **Project Scope Connection:**
 
@@ -74,6 +75,8 @@ Compute scenario comparisons. It does not expose an HTTP endpoint or calculate d
 - `src/typescript/db/drizzle-migrations/meta/_journal.json`
 - `tests/typescript/scenario.test.ts`
 - `tests/typescript/scenarioMigration.test.ts`
+- `src/typescript/scenarioRepository.ts`
+- `tests/typescript/scenarioRepository.test.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
@@ -83,6 +86,9 @@ Compute scenario comparisons. It does not expose an HTTP endpoint or calculate d
 - `npm run db:check` passed.
 - `npx vitest run tests/typescript/scenarioMigration.test.ts` is blocked because this
   environment has no working container runtime for Testcontainers.
+- `npx vitest run tests/typescript/scenarioRepository.test.ts` is blocked for the same
+  Testcontainers runtime limitation; it contains the acceptance case that persists five
+  scenarios and rejects the sixth.
 
 ## christopher-martus-jira79 - SCRUM-79
 
