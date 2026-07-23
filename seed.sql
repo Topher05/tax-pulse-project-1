@@ -1,0 +1,3 @@
+-- Deprecated: the shared seed implementation now lives in
+-- `src/typescript/db/seed.ts` and uses drizzle-seed directly.
+-- Keep this file only as a compatibility marker for older references.

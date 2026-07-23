@@ -1,0 +1,10 @@
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[tools]
+web_search = false
+
+[project]
+name = "tax-pulse-project-team-1"
+context_file = "AGENTS.md"
