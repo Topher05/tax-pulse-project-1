@@ -1718,3 +1718,56 @@ migrations, public-route headers, or a separate Tax Plan Cycle status field.
   SCRUM-70. The full Vitest run ended with 115 passing tests and 13 existing
   Testcontainers-backed migration failures because this environment could not find a
   working container runtime strategy.
+
+## christopher-martus-jira80 - SCRUM-80
+
+**Branch:** `christopher-martus-jira80`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-80
+
+**Summary:** Define the calculation request/response contract
+
+**Description:** As a Backend Developer, I want a pydantic contract for the calculation
+request and response, so that the engine has a stable typed interface.
+
+**Acceptance Criteria:**
+
+- A request model carries filing status, income, deductions, and state.
+- A response model carries federal liability, state liability, effective rate, marginal
+  rate, and quarterly estimate.
+- Invalid inputs, including negative income, reject with a validation error.
+
+**Code Connection:**
+
+- `TaxCalculationRequest` validates the input boundary, including the allowed filing
+  statuses and non-negative income and deductions.
+- `TaxCalculationResponse` defines the five calculation outputs, with non-negative
+  monetary amounts and rates constrained to fractions from 0 through 1.
+- `calculate_tax` now returns the response contract through an async, zero-valued
+  placeholder; SCRUM-81 and SCRUM-82 will replace that placeholder with bracket and
+  quarterly-payment logic.
+
+**Project Scope Connection:**
+
+This establishes the Tax Engine's typed calculation boundary without persisting results,
+adding an HTTP endpoint, duplicating Core Case Service behavior, or introducing a
+separate case status. It preserves the service-ownership boundary documented in ADR-0009.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/tax_calculation.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/test_tax_calculation.py`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused calculation-contract pytest coverage passed: 12 tests.
+- Ruff format, Ruff lint, and Pyright passed for the changed Python contract files.
+- `uv run ruff format --check src/python tests/python` passed: 8 files already formatted.
+- `uv run pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"` passed:
+  0 errors, 0 warnings, 0 informations.
+- `uv run pytest` passed: 28 tests. The run emitted one existing Starlette/TestClient
+  deprecation warning about the installed `httpx` package.
