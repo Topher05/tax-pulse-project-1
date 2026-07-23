@@ -62,6 +62,10 @@ and marginal rates, so that each Tax Plan Cycle shows real numbers.
 - This second slice supplies immutable 2026 federal and 2025 California schedules for
   every supported filing status. `get_bracket_schedules` returns the federal and
   requested state schedules through a state-neutral lookup mapping.
+- This third slice upgrades the calculation contract to `Decimal` monetary values and
+  returns rounded federal, state, and total liabilities with combined effective and
+  marginal rates. It normalizes supported state codes and returns zero rates when
+  taxable income is zero.
 
 **Project Scope Connection:**
 
@@ -74,6 +78,7 @@ SCRUM-81 slices.
 - `src/python/tax_pulse_project_team_1/tax_calculation.py`
 - `tests/python/test_tax_brackets.py`
 - `tests/python/test_tax_bracket_schedules.py`
+- `tests/python/test_tax_calculation.py`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
@@ -85,6 +90,9 @@ SCRUM-81 slices.
 - `python -m pyright src/python/tax_pulse_project_team_1/tax_calculation.py` passed.
 - Isolated schedule lookup assertions for all supported filing statuses and California
   bounds passed via direct module execution.
+- Isolated end-to-end assertions for the exact single-filer liabilities/rates,
+  zero-taxable-income rates, and repeated identical requests passed via direct module
+  execution.
 - Pytest collection is currently blocked before tests run because the local Python
   environment is missing the project dependency `boto3`.
 

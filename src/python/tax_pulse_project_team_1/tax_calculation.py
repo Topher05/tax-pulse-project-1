@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from types import MappingProxyType
-from typing import Final, Literal, Mapping
+from typing import Final, Mapping
 
 from pydantic import BaseModel, field_validator
 
@@ -267,13 +267,40 @@ def get_bracket_schedules(
     return federal_brackets, state_brackets
 
 
+def get_marginal_rate(taxable_income: Decimal, brackets: BracketSchedule) -> Decimal:
+    """Return the rate for the bracket containing positive taxable income."""
+
+    for bracket in brackets:
+        if taxable_income >= bracket.lower_bound and (
+            bracket.upper_bound is None or taxable_income < bracket.upper_bound
+        ):
+            return bracket.rate
+
+    raise ValueError("Taxable income does not match a bracket.")
+
+
 class TaxCalculationRequest(BaseModel):
     """Request model for tax calculation inputs."""
 
-    income: float
-    deductions: float
+    income: Decimal
+    deductions: Decimal
     state: str
     filing_status: str
+
+    @field_validator("income", "deductions")
+    @classmethod
+    def validate_nonnegative_money(cls: type[TaxCalculationRequest], value: Decimal) -> Decimal:
+        if value < Decimal("0"):
+            raise ValueError("Income and deductions cannot be negative.")
+        return value
+
+    @field_validator("state")
+    @classmethod
+    def validate_state(cls: type[TaxCalculationRequest], value: str) -> str:
+        state = value.upper()
+        if state not in STATE_BRACKETS_BY_STATE_AND_FILING_STATUS:
+            raise ValueError(f"Unsupported state: {state}.")
+        return state
 
     @field_validator("filing_status")
     @classmethod
@@ -285,23 +312,54 @@ class TaxCalculationRequest(BaseModel):
 
 
 class TaxCalculationResult(BaseModel):
-    """Placeholder result model for the async tax calculation seam."""
+    """Computed federal and state tax liabilities and rate metrics."""
 
-    income: float
-    deductions: float
+    income: Decimal
+    deductions: Decimal
     state: str
     filing_status: str
-    taxable_income: float
-    estimated_tax: float
+    taxable_income: Decimal
+    federal_liability: Decimal
+    state_liability: Decimal
+    total_liability: Decimal
+    effective_rate: Decimal
+    marginal_rate: Decimal
     currency: str = "USD"
-    calculation_status: Literal["placeholder"] = "placeholder"
 
 
 async def calculate_tax(request: TaxCalculationRequest) -> TaxCalculationResult:
-    """Return a deterministic placeholder result for an async-ready calculation seam."""
+    """Calculate deterministic federal and state bracket liability for one request."""
 
-    taxable_income = max(request.income - request.deductions, 0.0)
-    estimated_tax = round(taxable_income * 0.1, 2)
+    taxable_income = max(request.income - request.deductions, Decimal("0"))
+    federal_brackets, state_brackets = get_bracket_schedules(
+        request.filing_status,
+        request.state,
+    )
+    money_quantum = Decimal("0.01")
+    rate_quantum = Decimal("0.0001")
+
+    federal_liability = calculate_bracket_liability(taxable_income, federal_brackets).quantize(
+        money_quantum,
+        rounding=ROUND_HALF_UP,
+    )
+    state_liability = calculate_bracket_liability(taxable_income, state_brackets).quantize(
+        money_quantum,
+        rounding=ROUND_HALF_UP,
+    )
+    total_liability = federal_liability + state_liability
+
+    if taxable_income == Decimal("0"):
+        effective_rate = Decimal("0.0000")
+        marginal_rate = Decimal("0.0000")
+    else:
+        effective_rate = (total_liability / taxable_income).quantize(
+            rate_quantum,
+            rounding=ROUND_HALF_UP,
+        )
+        marginal_rate = (
+            get_marginal_rate(taxable_income, federal_brackets)
+            + get_marginal_rate(taxable_income, state_brackets)
+        ).quantize(rate_quantum, rounding=ROUND_HALF_UP)
 
     return TaxCalculationResult(
         income=request.income,
@@ -309,5 +367,9 @@ async def calculate_tax(request: TaxCalculationRequest) -> TaxCalculationResult:
         state=request.state,
         filing_status=request.filing_status,
         taxable_income=taxable_income,
-        estimated_tax=estimated_tax,
+        federal_liability=federal_liability,
+        state_liability=state_liability,
+        total_liability=total_liability,
+        effective_rate=effective_rate,
+        marginal_rate=marginal_rate,
     )
