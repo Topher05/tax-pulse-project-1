@@ -59,17 +59,21 @@ and marginal rates, so that each Tax Plan Cycle shows real numbers.
 - This first implementation slice adds an immutable `TaxBracket` value object and a
   pure `calculate_bracket_liability` helper. The helper accumulates each reached income
   range without I/O, time, randomness, or mutable shared state.
+- This second slice supplies immutable 2026 federal and 2025 California schedules for
+  every supported filing status. `get_bracket_schedules` returns the federal and
+  requested state schedules through a state-neutral lookup mapping.
 
 **Project Scope Connection:**
 
 This establishes the deterministic progressive-tax primitive for the Domain Compute
-service. Federal and state schedules, the public calculation response, and rate outputs
-will be added in subsequent SCRUM-81 slices.
+service. The public calculation response and rate outputs will be added in subsequent
+SCRUM-81 slices.
 
 **Changed Files:**
 
 - `src/python/tax_pulse_project_team_1/tax_calculation.py`
 - `tests/python/test_tax_brackets.py`
+- `tests/python/test_tax_bracket_schedules.py`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
@@ -79,6 +83,8 @@ will be added in subsequent SCRUM-81 slices.
 - `python -m ruff format --check src/python/tax_pulse_project_team_1/tax_calculation.py
   tests/python/test_tax_brackets.py` passed.
 - `python -m pyright src/python/tax_pulse_project_team_1/tax_calculation.py` passed.
+- Isolated schedule lookup assertions for all supported filing statuses and California
+  bounds passed via direct module execution.
 - Pytest collection is currently blocked before tests run because the local Python
   environment is missing the project dependency `boto3`.
 
