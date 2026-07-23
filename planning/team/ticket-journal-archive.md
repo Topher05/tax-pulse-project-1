@@ -7,6 +7,49 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## christopher-martus-jira78 - SCRUM-78
+
+**Branch:** `christopher-martus-jira78`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-78
+
+**Summary:** Document the storage decision matrix
+
+**Description:** As a Platform Engineer, I want a storage decision matrix, so that
+future features place data in the right store.
+
+**Acceptance Criteria:**
+
+- The matrix maps transactional case data to PostgreSQL, queue read models to DynamoDB,
+  cache entries to Redis, and idempotency keys to Redis with a 24-hour TTL; each row
+  includes its rationale.
+- The matrix names the bounded context that owns each store.
+- The document is linked from the repository README.
+
+**Code Connection:**
+
+- `docs/storage-decision-matrix.md` defines the storage placement rule, names the Core
+  Case Service as the owner for PostgreSQL, DynamoDB, and Redis entries, and preserves
+  the Tax Engine boundary from ADR-0009.
+- `README.md` links contributors to the decision matrix.
+- The matrix records the intended architecture without claiming that SCRUM-73 through
+  SCRUM-76 implementations already exist. SCRUM-75's cache-invalidation behavior is
+  captured as a future implementation implication.
+
+**Project Scope Connection:**
+
+The matrix maintains tenant-scoped case authority in the Core Case Service, keeps
+PostgreSQL as the system of record, and limits DynamoDB and Redis to rebuildable or
+temporary operational state. It does not add data stores, migrations, cache clients,
+queue projections, or a separate Tax Plan Cycle status field.
+
+**Changed Files:**
+
+- `docs/storage-decision-matrix.md`
+- `README.md`
+
 ## dylan-harle-jira76 - SCRUM-76
 
 **Branch:** `dylan-harle-jira76`
@@ -66,6 +109,9 @@ SCRUM-77's later concurrent-create guard.
 
 **Validation Notes:**
 
+- Verified the matrix against the SCRUM-78 acceptance criteria and ADR-0009 service
+  ownership decision.
+- Verified the README uses a relative link to the matrix.
 - Required-header refactor validation: `npm run typecheck` passed.
 - Required-header refactor validation:
   `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts tests/typescript/mainTaxPlanCycleComposition.test.ts`
