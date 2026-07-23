@@ -34,6 +34,54 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira81 - SCRUM-81
+
+**Branch:** `christopher-martus-jira81`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-81
+
+**Summary:** Implement bracket liability and effective/marginal rates
+
+**Description:** As an Advisor, I want federal and state bracket liability with effective
+and marginal rates, so that each Tax Plan Cycle shows real numbers.
+
+**Acceptance Criteria:**
+
+- The engine computes federal and state bracket liability for a given filing status and
+  state.
+- It derives the effective rate and the marginal rate from the brackets.
+- Identical inputs always return identical outputs (deterministic, no ML).
+
+**Code Connection:**
+
+- This first implementation slice adds an immutable `TaxBracket` value object and a
+  pure `calculate_bracket_liability` helper. The helper accumulates each reached income
+  range without I/O, time, randomness, or mutable shared state.
+
+**Project Scope Connection:**
+
+This establishes the deterministic progressive-tax primitive for the Domain Compute
+service. Federal and state schedules, the public calculation response, and rate outputs
+will be added in subsequent SCRUM-81 slices.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/tax_calculation.py`
+- `tests/python/test_tax_brackets.py`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Isolated calculation assertions for multi-bracket, boundary, and zero-income cases
+  passed via direct module execution.
+- `python -m ruff format --check src/python/tax_pulse_project_team_1/tax_calculation.py
+  tests/python/test_tax_brackets.py` passed.
+- `python -m pyright src/python/tax_pulse_project_team_1/tax_calculation.py` passed.
+- Pytest collection is currently blocked before tests run because the local Python
+  environment is missing the project dependency `boto3`.
+
 ## christopher-martus-jira79 - SCRUM-79
 
 **Branch:** `christopher-martus-jira79`

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from decimal import Decimal
 from typing import Final, Literal
 
 from pydantic import BaseModel, field_validator
@@ -15,6 +17,45 @@ ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
         "qualifying_surviving_spouse",
     }
 )
+
+
+@dataclass(frozen=True, slots=True)
+class TaxBracket:
+    """An income range taxed at one marginal rate."""
+
+    rate: Decimal
+    lower_bound: Decimal
+    upper_bound: Decimal | None
+
+    def __post_init__(self) -> None:
+        if self.rate < Decimal("0"):
+            raise ValueError("Tax bracket rate cannot be negative.")
+        if self.lower_bound < Decimal("0"):
+            raise ValueError("Tax bracket lower bound cannot be negative.")
+        if self.upper_bound is not None and self.upper_bound <= self.lower_bound:
+            raise ValueError("Tax bracket upper bound must exceed its lower bound.")
+
+
+def calculate_bracket_liability(
+    taxable_income: Decimal,
+    brackets: tuple[TaxBracket, ...],
+) -> Decimal:
+    """Calculate unrounded progressive tax liability for a bracket schedule."""
+
+    if taxable_income < Decimal("0"):
+        raise ValueError("Taxable income cannot be negative.")
+
+    liability = Decimal("0")
+    for bracket in brackets:
+        capped_income = (
+            taxable_income
+            if bracket.upper_bound is None
+            else min(taxable_income, bracket.upper_bound)
+        )
+        taxable_amount = max(capped_income - bracket.lower_bound, Decimal("0"))
+        liability += taxable_amount * bracket.rate
+
+    return liability
 
 
 class TaxCalculationRequest(BaseModel):
