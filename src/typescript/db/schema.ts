@@ -224,6 +224,32 @@ export const taxPlanCycle = pgTable(
   ],
 );
 
+export const taxPlanCycleIdempotencyKey = pgTable(
+  "tax_plan_cycle_idempotency_key",
+  {
+    tenantId: uuid("tenant_id").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    caseId: uuid("case_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "tax_plan_cycle_idempotency_key_tenant_id_fk",
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }),
+    foreignKey({
+      name: "tax_plan_cycle_idempotency_key_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    uniqueIndex("tax_plan_cycle_idempotency_key_tenant_key_idx").on(
+      table.tenantId,
+      table.idempotencyKey,
+    ),
+  ],
+);
+
 export const auditEntry = pgTable(
   "audit_entry",
   {

@@ -38,6 +38,7 @@ repository.create({
   priority: "low",
   dueDate: "2026-09-30",
   actor: "advisor-123",
+  idempotencyKey: "case-create-key-001",
 });
 
 repository.create({
@@ -48,8 +49,20 @@ repository.create({
   priority: "low",
   dueDate: "2026-09-30",
   actor: "advisor-123",
+  idempotencyKey: "case-create-key-002",
   // @ts-expect-error create persists Intake and does not accept caller-selected stage
   stage: "Review",
+});
+
+// @ts-expect-error idempotencyKey is required for every cycle create
+repository.create({
+  tenantId: "tenant-123",
+  planningPeriod: "2026-Q1",
+  clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+  owner: "advisor-123",
+  priority: "low",
+  dueDate: "2026-09-30",
+  actor: "advisor-123",
 });
 
 void repository.create({
@@ -60,6 +73,7 @@ void repository.create({
   priority: "low",
   dueDate: "2026-09-30",
   actor: "advisor-123",
+  idempotencyKey: "case-create-key-003",
 });
 
 repository.insert({

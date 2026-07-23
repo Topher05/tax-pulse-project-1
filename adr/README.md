@@ -12,3 +12,4 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0007: Use Argon2id for password login verification](./0007-argon2id-password-login.md)
 - [ADR-0008: Add append-only audit entries per case](./0008-append-only-audit-entry.md)
 - [ADR-0009: Service Ownership Boundaries](./0009-service-ownership-boundaries.md)
+- [ADR-0010: Tenant-scoped case creation idempotency](./0010-tenant-scoped-case-creation-idempotency.md)

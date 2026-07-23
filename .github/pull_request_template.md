@@ -8,7 +8,7 @@ Pull Request: release-v3.11.2
  -->
 
 ## Ticket
-
+- [SCRUM-XX](link)
 <!-- URL to jira item -->
 
 ## Brief
@@ -20,9 +20,9 @@ Pull Request: release-v3.11.2
 
 ## Acceptance Criteria
 <!--
-- [] Setup if required
-- [] Test steps to verify
-- [] Command to run for tests, all should be passing
+- [ ] Setup if required
+- [ ] Test steps to verify
+- [ ] Command to run for tests, all should be passing
 -->
 <!-- List checks, tests, and manual verification. -->
 
@@ -34,6 +34,7 @@ Pull Request: release-v3.11.2
 
 - [ ] Branch name follows the repo convention
 - [ ] Branch type follows Git flow expectations for main, development, feature, release, or hotfix
+- [ ] Ticket journal entry is present in the contributor's assigned `planning/team/` journal
 - [ ] Ticket reference and link is present
 - [ ] Brief matches the actual change
 - [ ] ADR link is present when needed
