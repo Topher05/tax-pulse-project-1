@@ -160,11 +160,11 @@ describe("Core Case Service OpenAPI document", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
     const createOperation = requiredRecord(
-      requiredRecord(paths, "/tax-plan-cycles"),
+      requiredRecord(paths, "/v1/tax-plan-cycles"),
       "post",
     );
     const readOperation = requiredRecord(
-      requiredRecord(paths, "/tax-plan-cycles/{caseId}"),
+      requiredRecord(paths, "/v1/tax-plan-cycles/{caseId}"),
       "get",
     );
 
@@ -236,7 +236,7 @@ describe("Core Case Service OpenAPI document", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
     const createOperation = requiredRecord(
-      requiredRecord(paths, "/tax-plan-cycles"),
+      requiredRecord(paths, "/v1/tax-plan-cycles"),
       "post",
     );
     const requestBody = requiredRecord(createOperation, "requestBody");
@@ -244,6 +244,7 @@ describe("Core Case Service OpenAPI document", () => {
     const jsonContent = requiredRecord(content, "application/json");
     const createSchema = requiredRecord(jsonContent, "schema");
     const properties = requiredRecord(createSchema, "properties");
+    const parameters = createOperation.parameters as unknown[];
 
     expect(Object.keys(properties)).toEqual(
       expect.arrayContaining([
@@ -257,13 +258,22 @@ describe("Core Case Service OpenAPI document", () => {
     expect(properties.stage).toBeUndefined();
     expect(properties.on_hold).toBeUndefined();
     expect(properties.status).toBeUndefined();
+    expect(parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "Idempotency-Key",
+          in: "header",
+          required: true,
+        }),
+      ]),
+    );
   });
 
   test("documents read responses with stage and due_date but no status field", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
     const readOperation = requiredRecord(
-      requiredRecord(paths, "/tax-plan-cycles/{caseId}"),
+      requiredRecord(paths, "/v1/tax-plan-cycles/{caseId}"),
       "get",
     );
     const responses = requiredRecord(readOperation, "responses");

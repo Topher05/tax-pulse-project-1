@@ -7,6 +7,7 @@ import {
   getDatabaseUrlFromEnv,
   withDatabaseClient,
 } from "../postgresMigrations.js";
+
 import {
   credential,
   mfaEnrollment,
@@ -17,6 +18,7 @@ import {
   userStatus,
   users,
 } from "./schema.js";
+
 import {
   buildTaxPlanCycleInsertRows,
   credentialRows,
@@ -74,13 +76,12 @@ export async function main(): Promise<void> {
     await applyDrizzleMigrations(client);
     await applySeed(client);
   });
-
   console.log("Applied linear seed data");
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch((error: unknown) => {
-    console.info('Failed seed') // Comment from me dont remove for now
+    console.info('Failed seed')
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
   });

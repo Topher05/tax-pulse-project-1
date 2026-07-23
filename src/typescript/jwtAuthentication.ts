@@ -11,13 +11,21 @@ declare global {
     interface Request {
       authenticatedPrincipal?: AuthenticatedPrincipal;
       tenant?: { id: string };
-      user?: { id: string };
+      user?: {
+        id: string;
+        role?: UserRole;
+        permissions?: string[];
+      };
     }
   }
 }
 
 export interface CreateJwtAuthenticationMiddlewareOptions {
   config: JwtConfig;
+}
+
+export interface CreateHydrateUserClaimsOptions {
+  permissionsForRole?: Partial<Record<UserRole, ReadonlyArray<string>>>;
 }
 
 function authenticationRequired(): ProblemHttpError {
@@ -59,6 +67,36 @@ function toAuthenticatedPrincipal(
     userId: payload.sub,
     role: payload.role,
     tenantId: payload.tenant_id,
+  };
+}
+
+export function hydrateUserClaims(
+  permissionsForRole: Partial<Record<UserRole, ReadonlyArray<string>>> = {
+    Advisor: ["EDIT"],
+  },
+): RequestHandler {
+  const effectivePermissionsForRole: Partial<
+    Record<UserRole, ReadonlyArray<string>>
+  > = {
+    Advisor: ["EDIT"],
+    ...permissionsForRole,
+  };
+
+  return (req, _res, next) => {
+    const principal = req.authenticatedPrincipal;
+
+    if (!principal) {
+      next(new Error("Authenticated principal missing after JWT verification."));
+      return;
+    }
+
+    req.user = {
+      id: principal.userId,
+      role: principal.role,
+      permissions: [...(effectivePermissionsForRole[principal.role] ?? [])],
+    };
+
+    next();
   };
 }
 

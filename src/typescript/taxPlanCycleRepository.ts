@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
@@ -6,6 +6,7 @@ import {
   auditEntry as auditEntryTable,
   stageTransition as stageTransitionTable,
   taxPlanCycle as taxPlanCycleTable,
+  taxPlanCycleIdempotencyKey as taxPlanCycleIdempotencyKeyTable,
 } from "./db/schema.js";
 import { taxPlanCycleSchema, type TaxPlanCycle } from "./taxPlanCycle.js";
 
@@ -27,12 +28,20 @@ export interface TaxPlanCycleRepositoryCreateInput {
   priority: TaxPlanCycle["priority"];
   dueDate: TaxPlanCycle["due_date"];
   actor: string;
+  idempotencyKey: string;
 }
 
 export interface TaxPlanCycleInsertInput {
   tenantId: string;
   planningPeriod: string;
   cycle: Omit<TaxPlanCycle, "id">;
+}
+
+export interface TaxPlanCycleTransitionInput {
+  tenantId: string;
+  caseId: string;
+  toStage: TaxPlanCycle["stage"];
+  actor: string;
 }
 
 export type TaxPlanCycleQueueItem = TaxPlanCycle & {
@@ -43,6 +52,9 @@ export interface TaxPlanCycleRepository {
   create(input: TaxPlanCycleRepositoryCreateInput): Promise<string>;
   insert(input: TaxPlanCycleInsertInput): Promise<string>;
   findByCaseId(input: TaxPlanCycleReadInput): Promise<TaxPlanCycle | null>;
+  transition(
+    input: TaxPlanCycleTransitionInput,
+  ): Promise<TaxPlanCycle | null>;
   listQueue(input: TaxPlanCycleQueueInput): Promise<TaxPlanCycleQueueItem[]>;
 }
 
@@ -101,8 +113,58 @@ export function createTaxPlanCycleRepository(
     onHold: boolean;
     holdReason: string | null;
     actor: string;
+    idempotencyKey?: string;
   }): Promise<string> {
+    if (input.idempotencyKey) {
+      const existingRows = await db
+        .select({ caseId: taxPlanCycleIdempotencyKeyTable.caseId })
+        .from(taxPlanCycleIdempotencyKeyTable)
+        .where(
+          and(
+            eq(taxPlanCycleIdempotencyKeyTable.tenantId, input.tenantId),
+            eq(
+              taxPlanCycleIdempotencyKeyTable.idempotencyKey,
+              input.idempotencyKey,
+            ),
+          ),
+        )
+        .limit(1);
+      const existingCaseId = existingRows[0]?.caseId;
+
+      if (existingCaseId) {
+        return existingCaseId;
+      }
+    }
+
     return await db.transaction(async (tx) => {
+      if (input.idempotencyKey) {
+        await tx.execute(sql`
+          SELECT pg_advisory_xact_lock(
+            hashtext(${input.tenantId}),
+            hashtext(${input.idempotencyKey})
+          )
+        `);
+
+        const existingRows = await tx
+          .select({ caseId: taxPlanCycleIdempotencyKeyTable.caseId })
+          .from(taxPlanCycleIdempotencyKeyTable)
+          .where(
+            and(
+              eq(taxPlanCycleIdempotencyKeyTable.tenantId, input.tenantId),
+              eq(
+                taxPlanCycleIdempotencyKeyTable.idempotencyKey,
+                input.idempotencyKey,
+              ),
+            ),
+          )
+          .limit(1);
+        const existingCaseId = existingRows[0]?.caseId;
+
+        if (existingCaseId) {
+          return existingCaseId;
+        }
+      }
+
       const rows = await tx
         .insert(taxPlanCycleTable)
         .values({
@@ -144,6 +206,14 @@ export function createTaxPlanCycleRepository(
         occurredAt,
       });
 
+      if (input.idempotencyKey) {
+        await tx.insert(taxPlanCycleIdempotencyKeyTable).values({
+          tenantId: input.tenantId,
+          idempotencyKey: input.idempotencyKey,
+          caseId,
+        });
+      }
+
       return caseId;
     });
   }
@@ -160,6 +230,7 @@ export function createTaxPlanCycleRepository(
         onHold: false,
         holdReason: null,
         actor: input.actor,
+        idempotencyKey: input.idempotencyKey,
       });
     },
 
@@ -201,6 +272,61 @@ export function createTaxPlanCycleRepository(
       const row = rows[0];
 
       return row ? toTaxPlanCycle(row) : null;
+    },
+
+    async transition({ tenantId, caseId, toStage, actor }) {
+      return await db.transaction(async (tx) => {
+        const rows = await tx
+          .select({
+            id: taxPlanCycleTable.id,
+            clientId: taxPlanCycleTable.clientId,
+            stage: taxPlanCycleTable.stage,
+            owner: taxPlanCycleTable.owner,
+            priority: taxPlanCycleTable.priority,
+            dueDate: taxPlanCycleTable.dueDate,
+            onHold: taxPlanCycleTable.onHold,
+            holdReason: taxPlanCycleTable.holdReason,
+          })
+          .from(taxPlanCycleTable)
+          .where(
+            and(
+              eq(taxPlanCycleTable.tenantId, tenantId),
+              eq(taxPlanCycleTable.id, caseId),
+            ),
+          )
+          .limit(1);
+
+        const currentRow = rows[0];
+
+        if (!currentRow) {
+          return null;
+        }
+
+        await tx
+          .update(taxPlanCycleTable)
+          .set({
+            stage: toStage,
+          })
+          .where(
+            and(
+              eq(taxPlanCycleTable.tenantId, tenantId),
+              eq(taxPlanCycleTable.id, caseId),
+            ),
+          );
+
+        await tx.insert(stageTransitionTable).values({
+          caseId,
+          fromStage: currentRow.stage,
+          toStage,
+          actor,
+          occurredAt: new Date(),
+        });
+
+        return toTaxPlanCycle({
+          ...currentRow,
+          stage: toStage,
+        });
+      });
     },
 
     async listQueue({ tenantId, asOfDate = todayIsoDate() }) {

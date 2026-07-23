@@ -8,7 +8,7 @@ Pull Request: release-v3.11.2
  -->
 
 ## Ticket
-
+- [SCRUM-XX](link)
 <!-- URL to jira item -->
 
 ## Brief
@@ -20,9 +20,9 @@ Pull Request: release-v3.11.2
 
 ## Acceptance Criteria
 <!--
-- [] Setup if required
-- [] Test steps to verify
-- [] Command to run for tests, all should be passing
+- [ ] Setup if required
+- [ ] Test steps to verify
+- [ ] Command to run for tests, all should be passing
 -->
 <!-- List checks, tests, and manual verification. -->
 
