@@ -73,7 +73,7 @@ describe("bracket reference migrations", () => {
         INSERT INTO federal_tax_bracket
           (tax_year, filing_status, rate, lower_bound, upper_bound)
         VALUES
-          (2026, 'single', 0.10, 0.00, 12400.00)
+          (2027, 'single', 0.10, 0.00, 12400.00)
       `);
 
       await expectPgError(
@@ -81,7 +81,7 @@ describe("bracket reference migrations", () => {
           INSERT INTO federal_tax_bracket
             (tax_year, filing_status, rate, lower_bound, upper_bound)
           VALUES
-            (2026, 'single', 0.12, 0.00, 50400.00)
+            (2027, 'single', 0.12, 0.00, 50400.00)
         `),
         {
           code: "23505",
@@ -93,7 +93,7 @@ describe("bracket reference migrations", () => {
         INSERT INTO state_tax_bracket
           (tax_year, state_code, filing_status, rate, lower_bound, upper_bound)
         VALUES
-          (2026, 'CA', 'single', 0.01, 0.00, 10000.00)
+          (2027, 'CA', 'single', 0.01, 0.00, 10000.00)
       `);
 
       await expectPgError(
@@ -101,7 +101,7 @@ describe("bracket reference migrations", () => {
           INSERT INTO state_tax_bracket
             (tax_year, state_code, filing_status, rate, lower_bound, upper_bound)
           VALUES
-            (2026, 'CA', 'single', 0.02, 0.00, 25000.00)
+            (2027, 'CA', 'single', 0.02, 0.00, 25000.00)
           `),
         {
           code: "23505",
