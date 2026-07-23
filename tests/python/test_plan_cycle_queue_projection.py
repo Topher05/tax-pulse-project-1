@@ -1,0 +1,212 @@
+from __future__ import annotations
+
+import os
+from collections.abc import Iterator
+from datetime import date
+from typing import cast
+from uuid import uuid4
+
+import pytest
+from pydantic import ValidationError
+from tax_pulse_project_team_1 import (
+    PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
+    PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
+    PlanCycleQueueProjectionItem,
+    create_dynamodb_client,
+    create_plan_cycle_queue_projection_table,
+    describe_plan_cycle_queue_projection_table,
+    wait_for_plan_cycle_queue_projection_table,
+)
+from tax_pulse_project_team_1.dynamodb.plan_cycle_queue_projection import DynamoDbClient
+from testcontainers.localstack import LocalStackContainer
+
+type DynamoDbAttributeValue = dict[str, str] | dict[str, bool]
+type DynamoDbAttributeMap = dict[str, DynamoDbAttributeValue]
+
+DEFAULT_LOCALSTACK_TEST_IMAGE = "localstack/localstack:3.8.1"
+
+
+@pytest.fixture(scope="module")
+def localstack_endpoint_url() -> Iterator[str]:
+    os.environ.setdefault("TESTCONTAINERS_RYUK_DISABLED", "true")
+    localstack_image = os.getenv("TAXPULSE_LOCALSTACK_IMAGE", DEFAULT_LOCALSTACK_TEST_IMAGE)
+    localstack_container = LocalStackContainer(image=localstack_image).with_services("dynamodb")
+
+    if localstack_auth_token := os.getenv("LOCALSTACK_AUTH_TOKEN"):
+        localstack_container = localstack_container.with_env(
+            "LOCALSTACK_AUTH_TOKEN", localstack_auth_token
+        )
+
+    with localstack_container as localstack:
+        yield localstack.get_url()
+
+
+@pytest.fixture
+def dynamodb_client(localstack_endpoint_url: str) -> DynamoDbClient:
+    return create_dynamodb_client(endpoint_url=localstack_endpoint_url)
+
+
+def unique_table_name() -> str:
+    return f"taxpulse_plan_cycle_queue_projection_{uuid4().hex}"
+
+
+def to_dynamodb_attribute_map(
+    item: PlanCycleQueueProjectionItem,
+) -> DynamoDbAttributeMap:
+    projection = item.to_dynamodb_item()
+
+    return {
+        "tenant_id": {"S": str(projection["tenant_id"])},
+        "case_id": {"S": str(projection["case_id"])},
+        "client": {"S": str(projection["client"])},
+        "stage": {"S": str(projection["stage"])},
+        "owner": {"S": str(projection["owner"])},
+        "priority": {"S": str(projection["priority"])},
+        "due_date": {"S": str(projection["due_date"])},
+        "is_overdue": {"BOOL": bool(projection["is_overdue"])},
+    }
+
+
+def test_plan_cycle_queue_projection_item_accepts_required_fields() -> None:
+    item = PlanCycleQueueProjectionItem(
+        tenant_id="tenant-001",
+        case_id="case-001",
+        client="North Shore Family Office",
+        stage="Review",
+        owner="advisor-001",
+        priority="high",
+        due_date=date(2026, 7, 15),
+        is_overdue=True,
+    )
+
+    assert item.to_dynamodb_item() == {
+        "tenant_id": "tenant-001",
+        "case_id": "case-001",
+        "client": "North Shore Family Office",
+        "stage": "Review",
+        "owner": "advisor-001",
+        "priority": "high",
+        "due_date": "2026-07-15",
+        "is_overdue": True,
+    }
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
+            "tenant_id": "tenant-001",
+            "case_id": "case-001",
+            "client": "North Shore Family Office",
+            "stage": "Review",
+            "owner": "advisor-001",
+            "priority": "high",
+            "due_date": "2026-07-15",
+        },
+        {
+            "tenant_id": "tenant-001",
+            "case_id": "case-001",
+            "client": "North Shore Family Office",
+            "stage": "Planning",
+            "owner": "advisor-001",
+            "priority": "high",
+            "due_date": "2026-07-15",
+            "is_overdue": True,
+        },
+        {
+            "tenant_id": "tenant-001",
+            "case_id": "case-001",
+            "client": "North Shore Family Office",
+            "stage": "Review",
+            "owner": "advisor-001",
+            "priority": "urgent",
+            "due_date": "2026-07-15",
+            "is_overdue": True,
+        },
+    ],
+)
+def test_plan_cycle_queue_projection_item_rejects_invalid_shapes(
+    payload: dict[str, object],
+) -> None:
+    with pytest.raises(ValidationError):
+        PlanCycleQueueProjectionItem.model_validate(payload)
+
+
+def test_creates_plan_cycle_queue_projection_table_against_localstack(
+    dynamodb_client: DynamoDbClient,
+) -> None:
+    table_name = unique_table_name()
+
+    create_plan_cycle_queue_projection_table(dynamodb_client, table_name)
+    wait_for_plan_cycle_queue_projection_table(dynamodb_client, table_name)
+
+    description = describe_plan_cycle_queue_projection_table(dynamodb_client, table_name)
+    table = cast(dict[str, object], description["Table"])
+    billing_mode_summary = cast(dict[str, str], table["BillingModeSummary"])
+
+    assert table["TableName"] == table_name
+    assert table["KeySchema"] == [
+        {"AttributeName": PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY, "KeyType": "HASH"},
+        {"AttributeName": PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY, "KeyType": "RANGE"},
+    ]
+    assert table["AttributeDefinitions"] == [
+        {"AttributeName": PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY, "AttributeType": "S"},
+        {"AttributeName": PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY, "AttributeType": "S"},
+    ]
+    assert billing_mode_summary["BillingMode"] == "PAY_PER_REQUEST"
+
+
+def test_queries_projection_items_by_tenant_from_localstack(
+    dynamodb_client: DynamoDbClient,
+) -> None:
+    table_name = unique_table_name()
+    create_plan_cycle_queue_projection_table(dynamodb_client, table_name)
+    wait_for_plan_cycle_queue_projection_table(dynamodb_client, table_name)
+
+    tenant_item = PlanCycleQueueProjectionItem(
+        tenant_id="tenant-queue-001",
+        case_id="case-overdue-001",
+        client="North Shore Family Office",
+        stage="Review",
+        owner="advisor-001",
+        priority="high",
+        due_date=date(2026, 7, 10),
+        is_overdue=True,
+    )
+    future_item = PlanCycleQueueProjectionItem(
+        tenant_id="tenant-queue-001",
+        case_id="case-future-001",
+        client="Juniper Advisory Client",
+        stage="Modeling",
+        owner="advisor-002",
+        priority="medium",
+        due_date=date(2026, 7, 20),
+        is_overdue=False,
+    )
+    other_tenant_item = PlanCycleQueueProjectionItem(
+        tenant_id="tenant-queue-002",
+        case_id="case-other-001",
+        client="Other Tenant Client",
+        stage="Intake",
+        owner="advisor-003",
+        priority="low",
+        due_date=date(2026, 7, 1),
+        is_overdue=True,
+    )
+
+    for item in [tenant_item, future_item, other_tenant_item]:
+        dynamodb_client.put_item(TableName=table_name, Item=to_dynamodb_attribute_map(item))
+
+    response = dynamodb_client.query(
+        TableName=table_name,
+        KeyConditionExpression="tenant_id = :tenant_id",
+        ExpressionAttributeValues={":tenant_id": {"S": "tenant-queue-001"}},
+    )
+
+    items = cast(list[DynamoDbAttributeMap], response["Items"])
+    returned_items = sorted(items, key=lambda row: cast(dict[str, str], row["case_id"])["S"])
+
+    assert returned_items == [
+        to_dynamodb_attribute_map(future_item),
+        to_dynamodb_attribute_map(tenant_item),
+    ]
