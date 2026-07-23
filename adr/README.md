@@ -12,4 +12,8 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0007: Use Argon2id for password login verification](./0007-argon2id-password-login.md)
 - [ADR-0008: Add append-only audit entries per case](./0008-append-only-audit-entry.md)
 - [ADR-0009: Service Ownership Boundaries](./0009-service-ownership-boundaries.md)
+<<<<<<< HEAD
 - [ADR-0010: Python DynamoDB Queue Projection with LocalStack](./0010-python-dynamodb-queue-projection-localstack.md)
+=======
+- [ADR-0010: Version Tax Plan Cycle API under /v1](./0010-versioned-tax-plan-cycle-api.md)
+>>>>>>> origin/development

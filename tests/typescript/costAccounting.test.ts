@@ -20,10 +20,10 @@ async function withCostAccountingServer(
     logger: silentLogger,
     registerRoutes: (server) => {
       server.use(createCostAccountingMiddleware(options));
-      server.get("/tax-plan-cycles/:caseId", (_req, res) => {
+      server.get("/v1/tax-plan-cycles/:caseId", (_req, res) => {
         res.status(200).json({ ok: true });
       });
-      server.post("/tax-plan-cycles", (_req, res) => {
+      server.post("/v1/tax-plan-cycles", (_req, res) => {
         res.status(202).json({ ok: true });
       });
       server.get("/custom-cost", (_req, res) => {
@@ -47,7 +47,7 @@ describe("createCostAccountingMiddleware", () => {
   test("sets one cost unit for Tax Plan Cycle reads", async () => {
     await withCostAccountingServer({}, async (baseUrl) => {
       const response = await fetch(
-        `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01`,
+        `${baseUrl}/v1/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01`,
       );
 
       expect(response.status).toBe(200);
@@ -57,7 +57,7 @@ describe("createCostAccountingMiddleware", () => {
 
   test("sets two cost units for Tax Plan Cycle creates", async () => {
     await withCostAccountingServer({}, async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
+      const response = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
         method: "POST",
       });
 
