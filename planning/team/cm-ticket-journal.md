@@ -34,6 +34,49 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus_jira85 - SCRUM-85
+
+**Branch:** `christopher-martus_jira85`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-85
+
+**Summary:** Create the scenario table for typed-in figures
+
+**Description:** As a Backend Developer, I want a scenario table, so that 2-5 modeled
+scenarios are persisted per cycle.
+
+**Acceptance Criteria:**
+
+- A migration creates a scenario table keyed to a case with name, typed-in figures, and
+  computed result.
+- A constraint or repository check limits a case to between 2 and 5 scenarios.
+- A test asserts a 6th scenario insert is rejected.
+
+**Code Connection:**
+
+- The first implementation slice defines the shared TypeScript schemas for manually
+  entered calculation figures and stored calculation results, plus the matching Drizzle
+  table contract. The migration and repository enforcement follow in later slices.
+
+**Project Scope Connection:**
+
+This establishes the PostgreSQL persistence boundary between Tax Plan Cycles and Domain
+Compute scenario comparisons. It does not expose an HTTP endpoint or calculate deltas.
+
+**Changed Files:**
+
+- `src/typescript/scenario.ts`
+- `src/typescript/db/schema.ts`
+- `tests/typescript/scenario.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/scenario.test.ts` passed (2 tests).
+
 ## christopher-martus-jira79 - SCRUM-79
 
 **Branch:** `christopher-martus-jira79`
