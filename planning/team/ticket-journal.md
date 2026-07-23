@@ -81,6 +81,71 @@ SCRUM-77's later concurrent-create guard.
   `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands ran with
   approved elevated filesystem access.
 
+## dylan-harle-jira77 - SCRUM-77
+
+**Branch:** `dylan-harle-jira77`
+
+**Owner:** Dylan Harle
+
+**Jira Key:** SCRUM-77
+
+**Epic:** SCRUM-15 - Polyglot Backend & Contracts
+
+**Summary:** Guard concurrent creates with the idempotency key
+
+**Description:** As a Backend Developer, I want concurrent creates with the same key to
+produce one cycle, so that retries under load never duplicate cases.
+
+**Acceptance Criteria:**
+
+- Two concurrent requests with the same Idempotency-Key create exactly one cycle.
+- The second request waits for or reads the first result rather than inserting again.
+- A concurrency test asserts a single cycle is created.
+
+**Code Connection:**
+
+- `createTaxPlanCycleRepository.create` still requires the SCRUM-76 `idempotencyKey` input.
+- Required-key creates now run in a transaction that acquires a PostgreSQL advisory lock
+  scoped to the tenant ID and idempotency key before reading or writing the idempotency row.
+- The first same-key transaction inserts the Intake cycle, initial transition, audit entry,
+  and idempotency row; later same-key transactions read the stored `case_id` and skip all
+  duplicate side effects.
+- The repository's internal `insert` helper remains a no-key fixture/seed path and does not
+  change public create behavior.
+- ADR-0010 now documents the advisory-lock concurrency decision.
+
+**Project Scope Connection:**
+
+This completes the retry-safety path established by SCRUM-76 while preserving tenant
+isolation, the stage-based workflow model, and immutable transition/audit side effects.
+The lock key is tenant-scoped so firms cannot observe or block each other's idempotency
+keys.
+
+**Changed Files:**
+
+- `planning/team/ticket-journal.md`
+- `adr/0010-tenant-scoped-case-creation-idempotency.md`
+- `src/typescript/taxPlanCycleRepository.ts`
+- `tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+
+**Validation Notes:**
+
+- Initial Node validation commands failed inside the default Windows sandbox with
+  `EPERM: operation not permitted, lstat 'C:\Users\Drybones'`; the same commands ran with
+  approved elevated filesystem access.
+- Merge-conflict validation: `npm run typecheck` passed.
+- Merge-conflict validation:
+  `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts tests/typescript/mainTaxPlanCycleComposition.test.ts`
+  passed with 31 tests.
+- Merge-conflict validation:
+  `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 22 tests, including the concurrent same-key create coverage.
+- Merge-conflict validation: `npm run test` passed typechecking and 142 tests, then
+  `tests/typescript/tenantsMigration.test.ts` timed out under full-suite load; rerunning
+  `npx vitest run tests/typescript/tenantsMigration.test.ts` passed.
+- `npx vitest run --config vitest.integration.config.ts tests/typescript/taxPlanCycle/taxPlanCycle.integration.ts`
+  passed with 17 tests, including the concurrent same-key create coverage.
+
 ## dylan-harle-jira73 - SCRUM-73
 
 **Branch:** `dylan-harle-jira73`

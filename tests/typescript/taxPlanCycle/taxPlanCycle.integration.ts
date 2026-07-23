@@ -212,7 +212,7 @@ async function withTransitionRouteServer(
 }
 
 async function withTaxPlanCycleIntegrationDatabase<T>(
-  callback: (client: Client) => Promise<T>,
+  callback: (client: Client, connectionString: string) => Promise<T>,
 ): Promise<T> {
   const container = await startDockerPostgresContainer();
   const client = new Client({
@@ -225,7 +225,7 @@ async function withTaxPlanCycleIntegrationDatabase<T>(
     await client.query(`DROP SCHEMA IF EXISTS public CASCADE`);
     await client.query(`CREATE SCHEMA public`);
     await applyDrizzleMigrations(client);
-    return await callback(client);
+    return await callback(client, container.connectionUri);
   } finally {
     await client.query("SET search_path TO public").catch(() => undefined);
     await client.end().catch(() => undefined);
@@ -954,6 +954,91 @@ describe("taxPlanCycle integration", () => {
           },
         ]);
       });
+    });
+  });
+
+  test("concurrent creates with the same Idempotency-Key create one cycle", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client, connectionString) => {
+      const db = drizzle(client);
+      const firstClient = new Client({ connectionString });
+      const secondClient = new Client({ connectionString });
+
+      await seedSampleTenant(client);
+      await client.query(`
+        CREATE OR REPLACE FUNCTION slow_tax_plan_cycle_insert()
+        RETURNS trigger
+        LANGUAGE plpgsql
+        AS $$
+        BEGIN
+          PERFORM pg_sleep(0.1);
+          RETURN NEW;
+        END;
+        $$;
+      `);
+      await client.query(`
+        CREATE TRIGGER slow_tax_plan_cycle_insert_trigger
+        BEFORE INSERT ON tax_plan_cycle
+        FOR EACH ROW
+        EXECUTE FUNCTION slow_tax_plan_cycle_insert();
+      `);
+      await firstClient.connect();
+      await secondClient.connect();
+
+      try {
+        const firstRepository = createTaxPlanCycleRepository(firstClient);
+        const secondRepository = createTaxPlanCycleRepository(secondClient);
+        const createInput = {
+          tenantId: sampleTenant.id,
+          planningPeriod: "2026-Q2",
+          clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d64",
+          owner: "advisor-concurrent-001",
+          priority: "high",
+          dueDate: "2026-10-31",
+          actor: "advisor-concurrent-001",
+          idempotencyKey: "case-create-key-concurrent-001",
+        } as const;
+
+        const [firstCaseId, secondCaseId] = await Promise.all([
+          firstRepository.create(createInput),
+          secondRepository.create(createInput),
+        ]);
+
+        expect(secondCaseId).toBe(firstCaseId);
+
+        const cycleRows = await db
+          .select({ id: taxPlanCycle.id })
+          .from(taxPlanCycle)
+          .where(eq(taxPlanCycle.tenantId, sampleTenant.id));
+        const idempotencyRows = await db
+          .select({
+            tenantId: taxPlanCycleIdempotencyKey.tenantId,
+            idempotencyKey: taxPlanCycleIdempotencyKey.idempotencyKey,
+            caseId: taxPlanCycleIdempotencyKey.caseId,
+          })
+          .from(taxPlanCycleIdempotencyKey);
+        const transitionRows = await db
+          .select({ id: stageTransition.id })
+          .from(stageTransition)
+          .where(eq(stageTransition.caseId, firstCaseId));
+        const auditRows = await db
+          .select({ id: auditEntry.id })
+          .from(auditEntry)
+          .where(eq(auditEntry.caseId, firstCaseId));
+
+        expect(cycleRows).toEqual([{ id: firstCaseId }]);
+        expect(idempotencyRows).toEqual([
+          {
+            tenantId: sampleTenant.id,
+            idempotencyKey: "case-create-key-concurrent-001",
+            caseId: firstCaseId,
+          },
+        ]);
+        expect(transitionRows).toHaveLength(1);
+        expect(auditRows).toHaveLength(1);
+      } finally {
+        await firstClient.end().catch(() => undefined);
+        await secondClient.end().catch(() => undefined);
+      }
     });
   });
 

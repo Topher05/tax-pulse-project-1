@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
@@ -137,6 +137,34 @@ export function createTaxPlanCycleRepository(
     }
 
     return await db.transaction(async (tx) => {
+      if (input.idempotencyKey) {
+        await tx.execute(sql`
+          SELECT pg_advisory_xact_lock(
+            hashtext(${input.tenantId}),
+            hashtext(${input.idempotencyKey})
+          )
+        `);
+
+        const existingRows = await tx
+          .select({ caseId: taxPlanCycleIdempotencyKeyTable.caseId })
+          .from(taxPlanCycleIdempotencyKeyTable)
+          .where(
+            and(
+              eq(taxPlanCycleIdempotencyKeyTable.tenantId, input.tenantId),
+              eq(
+                taxPlanCycleIdempotencyKeyTable.idempotencyKey,
+                input.idempotencyKey,
+              ),
+            ),
+          )
+          .limit(1);
+        const existingCaseId = existingRows[0]?.caseId;
+
+        if (existingCaseId) {
+          return existingCaseId;
+        }
+      }
+
       const rows = await tx
         .insert(taxPlanCycleTable)
         .values({
