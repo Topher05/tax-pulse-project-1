@@ -16,8 +16,20 @@ export interface AuditEntryListInput {
   caseId: string;
 }
 
+export interface AuditEntryWriteInput {
+  caseId: string;
+  actor: string;
+  action: string;
+  outcome: string;
+  occurredAt: Date;
+}
+
 export interface AuditEntryReader {
   listByCase(input: AuditEntryListInput): Promise<AuditEntryOutput[]>;
+}
+
+export interface AuditEntryWriter {
+  record(input: AuditEntryWriteInput): Promise<void>;
 }
 
 export function createAuditEntryRepository(client: Client): AuditEntryReader {
@@ -48,6 +60,22 @@ export function createAuditEntryRepository(client: Client): AuditEntryReader {
         .orderBy(asc(auditEntryTable.occurredAt));
 
       return rows.map((row) => serializeAuditEntryForOutput(row));
+    },
+  };
+}
+
+export function createAuditEntryWriter(client: Client): AuditEntryWriter {
+  const db = drizzle(client);
+
+  return {
+    async record(input) {
+      await db.insert(auditEntryTable).values({
+        caseId: input.caseId,
+        actor: input.actor,
+        action: input.action,
+        outcome: input.outcome,
+        occurredAt: input.occurredAt,
+      });
     },
   };
 }
