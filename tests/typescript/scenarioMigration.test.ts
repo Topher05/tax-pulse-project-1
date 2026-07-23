@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 
+import { taxPlanCycleRows } from "../../src/typescript/db/seed.model.js";
 import { withDockerDrizzleSeededDatabase } from "./bootstrap/migrationTestUtils.js";
 import { expectPgError, getTableStructure } from "./bootstrap/tableTestUtils.js";
-import { sampleCycleIds } from "./taxPlanCycle/taxPlanCycle.test.model.js";
 
 describe("scenario migration", () => {
   test("creates a scenario table linked to a tax plan cycle", { timeout: 30000 }, async () => {
@@ -37,7 +37,7 @@ describe("scenario migration", () => {
           VALUES ($1, $2, $3::jsonb, $4::jsonb)
         `,
         [
-          sampleCycleIds[0],
+          taxPlanCycleRows[0].id,
           "Maximize deductions",
           JSON.stringify({
             income: 250000,
