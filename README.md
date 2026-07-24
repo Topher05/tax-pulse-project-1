@@ -94,11 +94,33 @@ docker-compose setup. For that flow, `.env` only needs these values:
 - `TAXPULSE_DYNAMODB_ENDPOINT_URL=http://localhost:4566`
 - `LOCALSTACK_AUTH_TOKEN=<your LocalStack token>`
 
-Start LocalStack from the Python workspace root:
+Before running the bootstrap, make sure the Python dev dependencies are installed
+from `pyproject.toml`. From the repository root, use whichever installer your
+machine has available:
+
+```powershell
+python -m pip install -e ".[dev]"
+```
+
+If you have `uv` installed, you can use that instead:
+
+```powershell
+uv sync --extra dev
+```
+
+Start Docker Desktop first, then run the Python bootstrap from the Python workspace
+root:
 
 ```powershell
 cd src/python
 docker compose --env-file ..\..\.env -f docker-compose.yml up -d taxpulse-localstack
+```
+
+If a previous `taxpulse-localstack` container is already running or stuck in a
+conflicted state, remove it before rerunning:
+
+```powershell
+docker rm -f taxpulse-localstack
 ```
 
 Then bootstrap the empty queue table:
@@ -106,6 +128,9 @@ Then bootstrap the empty queue table:
 ```powershell
 python -m tax_pulse_project_team_1.main
 ```
+
+The Python entrypoint will start the container if it is missing, or reuse the
+configured Compose service if it is already available.
 
 If you want to confirm the table exists afterward, use the AWS CLI against the local
 endpoint:
