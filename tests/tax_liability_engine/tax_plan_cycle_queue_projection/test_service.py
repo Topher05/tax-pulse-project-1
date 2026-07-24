@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date
 
-from tax_pulse_project_team_1.tax_plan_cycle_queue_projection import (
+from tax_liability_engine.tax_plan_cycle_queue_projection import (
     TaxPlanCycleQueueProjectionItem,
     TaxPlanCycleRecord,
     project_tax_plan_cycle_to_queue_item,

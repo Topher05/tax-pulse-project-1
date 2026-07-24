@@ -5,8 +5,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Protocol
 
-from tax_pulse_project_team_1.dynamodb import DEFAULT_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME
-from tax_pulse_project_team_1.dynamodb.plan_cycle_queue_projection import create_dynamodb_client
+from tax_liability_engine.dynamodb import DEFAULT_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME
+from tax_liability_engine.dynamodb.plan_cycle_queue_projection import create_dynamodb_client
 
 from .models import TaxPlanCycleQueueProjectionItem, TaxPlanCycleRecord
 

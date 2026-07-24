@@ -1,4 +1,4 @@
-"""TaxPulse project workspace package."""
+"""Tax liability engine project workspace package."""
 
 from .dynamodb import (
     DEFAULT_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,

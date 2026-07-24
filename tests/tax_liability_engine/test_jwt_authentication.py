@@ -7,7 +7,7 @@ import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 from httpx import Response
-from tax_pulse_project_team_1.jwt_authentication import (
+from tax_liability_engine.jwt_authentication import (
     AuthenticatedPrincipal,
     JwtValidationConfig,
     create_jwt_authentication_dependency,

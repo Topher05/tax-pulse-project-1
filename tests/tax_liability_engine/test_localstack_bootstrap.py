@@ -7,7 +7,7 @@ from typing import cast
 import pytest
 from botocore.exceptions import ClientError
 
-from tax_pulse_project_team_1.localstack_bootstrap import (
+from tax_liability_engine.localstack_bootstrap import (
     bootstrap_localstack_queue_projection,
     ensure_plan_cycle_queue_projection_table,
     load_env_file,
@@ -57,7 +57,7 @@ def test_load_localstack_bootstrap_config_requires_all_localstack_keys(tmp_path:
         ),
         encoding="utf-8",
     )
-    compose_file = repo_root / "src/python/docker-compose.yml"
+    compose_file = repo_root / "src/tax_liability_engine/docker-compose.yml"
 
     config = load_localstack_bootstrap_config(
         project_root=repo_root,
@@ -93,7 +93,7 @@ def test_run_localstack_compose_invokes_docker_compose(
         ),
         encoding="utf-8",
     )
-    compose_file = repo_root / "src/python/docker-compose.yml"
+    compose_file = repo_root / "src/tax_liability_engine/docker-compose.yml"
     config = load_localstack_bootstrap_config(
         project_root=repo_root,
         env_file=env_file,
@@ -236,7 +236,7 @@ def test_bootstrap_localstack_queue_projection_runs_compose_and_creates_table(
         ),
         encoding="utf-8",
     )
-    compose_file = repo_root / "src/python/docker-compose.yml"
+    compose_file = repo_root / "src/tax_liability_engine/docker-compose.yml"
     config = load_localstack_bootstrap_config(
         project_root=repo_root,
         env_file=env_file,
@@ -271,15 +271,15 @@ def test_bootstrap_localstack_queue_projection_runs_compose_and_creates_table(
         return True
 
     monkeypatch.setattr(
-        "tax_pulse_project_team_1.localstack_bootstrap.run_localstack_compose",
+        "tax_liability_engine.localstack_bootstrap.run_localstack_compose",
         fake_run_localstack_compose,
     )
     monkeypatch.setattr(
-        "tax_pulse_project_team_1.localstack_bootstrap.wait_for_localstack_dynamodb_client",
+        "tax_liability_engine.localstack_bootstrap.wait_for_localstack_dynamodb_client",
         fake_wait_for_localstack_dynamodb_client,
     )
     monkeypatch.setattr(
-        "tax_pulse_project_team_1.localstack_bootstrap.ensure_plan_cycle_queue_projection_table",
+        "tax_liability_engine.localstack_bootstrap.ensure_plan_cycle_queue_projection_table",
         fake_ensure_plan_cycle_queue_projection_table,
     )
 

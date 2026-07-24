@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
-from tax_pulse_project_team_1 import (
+from tax_liability_engine import (
     PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
     PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
     PlanCycleQueueProjectionItem,
@@ -17,8 +17,8 @@ from tax_pulse_project_team_1 import (
     describe_plan_cycle_queue_projection_table,
     wait_for_plan_cycle_queue_projection_table,
 )
-from tax_pulse_project_team_1.dynamodb.plan_cycle_queue_projection import DynamoDbClient
-from tax_pulse_project_team_1.tax_plan_cycle_queue_projection import (
+from tax_liability_engine.dynamodb.plan_cycle_queue_projection import DynamoDbClient
+from tax_liability_engine.tax_plan_cycle_queue_projection import (
     TaxPlanCycleRecord,
     upsert_tax_plan_cycle_queue_projection,
 )

@@ -1,4 +1,4 @@
-from tax_pulse_project_team_1.tax_plan_cycle_queue_projection import (
+from tax_liability_engine.tax_plan_cycle_queue_projection import (
     TaxPlanCycleQueueProjectionItem,
     TaxPlanCycleRecord,
 )

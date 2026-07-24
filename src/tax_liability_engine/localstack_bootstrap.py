@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import os
 import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, Mapping
+from typing import Final
 
 from botocore.exceptions import BotoCoreError, ClientError
 
@@ -191,8 +190,8 @@ def bootstrap_localstack_queue_projection(
 def default_localstack_bootstrap_config() -> LocalStackBootstrapConfig:
     """Resolve the default repo-local LocalStack bootstrap paths."""
 
-    repo_root = Path(__file__).resolve().parents[3]
-    compose_file = repo_root / "src/python/docker-compose.yml"
+    repo_root = Path(__file__).resolve().parents[2]
+    compose_file = repo_root / "src/tax_liability_engine/docker-compose.yml"
     env_file = repo_root / ".env"
     return load_localstack_bootstrap_config(
         project_root=repo_root,

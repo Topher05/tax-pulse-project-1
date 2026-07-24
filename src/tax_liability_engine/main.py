@@ -30,7 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--compose-file",
         type=Path,
         default=None,
-        help="Path to the docker-compose file (defaults to src/python/docker-compose.yml).",
+        help="Path to the docker-compose file (defaults to src/tax_liability_engine/docker-compose.yml).",
     )
     parser.add_argument(
         "--table-name",
@@ -45,9 +45,9 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     args = build_parser().parse_args(argv)
 
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = Path(__file__).resolve().parents[2]
     env_file = args.env_file or (repo_root / ".env")
-    compose_file = args.compose_file or (repo_root / "src/python/docker-compose.yml")
+    compose_file = args.compose_file or (repo_root / "src/tax_liability_engine/docker-compose.yml")
     config = load_localstack_bootstrap_config(
         project_root=repo_root,
         env_file=env_file,
