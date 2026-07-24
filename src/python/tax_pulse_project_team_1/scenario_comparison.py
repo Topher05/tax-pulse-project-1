@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from .tax_calculation import TaxCalculationRequest, TaxCalculationResponse, calculate_tax
+from .tax_calculation import TaxCalculationRequest, TaxCalculationResult, calculate_tax
 
 
 class ScenarioComparisonInput(BaseModel):
@@ -52,7 +52,7 @@ async def calculate_scenario_comparisons(
     return results
 
 
-def _total_tax(calculation: TaxCalculationResponse) -> float:
+def _total_tax(calculation: TaxCalculationResult) -> float:
     """Return combined federal and state liability for a calculation."""
 
-    return calculation.federal_liability + calculation.state_liability
+    return float(calculation.total_liability)

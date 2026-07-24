@@ -42,7 +42,6 @@ __all__ = [
     "TaxPlanCycleQueueProjectionItem",
     "TaxPlanCycleRecord",
     "TaxCalculationRequest",
-    "TaxCalculationResponse",
     "ScenarioComparisonInput",
     "ScenarioComparisonRequest",
     "ScenarioComparisonResult",

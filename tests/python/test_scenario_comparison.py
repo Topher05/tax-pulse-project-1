@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest.mock import AsyncMock, call
 
 import pytest
@@ -5,7 +6,7 @@ from pydantic import ValidationError
 from tax_pulse_project_team_1 import (
     ScenarioComparisonRequest,
     ScenarioComparisonResult,
-    TaxCalculationResponse,
+    TaxCalculationResult,
     calculate_scenario_comparisons,
 )
 from tax_pulse_project_team_1 import scenario_comparison
@@ -23,6 +24,22 @@ def scenario(number: int) -> dict[str, object]:
         "name": f"Scenario {number}",
         "typed_figures": {**BASELINE, "income": BASELINE["income"] + number},
     }
+
+
+def calculation_result(total_liability: str) -> TaxCalculationResult:
+    total = Decimal(total_liability)
+    return TaxCalculationResult(
+        income=Decimal("1000"),
+        deductions=Decimal("0"),
+        state="CA",
+        filing_status="single",
+        taxable_income=Decimal("1000"),
+        federal_liability=total,
+        state_liability=Decimal("0"),
+        total_liability=total,
+        effective_rate=Decimal("0"),
+        marginal_rate=Decimal("0"),
+    )
 
 
 @pytest.mark.parametrize("count", [2, 5])
@@ -77,34 +94,10 @@ async def test_scenario_comparisons_reuse_baseline_calculation_and_preserve_inpu
     )
     calculator = AsyncMock(
         side_effect=[
-            TaxCalculationResponse(
-                federal_liability=80,
-                state_liability=20,
-                effective_rate=0.2,
-                marginal_rate=0.24,
-                quarterly_estimate=25,
-            ),
-            TaxCalculationResponse(
-                federal_liability=100,
-                state_liability=30,
-                effective_rate=0.26,
-                marginal_rate=0.3,
-                quarterly_estimate=32.5,
-            ),
-            TaxCalculationResponse(
-                federal_liability=60,
-                state_liability=20,
-                effective_rate=0.16,
-                marginal_rate=0.22,
-                quarterly_estimate=20,
-            ),
-            TaxCalculationResponse(
-                federal_liability=70,
-                state_liability=30,
-                effective_rate=0.2,
-                marginal_rate=0.24,
-                quarterly_estimate=25,
-            ),
+            calculation_result("100"),
+            calculation_result("130"),
+            calculation_result("80"),
+            calculation_result("100"),
         ]
     )
     monkeypatch.setattr(scenario_comparison, "calculate_tax", calculator)

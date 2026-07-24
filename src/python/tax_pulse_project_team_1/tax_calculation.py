@@ -312,7 +312,6 @@ class TaxCalculationRequest(BaseModel):
         return value
 
 
-
 class TaxCalculationResult(BaseModel):
     """Computed federal and state tax liabilities and rate metrics."""
 
