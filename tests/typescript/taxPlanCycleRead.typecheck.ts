@@ -1,14 +1,23 @@
 import type { Client } from "pg";
 
 import {
+  createTaxPlanCycleQueueReadService,
   createTaxPlanCycleReadHelper,
   createTaxPlanCycleRepository,
+  type TaxPlanCycleQueueCache,
+  type TaxPlanCycleQueueProjectionReader,
 } from "../../src/typescript/index.js";
 
 declare const client: Client;
+declare const cache: TaxPlanCycleQueueCache;
+declare const projectionReader: TaxPlanCycleQueueProjectionReader;
 
 const readHelper = createTaxPlanCycleReadHelper(client);
 const repository = createTaxPlanCycleRepository(client);
+const queueReadService = createTaxPlanCycleQueueReadService({
+  cache,
+  projectionReader,
+});
 
 // @ts-expect-error tenantId is required for every cycle read
 readHelper.findByCaseId({ caseId: "case-123" });
@@ -26,6 +35,18 @@ void repository.listQueue({
 });
 
 void repository.listQueue({
+  tenantId: "tenant-123",
+  asOfDate: "2026-07-15",
+});
+
+// @ts-expect-error tenantId is required for cache-aside queue reads
+queueReadService.listQueue({});
+
+void queueReadService.listQueue({
+  tenantId: "tenant-123",
+});
+
+void queueReadService.listQueue({
   tenantId: "tenant-123",
   asOfDate: "2026-07-15",
 });
