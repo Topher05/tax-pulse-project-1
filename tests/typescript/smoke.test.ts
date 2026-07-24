@@ -12,8 +12,22 @@ import {
   type TaxPlanCycleStage,
 } from "../../src/typescript/index.js";
 
+const SMOKE_GREETING = "hello from TypeScript";
+
+function reportSmokeCheck(name: string, check: () => void): void {
+  try {
+    check();
+    console.log(`PASS ${name}`);
+  } catch (error) {
+    console.error(`FAIL ${name}`);
+    throw error;
+  }
+}
+
 test("createGreeting returns the TypeScript smoke message", () => {
-  assert.equal(createGreeting(), "hello from TypeScript");
+  reportSmokeCheck("createGreeting returns the TypeScript smoke message", () => {
+    assert.equal(createGreeting(), SMOKE_GREETING);
+  });
 });
 
 test("tax plan cycle stages are listed in canonical order", () => {
