@@ -6,8 +6,8 @@ wealth advisory firms. The core case entity is a Tax Plan Cycle with stage-based
 state, role-gated transitions, scoped internal/external access, and immutable audit history.
 
 ## Languages and Layout
-- Python 3.13.14 source: `src/python/tax_pulse_project_team_1`
-- Python tests: `tests/python`
+- Python 3.13.14 source: `src/tax_liability_engine`
+- Python tests: `tests/tax_liability_engine`
 - TypeScript on Node.js 22.0.0 source: `src/typescript`
 - TypeScript tests: `tests/typescript`
 
@@ -24,7 +24,7 @@ state, role-gated transitions, scoped internal/external access, and immutable au
 Run relevant checks from the repository root:
 
 ```bash
-python -m ruff format --check src/python tests/python
+python -m ruff format --check src tests
 python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"
 python -m pytest
 npm run typecheck
