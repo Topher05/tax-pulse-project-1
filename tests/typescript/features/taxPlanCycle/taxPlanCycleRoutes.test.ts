@@ -20,11 +20,11 @@ import {
   type AuditEntryReader,
   type AuditEntryWriter,
   type ValidationErrorResponse,
-} from "../../src/typescript/index.js";
+} from "../../../../src/typescript/index.js";
 import {
   hydrateUserClaims,
   obtainAccessTokenViaLoginAndMfa,
-} from "./bootstrap/authFlow.js";
+} from "../../bootstrap/authFlow.js";
 
 const silentLogger = createLogger({ level: "silent" });
 const authConfig: JwtConfig = {

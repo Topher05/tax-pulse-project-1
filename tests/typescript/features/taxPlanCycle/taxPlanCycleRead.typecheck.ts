@@ -6,7 +6,7 @@ import {
   createTaxPlanCycleRepository,
   type TaxPlanCycleQueueCache,
   type TaxPlanCycleQueueProjectionReader,
-} from "../../src/typescript/index.js";
+} from "../../../../src/typescript/index.js";
 
 declare const client: Client;
 declare const cache: TaxPlanCycleQueueCache;

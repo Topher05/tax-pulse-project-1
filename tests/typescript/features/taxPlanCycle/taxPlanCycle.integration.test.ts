@@ -28,19 +28,19 @@ import {
   taxPlanCycleSchema,
   tenants,
   type AuditEntryWriter,
-} from "../../../src/typescript/index.js";
-import { applySeed } from "../../../src/typescript/shared/database/seed.js";
+} from "../../../../src/typescript/index.js";
+import { applySeed } from "../../../../src/typescript/shared/database/seed.js";
 import {
   applyDrizzleMigrations,
   drizzleAppliedMigrationsTableName,
   drizzleMigrationsDirectory,
-} from "../../../src/typescript/postgresMigrations.js";
-import { startDockerPostgresContainer } from "../bootstrap/dockerPostgres.js";
+} from "../../../../src/typescript/postgresMigrations.js";
+import { startDockerPostgresContainer } from "../../bootstrap/dockerPostgres.js";
 import {
   hydrateUserClaims,
   obtainAccessTokenViaLoginAndMfa,
-} from "../bootstrap/authFlow.js";
-import { expectPgError, getTableStructure } from "../bootstrap/tableTestUtils.js";
+} from "../../bootstrap/authFlow.js";
+import { expectPgError, getTableStructure } from "../../bootstrap/tableTestUtils.js";
 import {
   expectedStageTransitionColumns,
   expectedStageTransitionRows,

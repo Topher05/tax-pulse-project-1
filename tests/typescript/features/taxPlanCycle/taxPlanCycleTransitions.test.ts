@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   isLegalTaxPlanCycleStageTransition,
   type TaxPlanCycleStage,
-} from "../../src/typescript/index.js";
+} from "../../../../src/typescript/index.js";
 
 describe("tax plan cycle stage transitions", () => {
   const legalForwardTransitions: Array<{

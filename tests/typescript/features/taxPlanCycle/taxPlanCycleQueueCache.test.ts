@@ -6,10 +6,10 @@ import {
   createNoopTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
-} from "../../src/typescript/index.js";
-import { createTaxPlanCycleQueueReadService } from "../../src/typescript/taxPlanCycleQueueReadService.js";
-import type { TaxPlanCycleQueueCacheClient } from "../../src/typescript/taxPlanCycleQueueCache.js";
-import type { TaxPlanCycleQueueProjectionItem } from "../../src/typescript/taxPlanCycleQueueProjection.js";
+} from "../../../../src/typescript/index.js";
+import { createTaxPlanCycleQueueReadService } from "../../../../src/typescript/taxPlanCycleQueueReadService.js";
+import type { TaxPlanCycleQueueCacheClient } from "../../../../src/typescript/taxPlanCycleQueueCache.js";
+import type { TaxPlanCycleQueueProjectionItem } from "../../../../src/typescript/taxPlanCycleQueueProjection.js";
 
 function createInMemoryRedisClient(
   seed: Record<string, string> = {},

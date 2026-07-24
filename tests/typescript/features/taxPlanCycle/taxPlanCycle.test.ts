@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 import {
   taxPlanCycleSchema,
   type TaxPlanCycle,
-} from "../../../src/typescript/index.js";
+} from "../../../../src/typescript/index.js";
 import {
   expectedStageTransitionRows,
   expectedTaxPlanCycleRows,

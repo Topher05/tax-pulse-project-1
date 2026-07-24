@@ -28,8 +28,8 @@ vi.mock("pg", () => ({
   },
 }));
 
-vi.mock("../../src/typescript/taxPlanCycleRepository.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../src/typescript/taxPlanCycleRepository.js")>()),
+vi.mock("../../../../src/typescript/taxPlanCycleRepository.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../../src/typescript/taxPlanCycleRepository.js")>()),
   createTaxPlanCycleRepository,
 }));
 
@@ -64,7 +64,7 @@ describe("main Tax Plan Cycle composition", () => {
       LOG_LEVEL: "silent",
       PORT: "0",
     };
-    const { main } = await import("../../src/typescript/index.js");
+    const { main } = await import("../../../../src/typescript/index.js");
     const server = await main();
     const address = server.address() as AddressInfo;
     const token = await createAccessToken();

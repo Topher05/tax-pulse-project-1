@@ -20,7 +20,7 @@ import {
   type TaxPlanCycle,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateInput,
-} from "../../src/typescript/index.js";
+} from "../../../../src/typescript/index.js";
 
 const config: JwtConfig = {
   issuer: "https://auth.taxpulse.example",
