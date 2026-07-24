@@ -32,7 +32,11 @@ npm test
 ```
 
 ## Ticket Journal
-- When implementing a Jira ticket from `planning/stackpulse_tax.csv`, add an entry to `planning/team/ticket-journal.md` named from the current branch, whose final segment should identify the ticket each member is working on, and include the branch name, assignee, Jira key, summary, description, acceptance criteria, code connection, project scope connection, changed files, and validation notes.
+- When implementing a Jira ticket from `planning/stackpulse_tax.csv`, add an entry to
+  the assignee's journal under `planning/team/`, using the current branch name as its
+  naming source and the routing in `planning/team/README.md`. Include the branch name,
+  assignee, Jira key, summary, description, acceptance criteria, code connection,
+  project scope connection, changed files, and validation notes. If unsure whose ticket journal to stop and ask for the correct journal.
 
 ### Developer experience rules
 - If you see a comment starting with TODO in the text **DO NOT REMOVE IT UNDER ANY CIRCUMSTANCES**

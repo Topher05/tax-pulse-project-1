@@ -1,7 +1,85 @@
-# Shared Team Ticket Journal
+# Archived Shared Team Ticket Journal
+
+> **Deprecated:** This file is retained as the read-only historical record of ticket
+> work completed before the per-developer journal migration. Record new work in the
+> appropriate journal listed in [`README.md`](README.md).
 
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
+
+## christopher-martus-jira80 - SCRUM-80
+
+**Branch:** `christopher-martus-jira80`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-80
+
+**Summary:** Define the calculation request/response contract
+
+**Description:** As a Backend Developer, I want a pydantic contract for the calculation
+request and response, so that the engine has a stable typed interface.
+
+**Acceptance Criteria:**
+
+- A request model carries filing status, income, deductions, and state.
+- A response model carries federal liability, state liability, effective rate, marginal
+  rate, and quarterly estimate.
+- Invalid inputs, including negative income, reject with a validation error.
+
+**Code Connection:**
+
+- `TaxCalculationRequest` validates the input boundary, including the allowed filing
+  statuses and non-negative income and deductions.
+- `TaxCalculationResponse` defines the five calculation outputs, with non-negative
+  monetary amounts and rates constrained to fractions from 0 through 1.
+- `calculate_tax` now returns the response contract through an async, zero-valued
+  placeholder; SCRUM-81 and SCRUM-82 will replace that placeholder with bracket and
+  quarterly-payment logic.
+
+  
+## christopher-martus-jira78 - SCRUM-78
+
+**Branch:** `christopher-martus-jira78`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-78
+
+**Summary:** Document the storage decision matrix
+
+**Description:** As a Platform Engineer, I want a storage decision matrix, so that
+future features place data in the right store.
+
+**Acceptance Criteria:**
+
+- The matrix maps transactional case data to PostgreSQL, queue read models to DynamoDB,
+  cache entries to Redis, and idempotency keys to Redis with a 24-hour TTL; each row
+  includes its rationale.
+- The matrix names the bounded context that owns each store.
+- The document is linked from the repository README.
+
+**Code Connection:**
+
+- `docs/storage-decision-matrix.md` defines the storage placement rule, names the Core
+  Case Service as the owner for PostgreSQL, DynamoDB, and Redis entries, and preserves
+  the Tax Engine boundary from ADR-0009.
+- `README.md` links contributors to the decision matrix.
+- The matrix records the intended architecture without claiming that SCRUM-73 through
+  SCRUM-76 implementations already exist. SCRUM-75's cache-invalidation behavior is
+  captured as a future implementation implication.
+
+**Project Scope Connection:**
+
+The matrix maintains tenant-scoped case authority in the Core Case Service, keeps
+PostgreSQL as the system of record, and limits DynamoDB and Redis to rebuildable or
+temporary operational state. It does not add data stores, migrations, cache clients,
+queue projections, or a separate Tax Plan Cycle status field.
+
+**Changed Files:**
+
+- `docs/storage-decision-matrix.md`
+- `README.md`
 
 ## dylan-harle-jira76 - SCRUM-76
 
@@ -62,6 +140,9 @@ SCRUM-77's later concurrent-create guard.
 
 **Validation Notes:**
 
+- Verified the matrix against the SCRUM-78 acceptance criteria and ADR-0009 service
+  ownership decision.
+- Verified the README uses a relative link to the matrix.
 - Required-header refactor validation: `npm run typecheck` passed.
 - Required-header refactor validation:
   `npx vitest run tests/typescript/taxPlanCycleRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts tests/typescript/mainTaxPlanCycleComposition.test.ts`
@@ -301,6 +382,67 @@ model.
 
 **Validation Notes:**
 
+<<<<<<< HEAD:planning/team/ticket-journal.md
+- `npm run typecheck` passed after the schema, seed, and repository changes.
+- `npm run db:check` passed after generating the Drizzle migration.
+- Focused PostgreSQL tests and `npm run test:migration` require Testcontainers; they are
+  blocked in this environment because no working container runtime is available.
+
+## martins-okorie-jira70 - SCRUM-70
+
+**Branch:** `martins-okorie-jira70`
+
+**Owner:** Reyhan Daniels
+
+**Jira Key:** SCRUM-70
+
+**Summary:** Emit cost-accounting headers per request
+
+**Description:** As a Platform Engineer, I want cost-accounting headers on responses, so
+that per-request usage is observable.
+
+**Acceptance Criteria:**
+
+- Responses include a header reporting the request's accounted cost units.
+- The cost value reflects the operation performed.
+- A test asserts the header is present on a representative endpoint.
+
+**Code Connection:**
+
+- `createCostAccountingMiddleware` sets `X-TaxPulse-Cost-Units` from a default resolver
+  for Tax Plan Cycle operations.
+- The default cost model accounts `GET /tax-plan-cycles/:caseId` as 1 unit and
+  `POST /tax-plan-cycles` as 2 units.
+- `main()` wires cost accounting after SCRUM-62 JWT authentication and before SCRUM-69
+  tenant rate limiting, so protected Tax Plan Cycle success responses and rate-limited
+  attempts can report the attempted operation's cost.
+- The middleware supports an injected resolver for focused tests without adding storage,
+  billing, or quota state.
+
+**Project Scope Connection:**
+
+Cost-accounting headers make Core Case Service usage observable per request while staying
+inside the secure Tax Plan Cycle boundary created by SCRUM-62 and SCRUM-69. This ticket
+does not add persistence, billing records, tenant quota enforcement, OpenAPI changes,
+migrations, public-route headers, or a separate Tax Plan Cycle status field.
+
+**Changed Files:**
+
+- `src/typescript/costAccounting.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/costAccounting.test.ts`
+- `tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/costAccounting.test.ts tests/typescript/tenantRateLimiting.test.ts tests/typescript/jwtProtectedTaxPlanCycleRoutes.test.ts` passed: 11 tests.
+- `npm run test` passed typechecking and all non-container route/unit coverage needed for
+  SCRUM-70. The full Vitest run ended with 115 passing tests and 13 existing
+  Testcontainers-backed migration failures because this environment could not find a
+  working container runtime strategy.
+=======
 - `npm run typecheck` passed.
 - `npm test` passed the new route coverage, but the full Vitest run still timed out in
   pre-existing `role` and `user` tests at the 5 second test limit.
@@ -2148,3 +2290,4 @@ projection boundary.
 - `tests/python/queue_projection/test_models.py`
 - `tests/python/queue_projection/test_service.py`
 - `planning/team/ticket-journal.md`
+>>>>>>> 063531b98ff61d552643a55e13d0ad85133b7cf3:planning/team/ticket-journal-archive.md

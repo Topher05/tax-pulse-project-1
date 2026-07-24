@@ -17,7 +17,11 @@ from .tax_plan_cycle_queue_projection import (
     project_tax_plan_cycle_to_queue_item,
     upsert_tax_plan_cycle_queue_projection,
 )
-from .tax_calculation import TaxCalculationRequest, TaxCalculationResult, calculate_tax
+from .tax_calculation import (
+    TaxCalculationRequest,
+    TaxCalculationResponse,
+    calculate_tax,
+)
 
 __all__ = [
     "DEFAULT_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME",
@@ -32,7 +36,7 @@ __all__ = [
     "TaxPlanCycleQueueProjectionItem",
     "TaxPlanCycleRecord",
     "TaxCalculationRequest",
-    "TaxCalculationResult",
+    "TaxCalculationResponse",
     "calculate_tax",
     "project_tax_plan_cycle_to_queue_item",
     "upsert_tax_plan_cycle_queue_projection",

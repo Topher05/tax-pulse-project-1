@@ -34,6 +34,7 @@ Pull Request: release-v3.11.2
 
 - [ ] Branch name follows the repo convention
 - [ ] Branch type follows Git flow expectations for main, development, feature, release, or hotfix
+- [ ] Ticket journal entry is present in the contributor's assigned `planning/team/` journal
 - [ ] Ticket reference and link is present
 - [ ] Brief matches the actual change
 - [ ] ADR link is present when needed

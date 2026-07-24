@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Final, Literal
+from typing import Final
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
     {
@@ -20,8 +20,8 @@ ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
 class TaxCalculationRequest(BaseModel):
     """Request model for tax calculation inputs."""
 
-    income: float
-    deductions: float
+    income: float = Field(ge=0)
+    deductions: float = Field(ge=0)
     state: str
     filing_status: str
 
@@ -34,30 +34,23 @@ class TaxCalculationRequest(BaseModel):
         return value
 
 
-class TaxCalculationResult(BaseModel):
-    """Placeholder result model for the async tax calculation seam."""
+class TaxCalculationResponse(BaseModel):
+    """Response contract for calculated tax liabilities and rates."""
 
-    income: float
-    deductions: float
-    state: str
-    filing_status: str
-    taxable_income: float
-    estimated_tax: float
-    currency: str = "USD"
-    calculation_status: Literal["placeholder"] = "placeholder"
+    federal_liability: float = Field(ge=0)
+    state_liability: float = Field(ge=0)
+    effective_rate: float = Field(ge=0, le=1)
+    marginal_rate: float = Field(ge=0, le=1)
+    quarterly_estimate: float = Field(ge=0)
 
 
-async def calculate_tax(request: TaxCalculationRequest) -> TaxCalculationResult:
-    """Return a deterministic placeholder result for an async-ready calculation seam."""
+async def calculate_tax(request: TaxCalculationRequest) -> TaxCalculationResponse:
+    """Return a zero-valued response until bracket and payment logic is implemented."""
 
-    taxable_income = max(request.income - request.deductions, 0.0)
-    estimated_tax = round(taxable_income * 0.1, 2)
-
-    return TaxCalculationResult(
-        income=request.income,
-        deductions=request.deductions,
-        state=request.state,
-        filing_status=request.filing_status,
-        taxable_income=taxable_income,
-        estimated_tax=estimated_tax,
+    return TaxCalculationResponse(
+        federal_liability=0,
+        state_liability=0,
+        effective_rate=0,
+        marginal_rate=0,
+        quarterly_estimate=0,
     )
