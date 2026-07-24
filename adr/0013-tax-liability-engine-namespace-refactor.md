@@ -20,6 +20,10 @@ Move the Python source tree directly under `src/` and the Python tests directly 
 Move the Python Docker Compose definition into the Python package directory so the
 LocalStack bootstrap flow lives beside the Python entrypoint code.
 
+Keep the CLI behavior centered on `tax_liability_engine.main` so the package remains
+invocable both as `python -m tax_liability_engine.main` and through the installed
+`tax-pulse` console script.
+
 Keep the existing public behavior of the Python modules and tests, but update all
 imports, script entrypoints, path lookups, and developer documentation to match the new
 layout.

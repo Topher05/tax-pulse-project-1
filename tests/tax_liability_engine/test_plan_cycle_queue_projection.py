@@ -27,11 +27,26 @@ from testcontainers.localstack import LocalStackContainer
 type DynamoDbAttributeValue = dict[str, str] | dict[str, bool]
 type DynamoDbAttributeMap = dict[str, DynamoDbAttributeValue]
 
-DEFAULT_LOCALSTACK_TEST_IMAGE = "localstack/localstack:stable"
+DEFAULT_LOCALSTACK_TEST_IMAGE = "localstack/localstack:3.8.1" # Pinned version in tests to circument api key req for cloud int
+
+
+def _docker_engine_is_available() -> bool:
+    try:
+        import docker
+
+        client = docker.from_env()
+        client.ping()
+    except Exception:
+        return False
+
+    return True
 
 
 @pytest.fixture(scope="module")
 def localstack_endpoint_url() -> Iterator[str]:
+    if not _docker_engine_is_available():
+        pytest.skip("Docker is unavailable, so LocalStack integration tests cannot run.")
+
     os.environ.setdefault("TESTCONTAINERS_RYUK_DISABLED", "true")
     localstack_image = os.getenv("TAXPULSE_LOCALSTACK_IMAGE", DEFAULT_LOCALSTACK_TEST_IMAGE)
     localstack_container = LocalStackContainer(image=localstack_image).with_services("dynamodb")
