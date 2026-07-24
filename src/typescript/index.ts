@@ -229,16 +229,16 @@ export {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
+  taxPlanCycleQueueProjectionItemSchema,
+  taxPlanCycleQueueProjectionItemsSchema,
+  type TaxPlanCycleQueueProjectionItem,
+} from "./taxPlanCycleQueueProjection.js";
+export {
   createTaxPlanCycleQueueDynamoDocumentClient,
   createTaxPlanCycleQueueProjectionStore,
   type TaxPlanCycleQueueProjectionDynamoClient,
   type TaxPlanCycleQueueProjectionReader,
 } from "./taxPlanCycleQueueDynamoStore.js";
-export {
-  taxPlanCycleQueueProjectionItemSchema,
-  taxPlanCycleQueueProjectionItemsSchema,
-  type TaxPlanCycleQueueProjectionItem,
-} from "./taxPlanCycleQueueProjection.js";
 export {
   createTaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadService,
@@ -283,6 +283,7 @@ import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
 import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
 import { createTokenService } from "./tokenService.js";
 import {
+  createTaxPlanCycleQueueCache,
   createNoopTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleQueueCacheInvalidator,
 } from "./taxPlanCycleQueueCache.js";
@@ -356,8 +357,9 @@ export async function main(): Promise<Server> {
   if (queueRedisUrl) {
     queueCacheRedisClient = createClient({ url: queueRedisUrl });
     await queueCacheRedisClient.connect();
+    const queueCache = createTaxPlanCycleQueueCache(queueCacheRedisClient);
     queueCacheInvalidator = createTaxPlanCycleQueueCacheInvalidator(
-      queueCacheRedisClient,
+      queueCache,
     );
     logger.info("Connected to Redis for queue cache invalidation");
   }

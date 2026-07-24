@@ -5,6 +5,7 @@ import {
   taxPlanCycleStageSchema,
 } from "./taxPlanCycle.js";
 
+// TODO: Analyze these
 export const TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME = "taxpulse_plan_cycle_queue_projection";
 export const TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY = "tenant_id";
 export const TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY = "case_id";

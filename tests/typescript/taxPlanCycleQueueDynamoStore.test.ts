@@ -3,8 +3,8 @@ import { describe, expect, test, vi } from "vitest";
 
 import {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
-  createTaxPlanCycleQueueProjectionStore,
-} from "../../src/typescript/taxPlanCycleQueueDynamoStore.js";
+} from "../../src/typescript/taxPlanCycleQueueProjection.js";
+import { createTaxPlanCycleQueueProjectionStore } from "../../src/typescript/taxPlanCycleQueueDynamoStore.js";
 
 const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e71";
 const asOfDate = "2026-07-15";
