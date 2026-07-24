@@ -11,7 +11,7 @@ from .dynamodb import (
     wait_for_plan_cycle_queue_projection_table,
 )
 from .greetings import create_greeting
-from .queue_projection import (
+from .tax_plan_cycle_queue_projection import (
     TaxPlanCycleQueueProjectionItem,
     TaxPlanCycleRecord,
     project_tax_plan_cycle_to_queue_item,
