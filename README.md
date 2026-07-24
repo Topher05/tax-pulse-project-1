@@ -1,13 +1,13 @@
-# tax-pulse-project-team-1
+# tax-liability-engine
 
 ## Project Layout
 
 This workspace is scaffolded as a small dual-runtime project:
 
 - TypeScript source lives in [`src/typescript`](./src/typescript)
-- Python source lives in [`src/python/tax_pulse_project_team_1`](./src/python/tax_pulse_project_team_1)
+- Python source lives in [`src/tax_liability_engine`](./src/tax_liability_engine)
 - TypeScript tests live in [`tests/typescript`](./tests/typescript)
-- Python tests live in [`tests/python`](./tests/python)
+- Python tests live in [`tests/tax_liability_engine`](./tests/tax_liability_engine)
 
 ## Toolchain
 
@@ -76,9 +76,9 @@ npm start
 ```
 
 ```bash
-python -m tax_pulse_project_team_1.main
-python -m ruff format --check src/python tests/python
-python -m ruff check src/python tests/python
+python -m tax_liability_engine.main
+python -m ruff format --check src tests
+python -m ruff check src tests
 python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"
 python -m pytest
 ```
@@ -108,12 +108,10 @@ If you have `uv` installed, you can use that instead:
 uv sync --extra dev
 ```
 
-Start Docker Desktop first, then run the Python bootstrap from the Python workspace
-root:
+Start Docker Desktop first, then run the Python bootstrap from the repository root:
 
 ```powershell
-cd src/python
-docker compose --env-file ..\..\.env -f docker-compose.yml up -d taxpulse-localstack
+docker compose --env-file .env -f src/tax_liability_engine/docker-compose.yml up -d taxpulse-localstack
 ```
 
 If a previous `taxpulse-localstack` container is already running or stuck in a
@@ -126,7 +124,7 @@ docker rm -f taxpulse-localstack
 Then bootstrap the empty queue table:
 
 ```powershell
-python -m tax_pulse_project_team_1.main
+python -m tax_liability_engine.main
 ```
 
 The Python entrypoint will start the container if it is missing, or reuse the
@@ -310,7 +308,7 @@ Success means:
 
 - `node --version` matches [`.nvmrc`](./.nvmrc) and the `nodejs` entry in [`.tool-versions`](./.tool-versions)
 - `python --version` matches the `python` entry in [`.tool-versions`](./.tool-versions) and `requires-python` in [`pyproject.toml`](./pyproject.toml)
-- `python -m ruff format --check src/python tests/python`, `python -m ruff check src/python tests/python`, and `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"` all pass
+- `python -m ruff format --check src tests`, `python -m ruff check src tests`, and `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"` all pass
 - Running the setup script completes with both hello checks green
 
 ## Security Information
