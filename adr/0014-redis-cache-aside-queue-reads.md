@@ -78,6 +78,9 @@ RedisInsight is the preferred Docker-based developer tool for inspecting this ca
 Bookmark the local UI at `http://localhost:5540` when running the container-based
 tooling flow.
 
+If you prefer an in-container CLI, `docker exec -it <container-name> redis-cli` is a
+supported option for interacting with the running Redis container directly.
+
 Versioned tenant namespaces avoid key scans and make invalidation predictable.
 Redis outages do not change the source of truth, but they may slow queue reads until
 the cache repopulates.
