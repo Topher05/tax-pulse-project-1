@@ -8,7 +8,7 @@ This workspace is scaffolded as a small dual-runtime project:
 - Pulse UI React/Vite source lives in [`src/pulseUI`](./src/pulseUI)
 - Python source lives in [`src/python/tax_pulse_project_team_1`](./src/python/tax_pulse_project_team_1)
 - TypeScript tests live in [`tests/typescript`](./tests/typescript)
-- Pulse UI component tests live in [`tests/pulseUI`](./tests/pulseUI)
+- Pulse UI component tests live in [`src/pulseUI/tests`](./src/pulseUI/tests)
 - Python tests live in [`tests/python`](./tests/python)
 
 ## Toolchain
@@ -100,7 +100,9 @@ frontend-specific config files live beside the implementation:
 - [`src/pulseUI/tsconfig.pulseUI.json`](./src/pulseUI/tsconfig.pulseUI.json) type-checks
   browser TypeScript, JSX, and Pulse UI tests.
 - [`src/pulseUI/vitest.config.ts`](./src/pulseUI/vitest.config.ts) is the Vitest config
-  used by `npm run test:vitest` and migration test scripts.
+  used by Pulse UI tests.
+- [`src/typescript/vitest.config.ts`](./src/typescript/vitest.config.ts) is the Vitest
+  config used by Express/backend TypeScript tests.
 
 Run the Pulse UI dev server:
 
@@ -117,7 +119,19 @@ npm run build:web
 Run the Pulse UI shell test directly:
 
 ```bash
-npm run test:vitest -- tests/pulseUI/appShell.test.tsx
+npm run test:pulseUI -- src/pulseUI/tests/appShell.test.tsx
+```
+
+Run Express/backend TypeScript tests:
+
+```bash
+npm run test:express
+```
+
+Run both Express/backend and Pulse UI Vitest suites:
+
+```bash
+npm run test:vitest
 ```
 
 Run all TypeScript checks, including backend TypeScript and Pulse UI:

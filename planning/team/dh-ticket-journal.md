@@ -46,12 +46,13 @@ Add new ticket entries below using this template.
 - `src/pulseUI/tsconfig.pulseUI.json`
 - `src/pulseUI/vite.config.ts`
 - `src/pulseUI/vitest.config.ts`
-- `tests/pulseUI/appShell.test.tsx`
+- `src/typescript/vitest.config.ts`
+- `src/pulseUI/tests/appShell.test.tsx`
 
 **Validation Notes:**
 
 - `npm run typecheck` passed.
-- `npx vitest run tests/pulseUI/appShell.test.tsx` passed.
+- `npm run test:pulseUI -- src/pulseUI/tests/appShell.test.tsx` passed.
 - `npm run build:web` passed.
 - `npm test` ran the full suite but failed in existing backend database/migration tests after PostgreSQL reported `function uuidv7() does not exist`; the new Pulse UI tests pass when run directly.
 

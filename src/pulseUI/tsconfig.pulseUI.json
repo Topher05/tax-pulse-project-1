@@ -14,5 +14,5 @@
     "target": "ES2023",
     "types": ["vite/client", "vitest/globals"]
   },
-  "include": ["./**/*.ts", "./**/*.tsx", "../../tests/pulseUI/**/*.ts", "../../tests/pulseUI/**/*.tsx"]
+  "include": ["./**/*.ts", "./**/*.tsx"]
 }
