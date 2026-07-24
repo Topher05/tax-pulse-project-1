@@ -20,9 +20,11 @@ export const scenarioTypedFiguresSchema = z.strictObject({
 export const scenarioComputedResultSchema = z.strictObject({
   federal_liability: nonNegativeFiniteAmountSchema,
   state_liability: nonNegativeFiniteAmountSchema,
-  effective_rate: z.number().finite().min(0).max(1),
-  marginal_rate: z.number().finite().min(0).max(1),
+  effective_rate: z.number().min(0).max(1),
+  marginal_rate: z.number().min(0).max(1),
   quarterly_estimate: nonNegativeFiniteAmountSchema,
+  total_tax: nonNegativeFiniteAmountSchema,
+  delta_vs_baseline: z.number(),
 });
 
 export const scenarioSchema = z.strictObject({

@@ -22,6 +22,8 @@ const computedResult = {
   effective_rate: 0.252,
   marginal_rate: 0.32,
   quarterly_estimate: 15_750,
+  total_tax: 63_000,
+  delta_vs_baseline: -4_500,
 } as const;
 
 describe("scenario repository", () => {
