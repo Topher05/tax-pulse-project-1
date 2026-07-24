@@ -7,6 +7,37 @@
 This journal records Jira-ticket implementation work from `planning/stackpulse_tax.csv`
 and ties each ticket back to the code, tests, and validation evidence produced for it.
 
+## christopher-martus-jira80 - SCRUM-80
+
+**Branch:** `christopher-martus-jira80`
+
+**Owner:** Christopher Martus
+
+**Jira Key:** SCRUM-80
+
+**Summary:** Define the calculation request/response contract
+
+**Description:** As a Backend Developer, I want a pydantic contract for the calculation
+request and response, so that the engine has a stable typed interface.
+
+**Acceptance Criteria:**
+
+- A request model carries filing status, income, deductions, and state.
+- A response model carries federal liability, state liability, effective rate, marginal
+  rate, and quarterly estimate.
+- Invalid inputs, including negative income, reject with a validation error.
+
+**Code Connection:**
+
+- `TaxCalculationRequest` validates the input boundary, including the allowed filing
+  statuses and non-negative income and deductions.
+- `TaxCalculationResponse` defines the five calculation outputs, with non-negative
+  monetary amounts and rates constrained to fractions from 0 through 1.
+- `calculate_tax` now returns the response contract through an async, zero-valued
+  placeholder; SCRUM-81 and SCRUM-82 will replace that placeholder with bracket and
+  quarterly-payment logic.
+
+  
 ## christopher-martus-jira78 - SCRUM-78
 
 **Branch:** `christopher-martus-jira78`

@@ -1,13 +1,13 @@
 """Tax calculation model definitions."""
 
 from __future__ import annotations
-
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 from types import MappingProxyType
 from typing import Final, Mapping
 
-from pydantic import BaseModel, field_validator
+
+from pydantic import BaseModel, Field, field_validator
 
 ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
     {
@@ -284,6 +284,7 @@ class TaxCalculationRequest(BaseModel):
 
     income: Decimal
     deductions: Decimal
+
     state: str
     filing_status: str
 
@@ -309,6 +310,7 @@ class TaxCalculationRequest(BaseModel):
             allowed = ", ".join(sorted(ALLOWED_FILING_STATUSES))
             raise ValueError(f"Invalid filing status. Allowed values are: {allowed}.")
         return value
+
 
 
 class TaxCalculationResult(BaseModel):
