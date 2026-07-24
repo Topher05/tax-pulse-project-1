@@ -215,13 +215,45 @@ export {
   type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
 } from "./taxPlanCycleRepository.js";
 export {
+  buildTaxPlanCycleQueueReadCacheKey,
+  buildTaxPlanCycleQueueTenantVersionKey,
+  createNoopTaxPlanCycleQueueCacheInvalidator,
+  createTaxPlanCycleQueueCache,
+  createTaxPlanCycleQueueCacheInvalidator,
+  type TaxPlanCycleQueueCache,
+  type TaxPlanCycleQueueCacheClient,
+  type TaxPlanCycleQueueCacheInvalidator,
+  type TaxPlanCycleQueueCacheReadInput,
+} from "./taxPlanCycleQueueCache.js";
+export {
+  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
+  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
+  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
+  createTaxPlanCycleQueueDynamoDocumentClient,
+  createTaxPlanCycleQueueProjectionStore,
+  type TaxPlanCycleQueueProjectionDynamoClient,
+  type TaxPlanCycleQueueProjectionReader,
+} from "./taxPlanCycleQueueDynamoStore.js";
+export {
+  taxPlanCycleQueueProjectionItemSchema,
+  taxPlanCycleQueueProjectionItemsSchema,
+  type TaxPlanCycleQueueProjectionItem,
+} from "./taxPlanCycleQueueProjection.js";
+export {
+  createTaxPlanCycleQueueReadService,
+  type TaxPlanCycleQueueReadService,
+  type TaxPlanCycleQueueReadServiceOptions,
+} from "./taxPlanCycleQueueReadService.js";
+export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
+  type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionController,
 } from "./taxPlanCycleTransitionController.js";
 
 import { config as loadEnv } from "dotenv";
 import pg from "pg";
+import { createClient } from "redis";
 
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
@@ -250,6 +282,10 @@ import { createMfaEnrollmentController } from "./mfaEnrollment.js";
 import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
 import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
 import { createTokenService } from "./tokenService.js";
+import {
+  createNoopTaxPlanCycleQueueCacheInvalidator,
+  createTaxPlanCycleQueueCacheInvalidator,
+} from "./taxPlanCycleQueueCache.js";
 
 loadEnv();
 const { Client } = pg;
@@ -313,6 +349,19 @@ export async function main(): Promise<Server> {
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
+  let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
+  let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
+
+  if (queueRedisUrl) {
+    queueCacheRedisClient = createClient({ url: queueRedisUrl });
+    await queueCacheRedisClient.connect();
+    queueCacheInvalidator = createTaxPlanCycleQueueCacheInvalidator(
+      queueCacheRedisClient,
+    );
+    logger.info("Connected to Redis for queue cache invalidation");
+  }
+
   const auditEntryRepository = createAuditEntryRepository(client);
   const auditEntryWriter = createAuditEntryWriter(client);
   const taxPlanCycleController = createTaxPlanCycleCreateController(
@@ -320,6 +369,9 @@ export async function main(): Promise<Server> {
   );
   const taxPlanCycleTransitionController = createTaxPlanCycleTransitionController(
     taxPlanCycleRepository,
+    {
+      queueCacheInvalidator,
+    },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
     authenticatePasswordForMfaChallenge(input, credentialReader);
@@ -376,6 +428,11 @@ export async function main(): Promise<Server> {
       resolve(server);
     });
 
+    server.on("close", () => {
+      if (queueCacheRedisClient) {
+        void queueCacheRedisClient.quit().catch(() => undefined);
+      }
+    });
     server.on("error", reject);
   });
 }
