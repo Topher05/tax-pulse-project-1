@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 from tax_pulse_project_team_1 import (
     TaxCalculationRequest,
-    TaxCalculationResponse,
+    TaxCalculationResult,
     calculate_tax,
 )
 
@@ -72,7 +72,7 @@ async def test_calculate_tax_returns_bracket_liabilities_and_rates() -> None:
 
     result = await calculate_tax(request)
 
-    assert isinstance(result, TaxCalculationResponse)
+    assert isinstance(result, TaxCalculationResult)
     assert result.model_dump() == {
         "income": Decimal("100000"),
         "deductions": Decimal("12000"),
