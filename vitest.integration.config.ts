@@ -11,6 +11,6 @@ export default defineConfig({
       "**/dist/**",
       "**/node_modules/**",
     ],
-    include: ["tests/typescript/**/*.integration.ts"],
+    include: ["tests/typescript/**/*.integration.test.ts"],
   },
 });
