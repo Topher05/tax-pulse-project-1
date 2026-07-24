@@ -145,16 +145,36 @@ settings:
 
 - `TAXPULSE_REDIS_URL=redis://localhost:6379`
 
-If you want to run a local Redis container by hand, use Docker:
+Start the Redis stack with the repo script:
 
 ```powershell
-docker run --rm -d --name taxpulse-redis -p 6379:6379 redis:7-alpine
+npm run redis:up
+```
+
+That compose stack brings up:
+
+- Redis on `localhost:6379`
+- RedisInsight on `http://localhost:5540`
+
+RedisInsight is preconfigured against the local Redis container, so once the stack is
+running you can open the browser UI and inspect the cache immediately.
+
+If you want to stop the stack cleanly:
+
+```powershell
+npm run redis:down
 ```
 
 If a previous Redis container is still around, remove it before rerunning:
 
 ```powershell
-docker rm -f taxpulse-redis
+docker rm -f taxpulse-redis taxpulse-redisinsight
+```
+
+Use the smoke command to prove the cache is reachable and writable:
+
+```powershell
+npm run redis:smoke
 ```
 
 The Redis-backed queue-cache integration test runs through Testcontainers, so Docker
