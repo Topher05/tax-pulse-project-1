@@ -4,6 +4,7 @@ import type {
   TaxPlanCycleRepository,
   TaxPlanCycleTransitionInput,
 } from "./taxPlanCycleRepository.js";
+import type { TaxPlanCycleQueueCacheInvalidator } from "./taxPlanCycleQueueCache.js";
 
 export interface TaxPlanCycleTransitionController {
   transition(
@@ -14,11 +15,32 @@ export interface TaxPlanCycleTransitionController {
   ): Promise<TaxPlanCycle | null> | TaxPlanCycle | null;
 }
 
+export interface TaxPlanCycleTransitionControllerOptions {
+  queueCacheInvalidator?: TaxPlanCycleQueueCacheInvalidator;
+}
+
 export function createTaxPlanCycleTransitionController(
   repository: TaxPlanCycleRepository,
+  options: TaxPlanCycleTransitionControllerOptions = {},
 ): TaxPlanCycleTransitionController {
   return {
-    transition: (input) => repository.transition(input),
+    transition: async (input) => {
+      const transitioned = await repository.transition(input);
+
+      if (transitioned && options.queueCacheInvalidator) {
+        // Cache invalidation is best-effort because Redis is disposable state.
+        try {
+          await options.queueCacheInvalidator.invalidateAfterStageChange({
+            tenantId: input.tenantId,
+            caseId: input.caseId,
+          });
+        } catch {
+          // Ignore cache invalidation failures so the mutation still succeeds.
+        }
+      }
+
+      return transitioned;
+    },
     findByCaseId: (input) => repository.findByCaseId(input),
   };
 }
