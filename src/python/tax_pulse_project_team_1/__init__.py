@@ -25,7 +25,7 @@ from .scenario_comparison import (
 )
 from .tax_calculation import (
     TaxCalculationRequest,
-    TaxCalculationResponse,
+    TaxCalculationResult,
     calculate_tax,
 )
 
@@ -46,6 +46,7 @@ __all__ = [
     "ScenarioComparisonInput",
     "ScenarioComparisonRequest",
     "ScenarioComparisonResult",
+    "TaxCalculationResult",
     "calculate_tax",
     "calculate_scenario_comparisons",
     "project_tax_plan_cycle_to_queue_item",
