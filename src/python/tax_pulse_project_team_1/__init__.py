@@ -19,7 +19,7 @@ from .queue_projection import (
 )
 from .tax_calculation import (
     TaxCalculationRequest,
-    TaxCalculationResponse,
+    TaxCalculationResult,
     calculate_tax,
 )
 
@@ -36,7 +36,7 @@ __all__ = [
     "TaxPlanCycleQueueProjectionItem",
     "TaxPlanCycleRecord",
     "TaxCalculationRequest",
-    "TaxCalculationResponse",
+    "TaxCalculationResult",
     "calculate_tax",
     "project_tax_plan_cycle_to_queue_item",
     "upsert_tax_plan_cycle_queue_projection",
