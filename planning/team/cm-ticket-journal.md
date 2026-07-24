@@ -34,6 +34,129 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira86 - SCRUM-86
+
+**Branch:** `christopher-martus-jira86`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-86
+
+**Summary:** Compute scenario deltas against the baseline
+
+**Description:** As an Advisor, I want each scenario's delta versus the baseline
+computed, so that I can compare planning options for a client.
+
+**Acceptance Criteria:**
+
+- A scenario request accepts 2-5 scenarios of typed-in figures and rejects fewer than
+  2 or more than 5.
+- Each result reports total tax and the dollar delta versus the baseline.
+- Scenario calculations reuse the same bracket logic as the baseline calculation.
+
+**Code Connection:**
+
+- The persisted scenario result contract now reserves `total_tax` and
+  `delta_vs_baseline`. Python comparison request and result models use
+  `TaxCalculationRequest` for baseline and scenario typed figures, enforce the 2-5
+  request bound, and represent the signed delta. The comparison service calculates the
+  baseline once and delegates every scenario to `calculate_tax`, ensuring a single
+  calculation path for bracket logic.
+
+**Project Scope Connection:**
+
+This implements the typed Domain Compute contract between ticket 85 scenario persistence
+and ticket 87 transport. It does not add an HTTP endpoint, database migration, or bracket
+liability calculation.
+
+**Changed Files:**
+
+- `src/typescript/scenario.ts`
+- `tests/typescript/scenario.test.ts`
+- `tests/typescript/scenarioRepository.test.ts`
+- `src/python/tax_pulse_project_team_1/scenario_comparison.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/test_scenario_comparison.py`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `.venv\\Scripts\\python.exe -m pytest tests/python/test_scenario_comparison.py`
+  passed (7 tests; only an existing pytest-cache permission warning).
+- `.venv\\Scripts\\python.exe -m ruff format --check src/python tests/python` passed.
+- `.venv\\Scripts\\python.exe -m pyright --pythonpath ".\\.venv\\Scripts\\python.exe"`
+  passed with 0 errors and 0 warnings.
+- The real-bracket scenario comparison test passed as part of the focused 27-test
+  ticket-81/ticket-86 suite.
+- `.venv\\Scripts\\python.exe -m pytest tests/python/test_tax_calculation.py
+  tests/python/test_tax_brackets.py tests/python/test_tax_bracket_schedules.py
+  tests/python/test_scenario_comparison.py` passed (27 tests; only an existing
+  pytest-cache permission warning).
+- `.venv\\Scripts\\python.exe -m ruff format --check src/python tests/python` passed.
+- `.venv\\Scripts\\python.exe -m pyright --pythonpath ".\\.venv\\Scripts\\python.exe"`
+  passed with 0 errors and 0 warnings.
+
+## christopher-martus-jira81 - SCRUM-81
+
+**Branch:** `christopher-martus-jira81`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-81
+
+**Summary:** Implement bracket liability and effective/marginal rates
+
+**Description:** As an Advisor, I want federal and state bracket liability with effective
+and marginal rates, so that each Tax Plan Cycle shows real numbers.
+
+**Acceptance Criteria:**
+
+- The engine computes federal and state bracket liability for a given filing status and
+  state.
+- It derives the effective rate and the marginal rate from the brackets.
+- Identical inputs always return identical outputs (deterministic, no ML).
+
+**Code Connection:**
+
+- This first implementation slice adds an immutable `TaxBracket` value object and a
+  pure `calculate_bracket_liability` helper. The helper accumulates each reached income
+  range without I/O, time, randomness, or mutable shared state.
+- This second slice supplies immutable 2026 federal and 2025 California schedules for
+  every supported filing status. `get_bracket_schedules` returns the federal and
+  requested state schedules through a state-neutral lookup mapping.
+- This third slice upgrades the calculation contract to `Decimal` monetary values and
+  returns rounded federal, state, and total liabilities with combined effective and
+  marginal rates. It normalizes supported state codes and returns zero rates when
+  taxable income is zero.
+
+**Project Scope Connection:**
+
+This establishes the deterministic progressive-tax primitive for the Domain Compute
+service. The public calculation response and rate outputs will be added in subsequent
+SCRUM-81 slices.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/tax_calculation.py`
+- `tests/python/test_tax_brackets.py`
+- `tests/python/test_tax_bracket_schedules.py`
+- `tests/python/test_tax_calculation.py`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Isolated calculation assertions for multi-bracket, boundary, and zero-income cases
+  passed via direct module execution.
+- `python -m ruff format --check src/python/tax_pulse_project_team_1/tax_calculation.py
+  tests/python/test_tax_brackets.py` passed.
+- `python -m pyright src/python/tax_pulse_project_team_1/tax_calculation.py` passed.
+- Isolated schedule lookup assertions for all supported filing statuses and California
+  bounds passed via direct module execution.
+- Isolated end-to-end assertions for the exact single-filer liabilities/rates,
+  zero-taxable-income rates, and repeated identical requests passed via direct module
+  execution.
+- Pytest collection is currently blocked before tests run because the local Python
+  environment is missing the project dependency `boto3`.
 
 ## christopher-martus_jira85 - SCRUM-85
 
@@ -82,7 +205,6 @@ Compute scenario comparisons. It does not expose an HTTP endpoint or calculate d
 
 **Validation Notes:**
 
-
 - `npm run typecheck` passed.
 - `npx vitest run tests/typescript/scenario.test.ts` passed (2 tests).
 - `npm run db:check` passed.
@@ -91,65 +213,6 @@ Compute scenario comparisons. It does not expose an HTTP endpoint or calculate d
 - `npx vitest run tests/typescript/scenarioRepository.test.ts` is blocked for the same
   Testcontainers runtime limitation; it contains the acceptance case that persists five
   scenarios and rejects the sixth.
-
-## christopher-martus-jira81 - SCRUM-81
-
-**Branch:** `christopher-martus-jira81`
-
-**Assignee:** Christopher Martus
-
-**Jira Key:** SCRUM-81
-
-**Summary:** Implement bracket liability and effective/marginal rates
-
-**Description:** As an Advisor, I want federal and state bracket liability with effective
-and marginal rates, so that each Tax Plan Cycle shows real numbers.
-
-**Acceptance Criteria:**
-
-- The engine computes federal and state bracket liability for a given filing status and
-  state.
-- It derives the effective rate and the marginal rate from the brackets.
-- Identical inputs always return identical outputs (deterministic, no ML).
-
-**Code Connection:**
-
-- This first implementation slice adds an immutable `TaxBracket` value object and a
-  pure `calculate_bracket_liability` helper. The helper accumulates each reached income
-  range without I/O, time, randomness, or mutable shared state.
-- This second slice supplies immutable 2026 federal and 2025 California schedules for
-  every supported filing status. `get_bracket_schedules` returns the federal and
-  requested state schedules through a state-neutral lookup mapping.
-- This third slice upgrades the calculation contract to `Decimal` monetary values and
-  returns rounded federal, state, and total liabilities with combined effective and
-  marginal rates. It normalizes supported state codes and returns zero rates when
-  taxable income is zero.
-
-**Project Scope Connection:**
-
-This establishes the deterministic progressive-tax primitive for the Domain Compute
-service. The public calculation response and rate outputs will be added in subsequent
-SCRUM-81 slices.
-
-**Changed Files:**
-
-- `src/python/tax_pulse_project_team_1/tax_calculation.py`
-- `tests/python/test_tax_brackets.py`
-- `tests/python/test_tax_bracket_schedules.py`
-- `tests/python/test_tax_calculation.py`
-- Isolated calculation assertions for multi-bracket, boundary, and zero-income cases
-  passed via direct module execution.
-- `python -m ruff format --check src/python/tax_pulse_project_team_1/tax_calculation.py
-  tests/python/test_tax_brackets.py` passed.
-- `python -m pyright src/python/tax_pulse_project_team_1/tax_calculation.py` passed.
-- Isolated schedule lookup assertions for all supported filing statuses and California
-  bounds passed via direct module execution.
-- Isolated end-to-end assertions for the exact single-filer liabilities/rates,
-  zero-taxable-income rates, and repeated identical requests passed via direct module
-  execution.
-- Pytest collection is currently blocked before tests run because the local Python
-  environment is missing the project dependency `boto3`.
-
 
 ## christopher-martus-jira79 - SCRUM-79
 

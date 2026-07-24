@@ -17,6 +17,12 @@ from .queue_projection import (
     project_tax_plan_cycle_to_queue_item,
     upsert_tax_plan_cycle_queue_projection,
 )
+from .scenario_comparison import (
+    ScenarioComparisonInput,
+    ScenarioComparisonRequest,
+    ScenarioComparisonResult,
+    calculate_scenario_comparisons,
+)
 from .tax_calculation import (
     TaxCalculationRequest,
     TaxCalculationResult,
@@ -36,8 +42,12 @@ __all__ = [
     "TaxPlanCycleQueueProjectionItem",
     "TaxPlanCycleRecord",
     "TaxCalculationRequest",
+    "ScenarioComparisonInput",
+    "ScenarioComparisonRequest",
+    "ScenarioComparisonResult",
     "TaxCalculationResult",
     "calculate_tax",
+    "calculate_scenario_comparisons",
     "project_tax_plan_cycle_to_queue_item",
     "upsert_tax_plan_cycle_queue_projection",
 ]

@@ -19,6 +19,8 @@ const computedResult = {
   effective_rate: 0.252,
   marginal_rate: 0.32,
   quarterly_estimate: 15_750,
+  total_tax: 63_000,
+  delta_vs_baseline: -4_500,
 } as const;
 
 describe("scenario persistence contract", () => {
@@ -47,6 +49,12 @@ describe("scenario persistence contract", () => {
     ).toBe(false);
     expect(
       scenarioComputedResultSchema.safeParse({ ...computedResult, effective_rate: 1.01 }).success,
+    ).toBe(false);
+    expect(
+      scenarioComputedResultSchema.safeParse({ ...computedResult, total_tax: -1 }).success,
+    ).toBe(false);
+    expect(
+      scenarioComputedResultSchema.safeParse({ ...computedResult, delta_vs_baseline: Infinity }).success,
     ).toBe(false);
   });
 });
