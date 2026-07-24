@@ -5,8 +5,6 @@ from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 from types import MappingProxyType
 from typing import Final, Mapping
-
-
 from pydantic import BaseModel, Field, field_validator
 
 ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
@@ -18,7 +16,8 @@ ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
         "qualifying_surviving_spouse",
     }
 )
-
+MONEY_CENT: Final[Decimal] = Decimal("0.01")
+QUARTER_COUNT: Final[int] = 4
 
 @dataclass(frozen=True, slots=True)
 class TaxBracket:
@@ -284,7 +283,7 @@ class TaxCalculationRequest(BaseModel):
 
     income: Decimal
     deductions: Decimal
-
+    withholding: float = Field(default=0, ge=0)
     state: str
     filing_status: str
 
@@ -312,6 +311,24 @@ class TaxCalculationRequest(BaseModel):
         return value
 
 
+def _money_to_cents(amount: float) -> int:
+    rounded_amount = Decimal(str(amount)).quantize(MONEY_CENT, rounding=ROUND_HALF_UP)
+    return int(rounded_amount * 100)
+
+
+def derive_quarterly_estimates(total_liability: float, withholding: float) -> list[float]:
+    """Split net tax liability into four deterministic quarterly payments."""
+
+    net_liability_cents = max(_money_to_cents(total_liability) - _money_to_cents(withholding), 0)
+    base_payment_cents, remainder_cents = divmod(net_liability_cents, QUARTER_COUNT)
+
+    payment_cents = [
+        base_payment_cents + (1 if quarter_index < remainder_cents else 0)
+        for quarter_index in range(QUARTER_COUNT)
+    ]
+    return [cents / 100 for cents in payment_cents]
+
+
 class TaxCalculationResult(BaseModel):
     """Computed federal and state tax liabilities and rate metrics."""
 
@@ -330,7 +347,6 @@ class TaxCalculationResult(BaseModel):
 
 async def calculate_tax(request: TaxCalculationRequest) -> TaxCalculationResult:
     """Calculate deterministic federal and state bracket liability for one request."""
-
     taxable_income = max(request.income - request.deductions, Decimal("0"))
     federal_brackets, state_brackets = get_bracket_schedules(
         request.filing_status,
