@@ -34,6 +34,58 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira86 - SCRUM-86
+
+**Branch:** `christopher-martus-jira86`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-86
+
+**Summary:** Compute scenario deltas against the baseline
+
+**Description:** As an Advisor, I want each scenario's delta versus the baseline
+computed, so that I can compare planning options for a client.
+
+**Acceptance Criteria:**
+
+- A scenario request accepts 2-5 scenarios of typed-in figures and rejects fewer than
+  2 or more than 5.
+- Each result reports total tax and the dollar delta versus the baseline.
+- Scenario calculations reuse the same bracket logic as the baseline calculation.
+
+**Code Connection:**
+
+- The persisted scenario result contract now reserves `total_tax` and
+  `delta_vs_baseline`. Python comparison request and result models use
+  `TaxCalculationRequest` for baseline and scenario typed figures, enforce the 2-5
+  request bound, and represent the signed delta needed by the upcoming computation.
+
+**Project Scope Connection:**
+
+This implements the typed Domain Compute contract between ticket 85 scenario persistence
+and ticket 87 transport. It does not add an HTTP endpoint, database migration, or bracket
+liability calculation.
+
+**Changed Files:**
+
+- `src/typescript/scenario.ts`
+- `tests/typescript/scenario.test.ts`
+- `tests/typescript/scenarioRepository.test.ts`
+- `src/python/tax_pulse_project_team_1/scenario_comparison.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/test_scenario_comparison.py`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `uv run pytest tests/python/test_scenario_comparison.py` passed (6 tests).
+- `python -m ruff format --check src/python tests/python` passed.
+- `npm run typecheck` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')`
+  reports only existing unresolved optional imports for `boto3` and
+  `testcontainers.localstack`; no scenario-comparison findings remain.
+
 ## christopher-martus_jira85 - SCRUM-85
 
 **Branch:** `christopher-martus_jira85`
