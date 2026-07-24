@@ -17,7 +17,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { taxPlanCycleStages } from "../taxPlanCycle.js";
+import { taxPlanCycleStages } from "../../taxPlanCycle.js";
 
 const stageValuesSql = sql.join(
   taxPlanCycleStages.map((stage) => sql.raw(`'${stage.replace(/'/g, "''")}'`)),
