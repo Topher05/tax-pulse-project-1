@@ -150,8 +150,7 @@ export async function main(): Promise<void> {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  main().catch((error: unknown) => {
-    console.error("Redis smoke check failed", error);
+  main().catch(() => {
     process.exitCode = 1;
   });
 }
