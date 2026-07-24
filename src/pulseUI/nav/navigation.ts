@@ -1,4 +1,3 @@
-import type { ComponentType } from "react";
 import {
   BarChart3,
   BriefcaseBusiness,
@@ -12,28 +11,7 @@ import {
   Users,
 } from "lucide-react";
 
-export type PulseRoutePath =
-  | "/"
-  | "/plan-cycles"
-  | "/plan-cycles/$caseId"
-  | "/scenarios"
-  | "/income"
-  | "/deductions"
-  | "/quarterly-payments"
-  | "/clients"
-  | "/firm/users"
-  | "/firm/settings";
-
-export type PulseNavItem = {
-  readonly label: string;
-  readonly path: PulseRoutePath;
-  readonly icon: ComponentType<{ className?: string; "aria-hidden"?: true }>;
-};
-
-export type PulseNavGroup = {
-  readonly label: "Workspace" | "Plan Tools" | "Firm";
-  readonly items: readonly PulseNavItem[];
-};
+import type { PulseNavGroup } from "./navItem.types.ts";
 
 export const pulseNavGroups: readonly PulseNavGroup[] = [
   {
@@ -62,19 +40,3 @@ export const pulseNavGroups: readonly PulseNavGroup[] = [
     ],
   },
 ] as const;
-
-export const getViewTitle = (pathname: string): string => {
-  if (pathname.startsWith("/plan-cycles/") && pathname !== "/plan-cycles") {
-    return "Plan Cycle Detail";
-  }
-
-  for (const group of pulseNavGroups) {
-    const item = group.items.find((navItem) => navItem.path === pathname);
-
-    if (item !== undefined) {
-      return item.label;
-    }
-  }
-
-  return "Dashboard";
-};
