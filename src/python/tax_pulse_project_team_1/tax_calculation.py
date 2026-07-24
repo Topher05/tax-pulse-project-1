@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 from types import MappingProxyType
-from typing import Final, Mapping, Annotated
+from typing import Final, Mapping
 from pydantic import BaseModel, Field, field_validator
 
 ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
@@ -18,9 +18,6 @@ ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
 )
 MONEY_CENT: Final[Decimal] = Decimal("0.01")
 QUARTER_COUNT: Final[int] = 4
-
-NonNegativeMoneyAmount = Annotated[float, Field(ge=0)]
-
 
 @dataclass(frozen=True, slots=True)
 class TaxBracket:
@@ -283,6 +280,7 @@ def get_marginal_rate(taxable_income: Decimal, brackets: BracketSchedule) -> Dec
 
 class TaxCalculationRequest(BaseModel):
     """Request model for tax calculation inputs."""
+
     income: Decimal
     deductions: Decimal
     withholding: float = Field(default=0, ge=0)
@@ -312,16 +310,6 @@ class TaxCalculationRequest(BaseModel):
             raise ValueError(f"Invalid filing status. Allowed values are: {allowed}.")
         return value
 
-    federal_liability: float = Field(ge=0)
-    state_liability: float = Field(ge=0)
-    effective_rate: float = Field(ge=0, le=1)
-    marginal_rate: float = Field(ge=0, le=1)
-    quarterly_estimate: float = Field(ge=0)
-    quarterly_estimates: list[NonNegativeMoneyAmount] = Field(
-        min_length=QUARTER_COUNT,
-        max_length=QUARTER_COUNT,
-    )
-
 
 def _money_to_cents(amount: float) -> int:
     rounded_amount = Decimal(str(amount)).quantize(MONEY_CENT, rounding=ROUND_HALF_UP)
@@ -339,6 +327,7 @@ def derive_quarterly_estimates(total_liability: float, withholding: float) -> li
         for quarter_index in range(QUARTER_COUNT)
     ]
     return [cents / 100 for cents in payment_cents]
+
 
 class TaxCalculationResult(BaseModel):
     """Computed federal and state tax liabilities and rate metrics."""
@@ -358,12 +347,6 @@ class TaxCalculationResult(BaseModel):
 
 async def calculate_tax(request: TaxCalculationRequest) -> TaxCalculationResult:
     """Calculate deterministic federal and state bracket liability for one request."""
-    federal_liability = 0
-    state_liability = 0
-    quarterly_estimates = derive_quarterly_estimates(
-        federal_liability + state_liability,
-        request.withholding,
-    )
     taxable_income = max(request.income - request.deductions, Decimal("0"))
     federal_brackets, state_brackets = get_bracket_schedules(
         request.filing_status,
