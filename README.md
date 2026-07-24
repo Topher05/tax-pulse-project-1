@@ -5,8 +5,10 @@
 This workspace is scaffolded as a small dual-runtime project:
 
 - TypeScript source lives in [`src/typescript`](./src/typescript)
+- Pulse UI React/Vite source lives in [`src/pulseUI`](./src/pulseUI)
 - Python source lives in [`src/python/tax_pulse_project_team_1`](./src/python/tax_pulse_project_team_1)
 - TypeScript tests live in [`tests/typescript`](./tests/typescript)
+- Pulse UI component tests live in [`tests/pulseUI`](./tests/pulseUI)
 - Python tests live in [`tests/python`](./tests/python)
 
 ## Toolchain
@@ -18,6 +20,8 @@ This workspace is scaffolded as a small dual-runtime project:
 - Node.js is pinned in both [`.nvmrc`](./.nvmrc) and [`.tool-versions`](./.tool-versions).
 - Python is pinned in [`.tool-versions`](./.tool-versions) and must exactly match `requires-python` in [`pyproject.toml`](./pyproject.toml).
 - Python dev dependencies come from [`pyproject.toml`](./pyproject.toml) and include Ruff, pytest, and `pyright[nodejs]`.
+- The Pulse UI browser shell uses React, React DOM, Vite, TanStack Router, and lucide-react.
+- Pulse UI component tests use Vitest, Testing Library, jest-dom matchers, and jsdom.
 - The setup scripts treat the manifests as strict pins and exit non-zero on any mismatch.
 
 ## Verify Active Versions
@@ -69,9 +73,11 @@ After setup, run these from the repository root:
 
 ```bash
 npm run dev
+npm run dev:web
 npm run typecheck
 npm test
 npm run build
+npm run build:web
 npm start
 ```
 
@@ -83,10 +89,47 @@ python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')
 python -m pytest
 ```
 
+### Pulse UI
+
+The Pulse UI operator workspace is nested under [`src/pulseUI`](./src/pulseUI). Its
+frontend-specific config files live beside the implementation:
+
+- [`src/pulseUI/index.html`](./src/pulseUI/index.html) is the Vite HTML entrypoint.
+- [`src/pulseUI/vite.config.ts`](./src/pulseUI/vite.config.ts) sets the app root and
+  builds browser assets to `dist/pulseUI`.
+- [`src/pulseUI/tsconfig.pulseUI.json`](./src/pulseUI/tsconfig.pulseUI.json) type-checks
+  browser TypeScript, JSX, and Pulse UI tests.
+- [`src/pulseUI/vitest.config.ts`](./src/pulseUI/vitest.config.ts) is the Vitest config
+  used by `npm run test:vitest` and migration test scripts.
+
+Run the Pulse UI dev server:
+
+```bash
+npm run dev:web
+```
+
+Build the Pulse UI production bundle:
+
+```bash
+npm run build:web
+```
+
+Run the Pulse UI shell test directly:
+
+```bash
+npm run test:vitest -- tests/pulseUI/appShell.test.tsx
+```
+
+Run all TypeScript checks, including backend TypeScript and Pulse UI:
+
+```bash
+npm run typecheck
+```
+
 ### TypeScript Coverage
 
 Vitest with `@vitest/coverage-v8` is the standard coverage path for the TypeScript
-suite. Use this command to generate local coverage output and reporting:
+and Pulse UI suite. Use this command to generate local coverage output and reporting:
 
 ```bash
 npm run test:cov
