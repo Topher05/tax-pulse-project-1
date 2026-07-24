@@ -59,7 +59,9 @@ computed, so that I can compare planning options for a client.
 - The persisted scenario result contract now reserves `total_tax` and
   `delta_vs_baseline`. Python comparison request and result models use
   `TaxCalculationRequest` for baseline and scenario typed figures, enforce the 2-5
-  request bound, and represent the signed delta needed by the upcoming computation.
+  request bound, and represent the signed delta. The comparison service calculates the
+  baseline once and delegates every scenario to `calculate_tax`, ensuring a single
+  calculation path for bracket logic.
 
 **Project Scope Connection:**
 
@@ -79,7 +81,11 @@ liability calculation.
 
 **Validation Notes:**
 
-- `uv run pytest tests/python/test_scenario_comparison.py` passed (6 tests).
+- `.venv\\Scripts\\python.exe -m pytest tests/python/test_scenario_comparison.py`
+  passed (7 tests; only an existing pytest-cache permission warning).
+- `.venv\\Scripts\\python.exe -m ruff format --check src/python tests/python` passed.
+- `.venv\\Scripts\\python.exe -m pyright --pythonpath ".\\.venv\\Scripts\\python.exe"`
+  passed with 0 errors and 0 warnings.
 - `python -m ruff format --check src/python tests/python` passed.
 - `npm run typecheck` passed.
 - `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')`

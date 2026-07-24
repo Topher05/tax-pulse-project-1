@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from .tax_calculation import TaxCalculationRequest
+from .tax_calculation import TaxCalculationRequest, TaxCalculationResponse, calculate_tax
 
 
 class ScenarioComparisonInput(BaseModel):
@@ -27,3 +27,32 @@ class ScenarioComparisonResult(BaseModel):
     name: str = Field(min_length=1)
     total_tax: float = Field(ge=0)
     delta_vs_baseline: float
+
+
+async def calculate_scenario_comparisons(
+    request: ScenarioComparisonRequest,
+) -> list[ScenarioComparisonResult]:
+    """Calculate each scenario with the baseline calculator and compare its total tax."""
+
+    baseline_calculation = await calculate_tax(request.baseline)
+    baseline_total_tax = _total_tax(baseline_calculation)
+    results: list[ScenarioComparisonResult] = []
+
+    for scenario in request.scenarios:
+        calculation = await calculate_tax(scenario.typed_figures)
+        total_tax = _total_tax(calculation)
+        results.append(
+            ScenarioComparisonResult(
+                name=scenario.name,
+                total_tax=total_tax,
+                delta_vs_baseline=total_tax - baseline_total_tax,
+            )
+        )
+
+    return results
+
+
+def _total_tax(calculation: TaxCalculationResponse) -> float:
+    """Return combined federal and state liability for a calculation."""
+
+    return calculation.federal_liability + calculation.state_liability
