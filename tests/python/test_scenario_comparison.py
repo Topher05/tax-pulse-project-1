@@ -71,8 +71,8 @@ def test_scenario_comparison_request_rejects_out_of_range_scenario_counts(count:
 def test_scenario_comparison_result_reports_total_tax_and_signed_delta() -> None:
     result = ScenarioComparisonResult(
         name="Increase retirement contributions",
-        total_tax=58500,
-        delta_vs_baseline=-4500,
+        total_tax=Decimal(58500),
+        delta_vs_baseline=Decimal(-4500),
     )
 
     assert result.model_dump() == {
@@ -105,9 +105,21 @@ async def test_scenario_comparisons_reuse_baseline_calculation_and_preserve_inpu
     results = await calculate_scenario_comparisons(request)
 
     assert [result.model_dump() for result in results] == [
-        {"name": "Scenario 1", "total_tax": 130.0, "delta_vs_baseline": 30.0},
-        {"name": "Scenario 2", "total_tax": 80.0, "delta_vs_baseline": -20.0},
-        {"name": "Scenario 3", "total_tax": 100.0, "delta_vs_baseline": 0.0},
+        {
+            "name": "Scenario 1",
+            "total_tax": Decimal("130.00"),
+            "delta_vs_baseline": Decimal("30.00"),
+        },
+        {
+            "name": "Scenario 2",
+            "total_tax": Decimal("80.00"),
+            "delta_vs_baseline": Decimal("-20.00"),
+        },
+        {
+            "name": "Scenario 3",
+            "total_tax": Decimal("100.00"),
+            "delta_vs_baseline": Decimal("0.00"),
+        },
     ]
     assert calculator.await_args_list == [
         call(request.baseline),
@@ -115,6 +127,32 @@ async def test_scenario_comparisons_reuse_baseline_calculation_and_preserve_inpu
         call(request.scenarios[1].typed_figures),
         call(request.scenarios[2].typed_figures),
     ]
+
+
+@pytest.mark.asyncio
+async def test_scenario_comparisons_preserve_a_one_cent_delta(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = ScenarioComparisonRequest.model_validate(
+        {
+            "baseline": BASELINE,
+            "scenarios": [scenario(1), scenario(2)],
+        }
+    )
+    calculator = AsyncMock(
+        side_effect=[
+            calculation_result("18694.64"),
+            calculation_result("18694.65"),
+            calculation_result("18694.64"),
+        ]
+    )
+    monkeypatch.setattr(scenario_comparison, "calculate_tax", calculator)
+
+    results = await calculate_scenario_comparisons(request)
+
+    assert results[0].total_tax == Decimal("18694.65")
+    assert results[0].delta_vs_baseline == Decimal("0.01")
+    assert results[1].delta_vs_baseline == Decimal("0.00")
 
 
 @pytest.mark.asyncio
@@ -147,13 +185,17 @@ async def test_scenario_comparisons_use_real_brackets_for_totals_and_deltas() ->
     assert [result.model_dump() for result in results] == [
         {
             "name": "Increase deductions",
-            "total_tax": 16190.64,
-            "delta_vs_baseline": -2504.0,
+            "total_tax": Decimal("16190.64"),
+            "delta_vs_baseline": Decimal("-2504.00"),
         },
-        {"name": "Keep baseline", "total_tax": 18694.64, "delta_vs_baseline": 0.0},
+        {
+            "name": "Keep baseline",
+            "total_tax": Decimal("18694.64"),
+            "delta_vs_baseline": Decimal("0.00"),
+        },
         {
             "name": "Increase income",
-            "total_tax": 21824.64,
-            "delta_vs_baseline": 3130.0,
+            "total_tax": Decimal("21824.64"),
+            "delta_vs_baseline": Decimal("3130.00"),
         },
     ]

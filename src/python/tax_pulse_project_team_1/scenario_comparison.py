@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from pydantic import BaseModel, Field
 
 from .tax_calculation import TaxCalculationRequest, TaxCalculationResult, calculate_tax
@@ -25,8 +27,8 @@ class ScenarioComparisonResult(BaseModel):
     """The total tax and signed difference from the baseline for one scenario."""
 
     name: str = Field(min_length=1)
-    total_tax: float = Field(ge=0)
-    delta_vs_baseline: float
+    total_tax: Decimal = Field(ge=0)
+    delta_vs_baseline: Decimal
 
 
 async def calculate_scenario_comparisons(
@@ -52,7 +54,7 @@ async def calculate_scenario_comparisons(
     return results
 
 
-def _total_tax(calculation: TaxCalculationResult) -> float:
+def _total_tax(calculation: TaxCalculationResult) -> Decimal:
     """Return combined federal and state liability for a calculation."""
 
-    return float(calculation.total_liability)
+    return Decimal(calculation.total_liability)
