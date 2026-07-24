@@ -7,7 +7,7 @@ import {
   stageTransition as stageTransitionTable,
   taxPlanCycle as taxPlanCycleTable,
   taxPlanCycleIdempotencyKey as taxPlanCycleIdempotencyKeyTable,
-} from "./db/schema.js";
+} from "./shared/database/schema.js";
 import { taxPlanCycleSchema, type TaxPlanCycle } from "./taxPlanCycle.js";
 
 export interface TaxPlanCycleReadInput {

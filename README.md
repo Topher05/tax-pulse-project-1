@@ -272,7 +272,7 @@ different capacity or latency tradeoffs:
 ## Migration Commands
 
 The PostgreSQL migration workflow keeps typed Drizzle schema definitions in
-[`src/typescript/db/schema.ts`](./src/typescript/db/schema.ts), generated Drizzle
+[`src/typescript/shared/database/schema.ts`](./src/typescript/shared/database/schema.ts), generated Drizzle
 migration evidence in [`drizzle/`](./drizzle), and the executable SQL migration files
 in the top-level [`migrations/`](./migrations) directory.
 
@@ -320,7 +320,7 @@ Notes:
 - Drizzle definitions are the typed schema contract; the SQL migration runner applies
   the top-level `migrations/` files and records applied files in `schema_migrations`.
 - Keep any local seed data synthetic and clearly fake.
-- A shared seed data lives in `src/typescript/db/seed.ts` and is executed with `npm run seed`; keep any generated sample data synthetic and clearly fake.
+- A shared seed data lives in `src/typescript/shared/database/seed.ts` and is executed with `npm run seed`; keep any generated sample data synthetic and clearly fake.
 - Start Docker before running `npm run test:integration` or any command that depends on Testcontainers.
 
 ## Contributing and Codex Context

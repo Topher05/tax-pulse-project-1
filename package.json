@@ -20,7 +20,7 @@
     "redis:down": "docker compose -f docker-compose.redis.yml down",
     "redis:smoke": "tsx src/typescript/redisSmoke.ts",
     "migrate": "tsx src/typescript/runMigrations.ts",
-    "seed": "tsx src/typescript/db/seed.ts",
+    "seed": "tsx src/typescript/shared/database/seed.ts",
     "start": "node dist/typescript/index.js",
     "test": "npm run typecheck && npm run test:vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",

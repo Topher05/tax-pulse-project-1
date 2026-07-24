@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 import { getTableStructure, expectPgError } from "../bootstrap/tableTestUtils.js";
-import { roles } from "../../../src/typescript/db/schema.js";
+import { roles } from "../../../src/typescript/shared/database/schema.js";
 import {
   expectedRoleColumnTypes,
   expectedRoleColumns,

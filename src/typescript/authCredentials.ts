@@ -5,7 +5,7 @@ import type { Client } from "pg";
 import {
   credential as credentialTable,
   users as usersTable,
-} from "./db/schema.js";
+} from "./shared/database/schema.js";
 import type {
   PasswordCredentialLoginRecord,
   PasswordCredentialLookupInput,

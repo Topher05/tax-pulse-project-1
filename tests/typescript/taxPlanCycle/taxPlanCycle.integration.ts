@@ -29,7 +29,7 @@ import {
   tenants,
   type AuditEntryWriter,
 } from "../../../src/typescript/index.js";
-import { applySeed } from "../../../src/typescript/db/seed.js";
+import { applySeed } from "../../../src/typescript/shared/database/seed.js";
 import {
   applyDrizzleMigrations,
   drizzleAppliedMigrationsTableName,

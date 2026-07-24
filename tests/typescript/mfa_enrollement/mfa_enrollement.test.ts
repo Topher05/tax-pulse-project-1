@@ -3,7 +3,7 @@ import { asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { describe, expect, test } from "vitest";
 
-import { mfaEnrollment } from "../../../src/typescript/db/schema.js";
+import { mfaEnrollment } from "../../../src/typescript/shared/database/schema.js";
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 import { getTableStructure, expectPgError } from "../bootstrap/tableTestUtils.js";
 import {

@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { describe, expect, test } from "vitest";
 
 import type { JwtConfig } from "../../src/typescript/authConfig.js";
-import { refreshToken } from "../../src/typescript/db/schema.js";
+import { refreshToken } from "../../src/typescript/shared/database/schema.js";
 import { createRefreshTokenRepository } from "../../src/typescript/refreshTokenRepository.js";
 import { createTokenService } from "../../src/typescript/tokenService.js";
 import { userRows } from "./user/user.test.model.js";

@@ -5,7 +5,7 @@ import type { Client } from "pg";
 import {
   auditEntry as auditEntryTable,
   taxPlanCycle as taxPlanCycleTable,
-} from "./db/schema.js";
+} from "./shared/database/schema.js";
 import {
   serializeAuditEntryForOutput,
   type AuditEntryOutput,

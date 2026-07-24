@@ -118,7 +118,7 @@ export {
   tenants,
   users,
   userStatus,
-} from "./db/schema.js";
+} from "./shared/database/schema.js";
 export {
   createBracketReferenceRepository,
   type BracketReferenceLookupInput,

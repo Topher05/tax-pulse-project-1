@@ -10,7 +10,7 @@ import {
   userStatus,
   userStatusEnum,
   users,
-} from "../../../src/typescript/db/schema.js";
+} from "../../../src/typescript/shared/database/schema.js";
 import {
   expectedUserColumnTypes,
   expectedUserColumns,

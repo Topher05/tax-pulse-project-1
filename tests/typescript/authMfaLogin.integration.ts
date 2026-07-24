@@ -7,7 +7,7 @@ import { describe, expect, test } from "vitest";
 
 import type { JwtConfig } from "../../src/typescript/authConfig.js";
 import { createAuthMfaLoginController } from "../../src/typescript/authMfaLogin.js";
-import { refreshToken } from "../../src/typescript/db/schema.js";
+import { refreshToken } from "../../src/typescript/shared/database/schema.js";
 import { createMfaEnrollmentRepository } from "../../src/typescript/mfaEnrollmentRepository.js";
 import { createRefreshTokenRepository } from "../../src/typescript/refreshTokenRepository.js";
 import { createTokenService } from "../../src/typescript/tokenService.js";
