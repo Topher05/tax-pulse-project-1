@@ -1,4 +1,4 @@
-# ADR-0010: Python DynamoDB Queue Projection with LocalStack
+# ADR-0012: Python DynamoDB Queue Projection with LocalStack
 
 ## Context
 TaxPulse Advisory needs the Plan Cycle Queue to move toward a denormalized read model

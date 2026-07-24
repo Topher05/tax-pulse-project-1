@@ -1,4 +1,4 @@
-# ADR-0010: Version Tax Plan Cycle API under /v1
+# ADR-0011: Version Tax Plan Cycle API under /v1
 
 ## Context
 The Core Case Service exposes tenant-scoped Tax Plan Cycle endpoints that are consumed by
