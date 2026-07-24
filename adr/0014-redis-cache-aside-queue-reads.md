@@ -74,6 +74,10 @@ Redis now sits in front of the DynamoDB queue projection as disposable operation
 state. Queue reads get a fast cache hit path and still fall back to the projection
 store on a miss.
 
+RedisInsight is the preferred Docker-based developer tool for inspecting this cache.
+Bookmark the local UI at `http://localhost:5540` when running the container-based
+tooling flow.
+
 Versioned tenant namespaces avoid key scans and make invalidation predictable.
 Redis outages do not change the source of truth, but they may slow queue reads until
 the cache repopulates.
