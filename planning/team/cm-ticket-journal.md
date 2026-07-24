@@ -34,6 +34,64 @@ Add new ticket entries below using this template.
 
 -
 -->
+
+## christopher-martus_jira85 - SCRUM-85
+
+**Branch:** `christopher-martus_jira85`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-85
+
+**Summary:** Create the scenario table for typed-in figures
+
+**Description:** As a Backend Developer, I want a scenario table, so that 2-5 modeled
+scenarios are persisted per cycle.
+
+**Acceptance Criteria:**
+
+- A migration creates a scenario table keyed to a case with name, typed-in figures, and
+  computed result.
+- A constraint or repository check limits a case to between 2 and 5 scenarios.
+- A test asserts a 6th scenario insert is rejected.
+
+**Code Connection:**
+
+- The first implementation slice defines the shared TypeScript schemas for manually
+  entered calculation figures and stored calculation results, plus the matching Drizzle
+  table contract. The migration creates that table, and the tenant-scoped repository
+  locks the parent case while counting inserts so a sixth scenario is rejected safely.
+
+**Project Scope Connection:**
+
+This establishes the PostgreSQL persistence boundary between Tax Plan Cycles and Domain
+Compute scenario comparisons. It does not expose an HTTP endpoint or calculate deltas.
+
+**Changed Files:**
+
+- `src/typescript/scenario.ts`
+- `src/typescript/db/schema.ts`
+- `src/typescript/db/drizzle-migrations/0006_scenario.sql`
+- `src/typescript/db/drizzle-migrations/meta/0006_snapshot.json`
+- `src/typescript/db/drizzle-migrations/meta/_journal.json`
+- `tests/typescript/scenario.test.ts`
+- `tests/typescript/scenarioMigration.test.ts`
+- `src/typescript/scenarioRepository.ts`
+- `tests/typescript/scenarioRepository.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/scenario.test.ts` passed (2 tests).
+- `npm run db:check` passed.
+- `npx vitest run tests/typescript/scenarioMigration.test.ts` is blocked because this
+  environment has no working container runtime for Testcontainers.
+- `npx vitest run tests/typescript/scenarioRepository.test.ts` is blocked for the same
+  Testcontainers runtime limitation; it contains the acceptance case that persists five
+  scenarios and rejects the sixth.
+
 ## christopher-martus-jira81 - SCRUM-81
 
 **Branch:** `christopher-martus-jira81`
@@ -79,10 +137,6 @@ SCRUM-81 slices.
 - `tests/python/test_tax_brackets.py`
 - `tests/python/test_tax_bracket_schedules.py`
 - `tests/python/test_tax_calculation.py`
-- `planning/team/cm-ticket-journal.md`
-
-**Validation Notes:**
-
 - Isolated calculation assertions for multi-bracket, boundary, and zero-income cases
   passed via direct module execution.
 - `python -m ruff format --check src/python/tax_pulse_project_team_1/tax_calculation.py
@@ -95,6 +149,7 @@ SCRUM-81 slices.
   execution.
 - Pytest collection is currently blocked before tests run because the local Python
   environment is missing the project dependency `boto3`.
+
 
 ## christopher-martus-jira79 - SCRUM-79
 
