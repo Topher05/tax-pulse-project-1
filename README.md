@@ -137,6 +137,37 @@ endpoint:
 aws dynamodb describe-table --table-name taxpulse_plan_cycle_queue_projection --endpoint-url http://localhost:4566 --region us-east-1
 ```
 
+## Redis Queue Cache
+
+The TypeScript queue-read cache uses Redis as disposable operational state. Add this
+value to your local `.env` file alongside the existing PostgreSQL and LocalStack
+settings:
+
+- `TAXPULSE_REDIS_URL=redis://localhost:6379`
+
+If you want to run a local Redis container by hand, use Docker:
+
+```powershell
+docker run --rm -d --name taxpulse-redis -p 6379:6379 redis:7-alpine
+```
+
+If a previous Redis container is still around, remove it before rerunning:
+
+```powershell
+docker rm -f taxpulse-redis
+```
+
+The Redis-backed queue-cache integration test runs through Testcontainers, so Docker
+must be running before `npm run test:integration`.
+
+After you install the updated Node dependencies locally, you can run the queue-cache
+slice directly with:
+
+```powershell
+npm run test:queue-cache
+npm run test:queue-cache:integration
+```
+
 ### TypeScript Coverage
 
 Vitest with `@vitest/coverage-v8` is the standard coverage path for the TypeScript

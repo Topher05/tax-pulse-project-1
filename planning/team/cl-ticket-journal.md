@@ -82,3 +82,53 @@ Add new ticket entries below using this template.
 - `.\.venv\Scripts\python.exe -m pytest --basetemp=.pytest-tmp`
 - `python -m pytest --cache-clear` in PowerShell also passed after the dev environment was installed
 - LocalStack integration tests are wired through testcontainers and skip when Docker is not reachable in the current shell
+
+## caleb-latimer-jira75 - SCRUM-75
+
+**Branch:** `caleb-latimer-jira75`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-75
+
+**Summary:** Cache the queue read in Redis with invalidation
+
+**Description:** As an Advisor, I want the Plan Cycle Queue cached in Redis, so that the queue loads fast without hammering the read store.
+
+**Acceptance Criteria:**
+
+- Queue reads check Redis first and fall back to DynamoDB on a miss.
+- A cache entry is invalidated when a case's stage or due_date changes.
+- A test asserts a stale entry is not served after an invalidating change.
+
+**Code Connection:**
+
+- `src/typescript/taxPlanCycleQueueProjection.ts`
+- `src/typescript/taxPlanCycleQueueCache.ts`
+- `src/typescript/taxPlanCycleQueueDynamoStore.ts`
+- `src/typescript/taxPlanCycleQueueReadService.ts`
+- `src/typescript/taxPlanCycleTransitionController.ts`
+- `tests/typescript/bootstrap/dockerRedis.ts`
+- `tests/typescript/taxPlanCycleQueueCache.test.ts`
+- `tests/typescript/taxPlanCycleQueueDynamoStore.test.ts`
+- `tests/typescript/taxPlanCycleQueueRead.integration.ts`
+
+**Project Scope Connection:**
+
+- Polyglot Backend & Contracts
+- Core Case Service queue-read cache-aside work
+
+**Changed Files:**
+
+- `src/typescript/`
+- `tests/typescript/`
+- `README.md`
+- `.env.example`
+- `package.json`
+- `adr/0014-redis-cache-aside-queue-reads.md`
+- `adr/README.md`
+
+**Validation Notes:**
+
+- Scaffolding was completed in the sandbox, but the new npm dependencies still need to be installed locally before `npm run typecheck`, `npm test`, and `npm run test:integration` can be executed.
+- New helper scripts were added for `npm run test:queue-cache` and `npm run test:queue-cache:integration` so the Redis slices can be run directly after install.
