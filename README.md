@@ -83,6 +83,37 @@ python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')
 python -m pytest
 ```
 
+## Python LocalStack Bootstrap
+
+The Python queue-projection bootstrap uses LocalStack and DynamoDB through a small
+docker-compose setup. For that flow, `.env` only needs these values:
+
+- `AWS_ACCESS_KEY_ID=test`
+- `AWS_SECRET_ACCESS_KEY=test`
+- `AWS_REGION=us-east-1`
+- `TAXPULSE_DYNAMODB_ENDPOINT_URL=http://localhost:4566`
+- `LOCALSTACK_AUTH_TOKEN=<your LocalStack token>`
+
+Start LocalStack from the Python workspace root:
+
+```powershell
+cd src/python
+docker compose --env-file ..\..\.env -f docker-compose.yml up -d taxpulse-localstack
+```
+
+Then bootstrap the empty queue table:
+
+```powershell
+python -m tax_pulse_project_team_1.main
+```
+
+If you want to confirm the table exists afterward, use the AWS CLI against the local
+endpoint:
+
+```powershell
+aws dynamodb describe-table --table-name taxpulse_plan_cycle_queue_projection --endpoint-url http://localhost:4566 --region us-east-1
+```
+
 ### TypeScript Coverage
 
 Vitest with `@vitest/coverage-v8` is the standard coverage path for the TypeScript
