@@ -86,6 +86,15 @@ liability calculation.
 - `.venv\\Scripts\\python.exe -m ruff format --check src/python tests/python` passed.
 - `.venv\\Scripts\\python.exe -m pyright --pythonpath ".\\.venv\\Scripts\\python.exe"`
   passed with 0 errors and 0 warnings.
+- The real-bracket scenario comparison test passed as part of the focused 27-test
+  ticket-81/ticket-86 suite.
+- `.venv\\Scripts\\python.exe -m pytest tests/python/test_tax_calculation.py
+  tests/python/test_tax_brackets.py tests/python/test_tax_bracket_schedules.py
+  tests/python/test_scenario_comparison.py` passed (27 tests; only an existing
+  pytest-cache permission warning).
+- `.venv\\Scripts\\python.exe -m ruff format --check src/python tests/python` passed.
+- `.venv\\Scripts\\python.exe -m pyright --pythonpath ".\\.venv\\Scripts\\python.exe"`
+  passed with 0 errors and 0 warnings.
 
 ## christopher-martus-jira81 - SCRUM-81
 

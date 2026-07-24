@@ -115,3 +115,45 @@ async def test_scenario_comparisons_reuse_baseline_calculation_and_preserve_inpu
         call(request.scenarios[1].typed_figures),
         call(request.scenarios[2].typed_figures),
     ]
+
+
+@pytest.mark.asyncio
+async def test_scenario_comparisons_use_real_brackets_for_totals_and_deltas() -> None:
+    baseline = {
+        "income": 100000,
+        "deductions": 12000,
+        "state": "CA",
+        "filing_status": "single",
+    }
+    request = ScenarioComparisonRequest.model_validate(
+        {
+            "baseline": baseline,
+            "scenarios": [
+                {
+                    "name": "Increase deductions",
+                    "typed_figures": {**baseline, "deductions": 20000},
+                },
+                {"name": "Keep baseline", "typed_figures": baseline},
+                {
+                    "name": "Increase income",
+                    "typed_figures": {**baseline, "income": 110000},
+                },
+            ],
+        }
+    )
+
+    results = await calculate_scenario_comparisons(request)
+
+    assert [result.model_dump() for result in results] == [
+        {
+            "name": "Increase deductions",
+            "total_tax": 16190.64,
+            "delta_vs_baseline": -2504.0,
+        },
+        {"name": "Keep baseline", "total_tax": 18694.64, "delta_vs_baseline": 0.0},
+        {
+            "name": "Increase income",
+            "total_tax": 21824.64,
+            "delta_vs_baseline": 3130.0,
+        },
+    ]
