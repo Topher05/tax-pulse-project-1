@@ -1,15 +1,7 @@
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-} from "@tanstack/react-router";
+import { createRootRoute, createRoute } from "@tanstack/react-router";
 
-import { AppShell } from "./AppShell.tsx";
-
-function EmptyRoute() {
-  return null;
-}
+import { AppShell } from "../AppShell.tsx";
+import { EmptyRoute } from "./EmptyRoute.tsx";
 
 const rootRoute = createRootRoute({
   component: AppShell,
@@ -75,7 +67,7 @@ const firmSettingsRoute = createRoute({
   component: EmptyRoute,
 });
 
-const routeTree = rootRoute.addChildren([
+export const routeTree = rootRoute.addChildren([
   dashboardRoute,
   planCyclesRoute,
   planCycleDetailRoute,
@@ -87,20 +79,3 @@ const routeTree = rootRoute.addChildren([
   firmUsersRoute,
   firmSettingsRoute,
 ]);
-
-export const createPulseRouter = (initialEntries?: readonly string[]) =>
-  createRouter({
-    routeTree,
-    history:
-      initialEntries === undefined
-        ? undefined
-        : createMemoryHistory({ initialEntries: [...initialEntries] }),
-  });
-
-const pulseRouter = createPulseRouter();
-
-declare module "@tanstack/react-router" {
-  interface Register {
-    router: typeof pulseRouter;
-  }
-}
