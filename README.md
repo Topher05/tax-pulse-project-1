@@ -180,12 +180,12 @@ npm run redis:smoke
 The Redis-backed queue-cache integration test runs through Testcontainers, so Docker
 must be running before `npm run test:integration`.
 
-After you install the updated Node dependencies locally, you can run the queue-cache
-slice directly with:
+After you install the updated Node dependencies locally, you can run the Redis
+queue-cache tests directly with Vitest:
 
 ```powershell
-npm run test:queue-cache
-npm run test:queue-cache:integration
+npx vitest run tests/typescript/features/taxPlanCycle/queueCache.test.ts tests/typescript/features/taxPlanCycle/queueDynamoStore.test.ts
+npm run test:integration -- tests/typescript/features/taxPlanCycle/queueRead.integration.test.ts
 ```
 
 ### TypeScript Coverage

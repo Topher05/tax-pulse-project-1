@@ -131,4 +131,4 @@ Add new ticket entries below using this template.
 **Validation Notes:**
 
 - Scaffolding was completed in the sandbox, but the new npm dependencies still need to be installed locally before `npm run typecheck`, `npm test`, and `npm run test:integration` can be executed.
-- New helper scripts were added for `npm run test:queue-cache` and `npm run test:queue-cache:integration` so the Redis slices can be run directly after install.
+- New queue-cache tests were added under the Tax Plan Cycle feature slice so the Redis coverage can be run directly with Vitest after install.
