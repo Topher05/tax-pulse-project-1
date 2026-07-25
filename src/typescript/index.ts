@@ -213,42 +213,42 @@ export {
   type TaxPlanCycleRepository,
   type TaxPlanCycleRepositoryCreateInput,
   type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
-} from "./features/taxPlanCycle/index.js";
-export {
+  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
+  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
+  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
   buildTaxPlanCycleQueueReadCacheKey,
   buildTaxPlanCycleQueueTenantVersionKey,
   createNoopTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
+  createTaxPlanCycleQueueDynamoDocumentClient,
+  createTaxPlanCycleQueueProjectionStore,
+  createTaxPlanCycleQueueReadService,
+  createTaxPlanCycleCreateController,
+  taxPlanCycleCreateController,
+  taxPlanCycleCreateResultSchema,
+  createTaxPlanCycleTransitionController,
+  taxPlanCycleTransitionController,
+  createTaxPlanCycleRouter,
+  taxPlanCycleQueueProjectionItemSchema,
+  taxPlanCycleQueueProjectionItemsSchema,
+  type CreateTaxPlanCycleRouterOptions,
+  type TaxPlanCycleCreateControllerInput,
+  type TaxPlanCycleCreateController,
+  type TaxPlanCycleCreateResult,
   type TaxPlanCycleQueueCache,
   type TaxPlanCycleQueueCacheClient,
   type TaxPlanCycleQueueCacheInvalidator,
   type TaxPlanCycleQueueCacheReadInput,
-} from "./features/taxPlanCycle/index.js";
-export {
-  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
-  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
-  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
-  taxPlanCycleQueueProjectionItemSchema,
-  taxPlanCycleQueueProjectionItemsSchema,
-  type TaxPlanCycleQueueProjectionItem,
-} from "./features/taxPlanCycle/index.js";
-export {
-  createTaxPlanCycleQueueDynamoDocumentClient,
-  createTaxPlanCycleQueueProjectionStore,
   type TaxPlanCycleQueueProjectionDynamoClient,
+  type TaxPlanCycleQueueProjectionItem,
   type TaxPlanCycleQueueProjectionReader,
-} from "./features/taxPlanCycle/index.js";
-export {
-  createTaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadServiceOptions,
-} from "./features/taxPlanCycle/index.js";
-export {
-  createTaxPlanCycleTransitionController,
-  taxPlanCycleTransitionController,
   type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionController,
+  type ValidationErrorIssue,
+  type ValidationErrorResponse,
 } from "./features/taxPlanCycle/index.js";
 
 import { config as loadEnv } from "dotenv";
@@ -263,13 +263,13 @@ import { createCostAccountingMiddleware } from "./costAccounting.js";
 import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import {
+  createNoopTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleCreateController,
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleRepository,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
-  createNoopTaxPlanCycleQueueCacheInvalidator,
 } from "./features/taxPlanCycle/index.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
@@ -294,25 +294,11 @@ const taxPlanCycleApiPrefix = "/v1";
 const taxPlanCycleApiBasePath = `${taxPlanCycleApiPrefix}/tax-plan-cycles`;
 
 export {
-  createTaxPlanCycleCreateController,
-  taxPlanCycleCreateController,
-  taxPlanCycleCreateResultSchema,
-  type TaxPlanCycleCreateControllerInput,
-  type TaxPlanCycleCreateController,
-  type TaxPlanCycleCreateResult,
-} from "./features/taxPlanCycle/index.js";
-export {
   createMfaEnrollmentRouter,
   type CreateMfaEnrollmentRouterOptions,
   type MfaValidationErrorIssue,
   type MfaValidationErrorResponse,
 } from "./mfaEnrollmentRoutes.js";
-export {
-  createTaxPlanCycleRouter,
-  type CreateTaxPlanCycleRouterOptions,
-  type ValidationErrorIssue,
-  type ValidationErrorResponse,
-} from "./features/taxPlanCycle/index.js";
 
 export function createGreeting(runtime: string = "TypeScript"): string {
   return `hello from ${runtime}`;
