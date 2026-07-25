@@ -19,18 +19,6 @@ import {
   userRows,
 } from "./user.test.model.js";
 
-
-/*
-* Deprecate unsued migration files
-* Deprecate unsued tests
- * User and role do not work nicely in drizzle, renaming entity to not match psql keywords (DONE, need to note in PR)
- * Add relationship tests for user and role (DONE as integration test)
- * Figure out why drizzle table hook is inoperable (DONE, version migration mismatches fail silently fixed in beta version need to run upgrade, document for later)
- * Update npm notations for applying drizzle commands, update readme as well (DONE, needs review)
- * Review migration setup, what is different (TODO)
- * Generate new seed, consider faker &/or drizzle-seed (DONE, drizzle seed can be removed)
- */
-
 async function stubUserModuleState(_client: Client): Promise<void> {
   return;
 }
