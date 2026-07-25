@@ -17,3 +17,4 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0012: Python DynamoDB Queue Projection with LocalStack](./0012-python-dynamodb-queue-projection-localstack.md)
 - [ADR-0013: Tax liability engine namespace and layout refactor](./0013-tax-liability-engine-namespace-refactor.md)
 - [ADR-0014: Redis cache-aside for Tax Plan Cycle Queue reads](./0014-redis-cache-aside-queue-reads.md)
+- [ADR-0015: Tax Plan Cycle feature slice Architecture](./0015-tax-plan-cycle-feature-slice.md)

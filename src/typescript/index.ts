@@ -251,6 +251,7 @@ export {
   type ValidationErrorResponse,
 } from "./features/taxPlanCycle/index.js";
 
+// Feature export block separation for runtime startup safety
 import { config as loadEnv } from "dotenv";
 import pg from "pg";
 import { createClient } from "redis";
