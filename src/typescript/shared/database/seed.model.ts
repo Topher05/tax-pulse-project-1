@@ -1,7 +1,7 @@
 import type {
   TaxPlanCyclePriority,
   TaxPlanCycleStage,
-} from "../../taxPlanCycle.js";
+} from "../../features/taxPlanCycle/taxPlanCycle.js";
 
 export type SeedTenantRow = {
   id: string;

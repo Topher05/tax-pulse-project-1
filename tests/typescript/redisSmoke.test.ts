@@ -15,7 +15,7 @@ import {
   runRedisSmokeCommand,
   verifyRedisIsUp,
 } from "../../src/typescript/redisSmoke.js";
-import { buildTaxPlanCycleQueueReadCacheKey } from "../../src/typescript/taxPlanCycleQueueCache.js";
+import { buildTaxPlanCycleQueueReadCacheKey } from "../../src/typescript/features/taxPlanCycle/infrastructure/queueCache.js";
 
 describe("redis smoke helpers", () => {
   test("builds the mocked queue payload in the projected shape", () => {

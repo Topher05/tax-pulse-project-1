@@ -4,7 +4,7 @@ import {
   taxPlanCyclePrioritySchema,
   taxPlanCycleSchema,
   taxPlanCycleStageSchema,
-} from "../../../../src/typescript/taxPlanCycle.js";
+} from "../../../../src/typescript/features/taxPlanCycle/taxPlanCycle.js";
 
 export const wellFormedCycle = {
   id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",

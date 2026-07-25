@@ -1,9 +1,9 @@
 import { createClient } from "redis";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
-import { buildTaxPlanCycleQueueReadCacheKey, createTaxPlanCycleQueueCache } from "../../../../src/typescript/taxPlanCycleQueueCache.js";
-import { createTaxPlanCycleQueueReadService } from "../../../../src/typescript/taxPlanCycleQueueReadService.js";
-import type { TaxPlanCycleQueueProjectionItem } from "../../../../src/typescript/taxPlanCycleQueueProjection.js";
+import { buildTaxPlanCycleQueueReadCacheKey, createTaxPlanCycleQueueCache } from "../../../../src/typescript/features/taxPlanCycle/infrastructure/queueCache.js";
+import { createTaxPlanCycleQueueReadService } from "../../../../src/typescript/features/taxPlanCycle/readService.js";
+import type { TaxPlanCycleQueueProjectionItem } from "../../../../src/typescript/features/taxPlanCycle/infrastructure/queueProjection.js";
 import { startDockerRedisContainer } from "../../bootstrap/dockerRedis.js";
 
 const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e61";

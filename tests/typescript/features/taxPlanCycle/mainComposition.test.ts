@@ -28,8 +28,8 @@ vi.mock("pg", () => ({
   },
 }));
 
-vi.mock("../../../../src/typescript/taxPlanCycleRepository.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../../../src/typescript/taxPlanCycleRepository.js")>()),
+vi.mock("../../../../src/typescript/features/taxPlanCycle/repository/repository.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/repository/repository.js")>()),
   createTaxPlanCycleRepository,
 }));
 

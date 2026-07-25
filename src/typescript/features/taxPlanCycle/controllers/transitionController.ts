@@ -1,10 +1,10 @@
-import type { TaxPlanCycle } from "./taxPlanCycle.js";
+import type { TaxPlanCycle } from "../taxPlanCycle.js";
 import type {
   TaxPlanCycleReadInput,
   TaxPlanCycleRepository,
   TaxPlanCycleTransitionInput,
-} from "./taxPlanCycleRepository.js";
-import type { TaxPlanCycleQueueCacheInvalidator } from "./taxPlanCycleQueueCache.js";
+} from "../repository/repository.js";
+import type { TaxPlanCycleQueueCacheInvalidator } from "../infrastructure/queueCache.js";
 
 export interface TaxPlanCycleTransitionController {
   transition(

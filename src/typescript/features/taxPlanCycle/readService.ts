@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { taxPlanCycleQueueProjectionItemSchema, type TaxPlanCycleQueueProjectionItem } from "./taxPlanCycleQueueProjection.js";
-import type { TaxPlanCycleQueueCache, TaxPlanCycleQueueCacheReadInput } from "./taxPlanCycleQueueCache.js";
-import type { TaxPlanCycleQueueInput } from "./taxPlanCycleRepository.js";
-import type { TaxPlanCycleQueueProjectionReader } from "./taxPlanCycleQueueDynamoStore.js";
+import { taxPlanCycleQueueProjectionItemSchema, type TaxPlanCycleQueueProjectionItem } from "./infrastructure/queueProjection.js";
+import type { TaxPlanCycleQueueCache, TaxPlanCycleQueueCacheReadInput } from "./infrastructure/queueCache.js";
+import type { TaxPlanCycleQueueInput } from "./repository/repository.js";
+import type { TaxPlanCycleQueueProjectionReader } from "./infrastructure/queueDynamoStore.js";
 
 export interface TaxPlanCycleQueueReadService {
   listQueue(

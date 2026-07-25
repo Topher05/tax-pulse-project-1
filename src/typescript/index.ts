@@ -201,7 +201,7 @@ export {
   type TaxPlanCycleTransitionInput,
   type TaxPlanCycleTransitionParams,
   type TaxPlanCycleStage,
-} from "./taxPlanCycle.js";
+} from "./features/taxPlanCycle/index.js";
 export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
@@ -213,7 +213,7 @@ export {
   type TaxPlanCycleRepository,
   type TaxPlanCycleRepositoryCreateInput,
   type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
-} from "./taxPlanCycleRepository.js";
+} from "./features/taxPlanCycle/index.js";
 export {
   buildTaxPlanCycleQueueReadCacheKey,
   buildTaxPlanCycleQueueTenantVersionKey,
@@ -224,7 +224,7 @@ export {
   type TaxPlanCycleQueueCacheClient,
   type TaxPlanCycleQueueCacheInvalidator,
   type TaxPlanCycleQueueCacheReadInput,
-} from "./taxPlanCycleQueueCache.js";
+} from "./features/taxPlanCycle/index.js";
 export {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
@@ -232,24 +232,24 @@ export {
   taxPlanCycleQueueProjectionItemSchema,
   taxPlanCycleQueueProjectionItemsSchema,
   type TaxPlanCycleQueueProjectionItem,
-} from "./taxPlanCycleQueueProjection.js";
+} from "./features/taxPlanCycle/index.js";
 export {
   createTaxPlanCycleQueueDynamoDocumentClient,
   createTaxPlanCycleQueueProjectionStore,
   type TaxPlanCycleQueueProjectionDynamoClient,
   type TaxPlanCycleQueueProjectionReader,
-} from "./taxPlanCycleQueueDynamoStore.js";
+} from "./features/taxPlanCycle/index.js";
 export {
   createTaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadServiceOptions,
-} from "./taxPlanCycleQueueReadService.js";
+} from "./features/taxPlanCycle/index.js";
 export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
   type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionController,
-} from "./taxPlanCycleTransitionController.js";
+} from "./features/taxPlanCycle/index.js";
 
 import { config as loadEnv } from "dotenv";
 import pg from "pg";
@@ -262,10 +262,15 @@ import { createJwtAuthenticationMiddleware, hydrateUserClaims } from "./jwtAuthe
 import { createCostAccountingMiddleware } from "./costAccounting.js";
 import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
-import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
-import { createTaxPlanCycleCreateController } from "./taxPlanCycleCreateController.js";
-import { createTaxPlanCycleTransitionController } from "./taxPlanCycleTransitionController.js";
-import { createTaxPlanCycleRepository } from "./taxPlanCycleRepository.js";
+import {
+  createTaxPlanCycleCreateController,
+  createTaxPlanCycleQueueCache,
+  createTaxPlanCycleQueueCacheInvalidator,
+  createTaxPlanCycleRepository,
+  createTaxPlanCycleRouter,
+  createTaxPlanCycleTransitionController,
+  createNoopTaxPlanCycleQueueCacheInvalidator,
+} from "./features/taxPlanCycle/index.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
@@ -282,11 +287,6 @@ import { createMfaEnrollmentController } from "./mfaEnrollment.js";
 import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
 import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
 import { createTokenService } from "./tokenService.js";
-import {
-  createTaxPlanCycleQueueCache,
-  createNoopTaxPlanCycleQueueCacheInvalidator,
-  createTaxPlanCycleQueueCacheInvalidator,
-} from "./taxPlanCycleQueueCache.js";
 
 loadEnv();
 const { Client } = pg;
@@ -300,7 +300,7 @@ export {
   type TaxPlanCycleCreateControllerInput,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateResult,
-} from "./taxPlanCycleCreateController.js";
+} from "./features/taxPlanCycle/index.js";
 export {
   createMfaEnrollmentRouter,
   type CreateMfaEnrollmentRouterOptions,
@@ -312,7 +312,7 @@ export {
   type CreateTaxPlanCycleRouterOptions,
   type ValidationErrorIssue,
   type ValidationErrorResponse,
-} from "./taxPlanCycleRoutes.js";
+} from "./features/taxPlanCycle/index.js";
 
 export function createGreeting(runtime: string = "TypeScript"): string {
   return `hello from ${runtime}`;

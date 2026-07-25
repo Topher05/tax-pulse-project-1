@@ -1,7 +1,7 @@
 import {
   taxPlanCycleQueueProjectionItemsSchema,
   type TaxPlanCycleQueueProjectionItem,
-} from "./taxPlanCycleQueueProjection.js";
+} from "./queueProjection.js";
 
 export interface TaxPlanCycleQueueCacheClient {
   get(key: string): Promise<string | null>;

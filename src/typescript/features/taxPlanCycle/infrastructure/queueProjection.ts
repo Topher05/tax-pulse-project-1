@@ -3,7 +3,7 @@ import { z } from "zod";
 import {
   taxPlanCyclePrioritySchema,
   taxPlanCycleStageSchema,
-} from "./taxPlanCycle.js";
+} from "../taxPlanCycle.js";
 
 // TODO: Analyze these
 export const TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME = "taxpulse_plan_cycle_queue_projection";

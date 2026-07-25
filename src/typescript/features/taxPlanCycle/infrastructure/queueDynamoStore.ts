@@ -8,15 +8,15 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { z } from "zod";
 
-import { taxPlanCyclePrioritySchema, taxPlanCycleStageSchema } from "./taxPlanCycle.js";
+import { taxPlanCyclePrioritySchema, taxPlanCycleStageSchema } from "../taxPlanCycle.js";
 import {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
   taxPlanCycleQueueProjectionItemSchema,
   type TaxPlanCycleQueueProjectionItem,
-} from "./taxPlanCycleQueueProjection.js";
-import type { TaxPlanCycleQueueInput } from "./taxPlanCycleRepository.js";
+} from "./queueProjection.js";
+import type { TaxPlanCycleQueueInput } from "../repository/repository.js";
 
 export interface TaxPlanCycleQueueProjectionReader {
   listQueue(

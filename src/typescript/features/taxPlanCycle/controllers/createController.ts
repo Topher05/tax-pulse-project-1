@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-import type { TaxPlanCycle, TaxPlanCycleCreateInput } from "./taxPlanCycle.js";
+import type { TaxPlanCycle, TaxPlanCycleCreateInput } from "../taxPlanCycle.js";
 import type {
   TaxPlanCycleReadInput,
   TaxPlanCycleRepository,
-} from "./taxPlanCycleRepository.js";
+} from "../repository/repository.js";
 
 export const taxPlanCycleCreateResultSchema = z.object({
   case_id: z.uuid(),

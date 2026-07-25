@@ -7,9 +7,9 @@ import {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
 } from "../../../../src/typescript/index.js";
-import { createTaxPlanCycleQueueReadService } from "../../../../src/typescript/taxPlanCycleQueueReadService.js";
-import type { TaxPlanCycleQueueCacheClient } from "../../../../src/typescript/taxPlanCycleQueueCache.js";
-import type { TaxPlanCycleQueueProjectionItem } from "../../../../src/typescript/taxPlanCycleQueueProjection.js";
+import { createTaxPlanCycleQueueReadService } from "../../../../src/typescript/features/taxPlanCycle/readService.js";
+import type { TaxPlanCycleQueueCacheClient } from "../../../../src/typescript/features/taxPlanCycle/infrastructure/queueCache.js";
+import type { TaxPlanCycleQueueProjectionItem } from "../../../../src/typescript/features/taxPlanCycle/infrastructure/queueProjection.js";
 
 function createInMemoryRedisClient(
   seed: Record<string, string> = {},
