@@ -18,6 +18,40 @@ import {
 import { buildTaxPlanCycleQueueReadCacheKey } from "../../src/typescript/features/taxPlanCycle/infrastructure/queueCache.js";
 
 describe("redis smoke helpers", () => {
+  function createInMemoryRedisClient(
+    seed: Record<string, string> = {},
+  ): {
+    store: Map<string, string>;
+    connect: ReturnType<typeof vi.fn>;
+    ping: ReturnType<typeof vi.fn>;
+    get: ReturnType<typeof vi.fn>;
+    set: ReturnType<typeof vi.fn>;
+    incr: ReturnType<typeof vi.fn>;
+  } {
+    const store = new Map(Object.entries(seed));
+    const connect = vi.fn(async () => undefined);
+    const ping = vi.fn(async () => "PONG");
+    const get = vi.fn(async (key: string) => store.get(key) ?? null);
+    const set = vi.fn(async (key: string, value: string) => {
+      store.set(key, value);
+      return "OK";
+    });
+    const incr = vi.fn(async (key: string) => {
+      const nextValue = (Number.parseInt(store.get(key) ?? "0", 10) || 0) + 1;
+      store.set(key, String(nextValue));
+      return nextValue;
+    });
+
+    return {
+      store,
+      connect,
+      ping,
+      get,
+      set,
+      incr,
+    };
+  }
+
   test("builds the mocked queue payload in the projected shape", () => {
     const item = buildRedisSmokeQueueItem();
 
@@ -84,13 +118,7 @@ describe("redis smoke helpers", () => {
       log: vi.fn(),
       error: vi.fn(),
     };
-    const client = {
-      connect: vi.fn(async () => undefined),
-      ping: vi.fn(async () => "PONG"),
-      get: vi.fn(async () => null),
-      set: vi.fn(async () => "OK"),
-      incr: vi.fn(async () => 1),
-    };
+    const client = createInMemoryRedisClient();
 
     await runRedisSmokeCommand(client, "redis://localhost:6379", logger);
 
@@ -117,7 +145,9 @@ describe("redis smoke helpers", () => {
 
     await expect(
       runRedisSmokeCommand(client, "redis://localhost:6379", logger),
-    ).rejects.toThrow("connection failed");
+    ).rejects.toThrow(
+      buildRedisUnavailableMessage("redis://localhost:6379"),
+    );
 
     expect(logger.log).not.toHaveBeenCalled();
     expect(logger.error).toHaveBeenCalledWith(

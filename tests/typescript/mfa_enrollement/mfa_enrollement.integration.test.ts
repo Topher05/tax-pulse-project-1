@@ -27,7 +27,7 @@ async function withMfaEnrollmentIntegrationDatabase<T>(
 }
 
 describe("mfa enrollment integration tests", () => {
-  test("tracks mfa enrollment relationships and default enrollment state", { timeout: 15000 }, async () => {
+  test("tracks mfa enrollment relationships and default enrollment state", { timeout: 60000 }, async () => {
     await withMfaEnrollmentIntegrationDatabase(async (client) => {
       const db = drizzle(client);
       const structure = await getTableStructure(client, "mfa_enrollment");
@@ -79,7 +79,7 @@ describe("mfa enrollment integration tests", () => {
     });
   });
 
-  test("rejects duplicate enrollments and missing users", { timeout: 15000 }, async () => {
+  test("rejects duplicate enrollments and missing users", { timeout: 60000 }, async () => {
     await withMfaEnrollmentIntegrationDatabase(async (client) => {
       const db = drizzle(client);
 

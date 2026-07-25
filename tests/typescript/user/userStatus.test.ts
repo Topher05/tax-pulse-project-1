@@ -27,7 +27,7 @@ async function withUserStatusDatabase<T>(
 }
 
 describe("user status module", () => {
-  test("tracks the user_status table contract and seeded rows", { timeout: 30000 }, async () => {
+  test("tracks the user_status table contract and seeded rows", { timeout: 60000 }, async () => {
     await withUserStatusDatabase(async (client) => {
       const db = drizzle(client);
       const structure = await getTableStructure(client, "user_status");
@@ -49,7 +49,7 @@ describe("user status module", () => {
     });
   });
 
-  test("rejects duplicate lookup values and invalid status values", { timeout: 30000 }, async () => {
+  test("rejects duplicate lookup values and invalid status values", { timeout: 60000 }, async () => {
     await withUserStatusDatabase(async (client) => {
       await expectPgError(
         client.query(

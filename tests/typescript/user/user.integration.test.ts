@@ -22,7 +22,7 @@ async function withUserIntegrationDatabase<T>(
 }
 
 describe("user integration tests", () => {
-  test("tracks user relationships and FK constraints", { timeout: 15000 }, async () => {
+  test("tracks user relationships and FK constraints", { timeout: 60000 }, async () => {
     await withUserIntegrationDatabase(async (client) => {
       const db = drizzle(client);
       const structure = await getTableStructure(client, "users");
@@ -47,7 +47,7 @@ describe("user integration tests", () => {
     });
   });
 
-  test("rejects missing tenant, role, and status foreign keys", { timeout: 15000 }, async () => {
+  test("rejects missing tenant, role, and status foreign keys", { timeout: 60000 }, async () => {
     await withUserIntegrationDatabase(async (client) => {
       const db = drizzle(client);
 

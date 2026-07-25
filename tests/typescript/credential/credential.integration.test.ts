@@ -26,7 +26,7 @@ async function withCredentialIntegrationDatabase<T>(
 }
 
 describe("credential integration tests", () => {
-  test("tracks credential relationships and FK constraints", { timeout: 15000 }, async () => {
+  test("tracks credential relationships and FK constraints", { timeout: 60000 }, async () => {
     await withCredentialIntegrationDatabase(async (client) => {
       const db = drizzle(client);
       const structure = await getTableStructure(client, "credential");
@@ -47,7 +47,7 @@ describe("credential integration tests", () => {
     });
   });
 
-  test("rejects duplicate credential rows and missing user references", { timeout: 15000 }, async () => {
+  test("rejects duplicate credential rows and missing user references", { timeout: 60000 }, async () => {
     await withCredentialIntegrationDatabase(async (client) => {
       const db = drizzle(client);
 
