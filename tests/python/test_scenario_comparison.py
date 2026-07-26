@@ -8,8 +8,8 @@ from tax_pulse_project_team_1 import (
     ScenarioComparisonResult,
     TaxCalculationResult,
     calculate_scenario_comparisons,
+    scenario_comparison,
 )
-from tax_pulse_project_team_1 import scenario_comparison
 
 BASELINE = {
     "income": 250000,

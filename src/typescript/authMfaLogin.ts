@@ -73,6 +73,7 @@ export function createAuthMfaLoginController({
         secret: enrollment.totpSecret,
       });
 
+      // TODO: CL isValid check sometimes fails potentially due to base32 hmac computation via vanilla js using cryptoJS, version issue? Formatting? Not sure look into this later, just comment out as needed for local token gen
       if (!isValid) {
         throw authenticationFailedProblem();
       }

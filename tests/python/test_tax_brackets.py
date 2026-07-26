@@ -3,7 +3,6 @@ from decimal import Decimal
 import pytest
 from tax_pulse_project_team_1.tax_calculation import TaxBracket, calculate_bracket_liability
 
-
 BRACKETS = (
     TaxBracket(Decimal("0.10"), Decimal("0"), Decimal("10000")),
     TaxBracket(Decimal("0.20"), Decimal("10000"), Decimal("50000")),

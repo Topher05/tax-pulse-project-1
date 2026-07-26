@@ -27,8 +27,8 @@ def test_tax_calculation_request_accepts_required_fields() -> None:
 
 def test_tax_calculation_request_accepts_withholding() -> None:
     model = TaxCalculationRequest(
-        income=100000,
-        deductions=12000,
+        income=Decimal("100000"),
+        deductions=Decimal("12000"),
         withholding=24500,
         state="CA",
         filing_status="single",
@@ -39,9 +39,7 @@ def test_tax_calculation_request_accepts_withholding() -> None:
 
 def test_tax_calculation_request_rejects_missing_fields() -> None:
     with pytest.raises(ValidationError, match="filing_status"):
-        TaxCalculationRequest.model_validate(
-            {"income": 100000, "deductions": 12000, "state": "CA"}
-        )
+        TaxCalculationRequest.model_validate({"income": 100000, "deductions": 12000, "state": "CA"})
 
 
 def test_tax_calculation_request_rejects_invalid_filing_status_with_custom_message() -> None:
@@ -208,3 +206,22 @@ async def test_calculate_tax_returns_identical_results_for_identical_requests() 
     second_result = await calculate_tax(request)
 
     assert first_result == second_result
+
+
+@pytest.mark.asyncio
+async def test_calculate_tax_uses_the_next_bracket_at_an_exact_threshold() -> None:
+    result = await calculate_tax(
+        TaxCalculationRequest(
+            income=Decimal("12400"),
+            deductions=Decimal("0"),
+            state="CA",
+            filing_status="single",
+        )
+    )
+
+    assert result.taxable_income == Decimal("12400")
+    assert result.federal_liability == Decimal("1240.00")
+    assert result.state_liability == Decimal("137.21")
+    assert result.total_liability == Decimal("1377.21")
+    assert result.effective_rate == Decimal("0.1111")
+    assert result.marginal_rate == Decimal("0.1400")
