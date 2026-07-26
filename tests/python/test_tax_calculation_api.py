@@ -8,6 +8,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from tax_pulse_project_team_1.api import create_app
 from tax_pulse_project_team_1.jwt_authentication import JwtValidationConfig
+from tax_pulse_project_team_1.routers import tax_calculation as tax_calculation_router
 from tax_pulse_project_team_1.tax_calculation import TaxCalculationRequest, TaxCalculationResult
 
 CONFIG = JwtValidationConfig(
@@ -93,15 +94,13 @@ async def test_tax_calculation_endpoint_returns_expected_liability() -> None:
 async def test_tax_calculation_endpoint_calls_calculate_tax_and_uses_tenant_claim(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import tax_pulse_project_team_1.api as api_module
-
     seen_requests: list[dict[str, object]] = []
 
     async def fake_calculate_tax(request: TaxCalculationRequest) -> TaxCalculationResult:
         seen_requests.append(request.model_dump())
         return make_result()
 
-    monkeypatch.setattr(api_module, "calculate_tax", fake_calculate_tax)
+    monkeypatch.setattr(tax_calculation_router, "calculate_tax", fake_calculate_tax)
 
     app = create_app(CONFIG)
     transport = ASGITransport(app=app)

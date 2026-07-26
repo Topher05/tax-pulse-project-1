@@ -7,7 +7,6 @@ from typing import cast
 from uuid import uuid4
 
 import pytest
-from docker.errors import DockerException
 from pydantic import ValidationError
 from tax_pulse_project_team_1 import (
     PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
@@ -19,7 +18,19 @@ from tax_pulse_project_team_1 import (
     wait_for_plan_cycle_queue_projection_table,
 )
 from tax_pulse_project_team_1.dynamodb.plan_cycle_queue_projection import DynamoDbClient
-from testcontainers.localstack import LocalStackContainer
+
+try:
+    from docker.errors import DockerException as DockerError  # type: ignore[assignment]
+except ModuleNotFoundError:  # pragma: no cover - only used when Docker deps are absent
+
+    class DockerError(Exception):
+        pass
+
+
+try:
+    from testcontainers.localstack import LocalStackContainer
+except ModuleNotFoundError:  # pragma: no cover - only used when LocalStack deps are absent
+    LocalStackContainer = None
 
 type DynamoDbAttributeValue = dict[str, str] | dict[str, bool]
 type DynamoDbAttributeMap = dict[str, DynamoDbAttributeValue]
@@ -29,13 +40,14 @@ DEFAULT_LOCALSTACK_TEST_IMAGE = "localstack/localstack:3.8.1"
 
 @pytest.fixture(scope="module")
 def localstack_endpoint_url() -> Iterator[str]:
+    if LocalStackContainer is None:
+        pytest.skip("Docker-backed LocalStack dependencies are unavailable.")
+
     os.environ.setdefault("TESTCONTAINERS_RYUK_DISABLED", "true")
     localstack_image = os.getenv("TAXPULSE_LOCALSTACK_IMAGE", DEFAULT_LOCALSTACK_TEST_IMAGE)
     try:
-        localstack_container = LocalStackContainer(image=localstack_image).with_services(
-            "dynamodb"
-        )
-    except DockerException as error:
+        localstack_container = LocalStackContainer(image=localstack_image).with_services("dynamodb")
+    except DockerError as error:
         pytest.skip(f"Docker is unavailable for LocalStack-backed tests: {error}")
 
     if localstack_auth_token := os.getenv("LOCALSTACK_AUTH_TOKEN"):
