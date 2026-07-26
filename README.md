@@ -209,7 +209,7 @@ Run the migration integration test:
 npm run test:migration
 ```
 
-Run the Python tax-calculation API locally:
+Run the Python liability engine API locally:
 
 ```powershell
 python src/tax_liability_engine/scripts/liability_engine_on.py
@@ -224,9 +224,21 @@ Notes:
 - A shared seed data lives in `src/typescript/db/seed.ts` and is executed with `npm run seed`; keep any generated sample data synthetic and clearly fake.
 - Start Docker before running `npm run test:integration` or any command that depends on Testcontainers.
 
-The FastAPI tax-calculation service reads `JWT_ISSUER` and `JWT_SIGNING_SECRET` from the
-local environment. The Python startup script loads `.env` from the repository root before
+The FastAPI liability engine reads `JWT_ISSUER` and `JWT_SIGNING_SECRET` from the local
+environment. The Python startup script loads `.env` from the repository root before
 launching `uvicorn`, so the service is usually one command away after setup.
+
+### Liability Engine HTTP Surface
+
+The current FastAPI surface is feature-sliced and tenant-scoped. Available routes:
+
+- `GET /health`
+- `POST /tax-calculations`
+- `POST /scenarios/comparisons`
+
+Each calculation route expects a shared JWT bearer token and uses the token-derived
+tenant context at the route boundary. The request bodies stay focused on calculation
+inputs, and the math remains inside the domain services.
 
 ## Contributing and Codex Context
 

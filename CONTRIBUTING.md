@@ -55,6 +55,8 @@ for Python 3.13 work in `src/python` and `tests/python`.
 - Use synthetic-only data in tests and examples. Do not add secrets, tokens, or real
   taxpayer data.
 - Prefer small, readable helpers over large implicit logic blocks.
+- For FastAPI work, keep a thin app composition root and place routes in
+  feature-specific modules so HTTP transport stays close to the domain slice.
 
 Good Python changes usually:
 
