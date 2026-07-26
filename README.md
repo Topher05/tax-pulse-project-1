@@ -228,14 +228,6 @@ The FastAPI tax-calculation service reads `JWT_ISSUER` and `JWT_SIGNING_SECRET` 
 local environment. The Python startup script loads `.env` from the repository root before
 launching `uvicorn`, so the service is usually one command away after setup.
 
-To exercise the endpoint in Postman, import:
-
-- [`docs/postman/jira84-tax-calculation.postman_collection.json`](./docs/postman/jira84-tax-calculation.postman_collection.json)
-- [`docs/postman/jira84-tax-calculation.postman_environment.json`](./docs/postman/jira84-tax-calculation.postman_environment.json)
-
-The sample request posts to `POST /tax-calculations` and shows the expected liability
-response for a CA single filer example.
-
 ## Contributing and Codex Context
 
 Codex should follow the repository conventions in [`AGENTS.md`](./AGENTS.md), including
