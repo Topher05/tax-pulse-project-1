@@ -81,9 +81,11 @@ can call without changing the calculation math contract or introducing persisten
 **Changed Files:**
 
 - `src/python/tax_pulse_project_team_1/api.py`
+- `src/python/tax_pulse_project_team_1/jwt_authentication.py`
 - `src/python/tax_pulse_project_team_1/__init__.py`
 - `tests/python/test_tax_calculation.py`
 - `tests/python/test_tax_calculation_api.py`
+- `tests/python/test_plan_cycle_queue_projection.py`
 - `src/tax_liability_engine/scripts/liability_engine_on.py`
 - `adr/0016-fastapi-startup-convention.md`
 - `docs/postman/jira84-tax-calculation.postman_collection.json`
@@ -97,13 +99,8 @@ can call without changing the calculation math contract or introducing persisten
 - `.\.venv\Scripts\python.exe -m pyright --pythonpath .\.venv\Scripts\python.exe`
   passed.
 - `.\.venv\Scripts\python.exe -m pytest tests/python/test_tax_calculation.py
-  tests/python/test_tax_calculation_api.py tests/python/test_jwt_authentication.py
-  tests/python/test_scenario_comparison.py tests/python/test_tax_brackets.py
-  tests/python/test_tax_bracket_schedules.py tests/python/test_smoke.py
-  tests/python/queue_projection/test_models.py
-  tests/python/queue_projection/test_service.py` passed: 60 tests.
+  tests/python/test_tax_calculation_api.py tests/python/test_plan_cycle_queue_projection.py`
+  passed: 26 tests passed, 2 skipped.
 - `python src/tax_liability_engine/scripts/liability_engine_on.py` launched the API and returned
   `{"status":"ok"}` from `GET /health`.
-- `.\.venv\Scripts\python.exe -m pytest` still hits the existing Docker/LocalStack
-  prerequisite failure in `tests/python/test_plan_cycle_queue_projection.py` because
-  the host machine does not have a running Docker daemon.
+- `.\.venv\Scripts\python.exe -m pytest` passed: 67 tests passed, 2 skipped.
