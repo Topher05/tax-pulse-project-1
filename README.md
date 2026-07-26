@@ -209,6 +209,12 @@ Run the migration integration test:
 npm run test:migration
 ```
 
+Run the Python tax-calculation API locally:
+
+```powershell
+python src/tax_liability_engine/scripts/liability_engine_on.py
+```
+
 Notes:
 
 - The Node scripts read `.env` automatically through `dotenv`.
@@ -217,6 +223,18 @@ Notes:
 - Keep any local seed data synthetic and clearly fake.
 - A shared seed data lives in `src/typescript/db/seed.ts` and is executed with `npm run seed`; keep any generated sample data synthetic and clearly fake.
 - Start Docker before running `npm run test:integration` or any command that depends on Testcontainers.
+
+The FastAPI tax-calculation service reads `JWT_ISSUER` and `JWT_SIGNING_SECRET` from the
+local environment. The Python startup script loads `.env` from the repository root before
+launching `uvicorn`, so the service is usually one command away after setup.
+
+To exercise the endpoint in Postman, import:
+
+- [`docs/postman/jira84-tax-calculation.postman_collection.json`](./docs/postman/jira84-tax-calculation.postman_collection.json)
+- [`docs/postman/jira84-tax-calculation.postman_environment.json`](./docs/postman/jira84-tax-calculation.postman_environment.json)
+
+The sample request posts to `POST /tax-calculations` and shows the expected liability
+response for a CA single filer example.
 
 ## Contributing and Codex Context
 
