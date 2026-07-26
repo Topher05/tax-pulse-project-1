@@ -11,6 +11,11 @@ from .jwt_authentication import (
     JwtValidationConfig,
     create_jwt_authentication_dependency,
 )
+from .scenario_comparison import (
+    ScenarioComparisonRequest,
+    ScenarioComparisonResult,
+    calculate_scenario_comparisons,
+)
 from .tax_calculation import TaxCalculationRequest, TaxCalculationResult, calculate_tax
 
 
@@ -44,6 +49,23 @@ def create_tax_calculation_router(
     return router
 
 
+def create_scenario_comparison_router(
+    require_tenant_id: Callable[..., Awaitable[str]],
+) -> APIRouter:
+    """Create the scenario-comparison route group for the FastAPI app."""
+
+    router = APIRouter(tags=["scenario-comparisons"])
+
+    @router.post("/scenarios/comparisons", response_model=list[ScenarioComparisonResult])
+    async def post_scenario_comparisons(
+        request: ScenarioComparisonRequest,
+        _tenant_id: str = Depends(require_tenant_id),  # noqa: B008
+    ) -> list[ScenarioComparisonResult]:
+        return await calculate_scenario_comparisons(request)
+
+    return router
+
+
 def create_app(config: JwtValidationConfig | None = None) -> FastAPI:
     """Create the FastAPI application used by the tax calculation service."""
 
@@ -58,4 +80,5 @@ def create_app(config: JwtValidationConfig | None = None) -> FastAPI:
         return {"status": "ok"}
 
     app.include_router(create_tax_calculation_router(require_tenant_id))
+    app.include_router(create_scenario_comparison_router(require_tenant_id))
     return app
