@@ -27,8 +27,8 @@ def test_tax_calculation_request_accepts_required_fields() -> None:
 
 def test_tax_calculation_request_accepts_withholding() -> None:
     model = TaxCalculationRequest(
-        income=100000,
-        deductions=12000,
+        income=Decimal("100000"),
+        deductions=Decimal("12000"),
         withholding=24500,
         state="CA",
         filing_status="single",
@@ -39,9 +39,7 @@ def test_tax_calculation_request_accepts_withholding() -> None:
 
 def test_tax_calculation_request_rejects_missing_fields() -> None:
     with pytest.raises(ValidationError, match="filing_status"):
-        TaxCalculationRequest.model_validate(
-            {"income": 100000, "deductions": 12000, "state": "CA"}
-        )
+        TaxCalculationRequest.model_validate({"income": 100000, "deductions": 12000, "state": "CA"})
 
 
 def test_tax_calculation_request_rejects_invalid_filing_status_with_custom_message() -> None:
@@ -193,6 +191,77 @@ async def test_calculate_tax_returns_zero_rates_for_zero_taxable_income() -> Non
     assert result.state_liability == Decimal("0.00")
     assert result.effective_rate == Decimal("0.0000")
     assert result.marginal_rate == Decimal("0.0000")
+
+
+@pytest.mark.asyncio
+async def test_calculate_tax_returns_zero_liability_for_zero_income() -> None:
+    result = await calculate_tax(
+        TaxCalculationRequest(
+            income=Decimal("0"),
+            deductions=Decimal("0"),
+            state="CA",
+            filing_status="single",
+        )
+    )
+
+    assert result.taxable_income == Decimal("0")
+    assert result.federal_liability == Decimal("0.00")
+    assert result.state_liability == Decimal("0.00")
+    assert result.total_liability == Decimal("0.00")
+    assert result.effective_rate == Decimal("0.0000")
+    assert result.marginal_rate == Decimal("0.0000")
+
+
+@pytest.mark.parametrize(
+    ("income", "expected_federal_liability"),
+    [
+        (Decimal("12400"), Decimal("1240.00")),
+        (Decimal("50400"), Decimal("5800.00")),
+    ],
+)
+@pytest.mark.asyncio
+async def test_calculate_tax_handles_income_at_federal_bracket_boundaries(
+    income: Decimal,
+    expected_federal_liability: Decimal,
+) -> None:
+    result = await calculate_tax(
+        TaxCalculationRequest(
+            income=income,
+            deductions=Decimal("0"),
+            state="CA",
+            filing_status="single",
+        )
+    )
+
+    assert result.taxable_income == income
+    assert result.federal_liability == expected_federal_liability
+
+
+@pytest.mark.parametrize(
+    ("income", "deductions"),
+    [
+        (Decimal("1000"), Decimal("1000")),
+        (Decimal("50000"), Decimal("60000")),
+    ],
+)
+@pytest.mark.asyncio
+async def test_calculate_tax_returns_zero_liability_when_deductions_meet_or_exceed_income(
+    income: Decimal,
+    deductions: Decimal,
+) -> None:
+    result = await calculate_tax(
+        TaxCalculationRequest(
+            income=income,
+            deductions=deductions,
+            state="CA",
+            filing_status="single",
+        )
+    )
+
+    assert result.taxable_income == Decimal("0")
+    assert result.federal_liability == Decimal("0.00")
+    assert result.state_liability == Decimal("0.00")
+    assert result.total_liability == Decimal("0.00")
 
 
 @pytest.mark.asyncio

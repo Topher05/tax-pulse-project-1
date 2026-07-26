@@ -47,6 +47,48 @@ during tax planning.
 - `python -m pytest` passed after starting Colima and downloading
   `localstack/localstack:3.8.1` for the LocalStack/Testcontainers projection tests.
 
+## martins-okorie-jira83new - SCRUM-83
+
+**Branch:** `martins-okorie-jira83new`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-83
+
+**Summary:** Cover calculation edge cases with pytest
+
+**Description:** As a Backend Developer, I want pytest edge cases over the
+calculation, so that boundary conditions are correct.
+
+**Acceptance Criteria:**
+
+- Tests cover zero income.
+- Tests cover income at a bracket boundary.
+- Tests cover deductions exceeding income.
+
+**Code Connection:** The tax calculation test suite now verifies the current
+Decimal-based calculation contract for zero-income requests, exact federal bracket
+boundary income values, and deductions that meet or exceed income without changing
+the production calculation API.
+
+**Project Scope Connection:** This protects the Tax Calculation Engine behavior
+used by Tax Plan Cycle modeling so advisors receive deterministic liability values
+at common boundary conditions.
+
+**Changed Files:**
+
+- `tests/python/test_tax_calculation.py`
+- `src/python/tax_pulse_project_team_1/tax_calculation.py`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `python -m pytest tests/python/test_tax_calculation.py` passed.
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"` passed.
+- `python -m pytest` ran 67 passing tests and stopped on the two LocalStack projection
+  tests because Docker was not available at the local Unix socket.
+
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 
