@@ -6,6 +6,10 @@ the Core Case Service can request real numbers over HTTP. The startup path for t
 service should be explicit, interpreter-runnable, and easy to keep separate from any
 future bootstrap behavior that may be added to `main.py`.
 
+`main.py` for now serves as an exclusive entry point for `DynamoDB + LocalStack` right now this logic is decoupled but may end up merged into a single-startup-script later in the project lifecycle.
+
+For now enforcing clear separation of concerns and enforcing YAGNI with this new implementation takes priority
+
 The repository already models tenant-scoped case management in PostgreSQL and queue
 projection state in DynamoDB. The liability engine itself does not own either store;
 it only serves calculation responses to authenticated callers.
@@ -13,6 +17,16 @@ it only serves calculation responses to authenticated callers.
 ## Decision
 Use `python src/tax_liability_engine/scripts/liability_engine_on.py` as the canonical
 local startup command for the liability engine.
+
+
+The exact startup command is:
+```bash
+python src/tax_liability_engine/scripts/liability_engine_on.py
+```
+or from the scripts directory:
+```bash
+python liability_engine_on.py
+```
 
 That launcher will:
 - load local environment variables from `.env` when present,
@@ -26,6 +40,11 @@ supported application behavior.
 ## Consequences
 This gives the service a single, interpreter-friendly launch path that is easy to run
 from the shell, CI, or a future container entrypoint.
+
+Problem spots:
+`ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8000): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted` 
+
+may crop up as port 8000 is common scenario, leverage `netstat` & `taskkill` carefully for local development bugs
 
 Benefits:
 - no PowerShell-specific dependency for app startup,
