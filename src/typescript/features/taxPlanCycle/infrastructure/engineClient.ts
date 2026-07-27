@@ -1,13 +1,16 @@
 import {
-  scenarioComparisonResponseSchema,
-  type ScenarioComparisonResponse,
-  type ScenarioModelingRequest,
+  scenarioComparisonEngineOutputSchema,
+  type ScenarioComparisonEngineOutput,
+  type ScenarioComparisonEngineInput,
 } from "../scenarioModeling.js";
 
-export interface TaxEngineComparisonRequest extends ScenarioModelingRequest {
+export interface ScenarioComparisonEngineRequest
+  extends ScenarioComparisonEngineInput {
   tenantId: string;
   authorizationHeader: string;
 }
+
+export type TaxEngineComparisonRequest = ScenarioComparisonEngineRequest;
 
 export interface TaxEngineClientOptions {
   baseUrl: string;
@@ -18,8 +21,8 @@ export interface TaxEngineClientOptions {
 
 export interface TaxEngineClient {
   compareScenarios(
-    input: TaxEngineComparisonRequest,
-  ): Promise<ScenarioComparisonResponse>;
+    input: ScenarioComparisonEngineRequest,
+  ): Promise<ScenarioComparisonEngineOutput>;
 }
 
 const defaultTimeoutMs = 2_000;
@@ -123,6 +126,7 @@ export function createTaxEngineClient(
           );
 
           if (!response.ok) {
+            // TODO: Add 502 custom messaging support Jira-91
             const errorBody = await response.text();
 
             if (isRetryableStatus(response.status) && attempt < maxAttempts) {
@@ -134,7 +138,7 @@ export function createTaxEngineClient(
           }
 
           const payload = (await response.json()) as unknown;
-          return scenarioComparisonResponseSchema.parse(payload);
+          return scenarioComparisonEngineOutputSchema.parse(payload);
         } catch (error) {
           if (attempt >= maxAttempts) {
             throw error;

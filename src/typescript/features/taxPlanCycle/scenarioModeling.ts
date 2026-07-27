@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { scenarioTypedFiguresSchema } from "../../scenario.js";
+import { scenarioSchema, scenarioTypedFiguresSchema } from "../../scenario.js";
 
 export const scenarioModelingScenarioInputSchema = z.strictObject({
   name: z.string().min(1),
@@ -12,18 +12,30 @@ export const scenarioModelingRequestSchema = z.strictObject({
   scenarios: z.array(scenarioModelingScenarioInputSchema).min(2).max(5),
 });
 
-export const scenarioComparisonResultSchema = z.strictObject({
+export const scenarioModelingResponseSchema = z.array(scenarioSchema);
+
+export const scenarioComparisonEngineInputScenarioSchema =
+  scenarioModelingScenarioInputSchema;
+export const scenarioComparisonEngineInputSchema = scenarioModelingRequestSchema;
+
+export const scenarioComparisonEngineOutputScenarioSchema = z.strictObject({
   name: z.string().min(1),
   total_tax: z.number().finite().nonnegative(),
   delta_vs_baseline: z.number(),
 });
 
-export const scenarioComparisonResponseSchema = z.array(
-  scenarioComparisonResultSchema,
+export const scenarioComparisonEngineOutputSchema = z.array(
+  scenarioComparisonEngineOutputScenarioSchema,
 );
 
-export const scenarioModelingEngineScenarioSchema = scenarioComparisonResultSchema;
-export const scenarioModelingEngineResponseSchema = scenarioComparisonResponseSchema;
+export const scenarioComparisonResultSchema =
+  scenarioComparisonEngineOutputScenarioSchema;
+export const scenarioComparisonResponseSchema =
+  scenarioComparisonEngineOutputSchema;
+export const scenarioModelingEngineScenarioSchema =
+  scenarioComparisonEngineOutputScenarioSchema;
+export const scenarioModelingEngineResponseSchema =
+  scenarioComparisonEngineOutputSchema;
 
 export type ScenarioModelingScenarioInput = z.infer<
   typeof scenarioModelingScenarioInputSchema
@@ -31,11 +43,19 @@ export type ScenarioModelingScenarioInput = z.infer<
 export type ScenarioModelingRequest = z.infer<
   typeof scenarioModelingRequestSchema
 >;
-export type ScenarioComparisonResult = z.infer<
-  typeof scenarioComparisonResultSchema
+export type ScenarioModelingResponse = z.infer<
+  typeof scenarioModelingResponseSchema
 >;
-export type ScenarioComparisonResponse = z.infer<
-  typeof scenarioComparisonResponseSchema
+export type ScenarioComparisonEngineInput = ScenarioModelingRequest;
+export type ScenarioComparisonEngineInputScenario = ScenarioModelingScenarioInput;
+export type ScenarioComparisonEngineOutputScenario = z.infer<
+  typeof scenarioComparisonEngineOutputScenarioSchema
 >;
-export type ScenarioModelingEngineScenario = ScenarioComparisonResult;
-export type ScenarioModelingEngineResponse = ScenarioComparisonResponse;
+export type ScenarioComparisonEngineOutput = z.infer<
+  typeof scenarioComparisonEngineOutputSchema
+>;
+export type ScenarioComparisonResult = ScenarioComparisonEngineOutputScenario;
+export type ScenarioComparisonResponse = ScenarioComparisonEngineOutput;
+export type ScenarioModelingEngineScenario =
+  ScenarioComparisonEngineOutputScenario;
+export type ScenarioModelingEngineResponse = ScenarioComparisonEngineOutput;
