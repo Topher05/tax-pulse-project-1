@@ -1,13 +1,13 @@
 import { describe, expect, test } from "vitest";
 
-import { taxPlanCycleRows, tenantRows } from "../../src/typescript/shared/database/seed.model.js";
+import { taxPlanCycleRows, tenantRows } from "../../../../../src/typescript/shared/database/seed.model.js";
 import {
   createScenarioRepository,
   maximumScenariosPerCase,
   ScenarioCaseNotFoundError,
   ScenarioLimitExceededError,
-} from "../../src/typescript/scenarioRepository.js";
-import { withDockerDrizzleSeededDatabase } from "./bootstrap/migrationTestUtils.js";
+} from "../../../../../src/typescript/features/taxPlanCycle/repositories/scenarios.js";
+import { withDockerDrizzleSeededDatabase } from "../../../bootstrap/migrationTestUtils.js";
 
 const typedFigures = {
   income: 250_000,

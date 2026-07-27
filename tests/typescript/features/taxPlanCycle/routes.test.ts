@@ -13,6 +13,7 @@ import {
   type JwtConfig,
   redactedAuditAmount,
   type TaxPlanCycle,
+  type TaxPlanCycleReadResponse,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateInput,
   type TaxPlanCycleTransitionController,
@@ -42,7 +43,7 @@ const validCreateBody: TaxPlanCycleCreateInput = {
   due_date: "2026-12-31",
 };
 
-const validReadCycle: TaxPlanCycle = {
+const validReadCycle: TaxPlanCycleReadResponse = {
   id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
   client_id: validCreateBody.client_id,
   stage: "Review",
@@ -50,6 +51,7 @@ const validReadCycle: TaxPlanCycle = {
   priority: validCreateBody.priority,
   due_date: validCreateBody.due_date,
   on_hold: false,
+  scenarios: [],
 };
 
 async function createAccessToken(input: {

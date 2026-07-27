@@ -5,6 +5,13 @@ import {
   authMfaLoginRequestSchema,
   authMfaLoginResultSchema,
 } from "./authMfaLogin.js";
+import {
+  scenarioComputedResultSchema,
+  scenarioTypedFiguresSchema,
+} from "./scenario.js";
+import {
+  scenarioModelingRequestSchema,
+} from "./features/taxPlanCycle/scenarioModeling.js";
 import { taxPlanCycleCreateResultSchema } from "./features/taxPlanCycle/index.js";
 import {
   mfaEnrollConfirmRequestSchema,
@@ -33,6 +40,19 @@ export interface CoreCaseOpenApiSchemaRegistration {
   schema: ZodType;
 }
 
+const scenarioOpenApiSchema = z.strictObject({
+  id: z.uuid(),
+  case_id: z.uuid(),
+  name: z.string().min(1),
+  typed_figures: scenarioTypedFiguresSchema,
+  computed_result: scenarioComputedResultSchema,
+  created_at: z.iso.datetime(),
+});
+
+const taxPlanCycleReadResponseOpenApiSchema = taxPlanCycleSchema.extend({
+  scenarios: z.array(scenarioOpenApiSchema),
+});
+
 export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "TaxPlanCycleCreateRequest",
@@ -47,8 +67,20 @@ export const coreCaseOpenApiSchemaRegistrations = [
     schema: taxPlanCycleSchema,
   },
   {
+    name: "TaxPlanCycleReadResponse",
+    schema: taxPlanCycleReadResponseOpenApiSchema,
+  },
+  {
     name: "TaxPlanCycleCreateAccepted",
     schema: taxPlanCycleCreateResultSchema,
+  },
+  {
+    name: "ScenarioModelingRequest",
+    schema: scenarioModelingRequestSchema,
+  },
+  {
+    name: "Scenario",
+    schema: scenarioOpenApiSchema,
   },
   {
     name: "AuthMfaLoginRequest",
@@ -92,7 +124,65 @@ const fakeTaxPlanCycleExample = {
   priority: fakeTaxPlanCycleCreateExample.priority,
   due_date: fakeTaxPlanCycleCreateExample.due_date,
   on_hold: false,
+  scenarios: [],
 };
+
+const fakeScenarioModelingRequestExample = {
+  baseline: {
+    income: 250000,
+    deductions: 30000,
+    state: "CA",
+    filing_status: "married_filing_jointly",
+  },
+  scenarios: [
+    {
+      name: "Increase deductions",
+      typed_figures: {
+        income: 250000,
+        deductions: 36000,
+        state: "CA",
+        filing_status: "married_filing_jointly",
+      },
+    },
+    {
+      name: "Keep baseline",
+      typed_figures: {
+        income: 250000,
+        deductions: 30000,
+        state: "CA",
+        filing_status: "married_filing_jointly",
+      },
+    },
+  ],
+};
+
+const fakeScenarioModelingResponseExample: JsonValue[] = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e21",
+    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+    name: "Increase deductions",
+    typed_figures: fakeScenarioModelingRequestExample.scenarios[0]!.typed_figures,
+    computed_result: {
+      federal_liability: 38000,
+      state_liability: 12000,
+      effective_rate: 0.2,
+      marginal_rate: 0.32,
+      quarterly_estimate: 12500,
+    },
+    created_at: "2026-07-27T00:00:00.000Z",
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e22",
+    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+    name: "Keep baseline",
+    typed_figures: fakeScenarioModelingRequestExample.scenarios[1]!.typed_figures,
+    computed_result: {
+      totalTax: "53000.00",
+      deltaVBaseline: "0.00",
+    },
+    created_at: "2026-07-27T00:00:01.000Z",
+  },
+];
 
 const fakeMfaEnrollRequestExample = {
   tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
@@ -180,6 +270,9 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const createRequestSchema = toOpenApiSchema(taxPlanCycleCreateSchema);
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
+  const taxPlanCycleReadResponseSchema = toOpenApiSchema(
+    taxPlanCycleReadResponseOpenApiSchema,
+  );
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
   const authMfaLoginRequestOpenApiSchema = toOpenApiSchema(
     authMfaLoginRequestSchema,
@@ -554,6 +647,87 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           },
         },
       },
+      "/v1/tax-plan-cycles/{caseId}/scenarios": {
+        post: {
+          operationId: "modelTaxPlanCycleScenarios",
+          tags: ["Core Case Service"],
+          summary: "Model and persist Tax Plan Cycle scenarios",
+          description:
+            "Accepts a scenario modeling payload while the case is in Modeling stage, " +
+            "calls the Tax Engine, and stores the returned scenario figures.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Synthetic UUID case identifier scoped by the request tenant.",
+              schema: caseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: toOpenApiSchema(scenarioModelingRequestSchema),
+                example: fakeScenarioModelingRequestExample,
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The scenario modeling request was persisted.",
+              content: {
+                "application/json": {
+                  schema: toOpenApiSchema(z.array(scenarioOpenApiSchema)),
+                  example: fakeScenarioModelingResponseExample,
+                },
+              },
+            },
+            "400": {
+              description: "The scenario modeling request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: validationErrorExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "409": {
+              description:
+                "The requested case is not in Modeling stage or the engine call could not be applied safely.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/scenario-modeling-unavailable",
+                    title: "Scenario Modeling Unavailable",
+                    status: 409,
+                    detail:
+                      "Scenario modeling is only available while the case is in Modeling stage.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       "/v1/tax-plan-cycles/{caseId}": {
         get: {
           operationId: "readTaxPlanCycle",
@@ -578,7 +752,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
               description: "The tenant-scoped Tax Plan Cycle was found.",
               content: {
                 "application/json": {
-                  schema: taxPlanCycleResponseSchema,
+                  schema: taxPlanCycleReadResponseSchema,
                   example: fakeTaxPlanCycleExample,
                 },
               },

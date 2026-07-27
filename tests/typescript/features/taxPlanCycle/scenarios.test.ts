@@ -1,10 +1,11 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  scenarioComparisonSummarySchema,
   scenarioComputedResultSchema,
   scenarioSchema,
   scenarioTypedFiguresSchema,
-} from "../../src/typescript/scenario.js";
+} from "../../../../src/typescript/scenario.js";
 
 const typedFigures = {
   income: 250_000,
@@ -23,10 +24,23 @@ const computedResult = {
   delta_vs_baseline: -4_500,
 } as const;
 
+const comparisonSummary = {
+  totalTax: "63000.00",
+  deltaVBaseline: "-4500.00",
+} as const;
+
 describe("scenario persistence contract", () => {
   test("accepts typed figures and their computed calculation result", () => {
     expect(scenarioTypedFiguresSchema.parse(typedFigures)).toEqual(typedFigures);
     expect(scenarioComputedResultSchema.parse(computedResult)).toEqual(computedResult);
+    expect(scenarioComparisonSummarySchema.parse(comparisonSummary)).toEqual(comparisonSummary);
+    expect(scenarioComputedResultSchema.parse(comparisonSummary)).toEqual(comparisonSummary);
+    expect(
+      scenarioComparisonSummarySchema.safeParse({
+        totalTax: "63,000.00",
+        deltaVBaseline: "-4500.00",
+      }).success,
+    ).toBe(false);
     expect(
       scenarioSchema.parse({
         id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d51",
@@ -40,6 +54,20 @@ describe("scenario persistence contract", () => {
       name: "Increase retirement contributions",
       typed_figures: typedFigures,
       computed_result: computedResult,
+    });
+    expect(
+      scenarioSchema.parse({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d52",
+        case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d32",
+        name: "Keep baseline",
+        typed_figures: typedFigures,
+        computed_result: comparisonSummary,
+        created_at: new Date("2026-07-23T12:05:00.000Z"),
+      }),
+    ).toMatchObject({
+      name: "Keep baseline",
+      typed_figures: typedFigures,
+      computed_result: comparisonSummary,
     });
   });
 
@@ -55,6 +83,13 @@ describe("scenario persistence contract", () => {
     ).toBe(false);
     expect(
       scenarioComputedResultSchema.safeParse({ ...computedResult, delta_vs_baseline: Infinity }).success,
+    ).toBe(false);
+    expect(
+      scenarioComputedResultSchema.safeParse({
+        totalTax: "63000.00",
+        deltaVBaseline: "-4500.00",
+        extra: true,
+      }).success,
     ).toBe(false);
   });
 });

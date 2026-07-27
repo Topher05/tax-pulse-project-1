@@ -138,6 +138,17 @@ python -m tax_liability_engine.main
 The Python entrypoint will start the container if it is missing, or reuse the
 configured Compose service if it is already available.
 
+## Tax Engine URL
+
+The Core Case Service calls the Tax Engine when a modeling request creates scenarios.
+Set this environment variable in your local `.env` file so the Node service knows
+where to send the outbound request:
+
+- `LIABILITY_ENGINE_BASE=http://localhost:8000`
+
+If you are running the Python engine locally, start it before submitting scenario
+modeling requests.
+
 If you want to confirm the table exists afterward, use the AWS CLI against the local
 endpoint:
 

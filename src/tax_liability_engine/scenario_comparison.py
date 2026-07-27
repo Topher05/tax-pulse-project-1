@@ -39,7 +39,7 @@ async def calculate_scenario_comparisons(
     baseline_calculation = await calculate_tax(request.baseline)
     baseline_total_tax = _total_tax(baseline_calculation)
     results: list[ScenarioComparisonResult] = []
-
+    
     for scenario in request.scenarios:
         calculation = await calculate_tax(scenario.typed_figures)
         total_tax = _total_tax(calculation)
