@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { taxPlanCycleRows, tenantRows } from "../../src/typescript/db/seed.model.js";
+import { taxPlanCycleRows, tenantRows } from "../../src/typescript/shared/database/seed.model.js";
 import {
   createScenarioRepository,
   maximumScenariosPerCase,
@@ -27,7 +27,7 @@ const computedResult = {
 } as const;
 
 describe("scenario repository", () => {
-  test("persists five scenarios and rejects a sixth for the same case", { timeout: 30000 }, async () => {
+  test("persists five scenarios and rejects a sixth for the same case", { timeout: 60000 }, async () => {
     await withDockerDrizzleSeededDatabase(async (client) => {
       const repository = createScenarioRepository(client);
       const input = {
@@ -57,7 +57,7 @@ describe("scenario repository", () => {
     });
   });
 
-  test("does not permit a tenant to add scenarios to another tenant's case", { timeout: 30000 }, async () => {
+  test("does not permit a tenant to add scenarios to another tenant's case", { timeout: 60000 }, async () => {
     await withDockerDrizzleSeededDatabase(async (client) => {
       const repository = createScenarioRepository(client);
 

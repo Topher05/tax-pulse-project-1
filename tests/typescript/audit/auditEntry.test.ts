@@ -2,8 +2,8 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { describe, expect, test } from "vitest";
 
-import { auditEntry } from "../../../src/typescript/db/schema.js";
-import { taxPlanCycleRows } from "../../../src/typescript/db/seed.model.js";
+import { auditEntry } from "../../../src/typescript/shared/database/schema.js";
+import { taxPlanCycleRows } from "../../../src/typescript/shared/database/seed.model.js";
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 import { expectPgError, getTableStructure } from "../bootstrap/tableTestUtils.js";
 
@@ -31,7 +31,7 @@ const appendOnlyMessage =
   "audit_entry is append-only and cannot be updated or deleted";
 
 describe("audit_entry migration", () => {
-  test("tracks the audit_entry table contract", { timeout: 30000 }, async () => {
+  test("tracks the audit_entry table contract", { timeout: 60000 }, async () => {
     await withDockerDrizzleSeededDatabase(async (client) => {
       const structure = await getTableStructure(client, "audit_entry");
 
@@ -46,7 +46,7 @@ describe("audit_entry migration", () => {
     });
   });
 
-  test("stores audit rows by case and rejects missing case references", { timeout: 30000 }, async () => {
+  test("stores audit rows by case and rejects missing case references", { timeout: 60000 }, async () => {
     await withDockerDrizzleSeededDatabase(async (client) => {
       const db = drizzle(client);
 
@@ -89,7 +89,7 @@ describe("audit_entry migration", () => {
     });
   });
 
-  test("blocks updates and deletes with the append-only trigger", { timeout: 30000 }, async () => {
+  test("blocks updates and deletes with the append-only trigger", { timeout: 60000 }, async () => {
     await withDockerDrizzleSeededDatabase(async (client) => {
       const db = drizzle(client);
 

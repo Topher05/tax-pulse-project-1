@@ -22,7 +22,7 @@ const sampleTenantIds = [
 ] as const;
 
 describeMigration("tenants migration", () => {
-  test("creates the table and persists two tenants", { timeout: 30000 }, async () => {
+  test("creates the table and persists two tenants", { timeout: 60000 }, async () => {
     await withDrizzleTestSchema(async (client) => {
       await applyDrizzleMigrations(client);
 

@@ -10,7 +10,7 @@ const repoRoot = process.cwd();
 export const migrationsDirectory = resolve(repoRoot, "migrations");
 export const drizzleMigrationsDirectory = resolve(
   repoRoot,
-  "src/typescript/db/drizzle-migrations",
+  "src/typescript/shared/database/drizzle-migrations",
 );
 const migrationNamePattern = /^\d{14}_[a-z0-9][a-z0-9_-]*\.sql$/;
 export const appliedMigrationsTableName = "schema_migrations";

@@ -5,7 +5,7 @@ import type { Client } from "pg";
 import {
   scenario as scenarioTable,
   taxPlanCycle as taxPlanCycleTable,
-} from "./db/schema.js";
+} from "./shared/database/schema.js";
 import {
   scenarioSchema,
   type Scenario,
