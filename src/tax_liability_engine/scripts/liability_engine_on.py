@@ -36,9 +36,9 @@ def _ensure_python_path(src_python: Path) -> None:
 def main() -> None:
     root = _project_root()
     _load_dotenv(root / ".env")
-    _ensure_python_path(root / "src" / "python")
+    _ensure_python_path(root / "src")
 
-    from tax_pulse_project_team_1.api import create_app
+    from tax_liability_engine.api import create_app
 
     uvicorn.run(create_app(), host="127.0.0.1", port=8000)
 

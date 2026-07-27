@@ -1,23 +1,31 @@
 # ADR-0016: FastAPI Startup Convention for the Liability Engine
 
 ## Context
-TaxPulse now exposes the liability calculation through a FastAPI service boundary so
-the Core Case Service can request real numbers over HTTP. The startup path for that
-service should be explicit, interpreter-runnable, and easy to keep separate from any
-future bootstrap behavior that may be added to `main.py`.
+This ADR extends the existing FastAPI startup convention rather than replacing it.
+The original startup path stays the source of truth, and this update adds the
+feature-sliced HTTP layout as an architectural extension.
 
-`main.py` for now serves as an exclusive entry point for `DynamoDB + LocalStack` right now this logic is decoupled but may end up merged into a single-startup-script later in the project lifecycle.
+TaxPulse exposes liability and scenario calculations through a FastAPI boundary so the
+Core Case Service can request real numbers over HTTP. The API must stay easy to start
+locally, but it also needs an architecture that scales as more feature endpoints land.
 
-For now enforcing clear separation of concerns and enforcing YAGNI with this new implementation takes priority
+`main.py` remains separate from HTTP startup for now. It is still the bootstrap entry
+point for the DynamoDB and LocalStack-oriented startup path that already exists in the
+repo, while the liability API keeps its own interpreter-run launcher. That separation is
+intentional so the HTTP startup path stays explicit and easy to reason about.
 
 The repository already models tenant-scoped case management in PostgreSQL and queue
 projection state in DynamoDB. The liability engine itself does not own either store;
 it only serves calculation responses to authenticated callers.
 
+That design keeps separation of concerns and YAGNI intact:
+- the HTTP service does not absorb unrelated bootstrap responsibilities,
+- the launcher stays small and interpreter-friendly,
+- future app composition can evolve without forcing `main.py` to become the API host.
+
 ## Decision
 Use `python src/tax_liability_engine/scripts/liability_engine_on.py` as the canonical
 local startup command for the liability engine.
-
 
 The exact startup command is:
 ```bash
@@ -30,16 +38,29 @@ python liability_engine_on.py
 
 That launcher will:
 - load local environment variables from `.env` when present,
-- import the FastAPI app factory,
+- import the FastAPI app composition root,
 - start the app with `uvicorn`,
-- keep API startup separate from `main.py` for now.
+- keep API startup separate from `main.py`.
+
+### Feature-Sliced Architecture Extension
+
+The FastAPI application itself should follow a feature-sliced architecture:
+- one app composition root that mounts routers and shared dependencies,
+- one shared dependency module for JWT validation and tenant scoping,
+- one router module per feature slice,
+- pure domain math and comparison services stay outside the HTTP layer.
+
+The feature-sliced boundaries for the current service are:
+- `health`
+- `tax_calculation`
+- `scenario_comparison`
+- future slices can be added without growing one central router file.
 
 The startup convention is intentionally Python-native. PowerShell is not part of the
 supported application behavior.
 
 ## Consequences
-This gives the service a single, interpreter-friendly launch path that is easy to run
-from the shell, CI, or a future container entrypoint.
+This keeps startup simple while making the API easier to extend, test, and review.
 
 Problem spots:
 `ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8000): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted` 
@@ -47,39 +68,52 @@ Problem spots:
 may crop up as port 8000 is common scenario, leverage `netstat` & `taskkill` carefully for local development bugs
 
 Benefits:
-- no PowerShell-specific dependency for app startup,
-- startup behavior stays close to the Python package it launches,
-- the launcher can later be folded into `main.py` if the architecture calls for it.
+- one clear interpreter-friendly launch path,
+- a thin composition root instead of a monolithic `api.py`,
+- route handlers stay close to their feature-specific request and response models,
+- auth and tenant scoping stay shared and consistent across slices,
+- future endpoint work can land as isolated feature modules.
 
 Tradeoffs:
-- the launcher duplicates a small amount of bootstrapping code that could be absorbed
-  into `main.py` later,
-- developers must use the Python command path rather than a shell wrapper.
+- the package will have a few more small HTTP modules instead of one central file,
+- the launcher still carries a small amount of bootstrapping code that could later be
+  absorbed into a broader startup flow if the project decides to merge concerns.
 
-## Diagram
+Operational note:
+`ERROR: [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8000)`
+may appear if another local process already owns port 8000. Resolve the conflict before
+restarting the service.
+
+## Startup Diagram
 ```mermaid
-flowchart LR
-  Client[Core Case Service Request]
-  JWT[Shared JWT Validation]
-  Launcher[liability_engine_on.py]
-  Uvicorn[uvicorn]
-  API[FastAPI tax-calculation app]
-  Calc[calculate_tax]
-  PG[(PostgreSQL)]
-  DDB[(DynamoDB)]
+flowchart TB
+  Client[Client or Core Case Service] --> JWT[Shared JWT]
+  JWT --> Launcher[liability_engine_on.py]
+  Launcher --> Uvicorn[uvicorn]
+  Uvicorn --> App[create_app composition root]
+  App --> Tax[Tax calculation slice]
+  App --> Scenario[Scenario comparison slice]
+  App --> Health[Health slice]
+  Tax --> TaxSvc[calculate_tax]
+  Scenario --> CompareSvc[calculate_scenario_comparisons]
+  CompareSvc --> TaxSvc
+```
 
-  Client -->|POST /tax-calculations| JWT
-  JWT -->|validated bearer token| Launcher
-  Launcher --> Uvicorn
-  Uvicorn --> API
-  API --> Calc
-  Calc -->|tax result| API
-  API -->|liability response| Client
-  Client -->|persist case/cycle state| PG
-  Client -->|refresh projection/read model| DDB
+## Feature-Sliced Layout Diagram
+```mermaid
+flowchart TB
+  Launcher[liability_engine_on.py] --> Uvicorn[uvicorn]
+  Uvicorn --> App[create_app composition root]
+  App --> Dep[shared JWT + tenant dependencies]
+  App --> Health[health slice]
+  App --> Tax[tax_calculation slice]
+  App --> Scenario[scenario_comparison slice]
+  Tax --> TaxSvc[calculate_tax]
+  Scenario --> CompareSvc[calculate_scenario_comparisons]
+  CompareSvc --> TaxSvc
 ```
 
 ## Alternatives considered
-- Keep a PowerShell startup wrapper as the public entrypoint.
-- Fold the launcher into `main.py` immediately.
+- Keep a single monolithic `api.py` that owns every route.
+- Fold the launcher into `main.py` immediately and make it the public startup path.
 - Add a separate container orchestration layer for API startup now.
