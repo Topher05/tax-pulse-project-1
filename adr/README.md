@@ -20,3 +20,4 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0015: Tax Plan Cycle feature slice Architecture](./0015-tax-plan-cycle-feature-slice.md)
 - [ADR-0016: FastAPI Startup Convention for the Liability Engine](./0016-fastapi-startup-convention.md)
 - [ADR-0017: Nest the Pulse UI React/Vite shell under src/pulseUI](./0011-pulse-ui-react-vite-shell.md)
+- [ADR-0018: Consumer-driven Pact for the Tax Engine boundary](./0018-consumer-driven-tax-engine-pact.md)

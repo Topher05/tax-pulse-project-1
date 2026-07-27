@@ -127,5 +127,9 @@ export {
   type TaxEngineClient,
   type TaxEngineClientOptions,
   type TaxEngineComparisonRequest,
+  type TaxCalculationEngineFilingStatus,
+  type TaxCalculationEngineInput,
+  type TaxCalculationEngineRequest,
+  type TaxCalculationEngineResult,
   type ScenarioComparisonEngineRequest,
 } from "./infrastructure/engineClient.js";
