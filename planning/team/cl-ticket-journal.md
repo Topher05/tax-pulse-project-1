@@ -358,5 +358,42 @@ sequenceDiagram
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` passed: 45 test files passed, 1 skipped; 201 tests passed, 1 skipped.
+
+## caleb-latimer-jira91 - SCRUM-91
+
+**Branch:** `caleb-latimer-jira91`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-91
+
+**Summary:** Surface liability-engine failures as 502 Problem Details without mutating scenario state
+
+**Description:** As an Advisor, I want engine failures surfaced cleanly, so that a calculation outage never corrupts a case.
+
+**Acceptance Criteria:**
+
+- An engine failure surfaces as a 502-class Problem Details error.
+- The case's stored state is unchanged after a failed call.
+- A test asserts the case is intact after an injected engine failure.
+
+**Code Connection:** `src/typescript/features/taxPlanCycle/controllers/scenarios.ts` now translates scenario-modeling engine failures into `ProblemHttpError` 502 responses and logs the failure boundary with EST metadata via pino. `src/typescript/features/taxPlanCycle/routes.ts` continues to delegate scenario modeling through the feature-local controller, `src/typescript/coreCaseOpenApi.ts` documents the 502 scenario failure response, and `src/typescript/index.ts` wires the logger into the scenario-modeling controller during app composition.
+
+**Project Scope Connection:** This extends the Core Case Service scenario-modeling slice from Jira-90 and keeps the FastAPI liability engine wire contract unchanged while tightening the Core-side failure boundary.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/controllers/scenarios.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/scenarios.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` reached `test:vitest` and then failed because `test:express` is missing from `package.json`.
+- Direct Vitest invocation through the local wrapper hit a Windows `EPERM` path-resolution issue on `C:\Users\Exia`, so the branch currently has a clean typecheck but not a full runnable test pass in this environment.
 - Deviation from the original change set: the scenario comparison boundary now validates exact decimal strings instead of coercing monetary values into JS numbers, to preserve precision on the Core side.
 - The last full `npm test` run also exposed environment-sensitive Docker/Postgres timeouts in unrelated integration coverage; the scenario-specific feature tests and `typecheck` remained green.

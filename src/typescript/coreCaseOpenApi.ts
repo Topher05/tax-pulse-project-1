@@ -711,7 +711,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
             },
             "409": {
               description:
-                "The requested case is not in Modeling stage or the engine call could not be applied safely.",
+                "The requested case is not in Modeling stage.",
               content: {
                 "application/problem+json": {
                   schema: problemDetailsSchema,
@@ -721,6 +721,21 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     status: 409,
                     detail:
                       "Scenario modeling is only available while the case is in Modeling stage.",
+                  },
+                },
+              },
+            },
+            "502": {
+              description:
+                "The liability engine could not be reached or returned an invalid result after retries.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-engine-unavailable",
+                    title: "Tax Engine Unavailable",
+                    status: 502,
+                    detail: "The liability engine request failed after retries.",
                   },
                 },
               },

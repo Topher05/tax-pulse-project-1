@@ -1,11 +1,16 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import {
   scenarioComparisonSummarySchema,
   scenarioComputedResultSchema,
   scenarioSchema,
   scenarioTypedFiguresSchema,
-} from "../../../../src/typescript/scenario.js";
+} from "../../../../src/typescript/index.js";
+import {
+  createScenarioModelingController,
+  type ScenarioModelingControllerInput,
+  type TaxEngineClient,
+} from "../../../../src/typescript/features/taxPlanCycle/index.js";
 
 const typedFigures = {
   income: 250_000,
@@ -91,5 +96,78 @@ describe("scenario persistence contract", () => {
         extra: true,
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("scenario modeling failure boundary", () => {
+  test("maps upstream engine failures to 502 Problem Details and logs them", async () => {
+    const cycle = {
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d81",
+      client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d82",
+      stage: "Modeling" as const,
+      owner: "advisor-001",
+      priority: "high" as const,
+      due_date: "2026-07-27",
+      on_hold: false,
+    };
+    const engineError = new Error("connect ECONNREFUSED 127.0.0.1:8000");
+    const findByCaseId = vi.fn(async () => cycle);
+    const createMany = vi.fn(async () => []);
+    const taxEngineClient: TaxEngineClient = {
+      compareScenarios: vi.fn(async () => {
+        throw engineError;
+      }),
+    };
+    const logger = { error: vi.fn() };
+    const controller = createScenarioModelingController({
+      taxPlanCycleRepository: { findByCaseId },
+      scenarioRepository: { createMany },
+      taxEngineClient,
+      logger,
+    });
+    const input: ScenarioModelingControllerInput = {
+      tenantId: "tenant-001",
+      caseId: cycle.id,
+      authorizationHeader: "Bearer test-token",
+      baseline: typedFigures,
+      scenarios: [
+        {
+          name: "Increase deductions",
+          typed_figures: {
+            ...typedFigures,
+            deductions: 36_000,
+          },
+        },
+        {
+          name: "Keep baseline",
+          typed_figures: typedFigures,
+        },
+      ],
+    };
+
+    await expect(controller.model(input)).rejects.toMatchObject({
+      type: "https://taxpulse.example/problems/tax-engine-unavailable",
+      title: "Tax Engine Unavailable",
+      status: 502,
+      detail: "The liability engine request failed after retries.",
+    });
+    expect(findByCaseId).toHaveBeenCalledWith({
+      tenantId: "tenant-001",
+      caseId: cycle.id,
+    });
+    expect(createMany).not.toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        err: engineError,
+        calling_function: "createScenarioModelingController.model",
+        boundary: "tax-plan-cycle-scenario-modeling",
+        upstream_service: "liability-engine",
+        tenant_id: "tenant-001",
+        case_id: cycle.id,
+        occurred_at_est: expect.any(String),
+        occurred_at_utc: expect.any(String),
+      }),
+      "scenario modeling failed",
+    );
   });
 });

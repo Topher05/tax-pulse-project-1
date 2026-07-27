@@ -23,6 +23,11 @@ import {
   type ValidationErrorResponse,
 } from "../../../../src/typescript/index.js";
 import {
+  createScenarioModelingController,
+  type ScenarioModelingController,
+  type TaxEngineClient,
+} from "../../../../src/typescript/features/taxPlanCycle/index.js";
+import {
   hydrateUserClaims,
   obtainAccessTokenViaLoginAndMfa,
 } from "../../bootstrap/authFlow.js";
@@ -89,6 +94,48 @@ async function withRouteServer(
     registerRoutes: (app) => {
       app.use(createJwtAuthenticationMiddleware({ config: authConfig }));
       app.use(createTaxPlanCycleRouter({ auditEntryReader, controller }));
+    },
+  });
+
+  const server = app.listen(0);
+  await once(server, "listening");
+
+  try {
+    const address = server.address() as AddressInfo;
+    await run(`http://127.0.0.1:${address.port}`);
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+}
+
+async function withScenarioRouteServer(
+  scenarioModelingController: ScenarioModelingController,
+  requestContext: { tenantId: string; userId: string },
+  run: (baseUrl: string) => Promise<void>,
+): Promise<void> {
+  const app = createApp({
+    logger: silentLogger,
+    registerRoutes: (app) => {
+      app.use((req, _res, next) => {
+        (req as typeof req & { tenant: { id: string } }).tenant = {
+          id: requestContext.tenantId,
+        };
+        (req as typeof req & { user: { id: string } }).user = {
+          id: requestContext.userId,
+        };
+        next();
+      });
+      app.use(
+        "/v1",
+        createTaxPlanCycleRouter({
+          controller: {
+            create: vi.fn(),
+            findByCaseId: vi.fn(async () => null),
+          },
+          scenarioModelingController,
+        }),
+      );
     },
   });
 
@@ -439,6 +486,111 @@ describe("createTaxPlanCycleRouter", () => {
       });
       expect(create).toHaveBeenCalledTimes(1);
     });
+  });
+
+  test("returns 502 Problem Details and leaves the case intact when scenario modeling fails", async () => {
+    const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e77";
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: caseId,
+    }));
+    const findByCaseId = vi.fn(async () => ({
+      id: caseId,
+      client_id: validCreateBody.client_id,
+      stage: "Modeling" as const,
+      owner: validCreateBody.owner,
+      priority: validCreateBody.priority,
+      due_date: validCreateBody.due_date,
+      on_hold: false,
+    })) as ReturnType<typeof vi.fn> & TaxPlanCycleCreateController["findByCaseId"];
+    const scenarioRepository = {
+      createMany: vi.fn(),
+      listByCaseId: vi.fn(async () => []),
+    };
+    const taxEngineClient: TaxEngineClient = {
+      compareScenarios: vi.fn(async () => {
+        throw new Error("connect ECONNREFUSED 127.0.0.1:8000");
+      }),
+    };
+    const logger = { error: vi.fn() };
+    const scenarioModelingController = createScenarioModelingController({
+      taxPlanCycleRepository: { findByCaseId },
+      scenarioRepository,
+      taxEngineClient,
+      logger,
+    });
+
+    await withScenarioRouteServer(
+      scenarioModelingController,
+      { tenantId: "tenant-001", userId: "actor-001" },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/v1/tax-plan-cycles/${caseId}/scenarios`,
+          {
+            method: "POST",
+            headers: {
+              authorization: "Bearer test-token",
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              baseline: {
+                income: 250_000,
+                deductions: 30_000,
+                state: "CA",
+                filing_status: "married_filing_jointly",
+              },
+              scenarios: [
+                {
+                  name: "Increase deductions",
+                  typed_figures: {
+                    income: 250_000,
+                    deductions: 36_000,
+                    state: "CA",
+                    filing_status: "married_filing_jointly",
+                  },
+                },
+                {
+                  name: "Keep baseline",
+                  typed_figures: {
+                    income: 250_000,
+                    deductions: 30_000,
+                    state: "CA",
+                    filing_status: "married_filing_jointly",
+                  },
+                },
+              ],
+            }),
+          },
+        );
+        const body = (await response.json()) as ValidationErrorResponse;
+
+        expect(response.status).toBe(502);
+        expect(response.headers.get("content-type")).toContain(
+          "application/problem+json",
+        );
+        expect(body).toMatchObject({
+          type: "https://taxpulse.example/problems/tax-engine-unavailable",
+          title: "Tax Engine Unavailable",
+          status: 502,
+          detail: "The liability engine request failed after retries.",
+        });
+        expect(scenarioRepository.createMany).not.toHaveBeenCalled();
+        expect(scenarioRepository.listByCaseId).not.toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith(
+          expect.objectContaining({
+            err: expect.any(Error),
+            calling_function: "createScenarioModelingController.model",
+            boundary: "tax-plan-cycle-scenario-modeling",
+            upstream_service: "liability-engine",
+            tenant_id: "tenant-001",
+            case_id: caseId,
+            occurred_at_est: expect.any(String),
+            occurred_at_utc: expect.any(String),
+          }),
+          "scenario modeling failed",
+        );
+        expect(create).not.toHaveBeenCalled();
+      },
+    );
   });
 
   test("returns a tenant-scoped cycle by case ID", async () => {
