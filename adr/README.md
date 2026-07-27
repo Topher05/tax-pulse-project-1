@@ -13,3 +13,6 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0008: Add append-only audit entries per case](./0008-append-only-audit-entry.md)
 - [ADR-0009: Service Ownership Boundaries](./0009-service-ownership-boundaries.md)
 - [ADR-0010: Tenant-scoped case creation idempotency](./0010-tenant-scoped-case-creation-idempotency.md)
+- [ADR-0011: Version Tax Plan Cycle API under /v1](./0011-versioned-tax-plan-cycle-api.md)
+- [ADR-0012: Python DynamoDB Queue Projection with LocalStack](./0012-python-dynamodb-queue-projection-localstack.md)
+- [ADR-0013: Tax liability engine namespace and layout refactor](./0013-tax-liability-engine-namespace-refactor.md)

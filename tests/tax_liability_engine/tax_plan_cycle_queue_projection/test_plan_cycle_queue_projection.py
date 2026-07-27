@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
-from tax_pulse_project_team_1 import (
+from tax_liability_engine import (
     PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
     PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
     PlanCycleQueueProjectionItem,
@@ -17,17 +17,38 @@ from tax_pulse_project_team_1 import (
     describe_plan_cycle_queue_projection_table,
     wait_for_plan_cycle_queue_projection_table,
 )
-from tax_pulse_project_team_1.dynamodb.plan_cycle_queue_projection import DynamoDbClient
+from tax_liability_engine.dynamodb.plan_cycle_queue_projection import DynamoDbClient
+from tax_liability_engine.tax_plan_cycle_queue_projection import (
+    TaxPlanCycleRecord,
+    upsert_tax_plan_cycle_queue_projection,
+)
 from testcontainers.localstack import LocalStackContainer
 
 type DynamoDbAttributeValue = dict[str, str] | dict[str, bool]
 type DynamoDbAttributeMap = dict[str, DynamoDbAttributeValue]
 
-DEFAULT_LOCALSTACK_TEST_IMAGE = "localstack/localstack:3.8.1"
+DEFAULT_LOCALSTACK_TEST_IMAGE = (
+    "localstack/localstack:3.8.1"  # Pinned version in tests to circument api key req for cloud int
+)
+
+
+def _docker_engine_is_available() -> bool:
+    try:
+        import docker
+
+        client = docker.from_env()
+        client.ping()
+    except Exception:
+        return False
+
+    return True
 
 
 @pytest.fixture(scope="module")
 def localstack_endpoint_url() -> Iterator[str]:
+    if not _docker_engine_is_available():
+        pytest.skip("Docker is unavailable, so LocalStack integration tests cannot run.")
+
     os.environ.setdefault("TESTCONTAINERS_RYUK_DISABLED", "true")
     localstack_image = os.getenv("TAXPULSE_LOCALSTACK_IMAGE", DEFAULT_LOCALSTACK_TEST_IMAGE)
     localstack_container = LocalStackContainer(image=localstack_image).with_services("dynamodb")
@@ -143,6 +164,11 @@ def test_creates_plan_cycle_queue_projection_table_against_localstack(
     description = describe_plan_cycle_queue_projection_table(dynamodb_client, table_name)
     table = cast(dict[str, object], description["Table"])
     billing_mode_summary = cast(dict[str, str], table["BillingModeSummary"])
+    empty_query = dynamodb_client.query(
+        TableName=table_name,
+        KeyConditionExpression="tenant_id = :tenant_id",
+        ExpressionAttributeValues={":tenant_id": {"S": "tenant-queue-001"}},
+    )
 
     assert table["TableName"] == table_name
     assert table["KeySchema"] == [
@@ -154,6 +180,7 @@ def test_creates_plan_cycle_queue_projection_table_against_localstack(
         {"AttributeName": PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY, "AttributeType": "S"},
     ]
     assert billing_mode_summary["BillingMode"] == "PAY_PER_REQUEST"
+    assert empty_query["Items"] == []
 
 
 def test_queries_projection_items_by_tenant_from_localstack(
@@ -163,6 +190,33 @@ def test_queries_projection_items_by_tenant_from_localstack(
     create_plan_cycle_queue_projection_table(dynamodb_client, table_name)
     wait_for_plan_cycle_queue_projection_table(dynamodb_client, table_name)
 
+    tenant_record = TaxPlanCycleRecord(
+        case_id="case-overdue-001",
+        client_id="North Shore Family Office",
+        stage="Review",
+        owner="advisor-001",
+        priority="high",
+        due_date="2026-07-10",
+        on_hold=False,
+    )
+    future_record = TaxPlanCycleRecord(
+        case_id="case-future-001",
+        client_id="Juniper Advisory Client",
+        stage="Modeling",
+        owner="advisor-002",
+        priority="medium",
+        due_date="2026-07-24",
+        on_hold=False,
+    )
+    other_tenant_record = TaxPlanCycleRecord(
+        case_id="case-other-001",
+        client_id="Other Tenant Client",
+        stage="Intake",
+        owner="advisor-003",
+        priority="low",
+        due_date="2026-07-01",
+        on_hold=False,
+    )
     tenant_item = PlanCycleQueueProjectionItem(
         tenant_id="tenant-queue-001",
         case_id="case-overdue-001",
@@ -180,7 +234,7 @@ def test_queries_projection_items_by_tenant_from_localstack(
         stage="Modeling",
         owner="advisor-002",
         priority="medium",
-        due_date=date(2026, 7, 20),
+        due_date=date(2026, 7, 24),
         is_overdue=False,
     )
     other_tenant_item = PlanCycleQueueProjectionItem(
@@ -194,8 +248,18 @@ def test_queries_projection_items_by_tenant_from_localstack(
         is_overdue=True,
     )
 
-    for item in [tenant_item, future_item, other_tenant_item]:
-        dynamodb_client.put_item(TableName=table_name, Item=to_dynamodb_attribute_map(item))
+    for tenant_id, source in [
+        ("tenant-queue-001", tenant_record),
+        ("tenant-queue-001", future_record),
+        ("tenant-queue-002", other_tenant_record),
+    ]:
+        upsert_tax_plan_cycle_queue_projection(
+            tenant_id,
+            source,
+            as_of=date(2026, 7, 22),
+            dynamodb_client=dynamodb_client,
+            table_name=table_name,
+        )
 
     response = dynamodb_client.query(
         TableName=table_name,

@@ -2,12 +2,12 @@ from decimal import Decimal
 
 import pytest
 from pydantic import ValidationError
-from tax_pulse_project_team_1 import (
+from tax_liability_engine import (
     TaxCalculationRequest,
     TaxCalculationResult,
     calculate_tax,
 )
-from tax_pulse_project_team_1.tax_calculation import derive_quarterly_estimates
+from tax_liability_engine.tax_calculation import derive_quarterly_estimates
 
 
 def test_tax_calculation_request_accepts_required_fields() -> None:

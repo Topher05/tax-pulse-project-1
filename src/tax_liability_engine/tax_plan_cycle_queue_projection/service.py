@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from datetime import date
+from typing import Protocol
+
+from tax_liability_engine.dynamodb import DEFAULT_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME
+from tax_liability_engine.dynamodb.plan_cycle_queue_projection import create_dynamodb_client
 
 from .models import TaxPlanCycleQueueProjectionItem, TaxPlanCycleRecord
+
+
+class DynamoDbPutItemClient(Protocol):
+    """Small DynamoDB surface required by the queue projection writer."""
+
+    def put_item(self, **kwargs: object) -> dict[str, object]: ...
 
 
 def project_tax_plan_cycle_to_queue_item(
@@ -34,17 +43,30 @@ def project_tax_plan_cycle_to_queue_item(
     )
 
 
+def _to_dynamodb_item(projection: TaxPlanCycleQueueProjectionItem) -> dict[str, object]:
+    return {
+        "tenant_id": {"S": projection.tenant_id},
+        "case_id": {"S": projection.case_id},
+        "client": {"S": projection.client_id},
+        "stage": {"S": projection.stage},
+        "owner": {"S": projection.owner},
+        "priority": {"S": projection.priority},
+        "due_date": {"S": projection.due_date},
+        "is_overdue": {"BOOL": projection.overdue},
+    }
+
+
 def upsert_tax_plan_cycle_queue_projection(
     tenant_id: str,
     source: TaxPlanCycleRecord,
     *,
     as_of: date | None = None,
-    writer: Callable[[TaxPlanCycleQueueProjectionItem], None] | None = None,
+    dynamodb_client: DynamoDbPutItemClient | None = None,
+    table_name: str = DEFAULT_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
 ) -> TaxPlanCycleQueueProjectionItem:
-    """Stub the DynamoDB upsert seam until SCRUM-73 delivers the table contract."""
+    """Upsert the projected cycle into the DynamoDB queue read model."""
 
     projection = project_tax_plan_cycle_to_queue_item(tenant_id, source, as_of=as_of)
-    # Blocked by Scrum-73 pending impl
-    if writer is not None:
-        writer(projection)
+    client = dynamodb_client or create_dynamodb_client()
+    client.put_item(TableName=table_name, Item=_to_dynamodb_item(projection))
     return projection

@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 import pytest
-from tax_pulse_project_team_1.tax_calculation import TaxBracket, calculate_bracket_liability
+from tax_liability_engine.tax_calculation import TaxBracket, calculate_bracket_liability
 
 
 BRACKETS = (
