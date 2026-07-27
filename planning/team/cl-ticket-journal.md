@@ -287,3 +287,72 @@ existing calculation math contract.
 - `.\.venv\Scripts\python.exe -m pytest tests/python/test_tax_calculation_api.py
   tests/python/test_scenario_comparison_api.py` passed: 11 tests passed.
 - `.\.venv\Scripts\python.exe -m pytest` passed: 74 tests passed, 2 skipped.
+
+## caleb-latimer-jira90 - SCRUM-90
+
+**Branch:** `caleb-latimer-jira90`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-90
+
+**Summary:** Call the Tax Engine from Core through the Node HTTP client and persist modeled scenario results
+
+**Description:** As an Advisor, I want modeling on a cycle to call the Tax Engine through the Core service, so that results are persisted on the case.
+
+**Acceptance Criteria:**
+
+- A scenario-modeling request on a case in Modeling stage calls the engine using the Node service's native HTTP client with a per-call timeout and bounded retries, and stores the returned figures.
+- The call carries the shared JWT and tenant context.
+- The stored scenario results are returned on a subsequent case read.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant Core as Core Case Service
+    participant JWT as Shared JWT
+    participant Engine as Tax Engine
+    participant Repo as Scenario Repository
+
+    Advisor->>Core: POST /v1/tax-plan-cycles/:caseId/scenarios
+    Core->>JWT: Validate bearer token and tenant claim
+    JWT-->>Core: principal + tenant context
+    Core->>Engine: compareScenarios(baseline, scenarios, authorization, tenant)
+    Engine-->>Core: scenario figures + computed results
+    Core->>Repo: createMany(caseId, tenantId, scenarios)
+    Repo-->>Core: persisted scenario rows
+    Core-->>Advisor: 201 Created + stored scenarios
+
+    Advisor->>Core: GET /v1/tax-plan-cycles/:caseId
+    Core->>Repo: listByCaseId(tenantId, caseId)
+    Repo-->>Core: cycle + scenarios
+    Core-->>Advisor: 200 OK + case with scenarios
+```
+
+**Code Connection:** `src/typescript/features/taxPlanCycle/routes.ts` now exposes the modeling POST and read-back flow, `src/typescript/features/taxPlanCycle/scenarioModelingController.ts` owns the engine call and persistence handoff, `src/typescript/taxEngineClient.ts` provides the native HTTP client with timeout and retry handling, `src/typescript/scenarioRepository.ts` stores and lists scenario rows, and `src/typescript/coreCaseOpenApi.ts` documents the new request and response shapes. `src/typescript/index.ts` wires the runtime composition and exports the widened read response type.
+
+**Project Scope Connection:** This sits in the Polyglot Backend & Contracts workstream and extends the Core Case Service scenario-modeling slice so the TypeScript service can broker engine calls and persist the modeled figures without changing the tax math contract itself.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/scenarioModelingController.ts`
+- `src/typescript/scenarioModeling.ts`
+- `src/typescript/taxEngineClient.ts`
+- `src/typescript/scenarioRepository.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `.env.example`
+- `README.md`
+- `planning/team/cl-ticket-journal.md`
+- `planning/prompt-journal/cl-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` passed: 45 test files passed, 1 skipped; 201 tests passed, 1 skipped.
