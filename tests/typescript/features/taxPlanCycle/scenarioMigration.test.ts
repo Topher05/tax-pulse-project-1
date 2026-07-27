@@ -5,7 +5,7 @@ import { withDockerDrizzleSeededDatabase } from "../../bootstrap/migrationTestUt
 import { expectPgError, getTableStructure } from "../../bootstrap/tableTestUtils.js";
 
 describe("scenario migration", () => {
-  test("creates a scenario table linked to a tax plan cycle", { timeout: 30000 }, async () => {
+  test("creates a scenario table linked to a tax plan cycle", { timeout: 60000 }, async () => {
     await withDockerDrizzleSeededDatabase(async (client) => {
       const structure = await getTableStructure(client, "scenario");
 

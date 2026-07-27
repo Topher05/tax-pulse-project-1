@@ -2,6 +2,13 @@ import { z } from "zod";
 
 import { scenarioSchema, scenarioTypedFiguresSchema } from "../../scenario.js";
 
+const nonNegativeDecimalStringSchema = z
+  .string()
+  .regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/);
+const signedDecimalStringSchema = z
+  .string()
+  .regex(/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/);
+
 export const scenarioModelingScenarioInputSchema = z.strictObject({
   name: z.string().min(1),
   typed_figures: scenarioTypedFiguresSchema,
@@ -20,8 +27,8 @@ export const scenarioComparisonEngineInputSchema = scenarioModelingRequestSchema
 
 export const scenarioComparisonEngineOutputScenarioSchema = z.strictObject({
   name: z.string().min(1),
-  total_tax: z.number().finite().nonnegative(),
-  delta_vs_baseline: z.number(),
+  total_tax: nonNegativeDecimalStringSchema,
+  delta_vs_baseline: signedDecimalStringSchema,
 });
 
 export const scenarioComparisonEngineOutputSchema = z.array(

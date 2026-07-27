@@ -177,8 +177,8 @@ const fakeScenarioModelingResponseExample: JsonValue[] = [
     name: "Keep baseline",
     typed_figures: fakeScenarioModelingRequestExample.scenarios[1]!.typed_figures,
     computed_result: {
-      totalTax: 53000,
-      deltaVBaseline: 0,
+      totalTax: "53000.00",
+      deltaVBaseline: "0.00",
     },
     created_at: "2026-07-27T00:00:01.000Z",
   },

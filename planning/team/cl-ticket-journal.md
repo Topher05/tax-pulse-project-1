@@ -313,14 +313,16 @@ sequenceDiagram
     participant Advisor
     participant Core as Core Case Service
     participant JWT as Shared JWT
-    participant Engine as Tax Engine
+    participant Engine as Liability Engine (FastAPI)
     participant Repo as Scenario Repository
 
     Advisor->>Core: POST /v1/tax-plan-cycles/:caseId/scenarios
-    Core->>JWT: Validate bearer token and tenant claim
+    Core->>JWT: Validate bearer token + tenant claim
     JWT-->>Core: principal + tenant context
-    Core->>Engine: compareScenarios(baseline, scenarios, authorization, tenant)
-    Engine-->>Core: scenario figures + computed results
+    Core->>Engine: POST /scenarios/comparisons\nHeaders: authorization, x-taxpulse-tenant-id\nBody: { baseline, scenarios[].typed_figures }
+    Note right of Engine: Success 200\n[{ name, total_tax, delta_vs_baseline }]
+    Note right of Engine: Errors 400 validation\n401 unauthorized\n502/504 upstream failure
+    Engine-->>Core: 200 OK\n[{ name, total_tax, delta_vs_baseline }]
     Core->>Repo: createMany(caseId, tenantId, scenarios)
     Repo-->>Core: persisted scenario rows
     Core-->>Advisor: 201 Created + stored scenarios
@@ -331,7 +333,7 @@ sequenceDiagram
     Core-->>Advisor: 200 OK + case with scenarios
 ```
 
-**Code Connection:** `src/typescript/features/taxPlanCycle/routes.ts` now exposes the modeling POST and read-back flow, `src/typescript/features/taxPlanCycle/scenarioModelingController.ts` owns the engine call and persistence handoff, `src/typescript/taxEngineClient.ts` provides the native HTTP client with timeout and retry handling, `src/typescript/scenarioRepository.ts` stores and lists scenario rows, and `src/typescript/coreCaseOpenApi.ts` documents the new request and response shapes. `src/typescript/index.ts` wires the runtime composition and exports the widened read response type.
+**Code Connection:** `src/typescript/features/taxPlanCycle/routes.ts` now exposes the modeling POST and read-back flow, `src/typescript/features/taxPlanCycle/controllers/scenarios.ts` owns the engine call and persistence handoff, `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts` provides the native HTTP client with timeout and retry handling, `src/typescript/features/taxPlanCycle/repositories/scenarios.ts` stores and lists scenario rows, and `src/typescript/coreCaseOpenApi.ts` documents the scenario request and response shapes. `src/typescript/index.ts` wires the runtime composition and exports the feature-local scenario contracts.
 
 **Project Scope Connection:** This sits in the Polyglot Backend & Contracts workstream and extends the Core Case Service scenario-modeling slice so the TypeScript service can broker engine calls and persist the modeled figures without changing the tax math contract itself.
 
@@ -356,3 +358,5 @@ sequenceDiagram
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` passed: 45 test files passed, 1 skipped; 201 tests passed, 1 skipped.
+- Deviation from the original change set: the scenario comparison boundary now validates exact decimal strings instead of coercing monetary values into JS numbers, to preserve precision on the Core side.
+- The last full `npm test` run also exposed environment-sensitive Docker/Postgres timeouts in unrelated integration coverage; the scenario-specific feature tests and `typecheck` remained green.

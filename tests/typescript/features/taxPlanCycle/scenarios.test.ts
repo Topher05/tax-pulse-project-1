@@ -25,8 +25,8 @@ const computedResult = {
 } as const;
 
 const comparisonSummary = {
-  totalTax: 63_000,
-  deltaVBaseline: -4_500,
+  totalTax: "63000.00",
+  deltaVBaseline: "-4500.00",
 } as const;
 
 describe("scenario persistence contract", () => {
@@ -35,6 +35,12 @@ describe("scenario persistence contract", () => {
     expect(scenarioComputedResultSchema.parse(computedResult)).toEqual(computedResult);
     expect(scenarioComparisonSummarySchema.parse(comparisonSummary)).toEqual(comparisonSummary);
     expect(scenarioComputedResultSchema.parse(comparisonSummary)).toEqual(comparisonSummary);
+    expect(
+      scenarioComparisonSummarySchema.safeParse({
+        totalTax: "63,000.00",
+        deltaVBaseline: "-4500.00",
+      }).success,
+    ).toBe(false);
     expect(
       scenarioSchema.parse({
         id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d51",
@@ -77,6 +83,13 @@ describe("scenario persistence contract", () => {
     ).toBe(false);
     expect(
       scenarioComputedResultSchema.safeParse({ ...computedResult, delta_vs_baseline: Infinity }).success,
+    ).toBe(false);
+    expect(
+      scenarioComputedResultSchema.safeParse({
+        totalTax: "63000.00",
+        deltaVBaseline: "-4500.00",
+        extra: true,
+      }).success,
     ).toBe(false);
   });
 });
