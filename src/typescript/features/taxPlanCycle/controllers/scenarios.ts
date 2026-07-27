@@ -6,8 +6,8 @@ import type { ScenarioComparisonEngineOutput } from "../scenarioModeling.js";
 import type { ScenarioRepository } from "../repositories/scenarios.js";
 import type { TaxEngineClient } from "../infrastructure/engineClient.js";
 import type { ScenarioTypedFigures } from "../../../scenario.js";
-import type { TaxPlanCycleReadInput } from "../repository/repository.js";
-import type { TaxPlanCycleRepository } from "../repository/repository.js";
+import type { TaxPlanCycleReadInput } from "../repositories/repository.js";
+import type { TaxPlanCycleRepository } from "../repositories/repository.js";
 import type { ScenarioModelingScenarioInput } from "../scenarioModeling.js";
 
 export interface ScenarioModelingControllerInput extends TaxPlanCycleReadInput {
@@ -26,7 +26,7 @@ export interface ScenarioModelingControllerOptions {
   taxPlanCycleRepository: Pick<TaxPlanCycleRepository, "findByCaseId">;
   scenarioRepository: Pick<ScenarioRepository, "createMany">;
   taxEngineClient: TaxEngineClient;
-  logger?: Pick<Logger, "error">;
+  logger?: Logger;
 }
 
 function modelingUnavailableError(): ProblemHttpError {
@@ -57,25 +57,26 @@ function taxEngineUnavailableError(): ProblemHttpError {
 }
 
 function logTaxEngineFailure(
-  logger: Pick<Logger, "error">,
+  logger: Logger,
   error: unknown,
   input: ScenarioModelingControllerInput,
 ): void {
   const occurredAt = new Date();
+  const failureLogger = logger.child({
+    boundary: "tax-plan-cycle-scenario-modeling",
+    calling_function: "createScenarioModelingController.model",
+    occurred_at_est: formatEstTimestamp(occurredAt),
+    occurred_at_utc: occurredAt.toISOString(),
+    tenant_id: input.tenantId,
+    case_id: input.caseId,
+    upstream_service: "liability-engine",
+  });
+  const normalizedError =
+    error instanceof Error
+      ? error
+      : new Error(typeof error === "string" ? error : "Unexpected liability engine failure");
 
-  logger.error(
-    {
-      err: error,
-      calling_function: "createScenarioModelingController.model",
-      occurred_at_est: formatEstTimestamp(occurredAt),
-      occurred_at_utc: occurredAt.toISOString(),
-      tenant_id: input.tenantId,
-      case_id: input.caseId,
-      boundary: "tax-plan-cycle-scenario-modeling",
-      upstream_service: "liability-engine",
-    },
-    "scenario modeling failed",
-  );
+  failureLogger.error(normalizedError, "scenario modeling failed");
 }
 
 export function createScenarioModelingController(
