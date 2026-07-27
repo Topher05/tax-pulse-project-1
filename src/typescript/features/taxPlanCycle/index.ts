@@ -86,3 +86,33 @@ export {
   type ScenarioModelingControllerInput,
   type ScenarioModelingControllerOptions,
 } from "./scenarioModelingController.js";
+export {
+  createScenarioRepository,
+  maximumScenariosPerCase,
+  ScenarioCaseNotFoundError,
+  ScenarioLimitExceededError,
+  type ScenarioCreateInput,
+  type ScenarioCreateManyInput,
+  type ScenarioRepository,
+  type Scenario,
+} from "./scenarioRepository.js";
+export {
+  scenarioModelingEngineResponseSchema,
+  scenarioModelingEngineScenarioSchema,
+  scenarioModelingRequestSchema,
+  scenarioModelingScenarioInputSchema,
+  type ScenarioComparisonResponse,
+  type ScenarioComparisonResult,
+  type ScenarioModelingEngineResponse,
+  type ScenarioModelingEngineScenario,
+  type ScenarioModelingRequest,
+  type ScenarioModelingScenarioInput,
+} from "./scenarioModeling.js";
+export {
+  createTaxEngineClient,
+  TaxEngineHttpError,
+  TaxEngineTimeoutError,
+  type TaxEngineClient,
+  type TaxEngineClientOptions,
+  type TaxEngineComparisonRequest,
+} from "./taxEngineClient.js";

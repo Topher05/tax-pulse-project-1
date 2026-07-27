@@ -11,7 +11,7 @@ import {
 } from "./scenario.js";
 import {
   scenarioModelingRequestSchema,
-} from "./scenarioModeling.js";
+} from "./features/taxPlanCycle/scenarioModeling.js";
 import { taxPlanCycleCreateResultSchema } from "./features/taxPlanCycle/index.js";
 import {
   mfaEnrollConfirmRequestSchema,
@@ -156,7 +156,7 @@ const fakeScenarioModelingRequestExample = {
   ],
 };
 
-const fakeScenarioModelingResponseExample = [
+const fakeScenarioModelingResponseExample: JsonValue[] = [
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e21",
     case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
@@ -168,8 +168,6 @@ const fakeScenarioModelingResponseExample = [
       effective_rate: 0.2,
       marginal_rate: 0.32,
       quarterly_estimate: 12500,
-      total_tax: 50000,
-      delta_vs_baseline: -3000,
     },
     created_at: "2026-07-27T00:00:00.000Z",
   },
@@ -179,11 +177,6 @@ const fakeScenarioModelingResponseExample = [
     name: "Keep baseline",
     typed_figures: fakeScenarioModelingRequestExample.scenarios[1]!.typed_figures,
     computed_result: {
-      federal_liability: 40000,
-      state_liability: 13000,
-      effective_rate: 0.212,
-      marginal_rate: 0.32,
-      quarterly_estimate: 13250,
       total_tax: 53000,
       delta_vs_baseline: 0,
     },
