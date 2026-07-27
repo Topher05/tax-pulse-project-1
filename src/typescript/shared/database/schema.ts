@@ -5,6 +5,7 @@ import {
   date,
   foreignKey,
   index,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -16,8 +17,8 @@ import {
   varchar,
   uuid,
 } from "drizzle-orm/pg-core";
-
-import { taxPlanCycleStages } from "../../features/taxPlanCycle/taxPlanCycle.js";
+import type { ScenarioComputedResult, ScenarioTypedFigures } from "../scenario.js";
+import { taxPlanCycleStages } from "../taxPlanCycle.js";
 
 const stageValuesSql = sql.join(
   taxPlanCycleStages.map((stage) => sql.raw(`'${stage.replace(/'/g, "''")}'`)),
@@ -247,6 +248,33 @@ export const taxPlanCycleIdempotencyKey = pgTable(
       table.tenantId,
       table.idempotencyKey,
     ),
+  ],
+);
+
+export const scenario = pgTable(
+  "scenario",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    caseId: uuid("case_id").notNull(),
+    name: text("name").notNull(),
+    typedFigures: jsonb("typed_figures").$type<ScenarioTypedFigures>().notNull(),
+    computedResult: jsonb("computed_result")
+      .$type<ScenarioComputedResult>()
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "scenario_id_pk",
+      columns: [table.id],
+    }),
+    foreignKey({
+      name: "scenario_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    uniqueIndex("scenario_case_id_name_key").on(table.caseId, table.name),
+    index("scenario_case_id_idx").on(table.caseId),
   ],
 );
 
