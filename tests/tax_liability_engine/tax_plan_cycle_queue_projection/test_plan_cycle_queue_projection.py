@@ -7,6 +7,7 @@ from typing import cast
 from uuid import uuid4
 
 import pytest
+from docker.errors import DockerException
 from pydantic import ValidationError
 from tax_liability_engine import (
     PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
@@ -51,7 +52,12 @@ def localstack_endpoint_url() -> Iterator[str]:
 
     os.environ.setdefault("TESTCONTAINERS_RYUK_DISABLED", "true")
     localstack_image = os.getenv("TAXPULSE_LOCALSTACK_IMAGE", DEFAULT_LOCALSTACK_TEST_IMAGE)
-    localstack_container = LocalStackContainer(image=localstack_image).with_services("dynamodb")
+    try:
+        localstack_container = LocalStackContainer(image=localstack_image).with_services(
+            "dynamodb"
+        )
+    except DockerException as error:
+        pytest.skip(f"Docker is unavailable for LocalStack-backed tests: {error}")
 
     if localstack_auth_token := os.getenv("LOCALSTACK_AUTH_TOKEN"):
         localstack_container = localstack_container.with_env(

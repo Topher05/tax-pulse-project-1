@@ -18,3 +18,4 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0013: Tax liability engine namespace and layout refactor](./0013-tax-liability-engine-namespace-refactor.md)
 - [ADR-0014: Redis cache-aside for Tax Plan Cycle Queue reads](./0014-redis-cache-aside-queue-reads.md)
 - [ADR-0015: Tax Plan Cycle feature slice Architecture](./0015-tax-plan-cycle-feature-slice.md)
+- [ADR-0016: FastAPI Startup Convention for the Liability Engine](./0016-fastapi-startup-convention.md)

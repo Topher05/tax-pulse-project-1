@@ -8,6 +8,7 @@ from tax_liability_engine import (
     ScenarioComparisonResult,
     TaxCalculationResult,
     calculate_scenario_comparisons,
+    scenario_comparison,
 )
 import tax_liability_engine.scenario_comparison as scenario_comparison
 

@@ -1,10 +1,13 @@
 """Tax calculation model definitions."""
 
 from __future__ import annotations
+
+from collections.abc import Mapping
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from types import MappingProxyType
-from typing import Final, Mapping
+from typing import Final
+
 from pydantic import BaseModel, Field, field_validator
 
 ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(

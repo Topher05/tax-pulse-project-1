@@ -1,5 +1,6 @@
 """Tax liability engine project workspace package."""
 
+from .api import create_app
 from .dynamodb import (
     DEFAULT_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
     PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
@@ -45,6 +46,7 @@ __all__ = [
     "ScenarioComparisonInput",
     "ScenarioComparisonRequest",
     "ScenarioComparisonResult",
+    "create_app",
     "TaxCalculationResult",
     "calculate_tax",
     "calculate_scenario_comparisons",
