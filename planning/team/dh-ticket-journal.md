@@ -38,6 +38,8 @@ Add new ticket entries below using this template.
 
 - `package.json`
 - `package-lock.json`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
 - `adr/0011-pulse-ui-react-vite-shell.md`
 - `adr/README.md`
 - `README.md`
@@ -52,7 +54,7 @@ Add new ticket entries below using this template.
 **Validation Notes:**
 
 - `npm run typecheck` passed.
-- `npm run test:pulseUI -- src/pulseUI/tests/appShell.test.tsx` passed.
+- `npm run test:pulseUI -- tests/appShell.test.tsx` passed.
 - `npm run build:web` passed.
 - `npm test` ran the full suite but failed in existing backend database/migration tests after PostgreSQL reported `function uuidv7() does not exist`; the new Pulse UI tests pass when run directly.
 

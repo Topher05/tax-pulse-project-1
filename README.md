@@ -20,8 +20,9 @@ This workspace is scaffolded as a small dual-runtime project:
 - Node.js is pinned in both [`.nvmrc`](./.nvmrc) and [`.tool-versions`](./.tool-versions).
 - Python is pinned in [`.tool-versions`](./.tool-versions) and must exactly match `requires-python` in [`pyproject.toml`](./pyproject.toml).
 - Python dev dependencies come from [`pyproject.toml`](./pyproject.toml) and include Ruff, pytest, and `pyright[nodejs]`.
-- The Pulse UI browser shell uses React, React DOM, Vite, TanStack Router, and lucide-react.
-- Pulse UI component tests use Vitest, Testing Library, jest-dom matchers, and jsdom.
+- Root Node dependencies in [`package.json`](./package.json) are for the Express/API layer.
+- Pulse UI dependencies live in [`src/pulseUI/package.json`](./src/pulseUI/package.json) and include React, React DOM, Vite, TanStack Router, and lucide-react.
+- Pulse UI component tests use the UI package's Vitest, Testing Library, jest-dom matchers, and jsdom.
 - The setup scripts treat the manifests as strict pins and exit non-zero on any mismatch.
 
 ## Verify Active Versions
@@ -54,7 +55,8 @@ Each script:
 - installs Python from the pinned manifest version
 - verifies the Node and Python runtimes plus `npm` and `pip`
 - fails if the active Node or Python version differs from the manifest pin
-- installs TypeScript dependencies from [`package.json`](./package.json)
+- installs Express/API TypeScript dependencies from [`package.json`](./package.json)
+- installs Pulse UI dependencies from [`src/pulseUI/package.json`](./src/pulseUI/package.json)
 - installs the Python package in editable mode with dev dependencies from [`pyproject.toml`](./pyproject.toml)
 - verifies the Python dev tools, including Ruff and Pyright
 - runs a `hello` check for both the Node and Python stacks
@@ -92,8 +94,10 @@ python -m pytest
 ### Pulse UI
 
 The Pulse UI operator workspace is nested under [`src/pulseUI`](./src/pulseUI). Its
-frontend-specific config files live beside the implementation:
+frontend-specific package and config files live beside the implementation:
 
+- [`src/pulseUI/package.json`](./src/pulseUI/package.json) owns UI-only scripts and dependencies.
+- [`src/pulseUI/package-lock.json`](./src/pulseUI/package-lock.json) locks the UI dependency graph separately from the Express/API lockfile.
 - [`src/pulseUI/index.html`](./src/pulseUI/index.html) is the Vite HTML entrypoint.
 - [`src/pulseUI/vite.config.ts`](./src/pulseUI/vite.config.ts) sets the app root and
   builds browser assets to `dist/pulseUI`.
@@ -119,7 +123,13 @@ npm run build:web
 Run the Pulse UI shell test directly:
 
 ```bash
-npm run test:pulseUI -- src/pulseUI/tests/appShell.test.tsx
+npm run test:pulseUI -- tests/appShell.test.tsx
+```
+
+Install or refresh only Pulse UI dependencies:
+
+```bash
+npm --prefix src/pulseUI install
 ```
 
 Run Express/backend TypeScript tests:
@@ -301,6 +311,7 @@ Install dependencies manually if needed:
 
 ```powershell
 npm install
+npm --prefix src/pulseUI install
 py -3.13 -m pip install -e ".[dev]"
 ```
 

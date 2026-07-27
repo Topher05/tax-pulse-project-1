@@ -8,6 +8,6 @@ export default defineConfig({
     testTimeout: 30_000,
     environment: "jsdom",
     exclude: ["**/dist/**", "**/node_modules/**"],
-    include: ["src/pulseUI/tests/**/*.test.tsx"],
+    include: ["tests/**/*.test.tsx"],
   },
 });

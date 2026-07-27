@@ -23,15 +23,17 @@ The Pulse UI area will own:
 - `index.html` as the Vite HTML entrypoint,
 - `main.tsx` as the React bootstrap,
 - React shell, route, navigation, and style files,
-- `vite.config.ts` with `root: "src/pulseUI"` and output to `dist/pulseUI`,
+- `package.json` and `package-lock.json` for UI-only scripts and dependencies,
+- `vite.config.ts` with output to `dist/pulseUI`,
 - `tsconfig.pulseUI.json` for browser TypeScript and JSX,
 - `vitest.config.ts` for Pulse UI tests with jsdom.
 
-Repository-level npm scripts remain in the root `package.json` and point to nested
-configs. Pulse UI tests use `src/pulseUI/vitest.config.ts`, while Express/backend
-TypeScript tests use `src/typescript/vitest.config.ts`. The backend TypeScript configs
-remain scoped to `src/typescript`, while the root `typecheck` command runs backend,
-backend test, and Pulse UI type checks.
+Root npm scripts remain in the root `package.json` for Express/API work and delegate
+Pulse UI commands through `npm --prefix src/pulseUI`. Pulse UI tests use the UI package's
+`vitest.config.ts`, while Express/backend TypeScript tests use
+`src/typescript/vitest.config.ts`. The backend TypeScript configs remain scoped to
+`src/typescript`, while the root `typecheck` command runs backend, backend test, and
+Pulse UI type checks.
 
 The operator shell will use React, Vite, TanStack Router, lucide-react icons, Testing
 Library, jsdom, and Vitest. The SCRUM-92 implementation will render a design-only View-as
@@ -42,19 +44,20 @@ or DynamoDB behavior.
 Benefits:
 - frontend code and frontend config are colocated under a project-specific `src/pulseUI`
   boundary,
+- React/Vite dependencies are isolated from Express/API dependency management,
 - future React tickets have a stable shell and route frame to extend,
 - backend TypeScript remains isolated from browser JSX and DOM types,
 - Vite builds emit browser assets into `dist/pulseUI`,
 - the dependency on SCRUM-75 is not a technical blocker for shell work.
 
 Tradeoffs:
-- npm scripts must explicitly reference nested Vite, Vitest, and TypeScript config paths,
+- root npm scripts must delegate Pulse UI commands through `npm --prefix src/pulseUI`,
 - separate Vitest configs mean npm scripts must choose the Express/backend or Pulse UI
   test runner explicitly,
 - Pulse UI tests live under `src/pulseUI/tests`, so frontend tests move with the browser
   app rather than the backend test tree,
-- the first frontend scaffold adds several browser-facing dependencies to the shared
-  package manifest and lockfile.
+- contributors must install dependencies in both the repository root and `src/pulseUI`
+  when working from a clean checkout.
 
 ## Alternatives considered
 - Place the React app under `src/frontend`, which is conventional but less descriptive
@@ -63,3 +66,5 @@ Tradeoffs:
   scripts shorter but separates the app from its frontend-specific configuration.
 - Put Pulse UI files under `src/typescript`, which would mix browser JSX with backend
   service modules and require broader TypeScript config changes.
+- Keep React/Vite dependencies in the root package, which is simpler initially but causes
+  avoidable dependency-management friction between Express/API and React/Vite work.
