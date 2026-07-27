@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tax-pulse-project-team-1"
+name = "tax-liability-engine"
 version = "0.0.0"
-description = "TaxPulse project workspace"
+description = "Tax liability engine workspace"
 requires-python = "==3.13.14"
 dependencies = [
   "boto3>=1.35,<2",
@@ -26,17 +26,18 @@ dev = [
 ]
 
 [project.scripts]
-tax-pulse = "tax_pulse_project_team_1.main:main"
+tax-pulse = "tax_liability_engine.main:main"
 
 [tool.setuptools]
-package-dir = {"" = "src/python"}
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
-where = ["src/python"]
+where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/python"]
-pythonpath = ["src/python"]
+addopts = "-p no:cacheprovider"
+testpaths = ["tests"]
+pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 100
@@ -46,8 +47,8 @@ target-version = "py313"
 select = ["E4", "E7", "E9", "F", "I", "B", "UP", "ANN"]
 
 [tool.pyright]
-include = ["src/python", "tests/python"]
-extraPaths = ["src/python"]
+include = ["src", "tests"]
+extraPaths = ["src"]
 exclude = [
   "**/__pycache__",
   ".pytest_cache",

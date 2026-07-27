@@ -138,8 +138,8 @@ if [[ -f package.json ]]; then
 fi
 
 printf "Running Python checks...\n"
-python -m ruff format --check src/python tests/python
-python -m ruff check src/python tests/python
+python -m ruff format --check src tests
+python -m ruff check src tests
 PYTHON_EXECUTABLE="$(python -c "import sys; print(sys.executable)")"
 python -m pyright --pythonpath "$PYTHON_EXECUTABLE"
 python -m pytest
