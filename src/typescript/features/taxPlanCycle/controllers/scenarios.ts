@@ -1,10 +1,11 @@
 import { ProblemHttpError } from "../../../errors.js";
+import type { ScenarioComparisonEngineOutput } from "../scenarioModeling.js";
 import type { ScenarioRepository } from "../repositories/scenarios.js";
 import type { TaxEngineClient } from "../infrastructure/engineClient.js";
-import type { ScenarioModelingScenarioInput } from "../scenarioModeling.js";
 import type { ScenarioTypedFigures } from "../../../scenario.js";
 import type { TaxPlanCycleReadInput } from "../repository/repository.js";
 import type { TaxPlanCycleRepository } from "../repository/repository.js";
+import type { ScenarioModelingScenarioInput } from "../scenarioModeling.js";
 
 export interface ScenarioModelingControllerInput extends TaxPlanCycleReadInput {
   authorizationHeader: string;
@@ -56,7 +57,7 @@ export function createScenarioModelingController(
         throw modelingUnavailableError();
       }
 
-      const engineResults = await options.taxEngineClient.compareScenarios({
+      const engineResults: ScenarioComparisonEngineOutput = await options.taxEngineClient.compareScenarios({
         tenantId: input.tenantId,
         authorizationHeader: input.authorizationHeader,
         baseline: input.baseline,
@@ -74,8 +75,8 @@ export function createScenarioModelingController(
           name: scenario.name,
           typedFigures: input.scenarios[index]!.typed_figures,
           computedResult: {
-            total_tax: scenario.total_tax,
-            delta_vs_baseline: scenario.delta_vs_baseline,
+            totalTax: scenario.total_tax,
+            deltaVBaseline: scenario.delta_vs_baseline,
           },
         })),
       });
