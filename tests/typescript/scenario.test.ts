@@ -23,10 +23,16 @@ const computedResult = {
   delta_vs_baseline: -4_500,
 } as const;
 
+const comparisonSummary = {
+  total_tax: 63_000,
+  delta_vs_baseline: -4_500,
+} as const;
+
 describe("scenario persistence contract", () => {
   test("accepts typed figures and their computed calculation result", () => {
     expect(scenarioTypedFiguresSchema.parse(typedFigures)).toEqual(typedFigures);
     expect(scenarioComputedResultSchema.parse(computedResult)).toEqual(computedResult);
+    expect(scenarioComputedResultSchema.parse(comparisonSummary)).toEqual(comparisonSummary);
     expect(
       scenarioSchema.parse({
         id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d51",
@@ -40,6 +46,20 @@ describe("scenario persistence contract", () => {
       name: "Increase retirement contributions",
       typed_figures: typedFigures,
       computed_result: computedResult,
+    });
+    expect(
+      scenarioSchema.parse({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d52",
+        case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d32",
+        name: "Keep baseline",
+        typed_figures: typedFigures,
+        computed_result: comparisonSummary,
+        created_at: new Date("2026-07-23T12:05:00.000Z"),
+      }),
+    ).toMatchObject({
+      name: "Keep baseline",
+      typed_figures: typedFigures,
+      computed_result: comparisonSummary,
     });
   });
 

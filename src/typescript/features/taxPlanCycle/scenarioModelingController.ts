@@ -1,7 +1,7 @@
 import { ProblemHttpError } from "../../errors.js";
-import type { ScenarioRepository } from "../../scenarioRepository.js";
-import type { TaxEngineClient } from "../../taxEngineClient.js";
-import type { ScenarioModelingScenarioInput } from "../../scenarioModeling.js";
+import type { ScenarioRepository } from "./scenarioRepository.js";
+import type { TaxEngineClient } from "./taxEngineClient.js";
+import type { ScenarioModelingScenarioInput } from "./scenarioModeling.js";
 import type { ScenarioTypedFigures } from "../../scenario.js";
 import type { TaxPlanCycleReadInput } from "./repository/repository.js";
 import type { TaxPlanCycleRepository } from "./repository/repository.js";
@@ -70,10 +70,13 @@ export function createScenarioModelingController(
       return await options.scenarioRepository.createMany({
         tenantId: input.tenantId,
         caseId: input.caseId,
-        scenarios: engineResults.map((scenario) => ({
+        scenarios: engineResults.map((scenario, index) => ({
           name: scenario.name,
-          typedFigures: scenario.typed_figures,
-          computedResult: scenario.computed_result,
+          typedFigures: input.scenarios[index]!.typed_figures,
+          computedResult: {
+            total_tax: scenario.total_tax,
+            delta_vs_baseline: scenario.delta_vs_baseline,
+          },
         })),
       });
     },
