@@ -6,6 +6,7 @@ import {
   taxPlanCycleCreateController,
   type TaxPlanCycleCreateController,
 } from "./controllers/createController.js";
+import { type ScenarioModelingController } from "./scenarioModelingController.js";
 import type {
   AuditEntryReader,
   AuditEntryWriter,
@@ -14,6 +15,7 @@ import { ProblemHttpError, type ProblemDetails } from "../../errors.js";
 import {
   taxPlanCycleCreateSchema,
   taxPlanCycleReadParamsSchema,
+  taxPlanCycleReadResponseSchema,
   taxPlanCycleTransitionParamsSchema,
   taxPlanCycleTransitionSchema,
   isLegalTaxPlanCycleStageTransition,
@@ -23,6 +25,10 @@ import {
   taxPlanCycleTransitionController,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
+import {
+  scenarioModelingRequestSchema,
+} from "../../scenarioModeling.js";
+import type { ScenarioRepository } from "../../scenarioRepository.js";
 
 export interface ValidationErrorIssue {
   path: Array<string | number>;
@@ -38,6 +44,8 @@ export interface ValidationErrorResponse extends ProblemDetails {
 export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
   transitionController?: TaxPlanCycleTransitionController;
+  scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
+  scenarioModelingController?: ScenarioModelingController;
   auditEntryReader?: AuditEntryReader;
   auditEntryWriter?: AuditEntryWriter;
   auditLogger?: Pick<Console, "info">;
@@ -220,6 +228,13 @@ export function createTaxPlanCycleRouter(
   const router = Router();
   const controller = options.controller ?? taxPlanCycleCreateController;
   const transitionController = options.transitionController ?? taxPlanCycleTransitionController;
+  const scenarioRepository = options.scenarioRepository ?? {
+    async listByCaseId() {
+      return [];
+    },
+  };
+  const scenarioModelingController =
+    options.scenarioModelingController ?? deprecatedScenarioModelingController;
   const auditLogger = options.auditLogger ?? console;
   const auditEntryWriter =
     options.auditEntryWriter ?? deprecatedNoopAuditEntryWriter;
@@ -318,7 +333,17 @@ export function createTaxPlanCycleRouter(
           return;
         }
 
-        res.status(200).json(cycle);
+        const scenarios = await scenarioRepository.listByCaseId({
+          tenantId,
+          caseId: parsedParams.data.caseId,
+        });
+
+        const response = taxPlanCycleReadResponseSchema.parse({
+          ...cycle,
+          scenarios,
+        });
+
+        res.status(200).json(response);
       } catch (error) {
         next(error);
       }
@@ -357,6 +382,65 @@ export function createTaxPlanCycleRouter(
         });
         res.status(202).json(result);
       } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.post(
+    "/tax-plan-cycles/:caseId/scenarios",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedParams = taxPlanCycleReadParamsSchema.safeParse(req.params);
+      const parsedBody = scenarioModelingRequestSchema.safeParse(req.body);
+
+      if (!parsedParams.success || !parsedBody.success) {
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Scenario modeling request failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: [
+                ...(parsedParams.success
+                  ? []
+                  : parsedParams.error.issues.map(toValidationIssue)),
+                ...(parsedBody.success
+                  ? []
+                  : parsedBody.error.issues.map(toValidationIssue)),
+              ],
+            },
+          }),
+        );
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+        const authorizationHeader = req.header("authorization")?.trim();
+
+        if (!tenantId || !user?.id || !authorizationHeader) {
+          next(authenticationRequired());
+          return;
+        }
+
+        const scenarios = await scenarioModelingController.model({
+          tenantId,
+          caseId: parsedParams.data.caseId,
+          authorizationHeader,
+          baseline: parsedBody.data.baseline,
+          scenarios: parsedBody.data.scenarios,
+        });
+
+        res.status(201).json(scenarios);
+      } catch (error) {
+        console.log("*\n*")
+        console.log(error?.name)
+        console.log(error?.timeoutMs)
+        console.log(error.message)
+         console.log("*\n*")
         next(error);
       }
     },
@@ -492,5 +576,13 @@ export function createTaxPlanCycleRouter(
 const deprecatedNoopAuditEntryWriter: AuditEntryWriter = {
   async record() {
     return undefined;
+  },
+};
+
+const deprecatedScenarioModelingController: ScenarioModelingController = {
+  async model() {
+    throw new Error(
+      "createTaxPlanCycleRouter requires scenarioModelingController for scenario modeling requests.",
+    );
   },
 };

@@ -3,6 +3,7 @@ export {
   taxPlanCycleCreateSchema,
   taxPlanCyclePrioritySchema,
   taxPlanCycleReadParamsSchema,
+  taxPlanCycleReadResponseSchema,
   taxPlanCycleTransitionParamsSchema,
   taxPlanCycleTransitionSchema,
   taxPlanCycleSchema,
@@ -12,6 +13,7 @@ export {
   type TaxPlanCycleCreateInput,
   type TaxPlanCyclePriority,
   type TaxPlanCycleReadParams,
+  type TaxPlanCycleReadResponse,
   type TaxPlanCycleTransitionInput,
   type TaxPlanCycleTransitionParams,
   type TaxPlanCycleStage,
@@ -78,3 +80,9 @@ export {
   type ValidationErrorIssue,
   type ValidationErrorResponse,
 } from "./routes.js";
+export {
+  createScenarioModelingController,
+  type ScenarioModelingController,
+  type ScenarioModelingControllerInput,
+  type ScenarioModelingControllerOptions,
+} from "./scenarioModelingController.js";

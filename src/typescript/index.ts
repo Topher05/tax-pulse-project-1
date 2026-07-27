@@ -126,6 +126,41 @@ export {
   type BracketReferenceRepository,
   type TaxBracketReference,
 } from "./bracketReferenceRepository.js";
+export {
+  createScenarioRepository,
+  maximumScenariosPerCase,
+  ScenarioCaseNotFoundError,
+  ScenarioLimitExceededError,
+  type Scenario,
+  type ScenarioCreateInput,
+  type ScenarioCreateManyInput,
+  type ScenarioRepository,
+} from "./scenarioRepository.js";
+export {
+  scenarioModelingEngineResponseSchema,
+  scenarioModelingEngineScenarioSchema,
+  scenarioModelingRequestSchema,
+  scenarioModelingScenarioInputSchema,
+  type ScenarioModelingEngineResponse,
+  type ScenarioModelingEngineScenario,
+  type ScenarioModelingRequest,
+  type ScenarioModelingScenarioInput,
+} from "./scenarioModeling.js";
+export {
+  scenarioComputedResultSchema,
+  scenarioSchema,
+  scenarioTypedFiguresSchema,
+  type ScenarioComputedResult,
+  type ScenarioTypedFigures,
+} from "./scenario.js";
+export {
+  createTaxEngineClient,
+  TaxEngineHttpError,
+  TaxEngineTimeoutError,
+  type TaxEngineClient,
+  type TaxEngineClientOptions,
+  type TaxEngineComparisonRequest,
+} from "./taxEngineClient.js";
 export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
 export {
   createJwtAuthenticationMiddleware,
@@ -198,6 +233,7 @@ export {
   type TaxPlanCycleCreateInput,
   type TaxPlanCyclePriority,
   type TaxPlanCycleReadParams,
+  type TaxPlanCycleReadResponse,
   type TaxPlanCycleTransitionInput,
   type TaxPlanCycleTransitionParams,
   type TaxPlanCycleStage,
@@ -271,7 +307,10 @@ import {
   createTaxPlanCycleRepository,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
+  createScenarioModelingController,
 } from "./features/taxPlanCycle/index.js";
+import { createScenarioRepository } from "./scenarioRepository.js";
+import { createTaxEngineClient } from "./taxEngineClient.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
@@ -337,6 +376,19 @@ export async function main(): Promise<Server> {
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const scenarioRepository = createScenarioRepository(client);
+  const taxEngineBaseUrl = process.env.LIABILITY_ENGINE_BASE?.trim();
+  if (!taxEngineBaseUrl) {
+    throw new Error("LIABILITY_ENGINE_BASE is required to model scenarios.");
+  }
+  const taxEngineClient = createTaxEngineClient({
+    baseUrl: taxEngineBaseUrl,
+  });
+  const scenarioModelingController = createScenarioModelingController({
+    taxPlanCycleRepository,
+    scenarioRepository,
+    taxEngineClient,
+  });
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
   let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
@@ -400,6 +452,8 @@ export async function main(): Promise<Server> {
           auditEntryReader: auditEntryRepository,
           auditEntryWriter,
           controller: taxPlanCycleController,
+          scenarioRepository,
+          scenarioModelingController,
           transitionController: taxPlanCycleTransitionController,
         }),
       );
