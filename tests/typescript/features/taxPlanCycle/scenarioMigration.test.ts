@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 
-import { taxPlanCycleRows } from "../../src/typescript/shared/database/seed.model.js";
-import { withDockerDrizzleSeededDatabase } from "./bootstrap/migrationTestUtils.js";
-import { expectPgError, getTableStructure } from "./bootstrap/tableTestUtils.js";
+import { taxPlanCycleRows } from "../../../../src/typescript/shared/database/seed.model.js";
+import { withDockerDrizzleSeededDatabase } from "../../bootstrap/migrationTestUtils.js";
+import { expectPgError, getTableStructure } from "../../bootstrap/tableTestUtils.js";
 
 describe("scenario migration", () => {
   test("creates a scenario table linked to a tax plan cycle", { timeout: 30000 }, async () => {

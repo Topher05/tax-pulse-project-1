@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  scenarioComparisonSummarySchema,
   scenarioComputedResultSchema,
   scenarioSchema,
   scenarioTypedFiguresSchema,
@@ -24,14 +25,15 @@ const computedResult = {
 } as const;
 
 const comparisonSummary = {
-  total_tax: 63_000,
-  delta_vs_baseline: -4_500,
+  totalTax: 63_000,
+  deltaVBaseline: -4_500,
 } as const;
 
 describe("scenario persistence contract", () => {
   test("accepts typed figures and their computed calculation result", () => {
     expect(scenarioTypedFiguresSchema.parse(typedFigures)).toEqual(typedFigures);
     expect(scenarioComputedResultSchema.parse(computedResult)).toEqual(computedResult);
+    expect(scenarioComparisonSummarySchema.parse(comparisonSummary)).toEqual(comparisonSummary);
     expect(scenarioComputedResultSchema.parse(comparisonSummary)).toEqual(comparisonSummary);
     expect(
       scenarioSchema.parse({
