@@ -5,50 +5,6 @@
 
 Add new ticket entries below using this template.
 
-## dylan-harle-jira94 - SCRUM-94
-
-**Branch:** `dylan-harle-jira94`
-
-**Assignee:** Dylan Harle
-
-**Jira Key:** SCRUM-94
-
-**Summary:** Add loading, empty, and error states to the queue.
-
-**Description:** As an Advisor, I want the queue to show loading, empty, and error states, so that the screen behaves predictably while data resolves.
-
-**Acceptance Criteria:**
-
-- A loading skeleton renders while the queue request is in flight.
-- An empty state renders when the tenant has no open cycles.
-- An error state renders with a retry affordance on request failure.
-
-**Code Connection:**
-
-- Added a Plan Cycle Queue request-state boundary for the `/plan-cycles` route.
-- Added loading skeleton, empty state, and error state with retry behavior.
-- Documented the SCRUM-93 connection point at the non-empty success branch while keeping that branch visually empty for this ticket.
-
-**Project Scope Connection:**
-
-- Improves predictable queue screen behavior inside the Pulse UI operator workspace.
-- Does not implement SCRUM-93 table rows, queue KPI cards, overdue badges, or final queue item field rendering.
-- Leaves live data wiring for SCRUM-100.
-
-**Changed Files:**
-
-- `src/pulseUI/planCycles/PlanCycleQueueRoute.tsx`
-- `src/pulseUI/planCycles/README.md`
-- `src/pulseUI/routing/routeTree.tsx`
-- `src/pulseUI/styles.css`
-- `src/pulseUI/tests/planCycleQueueState.test.tsx`
-- `planning/team/dh-ticket-journal.md`
-
-**Validation Notes:**
-
-- `npm --prefix src/pulseUI run typecheck` passed.
-- `npm --prefix src/pulseUI test` passed.
-
 ## dylan-harle-jira92 - SCRUM-92
 
 **Branch:** `dylan-harle-jira92`
