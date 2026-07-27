@@ -114,6 +114,16 @@ else
   printf "${YELLOW}No package.json found. Skipping npm ci for this fresh-clone check.${NC}\n"
 fi
 
+if [[ -f src/pulseUI/package.json ]]; then
+  if [[ -f src/pulseUI/package-lock.json ]]; then
+    printf "Pulse UI package.json and package-lock.json detected. Running npm ci in src/pulseUI...\n"
+    npm --prefix src/pulseUI ci
+  else
+    printf "Pulse UI package.json detected without package-lock.json. Running npm install in src/pulseUI...\n"
+    npm --prefix src/pulseUI install
+  fi
+fi
+
 printf "Installing Python package with dev dependencies...\n"
 # This editable install is required before Ruff, Pyright, and pytest can run reliably.
 python -m pip install -e ".[dev]"

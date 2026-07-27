@@ -5,8 +5,10 @@
 This workspace is scaffolded as a small dual-runtime project:
 
 - TypeScript source lives in [`src/typescript`](./src/typescript)
+- Pulse UI React/Vite source lives in [`src/pulseUI`](./src/pulseUI)
 - Python source lives in [`src/tax_liability_engine`](./src/tax_liability_engine)
 - TypeScript tests live in [`tests/typescript`](./tests/typescript)
+- Pulse UI component tests live in [`src/pulseUI/tests`](./src/pulseUI/tests)
 - Python tests live in [`tests/tax_liability_engine`](./tests/tax_liability_engine)
 
 ## Toolchain
@@ -18,6 +20,9 @@ This workspace is scaffolded as a small dual-runtime project:
 - Node.js is pinned in both [`.nvmrc`](./.nvmrc) and [`.tool-versions`](./.tool-versions).
 - Python is pinned in [`.tool-versions`](./.tool-versions) and must exactly match `requires-python` in [`pyproject.toml`](./pyproject.toml).
 - Python dev dependencies come from [`pyproject.toml`](./pyproject.toml) and include Ruff, pytest, and `pyright[nodejs]`.
+- Root Node dependencies in [`package.json`](./package.json) are for the Express/API layer.
+- Pulse UI dependencies live in [`src/pulseUI/package.json`](./src/pulseUI/package.json) and include React, React DOM, Vite, TanStack Router, and lucide-react.
+- Pulse UI component tests use the UI package's Vitest, Testing Library, jest-dom matchers, and jsdom.
 - The setup scripts treat the manifests as strict pins and exit non-zero on any mismatch.
 
 ## Verify Active Versions
@@ -50,7 +55,8 @@ Each script:
 - installs Python from the pinned manifest version
 - verifies the Node and Python runtimes plus `npm` and `pip`
 - fails if the active Node or Python version differs from the manifest pin
-- installs TypeScript dependencies from [`package.json`](./package.json)
+- installs Express/API TypeScript dependencies from [`package.json`](./package.json)
+- installs Pulse UI dependencies from [`src/pulseUI/package.json`](./src/pulseUI/package.json)
 - installs the Python package in editable mode with dev dependencies from [`pyproject.toml`](./pyproject.toml)
 - verifies the Python dev tools, including Ruff and Pyright
 - runs a `hello` check for both the Node and Python stacks
@@ -69,9 +75,11 @@ After setup, run these from the repository root:
 
 ```bash
 npm run dev
+npm run dev:web
 npm run typecheck
 npm test
 npm run build
+npm run build:web
 npm start
 ```
 
@@ -186,12 +194,116 @@ queue-cache tests directly with Vitest:
 ```powershell
 npx vitest run tests/typescript/features/taxPlanCycle/queueCache.test.ts tests/typescript/features/taxPlanCycle/queueDynamoStore.test.ts
 npm run test:integration -- tests/typescript/features/taxPlanCycle/queueRead.integration.test.ts
+
+## Python LocalStack Bootstrap
+
+The Python queue-projection bootstrap uses LocalStack and DynamoDB through a small
+docker-compose setup. For that flow, `.env` only needs these values:
+
+- `AWS_ACCESS_KEY_ID=test`
+- `AWS_SECRET_ACCESS_KEY=test`
+- `AWS_REGION=us-east-1`
+- `TAXPULSE_DYNAMODB_ENDPOINT_URL=http://localhost:4566`
+- `LOCALSTACK_AUTH_TOKEN=<your LocalStack token>`
+
+Before running the bootstrap, make sure the Python dev dependencies are installed
+from `pyproject.toml`. From the repository root, use whichever installer your
+machine has available:
+
+```powershell
+python -m pip install -e ".[dev]"
+```
+
+If you have `uv` installed, you can use that instead:
+
+```powershell
+uv sync --extra dev
+```
+
+Start Docker Desktop first, then run the Python bootstrap from the repository root:
+
+```powershell
+docker compose --env-file .env -f src/tax_liability_engine/docker-compose.yml up -d taxpulse-localstack
+```
+
+If a previous `taxpulse-localstack` container is already running or stuck in a
+conflicted state, remove it before rerunning:
+
+```powershell
+docker rm -f taxpulse-localstack
+```
+
+Then bootstrap the empty queue table:
+
+```powershell
+python -m tax_liability_engine.main
+```
+
+The Python entrypoint will start the container if it is missing, or reuse the
+configured Compose service if it is already available.
+
+If you want to confirm the table exists afterward, use the AWS CLI against the local
+endpoint:
+
+```powershell
+aws dynamodb describe-table --table-name taxpulse_plan_cycle_queue_projection --endpoint-url http://localhost:4566 --region us-east-1
+```
+
+## Redis Queue Cache
+
+The TypeScript queue-read cache uses Redis as disposable operational state. Add this
+value to your local `.env` file alongside the existing PostgreSQL and LocalStack
+settings:
+
+- `TAXPULSE_REDIS_URL=redis://localhost:6379`
+
+Start the Redis stack with the repo script:
+
+```powershell
+npm run redis:up
+```
+
+That compose stack brings up:
+
+- Redis on `localhost:6379`
+- RedisInsight on `http://localhost:5540`
+
+RedisInsight is preconfigured against the local Redis container, so once the stack is
+running you can open the browser UI and inspect the cache immediately.
+
+If you want to stop the stack cleanly:
+
+```powershell
+npm run redis:down
+```
+
+If a previous Redis container is still around, remove it before rerunning:
+
+```powershell
+docker rm -f taxpulse-redis taxpulse-redisinsight
+```
+
+Use the smoke command to prove the cache is reachable and writable:
+
+```powershell
+npm run redis:smoke
+```
+
+The Redis-backed queue-cache integration test runs through Testcontainers, so Docker
+must be running before `npm run test:integration`.
+
+After you install the updated Node dependencies locally, you can run the Redis
+queue-cache tests directly with Vitest:
+
+```powershell
+npx vitest run tests/typescript/features/taxPlanCycle/queueCache.test.ts tests/typescript/features/taxPlanCycle/queueDynamoStore.test.ts
+npm run test:integration -- tests/typescript/features/taxPlanCycle/queueRead.integration.test.ts
 ```
 
 ### TypeScript Coverage
 
 Vitest with `@vitest/coverage-v8` is the standard coverage path for the TypeScript
-suite. Use this command to generate local coverage output and reporting:
+and Pulse UI suite. Use this command to generate local coverage output and reporting:
 
 ```bash
 npm run test:cov
@@ -371,6 +483,7 @@ Install dependencies manually if needed:
 
 ```powershell
 npm install
+npm --prefix src/pulseUI install
 py -3.13 -m pip install -e ".[dev]"
 ```
 

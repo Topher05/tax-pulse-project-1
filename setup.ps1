@@ -131,6 +131,20 @@ if (Test-Path -LiteralPath "package.json") {
     Write-Host "No package.json found. Skipping npm ci for this fresh-clone check." -ForegroundColor Yellow
 }
 
+if (Test-Path -LiteralPath "src/pulseUI/package.json") {
+    if (Test-Path -LiteralPath "src/pulseUI/package-lock.json") {
+        Write-Host "Pulse UI package.json and package-lock.json detected. Running npm ci in src/pulseUI..." -ForegroundColor Cyan
+        & npm --prefix src/pulseUI ci | Out-Host
+    } else {
+        Write-Host "Pulse UI package.json detected without package-lock.json. Running npm install in src/pulseUI..." -ForegroundColor Cyan
+        & npm --prefix src/pulseUI install | Out-Host
+    }
+
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Pulse UI npm dependency installation failed."
+    }
+}
+
 Write-Host "Installing Python package with dev dependencies..." -ForegroundColor Cyan
 # This editable install is required before Ruff, Pyright, and pytest can run reliably.
 & py -$PythonMajorMinor -m pip install -e ".[dev]" | Out-Host
