@@ -37,6 +37,29 @@ Future tickets may update this ADR as the Plan Cycle Detail tabs become data-bac
 as route-level data loading, comment submission, authorization, or tab-specific
 component boundaries are finalized.
 
+## SCRUM-96 update
+SCRUM-96 keeps the SCRUM-95 navigation decision intact and fleshes out only the
+Overview tab. The route now uses a typed synthetic overview view model to render the
+plan brief, recommendation, projected savings, risk flags, and case properties side
+panel. The same overview model also provides the current stage used to initialize the
+existing stepper highlight, so the first render reflects the case's stage instead of
+always defaulting to Intake.
+
+This update does not make the Plan Cycle Detail route data-backed. The overview values
+remain clearly fake Pulse UI fixture data until a later BFF/read-model ticket defines
+the durable payload for recommendations, projected savings, risk flags, reviewer,
+stage-entered timestamp, and other detail fields. Scenarios, Comments, and Audit Trail
+remain skeleton tab panels, except for the existing local comments draft behavior from
+SCRUM-95.
+
+Still unimplemented for now:
+- live BFF/API reads for Plan Cycle Detail overview data,
+- backend schema or read-model fields for recommendation, projected savings, risk
+  flags, reviewer, or stage-entered timestamp,
+- persisted comment submission, audit trail rendering, and scenario tab content,
+- URL-addressable tab state or externally persisted navigation state,
+- authorization-aware tab visibility or actions.
+
 ## Consequences
 Benefits:
 - tab switching and stepper transitions are testable without BFF or auth dependencies,
@@ -45,11 +68,15 @@ Benefits:
 - future Plan Cycle UI work can share the `src/pulseUI/planCycles` feature area,
 - SCRUM-96 and SCRUM-97 can add real tab content without redesigning the navigation
   state foundation,
+- SCRUM-96 can satisfy the Overview acceptance criteria with a bounded UI fixture while
+  leaving live read-model contracts open,
 - the UI continues to respect the domain rule that workflow condition lives in stage,
   not a separate status.
 
 Tradeoffs:
 - the stage shown by SCRUM-95 is local UI state until live Plan Cycle reads are wired,
+- the stage shown by SCRUM-96 is initialized from synthetic overview data until the
+  detail route receives a live current-stage value,
 - future tickets must revisit the hook boundary if tab state becomes URL-addressable or
   externally persisted,
 - the ADR may need updates as the tab skeletons become complete feature surfaces.
