@@ -405,7 +405,6 @@ export async function main(): Promise<Server> {
     taxPlanCycleRepository,
     scenarioRepository,
     taxEngineClient,
-    logger,
   });
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;

@@ -1,7 +1,4 @@
-import type { Logger } from "pino";
-
 import { ProblemHttpError } from "../../../errors.js";
-import { createLogger } from "../../../logger.js";
 import type { ScenarioComparisonEngineOutput } from "../scenarioModeling.js";
 import type { ScenarioRepository } from "../repositories/scenarios.js";
 import type { TaxEngineClient } from "../infrastructure/engineClient.js";
@@ -26,7 +23,6 @@ export interface ScenarioModelingControllerOptions {
   taxPlanCycleRepository: Pick<TaxPlanCycleRepository, "findByCaseId">;
   scenarioRepository: Pick<ScenarioRepository, "createMany">;
   taxEngineClient: TaxEngineClient;
-  logger?: Logger;
 }
 
 function modelingUnavailableError(): ProblemHttpError {
@@ -38,15 +34,6 @@ function modelingUnavailableError(): ProblemHttpError {
   });
 }
 
-function formatEstTimestamp(occurredAt: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    dateStyle: "short",
-    timeStyle: "medium",
-    hour12: false,
-  }).format(occurredAt);
-}
-
 function taxEngineUnavailableError(): ProblemHttpError {
   return new ProblemHttpError({
     type: "https://taxpulse.example/problems/tax-engine-unavailable",
@@ -56,34 +43,9 @@ function taxEngineUnavailableError(): ProblemHttpError {
   });
 }
 
-function logTaxEngineFailure(
-  logger: Logger,
-  error: unknown,
-  input: ScenarioModelingControllerInput,
-): void {
-  const occurredAt = new Date();
-  const failureLogger = logger.child({
-    boundary: "tax-plan-cycle-scenario-modeling",
-    calling_function: "createScenarioModelingController.model",
-    occurred_at_est: formatEstTimestamp(occurredAt),
-    occurred_at_utc: occurredAt.toISOString(),
-    tenant_id: input.tenantId,
-    case_id: input.caseId,
-    upstream_service: "liability-engine",
-  });
-  const normalizedError =
-    error instanceof Error
-      ? error
-      : new Error(typeof error === "string" ? error : "Unexpected liability engine failure");
-
-  failureLogger.error(normalizedError, "scenario modeling failed");
-}
-
 export function createScenarioModelingController(
   options: ScenarioModelingControllerOptions,
 ): ScenarioModelingController {
-  const logger = options.logger ?? createLogger();
-
   return {
     async model(input) {
       const cycle = await options.taxPlanCycleRepository.findByCaseId({
@@ -114,16 +76,10 @@ export function createScenarioModelingController(
           scenarios: [...input.scenarios],
         });
       } catch (error) {
-        logTaxEngineFailure(logger, error, input);
         throw taxEngineUnavailableError();
       }
 
       if (engineResults.length !== input.scenarios.length) {
-        const mismatchError = new Error(
-          "Tax Engine returned an unexpected number of scenario results.",
-        );
-
-        logTaxEngineFailure(logger, mismatchError, input);
         throw taxEngineUnavailableError();
       }
 

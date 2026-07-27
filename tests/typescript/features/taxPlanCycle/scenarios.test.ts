@@ -1,5 +1,4 @@
 import { describe, expect, test, vi } from "vitest";
-import type { Logger } from "pino";
 
 import {
   scenarioComparisonSummarySchema,
@@ -119,15 +118,10 @@ describe("scenario modeling failure boundary", () => {
         throw engineError;
       }),
     };
-    const childLogger = { error: vi.fn() };
-    const logger = {
-      child: vi.fn(() => childLogger),
-    } as unknown as Logger;
     const controller = createScenarioModelingController({
       taxPlanCycleRepository: { findByCaseId },
       scenarioRepository: { createMany },
       taxEngineClient,
-      logger,
     });
     const input: ScenarioModelingControllerInput = {
       tenantId: "tenant-001",
@@ -160,20 +154,5 @@ describe("scenario modeling failure boundary", () => {
       caseId: cycle.id,
     });
     expect(createMany).not.toHaveBeenCalled();
-    expect(logger.child).toHaveBeenCalledWith(
-      expect.objectContaining({
-        calling_function: "createScenarioModelingController.model",
-        boundary: "tax-plan-cycle-scenario-modeling",
-        upstream_service: "liability-engine",
-        tenant_id: "tenant-001",
-        case_id: cycle.id,
-        occurred_at_est: expect.any(String),
-        occurred_at_utc: expect.any(String),
-      }),
-    );
-    expect(childLogger.error).toHaveBeenCalledWith(
-      engineError,
-      "scenario modeling failed",
-    );
   });
 });

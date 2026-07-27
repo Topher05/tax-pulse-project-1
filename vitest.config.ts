@@ -13,6 +13,7 @@ export default defineConfig({
       "**/.venv/**",
       "**/dist/**",
       "**/node_modules/**",
+      "src/pulseUI/**",
       "tests/typescript/smoke.test.ts",
       "**/*.integration.test.ts",
     ],

@@ -2,7 +2,6 @@ import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
 import type { RequestHandler } from "express";
-import type { Logger } from "pino";
 import { describe, expect, test, vi } from "vitest";
 
 import {
@@ -512,15 +511,10 @@ describe("createTaxPlanCycleRouter", () => {
         throw new Error("connect ECONNREFUSED 127.0.0.1:8000");
       }),
     };
-    const childLogger = { error: vi.fn() };
-    const logger = {
-      child: vi.fn(() => childLogger),
-    } as unknown as Logger;
     const scenarioModelingController = createScenarioModelingController({
       taxPlanCycleRepository: { findByCaseId },
       scenarioRepository,
       taxEngineClient,
-      logger,
     });
 
     await withScenarioRouteServer(
@@ -579,21 +573,6 @@ describe("createTaxPlanCycleRouter", () => {
         });
         expect(scenarioRepository.createMany).not.toHaveBeenCalled();
         expect(scenarioRepository.listByCaseId).not.toHaveBeenCalled();
-        expect(logger.child).toHaveBeenCalledWith(
-          expect.objectContaining({
-            calling_function: "createScenarioModelingController.model",
-            boundary: "tax-plan-cycle-scenario-modeling",
-            upstream_service: "liability-engine",
-            tenant_id: "tenant-001",
-            case_id: caseId,
-            occurred_at_est: expect.any(String),
-            occurred_at_utc: expect.any(String),
-          }),
-        );
-        expect(childLogger.error).toHaveBeenCalledWith(
-          expect.any(Error),
-          "scenario modeling failed",
-        );
         expect(create).not.toHaveBeenCalled();
       },
     );
