@@ -1,6 +1,7 @@
 import { createRootRoute, createRoute } from "@tanstack/react-router";
 
 import { AppShell } from "../AppShell.tsx";
+import { PlanCycleDetailRoute } from "../planCycles/PlanCycleDetailRoute.tsx";
 import { EmptyRoute } from "./EmptyRoute.tsx";
 
 const rootRoute = createRootRoute({
@@ -22,7 +23,7 @@ const planCyclesRoute = createRoute({
 const planCycleDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/plan-cycles/$caseId",
-  component: EmptyRoute,
+  component: PlanCycleDetailRoute,
 });
 
 const scenarioPlannerRoute = createRoute({
