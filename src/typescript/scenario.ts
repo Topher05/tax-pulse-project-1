@@ -1,13 +1,6 @@
 import { z } from "zod";
 
 const nonNegativeFiniteAmountSchema = z.number().finite().nonnegative();
-const decimalStringPattern = /^-?(?:0|[1-9]\d*)(?:\.\d+)?$/;
-const nonNegativeDecimalStringSchema = z
-  .string()
-  .regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/);
-const signedDecimalStringSchema = z
-  .string()
-  .regex(decimalStringPattern);
 
 /** Figures manually entered by an advisor for a modeled tax scenario. */
 export const scenarioTypedFiguresSchema = z.strictObject({
@@ -24,12 +17,7 @@ export const scenarioTypedFiguresSchema = z.strictObject({
 });
 
 /** Tax-calculation output stored with the figures that produced it. */
-export const scenarioComparisonSummarySchema = z.strictObject({
-  totalTax: nonNegativeDecimalStringSchema,
-  deltaVBaseline: signedDecimalStringSchema,
-});
-
-const scenarioComputedResultDetailedSchema = z.strictObject({
+export const scenarioComputedResultSchema = z.strictObject({
   federal_liability: nonNegativeFiniteAmountSchema,
   state_liability: nonNegativeFiniteAmountSchema,
   effective_rate: z.number().min(0).max(1),
@@ -38,11 +26,6 @@ const scenarioComputedResultDetailedSchema = z.strictObject({
   total_tax: nonNegativeFiniteAmountSchema,
   delta_vs_baseline: z.number(),
 });
-
-export const scenarioComputedResultSchema = z.union([
-  scenarioComputedResultDetailedSchema,
-  scenarioComparisonSummarySchema,
-]);
 
 export const scenarioSchema = z.strictObject({
   id: z.uuid(),
@@ -54,8 +37,5 @@ export const scenarioSchema = z.strictObject({
 });
 
 export type ScenarioTypedFigures = z.infer<typeof scenarioTypedFiguresSchema>;
-export type ScenarioComparisonSummary = z.infer<
-  typeof scenarioComparisonSummarySchema
->;
 export type ScenarioComputedResult = z.infer<typeof scenarioComputedResultSchema>;
 export type Scenario = z.infer<typeof scenarioSchema>;

@@ -15,15 +15,10 @@ const repository = vi.hoisted(() => ({
     priority: "high",
     due_date: "2026-12-31",
     on_hold: false,
-    scenarios: [],
   })),
   listQueue: vi.fn(),
-  listByCaseId: vi.fn(async () => []),
 }));
 const createTaxPlanCycleRepository = vi.hoisted(() => vi.fn(() => repository));
-const createScenarioRepository = vi.hoisted(() => vi.fn(() => ({
-  listByCaseId: repository.listByCaseId,
-})));
 
 vi.mock("pg", () => ({
   default: {
@@ -36,11 +31,6 @@ vi.mock("pg", () => ({
 vi.mock("../../../../src/typescript/features/taxPlanCycle/repository/repository.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/repository/repository.js")>()),
   createTaxPlanCycleRepository,
-}));
-
-vi.mock("../../../../src/typescript/features/taxPlanCycle/repositories/scenarios.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/repositories/scenarios.js")>()),
-  createScenarioRepository,
 }));
 
 const originalEnvironment = { ...process.env };
@@ -71,7 +61,6 @@ describe("main Tax Plan Cycle composition", () => {
       JWT_SIGNING_SECRET: "a-unique-test-secret-that-is-more-than-32-bytes",
       JWT_ACCESS_TOKEN_TTL_SECONDS: "900",
       JWT_REFRESH_TOKEN_TTL_SECONDS: "1200",
-      LIABILITY_ENGINE_BASE: "http://127.0.0.1:8000",
       LOG_LEVEL: "silent",
       PORT: "0",
     };
