@@ -17,8 +17,8 @@ import {
   varchar,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { ScenarioComputedResult, ScenarioTypedFigures } from "../scenario.js";
-import { taxPlanCycleStages } from "../taxPlanCycle.js";
+import type { ScenarioComputedResult, ScenarioTypedFigures } from "../../scenario.js";
+import { taxPlanCycleStages } from "../../features/taxPlanCycle/taxPlanCycle.js";
 
 const stageValuesSql = sql.join(
   taxPlanCycleStages.map((stage) => sql.raw(`'${stage.replace(/'/g, "''")}'`)),
