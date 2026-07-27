@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:web": "npm --prefix src/pulseUI run build",
     "db:check": "drizzle-kit check",
     "db:gen": "drizzle-kit generate",
     "db:monitor": "drizzle-kit studio",
@@ -16,6 +17,7 @@
     "db:force": "drizzle-kit push",
     "db:up": "drizzle-kit up",
     "dev": "tsx src/typescript/index.ts",
+    "dev:web": "npm --prefix src/pulseUI run dev",
     "redis:up": "docker compose -f docker-compose.redis.yml up -d",
     "redis:down": "docker compose -f docker-compose.redis.yml down",
     "redis:smoke": "tsx src/typescript/redisSmoke.ts",
@@ -25,7 +27,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:cov": "vitest run --coverage",
     "test:smoke": "node --import tsx --test tests/typescript/smoke.test.ts",
-    "test:vitest": "vitest run",
+    "test:vitest": "npm run test:express",
     "typecheck": "node scripts/typecheck.mjs"
   },
   "devDependencies": {
