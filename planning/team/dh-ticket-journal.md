@@ -91,6 +91,8 @@ Add new ticket entries below using this template.
 **Changed Files:**
 
 - `planning/team/dh-ticket-journal.md`
+- `adr/0018-plan-cycle-detail-navigation-state.md`
+- `adr/README.md`
 - `src/pulseUI/planCycles/PlanCycleDetailRoute.tsx`
 - `src/pulseUI/planCycles/usePlanCycleDetailNavigation.ts`
 - `src/pulseUI/routing/routeTree.tsx`
