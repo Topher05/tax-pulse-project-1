@@ -118,7 +118,7 @@ export {
   tenants,
   users,
   userStatus,
-} from "./db/schema.js";
+} from "./shared/database/schema.js";
 export {
   createBracketReferenceRepository,
   type BracketReferenceLookupInput,
@@ -201,7 +201,7 @@ export {
   type TaxPlanCycleTransitionInput,
   type TaxPlanCycleTransitionParams,
   type TaxPlanCycleStage,
-} from "./taxPlanCycle.js";
+} from "./features/taxPlanCycle/index.js";
 export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
@@ -213,15 +213,48 @@ export {
   type TaxPlanCycleRepository,
   type TaxPlanCycleRepositoryCreateInput,
   type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
-} from "./taxPlanCycleRepository.js";
-export {
+  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
+  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
+  TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
+  buildTaxPlanCycleQueueReadCacheKey,
+  buildTaxPlanCycleQueueTenantVersionKey,
+  createNoopTaxPlanCycleQueueCacheInvalidator,
+  createTaxPlanCycleQueueCache,
+  createTaxPlanCycleQueueCacheInvalidator,
+  createTaxPlanCycleQueueDynamoDocumentClient,
+  createTaxPlanCycleQueueProjectionStore,
+  createTaxPlanCycleQueueReadService,
+  createTaxPlanCycleCreateController,
+  taxPlanCycleCreateController,
+  taxPlanCycleCreateResultSchema,
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
+  createTaxPlanCycleRouter,
+  taxPlanCycleQueueProjectionItemSchema,
+  taxPlanCycleQueueProjectionItemsSchema,
+  type CreateTaxPlanCycleRouterOptions,
+  type TaxPlanCycleCreateControllerInput,
+  type TaxPlanCycleCreateController,
+  type TaxPlanCycleCreateResult,
+  type TaxPlanCycleQueueCache,
+  type TaxPlanCycleQueueCacheClient,
+  type TaxPlanCycleQueueCacheInvalidator,
+  type TaxPlanCycleQueueCacheReadInput,
+  type TaxPlanCycleQueueProjectionDynamoClient,
+  type TaxPlanCycleQueueProjectionItem,
+  type TaxPlanCycleQueueProjectionReader,
+  type TaxPlanCycleQueueReadService,
+  type TaxPlanCycleQueueReadServiceOptions,
+  type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionController,
-} from "./taxPlanCycleTransitionController.js";
+  type ValidationErrorIssue,
+  type ValidationErrorResponse,
+} from "./features/taxPlanCycle/index.js";
 
+// Feature export block separation for runtime startup safety
 import { config as loadEnv } from "dotenv";
 import pg from "pg";
+import { createClient } from "redis";
 
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
@@ -230,10 +263,15 @@ import { createJwtAuthenticationMiddleware, hydrateUserClaims } from "./jwtAuthe
 import { createCostAccountingMiddleware } from "./costAccounting.js";
 import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
-import { createTaxPlanCycleRouter } from "./taxPlanCycleRoutes.js";
-import { createTaxPlanCycleCreateController } from "./taxPlanCycleCreateController.js";
-import { createTaxPlanCycleTransitionController } from "./taxPlanCycleTransitionController.js";
-import { createTaxPlanCycleRepository } from "./taxPlanCycleRepository.js";
+import {
+  createNoopTaxPlanCycleQueueCacheInvalidator,
+  createTaxPlanCycleCreateController,
+  createTaxPlanCycleQueueCache,
+  createTaxPlanCycleQueueCacheInvalidator,
+  createTaxPlanCycleRepository,
+  createTaxPlanCycleRouter,
+  createTaxPlanCycleTransitionController,
+} from "./features/taxPlanCycle/index.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
@@ -257,25 +295,11 @@ const taxPlanCycleApiPrefix = "/v1";
 const taxPlanCycleApiBasePath = `${taxPlanCycleApiPrefix}/tax-plan-cycles`;
 
 export {
-  createTaxPlanCycleCreateController,
-  taxPlanCycleCreateController,
-  taxPlanCycleCreateResultSchema,
-  type TaxPlanCycleCreateControllerInput,
-  type TaxPlanCycleCreateController,
-  type TaxPlanCycleCreateResult,
-} from "./taxPlanCycleCreateController.js";
-export {
   createMfaEnrollmentRouter,
   type CreateMfaEnrollmentRouterOptions,
   type MfaValidationErrorIssue,
   type MfaValidationErrorResponse,
 } from "./mfaEnrollmentRoutes.js";
-export {
-  createTaxPlanCycleRouter,
-  type CreateTaxPlanCycleRouterOptions,
-  type ValidationErrorIssue,
-  type ValidationErrorResponse,
-} from "./taxPlanCycleRoutes.js";
 
 export function createGreeting(runtime: string = "TypeScript"): string {
   return `hello from ${runtime}`;
@@ -313,6 +337,20 @@ export async function main(): Promise<Server> {
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
+  let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
+  let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
+
+  if (queueRedisUrl) {
+    queueCacheRedisClient = createClient({ url: queueRedisUrl });
+    await queueCacheRedisClient.connect();
+    const queueCache = createTaxPlanCycleQueueCache(queueCacheRedisClient);
+    queueCacheInvalidator = createTaxPlanCycleQueueCacheInvalidator(
+      queueCache,
+    );
+    logger.info("Connected to Redis for queue cache invalidation");
+  }
+
   const auditEntryRepository = createAuditEntryRepository(client);
   const auditEntryWriter = createAuditEntryWriter(client);
   const taxPlanCycleController = createTaxPlanCycleCreateController(
@@ -320,6 +358,9 @@ export async function main(): Promise<Server> {
   );
   const taxPlanCycleTransitionController = createTaxPlanCycleTransitionController(
     taxPlanCycleRepository,
+    {
+      queueCacheInvalidator,
+    },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
     authenticatePasswordForMfaChallenge(input, credentialReader);
@@ -376,6 +417,11 @@ export async function main(): Promise<Server> {
       resolve(server);
     });
 
+    server.on("close", () => {
+      if (queueCacheRedisClient) {
+        void queueCacheRedisClient.quit().catch(() => undefined);
+      }
+    });
     server.on("error", reject);
   });
 }

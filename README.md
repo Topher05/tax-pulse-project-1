@@ -137,6 +137,57 @@ endpoint:
 aws dynamodb describe-table --table-name taxpulse_plan_cycle_queue_projection --endpoint-url http://localhost:4566 --region us-east-1
 ```
 
+## Redis Queue Cache
+
+The TypeScript queue-read cache uses Redis as disposable operational state. Add this
+value to your local `.env` file alongside the existing PostgreSQL and LocalStack
+settings:
+
+- `TAXPULSE_REDIS_URL=redis://localhost:6379`
+
+Start the Redis stack with the repo script:
+
+```powershell
+npm run redis:up
+```
+
+That compose stack brings up:
+
+- Redis on `localhost:6379`
+- RedisInsight on `http://localhost:5540`
+
+RedisInsight is preconfigured against the local Redis container, so once the stack is
+running you can open the browser UI and inspect the cache immediately.
+
+If you want to stop the stack cleanly:
+
+```powershell
+npm run redis:down
+```
+
+If a previous Redis container is still around, remove it before rerunning:
+
+```powershell
+docker rm -f taxpulse-redis taxpulse-redisinsight
+```
+
+Use the smoke command to prove the cache is reachable and writable:
+
+```powershell
+npm run redis:smoke
+```
+
+The Redis-backed queue-cache integration test runs through Testcontainers, so Docker
+must be running before `npm run test:integration`.
+
+After you install the updated Node dependencies locally, you can run the Redis
+queue-cache tests directly with Vitest:
+
+```powershell
+npx vitest run tests/typescript/features/taxPlanCycle/queueCache.test.ts tests/typescript/features/taxPlanCycle/queueDynamoStore.test.ts
+npm run test:integration -- tests/typescript/features/taxPlanCycle/queueRead.integration.test.ts
+```
+
 ### TypeScript Coverage
 
 Vitest with `@vitest/coverage-v8` is the standard coverage path for the TypeScript
@@ -221,7 +272,7 @@ different capacity or latency tradeoffs:
 ## Migration Commands
 
 The PostgreSQL migration workflow keeps typed Drizzle schema definitions in
-[`src/typescript/db/schema.ts`](./src/typescript/db/schema.ts), generated Drizzle
+[`src/typescript/shared/database/schema.ts`](./src/typescript/shared/database/schema.ts), generated Drizzle
 migration evidence in [`drizzle/`](./drizzle), and the executable SQL migration files
 in the top-level [`migrations/`](./migrations) directory.
 
@@ -269,7 +320,7 @@ Notes:
 - Drizzle definitions are the typed schema contract; the SQL migration runner applies
   the top-level `migrations/` files and records applied files in `schema_migrations`.
 - Keep any local seed data synthetic and clearly fake.
-- A shared seed data lives in `src/typescript/db/seed.ts` and is executed with `npm run seed`; keep any generated sample data synthetic and clearly fake.
+- A shared seed data lives in `src/typescript/shared/database/seed.ts` and is executed with `npm run seed`; keep any generated sample data synthetic and clearly fake.
 - Start Docker before running `npm run test:integration` or any command that depends on Testcontainers.
 
 ## Contributing and Codex Context

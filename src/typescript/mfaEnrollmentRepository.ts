@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
-import { mfaEnrollment, roles, users, userStatus } from "./db/schema.js";
+import { mfaEnrollment, roles, users, userStatus } from "./shared/database/schema.js";
 import type {
   MfaEnrollmentRecord,
   MfaEnrollmentRepository,

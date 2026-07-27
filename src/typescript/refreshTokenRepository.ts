@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
-import { refreshToken } from "./db/schema.js";
+import { refreshToken } from "./shared/database/schema.js";
 
 export interface PersistRefreshTokenInput {
   userId: string;

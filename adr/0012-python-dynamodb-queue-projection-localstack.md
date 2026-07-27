@@ -56,6 +56,9 @@ The repository also includes a small Python bootstrap entrypoint and Compose fil
 developer can bring up LocalStack and create the queue table manually without adding a
 full migration framework.
 
+Bookmark the LocalStack Cloud console at `https://app.localstack.cloud/` for license
+management and remote environment visibility when using the licensed image.
+
 The application has a clear configuration path:
 
 - local tests and development use a LocalStack endpoint and fake local credentials,

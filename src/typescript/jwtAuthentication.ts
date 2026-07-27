@@ -3,7 +3,7 @@ import { jwtVerify } from "jose";
 
 import type { JwtConfig } from "./authConfig.js";
 import type { AuthenticatedPrincipal, UserRole } from "./authTypes.js";
-import { roleNameEnum } from "./db/schema.js";
+import { roleNameEnum } from "./shared/database/schema.js";
 import { ProblemHttpError } from "./errors.js";
 
 declare global {

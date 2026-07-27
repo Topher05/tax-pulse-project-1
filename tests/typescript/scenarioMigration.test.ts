@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { taxPlanCycleRows } from "../../src/typescript/db/seed.model.js";
+import { taxPlanCycleRows } from "../../src/typescript/shared/database/seed.model.js";
 import { withDockerDrizzleSeededDatabase } from "./bootstrap/migrationTestUtils.js";
 import { expectPgError, getTableStructure } from "./bootstrap/tableTestUtils.js";
 

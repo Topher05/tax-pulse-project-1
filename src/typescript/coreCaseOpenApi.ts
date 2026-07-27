@@ -5,7 +5,7 @@ import {
   authMfaLoginRequestSchema,
   authMfaLoginResultSchema,
 } from "./authMfaLogin.js";
-import { taxPlanCycleCreateResultSchema } from "./taxPlanCycleCreateController.js";
+import { taxPlanCycleCreateResultSchema } from "./features/taxPlanCycle/index.js";
 import {
   mfaEnrollConfirmRequestSchema,
   mfaEnrollConfirmResultSchema,
@@ -16,7 +16,7 @@ import {
   taxPlanCycleCreateSchema,
   taxPlanCycleReadParamsSchema,
   taxPlanCycleSchema,
-} from "./taxPlanCycle.js";
+} from "./features/taxPlanCycle/index.js";
 
 type JsonValue =
   | string
