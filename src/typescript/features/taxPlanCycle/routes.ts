@@ -6,10 +6,8 @@ import {
   taxPlanCycleCreateController,
   type TaxPlanCycleCreateController,
 } from "./controllers/createController.js";
-import { type ScenarioModelingController } from "./scenarioModelingController.js";
-import {
-  scenarioModelingRequestSchema,
-} from "./scenarioModeling.js";
+import { type ScenarioModelingController } from "./controllers/scenarios.js";
+import { scenarioModelingRequestSchema } from "./scenarioModeling.js";
 import type {
   AuditEntryReader,
   AuditEntryWriter,
@@ -28,7 +26,7 @@ import {
   taxPlanCycleTransitionController,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
-import type { ScenarioRepository } from "./scenarioRepository.js";
+import type { ScenarioRepository } from "./repositories/scenarios.js";
 
 export interface ValidationErrorIssue {
   path: Array<string | number>;
@@ -435,12 +433,7 @@ export function createTaxPlanCycleRouter(
         });
 
         res.status(201).json(scenarios);
-      } catch (error) {
-        console.log("*\n*")
-        console.log(error?.name)
-        console.log(error?.timeoutMs)
-        console.log(error.message)
-         console.log("*\n*")
+      } catch (error: unknown) {
         next(error);
       }
     },

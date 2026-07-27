@@ -4,7 +4,7 @@ import {
   scenarioComputedResultSchema,
   scenarioSchema,
   scenarioTypedFiguresSchema,
-} from "../../src/typescript/scenario.js";
+} from "../../../../src/typescript/scenario.js";
 
 const typedFigures = {
   income: 250_000,

@@ -6,7 +6,7 @@ import {
   maximumScenariosPerCase,
   ScenarioCaseNotFoundError,
   ScenarioLimitExceededError,
-} from "../../src/typescript/scenarioRepository.js";
+} from "../../src/typescript/features/taxPlanCycle/repositories/scenarios.js";
 import { withDockerDrizzleSeededDatabase } from "./bootstrap/migrationTestUtils.js";
 
 const typedFigures = {

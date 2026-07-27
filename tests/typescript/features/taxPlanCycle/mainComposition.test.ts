@@ -38,8 +38,8 @@ vi.mock("../../../../src/typescript/features/taxPlanCycle/repository/repository.
   createTaxPlanCycleRepository,
 }));
 
-vi.mock("../../../../src/typescript/features/taxPlanCycle/scenarioRepository.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/scenarioRepository.js")>()),
+vi.mock("../../../../src/typescript/features/taxPlanCycle/repositories/scenarios.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/repositories/scenarios.js")>()),
   createScenarioRepository,
 }));
 

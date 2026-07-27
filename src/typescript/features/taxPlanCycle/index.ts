@@ -85,7 +85,7 @@ export {
   type ScenarioModelingController,
   type ScenarioModelingControllerInput,
   type ScenarioModelingControllerOptions,
-} from "./scenarioModelingController.js";
+} from "./controllers/scenarios.js";
 export {
   createScenarioRepository,
   maximumScenariosPerCase,
@@ -95,7 +95,7 @@ export {
   type ScenarioCreateManyInput,
   type ScenarioRepository,
   type Scenario,
-} from "./scenarioRepository.js";
+} from "./repositories/scenarios.js";
 export {
   scenarioModelingEngineResponseSchema,
   scenarioModelingEngineScenarioSchema,
@@ -115,4 +115,4 @@ export {
   type TaxEngineClient,
   type TaxEngineClientOptions,
   type TaxEngineComparisonRequest,
-} from "./taxEngineClient.js";
+} from "./infrastructure/engineClient.js";
