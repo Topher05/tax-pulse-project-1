@@ -7,6 +7,9 @@ import {
   type TaxPlanCycleCreateController,
 } from "./controllers/createController.js";
 import { type ScenarioModelingController } from "./scenarioModelingController.js";
+import {
+  scenarioModelingRequestSchema,
+} from "./scenarioModeling.js";
 import type {
   AuditEntryReader,
   AuditEntryWriter,
@@ -25,10 +28,7 @@ import {
   taxPlanCycleTransitionController,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
-import {
-  scenarioModelingRequestSchema,
-} from "../../scenarioModeling.js";
-import type { ScenarioRepository } from "../../scenarioRepository.js";
+import type { ScenarioRepository } from "./scenarioRepository.js";
 
 export interface ValidationErrorIssue {
   path: Array<string | number>;

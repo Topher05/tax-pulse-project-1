@@ -17,7 +17,12 @@ export const scenarioTypedFiguresSchema = z.strictObject({
 });
 
 /** Tax-calculation output stored with the figures that produced it. */
-export const scenarioComputedResultSchema = z.strictObject({
+export const scenarioComparisonSummarySchema = z.strictObject({
+  total_tax: nonNegativeFiniteAmountSchema,
+  delta_vs_baseline: z.number(),
+});
+
+const scenarioComputedResultDetailedSchema = z.strictObject({
   federal_liability: nonNegativeFiniteAmountSchema,
   state_liability: nonNegativeFiniteAmountSchema,
   effective_rate: z.number().min(0).max(1),
@@ -26,6 +31,11 @@ export const scenarioComputedResultSchema = z.strictObject({
   total_tax: nonNegativeFiniteAmountSchema,
   delta_vs_baseline: z.number(),
 });
+
+export const scenarioComputedResultSchema = z.union([
+  scenarioComputedResultDetailedSchema,
+  scenarioComparisonSummarySchema,
+]);
 
 export const scenarioSchema = z.strictObject({
   id: z.uuid(),

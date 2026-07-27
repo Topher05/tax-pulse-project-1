@@ -135,7 +135,7 @@ export {
   type ScenarioCreateInput,
   type ScenarioCreateManyInput,
   type ScenarioRepository,
-} from "./scenarioRepository.js";
+} from "./features/taxPlanCycle/index.js";
 export {
   scenarioModelingEngineResponseSchema,
   scenarioModelingEngineScenarioSchema,
@@ -145,7 +145,7 @@ export {
   type ScenarioModelingEngineScenario,
   type ScenarioModelingRequest,
   type ScenarioModelingScenarioInput,
-} from "./scenarioModeling.js";
+} from "./features/taxPlanCycle/index.js";
 export {
   scenarioComputedResultSchema,
   scenarioSchema,
@@ -160,7 +160,7 @@ export {
   type TaxEngineClient,
   type TaxEngineClientOptions,
   type TaxEngineComparisonRequest,
-} from "./taxEngineClient.js";
+} from "./features/taxPlanCycle/index.js";
 export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
 export {
   createJwtAuthenticationMiddleware,
@@ -309,8 +309,10 @@ import {
   createTaxPlanCycleTransitionController,
   createScenarioModelingController,
 } from "./features/taxPlanCycle/index.js";
-import { createScenarioRepository } from "./scenarioRepository.js";
-import { createTaxEngineClient } from "./taxEngineClient.js";
+import {
+  createScenarioRepository,
+  createTaxEngineClient,
+} from "./features/taxPlanCycle/index.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
