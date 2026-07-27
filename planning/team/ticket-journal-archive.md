@@ -382,7 +382,6 @@ model.
 
 **Validation Notes:**
 
-<<<<<<< HEAD:planning/team/ticket-journal.md
 - `npm run typecheck` passed after the schema, seed, and repository changes.
 - `npm run db:check` passed after generating the Drizzle migration.
 - Focused PostgreSQL tests and `npm run test:migration` require Testcontainers; they are
@@ -442,7 +441,6 @@ migrations, public-route headers, or a separate Tax Plan Cycle status field.
   SCRUM-70. The full Vitest run ended with 115 passing tests and 13 existing
   Testcontainers-backed migration failures because this environment could not find a
   working container runtime strategy.
-=======
 - `npm run typecheck` passed.
 - `npm test` passed the new route coverage, but the full Vitest run still timed out in
   pre-existing `role` and `user` tests at the 5 second test limit.
@@ -2290,4 +2288,3 @@ projection boundary.
 - `tests/python/queue_projection/test_models.py`
 - `tests/python/queue_projection/test_service.py`
 - `planning/team/ticket-journal.md`
->>>>>>> 063531b98ff61d552643a55e13d0ad85133b7cf3:planning/team/ticket-journal-archive.md

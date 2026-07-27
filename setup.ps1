@@ -152,6 +152,12 @@ if ($LASTEXITCODE -ne 0) {
     Fail "Python package installation failed."
 }
 
+Write-Host "Verifying the canonical Python package import path..." -ForegroundColor Cyan
+& py -$PythonMajorMinor -c "import tax_liability_engine, tax_liability_engine.api; print(tax_liability_engine.__name__)" | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    Fail "Canonical Python package import check failed."
+}
+
 Write-Host "Verifying Python linting and type-check tools..." -ForegroundColor Cyan
 & py -$PythonMajorMinor -m ruff --version | Out-Host
 if ($LASTEXITCODE -ne 0) {
@@ -191,12 +197,12 @@ if (Test-Path -LiteralPath "package.json") {
 }
 
 Write-Host "Running Python checks..." -ForegroundColor Cyan
-& py -$PythonMajorMinor -m ruff format --check src/python tests/python | Out-Host
+& py -$PythonMajorMinor -m ruff format --check src tests | Out-Host
 if ($LASTEXITCODE -ne 0) {
     Fail "Ruff formatting check failed."
 }
 
-& py -$PythonMajorMinor -m ruff check src/python tests/python | Out-Host
+& py -$PythonMajorMinor -m ruff check src tests | Out-Host
 if ($LASTEXITCODE -ne 0) {
     Fail "Ruff lint check failed."
 }

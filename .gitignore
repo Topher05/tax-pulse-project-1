@@ -5,7 +5,9 @@ node_modules/
 __pycache__/
 *.egg-info/
 .venv/
+.pytest_tmp/
 .env
 planning/prompt-journal/*
 coverage/*
 .DS_Store
+uv.lock

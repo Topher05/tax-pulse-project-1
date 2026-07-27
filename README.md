@@ -1,4 +1,4 @@
-# tax-pulse-project-team-1
+# tax-liability-engine
 
 ## Project Layout
 
@@ -6,10 +6,10 @@ This workspace is scaffolded as a small dual-runtime project:
 
 - TypeScript source lives in [`src/typescript`](./src/typescript)
 - Pulse UI React/Vite source lives in [`src/pulseUI`](./src/pulseUI)
-- Python source lives in [`src/python/tax_pulse_project_team_1`](./src/python/tax_pulse_project_team_1)
+- Python source lives in [`src/tax_liability_engine`](./src/tax_liability_engine)
 - TypeScript tests live in [`tests/typescript`](./tests/typescript)
 - Pulse UI component tests live in [`src/pulseUI/tests`](./src/pulseUI/tests)
-- Python tests live in [`tests/python`](./tests/python)
+- Python tests live in [`tests/tax_liability_engine`](./tests/tax_liability_engine)
 
 ## Toolchain
 
@@ -84,70 +84,220 @@ npm start
 ```
 
 ```bash
-python -m tax_pulse_project_team_1.main
-python -m ruff format --check src/python tests/python
-python -m ruff check src/python tests/python
+python -m tax_liability_engine.main
+python -m ruff format --check src tests
+python -m ruff check src tests
 python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"
 python -m pytest
 ```
 
-### Pulse UI
+## Python LocalStack Bootstrap
 
-The Pulse UI operator workspace is nested under [`src/pulseUI`](./src/pulseUI). Its
-frontend-specific package and config files live beside the implementation:
+The Python queue-projection bootstrap uses LocalStack and DynamoDB through a small
+docker-compose setup. For that flow, `.env` only needs these values:
 
-- [`src/pulseUI/package.json`](./src/pulseUI/package.json) owns UI-only scripts and dependencies.
-- [`src/pulseUI/package-lock.json`](./src/pulseUI/package-lock.json) locks the UI dependency graph separately from the Express/API lockfile.
-- [`src/pulseUI/index.html`](./src/pulseUI/index.html) is the Vite HTML entrypoint.
-- [`src/pulseUI/vite.config.ts`](./src/pulseUI/vite.config.ts) sets the app root and
-  builds browser assets to `dist/pulseUI`.
-- [`src/pulseUI/tsconfig.pulseUI.json`](./src/pulseUI/tsconfig.pulseUI.json) type-checks
-  browser TypeScript, JSX, and Pulse UI tests.
-- [`src/pulseUI/vitest.config.ts`](./src/pulseUI/vitest.config.ts) is the Vitest config
-  used by Pulse UI tests.
-- [`src/typescript/vitest.config.ts`](./src/typescript/vitest.config.ts) is the Vitest
-  config used by Express/backend TypeScript tests.
+- `AWS_ACCESS_KEY_ID=test`
+- `AWS_SECRET_ACCESS_KEY=test`
+- `AWS_REGION=us-east-1`
+- `TAXPULSE_DYNAMODB_ENDPOINT_URL=http://localhost:4566`
+- `LOCALSTACK_AUTH_TOKEN=<your LocalStack token>`
 
-Run the Pulse UI dev server:
+Before running the bootstrap, make sure the Python dev dependencies are installed
+from `pyproject.toml`. From the repository root, use whichever installer your
+machine has available:
 
-```bash
-npm run dev:web
+```powershell
+python -m pip install -e ".[dev]"
 ```
 
-Build the Pulse UI production bundle:
+If you have `uv` installed, you can use that instead:
 
-```bash
-npm run build:web
+```powershell
+uv sync --extra dev
 ```
 
-Run the Pulse UI shell test directly:
+Start Docker Desktop first, then run the Python bootstrap from the repository root:
 
-```bash
-npm run test:pulseUI -- tests/appShell.test.tsx
+```powershell
+docker compose --env-file .env -f src/tax_liability_engine/docker-compose.yml up -d taxpulse-localstack
 ```
 
-Install or refresh only Pulse UI dependencies:
+If a previous `taxpulse-localstack` container is already running or stuck in a
+conflicted state, remove it before rerunning:
 
-```bash
-npm --prefix src/pulseUI install
+```powershell
+docker rm -f taxpulse-localstack
 ```
 
-Run Express/backend TypeScript tests:
+Then bootstrap the empty queue table:
 
-```bash
-npm run test:express
+```powershell
+python -m tax_liability_engine.main
 ```
 
-Run both Express/backend and Pulse UI Vitest suites:
+The Python entrypoint will start the container if it is missing, or reuse the
+configured Compose service if it is already available.
 
-```bash
-npm run test:vitest
+If you want to confirm the table exists afterward, use the AWS CLI against the local
+endpoint:
+
+```powershell
+aws dynamodb describe-table --table-name taxpulse_plan_cycle_queue_projection --endpoint-url http://localhost:4566 --region us-east-1
 ```
 
-Run all TypeScript checks, including backend TypeScript and Pulse UI:
+## Redis Queue Cache
 
-```bash
-npm run typecheck
+The TypeScript queue-read cache uses Redis as disposable operational state. Add this
+value to your local `.env` file alongside the existing PostgreSQL and LocalStack
+settings:
+
+- `TAXPULSE_REDIS_URL=redis://localhost:6379`
+
+Start the Redis stack with the repo script:
+
+```powershell
+npm run redis:up
+```
+
+That compose stack brings up:
+
+- Redis on `localhost:6379`
+- RedisInsight on `http://localhost:5540`
+
+RedisInsight is preconfigured against the local Redis container, so once the stack is
+running you can open the browser UI and inspect the cache immediately.
+
+If you want to stop the stack cleanly:
+
+```powershell
+npm run redis:down
+```
+
+If a previous Redis container is still around, remove it before rerunning:
+
+```powershell
+docker rm -f taxpulse-redis taxpulse-redisinsight
+```
+
+Use the smoke command to prove the cache is reachable and writable:
+
+```powershell
+npm run redis:smoke
+```
+
+The Redis-backed queue-cache integration test runs through Testcontainers, so Docker
+must be running before `npm run test:integration`.
+
+After you install the updated Node dependencies locally, you can run the Redis
+queue-cache tests directly with Vitest:
+
+```powershell
+npx vitest run tests/typescript/features/taxPlanCycle/queueCache.test.ts tests/typescript/features/taxPlanCycle/queueDynamoStore.test.ts
+npm run test:integration -- tests/typescript/features/taxPlanCycle/queueRead.integration.test.ts
+
+## Python LocalStack Bootstrap
+
+The Python queue-projection bootstrap uses LocalStack and DynamoDB through a small
+docker-compose setup. For that flow, `.env` only needs these values:
+
+- `AWS_ACCESS_KEY_ID=test`
+- `AWS_SECRET_ACCESS_KEY=test`
+- `AWS_REGION=us-east-1`
+- `TAXPULSE_DYNAMODB_ENDPOINT_URL=http://localhost:4566`
+- `LOCALSTACK_AUTH_TOKEN=<your LocalStack token>`
+
+Before running the bootstrap, make sure the Python dev dependencies are installed
+from `pyproject.toml`. From the repository root, use whichever installer your
+machine has available:
+
+```powershell
+python -m pip install -e ".[dev]"
+```
+
+If you have `uv` installed, you can use that instead:
+
+```powershell
+uv sync --extra dev
+```
+
+Start Docker Desktop first, then run the Python bootstrap from the repository root:
+
+```powershell
+docker compose --env-file .env -f src/tax_liability_engine/docker-compose.yml up -d taxpulse-localstack
+```
+
+If a previous `taxpulse-localstack` container is already running or stuck in a
+conflicted state, remove it before rerunning:
+
+```powershell
+docker rm -f taxpulse-localstack
+```
+
+Then bootstrap the empty queue table:
+
+```powershell
+python -m tax_liability_engine.main
+```
+
+The Python entrypoint will start the container if it is missing, or reuse the
+configured Compose service if it is already available.
+
+If you want to confirm the table exists afterward, use the AWS CLI against the local
+endpoint:
+
+```powershell
+aws dynamodb describe-table --table-name taxpulse_plan_cycle_queue_projection --endpoint-url http://localhost:4566 --region us-east-1
+```
+
+## Redis Queue Cache
+
+The TypeScript queue-read cache uses Redis as disposable operational state. Add this
+value to your local `.env` file alongside the existing PostgreSQL and LocalStack
+settings:
+
+- `TAXPULSE_REDIS_URL=redis://localhost:6379`
+
+Start the Redis stack with the repo script:
+
+```powershell
+npm run redis:up
+```
+
+That compose stack brings up:
+
+- Redis on `localhost:6379`
+- RedisInsight on `http://localhost:5540`
+
+RedisInsight is preconfigured against the local Redis container, so once the stack is
+running you can open the browser UI and inspect the cache immediately.
+
+If you want to stop the stack cleanly:
+
+```powershell
+npm run redis:down
+```
+
+If a previous Redis container is still around, remove it before rerunning:
+
+```powershell
+docker rm -f taxpulse-redis taxpulse-redisinsight
+```
+
+Use the smoke command to prove the cache is reachable and writable:
+
+```powershell
+npm run redis:smoke
+```
+
+The Redis-backed queue-cache integration test runs through Testcontainers, so Docker
+must be running before `npm run test:integration`.
+
+After you install the updated Node dependencies locally, you can run the Redis
+queue-cache tests directly with Vitest:
+
+```powershell
+npx vitest run tests/typescript/features/taxPlanCycle/queueCache.test.ts tests/typescript/features/taxPlanCycle/queueDynamoStore.test.ts
+npm run test:integration -- tests/typescript/features/taxPlanCycle/queueRead.integration.test.ts
 ```
 
 ### TypeScript Coverage
@@ -234,7 +384,7 @@ different capacity or latency tradeoffs:
 ## Migration Commands
 
 The PostgreSQL migration workflow keeps typed Drizzle schema definitions in
-[`src/typescript/db/schema.ts`](./src/typescript/db/schema.ts), generated Drizzle
+[`src/typescript/shared/database/schema.ts`](./src/typescript/shared/database/schema.ts), generated Drizzle
 migration evidence in [`drizzle/`](./drizzle), and the executable SQL migration files
 in the top-level [`migrations/`](./migrations) directory.
 
@@ -276,14 +426,36 @@ Run the migration integration test:
 npm run test:migration
 ```
 
+Run the Python liability engine API locally:
+
+```powershell
+python src/tax_liability_engine/scripts/liability_engine_on.py
+```
+
 Notes:
 
 - The Node scripts read `.env` automatically through `dotenv`.
 - Drizzle definitions are the typed schema contract; the SQL migration runner applies
   the top-level `migrations/` files and records applied files in `schema_migrations`.
 - Keep any local seed data synthetic and clearly fake.
-- A shared seed data lives in `src/typescript/db/seed.ts` and is executed with `npm run seed`; keep any generated sample data synthetic and clearly fake.
+- A shared seed data lives in `src/typescript/shared/database/seed.ts` and is executed with `npm run seed`; keep any generated sample data synthetic and clearly fake.
 - Start Docker before running `npm run test:integration` or any command that depends on Testcontainers.
+
+The FastAPI liability engine reads `JWT_ISSUER` and `JWT_SIGNING_SECRET` from the local
+environment. The Python startup script loads `.env` from the repository root before
+launching `uvicorn`, so the service is usually one command away after setup.
+
+### Liability Engine HTTP Surface
+
+The current FastAPI surface is feature-sliced and tenant-scoped. Available routes:
+
+- `GET /health`
+- `POST /tax-calculations`
+- `POST /scenarios/comparisons`
+
+Each calculation route expects a shared JWT bearer token and uses the token-derived
+tenant context at the route boundary. The request bodies stay focused on calculation
+inputs, and the math remains inside the domain services.
 
 ## Contributing and Codex Context
 
@@ -322,7 +494,7 @@ Success means:
 
 - `node --version` matches [`.nvmrc`](./.nvmrc) and the `nodejs` entry in [`.tool-versions`](./.tool-versions)
 - `python --version` matches the `python` entry in [`.tool-versions`](./.tool-versions) and `requires-python` in [`pyproject.toml`](./pyproject.toml)
-- `python -m ruff format --check src/python tests/python`, `python -m ruff check src/python tests/python`, and `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"` all pass
+- `python -m ruff format --check src tests`, `python -m ruff check src tests`, and `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"` all pass
 - Running the setup script completes with both hello checks green
 
 ## Security Information

@@ -1,0 +1,9 @@
+services:
+  taxpulse-localstack:
+    image: localstack/localstack:stable
+    container_name: taxpulse-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: dynamodb
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN}

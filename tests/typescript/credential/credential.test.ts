@@ -3,7 +3,7 @@ import { asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { describe, expect, test } from "vitest";
 
-import { credential } from "../../../src/typescript/db/schema.js";
+import { credential } from "../../../src/typescript/shared/database/schema.js";
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 import { getTableStructure, expectPgError } from "../bootstrap/tableTestUtils.js";
 import {
@@ -28,7 +28,7 @@ async function withCredentialDatabase<T>(
 }
 
 describe("credential module", () => {
-  test("tracks the credential table contract and seeded rows", { timeout: 30000 }, async () => {
+  test("tracks the credential table contract and seeded rows", { timeout: 60000 }, async () => {
     await withCredentialDatabase(async (client) => {
       const db = drizzle(client);
       const structure = await getTableStructure(client, "credential");
@@ -52,7 +52,7 @@ describe("credential module", () => {
     });
   });
 
-  test("rejects duplicate user credentials and missing user foreign keys", { timeout: 30000 }, async () => {
+  test("rejects duplicate user credentials and missing user foreign keys", { timeout: 60000 }, async () => {
     await withCredentialDatabase(async (client) => {
       const db = drizzle(client);
 

@@ -34,6 +34,186 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira86 - SCRUM-86
+
+**Branch:** `christopher-martus-jira86`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-86
+
+**Summary:** Compute scenario deltas against the baseline
+
+**Description:** As an Advisor, I want each scenario's delta versus the baseline
+computed, so that I can compare planning options for a client.
+
+**Acceptance Criteria:**
+
+- A scenario request accepts 2-5 scenarios of typed-in figures and rejects fewer than
+  2 or more than 5.
+- Each result reports total tax and the dollar delta versus the baseline.
+- Scenario calculations reuse the same bracket logic as the baseline calculation.
+
+**Code Connection:**
+
+- The persisted scenario result contract now reserves `total_tax` and
+  `delta_vs_baseline`. Python comparison request and result models use
+  `TaxCalculationRequest` for baseline and scenario typed figures, enforce the 2-5
+  request bound, and represent the signed delta. The comparison service calculates the
+  baseline once and delegates every scenario to `calculate_tax`, ensuring a single
+  calculation path for bracket logic.
+
+**Project Scope Connection:**
+
+This implements the typed Domain Compute contract between ticket 85 scenario persistence
+and ticket 87 transport. It does not add an HTTP endpoint, database migration, or bracket
+liability calculation.
+
+**Changed Files:**
+
+- `src/typescript/scenario.ts`
+- `tests/typescript/scenario.test.ts`
+- `tests/typescript/scenarioRepository.test.ts`
+- `src/python/tax_pulse_project_team_1/scenario_comparison.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/test_scenario_comparison.py`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `.venv\\Scripts\\python.exe -m pytest tests/python/test_scenario_comparison.py`
+  passed (7 tests; only an existing pytest-cache permission warning).
+- `.venv\\Scripts\\python.exe -m ruff format --check src/python tests/python` passed.
+- `.venv\\Scripts\\python.exe -m pyright --pythonpath ".\\.venv\\Scripts\\python.exe"`
+  passed with 0 errors and 0 warnings.
+- The real-bracket scenario comparison test passed as part of the focused 27-test
+  ticket-81/ticket-86 suite.
+- `.venv\\Scripts\\python.exe -m pytest tests/python/test_tax_calculation.py
+  tests/python/test_tax_brackets.py tests/python/test_tax_bracket_schedules.py
+  tests/python/test_scenario_comparison.py` passed (27 tests; only an existing
+  pytest-cache permission warning).
+- `.venv\\Scripts\\python.exe -m ruff format --check src/python tests/python` passed.
+- `.venv\\Scripts\\python.exe -m pyright --pythonpath ".\\.venv\\Scripts\\python.exe"`
+  passed with 0 errors and 0 warnings.
+
+## christopher-martus-jira81 - SCRUM-81
+
+**Branch:** `christopher-martus-jira81`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-81
+
+**Summary:** Implement bracket liability and effective/marginal rates
+
+**Description:** As an Advisor, I want federal and state bracket liability with effective
+and marginal rates, so that each Tax Plan Cycle shows real numbers.
+
+**Acceptance Criteria:**
+
+- The engine computes federal and state bracket liability for a given filing status and
+  state.
+- It derives the effective rate and the marginal rate from the brackets.
+- Identical inputs always return identical outputs (deterministic, no ML).
+
+**Code Connection:**
+
+- This first implementation slice adds an immutable `TaxBracket` value object and a
+  pure `calculate_bracket_liability` helper. The helper accumulates each reached income
+  range without I/O, time, randomness, or mutable shared state.
+- This second slice supplies immutable 2026 federal and 2025 California schedules for
+  every supported filing status. `get_bracket_schedules` returns the federal and
+  requested state schedules through a state-neutral lookup mapping.
+- This third slice upgrades the calculation contract to `Decimal` monetary values and
+  returns rounded federal, state, and total liabilities with combined effective and
+  marginal rates. It normalizes supported state codes and returns zero rates when
+  taxable income is zero.
+
+**Project Scope Connection:**
+
+This establishes the deterministic progressive-tax primitive for the Domain Compute
+service. The public calculation response and rate outputs will be added in subsequent
+SCRUM-81 slices.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/tax_calculation.py`
+- `tests/python/test_tax_brackets.py`
+- `tests/python/test_tax_bracket_schedules.py`
+- `tests/python/test_tax_calculation.py`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Isolated calculation assertions for multi-bracket, boundary, and zero-income cases
+  passed via direct module execution.
+- `python -m ruff format --check src/python/tax_pulse_project_team_1/tax_calculation.py
+  tests/python/test_tax_brackets.py` passed.
+- `python -m pyright src/python/tax_pulse_project_team_1/tax_calculation.py` passed.
+- Isolated schedule lookup assertions for all supported filing statuses and California
+  bounds passed via direct module execution.
+- Isolated end-to-end assertions for the exact single-filer liabilities/rates,
+  zero-taxable-income rates, and repeated identical requests passed via direct module
+  execution.
+- Pytest collection is currently blocked before tests run because the local Python
+  environment is missing the project dependency `boto3`.
+
+## christopher-martus_jira85 - SCRUM-85
+
+**Branch:** `christopher-martus_jira85`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-85
+
+**Summary:** Create the scenario table for typed-in figures
+
+**Description:** As a Backend Developer, I want a scenario table, so that 2-5 modeled
+scenarios are persisted per cycle.
+
+**Acceptance Criteria:**
+
+- A migration creates a scenario table keyed to a case with name, typed-in figures, and
+  computed result.
+- A constraint or repository check limits a case to between 2 and 5 scenarios.
+- A test asserts a 6th scenario insert is rejected.
+
+**Code Connection:**
+
+- The first implementation slice defines the shared TypeScript schemas for manually
+  entered calculation figures and stored calculation results, plus the matching Drizzle
+  table contract. The migration creates that table, and the tenant-scoped repository
+  locks the parent case while counting inserts so a sixth scenario is rejected safely.
+
+**Project Scope Connection:**
+
+This establishes the PostgreSQL persistence boundary between Tax Plan Cycles and Domain
+Compute scenario comparisons. It does not expose an HTTP endpoint or calculate deltas.
+
+**Changed Files:**
+
+- `src/typescript/scenario.ts`
+- `src/typescript/db/schema.ts`
+- `src/typescript/db/drizzle-migrations/0006_scenario.sql`
+- `src/typescript/db/drizzle-migrations/meta/0006_snapshot.json`
+- `src/typescript/db/drizzle-migrations/meta/_journal.json`
+- `tests/typescript/scenario.test.ts`
+- `tests/typescript/scenarioMigration.test.ts`
+- `src/typescript/scenarioRepository.ts`
+- `tests/typescript/scenarioRepository.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/scenario.test.ts` passed (2 tests).
+- `npm run db:check` passed.
+- `npx vitest run tests/typescript/scenarioMigration.test.ts` is blocked because this
+  environment has no working container runtime for Testcontainers.
+- `npx vitest run tests/typescript/scenarioRepository.test.ts` is blocked for the same
+  Testcontainers runtime limitation; it contains the acceptance case that persists five
+  scenarios and rejects the sixth.
+
 ## christopher-martus-jira79 - SCRUM-79
 
 **Branch:** `christopher-martus-jira79`

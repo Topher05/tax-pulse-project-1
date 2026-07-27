@@ -5,7 +5,7 @@ import type { Client } from "pg";
 import {
   federalTaxBracket,
   stateTaxBracket,
-} from "./db/schema.js";
+} from "./shared/database/schema.js";
 
 export interface BracketReferenceLookupInput {
   filingStatus: string;

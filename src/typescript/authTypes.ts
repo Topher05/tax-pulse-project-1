@@ -1,4 +1,4 @@
-import { roleNameEnum } from "./db/schema.js";
+import { roleNameEnum } from "./shared/database/schema.js";
 
 export type UserRole = (typeof roleNameEnum.enumValues)[number];
 

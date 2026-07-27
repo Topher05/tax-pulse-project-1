@@ -5,6 +5,90 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira82 - SCRUM-82
+
+**Branch:** `martins-okorie-jira82`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-82
+
+**Summary:** Derive the quarterly estimated payment
+
+**Description:** As an Advisor, I want the quarterly estimated payment derived from
+total liability, so that the cycle shows what the client owes each quarter.
+
+**Acceptance Criteria:**
+
+- The engine splits total liability into four quarterly estimates.
+- The estimate accounts for withholdings already applied.
+- A pytest case asserts the four estimates sum to the net liability.
+
+**Code Connection:** The Python tax calculation request now accepts non-negative
+withholding, the response carries a four-payment quarterly estimate schedule, and the
+calculation module derives deterministic cent-accurate quarterly payments from net
+liability.
+
+**Project Scope Connection:** This supports the Tax Plan Cycle modeling workflow by
+turning calculated liability into quarterly payment guidance advisors can show clients
+during tax planning.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/tax_calculation.py`
+- `tests/python/test_tax_calculation.py`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `python -m pytest tests/python/test_tax_calculation.py` passed.
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"` passed.
+- `python -m pytest` passed after starting Colima and downloading
+  `localstack/localstack:3.8.1` for the LocalStack/Testcontainers projection tests.
+
+## martins-okorie-jira83new - SCRUM-83
+
+**Branch:** `martins-okorie-jira83new`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-83
+
+**Summary:** Cover calculation edge cases with pytest
+
+**Description:** As a Backend Developer, I want pytest edge cases over the
+calculation, so that boundary conditions are correct.
+
+**Acceptance Criteria:**
+
+- Tests cover zero income.
+- Tests cover income at a bracket boundary.
+- Tests cover deductions exceeding income.
+
+**Code Connection:** The tax calculation test suite now verifies the current
+Decimal-based calculation contract for zero-income requests, exact federal bracket
+boundary income values, and deductions that meet or exceed income without changing
+the production calculation API.
+
+**Project Scope Connection:** This protects the Tax Calculation Engine behavior
+used by Tax Plan Cycle modeling so advisors receive deterministic liability values
+at common boundary conditions.
+
+**Changed Files:**
+
+- `tests/python/test_tax_calculation.py`
+- `src/python/tax_pulse_project_team_1/tax_calculation.py`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `python -m pytest tests/python/test_tax_calculation.py` passed.
+- `python -m ruff format --check src/python tests/python` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"` passed.
+- `python -m pytest` ran 67 passing tests and stopped on the two LocalStack projection
+  tests because Docker was not available at the local Unix socket.
+
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 

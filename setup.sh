@@ -128,6 +128,9 @@ printf "Installing Python package with dev dependencies...\n"
 # This editable install is required before Ruff, Pyright, and pytest can run reliably.
 python -m pip install -e ".[dev]"
 
+printf "Verifying the canonical Python package import path...\n"
+python -c "import tax_liability_engine, tax_liability_engine.api; print(tax_liability_engine.__name__)"
+
 printf "Verifying Python linting and type-check tools...\n"
 python -m ruff --version
 python -m pyright --version
@@ -148,8 +151,8 @@ if [[ -f package.json ]]; then
 fi
 
 printf "Running Python checks...\n"
-python -m ruff format --check src/python tests/python
-python -m ruff check src/python tests/python
+python -m ruff format --check src tests
+python -m ruff check src tests
 PYTHON_EXECUTABLE="$(python -c "import sys; print(sys.executable)")"
 python -m pyright --pythonpath "$PYTHON_EXECUTABLE"
 python -m pytest

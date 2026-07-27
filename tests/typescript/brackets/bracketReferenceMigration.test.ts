@@ -23,7 +23,7 @@ const expectedStateColumns = [
 ] as const;
 
 describe("bracket reference migrations", () => {
-  test("creates the federal and state bracket table contracts", { timeout: 30000 }, async () => {
+  test("creates the federal and state bracket table contracts", { timeout: 60000 }, async () => {
     await withDockerDrizzleSeededDatabase(async (client) => {
       const federalStructure = await getTableStructure(client, "federal_tax_bracket");
       const stateStructure = await getTableStructure(client, "state_tax_bracket");
@@ -67,7 +67,7 @@ describe("bracket reference migrations", () => {
     });
   });
 
-  test("prevents duplicate bracket lower bounds within a lookup scope", { timeout: 30000 }, async () => {
+  test("prevents duplicate bracket lower bounds within a lookup scope", { timeout: 60000 }, async () => {
     await withDockerDrizzleSeededDatabase(async (client) => {
       await client.query(`
         INSERT INTO federal_tax_bracket

@@ -4,7 +4,7 @@ import { createBracketReferenceRepository } from "../../../src/typescript/bracke
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 
 describe("bracket reference repository", () => {
-  test("returns ordered federal and state brackets for a filing status and state", { timeout: 30000 }, async () => {
+  test("returns ordered federal and state brackets for a filing status and state", { timeout: 60000 }, async () => {
     await withDockerDrizzleSeededDatabase(async (client) => {
       const repository = createBracketReferenceRepository(client);
 
@@ -43,7 +43,7 @@ describe("bracket reference repository", () => {
     });
   });
 
-  test("filters state brackets without changing the federal filing-status result", { timeout: 30000 }, async () => {
+  test("filters state brackets without changing the federal filing-status result", { timeout: 60000 }, async () => {
     await withDockerDrizzleSeededDatabase(async (client) => {
       const repository = createBracketReferenceRepository(client);
 

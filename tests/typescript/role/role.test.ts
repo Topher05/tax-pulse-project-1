@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 import { getTableStructure, expectPgError } from "../bootstrap/tableTestUtils.js";
-import { roles } from "../../../src/typescript/db/schema.js";
+import { roles } from "../../../src/typescript/shared/database/schema.js";
 import {
   expectedRoleColumnTypes,
   expectedRoleColumns,
@@ -27,7 +27,7 @@ async function withRoleDatabase<T>(
 }
 
 describe("role module", () => {
-  test("tracks the roles table contract and seeded rows", { timeout: 30000 }, async () => {
+  test("tracks the roles table contract and seeded rows", { timeout: 60000 }, async () => {
     await withRoleDatabase(async (client) => {
       const db = drizzle(client);
       const structure = await getTableStructure(client, "roles");
@@ -49,7 +49,7 @@ describe("role module", () => {
     });
   });
 
-  test("rejects duplicate lookup values and invalid role values", { timeout: 30000 }, async () => {
+  test("rejects duplicate lookup values and invalid role values", { timeout: 60000 }, async () => {
     await withRoleDatabase(async (client) => {
       const db = drizzle(client);
 
