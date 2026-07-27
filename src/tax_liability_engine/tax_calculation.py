@@ -19,6 +19,7 @@ ALLOWED_FILING_STATUSES: Final[frozenset[str]] = frozenset(
 MONEY_CENT: Final[Decimal] = Decimal("0.01")
 QUARTER_COUNT: Final[int] = 4
 
+
 @dataclass(frozen=True, slots=True)
 class TaxBracket:
     """An income range taxed at one marginal rate."""

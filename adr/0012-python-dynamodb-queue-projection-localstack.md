@@ -1,4 +1,4 @@
-# ADR-0010: Python DynamoDB Queue Projection with LocalStack
+# ADR-0012: Python DynamoDB Queue Projection with LocalStack
 
 ## Context
 TaxPulse Advisory needs the Plan Cycle Queue to move toward a denormalized read model
@@ -41,10 +41,9 @@ without committing credentials or cloud-specific values.
 
 Use Python Testcontainers to start LocalStack for DynamoDB integration tests. Tests
 create the table against LocalStack, verify the key schema, and write/query synthetic
-tenant-scoped projection items. The fixture defaults to a pinned LocalStack community
-image that does not require a project auth token, while allowing teams to override the
-image and pass `LOCALSTACK_AUTH_TOKEN` through environment variables if they later
-adopt current LocalStack licensing.
+tenant-scoped projection items. The fixture defaults to `localstack/localstack:stable`
+and passes `LOCALSTACK_AUTH_TOKEN` through the environment so the local setup matches
+the licensed image used by the new bootstrap flow.
 
 ## Consequences
 The DynamoDB queue projection contract now lives in the Python package and can evolve
@@ -52,6 +51,10 @@ with Python/Pydantic service boundaries.
 
 Local tests exercise real AWS-shaped DynamoDB APIs through boto3 and LocalStack without
 using paid AWS. Docker is required for the LocalStack-backed pytest coverage.
+
+The repository also includes a small Python bootstrap entrypoint and Compose file so a
+developer can bring up LocalStack and create the queue table manually without adding a
+full migration framework.
 
 The application has a clear configuration path:
 

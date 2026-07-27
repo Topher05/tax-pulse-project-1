@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date
 
-from tax_pulse_project_team_1.queue_projection import (
+from tax_liability_engine.tax_plan_cycle_queue_projection import (
     TaxPlanCycleQueueProjectionItem,
     TaxPlanCycleRecord,
     project_tax_plan_cycle_to_queue_item,
@@ -53,18 +53,38 @@ def test_project_tax_plan_cycle_to_queue_item_recomputes_overdue_from_due_date()
     )
 
 
-def test_upsert_tax_plan_cycle_queue_projection_invokes_writer_with_projected_item() -> None:
+def test_upsert_tax_plan_cycle_queue_projection_puts_projected_item() -> None:
     source = build_cycle(due_date="2026-07-24")
-    captured: list[TaxPlanCycleQueueProjectionItem] = []
+    calls: list[dict[str, object]] = []
+
+    class RecordingDynamoDbClient:
+        def put_item(self, **kwargs: object) -> dict[str, object]:
+            calls.append(kwargs)
+            return {}
 
     projection = upsert_tax_plan_cycle_queue_projection(
         "tenant-001",
         source,
         as_of=date(2026, 7, 22),
-        writer=captured.append,
+        dynamodb_client=RecordingDynamoDbClient(),
+        table_name="taxpulse_plan_cycle_queue_projection_test",
     )
 
-    assert captured == [projection]
+    assert calls == [
+        {
+            "TableName": "taxpulse_plan_cycle_queue_projection_test",
+            "Item": {
+                "tenant_id": {"S": "tenant-001"},
+                "case_id": {"S": "case-001"},
+                "client": {"S": "client-001"},
+                "stage": {"S": "Intake"},
+                "owner": {"S": "Advisor One"},
+                "priority": {"S": "high"},
+                "due_date": {"S": "2026-07-24"},
+                "is_overdue": {"BOOL": False},
+            },
+        }
+    ]
     assert projection.overdue is False
 
 
