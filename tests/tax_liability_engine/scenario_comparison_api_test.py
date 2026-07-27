@@ -5,8 +5,8 @@ from datetime import UTC, datetime, timedelta
 import jwt
 import pytest
 from httpx import ASGITransport, AsyncClient
-from tax_pulse_project_team_1.api import create_app
-from tax_pulse_project_team_1.jwt_authentication import JwtValidationConfig
+from tax_liability_engine.api import create_app
+from tax_liability_engine.jwt_authentication import JwtValidationConfig
 
 CONFIG = JwtValidationConfig(
     issuer="https://auth.taxpulse.example",

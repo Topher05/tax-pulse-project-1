@@ -6,10 +6,10 @@ from decimal import Decimal
 import jwt
 import pytest
 from httpx import ASGITransport, AsyncClient
-from tax_pulse_project_team_1.api import create_app
-from tax_pulse_project_team_1.jwt_authentication import JwtValidationConfig
-from tax_pulse_project_team_1.routers import tax_calculation as tax_calculation_router
-from tax_pulse_project_team_1.tax_calculation import TaxCalculationRequest, TaxCalculationResult
+from tax_liability_engine.api import create_app
+from tax_liability_engine.jwt_authentication import JwtValidationConfig
+from tax_liability_engine.routers import tax_calculation as tax_calculation_router
+from tax_liability_engine.tax_calculation import TaxCalculationRequest, TaxCalculationResult
 
 CONFIG = JwtValidationConfig(
     issuer="https://auth.taxpulse.example",

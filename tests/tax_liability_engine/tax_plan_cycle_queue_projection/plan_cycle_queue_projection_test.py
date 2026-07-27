@@ -21,7 +21,7 @@ from tax_liability_engine.tax_plan_cycle_queue_projection import (
     TaxPlanCycleRecord,
     upsert_tax_plan_cycle_queue_projection,
 )
-from tax_pulse_project_team_1.dynamodb.plan_cycle_queue_projection import DynamoDbClient
+from tax_liability_engine.dynamodb.plan_cycle_queue_projection import DynamoDbClient
 
 try:
     from docker.errors import DockerException as DockerError  # type: ignore[assignment]
