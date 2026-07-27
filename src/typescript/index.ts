@@ -137,21 +137,37 @@ export {
   type ScenarioRepository,
 } from "./features/taxPlanCycle/index.js";
 export {
+  scenarioComparisonEngineInputSchema,
+  scenarioComparisonEngineInputScenarioSchema,
+  scenarioComparisonEngineOutputSchema,
+  scenarioComparisonEngineOutputScenarioSchema,
+  scenarioComparisonResponseSchema,
+  scenarioComparisonResultSchema,
   scenarioModelingEngineResponseSchema,
   scenarioModelingEngineScenarioSchema,
   scenarioModelingRequestSchema,
+  scenarioModelingResponseSchema,
   scenarioModelingScenarioInputSchema,
   type ScenarioModelingEngineResponse,
   type ScenarioModelingEngineScenario,
   type ScenarioModelingRequest,
+  type ScenarioModelingResponse,
   type ScenarioModelingScenarioInput,
+  type ScenarioComparisonEngineInput,
+  type ScenarioComparisonEngineInputScenario,
+  type ScenarioComparisonEngineOutput,
+  type ScenarioComparisonEngineOutputScenario,
+  type ScenarioComparisonResponse,
+  type ScenarioComparisonResult,
 } from "./features/taxPlanCycle/index.js";
 export {
   scenarioComputedResultSchema,
   scenarioSchema,
+  scenarioComparisonSummarySchema,
   scenarioTypedFiguresSchema,
   type ScenarioComputedResult,
   type ScenarioTypedFigures,
+  type ScenarioComparisonSummary,
 } from "./scenario.js";
 export {
   createTaxEngineClient,
@@ -159,6 +175,7 @@ export {
   TaxEngineTimeoutError,
   type TaxEngineClient,
   type TaxEngineClientOptions,
+  type ScenarioComparisonEngineRequest,
   type TaxEngineComparisonRequest,
 } from "./features/taxPlanCycle/index.js";
 export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";

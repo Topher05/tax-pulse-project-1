@@ -18,8 +18,8 @@ export const scenarioTypedFiguresSchema = z.strictObject({
 
 /** Tax-calculation output stored with the figures that produced it. */
 export const scenarioComparisonSummarySchema = z.strictObject({
-  total_tax: nonNegativeFiniteAmountSchema,
-  delta_vs_baseline: z.number(),
+  totalTax: nonNegativeFiniteAmountSchema,
+  deltaVBaseline: z.number(),
 });
 
 const scenarioComputedResultDetailedSchema = z.strictObject({
@@ -47,5 +47,8 @@ export const scenarioSchema = z.strictObject({
 });
 
 export type ScenarioTypedFigures = z.infer<typeof scenarioTypedFiguresSchema>;
+export type ScenarioComparisonSummary = z.infer<
+  typeof scenarioComparisonSummarySchema
+>;
 export type ScenarioComputedResult = z.infer<typeof scenarioComputedResultSchema>;
 export type Scenario = z.infer<typeof scenarioSchema>;
