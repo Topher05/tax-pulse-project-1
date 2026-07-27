@@ -27,7 +27,9 @@ from testcontainers.localstack import LocalStackContainer
 type DynamoDbAttributeValue = dict[str, str] | dict[str, bool]
 type DynamoDbAttributeMap = dict[str, DynamoDbAttributeValue]
 
-DEFAULT_LOCALSTACK_TEST_IMAGE = "localstack/localstack:3.8.1" # Pinned version in tests to circument api key req for cloud int
+DEFAULT_LOCALSTACK_TEST_IMAGE = (
+    "localstack/localstack:3.8.1"  # Pinned version in tests to circument api key req for cloud int
+)
 
 
 def _docker_engine_is_available() -> bool:

@@ -7,7 +7,7 @@ from tax_liability_engine import (
     TaxCalculationResult,
     calculate_tax,
 )
-from tax_pulse_project_team_1.tax_calculation import derive_quarterly_estimates
+from tax_liability_engine.tax_calculation import derive_quarterly_estimates
 
 
 def test_tax_calculation_request_accepts_required_fields() -> None:
@@ -27,8 +27,8 @@ def test_tax_calculation_request_accepts_required_fields() -> None:
 
 def test_tax_calculation_request_accepts_withholding() -> None:
     model = TaxCalculationRequest(
-        income=100000,
-        deductions=12000,
+        income=Decimal("100000"),
+        deductions=Decimal("12000"),
         withholding=24500,
         state="CA",
         filing_status="single",
@@ -39,9 +39,7 @@ def test_tax_calculation_request_accepts_withholding() -> None:
 
 def test_tax_calculation_request_rejects_missing_fields() -> None:
     with pytest.raises(ValidationError, match="filing_status"):
-        TaxCalculationRequest.model_validate(
-            {"income": 100000, "deductions": 12000, "state": "CA"}
-        )
+        TaxCalculationRequest.model_validate({"income": 100000, "deductions": 12000, "state": "CA"})
 
 
 def test_tax_calculation_request_rejects_invalid_filing_status_with_custom_message() -> None:
