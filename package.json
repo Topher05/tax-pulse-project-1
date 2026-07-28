@@ -25,12 +25,14 @@
     "start": "node dist/typescript/index.js",
     "test": "npm run typecheck && npm run test:vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:pact": "vitest run tests/typescript/features/taxPlanCycle/engineClient.pact.test.ts",
     "test:cov": "vitest run --coverage",
     "test:smoke": "node --import tsx --test tests/typescript/smoke.test.ts",
-    "test:vitest": "npm run test:express",
+    "test:vitest": "vitest run --config vitest.config.ts",
     "typecheck": "node scripts/typecheck.mjs"
   },
   "devDependencies": {
+    "@pact-foundation/pact": "^17.0.1",
     "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.15.5",

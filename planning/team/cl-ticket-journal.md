@@ -287,3 +287,122 @@ existing calculation math contract.
 - `.\.venv\Scripts\python.exe -m pytest tests/python/test_tax_calculation_api.py
   tests/python/test_scenario_comparison_api.py` passed: 11 tests passed.
 - `.\.venv\Scripts\python.exe -m pytest` passed: 74 tests passed, 2 skipped.
+
+## caleb-latimer-jira90 - SCRUM-90
+
+**Branch:** `caleb-latimer-jira90`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-90
+
+**Summary:** Call the Tax Engine from Core through the Node HTTP client and persist modeled scenario results
+
+**Description:** As an Advisor, I want modeling on a cycle to call the Tax Engine through the Core service, so that results are persisted on the case.
+
+**Acceptance Criteria:**
+
+- A scenario-modeling request on a case in Modeling stage calls the engine using the Node service's native HTTP client with a per-call timeout and bounded retries, and stores the returned figures.
+- The call carries the shared JWT and tenant context.
+- The stored scenario results are returned on a subsequent case read.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant Core as Core Case Service
+    participant JWT as Shared JWT
+    participant Engine as Liability Engine (FastAPI)
+    participant Repo as Scenario Repository
+
+    Advisor->>Core: POST /v1/tax-plan-cycles/:caseId/scenarios
+    Core->>JWT: Validate bearer token + tenant claim
+    JWT-->>Core: principal + tenant context
+    Core->>Engine: POST /scenarios/comparisons\nHeaders: authorization, x-taxpulse-tenant-id\nBody: { baseline, scenarios[].typed_figures }
+    Note right of Engine: Success 200\n[{ name, total_tax, delta_vs_baseline }]
+    Note right of Engine: Errors 400 validation\n401 unauthorized\n502/504 upstream failure
+    Engine-->>Core: 200 OK\n[{ name, total_tax, delta_vs_baseline }]
+    Core->>Repo: createMany(caseId, tenantId, scenarios)
+    Repo-->>Core: persisted scenario rows
+    Core-->>Advisor: 201 Created + stored scenarios
+
+    Advisor->>Core: GET /v1/tax-plan-cycles/:caseId
+    Core->>Repo: listByCaseId(tenantId, caseId)
+    Repo-->>Core: cycle + scenarios
+    Core-->>Advisor: 200 OK + case with scenarios
+```
+
+**Code Connection:** `src/typescript/features/taxPlanCycle/routes.ts` now exposes the modeling POST and read-back flow, `src/typescript/features/taxPlanCycle/controllers/scenarios.ts` owns the engine call and persistence handoff, `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts` provides the native HTTP client with timeout and retry handling, `src/typescript/features/taxPlanCycle/repositories/scenarios.ts` stores and lists scenario rows, and `src/typescript/coreCaseOpenApi.ts` documents the scenario request and response shapes. `src/typescript/index.ts` wires the runtime composition and exports the feature-local scenario contracts.
+
+**Project Scope Connection:** This sits in the Polyglot Backend & Contracts workstream and extends the Core Case Service scenario-modeling slice so the TypeScript service can broker engine calls and persist the modeled figures without changing the tax math contract itself.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/scenarioModelingController.ts`
+- `src/typescript/scenarioModeling.ts`
+- `src/typescript/taxEngineClient.ts`
+- `src/typescript/scenarioRepository.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `.env.example`
+- `README.md`
+- `planning/team/cl-ticket-journal.md`
+- `planning/prompt-journal/cl-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` passed: 45 test files passed, 1 skipped; 201 tests passed, 1 skipped.
+
+## caleb-latimer-jira91 - SCRUM-91
+
+**Branch:** `caleb-latimer-jira91`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-91
+
+**Summary:** Surface liability-engine failures as 502 Problem Details without mutating scenario state
+
+**Description:** As an Advisor, I want engine failures surfaced cleanly, so that a calculation outage never corrupts a case.
+
+**Acceptance Criteria:**
+
+- An engine failure surfaces as a 502-class Problem Details error.
+- The case's stored state is unchanged after a failed call.
+- A test asserts the case is intact after an injected engine failure.
+
+**Code Connection:** `src/typescript/features/taxPlanCycle/controllers/scenarios.ts` now translates scenario-modeling engine failures into `ProblemHttpError` 502 responses without a feature-local scenario logger, `src/typescript/features/taxPlanCycle/routes.ts` continues to delegate scenario modeling through the feature-local controller, `src/typescript/coreCaseOpenApi.ts` documents the 502 scenario failure response, and `src/typescript/index.ts` wires the tax plan cycle feature through the composition root.
+
+**Project Scope Connection:** This extends the Core Case Service scenario-modeling slice from Jira-90 and keeps the FastAPI liability engine wire contract unchanged while tightening the Core-side failure boundary.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/controllers/scenarios.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/scenarios.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/repository/repository.ts`
+- `src/typescript/features/taxPlanCycle/readService.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueDynamoStore.ts`
+- `src/typescript/features/taxPlanCycle/controllers/createController.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `package.json`
+- `vitest.config.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` passed after fixing the stale `test:express` script reference and scoping Vitest away from the React UI tree.
+- Deviation from the original change set: the scenario-local logger was removed entirely because it did not improve the failure output enough to justify the added scope.
+- Deviation from the original change set: the root test harness was repaired as part of the same pass so the Node test run is exclusive from the React UI tree and `npm test` is meaningful again.

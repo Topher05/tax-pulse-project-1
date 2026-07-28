@@ -5,6 +5,17 @@ import {
   authMfaLoginRequestSchema,
   authMfaLoginResultSchema,
 } from "./authMfaLogin.js";
+import {
+  registrationAccountResponseSchema,
+  registrationRequestSchema,
+} from "./authRegistration.js";
+import {
+  scenarioComputedResultSchema,
+  scenarioTypedFiguresSchema,
+} from "./scenario.js";
+import {
+  scenarioModelingRequestSchema,
+} from "./features/taxPlanCycle/scenarioModeling.js";
 import { taxPlanCycleCreateResultSchema } from "./features/taxPlanCycle/index.js";
 import {
   mfaEnrollConfirmRequestSchema,
@@ -33,6 +44,19 @@ export interface CoreCaseOpenApiSchemaRegistration {
   schema: ZodType;
 }
 
+const scenarioOpenApiSchema = z.strictObject({
+  id: z.uuid(),
+  case_id: z.uuid(),
+  name: z.string().min(1),
+  typed_figures: scenarioTypedFiguresSchema,
+  computed_result: scenarioComputedResultSchema,
+  created_at: z.iso.datetime(),
+});
+
+const taxPlanCycleReadResponseOpenApiSchema = taxPlanCycleSchema.extend({
+  scenarios: z.array(scenarioOpenApiSchema),
+});
+
 export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "TaxPlanCycleCreateRequest",
@@ -47,8 +71,20 @@ export const coreCaseOpenApiSchemaRegistrations = [
     schema: taxPlanCycleSchema,
   },
   {
+    name: "TaxPlanCycleReadResponse",
+    schema: taxPlanCycleReadResponseOpenApiSchema,
+  },
+  {
     name: "TaxPlanCycleCreateAccepted",
     schema: taxPlanCycleCreateResultSchema,
+  },
+  {
+    name: "ScenarioModelingRequest",
+    schema: scenarioModelingRequestSchema,
+  },
+  {
+    name: "Scenario",
+    schema: scenarioOpenApiSchema,
   },
   {
     name: "AuthMfaLoginRequest",
@@ -57,6 +93,14 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "AuthMfaLoginResult",
     schema: authMfaLoginResultSchema,
+  },
+  {
+    name: "RegistrationRequest",
+    schema: registrationRequestSchema,
+  },
+  {
+    name: "RegistrationAccountResponse",
+    schema: registrationAccountResponseSchema,
   },
   {
     name: "MfaEnrollRequest",
@@ -92,7 +136,65 @@ const fakeTaxPlanCycleExample = {
   priority: fakeTaxPlanCycleCreateExample.priority,
   due_date: fakeTaxPlanCycleCreateExample.due_date,
   on_hold: false,
+  scenarios: [],
 };
+
+const fakeScenarioModelingRequestExample = {
+  baseline: {
+    income: 250000,
+    deductions: 30000,
+    state: "CA",
+    filing_status: "married_filing_jointly",
+  },
+  scenarios: [
+    {
+      name: "Increase deductions",
+      typed_figures: {
+        income: 250000,
+        deductions: 36000,
+        state: "CA",
+        filing_status: "married_filing_jointly",
+      },
+    },
+    {
+      name: "Keep baseline",
+      typed_figures: {
+        income: 250000,
+        deductions: 30000,
+        state: "CA",
+        filing_status: "married_filing_jointly",
+      },
+    },
+  ],
+};
+
+const fakeScenarioModelingResponseExample: JsonValue[] = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e21",
+    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+    name: "Increase deductions",
+    typed_figures: fakeScenarioModelingRequestExample.scenarios[0]!.typed_figures,
+    computed_result: {
+      federal_liability: 38000,
+      state_liability: 12000,
+      effective_rate: 0.2,
+      marginal_rate: 0.32,
+      quarterly_estimate: 12500,
+    },
+    created_at: "2026-07-27T00:00:00.000Z",
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e22",
+    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+    name: "Keep baseline",
+    typed_figures: fakeScenarioModelingRequestExample.scenarios[1]!.typed_figures,
+    computed_result: {
+      totalTax: "53000.00",
+      deltaVBaseline: "0.00",
+    },
+    created_at: "2026-07-27T00:00:01.000Z",
+  },
+];
 
 const fakeMfaEnrollRequestExample = {
   tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
@@ -113,6 +215,20 @@ const fakeAuthMfaLoginResultExample = {
   expires_in: 900,
   refresh_token: "synthetic-opaque-refresh-token",
   refresh_expires_in: 2592000,
+};
+
+const fakeRegistrationRequestExample = {
+  tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+  email: "new-client@example.test",
+  password: "synthetic-registration-password",
+};
+
+const fakeRegistrationAccountResponseExample = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02",
+  tenant_id: fakeRegistrationRequestExample.tenant_id,
+  email: fakeRegistrationRequestExample.email,
+  role: "Client",
+  status: "invited",
 };
 
 const validationErrorExample = {
@@ -180,12 +296,19 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const createRequestSchema = toOpenApiSchema(taxPlanCycleCreateSchema);
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
+  const taxPlanCycleReadResponseSchema = toOpenApiSchema(
+    taxPlanCycleReadResponseOpenApiSchema,
+  );
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
   const authMfaLoginRequestOpenApiSchema = toOpenApiSchema(
     authMfaLoginRequestSchema,
   );
   const authMfaLoginResultOpenApiSchema = toOpenApiSchema(
     authMfaLoginResultSchema,
+  );
+  const registrationRequestOpenApiSchema = toOpenApiSchema(registrationRequestSchema);
+  const registrationAccountResponseOpenApiSchema = toOpenApiSchema(
+    registrationAccountResponseSchema,
   );
   const mfaEnrollRequestOpenApiSchema = toOpenApiSchema(mfaEnrollRequestSchema);
   const mfaEnrollAcceptedSchema = toOpenApiSchema(mfaEnrollResultSchema);
@@ -212,7 +335,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
       },
       {
         name: "Authentication",
-        description: "Password and MFA login operations.",
+        description: "Registration, password, and MFA login operations.",
       },
       {
         name: "MFA Enrollment",
@@ -220,6 +343,84 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
       },
     ],
     paths: {
+      "/auth/register": {
+        post: {
+          operationId: "registerUser",
+          tags: ["Authentication"],
+          summary: "Register a new tenant-scoped account",
+          description:
+            "Creates a new account with server-controlled Client and invited defaults. " +
+            "The password is never returned or exposed as a hash.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: registrationRequestOpenApiSchema,
+                example: fakeRegistrationRequestExample,
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The account was registered.",
+              content: {
+                "application/json": {
+                  schema: registrationAccountResponseOpenApiSchema,
+                  example: fakeRegistrationAccountResponseExample,
+                },
+              },
+            },
+            "400": {
+              description: "The registration request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    ...validationErrorExample,
+                    issues: [
+                      {
+                        path: ["email"],
+                        message: "Invalid email address",
+                        code: "invalid_format",
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            "409": {
+              description: "An account with the email already exists in the tenant.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/email-already-registered",
+                    title: "Email Already Registered",
+                    status: 409,
+                    detail:
+                      "An account with this email is already registered for this tenant.",
+                    code: "EMAIL_ALREADY_REGISTERED",
+                  },
+                },
+              },
+            },
+            "500": {
+              description: "An unexpected service error occurred.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "about:blank",
+                    title: "Internal Server Error",
+                    status: 500,
+                    detail: "An unexpected error occurred.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       "/auth/login/mfa": {
         post: {
           operationId: "verifyLoginMfaTotp",
@@ -554,6 +755,102 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           },
         },
       },
+      "/v1/tax-plan-cycles/{caseId}/scenarios": {
+        post: {
+          operationId: "modelTaxPlanCycleScenarios",
+          tags: ["Core Case Service"],
+          summary: "Model and persist Tax Plan Cycle scenarios",
+          description:
+            "Accepts a scenario modeling payload while the case is in Modeling stage, " +
+            "calls the Tax Engine, and stores the returned scenario figures.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Synthetic UUID case identifier scoped by the request tenant.",
+              schema: caseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: toOpenApiSchema(scenarioModelingRequestSchema),
+                example: fakeScenarioModelingRequestExample,
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The scenario modeling request was persisted.",
+              content: {
+                "application/json": {
+                  schema: toOpenApiSchema(z.array(scenarioOpenApiSchema)),
+                  example: fakeScenarioModelingResponseExample,
+                },
+              },
+            },
+            "400": {
+              description: "The scenario modeling request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: validationErrorExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "409": {
+              description:
+                "The requested case is not in Modeling stage.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/scenario-modeling-unavailable",
+                    title: "Scenario Modeling Unavailable",
+                    status: 409,
+                    detail:
+                      "Scenario modeling is only available while the case is in Modeling stage.",
+                  },
+                },
+              },
+            },
+            "502": {
+              description:
+                "The liability engine could not be reached or returned an invalid result after retries.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-engine-unavailable",
+                    title: "Tax Engine Unavailable",
+                    status: 502,
+                    detail: "The liability engine request failed after retries.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       "/v1/tax-plan-cycles/{caseId}": {
         get: {
           operationId: "readTaxPlanCycle",
@@ -578,7 +875,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
               description: "The tenant-scoped Tax Plan Cycle was found.",
               content: {
                 "application/json": {
-                  schema: taxPlanCycleResponseSchema,
+                  schema: taxPlanCycleReadResponseSchema,
                   example: fakeTaxPlanCycleExample,
                 },
               },

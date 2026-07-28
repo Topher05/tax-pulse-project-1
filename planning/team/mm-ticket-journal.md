@@ -89,6 +89,105 @@ at common boundary conditions.
 - `python -m pytest` ran 67 passing tests and stopped on the two LocalStack projection
   tests because Docker was not available at the local Unix socket.
 
+## martins-okorie-jira88 - SCRUM-88
+
+**Branch:** `martins-okorie-jira88`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-88
+
+**Summary:** Author the consumer-side Pact for calculation
+
+**Description:** As a Backend Developer, I want a consumer-side Pact for the
+calculation request, so that the Core service's expectations are pinned.
+
+**Acceptance Criteria:**
+
+- A consumer Pact test defines the calculation request and expected response shape.
+- The pact also covers the scenario endpoint shape.
+- The generated pact file is published to the broker or shared directory.
+
+**Code Connection:** The Core service's real Tax Engine client now exposes both the
+single calculation call and the scenario comparison call. The Pact V4 consumer test
+runs that client against Pact's mock provider and records the `/tax-calculations` and
+`/scenarios/comparisons` interactions into a local shared pact file.
+
+**Project Scope Connection:** This pins the polyglot contract between the Express/Core
+service and Python Tax Calculation Engine without adding provider verification or new
+workflow behavior. SCRUM-89 can use the generated pact to catch breaking provider
+changes before deploy.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `adr/0018-consumer-driven-tax-engine-pact.md`
+- `adr/README.md`
+- `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/engineClient.pact.test.ts`
+- `pacts/CoreCaseService-TaxCalculationEngine.json`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run test:pact` passed and generated the local shared Pact file.
+- `npx tsc -p tsconfig.json --noEmit && npx tsc -p tsconfig.test.json --noEmit` passed.
+- `npm run typecheck` reached the existing Pulse UI typecheck and failed because React,
+  TanStack Router, Testing Library, and Vite React dependencies are not installed in
+  `src/pulseUI`.
+
+## martins-okorie-jira89 - SCRUM-89
+
+**Branch:** `martins-okorie-jira89`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-89
+
+**Summary:** Verify the provider against the consumer Pact
+
+**Description:** As a Backend Developer, I want provider-side Pact verification for the
+Python Tax Calculation Engine, so that the provider fails fast if it drifts from the
+Core service contract.
+
+**Acceptance Criteria:**
+
+- Provider verification replays the Core service pact against the real FastAPI provider.
+- Verification covers `/tax-calculations` and `/scenarios/comparisons`.
+- The SCRUM-88 pact uses a deterministic valid JWT so auth does not block contract checks.
+
+**Code Connection:** The provider verification pytest starts the real FastAPI app with
+the same deterministic JWT settings used by endpoint tests, then asks Pact Python to
+verify the local `CoreCaseService-TaxCalculationEngine.json` pact over HTTP.
+
+**Project Scope Connection:** This closes the consumer-driven contract loop between the
+Express/Core service and Python Tax Calculation Engine, protecting advisory tax plan
+workflows from response-shape drift across the polyglot service boundary.
+
+**Changed Files:**
+
+- `pyproject.toml`
+- `tests/tax_liability_engine/pact_provider_verification_test.py`
+- `tests/typescript/features/taxPlanCycle/engineClient.pact.test.ts`
+- `pacts/CoreCaseService-TaxCalculationEngine.json`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run test:pact` passed and regenerated the local shared Pact file with a
+  deterministic valid HS256 JWT.
+- `uv run --extra dev python -m pytest tests/tax_liability_engine/pact_provider_verification_test.py`
+  passed.
+- `uv run --extra dev python -m pytest tests/tax_liability_engine/tax_calculation_api_test.py tests/tax_liability_engine/scenario_comparison_api_test.py`
+  passed with 11 tests.
+- `uv run --extra dev python -m pyright --pythonpath .venv/bin/python` passed.
+- `uv run --extra dev python -m ruff format --check src tests` still reports unrelated
+  pre-existing formatting changes needed in `src/tax_liability_engine/scenario_comparison.py`
+  and `tests/tax_liability_engine/smoke_test.py`.
+
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 

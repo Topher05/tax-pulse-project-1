@@ -99,6 +99,22 @@ export {
   type PasswordLoginRequest,
 } from "./authRoutes.js";
 export {
+  RegistrationEmailConflictError,
+  registrationAccountResponseSchema,
+  registrationInitialAccountValues,
+  registrationRequestSchema,
+  type RegistrationAccountInsert,
+  type RegistrationAccountResponse,
+  type RegistrationAccountStore,
+  type RegistrationRequest,
+} from "./authRegistration.js";
+export {
+  createRegistrationService,
+  type CreateRegistrationServiceOptions,
+  type RegistrationService,
+} from "./authRegistrationService.js";
+export { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
+export {
   coreCaseOpenApiSchemaRegistrations,
   createCoreCaseOpenApiDocument,
   type CoreCaseOpenApiSchemaRegistration,
@@ -126,6 +142,62 @@ export {
   type BracketReferenceRepository,
   type TaxBracketReference,
 } from "./bracketReferenceRepository.js";
+export {
+  createScenarioRepository,
+  maximumScenariosPerCase,
+  ScenarioCaseNotFoundError,
+  ScenarioLimitExceededError,
+  type Scenario,
+  type ScenarioCreateInput,
+  type ScenarioCreateManyInput,
+  type ScenarioRepository,
+} from "./features/taxPlanCycle/index.js";
+export {
+  scenarioComparisonEngineInputSchema,
+  scenarioComparisonEngineInputScenarioSchema,
+  scenarioComparisonEngineOutputSchema,
+  scenarioComparisonEngineOutputScenarioSchema,
+  scenarioComparisonResponseSchema,
+  scenarioComparisonResultSchema,
+  scenarioModelingEngineResponseSchema,
+  scenarioModelingEngineScenarioSchema,
+  scenarioModelingRequestSchema,
+  scenarioModelingResponseSchema,
+  scenarioModelingScenarioInputSchema,
+  type ScenarioModelingEngineResponse,
+  type ScenarioModelingEngineScenario,
+  type ScenarioModelingRequest,
+  type ScenarioModelingResponse,
+  type ScenarioModelingScenarioInput,
+  type ScenarioComparisonEngineInput,
+  type ScenarioComparisonEngineInputScenario,
+  type ScenarioComparisonEngineOutput,
+  type ScenarioComparisonEngineOutputScenario,
+  type ScenarioComparisonResponse,
+  type ScenarioComparisonResult,
+} from "./features/taxPlanCycle/index.js";
+export {
+  scenarioComputedResultSchema,
+  scenarioSchema,
+  scenarioComparisonSummarySchema,
+  scenarioTypedFiguresSchema,
+  type ScenarioComputedResult,
+  type ScenarioTypedFigures,
+  type ScenarioComparisonSummary,
+} from "./scenario.js";
+export {
+  createTaxEngineClient,
+  TaxEngineHttpError,
+  TaxEngineTimeoutError,
+  type TaxEngineClient,
+  type TaxEngineClientOptions,
+  type TaxCalculationEngineFilingStatus,
+  type TaxCalculationEngineInput,
+  type TaxCalculationEngineRequest,
+  type TaxCalculationEngineResult,
+  type ScenarioComparisonEngineRequest,
+  type TaxEngineComparisonRequest,
+} from "./features/taxPlanCycle/index.js";
 export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
 export {
   createJwtAuthenticationMiddleware,
@@ -198,6 +270,7 @@ export {
   type TaxPlanCycleCreateInput,
   type TaxPlanCyclePriority,
   type TaxPlanCycleReadParams,
+  type TaxPlanCycleReadResponse,
   type TaxPlanCycleTransitionInput,
   type TaxPlanCycleTransitionParams,
   type TaxPlanCycleStage,
@@ -271,11 +344,16 @@ import {
   createTaxPlanCycleRepository,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
+  createScenarioModelingController,
+  createScenarioRepository,
+  createTaxEngineClient,
 } from "./features/taxPlanCycle/index.js";
 import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
+import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
+import { createRegistrationService } from "./authRegistrationService.js";
 import {
   createAuditEntryRepository,
   createAuditEntryWriter,
@@ -334,9 +412,25 @@ export async function main(): Promise<Server> {
   await client.connect();
 
   const credentialReader = createPasswordCredentialStore(client);
+  const registrationService = createRegistrationService({
+    store: createRegistrationAccountRepository(client),
+  });
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const scenarioRepository = createScenarioRepository(client);
+  const taxEngineBaseUrl = process.env.LIABILITY_ENGINE_BASE?.trim();
+  if (!taxEngineBaseUrl) {
+    throw new Error("LIABILITY_ENGINE_BASE is required to model scenarios.");
+  }
+  const taxEngineClient = createTaxEngineClient({
+    baseUrl: taxEngineBaseUrl,
+  });
+  const scenarioModelingController = createScenarioModelingController({
+    taxPlanCycleRepository,
+    scenarioRepository,
+    taxEngineClient,
+  });
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
   let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
@@ -400,10 +494,12 @@ export async function main(): Promise<Server> {
           auditEntryReader: auditEntryRepository,
           auditEntryWriter,
           controller: taxPlanCycleController,
+          scenarioRepository,
+          scenarioModelingController,
           transitionController: taxPlanCycleTransitionController,
         }),
       );
-      app.use(createAuthRouter({ authenticatePassword }));
+      app.use(createAuthRouter({ authenticatePassword, registrationService }));
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
       }));
@@ -413,7 +509,7 @@ export async function main(): Promise<Server> {
 
   return await new Promise<Server>((resolve, reject) => {
     const server = app.listen(port, () => {
-      logger.info({ port }, "Core Case Service listening");
+      logger.info("Core Case Service listening");
       resolve(server);
     });
 

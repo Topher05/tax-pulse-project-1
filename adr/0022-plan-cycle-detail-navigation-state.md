@@ -1,4 +1,4 @@
-# ADR-0018: Keep Plan Cycle Detail navigation state local to Pulse UI
+# ADR-0022: Keep Plan Cycle Detail navigation state local to Pulse UI
 
 ## Context
 SCRUM-95 adds the first Plan Cycle Detail surface inside the Pulse UI React/Vite
