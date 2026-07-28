@@ -1,6 +1,13 @@
 import { z } from "zod";
 
+import { ProblemHttpError } from "../../../errors.js";
 import type { TaxPlanCycle, TaxPlanCycleCreateInput } from "../taxPlanCycle.js";
+import {
+  TaxPlanCycleCreateIdempotencyInProgressError,
+  TaxPlanCycleCreateIdempotencyUnavailableError,
+  createUnavailableTaxPlanCycleCreateIdempotencyStore,
+  type TaxPlanCycleCreateIdempotencyStore,
+} from "../infrastructure/createIdempotency.js";
 import type {
   TaxPlanCycleReadInput,
   TaxPlanCycleRepository,
@@ -29,23 +36,68 @@ export interface TaxPlanCycleCreateController {
   ): TaxPlanCycle | null | Promise<TaxPlanCycle | null>;
 }
 
+export interface CreateTaxPlanCycleCreateControllerOptions {
+  idempotencyStore?: TaxPlanCycleCreateIdempotencyStore;
+}
+
+function createIdempotencyUnavailableProblem(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/idempotency-store-unavailable",
+    title: "Idempotency Store Unavailable",
+    status: 503,
+    detail: "Redis idempotency storage is required to create a Tax Plan Cycle.",
+  });
+}
+
+function createIdempotencyInProgressProblem(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/idempotency-request-in-progress",
+    title: "Idempotency Request In Progress",
+    status: 409,
+    detail: "A create request with the same Idempotency-Key is still in progress.",
+  });
+}
+
 export function createTaxPlanCycleCreateController(
   repository: TaxPlanCycleRepository,
+  options: CreateTaxPlanCycleCreateControllerOptions = {},
 ): TaxPlanCycleCreateController {
+  const idempotencyStore =
+    options.idempotencyStore ?? createUnavailableTaxPlanCycleCreateIdempotencyStore();
+
   return {
     async create(input) {
-      const caseId = await repository.create({
-        tenantId: input.tenantId,
-        planningPeriod: input.planning_period,
-        clientId: input.client_id,
-        owner: input.owner,
-        priority: input.priority,
-        dueDate: input.due_date,
-        actor: input.actor,
-        idempotencyKey: input.idempotencyKey,
-      });
+      try {
+        return await idempotencyStore.run(
+          {
+            tenantId: input.tenantId,
+            idempotencyKey: input.idempotencyKey,
+          },
+          async () => {
+            const caseId = await repository.create({
+              tenantId: input.tenantId,
+              planningPeriod: input.planning_period,
+              clientId: input.client_id,
+              owner: input.owner,
+              priority: input.priority,
+              dueDate: input.due_date,
+              actor: input.actor,
+            });
 
-      return { case_id: caseId };
+            return { case_id: caseId };
+          },
+        );
+      } catch (error) {
+        if (error instanceof TaxPlanCycleCreateIdempotencyUnavailableError) {
+          throw createIdempotencyUnavailableProblem();
+        }
+
+        if (error instanceof TaxPlanCycleCreateIdempotencyInProgressError) {
+          throw createIdempotencyInProgressProblem();
+        }
+
+        throw error;
+      }
     },
     findByCaseId: (input) => repository.findByCaseId(input),
   };
