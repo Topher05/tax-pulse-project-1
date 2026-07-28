@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { useState } from "react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { AuthProvider, useSession } from "../../auth/AuthProvider.tsx";
@@ -110,6 +111,60 @@ describe("AuthProvider", () => {
       await screen.findByText("authenticated:Advisor:tenant-synthetic-001"),
     ).toBeInTheDocument();
     expect(client.completeMfaLogin).toHaveBeenCalledWith(challenge, "123456");
+  });
+
+  test("refreshes an access token within the renewal leeway before returning it", async () => {
+    const client = createClient();
+    const expiringResponse = { ...tokenResponse, expires_in: 1 };
+    const refreshedResponse = { ...tokenResponse, access_token: `${createAccessToken()}-refreshed` };
+    vi.mocked(client.refreshSession)
+      .mockResolvedValueOnce(expiringResponse)
+      .mockResolvedValueOnce(refreshedResponse);
+
+    function AccessTokenProbe() {
+      const session = useSession();
+      const [token, setToken] = useState<string | null>(null);
+      return (
+        <>
+          <span>{session.status}</span>
+          <button onClick={() => void session.getAccessToken().then(setToken)}>Read token</button>
+          <output>{token ?? "no token"}</output>
+        </>
+      );
+    }
+
+    render(
+      <AuthProvider client={client}>
+        <AccessTokenProbe />
+      </AuthProvider>,
+    );
+
+    await screen.findByText("authenticated");
+    fireEvent.click(screen.getByRole("button", { name: "Read token" }));
+
+    expect(await screen.findByText(`${createAccessToken()}-refreshed`)).toBeInTheDocument();
+    expect(client.refreshSession).toHaveBeenCalledTimes(2);
+  });
+
+  test("clears supplied cached data even when the logout request fails", async () => {
+    const client = createClient();
+    const clearCachedData = vi.fn();
+    vi.mocked(client.logout).mockRejectedValueOnce(new Error("offline"));
+
+    function LogoutProbe() {
+      const session = useSession();
+      return <button onClick={() => void session.logout().catch(() => undefined)}>Logout</button>;
+    }
+
+    render(
+      <AuthProvider client={client} clearCachedData={clearCachedData}>
+        <LogoutProbe />
+      </AuthProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Logout" }));
+
+    await vi.waitFor(() => expect(clearCachedData).toHaveBeenCalledTimes(1));
   });
 
   test("rejects hook use outside the provider", () => {

@@ -68,6 +68,9 @@ query reads identity from one source.
 - `AuthProvider` restores the cookie-backed session at application startup and exposes
   `useSession` actions for login, MFA completion, refresh, logout, and current access
   token retrieval. The injected client seam keeps the component behavior testable.
+- Access-token access now refreshes within a 60-second expiry leeway. The shared
+  authenticated fetch wrapper retries a 401 exactly once after refresh, then invalidates
+  through logout; logout always invokes the supplied cache-clearing seam.
 
 **Project Scope Connection:**
 
@@ -80,9 +83,11 @@ preserving tenant and role isolation.
 - `src/pulseUI/auth/session.ts`
 - `src/pulseUI/auth/authClient.ts`
 - `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/auth/authenticatedFetch.ts`
 - `src/pulseUI/app/bootstrap.tsx`
 - `src/pulseUI/tests/auth/session.test.tsx`
 - `src/pulseUI/tests/auth/AuthProvider.test.tsx`
+- `src/pulseUI/tests/auth/authenticatedFetch.test.tsx`
 - `src/typescript/authSessionCookies.ts`
 - `src/typescript/authSessionRoutes.ts`
 - `src/typescript/authMfaLoginRoutes.ts`
@@ -102,6 +107,7 @@ preserving tenant and role isolation.
 
 - `npm test -- --run tests/auth/session.test.tsx --cache=false` passed (3 tests).
 - `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx --cache=false` passed (7 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx --cache=false` passed (12 tests).
 - `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/tokenService.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed (22 tests).
 - Root `npm run typecheck` remains blocked by pre-existing missing
   `@pact-foundation/pact` resolution and incomplete Tax Engine test doubles. The new
