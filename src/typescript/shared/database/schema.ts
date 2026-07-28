@@ -25,11 +25,23 @@ const stageValuesSql = sql.join(
   sql`, `,
 );
 
-export const tenants = pgTable("tenants", {
-  id: uuid("id").default(sql`uuidv7()`).primaryKey(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const tenants = pgTable(
+  "tenants",
+  {
+    id: uuid("id").default(sql`uuidv7()`).primaryKey(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    loginSlug: text("login_slug").notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+  },
+  (table) => [
+    uniqueIndex("tenants_login_slug_key").on(table.loginSlug),
+    check(
+      "tenants_login_slug_format_check",
+      sql`${table.loginSlug} ~ '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$'`,
+    ),
+  ],
+);
 
 export const federalTaxBracket = pgTable(
   "federal_tax_bracket",

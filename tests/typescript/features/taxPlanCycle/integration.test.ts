@@ -376,11 +376,13 @@ describe("taxPlanCycle integration", () => {
           id: repositoryTenantIds.primary,
           name: "Repository Primary Tenant",
           createdAt: new Date("2026-06-29T15:00:00Z"),
+          loginSlug: "repository-primary",
         },
         {
           id: repositoryTenantIds.secondary,
           name: "Repository Secondary Tenant",
           createdAt: new Date("2026-06-29T15:30:00Z"),
+          loginSlug: "repository-secondary",
         },
       ]);
 
@@ -464,11 +466,13 @@ describe("taxPlanCycle integration", () => {
           id: repositoryQueueTenantId,
           name: "Queue Tenant Advisors",
           createdAt: new Date("2026-06-29T16:00:00Z"),
+          loginSlug: "queue-tenant-advisors",
         },
         {
           id: repositoryQueueOtherTenantId,
           name: "Other Queue Tenant",
           createdAt: new Date("2026-06-29T16:30:00Z"),
+          loginSlug: "other-queue-tenant",
         },
       ]);
 
@@ -571,11 +575,13 @@ describe("taxPlanCycle integration", () => {
           id: sampleTenantIds[0],
           name: "Generated Sample Tenant One",
           createdAt: new Date("2026-06-29T13:00:00Z"),
+          loginSlug: "generated-sample-one",
         },
         {
           id: sampleTenantIds[1],
           name: "Generated Sample Tenant Two",
           createdAt: new Date("2026-06-29T13:30:00Z"),
+          loginSlug: "generated-sample-two",
         },
       ]);
 

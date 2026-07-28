@@ -7,6 +7,8 @@ export type SeedTenantRow = {
   id: string;
   name: string;
   createdAt: Date;
+  loginSlug: string;
+  isActive: boolean;
 };
 
 export type SeedRoleRow = {
@@ -229,26 +231,36 @@ export const tenantRows = [
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
     name: "North Shore Advisors",
     createdAt: new Date("2026-06-29T12:00:00Z"),
+    loginSlug: "north-shore-advisors",
+    isActive: true,
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02",
     name: "Harbor View Planning",
     createdAt: new Date("2026-06-29T12:30:00Z"),
+    loginSlug: "harbor-view-planning",
+    isActive: true,
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d03",
     name: "Summit Ridge Tax",
     createdAt: new Date("2026-06-29T13:00:00Z"),
+    loginSlug: "summit-ridge-tax",
+    isActive: true,
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d04",
     name: "Blue Harbor Tax",
     createdAt: new Date("2026-06-29T13:30:00Z"),
+    loginSlug: "blue-harbor-tax",
+    isActive: true,
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d05",
     name: "North Star Planning",
     createdAt: new Date("2026-06-29T14:00:00Z"),
+    loginSlug: "north-star-planning",
+    isActive: true,
   },
 ] as const satisfies readonly SeedTenantRow[];
 
