@@ -379,6 +379,10 @@ The auth helpers use Argon2id password hashes. See
 [`ADR-0007`](./adr/0007-argon2id-password-login.md) for the dependency and architecture
 rationale.
 
+Tenant context for password login is resolved from firm-specific login hostnames. See
+[`ADR-0018`](./adr/0018-tenant-login-hostname-resolution.md) for the tenancy and security
+rationale.
+
 `POST /auth/login` accepts `email` and `password`. The tenant is resolved server-side from
 the firm-specific login hostname (`{tenant-slug}.taxpulse.example`), so clients never submit
 a raw `tenant_id`. Valid passwords return `202` with an MFA challenge payload, invalid
