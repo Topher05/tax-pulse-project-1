@@ -4,6 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 
 import { createPulseRouter } from "./createPulseRouter.ts";
 import { AuthProvider } from "../auth/AuthProvider.tsx";
+import { AuthBoundary } from "../auth/AuthBoundary.tsx";
 import "../shared/styles.css";
 
 const rootElement = document.getElementById("root");
@@ -15,7 +16,9 @@ if (rootElement === null) {
 createRoot(rootElement).render(
   <StrictMode>
     <AuthProvider>
-      <RouterProvider router={createPulseRouter()} />
+      <AuthBoundary>
+        <RouterProvider router={createPulseRouter()} />
+      </AuthBoundary>
     </AuthProvider>
   </StrictMode>,
 );

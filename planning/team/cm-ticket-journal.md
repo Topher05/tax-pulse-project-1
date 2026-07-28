@@ -73,6 +73,9 @@ query reads identity from one source.
   through logout; logout always invokes the supplied cache-clearing seam.
 - The browser auth client validates the BFF's login, MFA, refresh, and logout contracts
   before session state changes; the provider keeps the user anonymous until MFA completes.
+- `useSession` now directly exposes `user` and `isAuthenticated`. The application-level
+  auth boundary blocks protected routed content while restoration is pending or when the
+  session is anonymous, forcing re-authentication through SCRUM-193's forthcoming UI.
 
 **Project Scope Connection:**
 
@@ -85,12 +88,14 @@ preserving tenant and role isolation.
 - `src/pulseUI/auth/session.ts`
 - `src/pulseUI/auth/authClient.ts`
 - `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/auth/AuthBoundary.tsx`
 - `src/pulseUI/auth/authenticatedFetch.ts`
 - `src/pulseUI/app/bootstrap.tsx`
 - `src/pulseUI/tests/auth/session.test.tsx`
 - `src/pulseUI/tests/auth/AuthProvider.test.tsx`
 - `src/pulseUI/tests/auth/authClient.test.tsx`
 - `src/pulseUI/tests/auth/authenticatedFetch.test.tsx`
+- `src/pulseUI/tests/auth/AuthBoundary.test.tsx`
 - `src/typescript/authSessionCookies.ts`
 - `src/typescript/authSessionRoutes.ts`
 - `src/typescript/authMfaLoginRoutes.ts`
@@ -112,6 +117,7 @@ preserving tenant and role isolation.
 - `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx --cache=false` passed (7 tests).
 - `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx --cache=false` passed (12 tests).
 - `npm test -- --run tests/auth/session.test.tsx tests/auth/authClient.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx --cache=false` passed (17 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/authClient.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx tests/auth/AuthBoundary.test.tsx --cache=false` passed (20 tests).
 - `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/tokenService.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed (22 tests).
 - Root `npm run typecheck` remains blocked by pre-existing missing
   `@pact-foundation/pact` resolution and incomplete Tax Engine test doubles. The new

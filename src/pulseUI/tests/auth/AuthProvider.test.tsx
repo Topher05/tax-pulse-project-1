@@ -49,7 +49,7 @@ function SessionProbe() {
       ? `${session.status}:${session.session.user.role}:${session.session.user.tenantId}`
       : session.status;
 
-  return <output>{display}</output>;
+  return <output>{`${display}:${session.isAuthenticated}:${session.user?.tenantId ?? "none"}`}</output>;
 }
 
 afterEach(() => {
@@ -65,9 +65,9 @@ describe("AuthProvider", () => {
       </AuthProvider>,
     );
 
-    expect(screen.getByText("initializing")).toBeInTheDocument();
+    expect(screen.getByText("initializing:false:none")).toBeInTheDocument();
     expect(
-      await screen.findByText("authenticated:Advisor:tenant-synthetic-001"),
+      await screen.findByText("authenticated:Advisor:tenant-synthetic-001:true:tenant-synthetic-001"),
     ).toBeInTheDocument();
     expect(client.refreshSession).toHaveBeenCalledTimes(1);
   });
@@ -81,7 +81,7 @@ describe("AuthProvider", () => {
       </AuthProvider>,
     );
 
-    expect(await screen.findByText("anonymous")).toBeInTheDocument();
+    expect(await screen.findByText("anonymous:false:none")).toBeInTheDocument();
   });
 
   test("establishes identity after the MFA completion action", async () => {
@@ -104,11 +104,11 @@ describe("AuthProvider", () => {
       </AuthProvider>,
     );
 
-    await screen.findByText("anonymous");
+    await screen.findByText("anonymous:false:none");
     screen.getByRole("button", { name: "Complete MFA" }).click();
 
     expect(
-      await screen.findByText("authenticated:Advisor:tenant-synthetic-001"),
+      await screen.findByText("authenticated:Advisor:tenant-synthetic-001:true:tenant-synthetic-001"),
     ).toBeInTheDocument();
     expect(client.completeMfaLogin).toHaveBeenCalledWith(challenge, "123456");
   });

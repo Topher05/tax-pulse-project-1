@@ -64,7 +64,12 @@ export interface SessionActions {
   getAccessToken(): Promise<string | null>;
 }
 
-export type SessionContextValue = AuthSessionState & SessionActions;
+export type SessionContextValue = AuthSessionState &
+  SessionActions & {
+    /** Null when no authenticated session is available. */
+    readonly user: SessionUser | null;
+    readonly isAuthenticated: boolean;
+  };
 
 function isSessionRole(value: unknown): value is SessionRole {
   return typeof value === "string" && sessionRoles.includes(value as SessionRole);

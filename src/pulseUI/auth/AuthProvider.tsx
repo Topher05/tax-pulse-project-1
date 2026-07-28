@@ -89,7 +89,16 @@ export function AuthProvider({
   }, [requestRefresh, state]);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ ...state, login, completeMfaLogin, logout, refreshSession, getAccessToken }),
+    () => ({
+      ...state,
+      user: state.status === "authenticated" ? state.session.user : null,
+      isAuthenticated: state.status === "authenticated",
+      login,
+      completeMfaLogin,
+      logout,
+      refreshSession,
+      getAccessToken,
+    }),
     [completeMfaLogin, getAccessToken, login, logout, refreshSession, state],
   );
 
