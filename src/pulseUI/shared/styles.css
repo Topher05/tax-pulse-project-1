@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* Root/base styles shared by the entire Pulse UI shell */
 :root {
   color: #17202a;
   background:
@@ -54,6 +55,7 @@ body::-webkit-scrollbar-thumb {
   border-radius: 9999px;
 }
 
+/* Shell/navigation chrome */
 .pulseShell {
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
@@ -335,6 +337,7 @@ body::-webkit-scrollbar-thumb {
   background: #e7ebef;
 }
 
+/* Queue page presentation */
 .queuePage {
   display: grid;
   gap: 1.5rem;
@@ -556,6 +559,7 @@ body::-webkit-scrollbar-thumb {
   border-color: #b5c1cc;
 }
 
+/* Queue state boundary: loading, empty, error, and retry states */
 .queueState {
   width: 100%;
   border: 1px solid #d9e0e7;
@@ -690,15 +694,6 @@ body::-webkit-scrollbar-thumb {
   }
 }
 
-  .queueStateError {
-    grid-template-columns: 1fr;
-  }
-
-  .queueSkeletonHeader,
-  .queueSkeletonRow {
-    grid-template-columns: 1fr;
-  }
-
 
 @media (max-width: 1100px) {
   .pulseTopbar {
@@ -776,5 +771,13 @@ body::-webkit-scrollbar-thumb {
 
   .queueSectionHeader {
     padding-block: 1rem;
+  }
+  .queueStateError {
+    grid-template-columns: 1fr;
+  }
+
+  .queueSkeletonHeader,
+  .queueSkeletonRow {
+    grid-template-columns: 1fr;
   }
 }

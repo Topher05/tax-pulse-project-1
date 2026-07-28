@@ -6,7 +6,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   PlanCycleQueueStateBoundary,
   type PlanCycleQueueLoader,
-} from "../planCycles/PlanCycleQueueRoute.tsx";
+} from "../../planCycles/PlanCycleQueueRoute.tsx";
 
 afterEach(() => {
   cleanup();
