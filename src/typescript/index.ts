@@ -56,6 +56,11 @@ export {
 } from "./authService.js";
 export { createPasswordCredentialStore } from "./authCredentials.js";
 export {
+  createTenantLoginResolver,
+  type TenantLoginResolution,
+  type TenantLoginResolver,
+} from "./tenantLoginResolver.js";
+export {
   auditEntryOutputSchema,
   redactAuditText,
   redactedAuditAmount,
