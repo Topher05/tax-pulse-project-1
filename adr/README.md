@@ -21,3 +21,4 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0016: FastAPI Startup Convention for the Liability Engine](./0016-fastapi-startup-convention.md)
 - [ADR-0017: Nest the Pulse UI React/Vite shell under src/pulseUI](./0011-pulse-ui-react-vite-shell.md)
 - [ADR-0019: Tailwind Styling Foundation for Pulse UI](./0019-tailwind-styling-foundation-for-pulse-ui.md)
+- [ADR-0020: Pulse UI Layered Application Structure](./0020-pulse-ui-layered-application-structure.md)

@@ -1,8 +1,8 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useId, useState } from "react";
 
-import { pulseNavGroups } from "./nav/navigation.ts";
-import { getViewTitle } from "./nav/viewTitle.ts";
+import { pulseNavGroups } from "../shared/navigation.ts";
+import { getViewTitle } from "../shared/viewTitle.ts";
 
 const viewAsOptions = ["Advisor", "Firm Admin", "Client"] as const;
 

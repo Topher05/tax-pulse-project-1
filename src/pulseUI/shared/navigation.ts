@@ -11,7 +11,16 @@ import {
   Users,
 } from "lucide-react";
 
-import type { PulseNavGroup } from "./navItem.types.ts";
+export type PulseNavItem = {
+  label: string;
+  path: string;
+  icon: typeof BarChart3;
+};
+
+export type PulseNavGroup = {
+  label: string;
+  items: readonly PulseNavItem[];
+};
 
 export const pulseNavGroups: readonly PulseNavGroup[] = [
   {

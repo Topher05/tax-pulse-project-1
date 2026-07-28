@@ -55,12 +55,20 @@ Add new ticket entries below using this template.
 
 **Code Connection:**
 
-- `src/pulseUI/features/planCycleQueue/PlanCycleQueuePage.tsx`
-- `src/pulseUI/routing/routeTree.tsx`
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/createPulseRouter.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/entities/planCycleQueue.ts`
+- `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/shared/navigation.ts`
+- `src/pulseUI/shared/viewTitle.ts`
 - `src/pulseUI/styles.css`
 - `src/pulseUI/vite.config.ts`
-- `src/pulseUI/tests/planCycleQueuePage.test.tsx`
+- `src/pulseUI/tests/planCycleQueue/planCycleQueuePage.test.tsx`
+- `src/pulseUI/main.tsx`
 - `adr/0019-tailwind-styling-foundation-for-pulse-ui.md`
+- `adr/0020-pulse-ui-layered-application-structure.md`
 
 **Project Scope Connection:**
 
@@ -69,14 +77,24 @@ Add new ticket entries below using this template.
 
 **Changed Files:**
 
-- `src/pulseUI/features/planCycleQueue/PlanCycleQueuePage.tsx`
-- `src/pulseUI/routing/routeTree.tsx`
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/createPulseRouter.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/entities/planCycleQueue.ts`
+- `src/pulseUI/pages/EmptyPage.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/shared/navigation.ts`
+- `src/pulseUI/shared/viewTitle.ts`
 - `src/pulseUI/styles.css`
 - `src/pulseUI/vite.config.ts`
-- `src/pulseUI/tests/planCycleQueuePage.test.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/planCycleQueue/planCycleQueuePage.test.tsx`
+- `src/pulseUI/main.tsx`
 - `src/pulseUI/package.json`
 - `src/pulseUI/package-lock.json`
 - `adr/0019-tailwind-styling-foundation-for-pulse-ui.md`
+- `adr/0020-pulse-ui-layered-application-structure.md`
 - `adr/README.md`
 - `planning/team/cl-ticket-journal.md`
 

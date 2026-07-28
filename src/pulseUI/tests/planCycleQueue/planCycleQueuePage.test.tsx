@@ -4,7 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { render, screen, within } from "@testing-library/react";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 
-import { createPulseRouter } from "../routing/createPulseRouter.ts";
+import { createPulseRouter } from "../../app/createPulseRouter.ts";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();

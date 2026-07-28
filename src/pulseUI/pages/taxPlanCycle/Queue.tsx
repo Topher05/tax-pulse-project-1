@@ -1,27 +1,13 @@
-type QueueMetric = {
-  label: string;
-  value: string;
-  caption: string;
-};
+import type { PlanCycleQueueMetric, PlanCycleQueueRow } from "../../entities/planCycleQueue.ts";
 
-type QueueRow = {
-  caseId: string;
-  client: string;
-  stage: string;
-  owner: string;
-  priority: string;
-  dueDate: string;
-  overdue: boolean;
-};
-
-const queueMetrics: readonly QueueMetric[] = [
+const queueMetrics: readonly PlanCycleQueueMetric[] = [
   { label: "Open", value: "18", caption: "All active cycles in the queue" },
   { label: "Awaiting Review", value: "6", caption: "Ready for advisor review" },
   { label: "Overdue", value: "3", caption: "Past the due date" },
   { label: "Presented This Week", value: "7", caption: "Shared with the client team" },
 ];
 
-const queueRows: readonly QueueRow[] = [
+const queueRows: readonly PlanCycleQueueRow[] = [
   {
     caseId: "TP-24018",
     client: "North Shore Family Office",
@@ -72,7 +58,7 @@ function QueueMetricCard({
   value,
   caption,
   gradient,
-}: QueueMetric & { gradient: string }) {
+}: PlanCycleQueueMetric & { gradient: string }) {
   return (
     <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -99,7 +85,7 @@ function OverdueBadge() {
   );
 }
 
-export function PlanCycleQueuePage() {
+export function Queue() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
@@ -122,7 +108,11 @@ export function PlanCycleQueuePage() {
 
       <section aria-label="Queue metrics" className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {queueMetrics.map((metric, index) => (
-          <QueueMetricCard key={metric.label} {...metric} gradient={metricRingClasses[index] ?? metricRingClasses[0]!} />
+          <QueueMetricCard
+            key={metric.label}
+            {...metric}
+            gradient={metricRingClasses[index] ?? metricRingClasses[0]!}
+          />
         ))}
       </section>
 
