@@ -6,6 +6,10 @@ import {
   authMfaLoginResultSchema,
 } from "./authMfaLogin.js";
 import {
+  registrationAccountResponseSchema,
+  registrationRequestSchema,
+} from "./authRegistration.js";
+import {
   scenarioComputedResultSchema,
   scenarioTypedFiguresSchema,
 } from "./scenario.js";
@@ -89,6 +93,14 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "AuthMfaLoginResult",
     schema: authMfaLoginResultSchema,
+  },
+  {
+    name: "RegistrationRequest",
+    schema: registrationRequestSchema,
+  },
+  {
+    name: "RegistrationAccountResponse",
+    schema: registrationAccountResponseSchema,
   },
   {
     name: "MfaEnrollRequest",
@@ -205,6 +217,20 @@ const fakeAuthMfaLoginResultExample = {
   refresh_expires_in: 2592000,
 };
 
+const fakeRegistrationRequestExample = {
+  tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+  email: "new-client@example.test",
+  password: "synthetic-registration-password",
+};
+
+const fakeRegistrationAccountResponseExample = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02",
+  tenant_id: fakeRegistrationRequestExample.tenant_id,
+  email: fakeRegistrationRequestExample.email,
+  role: "Client",
+  status: "invited",
+};
+
 const validationErrorExample = {
   type: "https://taxpulse.example/problems/validation-error",
   title: "Validation Error",
@@ -280,6 +306,10 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const authMfaLoginResultOpenApiSchema = toOpenApiSchema(
     authMfaLoginResultSchema,
   );
+  const registrationRequestOpenApiSchema = toOpenApiSchema(registrationRequestSchema);
+  const registrationAccountResponseOpenApiSchema = toOpenApiSchema(
+    registrationAccountResponseSchema,
+  );
   const mfaEnrollRequestOpenApiSchema = toOpenApiSchema(mfaEnrollRequestSchema);
   const mfaEnrollAcceptedSchema = toOpenApiSchema(mfaEnrollResultSchema);
   const mfaEnrollConfirmRequestOpenApiSchema = toOpenApiSchema(
@@ -305,7 +335,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
       },
       {
         name: "Authentication",
-        description: "Password and MFA login operations.",
+        description: "Registration, password, and MFA login operations.",
       },
       {
         name: "MFA Enrollment",
@@ -313,6 +343,84 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
       },
     ],
     paths: {
+      "/auth/register": {
+        post: {
+          operationId: "registerUser",
+          tags: ["Authentication"],
+          summary: "Register a new tenant-scoped account",
+          description:
+            "Creates a new account with server-controlled Client and invited defaults. " +
+            "The password is never returned or exposed as a hash.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: registrationRequestOpenApiSchema,
+                example: fakeRegistrationRequestExample,
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The account was registered.",
+              content: {
+                "application/json": {
+                  schema: registrationAccountResponseOpenApiSchema,
+                  example: fakeRegistrationAccountResponseExample,
+                },
+              },
+            },
+            "400": {
+              description: "The registration request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    ...validationErrorExample,
+                    issues: [
+                      {
+                        path: ["email"],
+                        message: "Invalid email address",
+                        code: "invalid_format",
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            "409": {
+              description: "An account with the email already exists in the tenant.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/email-already-registered",
+                    title: "Email Already Registered",
+                    status: 409,
+                    detail:
+                      "An account with this email is already registered for this tenant.",
+                    code: "EMAIL_ALREADY_REGISTERED",
+                  },
+                },
+              },
+            },
+            "500": {
+              description: "An unexpected service error occurred.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "about:blank",
+                    title: "Internal Server Error",
+                    status: 500,
+                    detail: "An unexpected error occurred.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       "/auth/login/mfa": {
         post: {
           operationId: "verifyLoginMfaTotp",
@@ -711,7 +819,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
             },
             "409": {
               description:
-                "The requested case is not in Modeling stage or the engine call could not be applied safely.",
+                "The requested case is not in Modeling stage.",
               content: {
                 "application/problem+json": {
                   schema: problemDetailsSchema,
@@ -721,6 +829,21 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     status: 409,
                     detail:
                       "Scenario modeling is only available while the case is in Modeling stage.",
+                  },
+                },
+              },
+            },
+            "502": {
+              description:
+                "The liability engine could not be reached or returned an invalid result after retries.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-engine-unavailable",
+                    title: "Tax Engine Unavailable",
+                    status: 502,
+                    detail: "The liability engine request failed after retries.",
                   },
                 },
               },

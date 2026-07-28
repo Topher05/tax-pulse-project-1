@@ -4,7 +4,7 @@ import type { TaxPlanCycle, TaxPlanCycleCreateInput } from "../taxPlanCycle.js";
 import type {
   TaxPlanCycleReadInput,
   TaxPlanCycleRepository,
-} from "../repository/repository.js";
+} from "../repositories/repository.js";
 
 export const taxPlanCycleCreateResultSchema = z.object({
   case_id: z.uuid(),

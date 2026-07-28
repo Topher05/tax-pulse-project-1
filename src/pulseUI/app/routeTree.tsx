@@ -1,9 +1,9 @@
 import { createRootRoute, createRoute } from "@tanstack/react-router";
-
 import { AppShell } from "../components/AppShell.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { Queue } from "../pages/taxPlanCycle/Queue.tsx";
+import { PlanCycleQueueRoute } from "../planCycles/PlanCycleQueueRoute.tsx";
 
 const rootRoute = createRootRoute({
   component: AppShell,

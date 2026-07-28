@@ -3,8 +3,8 @@ import type { ScenarioComparisonEngineOutput } from "../scenarioModeling.js";
 import type { ScenarioRepository } from "../repositories/scenarios.js";
 import type { TaxEngineClient } from "../infrastructure/engineClient.js";
 import type { ScenarioTypedFigures } from "../../../scenario.js";
-import type { TaxPlanCycleReadInput } from "../repository/repository.js";
-import type { TaxPlanCycleRepository } from "../repository/repository.js";
+import type { TaxPlanCycleReadInput } from "../repositories/repository.js";
+import type { TaxPlanCycleRepository } from "../repositories/repository.js";
 import type { ScenarioModelingScenarioInput } from "../scenarioModeling.js";
 
 export interface ScenarioModelingControllerInput extends TaxPlanCycleReadInput {
@@ -34,6 +34,15 @@ function modelingUnavailableError(): ProblemHttpError {
   });
 }
 
+function taxEngineUnavailableError(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/tax-engine-unavailable",
+    title: "Tax Engine Unavailable",
+    status: 502,
+    detail: "The liability engine request failed after retries.",
+  });
+}
+
 export function createScenarioModelingController(
   options: ScenarioModelingControllerOptions,
 ): ScenarioModelingController {
@@ -57,15 +66,21 @@ export function createScenarioModelingController(
         throw modelingUnavailableError();
       }
 
-      const engineResults: ScenarioComparisonEngineOutput = await options.taxEngineClient.compareScenarios({
-        tenantId: input.tenantId,
-        authorizationHeader: input.authorizationHeader,
-        baseline: input.baseline,
-        scenarios: [...input.scenarios],
-      });
+      let engineResults: ScenarioComparisonEngineOutput;
+
+      try {
+        engineResults = await options.taxEngineClient.compareScenarios({
+          tenantId: input.tenantId,
+          authorizationHeader: input.authorizationHeader,
+          baseline: input.baseline,
+          scenarios: [...input.scenarios],
+        });
+      } catch (error) {
+        throw taxEngineUnavailableError();
+      }
 
       if (engineResults.length !== input.scenarios.length) {
-        throw new Error("Tax Engine returned an unexpected number of scenario results.");
+        throw taxEngineUnavailableError();
       }
 
       return await options.scenarioRepository.createMany({

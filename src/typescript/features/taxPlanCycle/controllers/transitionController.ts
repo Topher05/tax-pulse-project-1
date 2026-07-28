@@ -3,7 +3,7 @@ import type {
   TaxPlanCycleReadInput,
   TaxPlanCycleRepository,
   TaxPlanCycleTransitionInput,
-} from "../repository/repository.js";
+} from "../repositories/repository.js";
 import type { TaxPlanCycleQueueCacheInvalidator } from "../infrastructure/queueCache.js";
 
 export interface TaxPlanCycleTransitionController {

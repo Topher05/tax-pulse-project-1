@@ -29,7 +29,7 @@ export {
   type TaxPlanCycleRepository,
   type TaxPlanCycleRepositoryCreateInput,
   type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
-} from "./repository/repository.js";
+} from "./repositories/repository.js";
 export {
   buildTaxPlanCycleQueueReadCacheKey,
   buildTaxPlanCycleQueueTenantVersionKey,
@@ -127,5 +127,9 @@ export {
   type TaxEngineClient,
   type TaxEngineClientOptions,
   type TaxEngineComparisonRequest,
+  type TaxCalculationEngineFilingStatus,
+  type TaxCalculationEngineInput,
+  type TaxCalculationEngineRequest,
+  type TaxCalculationEngineResult,
   type ScenarioComparisonEngineRequest,
 } from "./infrastructure/engineClient.js";

@@ -89,6 +89,56 @@ at common boundary conditions.
 - `python -m pytest` ran 67 passing tests and stopped on the two LocalStack projection
   tests because Docker was not available at the local Unix socket.
 
+## martins-okorie-jira88 - SCRUM-88
+
+**Branch:** `martins-okorie-jira88`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-88
+
+**Summary:** Author the consumer-side Pact for calculation
+
+**Description:** As a Backend Developer, I want a consumer-side Pact for the
+calculation request, so that the Core service's expectations are pinned.
+
+**Acceptance Criteria:**
+
+- A consumer Pact test defines the calculation request and expected response shape.
+- The pact also covers the scenario endpoint shape.
+- The generated pact file is published to the broker or shared directory.
+
+**Code Connection:** The Core service's real Tax Engine client now exposes both the
+single calculation call and the scenario comparison call. The Pact V4 consumer test
+runs that client against Pact's mock provider and records the `/tax-calculations` and
+`/scenarios/comparisons` interactions into a local shared pact file.
+
+**Project Scope Connection:** This pins the polyglot contract between the Express/Core
+service and Python Tax Calculation Engine without adding provider verification or new
+workflow behavior. SCRUM-89 can use the generated pact to catch breaking provider
+changes before deploy.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `adr/0018-consumer-driven-tax-engine-pact.md`
+- `adr/README.md`
+- `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/engineClient.pact.test.ts`
+- `pacts/CoreCaseService-TaxCalculationEngine.json`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run test:pact` passed and generated the local shared Pact file.
+- `npx tsc -p tsconfig.json --noEmit && npx tsc -p tsconfig.test.json --noEmit` passed.
+- `npm run typecheck` reached the existing Pulse UI typecheck and failed because React,
+  TanStack Router, Testing Library, and Vite React dependencies are not installed in
+  `src/pulseUI`.
+
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 
