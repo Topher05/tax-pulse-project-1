@@ -27,7 +27,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:cov": "vitest run --coverage",
     "test:smoke": "node --import tsx --test tests/typescript/smoke.test.ts",
-    "test:vitest": "npm run test:express",
+    "test:vitest": "vitest run --config vitest.config.ts",
     "typecheck": "node scripts/typecheck.mjs"
   },
   "devDependencies": {

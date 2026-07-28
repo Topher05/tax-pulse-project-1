@@ -484,7 +484,7 @@ export async function main(): Promise<Server> {
 
   return await new Promise<Server>((resolve, reject) => {
     const server = app.listen(port, () => {
-      logger.info({ port }, "Core Case Service listening");
+      logger.info("Core Case Service listening");
       resolve(server);
     });
 

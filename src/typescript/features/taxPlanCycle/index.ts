@@ -29,7 +29,7 @@ export {
   type TaxPlanCycleRepository,
   type TaxPlanCycleRepositoryCreateInput,
   type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
-} from "./repository/repository.js";
+} from "./repositories/repository.js";
 export {
   buildTaxPlanCycleQueueReadCacheKey,
   buildTaxPlanCycleQueueTenantVersionKey,
