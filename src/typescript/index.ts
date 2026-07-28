@@ -99,6 +99,13 @@ export {
   type PasswordLoginRequest,
 } from "./authRoutes.js";
 export {
+  registrationAccountResponseSchema,
+  registrationInitialAccountValues,
+  registrationRequestSchema,
+  type RegistrationAccountResponse,
+  type RegistrationRequest,
+} from "./authRegistration.js";
+export {
   coreCaseOpenApiSchemaRegistrations,
   createCoreCaseOpenApiDocument,
   type CoreCaseOpenApiSchemaRegistration,

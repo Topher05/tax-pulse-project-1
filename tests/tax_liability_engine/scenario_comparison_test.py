@@ -3,6 +3,8 @@ from unittest.mock import AsyncMock, call
 
 import pytest
 from pydantic import ValidationError
+
+import tax_liability_engine.scenario_comparison as scenario_comparison
 from tax_liability_engine import (
     ScenarioComparisonRequest,
     ScenarioComparisonResult,
@@ -10,7 +12,6 @@ from tax_liability_engine import (
     calculate_scenario_comparisons,
     scenario_comparison,
 )
-import tax_liability_engine.scenario_comparison as scenario_comparison
 
 BASELINE = {
     "income": 250000,
