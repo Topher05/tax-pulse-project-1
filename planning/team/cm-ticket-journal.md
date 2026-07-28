@@ -34,6 +34,78 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira195 - SCRUM-195
+
+**Branch:** `christopher-martus-jira195`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-195
+
+**Summary:** Register User
+
+**Description:** As a new user, I want to register an account so that I can securely
+access the application.
+
+**Acceptance Criteria:**
+
+- A registration request accepts the required user details and creates a user with a
+  securely hashed password.
+- A request using an email address that is already registered returns a clear conflict
+  error without creating another user.
+- A successful registration returns the new user's non-sensitive account details and
+  never exposes the password or password hash.
+
+**Code Connection:**
+
+- `authRegistration.ts` defines strict registration input and safe account-output
+  schemas, along with server-controlled `Client` and `invited` defaults.
+- `authRegistrationService.ts` hashes passwords through the existing Argon2id helper
+  before delegating persistence.
+- `authRegistrationRepository.ts` inserts the user and credential in one PostgreSQL
+  transaction and maps the tenant-email unique-constraint violation to a registration
+  conflict.
+- `authRoutes.ts` exposes `POST /auth/register`, returning 201 for a safe account DTO,
+  400 for invalid bodies, and a Problem Details 409 for duplicate tenant emails.
+- `index.ts` wires the repository and service into the runtime auth router.
+- `coreCaseOpenApi.ts` documents the registration operation and its 201, 400, and 409
+  response contracts alongside the existing Authentication endpoints.
+
+**Project Scope Connection:**
+
+This completes the Identity & Auth registration boundary for the multi-tenant TaxPulse
+workspace. It keeps credentials separate from user-profile data, preserves tenant-scoped
+email uniqueness, and applies least-privilege defaults without allowing a caller to set
+their own role or status.
+
+**Changed Files:**
+
+- `src/typescript/authRegistration.ts`
+- `src/typescript/authRegistrationService.ts`
+- `src/typescript/authRegistrationRepository.ts`
+- `src/typescript/authRoutes.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authRegistration.test.ts`
+- `tests/typescript/authRegistrationService.test.ts`
+- `tests/typescript/authRegistrationRoutes.test.ts`
+- `tests/typescript/authRegistration.integration.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- The focused registration contract, service, and route tests passed: 9 tests.
+- `npx vitest run tests/typescript/coreCaseOpenApi.test.ts --config vitest.config.ts`
+  passed: 8 tests.
+- `npx vitest run tests/typescript/authRegistration.integration.test.ts --config
+  vitest.integration.config.ts` passed with Docker access; it verifies Argon2id storage,
+  tenant-scoped conflicts, cross-tenant reuse of an email, and transaction rollback.
+- `git diff --check` passed.
+- The default sandbox cannot run the wider Testcontainers-backed suite without Docker
+  access; registration integration coverage was run with Docker access.
+
 ## christopher-martus-jira86 - SCRUM-86
 
 **Branch:** `christopher-martus-jira86`

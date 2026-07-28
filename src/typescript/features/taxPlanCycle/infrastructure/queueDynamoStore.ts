@@ -16,7 +16,7 @@ import {
   taxPlanCycleQueueProjectionItemSchema,
   type TaxPlanCycleQueueProjectionItem,
 } from "./queueProjection.js";
-import type { TaxPlanCycleQueueInput } from "../repository/repository.js";
+import type { TaxPlanCycleQueueInput } from "../repositories/repository.js";
 
 export interface TaxPlanCycleQueueProjectionReader {
   listQueue(

@@ -27,7 +27,7 @@ export {
   type TaxPlanCycleRepository,
   type TaxPlanCycleRepositoryCreateInput,
   type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
-} from "./repository/repository.js";
+} from "./repositories/repository.js";
 export {
   buildTaxPlanCycleQueueReadCacheKey,
   buildTaxPlanCycleQueueTenantVersionKey,
@@ -78,3 +78,56 @@ export {
   type ValidationErrorIssue,
   type ValidationErrorResponse,
 } from "./routes.js";
+export {
+  createScenarioModelingController,
+  type ScenarioModelingController,
+  type ScenarioModelingControllerInput,
+  type ScenarioModelingControllerOptions,
+} from "./controllers/scenarios.js";
+export {
+  createScenarioRepository,
+  maximumScenariosPerCase,
+  ScenarioCaseNotFoundError,
+  ScenarioLimitExceededError,
+  type ScenarioCreateInput,
+  type ScenarioCreateManyInput,
+  type ScenarioRepository,
+  type Scenario,
+} from "./repositories/scenarios.js";
+export {
+  scenarioComparisonEngineInputSchema,
+  scenarioComparisonEngineInputScenarioSchema,
+  scenarioComparisonEngineOutputSchema,
+  scenarioComparisonEngineOutputScenarioSchema,
+  scenarioComparisonResponseSchema,
+  scenarioComparisonResultSchema,
+  scenarioModelingEngineResponseSchema,
+  scenarioModelingEngineScenarioSchema,
+  scenarioModelingRequestSchema,
+  scenarioModelingResponseSchema,
+  scenarioModelingScenarioInputSchema,
+  type ScenarioComparisonEngineInput,
+  type ScenarioComparisonEngineInputScenario,
+  type ScenarioComparisonEngineOutput,
+  type ScenarioComparisonEngineOutputScenario,
+  type ScenarioComparisonResponse,
+  type ScenarioComparisonResult,
+  type ScenarioModelingEngineResponse,
+  type ScenarioModelingEngineScenario,
+  type ScenarioModelingRequest,
+  type ScenarioModelingResponse,
+  type ScenarioModelingScenarioInput,
+} from "./scenarioModeling.js";
+export {
+  createTaxEngineClient,
+  TaxEngineHttpError,
+  TaxEngineTimeoutError,
+  type TaxEngineClient,
+  type TaxEngineClientOptions,
+  type TaxEngineComparisonRequest,
+  type TaxCalculationEngineFilingStatus,
+  type TaxCalculationEngineInput,
+  type TaxCalculationEngineRequest,
+  type TaxCalculationEngineResult,
+  type ScenarioComparisonEngineRequest,
+} from "./infrastructure/engineClient.js";
