@@ -300,6 +300,8 @@ body::-webkit-scrollbar-thumb {
 .pulseModalOverlay {
   position: fixed;
   inset: 0;
+}
+.planCycleDetail {
   display: grid;
   place-items: center;
   padding: 24px;
@@ -557,6 +559,8 @@ body::-webkit-scrollbar-thumb {
 
 .queueRowAction:hover {
   border-color: #b5c1cc;
+    border-radius: 8px;
+  resize: vertical;
 }
 
 /* Queue state boundary: loading, empty, error, and retry states */
@@ -901,6 +905,10 @@ body::-webkit-scrollbar-thumb {
 
   .queueSectionHeader {
     padding-block: 1rem;
+  }
+
+  .planCycleStepper ol {
+    grid-template-columns: 1fr;
   }
   .queueStateError {
     grid-template-columns: 1fr;
