@@ -96,6 +96,7 @@ Add new ticket entries below using this template.
 - `src/pulseUI/shared/styles.css`
 - `src/pulseUI/vite.config.ts`
 - `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
 - `src/pulseUI/main.tsx`
