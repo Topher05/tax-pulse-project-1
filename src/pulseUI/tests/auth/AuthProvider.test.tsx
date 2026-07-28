@@ -113,6 +113,34 @@ describe("AuthProvider", () => {
     expect(client.completeMfaLogin).toHaveBeenCalledWith(challenge, "123456");
   });
 
+  test("delegates login to the shared client without setting a session before MFA", async () => {
+    const client = createClient();
+    vi.mocked(client.refreshSession).mockRejectedValueOnce(new Error("no session"));
+
+    function LoginProbe() {
+      const session = useSession();
+      return <button onClick={() => void session.login({
+        tenantId: challenge.tenantId,
+        email: challenge.email,
+        password: "synthetic-password",
+      })}>Login</button>;
+    }
+
+    render(
+      <AuthProvider client={client}>
+        <LoginProbe />
+      </AuthProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Login" }));
+
+    await vi.waitFor(() => expect(client.login).toHaveBeenCalledWith({
+      tenantId: challenge.tenantId,
+      email: challenge.email,
+      password: "synthetic-password",
+    }));
+  });
+
   test("refreshes an access token within the renewal leeway before returning it", async () => {
     const client = createClient();
     const expiringResponse = { ...tokenResponse, expires_in: 1 };
