@@ -380,7 +380,7 @@ The auth helpers use Argon2id password hashes. See
 rationale.
 
 Tenant context for password login is resolved from firm-specific login hostnames. See
-[`ADR-0018`](./adr/0018-tenant-login-hostname-resolution.md) for the tenancy and security
+[`ADR-0021`](./adr/0021-tenant-login-hostname-resolution.md) for the tenancy and security
 rationale.
 
 `POST /auth/login` accepts `email` and `password`. The tenant is resolved server-side from
@@ -388,6 +388,10 @@ the firm-specific login hostname (`{tenant-slug}.taxpulse.example`), so clients 
 a raw `tenant_id`. Valid passwords return `202` with an MFA challenge payload, invalid
 credentials return a shared `401` Problem Details response, and unknown login workspaces
 return `404`.
+
+Set `TAXPULSE_LOGIN_BASE_DOMAIN` when the deployment's login hostnames do not use the
+default `taxpulse.example` domain. For example, `TAXPULSE_LOGIN_BASE_DOMAIN=localhost`
+supports local hosts such as `northstar.localhost`.
 
 The defaults work out of the box. Override these values only when a deployment needs
 different capacity or latency tradeoffs:

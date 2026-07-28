@@ -25,17 +25,19 @@ export const passwordLoginRequestSchema = z
   })
   .strict();
 
+export const mfaChallengeResponseSchema = z.object({
+  status: z.literal("mfa_challenge_required"),
+  tenant_id: z.uuid(),
+  email: z.string().email(),
+  user_id: z.uuid(),
+});
+
 export interface PasswordLoginRequest {
   email: string;
   password: string;
 }
 
-export interface MfaChallengeResponse {
-  status: "mfa_challenge_required";
-  tenant_id: string;
-  email: string;
-  user_id: string;
-}
+export type MfaChallengeResponse = z.infer<typeof mfaChallengeResponseSchema>;
 
 export interface AuthValidationErrorIssue {
   path: Array<string | number>;
