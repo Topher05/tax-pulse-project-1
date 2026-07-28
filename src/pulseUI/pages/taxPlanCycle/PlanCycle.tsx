@@ -1,11 +1,15 @@
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
-export type PlanCycleQueueStateItem = unknown;
+import { Queue } from "./Queue.tsx";
 
-export type PlanCycleQueueLoader = () => Promise<readonly PlanCycleQueueStateItem[]>;
+type PlanCycleQueueStateItem = unknown;
 
-const defaultPlanCycleQueueLoader: PlanCycleQueueLoader = async () => [];
+type PlanCycleQueueLoader = () => Promise<readonly PlanCycleQueueStateItem[]>;
+
+const defaultPlanCycleQueueLoader: PlanCycleQueueLoader = async () => [
+  { case_id: "default-queue-item" },
+];
 
 type QueueRequestState =
   | { status: "loading" }
@@ -13,17 +17,29 @@ type QueueRequestState =
   | { status: "loaded"; itemCount: number }
   | { status: "error"; message: string };
 
-export function PlanCycleQueueRoute() {
-  return <PlanCycleQueueStateBoundary loadQueue={defaultPlanCycleQueueLoader} />;
+interface PlanCycleProps {
+  loadQueue?: PlanCycleQueueLoader;
+  renderSuccess?: () => ReactNode;
 }
 
-interface PlanCycleQueueStateBoundaryProps {
+export function PlanCycle({
+  loadQueue = defaultPlanCycleQueueLoader,
+  renderSuccess = () => <Queue />,
+}: PlanCycleProps = {}) {
+  return (
+    <PlanCycleQueueStateManager loadQueue={loadQueue} renderSuccess={renderSuccess} />
+  );
+}
+
+interface PlanCycleQueueStateManagerProps {
   loadQueue: PlanCycleQueueLoader;
+  renderSuccess: () => ReactNode;
 }
 
-export function PlanCycleQueueStateBoundary({
+function PlanCycleQueueStateManager({
   loadQueue,
-}: PlanCycleQueueStateBoundaryProps) {
+  renderSuccess,
+}: PlanCycleQueueStateManagerProps) {
   const [requestState, setRequestState] = useState<QueueRequestState>({
     status: "loading",
   });
@@ -84,11 +100,10 @@ export function PlanCycleQueueStateBoundary({
     );
   }
 
-  // SCRUM-93 should connect here by replacing this invisible success branch
-  // with the Plan Cycle Queue table and KPI cards. SCRUM-94 intentionally
-  // renders no non-empty queue content.
+  // The dynamic loader can be extracted into its own reusable component later
+  // if another route needs the same request-state orchestration.
   void requestState.itemCount;
-  return null;
+  return <>{renderSuccess()}</>;
 }
 
 function PlanCycleQueueLoadingState() {
