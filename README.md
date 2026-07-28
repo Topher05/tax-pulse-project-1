@@ -391,7 +391,13 @@ return `404`.
 
 Set `TAXPULSE_LOGIN_BASE_DOMAIN` when the deployment's login hostnames do not use the
 default `taxpulse.example` domain. For example, `TAXPULSE_LOGIN_BASE_DOMAIN=localhost`
-supports local hosts such as `northstar.localhost`.
+supports local hosts such as `north-star-planning.localhost`.
+
+For local development, retain the `TAXPULSE_LOGIN_BASE_DOMAIN=localhost` value supplied
+by [`.env.example`](./.env.example), then restart the API after changing `.env`. A Bruno
+request can use `POST http://127.0.0.1:3000/auth/login` with the headers
+`Host: {tenant-slug}.localhost:3000` and `Content-Type: application/json`. The request
+body must include only `email` and `password`; the hostname selects the tenant.
 
 The defaults work out of the box. Override these values only when a deployment needs
 different capacity or latency tradeoffs:
@@ -421,7 +427,8 @@ Local setup:
     - Create a new superuser and use its credentials in the config file.
     - Use pgAdmin or `psql`, whichever you prefer.
 5. Copy [`.env.example`](./.env.example) to `.env`.
-6. Edit `.env` and set `DATABASE_URL` to your local PostgreSQL connection string.
+6. Edit `.env`, set `DATABASE_URL` to your local PostgreSQL connection string, and keep
+   `TAXPULSE_LOGIN_BASE_DOMAIN=localhost` for local tenant-host login requests.
 
 Apply all migrations:
 
