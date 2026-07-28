@@ -61,6 +61,10 @@ query reads identity from one source.
   MFA challenge, and hook contracts. It validates JWT identity claims centrally and maps
   issued token responses to a browser session without retaining a refresh token in
   JavaScript state.
+- The BFF now sets refresh tokens only in a `Secure`, `HttpOnly`, `SameSite=Strict`
+  cookie after MFA. `POST /auth/refresh` atomically revokes the presented active token
+  before issuing a replacement pair, and `POST /auth/logout` revokes when possible and
+  always clears the cookie.
 
 **Project Scope Connection:**
 
@@ -72,14 +76,28 @@ preserving tenant and role isolation.
 
 - `src/pulseUI/auth/session.ts`
 - `src/pulseUI/tests/auth/session.test.tsx`
+- `src/typescript/authSessionCookies.ts`
+- `src/typescript/authSessionRoutes.ts`
+- `src/typescript/authMfaLoginRoutes.ts`
+- `src/typescript/refreshTokenRepository.ts`
+- `src/typescript/tokenService.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authSessionRoutes.test.ts`
+- `tests/typescript/authMfaLoginRoutes.test.ts`
+- `tests/typescript/authMfaLogin.test.ts`
+- `tests/typescript/tokenService.test.ts`
+- `tests/typescript/bootstrap/authFlow.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm test -- --run tests/auth/session.test.tsx --cache=false` passed (3 tests).
-- `npm run typecheck` remains blocked by pre-existing route parameter/import errors in
-  `pages/taxPlanCycle/Queue.tsx` and route tests, plus a missing
-  `@tailwindcss/vite` type resolution. None reference this auth slice.
+- `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/tokenService.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed (22 tests).
+- Root `npm run typecheck` remains blocked by pre-existing missing
+  `@pact-foundation/pact` resolution and incomplete Tax Engine test doubles. The new
+  auth contract compiles before those unrelated test failures.
 
 ## christopher-martus-jira195 - SCRUM-195
 

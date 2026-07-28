@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   authMfaLoginRequestSchema,
-  authMfaLoginResultSchema,
+  authSessionTokenResponseSchema,
   coreCaseOpenApiSchemaRegistrations,
   createApp,
   createCoreCaseOpenApiDocument,
@@ -213,7 +213,6 @@ describe("Core Case Service OpenAPI document", () => {
     expect(loginMfaOperation.description).toContain("POST /auth/login");
     expect(loginMfaExample).toMatchObject({
       access_token: expect.any(String),
-      refresh_token: expect.any(String),
       token_type: "Bearer",
       expires_in: expect.any(Number),
       refresh_expires_in: expect.any(Number),
@@ -347,7 +346,7 @@ describe("Core Case Service OpenAPI document", () => {
         }),
         expect.objectContaining({
           name: "AuthMfaLoginResult",
-          schema: authMfaLoginResultSchema,
+          schema: authSessionTokenResponseSchema,
         }),
         expect.objectContaining({
           name: "RegistrationRequest",

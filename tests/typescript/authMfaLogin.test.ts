@@ -57,6 +57,7 @@ function createTokenService(issue = vi.fn<TokenService["issue"]>()): TokenServic
   return {
     issue,
     revokeRefreshToken: async () => false,
+    rotateRefreshToken: async () => null,
   };
 }
 

@@ -45,6 +45,9 @@ function createNoopRefreshTokenRepository() {
     async revokeByTokenHash(): Promise<boolean> {
       return false;
     },
+    async findActivePrincipalByTokenHash() {
+      return null;
+    },
   };
 }
 

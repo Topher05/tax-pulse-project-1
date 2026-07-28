@@ -3,8 +3,8 @@ import type { ZodType } from "zod";
 
 import {
   authMfaLoginRequestSchema,
-  authMfaLoginResultSchema,
 } from "./authMfaLogin.js";
+import { authSessionTokenResponseSchema } from "./authSessionRoutes.js";
 import {
   registrationAccountResponseSchema,
   registrationRequestSchema,
@@ -92,7 +92,7 @@ export const coreCaseOpenApiSchemaRegistrations = [
   },
   {
     name: "AuthMfaLoginResult",
-    schema: authMfaLoginResultSchema,
+    schema: authSessionTokenResponseSchema,
   },
   {
     name: "RegistrationRequest",
@@ -213,7 +213,6 @@ const fakeAuthMfaLoginResultExample = {
     "synthetic-signature-example",
   token_type: "Bearer",
   expires_in: 900,
-  refresh_token: "synthetic-opaque-refresh-token",
   refresh_expires_in: 2592000,
 };
 
@@ -304,7 +303,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
     authMfaLoginRequestSchema,
   );
   const authMfaLoginResultOpenApiSchema = toOpenApiSchema(
-    authMfaLoginResultSchema,
+    authSessionTokenResponseSchema,
   );
   const registrationRequestOpenApiSchema = toOpenApiSchema(registrationRequestSchema);
   const registrationAccountResponseOpenApiSchema = toOpenApiSchema(
@@ -425,11 +424,11 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
         post: {
           operationId: "verifyLoginMfaTotp",
           tags: ["Authentication"],
-          summary: "Verify TOTP MFA and issue access and refresh tokens",
+          summary: "Verify TOTP MFA and establish a browser session",
           description:
             "Consumes the tenant and user challenge identifiers returned from " +
             "POST /auth/login, verifies the user's enrolled TOTP factor, and " +
-            "returns a signed bearer access token and opaque refresh token.",
+            "returns a signed bearer access token and sets the opaque refresh token in a Secure, HttpOnly cookie.",
           requestBody: {
             required: true,
             content: {
@@ -442,7 +441,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           responses: {
             "200": {
               description:
-                "The TOTP code was accepted and a token pair was issued.",
+                "The TOTP code was accepted and a browser session was established.",
               content: {
                 "application/json": {
                   schema: authMfaLoginResultOpenApiSchema,
