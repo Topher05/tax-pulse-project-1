@@ -65,6 +65,9 @@ query reads identity from one source.
   cookie after MFA. `POST /auth/refresh` atomically revokes the presented active token
   before issuing a replacement pair, and `POST /auth/logout` revokes when possible and
   always clears the cookie.
+- `AuthProvider` restores the cookie-backed session at application startup and exposes
+  `useSession` actions for login, MFA completion, refresh, logout, and current access
+  token retrieval. The injected client seam keeps the component behavior testable.
 
 **Project Scope Connection:**
 
@@ -75,7 +78,11 @@ preserving tenant and role isolation.
 **Changed Files:**
 
 - `src/pulseUI/auth/session.ts`
+- `src/pulseUI/auth/authClient.ts`
+- `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/app/bootstrap.tsx`
 - `src/pulseUI/tests/auth/session.test.tsx`
+- `src/pulseUI/tests/auth/AuthProvider.test.tsx`
 - `src/typescript/authSessionCookies.ts`
 - `src/typescript/authSessionRoutes.ts`
 - `src/typescript/authMfaLoginRoutes.ts`
@@ -94,10 +101,14 @@ preserving tenant and role isolation.
 **Validation Notes:**
 
 - `npm test -- --run tests/auth/session.test.tsx --cache=false` passed (3 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx --cache=false` passed (7 tests).
 - `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/tokenService.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed (22 tests).
 - Root `npm run typecheck` remains blocked by pre-existing missing
   `@pact-foundation/pact` resolution and incomplete Tax Engine test doubles. The new
   auth contract compiles before those unrelated test failures.
+- Pulse UI `npm run typecheck` remains blocked by pre-existing route parameter/import
+  errors and missing `@tailwindcss/vite` type resolution. None reference the auth
+  provider or client.
 
 ## christopher-martus-jira195 - SCRUM-195
 

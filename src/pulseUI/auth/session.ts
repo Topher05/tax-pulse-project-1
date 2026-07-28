@@ -24,10 +24,9 @@ export interface AccessTokenClaims {
   readonly exp: number;
 }
 
-/** The response issued after the password and MFA authentication flow completes. */
-export interface IssuedTokenResponse {
+/** Browser-visible response issued after MFA or an HttpOnly-cookie refresh. */
+export interface SessionTokenResponse {
   readonly access_token: string;
-  readonly refresh_token: string;
   readonly token_type: "Bearer";
   readonly expires_in: number;
   readonly refresh_expires_in: number;
@@ -135,17 +134,16 @@ export function parseAccessTokenClaims(accessToken: string): AccessTokenClaims |
 }
 
 /**
- * Converts an issued BFF response into the browser session. The refresh token is intentionally
- * not retained here: the follow-on BFF endpoint will keep it in an HttpOnly cookie.
+ * Converts a BFF response into the browser session. The refresh token is intentionally
+ * never exposed here because the BFF keeps it in an HttpOnly cookie.
  */
 export function createAuthenticatedSession(
-  response: IssuedTokenResponse,
+  response: SessionTokenResponse,
   now: number = Date.now(),
 ): AuthenticatedSession | null {
   if (
     response.token_type !== "Bearer" ||
     !isNonEmptyString(response.access_token) ||
-    !isNonEmptyString(response.refresh_token) ||
     !isPositiveWholeNumber(response.expires_in) ||
     !isPositiveWholeNumber(response.refresh_expires_in)
   ) {

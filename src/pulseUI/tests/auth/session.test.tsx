@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   createAuthenticatedSession,
   parseAccessTokenClaims,
-  type IssuedTokenResponse,
+  type SessionTokenResponse,
 } from "../../auth/session.ts";
 
 function createAccessToken(claims: Record<string, unknown>): string {
@@ -17,10 +17,9 @@ function createTokenResponse(
     tenant_id: "tenant-synthetic-001",
     exp: 1_800_000_000,
   }),
-): IssuedTokenResponse {
+): SessionTokenResponse {
   return {
     access_token: accessToken,
-    refresh_token: "synthetic-refresh-token",
     token_type: "Bearer",
     expires_in: 900,
     refresh_expires_in: 2_592_000,
