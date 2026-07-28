@@ -40,3 +40,4 @@ npm test
 
 ### Developer experience rules
 - If you see a comment starting with TODO in the text **DO NOT REMOVE IT UNDER ANY CIRCUMSTANCES**
+- Use the following link to a mockup of a refference example for what our end goal should be [mockupLink](https://d2bio8evtu94bp.cloudfront.net/prototypes/Real-TimeTaxLiabilityCalculator.html) aim to keep ui,ux,html,css in line with what's available here. Use the exact same typography & colors

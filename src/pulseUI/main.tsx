@@ -1,18 +1,1 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { RouterProvider } from "@tanstack/react-router";
-
-import { createPulseRouter } from "./routing/createPulseRouter.ts";
-import "./styles.css";
-
-const rootElement = document.getElementById("root");
-
-if (rootElement === null) {
-  throw new Error("TaxPulse UI root element was not found.");
-}
-
-createRoot(rootElement).render(
-  <StrictMode>
-    <RouterProvider router={createPulseRouter()} />
-  </StrictMode>,
-);
+import "./app/bootstrap.tsx";

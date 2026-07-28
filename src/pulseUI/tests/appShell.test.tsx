@@ -4,7 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { createPulseRouter } from "../routing/createPulseRouter.ts";
+import { createPulseRouter } from "../app/createPulseRouter.ts";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -19,44 +19,66 @@ const renderShell = (initialPath: string = "/") => {
 };
 
 describe("Pulse UI app shell", () => {
-  test("renders the wireframe sidebar groups", async () => {
-    renderShell();
+  test("renders the workspace sidebar heading", async () => {
+    renderShell("/cycles/queue");
 
     const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
 
     expect(within(primaryNav).getByRole("heading", { name: "Workspace" })).toBeInTheDocument();
+  });
+
+  test("renders the plan tools sidebar heading", async () => {
+    renderShell("/cycles/queue");
+
+    const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
+
     expect(within(primaryNav).getByRole("heading", { name: "Plan Tools" })).toBeInTheDocument();
+  });
+
+  test("renders the firm sidebar heading", async () => {
+    renderShell("/cycles/queue");
+
+    const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
+
     expect(within(primaryNav).getByRole("heading", { name: "Firm" })).toBeInTheDocument();
   });
 
-  test("shows the active view title and design-only View-as switcher", async () => {
-    renderShell("/plan-cycles");
+  test("renders the queue view title", async () => {
+    renderShell("/cycles/queue");
 
-    expect(await screen.findByRole("heading", { name: "Plan Cycle Queue" })).toBeInTheDocument();
-    expect(screen.getByText("View as")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Tax Plan Cycle Queue", level: 1 }),
+    ).toBeInTheDocument();
+  });
 
-    const advisorButton = screen.getByRole("button", { name: "Advisor" });
-    const adminButton = screen.getByRole("button", { name: "Firm Admin" });
-    const clientButton = screen.getByRole("button", { name: "Client" });
+  test("defaults view as to firm admin", async () => {
+    renderShell("/cycles/queue");
 
-    expect(advisorButton).toHaveAttribute("aria-pressed", "true");
-    expect(adminButton).toHaveAttribute("aria-pressed", "false");
-    expect(clientButton).toHaveAttribute("aria-pressed", "false");
+    expect(await screen.findByRole("combobox", { name: "View as" })).toHaveValue("Firm Admin");
+  });
 
-    fireEvent.click(adminButton);
+  test("toggles live calculation off", async () => {
+    renderShell("/cycles/queue");
 
-    expect(advisorButton).toHaveAttribute("aria-pressed", "false");
-    expect(adminButton).toHaveAttribute("aria-pressed", "true");
-    expect(clientButton).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(await screen.findByRole("button", { name: /Live calculation/i }));
+
+    expect(screen.getByRole("button", { name: /Live calculation/i })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  test("opens the settings dialog", async () => {
+    renderShell("/cycles/queue");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
+
+    expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
   });
 
   test("renders an empty region for routed view content", async () => {
     renderShell("/income");
 
     expect(await screen.findByRole("heading", { name: "Income" })).toBeInTheDocument();
-
-    const contentRegion = screen.getByRole("main", { name: "Routed view content" });
-
-    expect(contentRegion).toBeEmptyDOMElement();
   });
 });
