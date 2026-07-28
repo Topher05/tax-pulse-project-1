@@ -58,7 +58,7 @@
             "application/json"
           ],
           "authorization": [
-            "Bearer synthetic-access-token"
+            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTAwMSIsInJvbGUiOiJBZHZpc29yIiwidGVuYW50X2lkIjoidGVuYW50LTAwMSIsImlzcyI6Imh0dHBzOi8vYXV0aC50YXhwdWxzZS5leGFtcGxlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjQxMDI0NDQ4MDB9.Rdhyyb0DSSVTPzV9nV-kw9W-6U_Fr8-YSrAnt3PmgCo"
           ],
           "x-taxpulse-tenant-id": [
             "tenant-001"
@@ -135,7 +135,7 @@
             "application/json"
           ],
           "authorization": [
-            "Bearer synthetic-access-token"
+            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTAwMSIsInJvbGUiOiJBZHZpc29yIiwidGVuYW50X2lkIjoidGVuYW50LTAwMSIsImlzcyI6Imh0dHBzOi8vYXV0aC50YXhwdWxzZS5leGFtcGxlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjQxMDI0NDQ4MDB9.Rdhyyb0DSSVTPzV9nV-kw9W-6U_Fr8-YSrAnt3PmgCo"
           ],
           "x-taxpulse-tenant-id": [
             "tenant-001"

@@ -12,7 +12,8 @@ import { createTaxEngineClient } from "../../../../src/typescript/index.js";
 
 const pactsDir = resolve(process.cwd(), "pacts");
 const tenantId = "tenant-001";
-const authorizationHeader = "Bearer synthetic-access-token";
+const authorizationHeader =
+  "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTAwMSIsInJvbGUiOiJBZHZpc29yIiwidGVuYW50X2lkIjoidGVuYW50LTAwMSIsImlzcyI6Imh0dHBzOi8vYXV0aC50YXhwdWxzZS5leGFtcGxlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjQxMDI0NDQ4MDB9.Rdhyyb0DSSVTPzV9nV-kw9W-6U_Fr8-YSrAnt3PmgCo";
 
 const pact = new Pact({
   consumer: "CoreCaseService",
