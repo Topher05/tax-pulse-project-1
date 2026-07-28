@@ -11,6 +11,7 @@ import { beforeAll, describe, expect, test } from "vitest";
 import { createTaxEngineClient } from "../../../../src/typescript/index.js";
 
 const pactsDir = resolve(process.cwd(), "pacts");
+const pactFile = resolve(pactsDir, "CoreCaseService-TaxCalculationEngine.json");
 const tenantId = "tenant-001";
 const authorizationHeader = "Bearer synthetic-access-token";
 
@@ -119,7 +120,7 @@ const scenarioComparisonResponse = [
 
 describe("Tax Engine consumer pact", () => {
   beforeAll(() => {
-    rmSync(pactsDir, { force: true, recursive: true });
+    rmSync(pactFile, { force: true });
     mkdirSync(pactsDir, { recursive: true });
   });
 
