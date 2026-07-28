@@ -6,7 +6,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   PlanCycleQueueStateBoundary,
   type PlanCycleQueueLoader,
-} from "../../planCycles/PlanCycleQueueRoute.tsx";
+} from "../../components/taxPlanCycle/PlanCycleQueueStateBoundary.tsx";
 
 afterEach(() => {
   cleanup();
@@ -27,7 +27,12 @@ describe("Plan Cycle Queue request states", () => {
   test("renders a loading skeleton while the queue request is in flight", () => {
     const queueRequest = createDeferredQueue();
 
-    render(<PlanCycleQueueStateBoundary loadQueue={() => queueRequest.promise} />);
+    render(
+      <PlanCycleQueueStateBoundary
+        loadQueue={() => queueRequest.promise}
+        renderSuccess={() => <p>Queue ready</p>}
+      />,
+    );
 
     expect(
       screen.getByRole("status", { name: "Loading Plan Cycle Queue" }),
@@ -38,7 +43,12 @@ describe("Plan Cycle Queue request states", () => {
   });
 
   test("renders the empty state when the tenant has no open cycles", async () => {
-    render(<PlanCycleQueueStateBoundary loadQueue={async () => []} />);
+    render(
+      <PlanCycleQueueStateBoundary
+        loadQueue={async () => []}
+        renderSuccess={() => <p>Queue ready</p>}
+      />,
+    );
 
     expect(
       await screen.findByRole("heading", { name: "No open plan cycles" }),
@@ -54,6 +64,7 @@ describe("Plan Cycle Queue request states", () => {
         loadQueue={async () => {
           throw new Error("Read model unavailable.");
         }}
+        renderSuccess={() => <p>Queue ready</p>}
       />,
     );
 
@@ -71,7 +82,12 @@ describe("Plan Cycle Queue request states", () => {
       .mockRejectedValueOnce(new Error("Temporary queue failure."))
       .mockResolvedValueOnce([]);
 
-    render(<PlanCycleQueueStateBoundary loadQueue={loadQueue} />);
+    render(
+      <PlanCycleQueueStateBoundary
+        loadQueue={loadQueue}
+        renderSuccess={() => <p>Queue ready</p>}
+      />,
+    );
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
 
@@ -83,10 +99,15 @@ describe("Plan Cycle Queue request states", () => {
     expect(loadQueue).toHaveBeenCalledTimes(2);
   });
 
-  test("does not render SCRUM-93 queue content for non-empty successful data", async () => {
+  test("renders the success branch when the queue request has data", async () => {
     const queueRequest = createDeferredQueue();
 
-    render(<PlanCycleQueueStateBoundary loadQueue={() => queueRequest.promise} />);
+    render(
+      <PlanCycleQueueStateBoundary
+        loadQueue={() => queueRequest.promise}
+        renderSuccess={() => <p>Queue ready</p>}
+      />,
+    );
 
     await act(async () => {
       queueRequest.resolveQueue([{ case_id: "case-placeholder" }]);
@@ -98,10 +119,7 @@ describe("Plan Cycle Queue request states", () => {
         screen.queryByRole("status", { name: "Loading Plan Cycle Queue" }),
       ).not.toBeInTheDocument();
     });
-    expect(
-      screen.queryByRole("heading", { name: "No open plan cycles" }),
-    ).not.toBeInTheDocument();
+    expect(await screen.findByText("Queue ready")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.queryByText("case-placeholder")).not.toBeInTheDocument();
   });
 });

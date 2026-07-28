@@ -1,11 +1,11 @@
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 export type PlanCycleQueueStateItem = unknown;
 
 export type PlanCycleQueueLoader = () => Promise<readonly PlanCycleQueueStateItem[]>;
 
-const defaultPlanCycleQueueLoader: PlanCycleQueueLoader = async () => [];
+const defaultPlanCycleQueueLoader: PlanCycleQueueLoader = async () => [{ case_id: "default-queue-item" }];
 
 type QueueRequestState =
   | { status: "loading" }
@@ -13,16 +13,14 @@ type QueueRequestState =
   | { status: "loaded"; itemCount: number }
   | { status: "error"; message: string };
 
-export function PlanCycleQueueRoute() {
-  return <PlanCycleQueueStateBoundary loadQueue={defaultPlanCycleQueueLoader} />;
-}
-
 interface PlanCycleQueueStateBoundaryProps {
   loadQueue: PlanCycleQueueLoader;
+  renderSuccess: () => ReactNode;
 }
 
 export function PlanCycleQueueStateBoundary({
   loadQueue,
+  renderSuccess,
 }: PlanCycleQueueStateBoundaryProps) {
   const [requestState, setRequestState] = useState<QueueRequestState>({
     status: "loading",
@@ -84,11 +82,10 @@ export function PlanCycleQueueStateBoundary({
     );
   }
 
-  // SCRUM-93 should connect here by replacing this invisible success branch
-  // with the Plan Cycle Queue table and KPI cards. SCRUM-94 intentionally
-  // renders no non-empty queue content.
+  // The success branch intentionally hands control back to the page layer so
+  // the route page can compose the queue view.
   void requestState.itemCount;
-  return null;
+  return <>{renderSuccess()}</>;
 }
 
 function PlanCycleQueueLoadingState() {
@@ -156,3 +153,5 @@ function PlanCycleQueueErrorState({
     </section>
   );
 }
+
+export { defaultPlanCycleQueueLoader };
