@@ -35,6 +35,88 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira93 - SCRUM-93
+
+**Branch:** `caleb-latimer-jira93`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-93
+
+**Summary:** Jira-93 UI Feedback Pass
+
+**Description:** Tighten the Tax Plan Cycle queue screen so the topbar, KPI copy, table layout, document chrome, and details placeholder match the current mockup and route structure.
+
+**Acceptance Criteria:**
+
+- The queue renders at `/cycles/queue` with rows for case ID, client, stage, owner, priority, due date, updated date, and action.
+- Cases past their due date render an Overdue badge in place of the due-date text.
+- The queue KPI cards render with the updated copy and the topbar includes the grouped role selector, live calculation indicator, and settings modal trigger.
+- A blank details route exists at `/cycles/:id` and the `Open` action routes there.
+
+**Code Connection:**
+
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/createPulseRouter.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/entities/taxPlanCycle.ts`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/shared/navigation.ts`
+- `src/pulseUI/shared/viewTitle.ts`
+- `src/pulseUI/shared/styles.css`
+- `src/pulseUI/styles.css` (removed)
+- `src/pulseUI/vite.config.ts`
+- `src/pulseUI/index.html`
+- `src/pulseUI/public/calculator-favicon.svg`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/main.tsx`
+- `adr/0019-tailwind-styling-foundation-for-pulse-ui.md`
+- `adr/0020-pulse-ui-layered-application-structure.md`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Tax Plan Cycle queue UI work
+
+**Changed Files:**
+
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/createPulseRouter.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/entities/taxPlanCycle.ts`
+- `src/pulseUI/pages/EmptyPage.tsx`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/shared/navigation.ts`
+- `src/pulseUI/shared/viewTitle.ts`
+- `src/pulseUI/shared/styles.css`
+- `src/pulseUI/vite.config.ts`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/main.tsx`
+- `src/pulseUI/index.html`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `src/pulseUI/public/calculator-favicon.svg`
+- `adr/0019-tailwind-styling-foundation-for-pulse-ui.md`
+- `adr/0020-pulse-ui-layered-application-structure.md`
+- `adr/README.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run typecheck"` passed in `src/pulseUI`.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd test"` passed in `src/pulseUI`.
+- Final manual step after tests: compare the rendered queue page against the mocked layout referenced in `AGENTS.md` and note any pixel-level gaps before closing the ticket.
+
 ## caleb-latimer-jira74 - SCRUM-74
 
 **Branch:** `caleb-latimer-jira74`

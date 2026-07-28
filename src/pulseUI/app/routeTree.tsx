@@ -1,8 +1,8 @@
 import { createRootRoute, createRoute } from "@tanstack/react-router";
-
-import { AppShell } from "../AppShell.tsx";
-import { PlanCycleQueueRoute } from "../planCycles/PlanCycleQueueRoute.tsx";
-import { EmptyRoute } from "./EmptyRoute.tsx";
+import { AppShell } from "../components/AppShell.tsx";
+import { EmptyPage } from "../pages/EmptyPage.tsx";
+import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
+import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 
 const rootRoute = createRootRoute({
   component: AppShell,
@@ -11,67 +11,67 @@ const rootRoute = createRootRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: EmptyRoute,
+  component: EmptyPage,
 });
 
-const planCyclesRoute = createRoute({
+const cyclesQueueRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/plan-cycles",
-  component: PlanCycleQueueRoute,
+  path: "/cycles/queue",
+  component: PlanCycle,
 });
 
-const planCycleDetailRoute = createRoute({
+const cycleDetailsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/plan-cycles/$caseId",
-  component: EmptyRoute,
+  path: "/cycles/$id",
+  component: DetailsPage,
 });
 
 const scenarioPlannerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/scenarios",
-  component: EmptyRoute,
+  component: EmptyPage,
 });
 
 const incomeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/income",
-  component: EmptyRoute,
+  component: EmptyPage,
 });
 
 const deductionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/deductions",
-  component: EmptyRoute,
+  component: EmptyPage,
 });
 
 const quarterlyPaymentsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/quarterly-payments",
-  component: EmptyRoute,
+  component: EmptyPage,
 });
 
 const clientsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/clients",
-  component: EmptyRoute,
+  component: EmptyPage,
 });
 
 const firmUsersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/firm/users",
-  component: EmptyRoute,
+  component: EmptyPage,
 });
 
 const firmSettingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/firm/settings",
-  component: EmptyRoute,
+  component: EmptyPage,
 });
 
 export const routeTree = rootRoute.addChildren([
   dashboardRoute,
-  planCyclesRoute,
-  planCycleDetailRoute,
+  cyclesQueueRoute,
+  cycleDetailsRoute,
   scenarioPlannerRoute,
   incomeRoute,
   deductionsRoute,
