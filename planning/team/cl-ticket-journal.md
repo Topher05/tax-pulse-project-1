@@ -61,6 +61,7 @@ Add new ticket entries below using this template.
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/components/AppShell.tsx`
 - `src/pulseUI/entities/taxPlanCycle.ts`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Details.tsx`
 - `src/pulseUI/shared/navigation.ts`
@@ -89,6 +90,7 @@ Add new ticket entries below using this template.
 - `src/pulseUI/components/AppShell.tsx`
 - `src/pulseUI/entities/taxPlanCycle.ts`
 - `src/pulseUI/pages/EmptyPage.tsx`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Details.tsx`
 - `src/pulseUI/shared/navigation.ts`

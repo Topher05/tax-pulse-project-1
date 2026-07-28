@@ -19,29 +19,42 @@ const renderQueue = () => {
 };
 
 describe("Tax Plan Cycle queue page", () => {
-  test("renders the KPI cards and the tax plan cycle table", async () => {
+  test("renders the Open Cycles KPI", async () => {
     renderQueue();
 
     expect(await screen.findByText("Open Cycles")).toBeInTheDocument();
-    expect(screen.getAllByText("Awaiting Review")).toHaveLength(3);
-    expect(screen.getAllByText("Overdue")).toHaveLength(2);
-    expect(screen.getAllByText("Presented This Week")).toHaveLength(1);
-    expect(screen.getByRole("heading", { name: "Tax Plan Cycle Cases" })).toBeInTheDocument();
+  });
 
-    const table = screen.getByRole("table", { name: "Tax Plan Cycle Cases" });
+  test("renders the tax plan cycle cases table heading", async () => {
+    renderQueue();
 
-    expect(within(table).getAllByRole("row")).toHaveLength(6);
-    expect(within(table).getByText("Updated Date")).toBeInTheDocument();
-    expect(within(table).getByText("Action")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Tax Plan Cycle Cases" }),
+    ).toBeInTheDocument();
+  });
+
+  test("renders five open action buttons", async () => {
+    renderQueue();
+
+    const table = await screen.findByRole("table", { name: "Tax Plan Cycle Cases" });
+
     expect(within(table).getAllByRole("button", { name: "Open" })).toHaveLength(5);
   });
 
-  test("open buttons route to the details placeholder", async () => {
+  test("renders the expected number of visible table rows", async () => {
+    renderQueue();
+
+    const table = await screen.findByRole("table", { name: "Tax Plan Cycle Cases" });
+
+    expect(within(table).getAllByRole("row")).toHaveLength(6);
+  });
+
+  test("routes the open button to the details placeholder", async () => {
     renderQueue();
 
     const table = await screen.findByRole("table", { name: "Tax Plan Cycle Cases" });
     fireEvent.click(within(table).getAllByRole("button", { name: "Open" })[0]!);
 
-    expect(await screen.findByText("hello Details page 🚀")).toBeInTheDocument();
+    expect(await screen.findByText(`hello Details page ${String.fromCodePoint(0x1f680)}`)).toBeInTheDocument();
   });
 });

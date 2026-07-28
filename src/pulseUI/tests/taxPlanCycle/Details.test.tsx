@@ -14,6 +14,8 @@ describe("Tax Plan Cycle details page", () => {
   test("renders the blank details placeholder", async () => {
     render(<RouterProvider router={createPulseRouter(["/cycles/TP-24018"])} />);
 
-    expect(await screen.findByText("hello Details page 🚀")).toBeInTheDocument();
+    expect(
+      await screen.findByText(`hello Details page ${String.fromCodePoint(0x1f680)}`),
+    ).toBeInTheDocument();
   });
 });
