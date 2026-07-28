@@ -20,15 +20,31 @@ const tenantEmailUniqueConstraint = "users_tenant_id_email_key";
 interface PostgresError {
   code?: string;
   constraint?: string;
+  cause?: unknown;
 }
 
 function isTenantEmailConflict(error: unknown): boolean {
-  const postgresError = error as PostgresError;
+  let candidate: unknown = error;
+  const visited = new Set<object>();
 
-  return (
-    postgresError.code === "23505" &&
-    postgresError.constraint === tenantEmailUniqueConstraint
-  );
+  while (candidate && typeof candidate === "object") {
+    if (visited.has(candidate)) {
+      return false;
+    }
+    visited.add(candidate);
+
+    const postgresError = candidate as PostgresError;
+    if (
+      postgresError.code === "23505" &&
+      postgresError.constraint === tenantEmailUniqueConstraint
+    ) {
+      return true;
+    }
+
+    candidate = postgresError.cause;
+  }
+
+  return false;
 }
 
 export function createRegistrationAccountRepository(

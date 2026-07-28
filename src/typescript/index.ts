@@ -348,6 +348,8 @@ import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
+import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
+import { createRegistrationService } from "./authRegistrationService.js";
 import {
   createAuditEntryRepository,
   createAuditEntryWriter,
@@ -406,6 +408,9 @@ export async function main(): Promise<Server> {
   await client.connect();
 
   const credentialReader = createPasswordCredentialStore(client);
+  const registrationService = createRegistrationService({
+    store: createRegistrationAccountRepository(client),
+  });
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
@@ -490,7 +495,7 @@ export async function main(): Promise<Server> {
           transitionController: taxPlanCycleTransitionController,
         }),
       );
-      app.use(createAuthRouter({ authenticatePassword }));
+      app.use(createAuthRouter({ authenticatePassword, registrationService }));
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
       }));
