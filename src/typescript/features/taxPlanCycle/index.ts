@@ -31,6 +31,16 @@ export {
   type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
 } from "./repositories/repository.js";
 export {
+  buildTaxPlanCycleCreateIdempotencyKey,
+  createRedisTaxPlanCycleCreateIdempotencyStore,
+  createUnavailableTaxPlanCycleCreateIdempotencyStore,
+  TaxPlanCycleCreateIdempotencyInProgressError,
+  TaxPlanCycleCreateIdempotencyUnavailableError,
+  type TaxPlanCycleCreateIdempotencyClient,
+  type TaxPlanCycleCreateIdempotencyInput,
+  type TaxPlanCycleCreateIdempotencyStore,
+} from "./infrastructure/createIdempotency.js";
+export {
   buildTaxPlanCycleQueueReadCacheKey,
   buildTaxPlanCycleQueueTenantVersionKey,
   createNoopTaxPlanCycleQueueCacheInvalidator,
@@ -64,6 +74,7 @@ export {
   createTaxPlanCycleCreateController,
   taxPlanCycleCreateController,
   taxPlanCycleCreateResultSchema,
+  type CreateTaxPlanCycleCreateControllerOptions,
   type TaxPlanCycleCreateControllerInput,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateResult,
