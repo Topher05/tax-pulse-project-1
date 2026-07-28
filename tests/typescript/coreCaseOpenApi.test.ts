@@ -15,6 +15,8 @@ import {
   mfaEnrollConfirmResultSchema,
   mfaEnrollRequestSchema,
   mfaEnrollResultSchema,
+  registrationAccountResponseSchema,
+  registrationRequestSchema,
   taxPlanCycleCreateResultSchema,
   taxPlanCycleCreateSchema,
   taxPlanCycleReadParamsSchema,
@@ -232,6 +234,49 @@ describe("Core Case Service OpenAPI document", () => {
     });
   });
 
+  test("documents registration with safe account output and duplicate-email conflict", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const registrationOperation = requiredRecord(
+      requiredRecord(paths, "/auth/register"),
+      "post",
+    );
+    const requestBody = requiredRecord(registrationOperation, "requestBody");
+    const requestContent = requiredRecord(requestBody, "content");
+    const requestJson = requiredRecord(requestContent, "application/json");
+    const requestExample = requiredRecord(requestJson, "example");
+    const responses = requiredRecord(registrationOperation, "responses");
+    const createdResponse = requiredRecord(responses, "201");
+    const createdContent = requiredRecord(createdResponse, "content");
+    const createdJson = requiredRecord(createdContent, "application/json");
+    const createdExample = requiredRecord(createdJson, "example");
+    const conflictResponse = requiredRecord(responses, "409");
+    const conflictContent = requiredRecord(conflictResponse, "content");
+    const conflictJson = requiredRecord(conflictContent, "application/problem+json");
+    const conflictExample = requiredRecord(conflictJson, "example");
+
+    expect(registrationOperation.operationId).toBe("registerUser");
+    expect(registrationOperation.tags).toEqual(["Authentication"]);
+    expect(requestExample).toMatchObject({
+      tenant_id: expect.any(String),
+      email: expect.any(String),
+      password: expect.any(String),
+    });
+    expect(createdExample).toMatchObject({
+      id: expect.any(String),
+      tenant_id: requestExample.tenant_id,
+      email: requestExample.email,
+      role: "Client",
+      status: "invited",
+    });
+    expect(createdExample.password).toBeUndefined();
+    expect(createdExample.passwordHash).toBeUndefined();
+    expect(conflictExample).toMatchObject({
+      status: 409,
+      code: "EMAIL_ALREADY_REGISTERED",
+    });
+  });
+
   test("generates case schemas from zod without a separate status field", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
@@ -303,6 +348,14 @@ describe("Core Case Service OpenAPI document", () => {
         expect.objectContaining({
           name: "AuthMfaLoginResult",
           schema: authMfaLoginResultSchema,
+        }),
+        expect.objectContaining({
+          name: "RegistrationRequest",
+          schema: registrationRequestSchema,
+        }),
+        expect.objectContaining({
+          name: "RegistrationAccountResponse",
+          schema: registrationAccountResponseSchema,
         }),
         expect.objectContaining({
           name: "TaxPlanCycleCreateRequest",

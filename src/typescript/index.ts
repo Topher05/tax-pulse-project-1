@@ -104,6 +104,22 @@ export {
   type PasswordLoginRequest,
 } from "./authRoutes.js";
 export {
+  RegistrationEmailConflictError,
+  registrationAccountResponseSchema,
+  registrationInitialAccountValues,
+  registrationRequestSchema,
+  type RegistrationAccountInsert,
+  type RegistrationAccountResponse,
+  type RegistrationAccountStore,
+  type RegistrationRequest,
+} from "./authRegistration.js";
+export {
+  createRegistrationService,
+  type CreateRegistrationServiceOptions,
+  type RegistrationService,
+} from "./authRegistrationService.js";
+export { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
+export {
   coreCaseOpenApiSchemaRegistrations,
   createCoreCaseOpenApiDocument,
   type CoreCaseOpenApiSchemaRegistration,
@@ -180,6 +196,10 @@ export {
   TaxEngineTimeoutError,
   type TaxEngineClient,
   type TaxEngineClientOptions,
+  type TaxCalculationEngineFilingStatus,
+  type TaxCalculationEngineInput,
+  type TaxCalculationEngineRequest,
+  type TaxCalculationEngineResult,
   type ScenarioComparisonEngineRequest,
   type TaxEngineComparisonRequest,
 } from "./features/taxPlanCycle/index.js";
@@ -338,6 +358,8 @@ import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
 import { createTenantLoginResolver } from "./tenantLoginResolver.js";
+import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
+import { createRegistrationService } from "./authRegistrationService.js";
 import {
   createAuditEntryRepository,
   createAuditEntryWriter,
@@ -397,6 +419,9 @@ export async function main(): Promise<Server> {
 
   const credentialReader = createPasswordCredentialStore(client);
   const tenantLoginResolver = createTenantLoginResolver(client);
+  const registrationService = createRegistrationService({
+    store: createRegistrationAccountRepository(client),
+  });
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
@@ -481,7 +506,13 @@ export async function main(): Promise<Server> {
           transitionController: taxPlanCycleTransitionController,
         }),
       );
-      app.use(createAuthRouter({ authenticatePassword, tenantLoginResolver }));
+      app.use(
+        createAuthRouter({
+          authenticatePassword,
+          registrationService,
+          tenantLoginResolver,
+        }),
+      );
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
       }));
