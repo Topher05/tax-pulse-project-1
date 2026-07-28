@@ -34,6 +34,53 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira192 - SCRUM-192
+
+**Branch:** `christopher-martus-jira192`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-192
+
+**Summary:** Provide an auth context and session hooks for login, refresh, and logout
+
+**Description:** As a Frontend Developer, I want an auth context that holds the session
+and a hook for login, token refresh, and logout, so that every screen, route guard, and
+query reads identity from one source.
+
+**Acceptance Criteria:**
+
+- An auth context provider holds the authenticated session and restores it across reloads.
+- A session hook exposes identity, authentication state, and session actions.
+- Login stores issued tokens; logout clears the session and cached data.
+- Refresh and invalidation are centralized and covered by component tests.
+
+**Code Connection:**
+
+- The first implementation slice defines the Pulse UI's typed session, BFF token-response,
+  MFA challenge, and hook contracts. It validates JWT identity claims centrally and maps
+  issued token responses to a browser session without retaining a refresh token in
+  JavaScript state.
+
+**Project Scope Connection:**
+
+This establishes the frontend identity boundary for the React SPA. Subsequent slices add
+the provider, BFF refresh/logout contract, and authenticated request behavior while
+preserving tenant and role isolation.
+
+**Changed Files:**
+
+- `src/pulseUI/auth/session.ts`
+- `src/pulseUI/tests/auth/session.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm test -- --run tests/auth/session.test.tsx --cache=false` passed (3 tests).
+- `npm run typecheck` remains blocked by pre-existing route parameter/import errors in
+  `pages/taxPlanCycle/Queue.tsx` and route tests, plus a missing
+  `@tailwindcss/vite` type resolution. None reference this auth slice.
+
 ## christopher-martus-jira195 - SCRUM-195
 
 **Branch:** `christopher-martus-jira195`
