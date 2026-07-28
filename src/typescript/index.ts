@@ -175,6 +175,10 @@ export {
   TaxEngineTimeoutError,
   type TaxEngineClient,
   type TaxEngineClientOptions,
+  type TaxCalculationEngineFilingStatus,
+  type TaxCalculationEngineInput,
+  type TaxCalculationEngineRequest,
+  type TaxCalculationEngineResult,
   type ScenarioComparisonEngineRequest,
   type TaxEngineComparisonRequest,
 } from "./features/taxPlanCycle/index.js";
