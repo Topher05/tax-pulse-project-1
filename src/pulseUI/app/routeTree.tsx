@@ -2,6 +2,7 @@ import { createRootRoute, createRoute } from "@tanstack/react-router";
 
 import { AppShell } from "../components/AppShell.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
+import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { Queue } from "../pages/taxPlanCycle/Queue.tsx";
 
 const rootRoute = createRootRoute({
@@ -14,16 +15,16 @@ const dashboardRoute = createRoute({
   component: EmptyPage,
 });
 
-const planCyclesRoute = createRoute({
+const cyclesQueueRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/plan-cycles",
+  path: "/cycles/queue",
   component: Queue,
 });
 
-const planCycleDetailRoute = createRoute({
+const cycleDetailsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/plan-cycles/$caseId",
-  component: EmptyPage,
+  path: "/cycles/$id",
+  component: DetailsPage,
 });
 
 const scenarioPlannerRoute = createRoute({
@@ -70,8 +71,8 @@ const firmSettingsRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   dashboardRoute,
-  planCyclesRoute,
-  planCycleDetailRoute,
+  cyclesQueueRoute,
+  cycleDetailsRoute,
   scenarioPlannerRoute,
   incomeRoute,
   deductionsRoute,

@@ -1,170 +1,169 @@
-import type { PlanCycleQueueMetric, PlanCycleQueueRow } from "../../entities/planCycleQueue.ts";
+import { useNavigate } from "@tanstack/react-router";
+
+import type { PlanCycleQueueMetric, PlanCycleQueueRow } from "../../entities/taxPlanCycle.ts";
 
 const queueMetrics: readonly PlanCycleQueueMetric[] = [
-  { label: "Open", value: "18", caption: "All active cycles in the queue" },
-  { label: "Awaiting Review", value: "6", caption: "Ready for advisor review" },
-  { label: "Overdue", value: "3", caption: "Past the due date" },
-  { label: "Presented This Week", value: "7", caption: "Shared with the client team" },
-];
+  {
+    label: "Open Cycles",
+    value: "5",
+    caption: "7 due this week",
+  },
+  {
+    label: "Awaiting Review",
+    value: "2",
+    caption: "Awaiting Firm Admin Approval",
+  },
+  {
+    label: "Overdue",
+    value: "1",
+    caption: "Needs attention today",
+  },
+  {
+    label: "Presented This Week",
+    value: "4",
+    caption: "Avg Cycle: 4 days",
+  },
+] as const;
 
 const queueRows: readonly PlanCycleQueueRow[] = [
   {
     caseId: "TP-24018",
     client: "North Shore Family Office",
     stage: "Modeling",
-    owner: "Caleb Latimer",
+    owner: "Maya Reed",
     priority: "High",
-    dueDate: "Jul 10, 2026",
+    dueDate: "Overdue",
+    updatedDate: "May 12, 2026",
     overdue: true,
   },
   {
     caseId: "TP-24021",
-    client: "Hawthorne Surgical Partners",
+    client: "Harbor Point Advisors",
     stage: "Awaiting Review",
-    owner: "Dylan Harle",
+    owner: "Jordan Kim",
     priority: "Medium",
-    dueDate: "Jul 30, 2026",
+    dueDate: "Jun 03, 2026",
+    updatedDate: "May 29, 2026",
     overdue: false,
   },
   {
-    caseId: "TP-24028",
-    client: "Lighthouse Advisory Group",
-    stage: "Presented",
-    owner: "Christopher Martus",
-    priority: "Low",
-    dueDate: "Aug 02, 2026",
-    overdue: false,
-  },
-  {
-    caseId: "TP-24034",
-    client: "Birchfield Capital",
+    caseId: "TP-24027",
+    client: "Cedar Ridge Wealth",
     stage: "Modeling",
-    owner: "Martins Okorie",
-    priority: "High",
-    dueDate: "Jul 23, 2026",
-    overdue: true,
+    owner: "Avery Chen",
+    priority: "Low",
+    dueDate: "Jun 06, 2026",
+    updatedDate: "May 31, 2026",
+    overdue: false,
   },
-];
-
-const metricRingClasses: readonly string[] = [
-  "from-sky-500 to-cyan-500",
-  "from-emerald-500 to-teal-500",
-  "from-rose-500 to-orange-500",
-  "from-indigo-500 to-violet-500",
-];
-
-function QueueMetricCard({
-  label,
-  value,
-  caption,
-  gradient,
-}: PlanCycleQueueMetric & { gradient: string }) {
-  return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</h3>
-          <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
-          <p className="mt-1 text-sm text-slate-600">{caption}</p>
-        </div>
-
-        <span
-          aria-hidden="true"
-          className={`inline-flex h-10 w-10 shrink-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-90`}
-        />
-      </div>
-    </article>
-  );
-}
-
-function OverdueBadge() {
-  return (
-    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
-      Overdue
-    </span>
-  );
-}
+  {
+    caseId: "TP-24033",
+    client: "Summit View Partners",
+    stage: "Presented",
+    owner: "Noah Patel",
+    priority: "High",
+    dueDate: "Jun 09, 2026",
+    updatedDate: "Jun 01, 2026",
+    overdue: false,
+  },
+  {
+    caseId: "TP-24038",
+    client: "Beacon Street Group",
+    stage: "Awaiting Review",
+    owner: "Isla Torres",
+    priority: "Medium",
+    dueDate: "Jun 12, 2026",
+    updatedDate: "Jun 04, 2026",
+    overdue: false,
+  },
+] as const;
 
 export function Queue() {
+  const navigate = useNavigate();
+
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-      <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-              Plan Cycle Queue
-            </p>
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
-              Open cycles at a glance
-            </h2>
-          </div>
-
-          <p className="max-w-2xl text-sm leading-6 text-slate-600">
-            Review ownership, stage, and due-date risk from a single queue view while
-            keeping the page structure close to the wireframe.
-          </p>
+    <div className="queuePage">
+      <header className="queueHero">
+        <div className="queueHeroCopy">
+          <p className="queueEyebrow">Tax Plan Cycle</p>
+          <h2 className="queueTitle">Tax Plan Cycle Queue</h2>
+          <p className="queueLead">Track open cycles, review ownership, and timing at a glance.</p>
         </div>
-      </section>
 
-      <section aria-label="Queue metrics" className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {queueMetrics.map((metric, index) => (
-          <QueueMetricCard
-            key={metric.label}
-            {...metric}
-            gradient={metricRingClasses[index] ?? metricRingClasses[0]!}
-          />
+        <button className="queueHeroAction" type="button">
+          New Cycle
+        </button>
+      </header>
+
+      <section aria-label="Queue KPIs" className="queueKpiGrid">
+        {queueMetrics.map((metric) => (
+          <article className="queueKpiCard" key={metric.label}>
+            <p className="queueKpiLabel">{metric.label}</p>
+            <p className="queueKpiValue">{metric.value}</p>
+            <p className="queueKpiCaption">{metric.caption}</p>
+          </article>
         ))}
       </section>
 
-      <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-5">
+      <section className="queueTableCard">
+        <div className="queueSectionHeader">
           <div>
-            <h3 className="text-lg font-semibold text-slate-950">Cases in queue</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Tenant-scoped rows surfaced in the order advisors need them.
+            <h3 className="queueSectionTitle">Tax Plan Cycle Cases</h3>
+            <p className="queueSectionCopy">
+              Five open cases are ready for review, modeling, or presentation.
             </p>
           </div>
-          <p className="text-sm font-medium text-slate-500">{queueRows.length} open cases</p>
+
+          <button className="queueSectionAction" type="button">
+            New Cycle
+          </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table aria-label="Plan Cycle Queue cases" className="min-w-full border-separate border-spacing-0">
-            <thead className="bg-slate-50/80">
+        <div className="queueTableWrap">
+          <table className="queueTable" aria-label="Tax Plan Cycle Cases">
+            <thead>
               <tr>
-                {["Case ID", "Client", "Stage", "Owner", "Priority", "Due date"].map((heading) => (
-                  <th
-                    key={heading}
-                    scope="col"
-                    className="border-b border-slate-200 px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-slate-500"
-                  >
-                    {heading}
-                  </th>
-                ))}
+                <th>Case ID</th>
+                <th>Client</th>
+                <th>Stage</th>
+                <th>Owner</th>
+                <th>Priority</th>
+                <th>Due Date</th>
+                <th>Updated Date</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {queueRows.map((row) => (
-                <tr key={row.caseId} className="group hover:bg-slate-50/80">
-                  <td className="border-b border-slate-100 px-6 py-4 text-sm font-semibold text-slate-950">
-                    {row.caseId}
+                <tr key={row.caseId}>
+                  <td className="queueCaseId">{row.caseId}</td>
+                  <td>{row.client}</td>
+                  <td>{row.stage}</td>
+                  <td>{row.owner}</td>
+                  <td>
+                    <span className="queueRowPriority">{row.priority}</span>
                   </td>
-                  <td className="border-b border-slate-100 px-6 py-4 text-sm text-slate-700">
-                    {row.client}
-                  </td>
-                  <td className="border-b border-slate-100 px-6 py-4 text-sm text-slate-700">
-                    {row.stage}
-                  </td>
-                  <td className="border-b border-slate-100 px-6 py-4 text-sm text-slate-700">
-                    {row.owner}
-                  </td>
-                  <td className="border-b border-slate-100 px-6 py-4 text-sm text-slate-700">
-                    {row.priority}
-                  </td>
-                  <td className="border-b border-slate-100 px-6 py-4 text-sm text-slate-700">
-                    <div className="flex items-center gap-3">
+                  <td>
+                    {row.overdue ? (
+                      <span className="queueBadge queueBadgeOverdue">Overdue</span>
+                    ) : (
                       <span>{row.dueDate}</span>
-                      {row.overdue ? <OverdueBadge /> : null}
-                    </div>
+                    )}
+                  </td>
+                  <td>{row.updatedDate}</td>
+                  <td>
+                    <button
+                      className="queueRowAction"
+                      type="button"
+                      onClick={() => {
+                        navigate({
+                          to: "/cycles/$id",
+                          params: { id: row.caseId },
+                        });
+                      }}
+                    >
+                      Open
+                    </button>
                   </td>
                 </tr>
               ))}

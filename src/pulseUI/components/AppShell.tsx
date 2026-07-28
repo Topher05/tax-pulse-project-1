@@ -1,20 +1,35 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useId, useState } from "react";
+import { Settings2 } from "lucide-react";
+import { useState } from "react";
 
 import { pulseNavGroups } from "../shared/navigation.ts";
 import { getViewTitle } from "../shared/viewTitle.ts";
 
-const viewAsOptions = ["Advisor", "Firm Admin", "Client"] as const;
+const viewAsGroups = [
+  {
+    label: "Internal firm staff",
+    options: ["Firm Admin", "Advisor"] as const,
+  },
+  {
+    label: "External client",
+    options: ["Client"] as const,
+  },
+  {
+    label: "Platform",
+    options: ["Platform Admin"] as const,
+  },
+] as const;
 
 export function AppShell() {
-  const switcherLabelId = useId();
-  const [selectedRole, setSelectedRole] = useState<(typeof viewAsOptions)[number]>("Advisor");
+  const [selectedRole, setSelectedRole] = useState("Firm Admin");
+  const [liveCalculationEnabled, setLiveCalculationEnabled] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const viewTitle = getViewTitle(pathname);
 
   return (
     <div className="pulseShell">
-      <aside className="pulseSidebar" aria-label="Operator workspace">
+      <aside className="pulseSidebar" aria-label="Primary">
         <div className="pulseBrand">
           <span className="pulseBrandMark" aria-hidden="true">
             TP
@@ -35,13 +50,7 @@ export function AppShell() {
 
                   return (
                     <li key={`${group.label}-${item.label}`}>
-                      <Link
-                        className="pulseNavLink"
-                        to={item.path}
-                        params={item.path === "/plan-cycles/$caseId" ? { caseId: "example" } : undefined}
-                        activeProps={{ "data-active": "true" }}
-                        preload={false}
-                      >
+                      <Link className="pulseNavLink" to={item.path} activeProps={{ "data-active": "true" }} preload={false}>
                         <Icon className="pulseNavIcon" aria-hidden />
                         <span>{item.label}</span>
                       </Link>
@@ -56,27 +65,58 @@ export function AppShell() {
 
       <div className="pulseWorkspace">
         <header className="pulseTopbar">
-          <div>
-            <p className="pulseKicker">Operator Workspace</p>
+          <div className="pulseTopbarHeading">
             <h1>{viewTitle}</h1>
           </div>
 
-          <div className="pulseViewSwitcher" aria-labelledby={switcherLabelId}>
-            <span id={switcherLabelId}>View as</span>
-            <div className="pulseSegments" role="group" aria-label="Design-only view as switcher">
-              {viewAsOptions.map((option) => (
-                <button
-                  className="pulseSegment"
-                  type="button"
-                  aria-pressed={selectedRole === option}
-                  key={option}
-                  onClick={() => {
-                    setSelectedRole(option);
-                  }}
-                >
-                  {option}
-                </button>
-              ))}
+          <div className="pulseTopbarControls">
+            <label className="pulseRoleField">
+              <span>View as</span>
+              <select
+                className="pulseSelect"
+                value={selectedRole}
+                onChange={(event) => {
+                  setSelectedRole(event.target.value);
+                }}
+              >
+                {viewAsGroups.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+
+            <div className="pulseTopbarActions">
+              <button
+                className={`pulseLiveIndicator ${liveCalculationEnabled ? "is-live" : "is-offline"}`}
+                type="button"
+                aria-pressed={liveCalculationEnabled}
+                onClick={() => {
+                  setLiveCalculationEnabled((current) => !current);
+                }}
+              >
+                <span className="pulseLiveIndicatorDot" aria-hidden="true" />
+                <span>Live calculation</span>
+                <span className="pulseLiveIndicatorState">
+                  {liveCalculationEnabled ? "Live" : "Paused"}
+                </span>
+              </button>
+
+              <button
+                className="pulseActionButton"
+                type="button"
+                onClick={() => {
+                  setSettingsOpen(true);
+                }}
+              >
+                <Settings2 aria-hidden="true" />
+                <span>Settings</span>
+              </button>
             </div>
           </div>
         </header>
@@ -85,6 +125,37 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      {settingsOpen ? (
+        <div
+          className="pulseModalOverlay"
+          role="presentation"
+          onClick={() => {
+            setSettingsOpen(false);
+          }}
+        >
+          <div
+            className="pulseModal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Settings"
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            <button
+              className="pulseModalClose"
+              type="button"
+              aria-label="Close settings modal"
+              onClick={() => {
+                setSettingsOpen(false);
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

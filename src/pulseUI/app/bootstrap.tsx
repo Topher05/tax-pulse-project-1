@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 
 import { createPulseRouter } from "./createPulseRouter.ts";
-import "../styles.css";
+import "../shared/styles.css";
 
 const rootElement = document.getElementById("root");
 

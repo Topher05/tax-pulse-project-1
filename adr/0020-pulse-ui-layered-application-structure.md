@@ -31,8 +31,8 @@ flowchart LR
     Router --> RouteTree[app/routeTree.tsx]
     RouteTree --> Pages[pages/*]
     RouteTree --> Shell[components/AppShell.tsx]
-    Shell --> Shared[shared/navigation.ts + shared/viewTitle.ts]
-    Pages --> Entities[entities/planCycleQueue.ts]
+    Shell --> Shared[shared/navigation.ts + shared/viewTitle.ts + shared/styles.css]
+    Pages --> Entities[entities/taxPlanCycle.ts]
 ```
 
 This structure makes the ownership boundaries visible without forcing every UI piece

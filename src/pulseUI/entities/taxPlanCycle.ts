@@ -11,5 +11,6 @@ export type PlanCycleQueueRow = {
   owner: string;
   priority: string;
   dueDate: string;
+  updatedDate: string;
   overdue: boolean;
 };

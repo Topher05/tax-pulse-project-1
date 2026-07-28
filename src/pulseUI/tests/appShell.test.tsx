@@ -20,34 +20,46 @@ const renderShell = (initialPath: string = "/") => {
 
 describe("Pulse UI app shell", () => {
   test("renders the wireframe sidebar groups", async () => {
-    renderShell();
+    renderShell("/cycles/queue");
 
     const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
 
     expect(within(primaryNav).getByRole("heading", { name: "Workspace" })).toBeInTheDocument();
     expect(within(primaryNav).getByRole("heading", { name: "Plan Tools" })).toBeInTheDocument();
     expect(within(primaryNav).getByRole("heading", { name: "Firm" })).toBeInTheDocument();
+    expect(within(primaryNav).getByRole("link", { name: "Tax Plan Cycle Queue" })).toBeInTheDocument();
   });
 
-  test("shows the active view title and design-only View-as switcher", async () => {
-    renderShell("/plan-cycles");
+  test("shows the queue view title and menubar controls", async () => {
+    renderShell("/cycles/queue");
 
-    expect(await screen.findByRole("heading", { name: "Plan Cycle Queue" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Tax Plan Cycle Queue", level: 1 }),
+    ).toBeInTheDocument();
     expect(screen.getByText("View as")).toBeInTheDocument();
 
-    const advisorButton = screen.getByRole("button", { name: "Advisor" });
-    const adminButton = screen.getByRole("button", { name: "Firm Admin" });
-    const clientButton = screen.getByRole("button", { name: "Client" });
+    const roleSelect = screen.getByRole("combobox", { name: "View as" });
 
-    expect(advisorButton).toHaveAttribute("aria-pressed", "true");
-    expect(adminButton).toHaveAttribute("aria-pressed", "false");
-    expect(clientButton).toHaveAttribute("aria-pressed", "false");
+    expect(roleSelect).toHaveValue("Firm Admin");
+    expect(within(roleSelect).getByRole("option", { name: "Advisor" })).toBeInTheDocument();
+    expect(within(roleSelect).getByRole("option", { name: "Client" })).toBeInTheDocument();
+    expect(within(roleSelect).getByRole("option", { name: "Platform Admin" })).toBeInTheDocument();
 
-    fireEvent.click(adminButton);
+    expect(screen.getByRole("button", { name: /Live calculation/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
 
-    expect(advisorButton).toHaveAttribute("aria-pressed", "false");
-    expect(adminButton).toHaveAttribute("aria-pressed", "true");
-    expect(clientButton).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(screen.getByRole("button", { name: /Live calculation/i }));
+
+    expect(screen.getByRole("button", { name: /Live calculation/i })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+
+    expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
   });
 
   test("renders an empty region for routed view content", async () => {

@@ -43,15 +43,16 @@ Add new ticket entries below using this template.
 
 **Jira Key:** SCRUM-93
 
-**Summary:** Build the Plan Cycle Queue table component
+**Summary:** Jira-93 UI Feedback Pass
 
-**Description:** As an Advisor, I want the Plan Cycle Queue rendered from the wireframe, so that I can see all open cycles at a glance.
+**Description:** Tighten the Tax Plan Cycle queue screen so the topbar, KPI copy, table layout, document chrome, and details placeholder match the current mockup and route structure.
 
 **Acceptance Criteria:**
 
-- The queue renders rows with case ID, client, stage, owner, priority, and due date.
-- Cases past their due date render an Overdue badge.
-- The queue KPI cards (Open, Awaiting Review, Overdue, Presented This Week) render above the table.
+- The queue renders at `/cycles/queue` with rows for case ID, client, stage, owner, priority, due date, updated date, and action.
+- Cases past their due date render an Overdue badge in place of the due-date text.
+- The queue KPI cards render with the updated copy and the topbar includes the grouped role selector, live calculation indicator, and settings modal trigger.
+- A blank details route exists at `/cycles/:id` and the `Open` action routes there.
 
 **Code Connection:**
 
@@ -59,13 +60,18 @@ Add new ticket entries below using this template.
 - `src/pulseUI/app/createPulseRouter.ts`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/components/AppShell.tsx`
-- `src/pulseUI/entities/planCycleQueue.ts`
+- `src/pulseUI/entities/taxPlanCycle.ts`
 - `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
 - `src/pulseUI/shared/navigation.ts`
 - `src/pulseUI/shared/viewTitle.ts`
-- `src/pulseUI/styles.css`
+- `src/pulseUI/shared/styles.css`
+- `src/pulseUI/styles.css` (removed)
 - `src/pulseUI/vite.config.ts`
-- `src/pulseUI/tests/planCycleQueue/planCycleQueuePage.test.tsx`
+- `src/pulseUI/index.html`
+- `src/pulseUI/public/calculator-favicon.svg`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
 - `src/pulseUI/main.tsx`
 - `adr/0019-tailwind-styling-foundation-for-pulse-ui.md`
 - `adr/0020-pulse-ui-layered-application-structure.md`
@@ -81,18 +87,22 @@ Add new ticket entries below using this template.
 - `src/pulseUI/app/createPulseRouter.ts`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/components/AppShell.tsx`
-- `src/pulseUI/entities/planCycleQueue.ts`
+- `src/pulseUI/entities/taxPlanCycle.ts`
 - `src/pulseUI/pages/EmptyPage.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
 - `src/pulseUI/shared/navigation.ts`
 - `src/pulseUI/shared/viewTitle.ts`
-- `src/pulseUI/styles.css`
+- `src/pulseUI/shared/styles.css`
 - `src/pulseUI/vite.config.ts`
 - `src/pulseUI/tests/appShell.test.tsx`
-- `src/pulseUI/tests/planCycleQueue/planCycleQueuePage.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
 - `src/pulseUI/main.tsx`
+- `src/pulseUI/index.html`
 - `src/pulseUI/package.json`
 - `src/pulseUI/package-lock.json`
+- `src/pulseUI/public/calculator-favicon.svg`
 - `adr/0019-tailwind-styling-foundation-for-pulse-ui.md`
 - `adr/0020-pulse-ui-layered-application-structure.md`
 - `adr/README.md`
@@ -100,10 +110,9 @@ Add new ticket entries below using this template.
 
 **Validation Notes:**
 
-- `npm install` in `src/pulseUI` added the Tailwind Vite dependencies and refreshed the lockfile.
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed in `src/pulseUI`.
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` passed in `src/pulseUI`.
-- Final manual step: compare the rendered queue page against the mocked layout referenced in `AGENTS.md` and note any pixel-level gaps before closing the ticket.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run typecheck"` passed in `src/pulseUI`.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd test"` passed in `src/pulseUI`.
+- Final manual step after tests: compare the rendered queue page against the mocked layout referenced in `AGENTS.md` and note any pixel-level gaps before closing the ticket.
 
 ## caleb-latimer-jira74 - SCRUM-74
 

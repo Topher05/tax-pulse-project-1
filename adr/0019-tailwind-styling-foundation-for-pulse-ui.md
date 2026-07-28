@@ -16,8 +16,9 @@ For this project, the styling layer should be:
 Use Tailwind CSS as the primary styling foundation for `src/pulseUI`.
 
 The queue page and later feature pages can use utility classes for layout, spacing,
-typography, and responsive behavior while still keeping the existing shell CSS in
-place until it is naturally migrated.
+typography, and responsive behavior while the shared shell stylesheet lives in
+`src/pulseUI/shared/styles.css` and remains the base frame styling during the
+incremental migration.
 
 ```mermaid
 flowchart LR
@@ -48,8 +49,8 @@ one to justify the Tailwind base.
 The Pulse UI can ship a clean first page without committing to a heavyweight design
 system.
 
-Existing shell styles remain valid, so the migration can be incremental rather than a
-rewrite.
+Existing shell styles remain valid in `shared/styles.css`, so the migration can be
+incremental rather than a rewrite.
 
 Tailwind introduces build-time styling tooling, but it keeps runtime cost low and
 supports a modular component layout that can grow with the UI.
