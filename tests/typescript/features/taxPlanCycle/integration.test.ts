@@ -13,6 +13,8 @@ import {
   createAuditEntryRepository,
   createAuditEntryWriter,
   createLogger,
+  buildTaxPlanCycleCreateIdempotencyKey,
+  createRedisTaxPlanCycleCreateIdempotencyStore,
   createJwtAuthenticationMiddleware,
   createTaxPlanCycleCreateController,
   createTaxPlanCycleReadHelper,
@@ -24,10 +26,10 @@ import {
   redactedAuditAmount,
   stageTransition,
   taxPlanCycle,
-  taxPlanCycleIdempotencyKey,
   taxPlanCycleSchema,
   tenants,
   type AuditEntryWriter,
+  type TaxPlanCycleCreateIdempotencyClient,
 } from "../../../../src/typescript/index.js";
 import { applySeed } from "../../../../src/typescript/shared/database/seed.js";
 import {
@@ -107,6 +109,44 @@ const briannaAuthPrincipal = {
 } as const;
 const briannaSeedCycleId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
 
+function createInMemoryCreateIdempotencyClient(): TaxPlanCycleCreateIdempotencyClient & {
+  store: Map<string, string>;
+  setCalls: Array<{
+    key: string;
+    value: string;
+    options?: { EX?: number; NX?: boolean };
+  }>;
+} {
+  const store = new Map<string, string>();
+  const setCalls: Array<{
+    key: string;
+    value: string;
+    options?: { EX?: number; NX?: boolean };
+  }> = [];
+
+  return {
+    store,
+    setCalls,
+    async get(key) {
+      return store.get(key) ?? null;
+    },
+    async set(key, value, options) {
+      setCalls.push({ key, value, options });
+
+      if (options?.NX && store.has(key)) {
+        return null;
+      }
+
+      store.set(key, value);
+      return "OK";
+    },
+    async del(key) {
+      store.delete(key);
+      return 1;
+    },
+  };
+}
+
 async function createAccessToken(input: {
   tenantId: string;
   userId: string;
@@ -144,8 +184,15 @@ const attachRequestContext: RequestHandler = (req, _res, next) => {
 
 async function withRouteServer(
   repository: ReturnType<typeof createTaxPlanCycleRepository>,
-  run: (baseUrl: string) => Promise<void>,
+  run: (
+    baseUrl: string,
+    idempotencyClient: ReturnType<typeof createInMemoryCreateIdempotencyClient>,
+  ) => Promise<void>,
 ): Promise<void> {
+  const idempotencyClient = createInMemoryCreateIdempotencyClient();
+  const idempotencyStore = createRedisTaxPlanCycleCreateIdempotencyStore(
+    idempotencyClient,
+  );
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
@@ -153,7 +200,9 @@ async function withRouteServer(
       app.use(
         "/v1",
         createTaxPlanCycleRouter({
-          controller: createTaxPlanCycleCreateController(repository),
+          controller: createTaxPlanCycleCreateController(repository, {
+            idempotencyStore,
+          }),
         }),
       );
     },
@@ -164,7 +213,7 @@ async function withRouteServer(
 
   try {
     const address = server.address() as AddressInfo;
-    await run(`http://127.0.0.1:${address.port}`);
+    await run(`http://127.0.0.1:${address.port}`, idempotencyClient);
   } finally {
     server.close();
     await once(server, "close");
@@ -189,7 +238,11 @@ async function withTransitionRouteServer(
       app.use(hydrateUserClaims(permissionsForRole));
       app.use(
         createTaxPlanCycleRouter({
-          controller: createTaxPlanCycleCreateController(repository),
+          controller: createTaxPlanCycleCreateController(repository, {
+            idempotencyStore: createRedisTaxPlanCycleCreateIdempotencyStore(
+              createInMemoryCreateIdempotencyClient(),
+            ),
+          }),
           transitionController: createTaxPlanCycleTransitionController(
             repository,
           ),
@@ -275,13 +328,8 @@ describe("taxPlanCycle integration", () => {
     expect(migrationSql).toContain('CREATE TABLE "tax_plan_cycle"');
     expect(migrationSql).not.toContain('CONSTRAINT "tax_plan_cycle_case_id_key" UNIQUE');
     expect(migrationSql).toContain('CREATE TABLE "stage_transition"');
-    expect(migrationSql).toContain('CREATE TABLE "tax_plan_cycle_idempotency_key"');
-    expect(migrationSql).toContain(
-      'CREATE UNIQUE INDEX "tax_plan_cycle_idempotency_key_tenant_key_idx"',
-    );
-    expect(migrationSql).toContain(
-      'FOREIGN KEY ("case_id") REFERENCES "public"."tax_plan_cycle"("id")',
-    );
+    expect(migrationSql).not.toContain('CREATE TABLE "tax_plan_cycle_idempotency_key"');
+    expect(migrationSql).not.toContain("tax_plan_cycle_idempotency_key_tenant_key_idx");
   });
 
   test("creates the table, verifies it is empty, and persists two records", async () => {
@@ -660,7 +708,6 @@ describe("taxPlanCycle integration", () => {
         priority: "low",
         dueDate: "2026-09-30",
         actor: "advisor-003",
-        idempotencyKey: "repository-create-key-001",
       });
 
       expect(caseId).toMatch(
@@ -802,7 +849,7 @@ describe("taxPlanCycle integration", () => {
 
       await seedSampleTenant(client);
 
-      await withRouteServer(repository, async (baseUrl) => {
+      await withRouteServer(repository, async (baseUrl, idempotencyClient) => {
         const response = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
           method: "POST",
           headers: {
@@ -897,7 +944,7 @@ describe("taxPlanCycle integration", () => {
 
       await seedSampleTenant(client);
 
-      await withRouteServer(repository, async (baseUrl) => {
+      await withRouteServer(repository, async (baseUrl, idempotencyClient) => {
         const createBody = {
           client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
           planning_period: "2026-Q2",
@@ -935,24 +982,26 @@ describe("taxPlanCycle integration", () => {
           .select({ id: auditEntry.id })
           .from(auditEntry)
           .where(eq(auditEntry.caseId, firstBody.case_id));
-        const idempotencyRows = await db
-          .select({
-            tenantId: taxPlanCycleIdempotencyKey.tenantId,
-            idempotencyKey: taxPlanCycleIdempotencyKey.idempotencyKey,
-            caseId: taxPlanCycleIdempotencyKey.caseId,
-          })
-          .from(taxPlanCycleIdempotencyKey);
+        const idempotencyRedisKey = buildTaxPlanCycleCreateIdempotencyKey({
+          tenantId: sampleTenant.id,
+          idempotencyKey: "case-create-key-001",
+        });
 
         expect(cycleRows).toEqual([{ id: firstBody.case_id }]);
         expect(transitionRows).toHaveLength(1);
         expect(auditRows).toHaveLength(1);
-        expect(idempotencyRows).toEqual([
-          {
-            tenantId: sampleTenant.id,
-            idempotencyKey: "case-create-key-001",
-            caseId: firstBody.case_id,
-          },
-        ]);
+        expect(idempotencyClient.store.get(idempotencyRedisKey)).toBe(
+          JSON.stringify({
+            status: "completed",
+            result: firstBody,
+          }),
+        );
+        expect(idempotencyClient.setCalls).toContainEqual(
+          expect.objectContaining({
+            key: idempotencyRedisKey,
+            options: { EX: 86_400 },
+          }),
+        );
       });
     });
   });
@@ -985,56 +1034,62 @@ describe("taxPlanCycle integration", () => {
       await secondClient.connect();
 
       try {
+        const idempotencyClient = createInMemoryCreateIdempotencyClient();
+        const idempotencyStore = createRedisTaxPlanCycleCreateIdempotencyStore(
+          idempotencyClient,
+        );
         const firstRepository = createTaxPlanCycleRepository(firstClient);
         const secondRepository = createTaxPlanCycleRepository(secondClient);
+        const firstController = createTaxPlanCycleCreateController(firstRepository, {
+          idempotencyStore,
+        });
+        const secondController = createTaxPlanCycleCreateController(secondRepository, {
+          idempotencyStore,
+        });
         const createInput = {
           tenantId: sampleTenant.id,
-          planningPeriod: "2026-Q2",
-          clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d64",
+          planning_period: "2026-Q2",
+          client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d64",
           owner: "advisor-concurrent-001",
           priority: "high",
-          dueDate: "2026-10-31",
+          due_date: "2026-10-31",
           actor: "advisor-concurrent-001",
           idempotencyKey: "case-create-key-concurrent-001",
         } as const;
 
-        const [firstCaseId, secondCaseId] = await Promise.all([
-          firstRepository.create(createInput),
-          secondRepository.create(createInput),
+        const [firstResult, secondResult] = await Promise.all([
+          firstController.create(createInput),
+          secondController.create(createInput),
         ]);
 
-        expect(secondCaseId).toBe(firstCaseId);
+        expect(secondResult).toEqual(firstResult);
 
         const cycleRows = await db
           .select({ id: taxPlanCycle.id })
           .from(taxPlanCycle)
           .where(eq(taxPlanCycle.tenantId, sampleTenant.id));
-        const idempotencyRows = await db
-          .select({
-            tenantId: taxPlanCycleIdempotencyKey.tenantId,
-            idempotencyKey: taxPlanCycleIdempotencyKey.idempotencyKey,
-            caseId: taxPlanCycleIdempotencyKey.caseId,
-          })
-          .from(taxPlanCycleIdempotencyKey);
         const transitionRows = await db
           .select({ id: stageTransition.id })
           .from(stageTransition)
-          .where(eq(stageTransition.caseId, firstCaseId));
+          .where(eq(stageTransition.caseId, firstResult.case_id));
         const auditRows = await db
           .select({ id: auditEntry.id })
           .from(auditEntry)
-          .where(eq(auditEntry.caseId, firstCaseId));
+          .where(eq(auditEntry.caseId, firstResult.case_id));
+        const idempotencyRedisKey = buildTaxPlanCycleCreateIdempotencyKey({
+          tenantId: sampleTenant.id,
+          idempotencyKey: "case-create-key-concurrent-001",
+        });
 
-        expect(cycleRows).toEqual([{ id: firstCaseId }]);
-        expect(idempotencyRows).toEqual([
-          {
-            tenantId: sampleTenant.id,
-            idempotencyKey: "case-create-key-concurrent-001",
-            caseId: firstCaseId,
-          },
-        ]);
+        expect(cycleRows).toEqual([{ id: firstResult.case_id }]);
         expect(transitionRows).toHaveLength(1);
         expect(auditRows).toHaveLength(1);
+        expect(idempotencyClient.store.get(idempotencyRedisKey)).toBe(
+          JSON.stringify({
+            status: "completed",
+            result: firstResult,
+          }),
+        );
       } finally {
         await firstClient.end().catch(() => undefined);
         await secondClient.end().catch(() => undefined);
@@ -1049,7 +1104,7 @@ describe("taxPlanCycle integration", () => {
 
       await seedSampleTenant(client);
 
-      await withRouteServer(repository, async (baseUrl) => {
+      await withRouteServer(repository, async (baseUrl, idempotencyClient) => {
         const createBody = {
           client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d63",
           planning_period: "2026-Q3",
@@ -1085,16 +1140,27 @@ describe("taxPlanCycle integration", () => {
           .select({ id: taxPlanCycle.id })
           .from(taxPlanCycle)
           .where(eq(taxPlanCycle.tenantId, sampleTenant.id));
-        const idempotencyRows = await db
-          .select({ caseId: taxPlanCycleIdempotencyKey.caseId })
-          .from(taxPlanCycleIdempotencyKey);
+        const firstRedisKey = buildTaxPlanCycleCreateIdempotencyKey({
+          tenantId: sampleTenant.id,
+          idempotencyKey: "case-create-key-002",
+        });
+        const secondRedisKey = buildTaxPlanCycleCreateIdempotencyKey({
+          tenantId: sampleTenant.id,
+          idempotencyKey: "case-create-key-003",
+        });
 
         expect(cycleRows).toHaveLength(2);
-        expect(idempotencyRows).toEqual(
-          expect.arrayContaining([
-            { caseId: firstBody.case_id },
-            { caseId: secondBody.case_id },
-          ]),
+        expect(idempotencyClient.store.get(firstRedisKey)).toBe(
+          JSON.stringify({
+            status: "completed",
+            result: firstBody,
+          }),
+        );
+        expect(idempotencyClient.store.get(secondRedisKey)).toBe(
+          JSON.stringify({
+            status: "completed",
+            result: secondBody,
+          }),
         );
       });
     });
