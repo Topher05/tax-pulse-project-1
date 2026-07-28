@@ -111,6 +111,7 @@ export {
 export {
   createRegistrationService,
   type CreateRegistrationServiceOptions,
+  type RegistrationService,
 } from "./authRegistrationService.js";
 export { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
 export {

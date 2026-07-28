@@ -16,6 +16,10 @@ export interface CreateRegistrationServiceOptions {
   createCredentialId?: () => string;
 }
 
+export interface RegistrationService {
+  register(input: RegistrationRequest): Promise<RegistrationAccountResponse>;
+}
+
 function createCredentialId(): string {
   return randomBytes(18).toString("base64url");
 }
@@ -25,9 +29,7 @@ export function createRegistrationService({
   hashPasswordOptions,
   createUserId = randomUUID,
   createCredentialId: createNewCredentialId = createCredentialId,
-}: CreateRegistrationServiceOptions): {
-  register(input: RegistrationRequest): Promise<RegistrationAccountResponse>;
-} {
+}: CreateRegistrationServiceOptions): RegistrationService {
   return {
     async register(input) {
       const passwordHash = await hashPassword(input.password, hashPasswordOptions);
