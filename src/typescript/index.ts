@@ -99,12 +99,20 @@ export {
   type PasswordLoginRequest,
 } from "./authRoutes.js";
 export {
+  RegistrationEmailConflictError,
   registrationAccountResponseSchema,
   registrationInitialAccountValues,
   registrationRequestSchema,
+  type RegistrationAccountInsert,
   type RegistrationAccountResponse,
+  type RegistrationAccountStore,
   type RegistrationRequest,
 } from "./authRegistration.js";
+export {
+  createRegistrationService,
+  type CreateRegistrationServiceOptions,
+} from "./authRegistrationService.js";
+export { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
 export {
   coreCaseOpenApiSchemaRegistrations,
   createCoreCaseOpenApiDocument,

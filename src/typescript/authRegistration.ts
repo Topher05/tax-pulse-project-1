@@ -35,3 +35,26 @@ export const registrationAccountResponseSchema = z
 export type RegistrationAccountResponse = z.infer<
   typeof registrationAccountResponseSchema
 >;
+
+export interface RegistrationAccountInsert {
+  id: string;
+  tenantId: string;
+  email: string;
+  role: RegistrationAccountResponse["role"];
+  status: RegistrationAccountResponse["status"];
+  credentialId: string;
+  passwordHash: string;
+}
+
+export interface RegistrationAccountStore {
+  createRegistrationAccount(
+    input: RegistrationAccountInsert,
+  ): Promise<RegistrationAccountResponse>;
+}
+
+export class RegistrationEmailConflictError extends Error {
+  constructor() {
+    super("An account with this email is already registered for the tenant.");
+    this.name = "RegistrationEmailConflictError";
+  }
+}
