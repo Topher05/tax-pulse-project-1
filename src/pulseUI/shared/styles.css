@@ -300,6 +300,8 @@ body::-webkit-scrollbar-thumb {
 .pulseModalOverlay {
   position: fixed;
   inset: 0;
+}
+.planCycleDetail {
   display: grid;
   place-items: center;
   padding: 24px;
@@ -557,6 +559,8 @@ body::-webkit-scrollbar-thumb {
 
 .queueRowAction:hover {
   border-color: #b5c1cc;
+    border-radius: 8px;
+  resize: vertical;
 }
 
 /* Queue state boundary: loading, empty, error, and retry states */
@@ -684,6 +688,136 @@ body::-webkit-scrollbar-thumb {
   border: 0;
 }
 
+.planCycleDetail {
+  display: grid;
+  gap: 24px;
+  max-width: 1120px;
+}
+
+.planCycleStepper,
+.planCycleTabs {
+  display: grid;
+  gap: 14px;
+}
+
+.planCycleStepper h2,
+.planCycleTabs h2,
+.planCycleTabPanel h2 {
+  margin: 0;
+  color: #17202a;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.planCycleStepper ol {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(92px, 1fr));
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.planCycleStep {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  width: 100%;
+  padding: 8px;
+  color: #526173;
+  background: #ffffff;
+  border: 1px solid #cdd6df;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.planCycleStep[aria-current="step"] {
+  color: #112235;
+  border-color: #d6a72f;
+  box-shadow: inset 0 0 0 2px #f3c969;
+  font-weight: 800;
+}
+
+.planCycleStep[data-complete="true"] {
+  color: #17324d;
+  background: #edf7f6;
+  border-color: #8bcfcc;
+}
+
+.planCycleStepNumber {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: #ffffff;
+  background: #526173;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.planCycleStep[aria-current="step"] .planCycleStepNumber {
+  color: #112235;
+  background: #f3c969;
+}
+
+.planCycleStep[data-complete="true"] .planCycleStepNumber {
+  background: #1f7a76;
+}
+
+.planCycleTabList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid #cdd6df;
+}
+
+.planCycleTab {
+  min-height: 40px;
+  padding: 0 14px;
+  color: #526173;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.planCycleTab[aria-selected="true"] {
+  color: #112235;
+  border-bottom-color: #f3c969;
+  font-weight: 800;
+}
+
+.planCycleTabPanel {
+  display: grid;
+  gap: 12px;
+  min-height: 180px;
+  padding: 18px 0;
+}
+
+.planCycleCommentBox {
+  width: min(100%, 680px);
+  min-height: 132px;
+  padding: 12px;
+  color: #17202a;
+  background: #ffffff;
+  border: 1px solid #cdd6df;
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.pulseNavLink:focus-visible,
+.pulseSegment:focus-visible,
+.planCycleStep:focus-visible,
+.planCycleTab:focus-visible,
+.planCycleCommentBox:focus-visible {
+  outline: 3px solid #54b6b1;
+  outline-offset: 2px;
+}
+
 @keyframes queueSkeletonPulse {
   0% {
     background-position: 200% 0;
@@ -771,6 +905,10 @@ body::-webkit-scrollbar-thumb {
 
   .queueSectionHeader {
     padding-block: 1rem;
+  }
+
+  .planCycleStepper ol {
+    grid-template-columns: 1fr;
   }
   .queueStateError {
     grid-template-columns: 1fr;

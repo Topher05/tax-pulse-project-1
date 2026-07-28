@@ -1,4 +1,4 @@
-# ADR-0021: Resolve tenant context from firm-specific login hostnames
+# ADR-0022: Resolve tenant context from firm-specific login hostnames
 
 ## Context
 TaxPulse is a multi-tenant SaaS application in which users and password credentials are
