@@ -102,6 +102,55 @@ Add new ticket entries below using this template.
 - `npm run build:web` passed.
 - `npm test` ran the full suite but failed in existing backend database/migration tests after PostgreSQL reported `function uuidv7() does not exist`; the new Pulse UI tests pass when run directly.
 
+## dylan-harle-jira95 - SCRUM-95
+
+**Branch:** `dylan-harle-jira95`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-95
+
+**Summary:** Build the Plan Cycle Detail tab and stepper hook.
+
+**Description:** As an Advisor, I want a hook managing the detail tabs and stage stepper, so that switching tabs is predictable.
+
+**Acceptance Criteria:**
+
+- A custom hook tracks the active tab (Overview, Scenarios, Comments, Audit Trail) and the stepper position.
+- Switching tabs preserves unsaved local input in the comments box.
+- The hook is unit-tested for tab and stepper transitions.
+
+**Code Connection:**
+
+- Added a Pulse UI Plan Cycle Detail hook for local tab, stepper, and comments draft state.
+- Added a minimal Plan Cycle Detail route on `/plan-cycles/$caseId` with skeleton Overview, Scenarios, Comments, and Audit Trail tabs.
+- Replaced only the Plan Cycle Detail route's empty placeholder from the SCRUM-92 shell while leaving other placeholder routes intact.
+- Added hook and route coverage for tab transitions, stage transitions, and preserving unsaved comments draft input across tab switches.
+
+**Project Scope Connection:**
+
+- Builds on the SCRUM-92 React/Vite shell and TanStack Router workspace route framework.
+- Establishes Plan Cycle Detail navigation state for SCRUM-96 and SCRUM-97 without adding live data reads, backend API changes, or separate case status state.
+
+**Changed Files:**
+
+- `planning/team/dh-ticket-journal.md`
+- `adr/0018-plan-cycle-detail-navigation-state.md`
+- `adr/README.md`
+- `src/pulseUI/planCycles/PlanCycleDetailRoute.tsx`
+- `src/pulseUI/planCycles/usePlanCycleDetailNavigation.ts`
+- `src/pulseUI/routing/routeTree.tsx`
+- `src/pulseUI/styles.css`
+- `src/pulseUI/tests/planCycleDetailNavigation.test.tsx`
+- `src/pulseUI/tests/planCycleDetailRoute.test.tsx`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm run build:web` passed.
+
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
 
