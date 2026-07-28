@@ -379,9 +379,11 @@ The auth helpers use Argon2id password hashes. See
 [`ADR-0007`](./adr/0007-argon2id-password-login.md) for the dependency and architecture
 rationale.
 
-`POST /auth/login` accepts `tenant_id`, `email`, and `password`. Valid passwords return
-`202` with an MFA challenge payload, and invalid credentials return a shared `401`
-Problem Details response.
+`POST /auth/login` accepts `email` and `password`. The tenant is resolved server-side from
+the firm-specific login hostname (`{tenant-slug}.taxpulse.example`), so clients never submit
+a raw `tenant_id`. Valid passwords return `202` with an MFA challenge payload, invalid
+credentials return a shared `401` Problem Details response, and unknown login workspaces
+return `404`.
 
 The defaults work out of the box. Override these values only when a deployment needs
 different capacity or latency tradeoffs:

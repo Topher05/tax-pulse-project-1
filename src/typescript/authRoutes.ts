@@ -9,17 +9,17 @@ import {
 } from "./authModel.js";
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
 import { ProblemHttpError, type ProblemDetails } from "./errors.js";
+import { parseTenantLoginHostname } from "./tenantLoginHost.js";
+import type { TenantLoginResolver } from "./tenantLoginResolver.js";
 
 export const passwordLoginRequestSchema = z
   .object({
-    tenant_id: z.string().uuid(),
     email: z.string().email(),
     password: z.string().min(1),
   })
   .strict();
 
 export interface PasswordLoginRequest {
-  tenant_id: string;
   email: string;
   password: string;
 }
@@ -47,6 +47,8 @@ export type PasswordAuthenticator = (
 ) => Promise<PasswordAuthenticationResult>;
 
 export interface CreateAuthRouterOptions {
+  tenantLoginResolver: TenantLoginResolver;
+  tenantLoginBaseDomain?: string;
   credentialReader?: PasswordCredentialReader;
   authenticatePassword?: PasswordAuthenticator;
 }
@@ -61,9 +63,12 @@ function toValidationIssue(issue: ZodIssue): AuthValidationErrorIssue {
   };
 }
 
-function toLoginInput(body: PasswordLoginRequest): PasswordCredentialLoginInput {
+function toLoginInput(
+  body: PasswordLoginRequest,
+  tenantId: string,
+): PasswordCredentialLoginInput {
   return {
-    tenantId: body.tenant_id,
+    tenantId,
     email: body.email,
     plaintextPassword: body.password,
   };
@@ -89,7 +94,16 @@ function invalidCredentialsError(): ProblemHttpError {
   });
 }
 
-export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router {
+function unknownTenantLoginError(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/tenant-login-not-found",
+    title: "Login Workspace Not Found",
+    status: 404,
+    detail: "The requested login workspace was not found.",
+  });
+}
+
+export function createAuthRouter(options: CreateAuthRouterOptions): Router {
   const router = Router();
   let authenticatePassword = options.authenticatePassword;
 
@@ -128,7 +142,21 @@ export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router 
       }
 
       try {
-        const result = await authenticatePassword(toLoginInput(parsedBody.data));
+        const loginSlug = parseTenantLoginHostname(req.hostname, {
+          baseDomain: options.tenantLoginBaseDomain,
+        });
+        if (!loginSlug) {
+          next(unknownTenantLoginError());
+          return;
+        }
+
+        const tenant = await options.tenantLoginResolver.findActiveTenantByLoginSlug(loginSlug);
+        if (!tenant) {
+          next(unknownTenantLoginError());
+          return;
+        }
+
+        const result = await authenticatePassword(toLoginInput(parsedBody.data, tenant.tenantId));
         if (result.status === "invalid_credentials") {
           next(invalidCredentialsError());
           return;

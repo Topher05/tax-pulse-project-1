@@ -337,6 +337,7 @@ import { getJwtConfigFromEnv } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
+import { createTenantLoginResolver } from "./tenantLoginResolver.js";
 import {
   createAuditEntryRepository,
   createAuditEntryWriter,
@@ -395,6 +396,7 @@ export async function main(): Promise<Server> {
   await client.connect();
 
   const credentialReader = createPasswordCredentialStore(client);
+  const tenantLoginResolver = createTenantLoginResolver(client);
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
@@ -479,7 +481,7 @@ export async function main(): Promise<Server> {
           transitionController: taxPlanCycleTransitionController,
         }),
       );
-      app.use(createAuthRouter({ authenticatePassword }));
+      app.use(createAuthRouter({ authenticatePassword, tenantLoginResolver }));
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
       }));

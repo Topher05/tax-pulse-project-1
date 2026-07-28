@@ -9,10 +9,23 @@ import {
   createLogger,
   type AuthValidationErrorResponse,
   type PasswordAuthenticator,
+  type TenantLoginResolver,
 } from "../../../src/typescript/index.js";
 import { authEmail, authTenantId } from "./auth.test.model.js";
 
 const silentLogger = createLogger({ level: "silent" });
+const tenantLoginHostname = "north-shore-advisors.taxpulse.example";
+const tenantLoginSlug = "north-shore-advisors";
+
+function createTestTenantLoginResolver(): TenantLoginResolver {
+  return {
+    async findActiveTenantByLoginSlug(loginSlug) {
+      return loginSlug === tenantLoginSlug
+        ? { tenantId: authTenantId, loginSlug }
+        : null;
+    },
+  };
+}
 
 async function withAuthServer(
   authenticatePassword: PasswordAuthenticator,
@@ -21,9 +34,15 @@ async function withAuthServer(
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
-      app.use(createAuthRouter({ authenticatePassword }));
+      app.use(
+        createAuthRouter({
+          authenticatePassword,
+          tenantLoginResolver: createTestTenantLoginResolver(),
+        }),
+      );
     },
   });
+  app.set("trust proxy", true);
 
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -67,7 +86,6 @@ describe("auth route integration", () => {
       });
       expect(body.issues).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ path: ["tenant_id"] }),
           expect.objectContaining({ path: ["email"] }),
           expect.objectContaining({ path: ["password"] }),
           expect.objectContaining({ code: "unrecognized_keys" }),
@@ -82,7 +100,6 @@ describe("auth route integration", () => {
       status: "invalid_credentials",
     }));
     const loginBody = {
-      tenant_id: authTenantId,
       email: authEmail,
       password: "wrong-password",
     };
@@ -90,12 +107,12 @@ describe("auth route integration", () => {
     await withAuthServer(authenticatePassword, async (baseUrl) => {
       const wrongPasswordResponse = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-forwarded-host": tenantLoginHostname },
         body: JSON.stringify(loginBody),
       });
       const unknownEmailResponse = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-forwarded-host": tenantLoginHostname },
         body: JSON.stringify({
           ...loginBody,
           email: "unknown@example.com",
@@ -121,6 +138,27 @@ describe("auth route integration", () => {
     expect(authenticatePassword).toHaveBeenCalledTimes(2);
   });
 
+  test("rejects a client-supplied tenant ID even when credentials are otherwise valid", async () => {
+    const authenticatePassword = vi.fn<PasswordAuthenticator>();
+
+    await withAuthServer(authenticatePassword, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/auth/login`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-forwarded-host": tenantLoginHostname },
+        body: JSON.stringify({
+          tenant_id: authTenantId,
+          email: authEmail,
+          password: "correct-password",
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({ code: "VALIDATION_ERROR" });
+    });
+
+    expect(authenticatePassword).not.toHaveBeenCalled();
+  });
+
   test("advances valid password logins to MFA challenge without issuing a token", async () => {
     const authenticatePassword = vi.fn<PasswordAuthenticator>(async () => ({
       status: "mfa_challenge_required",
@@ -132,9 +170,8 @@ describe("auth route integration", () => {
     await withAuthServer(authenticatePassword, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-forwarded-host": tenantLoginHostname },
         body: JSON.stringify({
-          tenant_id: authTenantId,
           email: authEmail,
           password: "correct-password",
         }),
@@ -155,5 +192,30 @@ describe("auth route integration", () => {
       });
       expect(body).not.toHaveProperty("token");
     });
+  });
+
+  test("rejects an unknown tenant login hostname before password authentication", async () => {
+    const authenticatePassword = vi.fn<PasswordAuthenticator>();
+
+    await withAuthServer(authenticatePassword, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/auth/login`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-host": "unknown.taxpulse.example",
+        },
+        body: JSON.stringify({ email: authEmail, password: "correct-password" }),
+      });
+
+      expect(response.status).toBe(404);
+      await expect(response.json()).resolves.toEqual({
+        type: "https://taxpulse.example/problems/tenant-login-not-found",
+        title: "Login Workspace Not Found",
+        status: 404,
+        detail: "The requested login workspace was not found.",
+      });
+    });
+
+    expect(authenticatePassword).not.toHaveBeenCalled();
   });
 });
