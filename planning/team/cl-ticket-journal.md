@@ -35,6 +35,58 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira93 - SCRUM-93
+
+**Branch:** `caleb-latimer-jira93`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-93
+
+**Summary:** Build the Plan Cycle Queue table component
+
+**Description:** As an Advisor, I want the Plan Cycle Queue rendered from the wireframe, so that I can see all open cycles at a glance.
+
+**Acceptance Criteria:**
+
+- The queue renders rows with case ID, client, stage, owner, priority, and due date.
+- Cases past their due date render an Overdue badge.
+- The queue KPI cards (Open, Awaiting Review, Overdue, Presented This Week) render above the table.
+
+**Code Connection:**
+
+- `src/pulseUI/features/planCycleQueue/PlanCycleQueuePage.tsx`
+- `src/pulseUI/routing/routeTree.tsx`
+- `src/pulseUI/styles.css`
+- `src/pulseUI/vite.config.ts`
+- `src/pulseUI/tests/planCycleQueuePage.test.tsx`
+- `adr/0019-tailwind-styling-foundation-for-pulse-ui.md`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Tax Plan Cycle queue UI work
+
+**Changed Files:**
+
+- `src/pulseUI/features/planCycleQueue/PlanCycleQueuePage.tsx`
+- `src/pulseUI/routing/routeTree.tsx`
+- `src/pulseUI/styles.css`
+- `src/pulseUI/vite.config.ts`
+- `src/pulseUI/tests/planCycleQueuePage.test.tsx`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `adr/0019-tailwind-styling-foundation-for-pulse-ui.md`
+- `adr/README.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm install` in `src/pulseUI` added the Tailwind Vite dependencies and refreshed the lockfile.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed in `src/pulseUI`.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` passed in `src/pulseUI`.
+- Final manual step: compare the rendered queue page against the mocked layout referenced in `AGENTS.md` and note any pixel-level gaps before closing the ticket.
+
 ## caleb-latimer-jira74 - SCRUM-74
 
 **Branch:** `caleb-latimer-jira74`
