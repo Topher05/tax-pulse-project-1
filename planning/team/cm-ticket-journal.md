@@ -68,6 +68,8 @@ access the application.
 - `authRoutes.ts` exposes `POST /auth/register`, returning 201 for a safe account DTO,
   400 for invalid bodies, and a Problem Details 409 for duplicate tenant emails.
 - `index.ts` wires the repository and service into the runtime auth router.
+- `coreCaseOpenApi.ts` documents the registration operation and its 201, 400, and 409
+  response contracts alongside the existing Authentication endpoints.
 
 **Project Scope Connection:**
 
@@ -82,17 +84,21 @@ their own role or status.
 - `src/typescript/authRegistrationService.ts`
 - `src/typescript/authRegistrationRepository.ts`
 - `src/typescript/authRoutes.ts`
+- `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
 - `tests/typescript/authRegistration.test.ts`
 - `tests/typescript/authRegistrationService.test.ts`
 - `tests/typescript/authRegistrationRoutes.test.ts`
 - `tests/typescript/authRegistration.integration.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm run typecheck` passed.
 - The focused registration contract, service, and route tests passed: 9 tests.
+- `npx vitest run tests/typescript/coreCaseOpenApi.test.ts --config vitest.config.ts`
+  passed: 8 tests.
 - `npx vitest run tests/typescript/authRegistration.integration.test.ts --config
   vitest.integration.config.ts` passed with Docker access; it verifies Argon2id storage,
   tenant-scoped conflicts, cross-tenant reuse of an email, and transaction rollback.
