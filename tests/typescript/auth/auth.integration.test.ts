@@ -16,6 +16,9 @@ import { authEmail, authTenantId } from "./auth.test.model.js";
 const silentLogger = createLogger({ level: "silent" });
 const tenantLoginHostname = "north-shore-advisors.taxpulse.example";
 const tenantLoginSlug = "north-shore-advisors";
+const otherTenantLoginHostname = "harbor-view-planning.taxpulse.example";
+const otherTenantLoginSlug = "harbor-view-planning";
+const otherTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02";
 
 function createTestTenantLoginResolver(): TenantLoginResolver {
   return {
@@ -30,6 +33,7 @@ function createTestTenantLoginResolver(): TenantLoginResolver {
 async function withAuthServer(
   authenticatePassword: PasswordAuthenticator,
   run: (baseUrl: string) => Promise<void>,
+  tenantLoginResolver: TenantLoginResolver = createTestTenantLoginResolver(),
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
@@ -37,7 +41,7 @@ async function withAuthServer(
       app.use(
         createAuthRouter({
           authenticatePassword,
-          tenantLoginResolver: createTestTenantLoginResolver(),
+          tenantLoginResolver,
         }),
       );
     },
@@ -217,5 +221,79 @@ describe("auth route integration", () => {
     });
 
     expect(authenticatePassword).not.toHaveBeenCalled();
+  });
+
+  test("does not authenticate a tenant user's credentials through another tenant host", async () => {
+    const authenticatePassword = vi.fn<PasswordAuthenticator>(async (input) => {
+      if (
+        input.tenantId === authTenantId &&
+        input.email === authEmail &&
+        input.plaintextPassword === "correct-password"
+      ) {
+        return {
+          status: "mfa_challenge_required",
+          tenantId: authTenantId,
+          email: authEmail,
+          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        };
+      }
+
+      return { status: "invalid_credentials" };
+    });
+    const tenantLoginResolver: TenantLoginResolver = {
+      async findActiveTenantByLoginSlug(loginSlug) {
+        if (loginSlug === tenantLoginSlug) {
+          return { tenantId: authTenantId, loginSlug };
+        }
+        if (loginSlug === otherTenantLoginSlug) {
+          return { tenantId: otherTenantId, loginSlug };
+        }
+
+        return null;
+      },
+    };
+
+    await withAuthServer(
+      authenticatePassword,
+      async (baseUrl) => {
+        const tenantAResponse = await fetch(`${baseUrl}/auth/login`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-host": tenantLoginHostname,
+          },
+          body: JSON.stringify({ email: authEmail, password: "correct-password" }),
+        });
+        const tenantBResponse = await fetch(`${baseUrl}/auth/login`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-host": otherTenantLoginHostname,
+          },
+          body: JSON.stringify({ email: authEmail, password: "correct-password" }),
+        });
+
+        expect(tenantAResponse.status).toBe(202);
+        expect(tenantBResponse.status).toBe(401);
+        await expect(tenantBResponse.json()).resolves.toEqual({
+          type: "https://taxpulse.example/problems/invalid-credentials",
+          title: "Invalid Credentials",
+          status: 401,
+          detail: "The email or password is invalid.",
+        });
+      },
+      tenantLoginResolver,
+    );
+
+    expect(authenticatePassword).toHaveBeenNthCalledWith(1, {
+      tenantId: authTenantId,
+      email: authEmail,
+      plaintextPassword: "correct-password",
+    });
+    expect(authenticatePassword).toHaveBeenNthCalledWith(2, {
+      tenantId: otherTenantId,
+      email: authEmail,
+      plaintextPassword: "correct-password",
+    });
   });
 });
