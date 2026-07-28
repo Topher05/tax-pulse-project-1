@@ -57,6 +57,15 @@ export const taxPlanCycleSchema = taxPlanCycleBaseSchema.superRefine(
   requireHoldReasonWhenOnHold,
 );
 
+export const taxPlanCycleQueueItemSchema = taxPlanCycleSchema.extend({
+  is_overdue: z.boolean(),
+  updated_at: z.iso.datetime(),
+});
+
+export const taxPlanCycleQueueReadResponseSchema = z.array(
+  taxPlanCycleQueueItemSchema,
+);
+
 export const taxPlanCycleReadResponseSchema = taxPlanCycleSchema.extend({
   scenarios: z.array(scenarioSchema),
 });
@@ -81,6 +90,10 @@ export const taxPlanCycleTransitionSchema = z.strictObject({
 export type TaxPlanCycleStage = z.infer<typeof taxPlanCycleStageSchema>;
 export type TaxPlanCyclePriority = z.infer<typeof taxPlanCyclePrioritySchema>;
 export type TaxPlanCycle = z.infer<typeof taxPlanCycleSchema>;
+export type TaxPlanCycleQueueItem = z.infer<typeof taxPlanCycleQueueItemSchema>;
+export type TaxPlanCycleQueueReadResponse = z.infer<
+  typeof taxPlanCycleQueueReadResponseSchema
+>;
 export type TaxPlanCycleReadResponse = z.infer<
   typeof taxPlanCycleReadResponseSchema
 >;

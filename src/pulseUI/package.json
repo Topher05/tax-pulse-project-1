@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.pulseUI.json --noEmit"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-router": "^1.133.1",
     "lucide-react": "^0.553.0",
     "react": "^19.2.0",

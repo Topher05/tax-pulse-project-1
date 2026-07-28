@@ -26,6 +26,8 @@ import {
 import {
   taxPlanCycleCreateSchema,
   taxPlanCycleReadParamsSchema,
+  taxPlanCycleQueueItemSchema,
+  taxPlanCycleQueueReadResponseSchema,
   taxPlanCycleSchema,
 } from "./features/taxPlanCycle/index.js";
 
@@ -73,6 +75,14 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "TaxPlanCycleReadResponse",
     schema: taxPlanCycleReadResponseOpenApiSchema,
+  },
+  {
+    name: "TaxPlanCycleQueueItem",
+    schema: taxPlanCycleQueueItemSchema,
+  },
+  {
+    name: "TaxPlanCycleQueueReadResponse",
+    schema: taxPlanCycleQueueReadResponseSchema,
   },
   {
     name: "TaxPlanCycleCreateAccepted",
@@ -138,6 +148,20 @@ const fakeTaxPlanCycleExample = {
   on_hold: false,
   scenarios: [],
 };
+
+const fakeTaxPlanCycleQueueExample = [
+  {
+    id: fakeTaxPlanCycleExample.id,
+    client_id: fakeTaxPlanCycleExample.client_id,
+    stage: fakeTaxPlanCycleExample.stage,
+    owner: fakeTaxPlanCycleExample.owner,
+    priority: fakeTaxPlanCycleExample.priority,
+    due_date: fakeTaxPlanCycleExample.due_date,
+    on_hold: fakeTaxPlanCycleExample.on_hold,
+    is_overdue: false,
+    updated_at: "2026-07-27T00:00:00.000Z",
+  },
+];
 
 const fakeScenarioModelingRequestExample = {
   baseline: {
@@ -674,6 +698,54 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
         },
       },
       "/v1/tax-plan-cycles": {
+        get: {
+          operationId: "listTaxPlanCycleQueue",
+          tags: ["Core Case Service"],
+          summary: "List the tenant-scoped Tax Plan Cycle queue",
+          description:
+            "Returns the request tenant's queue ordered by due date. " +
+            "The response is the read model used by the queue screen.",
+          responses: {
+            "200": {
+              description: "The tenant-scoped queue was returned.",
+              content: {
+                "application/json": {
+                  schema: toOpenApiSchema(taxPlanCycleQueueReadResponseSchema),
+                  example: fakeTaxPlanCycleQueueExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "500": {
+              description: "An unexpected service error occurred.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "about:blank",
+                    title: "Internal Server Error",
+                    status: 500,
+                    detail: "An unexpected error occurred.",
+                  },
+                },
+              },
+            },
+          },
+        },
         post: {
           operationId: "createTaxPlanCycle",
           tags: ["Core Case Service"],

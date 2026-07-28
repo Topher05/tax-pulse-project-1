@@ -2,84 +2,46 @@ import { useNavigate } from "@tanstack/react-router";
 
 import type { PlanCycleQueueMetric, PlanCycleQueueRow } from "../../entities/taxPlanCycle.ts";
 
-const queueMetrics: readonly PlanCycleQueueMetric[] = [
-  {
-    label: "Open Cycles",
-    value: "5",
-    caption: "7 due this week",
-  },
-  {
-    label: "Awaiting Review",
-    value: "2",
-    caption: "Awaiting Firm Admin Approval",
-  },
-  {
-    label: "Overdue",
-    value: "1",
-    caption: "Needs attention today",
-  },
-  {
-    label: "Presented This Week",
-    value: "4",
-    caption: "Avg Cycle: 4 days",
-  },
-] as const;
+interface QueueProps {
+  rows: readonly PlanCycleQueueRow[];
+}
 
-const queueRows: readonly PlanCycleQueueRow[] = [
-  {
-    caseId: "TP-24018",
-    client: "North Shore Family Office",
-    stage: "Modeling",
-    owner: "Maya Reed",
-    priority: "High",
-    dueDate: "Overdue",
-    updatedDate: "May 12, 2026",
-    overdue: true,
-  },
-  {
-    caseId: "TP-24021",
-    client: "Harbor Point Advisors",
-    stage: "Awaiting Review",
-    owner: "Jordan Kim",
-    priority: "Medium",
-    dueDate: "Jun 03, 2026",
-    updatedDate: "May 29, 2026",
-    overdue: false,
-  },
-  {
-    caseId: "TP-24027",
-    client: "Cedar Ridge Wealth",
-    stage: "Modeling",
-    owner: "Avery Chen",
-    priority: "Low",
-    dueDate: "Jun 06, 2026",
-    updatedDate: "May 31, 2026",
-    overdue: false,
-  },
-  {
-    caseId: "TP-24033",
-    client: "Summit View Partners",
-    stage: "Presented",
-    owner: "Noah Patel",
-    priority: "High",
-    dueDate: "Jun 09, 2026",
-    updatedDate: "Jun 01, 2026",
-    overdue: false,
-  },
-  {
-    caseId: "TP-24038",
-    client: "Beacon Street Group",
-    stage: "Awaiting Review",
-    owner: "Isla Torres",
-    priority: "Medium",
-    dueDate: "Jun 12, 2026",
-    updatedDate: "Jun 04, 2026",
-    overdue: false,
-  },
-] as const;
+function buildQueueMetrics(rows: readonly PlanCycleQueueRow[]): readonly PlanCycleQueueMetric[] {
+  const awaitingReviewCount = rows.filter(
+    (row) => row.stage === "Review" || row.stage === "Awaiting Review",
+  ).length;
+  const overdueCount = rows.filter((row) => row.overdue).length;
+  const presentedThisWeekCount = rows.filter(
+    (row) => row.stage === "Executed" || row.stage === "Presented",
+  ).length;
 
-export function Queue() {
+  return [
+    {
+      label: "Open Cycles",
+      value: String(rows.length),
+      caption: "7 due this week",
+    },
+    {
+      label: "Awaiting Review",
+      value: String(awaitingReviewCount),
+      caption: "Awaiting Firm Admin Approval",
+    },
+    {
+      label: "Overdue",
+      value: String(overdueCount),
+      caption: "Needs attention today",
+    },
+    {
+      label: "Presented This Week",
+      value: String(presentedThisWeekCount),
+      caption: "Avg Cycle: 4 days",
+    },
+  ] as const;
+}
+
+export function Queue({ rows }: QueueProps) {
   const navigate = useNavigate();
+  const queueMetrics = buildQueueMetrics(rows);
 
   return (
     <div className="queuePage">
@@ -134,7 +96,7 @@ export function Queue() {
               </tr>
             </thead>
             <tbody>
-              {queueRows.map((row) => (
+              {rows.map((row) => (
                 <tr key={row.caseId}>
                   <td className="queueCaseId">{row.caseId}</td>
                   <td>{row.client}</td>

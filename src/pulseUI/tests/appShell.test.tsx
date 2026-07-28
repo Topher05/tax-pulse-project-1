@@ -1,9 +1,11 @@
 import "@testing-library/jest-dom/vitest";
 
+import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
+import { createPulseQueryClient } from "../app/queryClient.ts";
 import { createPulseRouter } from "../app/createPulseRouter.ts";
 
 beforeAll(() => {
@@ -15,7 +17,11 @@ afterEach(() => {
 });
 
 const renderShell = (initialPath: string = "/") => {
-  render(<RouterProvider router={createPulseRouter([initialPath])} />);
+  render(
+    <QueryClientProvider client={createPulseQueryClient()}>
+      <RouterProvider router={createPulseRouter([initialPath])} />
+    </QueryClientProvider>,
+  );
 };
 
 describe("Pulse UI app shell", () => {

@@ -14,6 +14,7 @@ import type {
 } from "../../auditEntryRepository.js";
 import { ProblemHttpError, type ProblemDetails } from "../../errors.js";
 import {
+  taxPlanCycleQueueReadResponseSchema,
   taxPlanCycleCreateSchema,
   taxPlanCycleReadParamsSchema,
   taxPlanCycleReadResponseSchema,
@@ -27,6 +28,7 @@ import {
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
 import type { ScenarioRepository } from "./repositories/scenarios.js";
+import type { TaxPlanCycleRepository } from "./repositories/repository.js";
 
 export interface ValidationErrorIssue {
   path: Array<string | number>;
@@ -42,6 +44,7 @@ export interface ValidationErrorResponse extends ProblemDetails {
 export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
   transitionController?: TaxPlanCycleTransitionController;
+  taxPlanCycleRepository?: Pick<TaxPlanCycleRepository, "findByCaseId" | "listQueue">;
   scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
   scenarioModelingController?: ScenarioModelingController;
   auditEntryReader?: AuditEntryReader;
@@ -226,6 +229,15 @@ export function createTaxPlanCycleRouter(
   const router = Router();
   const controller = options.controller ?? taxPlanCycleCreateController;
   const transitionController = options.transitionController ?? taxPlanCycleTransitionController;
+  const taxPlanCycleRepository =
+    options.taxPlanCycleRepository ?? {
+      async findByCaseId() {
+        return null;
+      },
+      async listQueue() {
+        return [];
+      },
+    };
   const scenarioRepository = options.scenarioRepository ?? {
     async listByCaseId() {
       return [];
@@ -239,6 +251,28 @@ export function createTaxPlanCycleRouter(
   const auditEntryReader = options.auditEntryReader ?? {
     listByCase: async () => [],
   };
+
+  router.get(
+    "/tax-plan-cycles",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+
+        const queue = await taxPlanCycleRepository.listQueue({ tenantId });
+        const response = taxPlanCycleQueueReadResponseSchema.parse(queue);
+
+        res.status(200).json(response);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
   router.get(
     "/tax-plan-cycles/:caseId/audit-entries",

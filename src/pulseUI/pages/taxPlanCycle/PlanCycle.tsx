@@ -1,110 +1,11 @@
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { Queue } from "./Queue.tsx";
-
-type PlanCycleQueueStateItem = unknown;
-
-type PlanCycleQueueLoader = () => Promise<readonly PlanCycleQueueStateItem[]>;
-
-const defaultPlanCycleQueueLoader: PlanCycleQueueLoader = async () => [
-  { case_id: "default-queue-item" },
-];
-
-type QueueRequestState =
-  | { status: "loading" }
-  | { status: "empty" }
-  | { status: "loaded"; itemCount: number }
-  | { status: "error"; message: string };
-
-interface PlanCycleProps {
-  loadQueue?: PlanCycleQueueLoader;
-  renderSuccess?: () => ReactNode;
-}
-
-export function PlanCycle({
-  loadQueue = defaultPlanCycleQueueLoader,
-  renderSuccess = () => <Queue />,
-}: PlanCycleProps = {}) {
-  return (
-    <PlanCycleQueueStateManager loadQueue={loadQueue} renderSuccess={renderSuccess} />
-  );
-}
-
-interface PlanCycleQueueStateManagerProps {
-  loadQueue: PlanCycleQueueLoader;
-  renderSuccess: () => ReactNode;
-}
-
-function PlanCycleQueueStateManager({
-  loadQueue,
-  renderSuccess,
-}: PlanCycleQueueStateManagerProps) {
-  const [requestState, setRequestState] = useState<QueueRequestState>({
-    status: "loading",
-  });
-  const [requestAttempt, setRequestAttempt] = useState(0);
-
-  useEffect(() => {
-    let isCurrentRequest = true;
-
-    setRequestState({ status: "loading" });
-
-    loadQueue()
-      .then((items) => {
-        if (!isCurrentRequest) {
-          return;
-        }
-
-        if (items.length === 0) {
-          setRequestState({ status: "empty" });
-          return;
-        }
-
-        setRequestState({ status: "loaded", itemCount: items.length });
-      })
-      .catch((error: unknown) => {
-        if (!isCurrentRequest) {
-          return;
-        }
-
-        setRequestState({
-          status: "error",
-          message: error instanceof Error ? error.message : "Queue request failed.",
-        });
-      });
-
-    return () => {
-      isCurrentRequest = false;
-    };
-  }, [loadQueue, requestAttempt]);
-
-  const retryQueueRequest = useCallback(() => {
-    setRequestAttempt((attempt) => attempt + 1);
-  }, []);
-
-  if (requestState.status === "loading") {
-    return <PlanCycleQueueLoadingState />;
-  }
-
-  if (requestState.status === "empty") {
-    return <PlanCycleQueueEmptyState />;
-  }
-
-  if (requestState.status === "error") {
-    return (
-      <PlanCycleQueueErrorState
-        message={requestState.message}
-        onRetry={retryQueueRequest}
-      />
-    );
-  }
-
-  // The dynamic loader can be extracted into its own reusable component later
-  // if another route needs the same request-state orchestration.
-  void requestState.itemCount;
-  return <>{renderSuccess()}</>;
-}
+import {
+  fetchTaxPlanCycleQueue,
+  taxPlanCycleQueueQueryKey,
+} from "./queries.ts";
 
 function PlanCycleQueueLoadingState() {
   const skeletonRows = Array.from({ length: 5 }, (_, index) => index);
@@ -148,15 +49,13 @@ function PlanCycleQueueEmptyState() {
   );
 }
 
-interface PlanCycleQueueErrorStateProps {
-  message: string;
-  onRetry: () => void;
-}
-
 function PlanCycleQueueErrorState({
   message,
   onRetry,
-}: PlanCycleQueueErrorStateProps) {
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
     <section className="queueState queueStateError" role="alert">
       <AlertTriangle className="queueStateIcon" aria-hidden />
@@ -170,4 +69,34 @@ function PlanCycleQueueErrorState({
       </button>
     </section>
   );
+}
+
+export function PlanCycle() {
+  const queueQuery = useQuery({
+    queryKey: taxPlanCycleQueueQueryKey,
+    queryFn: fetchTaxPlanCycleQueue,
+  });
+
+  if (queueQuery.isPending) {
+    return <PlanCycleQueueLoadingState />;
+  }
+
+  if (queueQuery.isError) {
+    return (
+      <PlanCycleQueueErrorState
+        message={queueQuery.error instanceof Error ? queueQuery.error.message : "Queue request failed."}
+        onRetry={() => {
+          void queueQuery.refetch();
+        }}
+      />
+    );
+  }
+
+  const queueRows = queueQuery.data ?? [];
+
+  if (queueRows.length === 0) {
+    return <PlanCycleQueueEmptyState />;
+  }
+
+  return <Queue rows={queueRows} />;
 }

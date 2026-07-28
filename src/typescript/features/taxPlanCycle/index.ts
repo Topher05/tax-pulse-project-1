@@ -2,6 +2,8 @@ export {
   isLegalTaxPlanCycleStageTransition,
   taxPlanCycleCreateSchema,
   taxPlanCyclePrioritySchema,
+  taxPlanCycleQueueItemSchema,
+  taxPlanCycleQueueReadResponseSchema,
   taxPlanCycleReadParamsSchema,
   taxPlanCycleReadResponseSchema,
   taxPlanCycleTransitionParamsSchema,

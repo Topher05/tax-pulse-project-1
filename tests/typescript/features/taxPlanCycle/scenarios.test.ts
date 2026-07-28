@@ -114,6 +114,19 @@ describe("scenario modeling failure boundary", () => {
     const findByCaseId = vi.fn(async () => cycle);
     const createMany = vi.fn(async () => []);
     const taxEngineClient: TaxEngineClient = {
+      calculateTax: vi.fn(async () => ({
+        income: "0",
+        deductions: "0",
+        state: "CA",
+        filing_status: "single" as const,
+        taxable_income: "0",
+        federal_liability: "0",
+        state_liability: "0",
+        total_liability: "0",
+        effective_rate: "0",
+        marginal_rate: "0",
+        currency: "USD",
+      })),
       compareScenarios: vi.fn(async () => {
         throw engineError;
       }),

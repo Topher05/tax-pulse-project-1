@@ -494,6 +494,7 @@ export async function main(): Promise<Server> {
           auditEntryReader: auditEntryRepository,
           auditEntryWriter,
           controller: taxPlanCycleController,
+          taxPlanCycleRepository,
           scenarioRepository,
           scenarioModelingController,
           transitionController: taxPlanCycleTransitionController,

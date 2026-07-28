@@ -35,6 +35,113 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira100 - SCRUM-100
+
+**Branch:** `caleb-latimer-jira100`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-100
+
+**Summary:** Jira-100 Wire the queue and detail screens to live data
+
+**Description:** Wire the Tax Plan Cycle queue and detail screens to live server state using TanStack Query so the signed-in user's authorized cycles and cycle detail can be read through the Core service.
+
+**Acceptance Criteria:**
+
+- The queue fetches the tenant's cycles via a TanStack Query hook.
+- The detail screen fetches a single cycle by case ID.
+- A scoped Advisor sees only their assigned cases per the permission matrix.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant UI as Pulse UI
+    participant Query as TanStack Query
+    participant Core as Core Case Service
+    participant Repo as Tax Plan Cycle Repository
+
+    Advisor->>UI: Open /cycles/queue
+    UI->>Query: useQuery(["taxPlanCycle","queue"])
+    Query->>Core: GET /v1/tax-plan-cycles
+    Core->>Repo: listQueue(tenantId)
+    Repo-->>Core: queue rows
+    Core-->>Query: 200 OK + queue payload
+    Query-->>UI: cache queue data
+    UI-->>Advisor: render queue table and KPIs
+
+    Advisor->>UI: Open /cycles/:id
+    UI->>Query: useQuery(["taxPlanCycle","details",caseId])
+    Query->>Core: GET /v1/tax-plan-cycles/:id
+    Core->>Repo: findByCaseId(tenantId, caseId)
+    Repo-->>Core: single cycle payload
+    Core-->>Query: 200 OK + detail payload
+    Query-->>UI: cache cycle detail
+    UI-->>Advisor: render details placeholder plus live details
+
+    Core-->>UI: 401/502 Problem Details on auth or upstream failure
+```
+
+**Code Connection:**
+
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/queryClient.ts`
+- `src/pulseUI/shared/coreCaseApi.ts`
+- `src/pulseUI/pages/taxPlanCycle/queries.ts`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `adr/0021-tanstack-query-for-pulse-ui-server-state.md`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Core Case Service tax plan cycle read wiring
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/index.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/queryClient.ts`
+- `src/pulseUI/shared/coreCaseApi.ts`
+- `src/pulseUI/pages/taxPlanCycle/queries.ts`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `adr/0021-tanstack-query-for-pulse-ui-server-state.md`
+- `adr/README.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run typecheck"` passed at the repo root.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd test"` passed in `src/pulseUI`.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd test"` at the repo root failed in the integration suite because Testcontainers could not find a working container runtime strategy in this environment.
+- The queue-state test harness now uses router context so the success branch no longer emits a `useRouter must be used inside a <RouterProvider>` warning.
+
 ## caleb-latimer-jira93 - SCRUM-93
 
 **Branch:** `caleb-latimer-jira93`
