@@ -915,7 +915,6 @@ body::-webkit-scrollbar-thumb {
   gap: 16px;
 }
 
-.planCycleCommentList,
 .planCycleAuditList {
   display: grid;
   gap: 10px;
@@ -924,7 +923,6 @@ body::-webkit-scrollbar-thumb {
   list-style: none;
 }
 
-.planCycleCommentItem,
 .planCycleAuditItem,
 .planCycleCommentComposer,
 .planCycleStatePanel {
@@ -936,7 +934,6 @@ body::-webkit-scrollbar-thumb {
   border-radius: 8px;
 }
 
-.planCycleCommentItem > p,
 .planCycleStatePanel p {
   margin: 0;
   color: #344153;

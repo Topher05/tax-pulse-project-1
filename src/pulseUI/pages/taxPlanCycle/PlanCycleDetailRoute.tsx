@@ -21,14 +21,6 @@ interface PlanCycleOverview {
   currentStage: PlanCycleDetailStage;
 }
 
-interface PlanCycleComment {
-  id: string;
-  author: string;
-  role: string;
-  body: string;
-  createdAt: string;
-}
-
 interface PlanCycleAuditEntry {
   id: string;
   actor: string;
@@ -183,7 +175,6 @@ function ScenariosTab() {
 }
 
 interface CommentsTabProps {
-  comments: readonly PlanCycleComment[];
   commentDraft: string;
   setCommentDraft: (draft: string) => void;
 }
@@ -221,7 +212,6 @@ function ErrorTabState({ copy }: { copy: typeof auditErrorCopy }) {
 }
 
 function CommentsTab({
-  comments,
   commentDraft,
   setCommentDraft,
 }: CommentsTabProps) {
@@ -231,24 +221,7 @@ function CommentsTab({
       aria-labelledby="plan-cycle-comments-heading"
     >
       <h2 id="plan-cycle-comments-heading">Comments</h2>
-      {comments.length > 0 ? (
-        <ol className="planCycleCommentList" aria-label="Case comments">
-          {comments.map((comment) => (
-            <li className="planCycleCommentItem" key={comment.id}>
-              <div className="planCycleEntryHeader">
-                <div>
-                  <h3>{comment.author}</h3>
-                  <p>{comment.role}</p>
-                </div>
-                <time>{comment.createdAt}</time>
-              </div>
-              <p>{comment.body}</p>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <EmptyTabState copy={commentStateCopy} />
-      )}
+      <EmptyTabState copy={commentStateCopy} />
 
       <div className="planCycleCommentComposer">
         <label htmlFor="plan-cycle-comment-draft">Add comment</label>
@@ -347,7 +320,6 @@ export function PlanCycleDetailRoute() {
   const tabLabelId = useId();
   const stageLabelId = useId();
   const { caseId } = useParams({ strict: false }) as { caseId?: string };
-  const comments: readonly PlanCycleComment[] = [];
   const [auditTrailState, setAuditTrailState] = useState<AuditTrailState>({
     status: "loading",
   });
@@ -364,6 +336,10 @@ export function PlanCycleDetailRoute() {
   } = usePlanCycleDetailNavigation({ initialStage: overview.currentStage });
 
   useEffect(() => {
+    if (activeTab !== "Audit Trail") {
+      return;
+    }
+
     if (!caseId) {
       setAuditTrailState({ status: "error" });
       return;
@@ -398,7 +374,7 @@ export function PlanCycleDetailRoute() {
     return () => {
       abortController.abort();
     };
-  }, [caseId]);
+  }, [activeTab, caseId]);
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -409,7 +385,6 @@ export function PlanCycleDetailRoute() {
       case "Comments":
         return (
           <CommentsTab
-            comments={comments}
             commentDraft={commentDraft}
             setCommentDraft={setCommentDraft}
           />

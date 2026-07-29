@@ -2,26 +2,16 @@ import "@testing-library/jest-dom/vitest";
 
 import { RouterProvider } from "@tanstack/react-router";
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
-import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseRouter } from "../app/createPulseRouter.ts";
 import { usePlanCycleDetailNavigation } from "../pages/taxPlanCycle/usePlanCycleDetailNavigation.ts";
-
-const emptyAuditResponse = {
-  ok: true,
-  json: () => Promise.resolve({ audit_entries: [] }),
-} as Response;
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
 });
 
-beforeEach(() => {
-  vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(emptyAuditResponse)));
-});
-
 afterEach(() => {
-  vi.unstubAllGlobals();
   cleanup();
 });
 

@@ -32,6 +32,7 @@ describe("Plan Cycle Detail route", () => {
 
     const main = screen.getByRole("main", { name: "Routed view content" });
     const tabList = within(main).getByRole("tablist", { name: "Plan cycle detail tabs" });
+    const fetchMock = vi.mocked(fetch);
 
     expect(within(tabList).getByRole("tab", { name: "Overview" })).toHaveAttribute(
       "aria-selected",
@@ -68,6 +69,7 @@ describe("Plan Cycle Detail route", () => {
     expect(within(caseProperties as HTMLElement).getByText("2026-08-15")).toBeInTheDocument();
     expect(within(caseProperties as HTMLElement).getByText("No")).toBeInTheDocument();
     expect(within(caseProperties as HTMLElement).getByText("High")).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test("renders an empty comments state and preserves draft input without adding a comment", async () => {
