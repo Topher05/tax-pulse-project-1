@@ -5,6 +5,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { AuthenticatedSessionProvider } from "../auth/AuthenticatedSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -12,7 +13,11 @@ beforeAll(() => {
 
 describe("Tax Plan Cycle details page", () => {
   test("renders the plan cycle overview", async () => {
-    render(<RouterProvider router={createPulseRouter(["/cycles/TP-24018"])} />);
+    render(
+      <AuthenticatedSessionProvider>
+        <RouterProvider router={createPulseRouter(["/cycles/TP-24018"])} />
+      </AuthenticatedSessionProvider>,
+    );
 
     expect(await screen.findByRole("heading", { name: "Cycle Details", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Overview" })).toBeInTheDocument();

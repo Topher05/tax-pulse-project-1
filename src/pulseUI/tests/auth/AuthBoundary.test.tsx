@@ -67,7 +67,9 @@ describe("AuthBoundary", () => {
       </AuthProvider>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Sign in required" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Sign in to TaxPulse Advisory" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Protected workspace")).not.toBeInTheDocument();
   });
 

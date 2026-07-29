@@ -436,3 +436,51 @@ add additional state datasets.
 - `npm run db:check` passed after generating the Drizzle migration.
 - Focused PostgreSQL tests and `npm run test:migration` require Testcontainers; they are
   blocked in this environment because no working container runtime is available.
+
+## christopher-martus-jira192 - SCRUM-192 / requested SCRUM-193 UI slice
+
+**Branch:** `christopher-martus-jira192`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-192 (the requested sign-in UI acceptance criteria are catalogued as SCRUM-193)
+
+**Summary:** Build the sign-in, MFA, and password-reset UI wired to the auth context
+
+**Description:** Provide SPA sign-in, MFA challenge, and mocked password-reset screens
+on the auth-context foundation supplied by SCRUM-192.
+
+**Acceptance Criteria:**
+
+- Anonymous users see sign-in as the protected-workspace entry view.
+- Sign-in, MFA, and password-reset routes are public screens.
+- Later slices wire credentials, MFA completion, reset navigation, role landing, and logout.
+
+**Code Connection:**
+
+- The router now separates public authentication routes from an `AuthBoundary`-guarded
+  workspace layout. The boundary uses the new sign-in screen for anonymous sessions.
+
+**Project Scope Connection:**
+
+This is the first UI-routing slice for the React SPA authentication flow. It introduces
+no BFF endpoint, token, password-reset, or authorization-policy change.
+
+**Changed Files:**
+
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/auth/AuthBoundary.tsx`
+- `src/pulseUI/pages/auth/SignInPage.tsx`
+- `src/pulseUI/pages/auth/MfaChallengePage.tsx`
+- `src/pulseUI/pages/auth/PasswordResetPage.tsx`
+- `src/pulseUI/pages/auth/PasswordResetConfirmationPage.tsx`
+- `src/pulseUI/tests/auth/AuthenticatedSessionProvider.tsx`
+- Existing Pulse UI route/component tests
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI test` passed: 44 tests in 11 files.
+- `npm --prefix src/pulseUI run typecheck` is blocked by the existing missing local
+  `@tailwindcss/vite` package referenced by `src/pulseUI/vite.config.ts`.

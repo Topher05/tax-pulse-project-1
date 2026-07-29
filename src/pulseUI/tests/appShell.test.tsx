@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseRouter } from "../app/createPulseRouter.ts";
+import { AuthenticatedSessionProvider } from "./auth/AuthenticatedSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -15,7 +16,11 @@ afterEach(() => {
 });
 
 const renderShell = (initialPath: string = "/") => {
-  render(<RouterProvider router={createPulseRouter([initialPath])} />);
+  render(
+    <AuthenticatedSessionProvider>
+      <RouterProvider router={createPulseRouter([initialPath])} />
+    </AuthenticatedSessionProvider>,
+  );
 };
 
 describe("Pulse UI app shell", () => {

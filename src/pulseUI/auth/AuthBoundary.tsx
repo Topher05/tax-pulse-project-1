@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from "react";
 
 import { useSession } from "./AuthProvider.tsx";
+import { SignInPage } from "../pages/auth/SignInPage.tsx";
 
 /** Blocks workspace routes until the session has been restored and is authenticated. */
 export function AuthBoundary({ children }: PropsWithChildren) {
@@ -11,12 +12,7 @@ export function AuthBoundary({ children }: PropsWithChildren) {
   }
 
   if (!isAuthenticated) {
-    return (
-      <main>
-        <h1>Sign in required</h1>
-        <p>Your session has ended. Sign in to continue to TaxPulse Advisory.</p>
-      </main>
-    );
+    return <SignInPage />;
   }
 
   return <>{children}</>;

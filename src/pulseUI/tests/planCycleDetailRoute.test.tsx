@@ -5,6 +5,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseRouter } from "../app/createPulseRouter.ts";
+import { AuthenticatedSessionProvider } from "./auth/AuthenticatedSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -16,7 +17,11 @@ afterEach(() => {
 
 describe("Plan Cycle Detail route", () => {
   test("renders the Overview tab inside the existing shell", async () => {
-    render(<RouterProvider router={createPulseRouter(["/cycles/example"])} />);
+    render(
+      <AuthenticatedSessionProvider>
+        <RouterProvider router={createPulseRouter(["/cycles/example"])} />
+      </AuthenticatedSessionProvider>,
+    );
 
     expect(await screen.findByRole("heading", { name: "Cycle Details", level: 1 })).toBeInTheDocument();
 
