@@ -2,10 +2,10 @@ import { ArrowRight, CalendarDays, ChartColumnBig, FolderKanban, Sparkles } from
 import { Link } from "@tanstack/react-router";
 
 import styles from "./DashboardPage.module.css";
-import { MetricCard } from "../components/MetricCard.tsx";
-import { PanelCard } from "../components/PanelCard.tsx";
-import { StatusPill } from "../components/StatusPill.tsx";
-import { WorkflowStepper } from "../components/WorkflowStepper.tsx";
+import { MetricCard } from "../../components/MetricCard.tsx";
+import { PanelCard } from "../../components/PanelCard.tsx";
+import { StatusPill } from "../../components/StatusPill.tsx";
+import { WorkflowStepper } from "../../components/WorkflowStepper.tsx";
 
 const dashboardMetrics = [
   {
