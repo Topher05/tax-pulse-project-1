@@ -151,6 +151,50 @@ Add new ticket entries below using this template.
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `npm run build:web` passed.
 
+## dylan-harle-jira96 - SCRUM-96
+
+**Branch:** `dylan-harle-jira96`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-96
+
+**Summary:** Build the Plan Cycle Detail Overview tab.
+
+**Description:** As an Advisor, I want the Overview tab of Plan Cycle Detail, so that I see the plan brief, recommendation, and case properties.
+
+**Acceptance Criteria:**
+
+- The Overview tab renders the plan brief (period, recommendation, projected savings, risk flags).
+- The case properties side panel renders advisor, reviewer, stage entered, due date, on-hold, and priority.
+- The stage stepper highlights the current stage.
+
+**Code Connection:**
+
+- Filled in only the existing Plan Cycle Detail Overview tab from SCRUM-95 with a typed synthetic overview view model.
+- Rendered the plan brief, recommendation, projected savings, risk flags, and case properties side panel inside the Overview tab.
+- Initialized the existing SCRUM-95 stage stepper from the overview model's current stage while preserving tab switching and comments draft behavior.
+- Added focused route coverage for the Overview content and current-stage highlight.
+
+**Project Scope Connection:**
+
+- Builds directly on the SCRUM-95 Plan Cycle Detail tab and stepper skeleton.
+- Leaves Scenarios, Comments, and Audit Trail as their existing skeletons for later tickets.
+- Does not add backend reads, BFF contracts, persistence changes, or a separate case status field.
+
+**Changed Files:**
+
+- `planning/team/dh-ticket-journal.md`
+- `adr/0018-plan-cycle-detail-navigation-state.md`
+- `src/pulseUI/planCycles/PlanCycleDetailRoute.tsx`
+- `src/pulseUI/styles.css`
+- `src/pulseUI/tests/planCycleDetailRoute.test.tsx`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run test` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
 

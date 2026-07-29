@@ -161,8 +161,8 @@ export function Queue({ rows }: QueueProps) {
                       type="button"
                       onClick={() => {
                         navigate({
-                          to: "/cycles/$id",
-                          params: { id: row.caseId },
+                          to: "/cycles/$caseId",
+                          params: { caseId: row.caseId },
                         });
                       }}
                     >

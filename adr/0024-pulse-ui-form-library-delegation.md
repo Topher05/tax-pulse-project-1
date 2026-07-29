@@ -1,4 +1,4 @@
-# ADR-0023: Delegate Pulse UI form state to react-hook-form and validation to Zod
+# ADR-0024: Delegate Pulse UI form state to react-hook-form and validation to Zod
 
 ## Context
 The Pulse UI will need form-heavy screens for creating, editing, and reviewing case

@@ -46,6 +46,7 @@ export const sampleTenant = {
   id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11",
   name: "North Shore Advisors",
   createdAt: new Date("2026-06-29T12:00:00Z"),
+  loginSlug: "north-shore-advisors",
 } as const;
 
 export const sampleClientIds = [

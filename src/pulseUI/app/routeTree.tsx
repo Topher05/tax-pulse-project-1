@@ -1,9 +1,9 @@
 import { createRootRoute, createRoute } from "@tanstack/react-router";
+
 import { PlanCycleDetailRoute } from "../pages/taxPlanCycle/PlanCycleDetailRoute.tsx";
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
-import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 

@@ -6,6 +6,10 @@ import {
   authMfaLoginResultSchema,
 } from "./authMfaLogin.js";
 import {
+  mfaChallengeResponseSchema,
+  passwordLoginRequestSchema,
+} from "./authRoutes.js";
+import {
   registrationAccountResponseSchema,
   registrationRequestSchema,
 } from "./authRegistration.js";
@@ -46,19 +50,6 @@ export interface CoreCaseOpenApiSchemaRegistration {
   schema: ZodType;
 }
 
-const scenarioOpenApiSchema = z.strictObject({
-  id: z.uuid(),
-  case_id: z.uuid(),
-  name: z.string().min(1),
-  typed_figures: scenarioTypedFiguresSchema,
-  computed_result: scenarioComputedResultSchema,
-  created_at: z.iso.datetime(),
-});
-
-const taxPlanCycleReadResponseOpenApiSchema = taxPlanCycleSchema.extend({
-  scenarios: z.array(scenarioOpenApiSchema),
-});
-
 export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "TaxPlanCycleCreateRequest",
@@ -89,20 +80,20 @@ export const coreCaseOpenApiSchemaRegistrations = [
     schema: taxPlanCycleCreateResultSchema,
   },
   {
-    name: "ScenarioModelingRequest",
-    schema: scenarioModelingRequestSchema,
-  },
-  {
-    name: "Scenario",
-    schema: scenarioOpenApiSchema,
-  },
-  {
     name: "AuthMfaLoginRequest",
     schema: authMfaLoginRequestSchema,
   },
   {
     name: "AuthMfaLoginResult",
     schema: authMfaLoginResultSchema,
+  },
+  {
+    name: "PasswordLoginRequest",
+    schema: passwordLoginRequestSchema,
+  },
+  {
+    name: "MfaChallengeResponse",
+    schema: mfaChallengeResponseSchema,
   },
   {
     name: "RegistrationRequest",
@@ -165,58 +156,49 @@ const fakeTaxPlanCycleQueueExample = [
 
 const fakeScenarioModelingRequestExample = {
   baseline: {
-    income: 250000,
-    deductions: 30000,
+    income: 100000,
+    deductions: 12000,
     state: "CA",
-    filing_status: "married_filing_jointly",
+    filing_status: "single",
   },
   scenarios: [
     {
       name: "Increase deductions",
       typed_figures: {
-        income: 250000,
-        deductions: 36000,
+        income: 100000,
+        deductions: 18000,
         state: "CA",
-        filing_status: "married_filing_jointly",
+        filing_status: "single",
       },
     },
     {
-      name: "Keep baseline",
+      name: "Increase income",
       typed_figures: {
-        income: 250000,
-        deductions: 30000,
+        income: 112000,
+        deductions: 12000,
         state: "CA",
-        filing_status: "married_filing_jointly",
+        filing_status: "single",
       },
     },
   ],
 };
 
-const fakeScenarioModelingResponseExample: JsonValue[] = [
+const fakeScenarioModelingResponseExample = [
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e21",
-    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+    case_id: fakeTaxPlanCycleExample.id,
     name: "Increase deductions",
     typed_figures: fakeScenarioModelingRequestExample.scenarios[0]!.typed_figures,
     computed_result: {
-      federal_liability: 38000,
-      state_liability: 12000,
-      effective_rate: 0.2,
-      marginal_rate: 0.32,
-      quarterly_estimate: 12500,
+      federal_liability: 12000,
+      state_liability: 3500,
+      effective_rate: 0.155,
+      marginal_rate: 0.24,
+      quarterly_estimate: 3875,
+      total_tax: 15500,
+      delta_vs_baseline: -2500,
     },
-    created_at: "2026-07-27T00:00:00.000Z",
-  },
-  {
-    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e22",
-    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
-    name: "Keep baseline",
-    typed_figures: fakeScenarioModelingRequestExample.scenarios[1]!.typed_figures,
-    computed_result: {
-      totalTax: "53000.00",
-      deltaVBaseline: "0.00",
-    },
-    created_at: "2026-07-27T00:00:01.000Z",
+    created_at: "2026-07-01T12:00:00.000Z",
   },
 ];
 
@@ -245,6 +227,18 @@ const fakeRegistrationRequestExample = {
   tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
   email: "new-client@example.test",
   password: "synthetic-registration-password",
+};
+
+const fakePasswordLoginRequestExample = {
+  email: "advisor@example.test",
+  password: "synthetic-password",
+};
+
+const fakeMfaChallengeResponseExample = {
+  status: "mfa_challenge_required",
+  tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+  email: fakePasswordLoginRequestExample.email,
+  user_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
 };
 
 const fakeRegistrationAccountResponseExample = {
@@ -320,15 +314,18 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const createRequestSchema = toOpenApiSchema(taxPlanCycleCreateSchema);
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
-  const taxPlanCycleReadResponseSchema = toOpenApiSchema(
-    taxPlanCycleReadResponseOpenApiSchema,
-  );
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
   const authMfaLoginRequestOpenApiSchema = toOpenApiSchema(
     authMfaLoginRequestSchema,
   );
   const authMfaLoginResultOpenApiSchema = toOpenApiSchema(
     authMfaLoginResultSchema,
+  );
+  const passwordLoginRequestOpenApiSchema = toOpenApiSchema(
+    passwordLoginRequestSchema,
+  );
+  const mfaChallengeResponseOpenApiSchema = toOpenApiSchema(
+    mfaChallengeResponseSchema,
   );
   const registrationRequestOpenApiSchema = toOpenApiSchema(registrationRequestSchema);
   const registrationAccountResponseOpenApiSchema = toOpenApiSchema(
@@ -367,6 +364,76 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
       },
     ],
     paths: {
+      "/auth/login": {
+        post: {
+          operationId: "startPasswordLogin",
+          tags: ["Authentication"],
+          summary: "Verify a password and start an MFA challenge",
+          description:
+            "Resolves the tenant from the firm-specific login hostname. " +
+            "The request body accepts only email and password; clients must not send tenant_id.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: passwordLoginRequestOpenApiSchema,
+                example: fakePasswordLoginRequestExample,
+              },
+            },
+          },
+          responses: {
+            "202": {
+              description: "The password was accepted and an MFA challenge is required.",
+              content: {
+                "application/json": {
+                  schema: mfaChallengeResponseOpenApiSchema,
+                  example: fakeMfaChallengeResponseExample,
+                },
+              },
+            },
+            "400": {
+              description: "The login request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    ...validationErrorExample,
+                    issues: [{ path: ["email"], message: "Invalid email address", code: "invalid_format" }],
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "The submitted email or password was invalid.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/invalid-credentials",
+                    title: "Invalid Credentials",
+                    status: 401,
+                    detail: "The email or password is invalid.",
+                  },
+                },
+              },
+            },
+            "404": {
+              description: "The login hostname does not identify an active workspace.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tenant-login-not-found",
+                    title: "Login Workspace Not Found",
+                    status: 404,
+                    detail: "The requested login workspace was not found.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       "/auth/register": {
         post: {
           operationId: "registerUser",
@@ -947,7 +1014,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
               description: "The tenant-scoped Tax Plan Cycle was found.",
               content: {
                 "application/json": {
-                  schema: taxPlanCycleReadResponseSchema,
+                  schema: taxPlanCycleResponseSchema,
                   example: fakeTaxPlanCycleExample,
                 },
               },
