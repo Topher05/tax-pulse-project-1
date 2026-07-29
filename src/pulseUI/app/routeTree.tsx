@@ -5,6 +5,7 @@ import { DashboardPage } from "../pages/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
+import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
 
 const rootRoute = createRootRoute({
   component: AppShell,
@@ -26,6 +27,7 @@ const cycleDetailsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/cycles/$id",
   component: DetailsPage,
+  validateSearch: (search) => validateDetailsSearch(search),
 });
 
 const scenarioPlannerRoute = createRoute({

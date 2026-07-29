@@ -1,8 +1,15 @@
 import { useEffect, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 
 import styles from "./Details.module.css";
+import {
+  caseStages,
+  detailTabs,
+  normalizeDetailsSearch,
+  type DetailStage,
+  type DetailTab,
+} from "./detailViewState.ts";
 import {
   fetchTaxPlanCycleDetails,
   taxPlanCycleDetailsQueryKey,
@@ -10,18 +17,6 @@ import {
 import { EmptyState } from "../../components/EmptyState.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
-
-const caseStages = [
-  "Intake",
-  "Data Aggregation",
-  "Modeling",
-  "Review",
-  "Client Approval",
-  "Executed",
-  "Archived",
-] as const;
-
-const detailTabs = ["Overview", "Scenarios", "Comments", "Audit Trail"] as const;
 
 const sampleScenarios = [
   {
@@ -57,9 +52,6 @@ const sampleAuditEntries = [
   "Review stage entered by Firm Admin",
 ] as const;
 
-type DetailTab = (typeof detailTabs)[number];
-type DetailStage = (typeof caseStages)[number];
-
 function priorityTone(priority: string): "danger" | "warning" | "info" {
   const normalized = priority.toLowerCase();
 
@@ -74,23 +66,16 @@ function priorityTone(priority: string): "danger" | "warning" | "info" {
   return "info";
 }
 
-function isDetailStage(stage: string): stage is DetailStage {
-  return caseStages.includes(stage as DetailStage);
-}
-
-function isDetailTab(tab: string): tab is DetailTab {
-  return detailTabs.includes(tab as DetailTab);
-}
-
 export function DetailsPage() {
   const { id: caseId = "" } = useParams({ from: "/cycles/$id" });
-  const [activeStage, setActiveStage] = useState<DetailStage | "">("");
+  const search = useSearch({ from: "/cycles/$id" });
+  const navigate = useNavigate({ from: "/cycles/$id" });
+  const detailSearch = normalizeDetailsSearch(search);
   const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
   const [commentDraft, setCommentDraft] = useState("");
   const stageLabelId = useId();
 
   useEffect(() => {
-    setActiveStage("");
     setActiveTab("Overview");
     setCommentDraft("");
   }, [caseId]);
@@ -100,19 +85,6 @@ export function DetailsPage() {
     queryFn: () => fetchTaxPlanCycleDetails(caseId),
     enabled: caseId.length > 0,
   });
-
-  useEffect(() => {
-    if (activeStage !== "" || !detailsQuery.data) {
-      return;
-    }
-
-    if (isDetailStage(detailsQuery.data.stage)) {
-      setActiveStage(detailsQuery.data.stage);
-      return;
-    }
-
-    setActiveStage("Intake");
-  }, [activeStage, detailsQuery.data]);
 
   if (detailsQuery.isPending) {
     return (
@@ -144,8 +116,8 @@ export function DetailsPage() {
     return null;
   }
 
-  const selectedStage = activeStage || (isDetailStage(details.stage) ? details.stage : "Intake");
-  const activeStageIndex = caseStages.indexOf(selectedStage);
+  const selectedStage = detailSearch.stage ?? details.stage;
+  const activeStageIndex = caseStages.indexOf(selectedStage as DetailStage);
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -296,7 +268,12 @@ export function DetailsPage() {
                     type="button"
                     aria-current={isActive ? "step" : undefined}
                     onClick={() => {
-                      setActiveStage(stage);
+                      void navigate({
+                        search: {
+                          stage,
+                        },
+                        replace: true,
+                      });
                     }}
                   >
                     <span className={styles.stageStepNumber}>{index + 1}</span>
@@ -320,9 +297,7 @@ export function DetailsPage() {
                 aria-selected={activeTab === tab}
                 type="button"
                 onClick={() => {
-                  if (isDetailTab(tab)) {
-                    setActiveTab(tab);
-                  }
+                  setActiveTab(tab);
                 }}
               >
                 {tab}

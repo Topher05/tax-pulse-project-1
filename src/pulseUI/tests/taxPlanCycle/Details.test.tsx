@@ -76,13 +76,13 @@ describe("Tax Plan Cycle details page", () => {
 
     fireEvent.click(await screen.findByRole("tab", { name: "Comments" }));
 
-    const commentBox = screen.getByRole("textbox", { name: "Comment draft" });
+    const commentBox = await screen.findByRole("textbox", { name: "Comment draft" });
     fireEvent.change(commentBox, { target: { value: "Review quarterly estimate assumptions." } });
 
     fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
     fireEvent.click(screen.getByRole("tab", { name: "Comments" }));
 
-    expect(screen.getByRole("textbox", { name: "Comment draft" })).toHaveValue(
+    expect(await screen.findByRole("textbox", { name: "Comment draft" })).toHaveValue(
       "Review quarterly estimate assumptions.",
     );
   });
@@ -93,7 +93,7 @@ describe("Tax Plan Cycle details page", () => {
     const stageStepper = await screen.findByLabelText("Case stage progression");
     fireEvent.click(within(stageStepper).getByRole("button", { name: /Modeling/ }));
 
-    expect(within(stageStepper).getByRole("button", { name: /Modeling/ })).toHaveAttribute(
+    expect(await within(stageStepper).findByRole("button", { name: /Modeling/ })).toHaveAttribute(
       "aria-current",
       "step",
     );
