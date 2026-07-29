@@ -1,5 +1,6 @@
 import { createRootRoute, createRoute } from "@tanstack/react-router";
 import { AppShell } from "../components/AppShell.tsx";
+import { DashboardPage } from "../pages/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
@@ -11,7 +12,7 @@ const rootRoute = createRootRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: EmptyPage,
+  component: DashboardPage,
 });
 
 const cyclesQueueRoute = createRoute({

@@ -82,7 +82,15 @@ describe("Pulse UI app shell", () => {
     expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
   });
 
-  test("renders an empty region for routed view content", async () => {
+  test("renders the dashboard hero on the root route", async () => {
+    renderShell("/");
+
+    expect(
+      await screen.findByRole("heading", { name: "Tax Liability Tracker" }),
+    ).toBeInTheDocument();
+  });
+
+  test("still renders placeholder routes that have not been built yet", async () => {
     renderShell("/income");
 
     expect(await screen.findByRole("heading", { name: "Income" })).toBeInTheDocument();

@@ -1,0 +1,257 @@
+.page {
+  display: grid;
+  gap: 1rem;
+}
+
+.hero {
+  background: linear-gradient(135deg, rgb(99 102 241 / 14%), rgb(167 139 250 / 8%));
+}
+
+.heroMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.heroMetaText {
+  color: var(--pulse-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.primaryAction,
+.textAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.primaryAction {
+  color: #f8fafc;
+  background: var(--pulse-nav);
+  border: 1px solid var(--pulse-border);
+}
+
+.textAction {
+  color: var(--pulse-accent-light);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.metricGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.contentGrid,
+.bottomGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.breakdownList,
+.timeline,
+.scenarioList {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.breakdownItem {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.breakdownHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.breakdownLabel {
+  color: var(--pulse-muted);
+  font-size: 0.85rem;
+}
+
+.breakdownAmount {
+  color: var(--pulse-ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.progressBar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--pulse-surface-muted);
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.toneindigo {
+  background: linear-gradient(90deg, var(--pulse-accent), var(--pulse-accent-light));
+}
+
+.tonecyan {
+  background: linear-gradient(90deg, var(--pulse-cyan), #67e8f9);
+}
+
+.toneamber {
+  background: linear-gradient(90deg, var(--pulse-amber), #fbbf24);
+}
+
+.tonegreen {
+  background: linear-gradient(90deg, var(--pulse-success), #4ade80);
+}
+
+.timelineItem {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 18px;
+  background: var(--pulse-surface-muted);
+}
+
+.timelineDate {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+}
+
+.timelineMonth {
+  color: var(--pulse-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.timelineDay {
+  color: var(--pulse-ink);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.timelineLabel {
+  color: var(--pulse-ink);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.timelineDesc {
+  margin-top: 0.2rem;
+  color: var(--pulse-muted);
+  font-size: 0.82rem;
+}
+
+.timelineAmount {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+}
+
+.timelineValue {
+  color: var(--pulse-ink);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 0 0 0.85rem;
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--pulse-border);
+  color: var(--pulse-nav-text);
+  font-size: 0.9rem;
+}
+
+.scenarioCard {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 18px;
+  background: var(--pulse-surface-muted);
+}
+
+.scenarioHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.scenarioName {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.scenarioDesc {
+  margin: 0.45rem 0 0;
+  color: var(--pulse-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.stepperBlock {
+  margin-top: 1rem;
+}
+
+@media (max-width: 1100px) {
+  .metricGrid,
+  .contentGrid,
+  .bottomGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .metricGrid,
+  .contentGrid,
+  .bottomGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .timelineItem {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .timelineAmount {
+    justify-items: start;
+  }
+}

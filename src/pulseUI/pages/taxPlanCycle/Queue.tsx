@@ -1,8 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
+import { ArrowUpRight, CircleDot, Clock3, Layers3 } from "lucide-react";
 
 import styles from "./Queue.module.css";
-
 import type { PlanCycleQueueMetric, PlanCycleQueueRow } from "../../entities/taxPlanCycle.ts";
+import { MetricCard } from "../../components/MetricCard.tsx";
+import { PanelCard } from "../../components/PanelCard.tsx";
+import { StatusPill } from "../../components/StatusPill.tsx";
 
 interface QueueProps {
   rows: readonly PlanCycleQueueRow[];
@@ -56,60 +59,80 @@ export function buildQueueMetrics(
   ] as const;
 }
 
+function getPriorityTone(priority: string): "danger" | "warning" | "info" {
+  const normalized = priority.toLowerCase();
+
+  if (normalized === "high") {
+    return "danger";
+  }
+
+  if (normalized === "medium") {
+    return "warning";
+  }
+
+  return "info";
+}
+
 export function Queue({ rows }: QueueProps) {
   const navigate = useNavigate();
   const queueMetrics = buildQueueMetrics(computeMetric(rows), rows.length);
+  const metricTones = ["indigo", "cyan", "amber", "green"] as const;
+  const metricIcons = [CircleDot, Layers3, Clock3, ArrowUpRight] as const;
 
   return (
     <div className={styles.page}>
-      <header className={styles.hero}>
+      <section className={styles.hero}>
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>Tax Plan Cycle</p>
           <h2 className={styles.title}>Tax Plan Cycle Queue</h2>
-          <p className={styles.lead}>Track open cycles, review ownership, and timing at a glance.</p>
+          <p className={styles.lead}>
+            Track open cycles, review ownership, and timing at a glance.
+          </p>
         </div>
 
         <button className={styles.primaryAction} type="button">
           New Cycle
         </button>
-      </header>
-
-      <section aria-label="Queue KPIs" className={styles.kpiGrid}>
-        {queueMetrics.map((metric) => (
-          <article className={styles.card} key={metric.label}>
-            <p className={styles.kpiLabel}>{metric.label}</p>
-            <p className={styles.kpiValue}>{metric.value}</p>
-            <p className={styles.kpiCaption}>{metric.caption}</p>
-          </article>
-        ))}
       </section>
 
-      <section className={styles.tableCard}>
-        <div className={styles.sectionHeader}>
-          <div>
-            <h3 className={styles.sectionTitle}>Tax Plan Cycle Cases</h3>
-            <p className={styles.sectionCopy}>
-              Five open cases are ready for review, modeling, or presentation.
-            </p>
-          </div>
+      <section aria-label="Queue KPIs" className={styles.metricGrid}>
+        {queueMetrics.map((metric, index) => {
+          const Icon = metricIcons[index] ?? CircleDot;
 
+          return (
+            <MetricCard
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+              caption={metric.caption}
+              tone={metricTones[index]}
+              icon={<Icon aria-hidden="true" />}
+            />
+          );
+        })}
+      </section>
+
+      <PanelCard
+        title="Tax Plan Cycle Cases"
+        description="Five open cases are ready for review, modeling, or presentation."
+        action={
           <button className={styles.secondaryAction} type="button">
             New Cycle
           </button>
-        </div>
-
+        }
+      >
         <div className={styles.tableWrap}>
           <table className={styles.table} aria-label="Tax Plan Cycle Cases">
-            <thead className={styles.tableHead}>
+            <thead>
               <tr>
-                <th className={styles.tableHeadCell}>Case ID</th>
-                <th className={styles.tableHeadCell}>Client</th>
-                <th className={styles.tableHeadCell}>Stage</th>
-                <th className={styles.tableHeadCell}>Owner</th>
-                <th className={styles.tableHeadCell}>Priority</th>
-                <th className={styles.tableHeadCell}>Due Date</th>
-                <th className={styles.tableHeadCell}>Updated Date</th>
-                <th className={styles.tableHeadCell}>Action</th>
+                <th>Case ID</th>
+                <th>Client</th>
+                <th>Stage</th>
+                <th>Owner</th>
+                <th>Priority</th>
+                <th>Due Date</th>
+                <th>Updated Date</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -122,11 +145,11 @@ export function Queue({ rows }: QueueProps) {
                   <td className={styles.tableBodyCell}>{row.stage}</td>
                   <td className={styles.tableBodyCell}>{row.owner}</td>
                   <td className={styles.tableBodyCell}>
-                    <span className={styles.priority}>{row.priority}</span>
+                    <StatusPill tone={getPriorityTone(row.priority)}>{row.priority}</StatusPill>
                   </td>
                   <td className={styles.tableBodyCell}>
                     {row.overdue ? (
-                      <span className={styles.overdue}>Overdue</span>
+                      <StatusPill tone="danger">Overdue</StatusPill>
                     ) : (
                       <span>{row.dueDate}</span>
                     )}
@@ -151,7 +174,7 @@ export function Queue({ rows }: QueueProps) {
             </tbody>
           </table>
         </div>
-      </section>
+      </PanelCard>
     </div>
   );
 }

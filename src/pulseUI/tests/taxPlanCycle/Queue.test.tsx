@@ -72,6 +72,18 @@ function renderQueue() {
     },
   ]);
 
+  vi.spyOn(queueQueries, "fetchTaxPlanCycleDetails").mockResolvedValue({
+    caseId: "TP-24018",
+    client: "North Shore Family Office",
+    stage: "Modeling",
+    owner: "Maya Reed",
+    priority: "High",
+    dueDate: "May 12, 2026",
+    scenarioCount: 3,
+    onHold: false,
+    overdue: true,
+  });
+
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
       <RouterProvider router={createPulseRouter(["/cycles/queue"])} />
@@ -110,12 +122,16 @@ describe("Tax Plan Cycle queue page", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(6);
   });
 
-  test("routes the open button to the details placeholder", async () => {
+  test("routes the open button to the details view", async () => {
     renderQueue();
 
     const table = await screen.findByRole("table", { name: "Tax Plan Cycle Cases" });
     fireEvent.click(within(table).getAllByRole("button", { name: "Open" })[0]!);
 
-    expect(await screen.findByText(`hello Details page ${String.fromCodePoint(0x1f680)}`)).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", {
+        name: "North Shore Family Office - Q2 2026 Tax Plan",
+      }),
+    ).toBeInTheDocument();
   });
 });

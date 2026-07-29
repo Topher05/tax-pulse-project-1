@@ -1,50 +1,47 @@
-import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
 
 import styles from "./PlanCycle.module.css";
 import { Queue } from "./Queue.tsx";
-import {
-  fetchTaxPlanCycleQueue,
-  taxPlanCycleQueueQueryKey,
-} from "./queries.ts";
+import { fetchTaxPlanCycleQueue, taxPlanCycleQueueQueryKey } from "./queries.ts";
+import { EmptyState } from "../../components/EmptyState.tsx";
+import { PanelCard } from "../../components/PanelCard.tsx";
 
 function PlanCycleQueueLoadingState() {
   const skeletonRows = Array.from({ length: 5 }, (_, index) => index);
 
   return (
-    <section
-      className={`${styles.stateCard} ${styles.skeletonState}`}
-      aria-label="Loading Plan Cycle Queue"
-      aria-busy="true"
+    <PanelCard
+      className={styles.stateCard}
+      title="Loading Plan Cycle Queue"
+      description="Fetching the latest queue and applying the current tenant filters."
     >
-      <div className={styles.skeletonHeader}>
-        <span className={`${styles.skeletonBlock} ${styles.skeletonSummary}`} />
-        <span className={`${styles.skeletonBlock} ${styles.skeletonSummary}`} />
-        <span className={`${styles.skeletonBlock} ${styles.skeletonSummary}`} />
-      </div>
       <div className={styles.skeletonTable} role="status" aria-label="Loading Plan Cycle Queue">
-        <span className={styles.srOnly}>Loading Plan Cycle Queue</span>
+        <span className="srOnly">Loading Plan Cycle Queue</span>
+        <div className={styles.skeletonHeader}>
+          <span className={styles.skeletonBlock} />
+          <span className={styles.skeletonBlock} />
+          <span className={styles.skeletonBlock} />
+        </div>
         {skeletonRows.map((row) => (
           <div className={styles.skeletonRow} key={row}>
-            <span className={`${styles.skeletonBlock} ${styles.skeletonCellLarge}`} />
             <span className={styles.skeletonBlock} />
             <span className={styles.skeletonBlock} />
-            <span className={`${styles.skeletonBlock} ${styles.skeletonCellSmall}`} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
           </div>
         ))}
       </div>
-    </section>
+    </PanelCard>
   );
 }
 
 function PlanCycleQueueEmptyState() {
   return (
-    <section className={`${styles.stateCard} ${styles.emptyState}`} aria-label="Empty Plan Cycle Queue">
-      <div>
-        <h2 className={styles.stateHeading}>No open plan cycles</h2>
-        <p className={styles.stateCopy}>This tenant has no open cycles right now.</p>
-      </div>
-    </section>
+    <EmptyState
+      title="No open plan cycles"
+      description="This tenant has no open cycles right now."
+    />
   );
 }
 
@@ -56,17 +53,15 @@ function PlanCycleQueueErrorState({
   onRetry: () => void;
 }) {
   return (
-    <section className={`${styles.stateCard} ${styles.errorState}`} role="alert">
-      <AlertTriangle className={styles.stateIcon} aria-hidden />
-      <div>
-        <h2 className={styles.stateHeading}>Queue could not load</h2>
-        <p className={styles.stateCopy}>{message}</p>
-      </div>
-      <button className={styles.retryButton} type="button" onClick={onRetry}>
-        <RefreshCw className={styles.retryButtonIcon} aria-hidden />
-        Retry
-      </button>
-    </section>
+    <div role="alert">
+      <EmptyState
+        title="Queue could not load"
+        description={message}
+        actionLabel="Retry"
+        onAction={onRetry}
+        icon={<RefreshCw />}
+      />
+    </div>
   );
 }
 
@@ -77,13 +72,10 @@ export function PlanCycle() {
   });
 
   if (queueQuery.isPending) {
-    console.log('A')
     return <PlanCycleQueueLoadingState />;
   }
 
   if (queueQuery.isError) {
-    console.log('B')
-    console.log(queueQuery)
     return (
       <PlanCycleQueueErrorState
         message={queueQuery.error instanceof Error ? queueQuery.error.message : "Queue request failed."}
