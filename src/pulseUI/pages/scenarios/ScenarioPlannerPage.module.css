@@ -92,15 +92,15 @@
 }
 
 .modal {
-  width: min(760px, 100%);
-  max-height: min(90vh, 920px);
-  overflow: auto;
-  border: 1px solid var(--pulse-border);
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at top right, rgb(96 165 250 / 10%), transparent 30%),
-    linear-gradient(180deg, var(--pulse-surface), rgb(18 21 29 / 98%));
-  box-shadow: 0 40px 90px rgb(0 0 0 / 42%);
+  /* Keep this shell easy to tune if the modal sizing or card treatment changes later. */
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
 }
 
 .header {
@@ -164,7 +164,7 @@
 }
 
 .field[data-invalid="true"] .label {
-  color: var(--pulse-danger);
+  color: #D22B2B;
 }
 
 .input,
@@ -181,8 +181,8 @@
 
 .field[data-invalid="true"] .input,
 .field[data-invalid="true"] .select {
-  border-color: color-mix(in srgb, var(--pulse-danger) 72%, white);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pulse-danger) 30%, transparent);
+  border-color: #D22B2B;
+  box-shadow: 0 0 0 1px #D22B2B;
 }
 
 .input::placeholder {
@@ -201,7 +201,7 @@
 
 .error {
   margin: 0;
-  color: var(--pulse-danger);
+  color: #D22B2B;
   font-size: 0.85rem;
   line-height: 1.4;
   font-weight: 600;

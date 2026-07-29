@@ -11,6 +11,9 @@
   --pulse-surface-muted: #e7ebef;
   --pulse-border: #d9e0e7;
   --pulse-border-strong: #cdd6df;
+  --bg-card: var(--pulse-surface);
+  --border: var(--pulse-border);
+  --shadow-lg: 0 18px 50px rgb(15 23 42 / 18%);
   --pulse-nav: #17324d;
   --pulse-nav-hover: #244969;
   --pulse-nav-active: #f3c969;
@@ -21,7 +24,7 @@
   --pulse-success: #22c55e;
   --pulse-success-bg: #f0fdf4;
   --pulse-negative-bg: #fef2f2;
-  --pulse-danger: #b93815;
+  --pulse-danger: #D22B2B;
   --pulse-danger-bg: #fff8f5;
   --pulse-danger-border: #f0b8a8;
   color: var(--pulse-ink);
