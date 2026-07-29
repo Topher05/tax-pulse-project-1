@@ -20,6 +20,28 @@ interface PlanCycleOverview {
   currentStage: PlanCycleDetailStage;
 }
 
+interface PlanCycleComment {
+  id: string;
+  author: string;
+  role: string;
+  body: string;
+  createdAt: string;
+}
+
+interface PlanCycleAuditEntry {
+  id: string;
+  actor: string;
+  action: string;
+  outcome: string;
+  occurredAt: string;
+}
+
+interface PlanCycleTabStateCopy {
+  id: string;
+  emptyTitle: string;
+  emptyDetail: string;
+}
+
 const overview: PlanCycleOverview = {
   period: "2026 Q4",
   recommendation: "Accelerate charitable contributions before year-end and harvest short-term losses.",
@@ -32,6 +54,18 @@ const overview: PlanCycleOverview = {
   onHold: false,
   priority: "High",
   currentStage: "Review",
+};
+
+const commentStateCopy: PlanCycleTabStateCopy = {
+  id: "comments",
+  emptyTitle: "No comments yet",
+  emptyDetail: "Start the discussion by adding a case comment.",
+};
+
+const auditStateCopy: PlanCycleTabStateCopy = {
+  id: "audit-trail",
+  emptyTitle: "No audit entries yet",
+  emptyDetail: "Workflow history will appear after the first recorded case action.",
 };
 
 interface OverviewTabProps {
@@ -121,30 +155,95 @@ function ScenariosTab() {
 }
 
 interface CommentsTabProps {
+  comments: readonly PlanCycleComment[];
   commentDraft: string;
   setCommentDraft: (draft: string) => void;
 }
 
-function CommentsTab({ commentDraft, setCommentDraft }: CommentsTabProps) {
+function EmptyTabState({ copy }: { copy: PlanCycleTabStateCopy }) {
   return (
-    <section className="planCycleTabPanel" aria-labelledby="plan-cycle-comments-heading">
-      <h2 id="plan-cycle-comments-heading">Comments</h2>
-      <textarea
-        aria-label="Comment draft"
-        className="planCycleCommentBox"
-        value={commentDraft}
-        onChange={(event) => {
-          setCommentDraft(event.target.value);
-        }}
-      />
+    <section className="planCycleStatePanel" aria-labelledby={`${copy.id}-empty-heading`}>
+      <h3 id={`${copy.id}-empty-heading`}>{copy.emptyTitle}</h3>
+      <p>{copy.emptyDetail}</p>
     </section>
   );
 }
 
-function AuditTrailTab() {
+function CommentsTab({
+  comments,
+  commentDraft,
+  setCommentDraft,
+}: CommentsTabProps) {
   return (
-    <section className="planCycleTabPanel" aria-labelledby="plan-cycle-audit-trail-heading">
+    <section
+      className="planCycleTabPanel planCycleDiscussion"
+      aria-labelledby="plan-cycle-comments-heading"
+    >
+      <h2 id="plan-cycle-comments-heading">Comments</h2>
+      {comments.length > 0 ? (
+        <ol className="planCycleCommentList" aria-label="Case comments">
+          {comments.map((comment) => (
+            <li className="planCycleCommentItem" key={comment.id}>
+              <div className="planCycleEntryHeader">
+                <div>
+                  <h3>{comment.author}</h3>
+                  <p>{comment.role}</p>
+                </div>
+                <time>{comment.createdAt}</time>
+              </div>
+              <p>{comment.body}</p>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <EmptyTabState copy={commentStateCopy} />
+      )}
+
+      <div className="planCycleCommentComposer">
+        <label htmlFor="plan-cycle-comment-draft">Add comment</label>
+        <textarea
+          id="plan-cycle-comment-draft"
+          aria-label="Comment draft"
+          className="planCycleCommentBox"
+          value={commentDraft}
+          onChange={(event) => {
+            setCommentDraft(event.target.value);
+          }}
+        />
+      </div>
+    </section>
+  );
+}
+
+interface AuditTrailTabProps {
+  auditEntries: readonly PlanCycleAuditEntry[];
+}
+
+function AuditTrailTab({ auditEntries }: AuditTrailTabProps) {
+  return (
+    <section
+      className="planCycleTabPanel planCycleAudit"
+      aria-labelledby="plan-cycle-audit-trail-heading"
+    >
       <h2 id="plan-cycle-audit-trail-heading">Audit Trail</h2>
+      {auditEntries.length > 0 ? (
+        <ol className="planCycleAuditList" aria-label="Read-only audit entries">
+          {auditEntries.map((entry) => (
+            <li className="planCycleAuditItem" key={entry.id}>
+              <div className="planCycleEntryHeader">
+                <div>
+                  <h3>{entry.action}</h3>
+                  <p>{entry.actor}</p>
+                </div>
+                <time>{entry.occurredAt}</time>
+              </div>
+              <span className="planCycleAuditOutcome">{entry.outcome}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <EmptyTabState copy={auditStateCopy} />
+      )}
     </section>
   );
 }
@@ -152,6 +251,8 @@ function AuditTrailTab() {
 export function PlanCycleDetailRoute() {
   const tabLabelId = useId();
   const stageLabelId = useId();
+  const comments: readonly PlanCycleComment[] = [];
+  const auditEntries: readonly PlanCycleAuditEntry[] = [];
   const {
     activeStage,
     activeStageIndex,
@@ -171,9 +272,15 @@ export function PlanCycleDetailRoute() {
       case "Scenarios":
         return <ScenariosTab />;
       case "Comments":
-        return <CommentsTab commentDraft={commentDraft} setCommentDraft={setCommentDraft} />;
+        return (
+          <CommentsTab
+            comments={comments}
+            commentDraft={commentDraft}
+            setCommentDraft={setCommentDraft}
+          />
+        );
       case "Audit Trail":
-        return <AuditTrailTab />;
+        return <AuditTrailTab auditEntries={auditEntries} />;
     }
   };
 

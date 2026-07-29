@@ -188,6 +188,48 @@ workflows from response-shape drift across the polyglot service boundary.
   pre-existing formatting changes needed in `src/tax_liability_engine/scenario_comparison.py`
   and `tests/tax_liability_engine/smoke_test.py`.
 
+## martins-okorie-jira97 - SCRUM-97
+
+**Branch:** `martins-okorie-jira97`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-97
+
+**Summary:** Build the Comments and Audit Trail tabs.
+
+**Description:** As an Advisor, I want the Comments and Audit Trail tabs, so that I can
+discuss the case and review its history.
+
+**Acceptance Criteria:**
+
+- The Comments tab lists comments and offers an add-comment input.
+- The Audit Trail tab renders the case's audit entries read-only with redacted figures.
+- Both tabs render loading and empty states.
+
+**Code Connection:** Filled in the existing Plan Cycle Detail Comments and Audit Trail
+tabs with typed view models, loaded-empty default states, a preserved comment draft
+input, and a read-only Audit Trail surface that does not expose raw financial amounts
+without backend audit data.
+
+**Project Scope Connection:** Keeps SCRUM-97 scoped to the Pulse UI detail surface and
+reflects the current backend boundary: Comments have no persistence API yet, and Audit
+Trail entries are not wired into this route yet, so both tabs start empty without
+inventing backend persistence or new workflow state.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/taxPlanCycle/PlanCycleDetailRoute.tsx`
+- `src/pulseUI/shared/styles.css`
+- `src/pulseUI/tests/planCycleDetailRoute.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test` passed with 26 tests.
+- `npm --prefix src/pulseUI run build` passed.
+
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 

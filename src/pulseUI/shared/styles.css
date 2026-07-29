@@ -910,6 +910,87 @@ body::-webkit-scrollbar-thumb {
   font-weight: 800;
 }
 
+.planCycleDiscussion,
+.planCycleAudit {
+  gap: 16px;
+}
+
+.planCycleCommentList,
+.planCycleAuditList {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.planCycleCommentItem,
+.planCycleAuditItem,
+.planCycleCommentComposer,
+.planCycleStatePanel {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #cdd6df;
+  border-radius: 8px;
+}
+
+.planCycleCommentItem > p,
+.planCycleStatePanel p {
+  margin: 0;
+  color: #344153;
+  line-height: 1.5;
+}
+
+.planCycleEntryHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.planCycleEntryHeader h3 {
+  margin: 0;
+  color: #17202a;
+  font-size: 0.96rem;
+  line-height: 1.25;
+}
+
+.planCycleEntryHeader p,
+.planCycleEntryHeader time {
+  margin: 3px 0 0;
+  color: #627184;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.planCycleAuditItem {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.planCycleAuditOutcome {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 0 10px;
+  color: #1f5f4a;
+  background: #e8f7ef;
+  border: 1px solid #9fd9bd;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.planCycleCommentComposer label {
+  color: #17202a;
+  font-weight: 800;
+}
+
 .planCycleCommentBox {
   width: min(100%, 680px);
   min-height: 132px;
@@ -919,6 +1000,19 @@ body::-webkit-scrollbar-thumb {
   border: 1px solid #cdd6df;
   border-radius: 8px;
   resize: vertical;
+}
+
+.planCycleStatePanel {
+  min-height: 118px;
+  align-content: start;
+  background: #f8fafc;
+}
+
+.planCycleStatePanel h3 {
+  margin: 0;
+  color: #17202a;
+  font-size: 0.94rem;
+  line-height: 1.25;
 }
 
 .pulseNavLink:focus-visible,
@@ -1026,6 +1120,19 @@ body::-webkit-scrollbar-thumb {
   .planCycleOverviewGrid,
   .planCycleBriefStats {
     grid-template-columns: 1fr;
+  }
+
+  .planCycleAuditItem,
+  .planCycleEntryHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .planCycleEntryHeader {
+    display: grid;
+  }
+
+  .planCycleAuditOutcome {
+    justify-self: start;
   }
 
   .queueStateError {
