@@ -29,7 +29,10 @@ describe("Scenario Planner page", () => {
   test("renders the launch button and opens the modal", async () => {
     renderScenarioPlanner();
 
-    fireEvent.click(await screen.findByRole("button", { name: "New What-If Scenario" }));
+    const launchButton = await screen.findByRole("button", { name: "New What-If Scenario" });
+    expect(launchButton.querySelector("svg")).toBeInTheDocument();
+
+    fireEvent.click(launchButton);
 
     expect(
       await screen.findByRole("dialog", { name: "New What-If Scenario" }),
@@ -66,6 +69,9 @@ describe("Scenario Planner page", () => {
     expect(screen.getByText("Description is required")).toBeInTheDocument();
     expect(screen.getByText("Additional Income is required")).toBeInTheDocument();
     expect(screen.getByText("Additional Deductions is required")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create Scenario" })).toBeDisabled();
+    expect(screen.getByLabelText("Scenario Name")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Scenario Name").closest("[data-invalid='true']")).toBeInTheDocument();
   });
 
   test("defaults income type to W-2 and logs submitted data with console.table", async () => {
@@ -132,5 +138,8 @@ describe("Scenario Planner page", () => {
 
     expect(await screen.findByText("Additional Income cannot be negative")).toBeInTheDocument();
     expect(await screen.findByText("Additional Deductions cannot be negative")).toBeInTheDocument();
+    expect(screen.getByLabelText("Additional Income")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Additional Deductions")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: "Create Scenario" })).toBeDisabled();
   });
 });

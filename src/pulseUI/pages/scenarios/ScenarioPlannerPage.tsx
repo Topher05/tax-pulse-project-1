@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useId, useState } from "react";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useForm, type DefaultValues } from "react-hook-form";
 import { z } from "zod";
 
@@ -97,6 +97,7 @@ function ScenarioPlannerModal({ onClose }: ScenarioPlannerModalProps) {
     register,
     reset,
   } = form;
+  const hasValidationErrors = Object.keys(errors).length > 0;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -140,12 +141,9 @@ function ScenarioPlannerModal({ onClose }: ScenarioPlannerModalProps) {
         }}
       >
         <header className={styles.header}>
-          <div className={styles.headingGroup}>
-            <p className={styles.kicker}>What-if modeling</p>
-            <h2 className={styles.title} id={modalTitleId}>
-              New What-If Scenario
-            </h2>
-          </div>
+          <h2 className={styles.title} id={modalTitleId}>
+            New What-If Scenario
+          </h2>
 
           <button className={styles.iconButton} type="button" aria-label="Close modal" onClick={closeModal}>
             <X aria-hidden="true" />
@@ -153,12 +151,13 @@ function ScenarioPlannerModal({ onClose }: ScenarioPlannerModalProps) {
         </header>
 
         <form className={styles.form} noValidate onSubmit={submitForm}>
-          <div className={styles.field}>
+          <div className={styles.field} data-invalid={errors.scenarioName ? "true" : undefined}>
             <label className={styles.label} htmlFor="scenarioName">
               Scenario Name
             </label>
             <input
               id="scenarioName"
+              aria-invalid={errors.scenarioName ? "true" : undefined}
               className={styles.input}
               type="text"
               placeholder="e.g. Take a freelance project"
@@ -171,12 +170,13 @@ function ScenarioPlannerModal({ onClose }: ScenarioPlannerModalProps) {
             ) : null}
           </div>
 
-          <div className={styles.field}>
+          <div className={styles.field} data-invalid={errors.description ? "true" : undefined}>
             <label className={styles.label} htmlFor="description">
               Description
             </label>
             <input
               id="description"
+              aria-invalid={errors.description ? "true" : undefined}
               className={styles.input}
               type="text"
               placeholder="e.g. Additional $20k freelance income"
@@ -190,18 +190,19 @@ function ScenarioPlannerModal({ onClose }: ScenarioPlannerModalProps) {
           </div>
 
           <div className={styles.grid}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="additionalIncome">
-                Additional Income
-              </label>
-              <input
+          <div className={styles.field} data-invalid={errors.additionalIncome ? "true" : undefined}>
+            <label className={styles.label} htmlFor="additionalIncome">
+              Additional Income
+            </label>
+            <input
                 id="additionalIncome"
-                className={styles.input}
-                type="number"
-                min="0"
-                step="0.01"
-                inputMode="decimal"
-                placeholder="0.00"
+                aria-invalid={errors.additionalIncome ? "true" : undefined}
+              className={styles.input}
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              placeholder="0.00"
                 {...register("additionalIncome")}
               />
               {errors.additionalIncome ? (
@@ -211,18 +212,22 @@ function ScenarioPlannerModal({ onClose }: ScenarioPlannerModalProps) {
               ) : null}
             </div>
 
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="additionalDeductions">
-                Additional Deductions
-              </label>
-              <input
+          <div
+            className={styles.field}
+            data-invalid={errors.additionalDeductions ? "true" : undefined}
+          >
+            <label className={styles.label} htmlFor="additionalDeductions">
+              Additional Deductions
+            </label>
+            <input
                 id="additionalDeductions"
-                className={styles.input}
-                type="number"
-                min="0"
-                step="0.01"
-                inputMode="decimal"
-                placeholder="0.00"
+                aria-invalid={errors.additionalDeductions ? "true" : undefined}
+              className={styles.input}
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              placeholder="0.00"
                 {...register("additionalDeductions")}
               />
               {errors.additionalDeductions ? (
@@ -233,11 +238,16 @@ function ScenarioPlannerModal({ onClose }: ScenarioPlannerModalProps) {
             </div>
           </div>
 
-          <div className={styles.field}>
+          <div className={styles.field} data-invalid={errors.incomeType ? "true" : undefined}>
             <label className={styles.label} htmlFor="incomeType">
               Income Type
             </label>
-            <select id="incomeType" className={styles.select} {...register("incomeType")}>
+            <select
+              id="incomeType"
+              aria-invalid={errors.incomeType ? "true" : undefined}
+              className={styles.select}
+              {...register("incomeType")}
+            >
               {incomeTypeOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -255,7 +265,11 @@ function ScenarioPlannerModal({ onClose }: ScenarioPlannerModalProps) {
             <button className={styles.secondaryButton} type="button" onClick={closeModal}>
               Cancel
             </button>
-            <button className={styles.primaryButton} type="submit" disabled={isSubmitting}>
+            <button
+              className={styles.primaryButton}
+              type="submit"
+              disabled={isSubmitting || hasValidationErrors}
+            >
               Create Scenario
             </button>
           </footer>
@@ -286,6 +300,7 @@ export function ScenarioPlannerPage() {
             setIsModalOpen(true);
           }}
         >
+          <Plus aria-hidden="true" />
           New What-If Scenario
         </button>
       </div>
