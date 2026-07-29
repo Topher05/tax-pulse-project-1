@@ -127,6 +127,14 @@ const fakeTaxPlanCycleExample = {
   on_hold: false,
 };
 
+const fakeTaxPlanCycleQueueExample = [
+  {
+    ...fakeTaxPlanCycleExample,
+    is_overdue: false,
+    updated_at: "2026-07-01T12:00:00.000Z",
+  },
+];
+
 const scenarioOpenApiSchema = z.strictObject({
   id: z.uuid(),
   case_id: z.uuid(),

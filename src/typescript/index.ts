@@ -362,6 +362,9 @@ import {
   createTaxPlanCycleRepository,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
+  createScenarioModelingController,
+  createScenarioRepository,
+  createTaxEngineClient,
 } from "./features/taxPlanCycle/index.js";
 import {
   getJwtConfigFromEnv,
@@ -439,12 +442,17 @@ export async function main(): Promise<Server> {
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const scenarioRepository = createScenarioRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
+  const liabilityEngineBase = process.env.LIABILITY_ENGINE_BASE?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
   let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
   let createIdempotencyStore: ReturnType<
     typeof createRedisTaxPlanCycleCreateIdempotencyStore
   > | undefined;
+  let scenarioModelingController:
+    | ReturnType<typeof createScenarioModelingController>
+    | undefined;
 
   if (queueRedisUrl) {
     queueCacheRedisClient = createClient({ url: queueRedisUrl });
@@ -457,6 +465,18 @@ export async function main(): Promise<Server> {
       queueCache,
     );
     logger.info("Connected to Redis for queue cache invalidation and create idempotency");
+  }
+
+  if (liabilityEngineBase) {
+    const taxEngineClient = createTaxEngineClient({
+      baseUrl: liabilityEngineBase,
+    });
+    scenarioModelingController = createScenarioModelingController({
+      taxPlanCycleRepository,
+      scenarioRepository,
+      taxEngineClient,
+    });
+    logger.info("Connected to the liability engine for scenario modeling");
   }
 
   const auditEntryRepository = createAuditEntryRepository(client);

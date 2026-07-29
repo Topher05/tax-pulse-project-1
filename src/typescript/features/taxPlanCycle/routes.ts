@@ -243,8 +243,6 @@ export function createTaxPlanCycleRouter(
       return [];
     },
   };
-  const scenarioModelingController =
-    options.scenarioModelingController ?? deprecatedScenarioModelingController;
   const auditLogger = options.auditLogger ?? console;
   const auditEntryWriter =
     options.auditEntryWriter ?? deprecatedNoopAuditEntryWriter;
