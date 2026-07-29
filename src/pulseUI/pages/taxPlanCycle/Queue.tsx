@@ -8,15 +8,13 @@ interface QueueProps {
   rows: readonly PlanCycleQueueRow[];
 }
 
-interface QueueMetricCounts {
+export interface QueueMetricCounts {
   awaitingReviewCount: number;
   overdueCount: number;
   presentedThisWeekCount: number;
 }
 
-function computeMetric(rows: readonly PlanCycleQueueRow[]): QueueMetricCounts {
-   console.log("In build function")
-  console.log(rows)
+export function computeMetric(rows: readonly PlanCycleQueueRow[]): QueueMetricCounts {
   return {
     awaitingReviewCount: rows.filter(
       (row) => row.stage === "Review" || row.stage === "Awaiting Review",
@@ -28,7 +26,7 @@ function computeMetric(rows: readonly PlanCycleQueueRow[]): QueueMetricCounts {
   };
 }
 
-function buildQueueMetrics(
+export function buildQueueMetrics(
   counts: QueueMetricCounts,
   rowCount: number,
 ): readonly PlanCycleQueueMetric[] {

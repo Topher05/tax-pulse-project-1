@@ -16,7 +16,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.disable("x-powered-by");
   app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET,OPTIONS");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,OPTIONS");
     res.header("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key");
     res.header("Access-Control-Max-Age", "600");
 
