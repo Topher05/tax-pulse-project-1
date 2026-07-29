@@ -14,6 +14,19 @@ export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
 
   app.disable("x-powered-by");
+  app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key");
+    res.header("Access-Control-Max-Age", "600");
+
+    if (req.method === "OPTIONS") {
+      res.sendStatus(204);
+      return;
+    }
+
+    next();
+  });
   app.use(createRequestLogger(logger));
   app.use(express.json());
 

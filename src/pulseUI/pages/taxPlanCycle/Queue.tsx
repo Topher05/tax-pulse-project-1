@@ -1,126 +1,128 @@
 import { useNavigate } from "@tanstack/react-router";
+import { ArrowUpRight, CircleDot, Clock3, Layers3 } from "lucide-react";
 
+import styles from "./Queue.module.css";
 import type { PlanCycleQueueMetric, PlanCycleQueueRow } from "../../entities/taxPlanCycle.ts";
+import { MetricCard } from "../../components/MetricCard.tsx";
+import { PanelCard } from "../../components/PanelCard.tsx";
+import { StatusPill } from "../../components/StatusPill.tsx";
 
-const queueMetrics: readonly PlanCycleQueueMetric[] = [
-  {
-    label: "Open Cycles",
-    value: "5",
-    caption: "7 due this week",
-  },
-  {
-    label: "Awaiting Review",
-    value: "2",
-    caption: "Awaiting Firm Admin Approval",
-  },
-  {
-    label: "Overdue",
-    value: "1",
-    caption: "Needs attention today",
-  },
-  {
-    label: "Presented This Week",
-    value: "4",
-    caption: "Avg Cycle: 4 days",
-  },
-] as const;
+interface QueueProps {
+  rows: readonly PlanCycleQueueRow[];
+}
 
-const queueRows: readonly PlanCycleQueueRow[] = [
-  {
-    caseId: "TP-24018",
-    client: "North Shore Family Office",
-    stage: "Modeling",
-    owner: "Maya Reed",
-    priority: "High",
-    dueDate: "Overdue",
-    updatedDate: "May 12, 2026",
-    overdue: true,
-  },
-  {
-    caseId: "TP-24021",
-    client: "Harbor Point Advisors",
-    stage: "Awaiting Review",
-    owner: "Jordan Kim",
-    priority: "Medium",
-    dueDate: "Jun 03, 2026",
-    updatedDate: "May 29, 2026",
-    overdue: false,
-  },
-  {
-    caseId: "TP-24027",
-    client: "Cedar Ridge Wealth",
-    stage: "Modeling",
-    owner: "Avery Chen",
-    priority: "Low",
-    dueDate: "Jun 06, 2026",
-    updatedDate: "May 31, 2026",
-    overdue: false,
-  },
-  {
-    caseId: "TP-24033",
-    client: "Summit View Partners",
-    stage: "Presented",
-    owner: "Noah Patel",
-    priority: "High",
-    dueDate: "Jun 09, 2026",
-    updatedDate: "Jun 01, 2026",
-    overdue: false,
-  },
-  {
-    caseId: "TP-24038",
-    client: "Beacon Street Group",
-    stage: "Awaiting Review",
-    owner: "Isla Torres",
-    priority: "Medium",
-    dueDate: "Jun 12, 2026",
-    updatedDate: "Jun 04, 2026",
-    overdue: false,
-  },
-] as const;
+export interface QueueMetricCounts {
+  awaitingReviewCount: number;
+  overdueCount: number;
+  presentedThisWeekCount: number;
+}
 
-export function Queue() {
+export function computeMetric(rows: readonly PlanCycleQueueRow[]): QueueMetricCounts {
+  return {
+    awaitingReviewCount: rows.filter(
+      (row) => row.stage === "Review" || row.stage === "Awaiting Review",
+    ).length,
+    overdueCount: rows.filter((row) => row.overdue).length,
+    presentedThisWeekCount: rows.filter(
+      (row) => row.stage === "Executed" || row.stage === "Presented",
+    ).length,
+  };
+}
+
+export function buildQueueMetrics(
+  counts: QueueMetricCounts,
+  rowCount: number,
+): readonly PlanCycleQueueMetric[] {
+  const { awaitingReviewCount, overdueCount, presentedThisWeekCount } = counts;
+
+  return [
+    {
+      label: "Open Cycles",
+      value: String(rowCount),
+      caption: "7 due this week",
+    },
+    {
+      label: "Awaiting Review",
+      value: String(awaitingReviewCount),
+      caption: "Awaiting Firm Admin Approval",
+    },
+    {
+      label: "Overdue",
+      value: String(overdueCount),
+      caption: "Needs attention today",
+    },
+    {
+      label: "Presented This Week",
+      value: String(presentedThisWeekCount),
+      caption: "Avg Cycle: 4 days",
+    },
+  ] as const;
+}
+
+function getPriorityTone(priority: string): "danger" | "warning" | "info" {
+  const normalized = priority.toLowerCase();
+
+  if (normalized === "high") {
+    return "danger";
+  }
+
+  if (normalized === "medium") {
+    return "warning";
+  }
+
+  return "info";
+}
+
+export function Queue({ rows }: QueueProps) {
   const navigate = useNavigate();
+  const queueMetrics = buildQueueMetrics(computeMetric(rows), rows.length);
+  const metricTones = ["indigo", "cyan", "amber", "green"] as const;
+  const metricIcons = [CircleDot, Layers3, Clock3, ArrowUpRight] as const;
 
   return (
-    <div className="queuePage">
-      <header className="queueHero">
-        <div className="queueHeroCopy">
-          <p className="queueEyebrow">Tax Plan Cycle</p>
-          <h2 className="queueTitle">Tax Plan Cycle Queue</h2>
-          <p className="queueLead">Track open cycles, review ownership, and timing at a glance.</p>
+    <div className={styles.page}>
+      <section className={styles.hero}>
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>Tax Plan Cycle</p>
+          <h2 className={styles.title}>Tax Plan Cycle Queue</h2>
+          <p className={styles.lead}>
+            Track open cycles, review ownership, and timing at a glance.
+          </p>
         </div>
 
-        <button className="queueHeroAction" type="button">
+        <button className={styles.primaryAction} type="button">
           New Cycle
         </button>
-      </header>
-
-      <section aria-label="Queue KPIs" className="queueKpiGrid">
-        {queueMetrics.map((metric) => (
-          <article className="queueKpiCard" key={metric.label}>
-            <p className="queueKpiLabel">{metric.label}</p>
-            <p className="queueKpiValue">{metric.value}</p>
-            <p className="queueKpiCaption">{metric.caption}</p>
-          </article>
-        ))}
       </section>
 
-      <section className="queueTableCard">
-        <div className="queueSectionHeader">
-          <div>
-            <h3 className="queueSectionTitle">Tax Plan Cycle Cases</h3>
-            <p className="queueSectionCopy">
-              Five open cases are ready for review, modeling, or presentation.
-            </p>
-          </div>
+      <section aria-label="Queue KPIs" className={styles.metricGrid}>
+        {queueMetrics.map((metric, index) => {
+          const Icon = metricIcons[index] ?? CircleDot;
 
-          <button className="queueSectionAction" type="button">
+          return (
+            <MetricCard
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+              caption={metric.caption}
+              tone={metricTones[index]}
+              icon={<Icon aria-hidden="true" />}
+            />
+          );
+        })}
+      </section>
+
+      <PanelCard
+        title="Tax Plan Cycle Cases"
+        description="Five open cases are ready for review, modeling, or presentation."
+        action={
+          <button className={styles.secondaryAction} type="button">
             New Cycle
           </button>
-        </div>
-
-        <div className="queueTableWrap">
-          <table className="queueTable" aria-label="Tax Plan Cycle Cases">
+        }
+      >
+        <div className={styles.tableWrap}>
+          <table className={styles.table} aria-label="Tax Plan Cycle Cases">
             <thead>
               <tr>
                 <th>Case ID</th>
@@ -134,31 +136,33 @@ export function Queue() {
               </tr>
             </thead>
             <tbody>
-              {queueRows.map((row) => (
-                <tr key={row.caseId}>
-                  <td className="queueCaseId">{row.caseId}</td>
-                  <td>{row.client}</td>
-                  <td>{row.stage}</td>
-                  <td>{row.owner}</td>
-                  <td>
-                    <span className="queueRowPriority">{row.priority}</span>
+              {rows.map((row) => (
+                <tr className={styles.row} key={row.caseId}>
+                  <td className={styles.tableBodyCell}>
+                    <span className={styles.caseId}>{row.caseId}</span>
                   </td>
-                  <td>
+                  <td className={styles.tableBodyCell}>{row.client}</td>
+                  <td className={styles.tableBodyCell}>{row.stage}</td>
+                  <td className={styles.tableBodyCell}>{row.owner}</td>
+                  <td className={styles.tableBodyCell}>
+                    <StatusPill tone={getPriorityTone(row.priority)}>{row.priority}</StatusPill>
+                  </td>
+                  <td className={styles.tableBodyCell}>
                     {row.overdue ? (
-                      <span className="queueBadge queueBadgeOverdue">Overdue</span>
+                      <StatusPill tone="danger">Overdue</StatusPill>
                     ) : (
                       <span>{row.dueDate}</span>
                     )}
                   </td>
-                  <td>{row.updatedDate}</td>
-                  <td>
+                  <td className={styles.tableBodyCell}>{row.updatedDate}</td>
+                  <td className={styles.tableBodyCell}>
                     <button
-                      className="queueRowAction"
+                      className={styles.rowAction}
                       type="button"
                       onClick={() => {
                         navigate({
-                          to: "/cycles/$caseId",
-                          params: { caseId: row.caseId },
+                          to: "/cycles/$id",
+                          params: { id: row.caseId },
                         });
                       }}
                     >
@@ -170,7 +174,7 @@ export function Queue() {
             </tbody>
           </table>
         </div>
-      </section>
+      </PanelCard>
     </div>
   );
 }

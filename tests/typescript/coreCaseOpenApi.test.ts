@@ -163,6 +163,10 @@ describe("Core Case Service OpenAPI document", () => {
   test("documents create and read operations", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
+    const queueOperation = requiredRecord(
+      requiredRecord(paths, "/v1/tax-plan-cycles"),
+      "get",
+    );
     const createOperation = requiredRecord(
       requiredRecord(paths, "/v1/tax-plan-cycles"),
       "post",
@@ -172,8 +176,10 @@ describe("Core Case Service OpenAPI document", () => {
       "get",
     );
 
+    expect(queueOperation.operationId).toBe("listTaxPlanCycleQueue");
     expect(createOperation.operationId).toBe("createTaxPlanCycle");
     expect(readOperation.operationId).toBe("readTaxPlanCycle");
+    expect(queueOperation.tags).toEqual(["Core Case Service"]);
     expect(createOperation.tags).toEqual(["Core Case Service"]);
     expect(readOperation.tags).toEqual(["Core Case Service"]);
   });

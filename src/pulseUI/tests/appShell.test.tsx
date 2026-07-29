@@ -1,9 +1,11 @@
 import "@testing-library/jest-dom/vitest";
 
+import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
+import { createPulseQueryClient } from "../app/queryClient.ts";
 import { createPulseRouter } from "../app/createPulseRouter.ts";
 
 beforeAll(() => {
@@ -15,7 +17,11 @@ afterEach(() => {
 });
 
 const renderShell = (initialPath: string = "/") => {
-  render(<RouterProvider router={createPulseRouter([initialPath])} />);
+  render(
+    <QueryClientProvider client={createPulseQueryClient()}>
+      <RouterProvider router={createPulseRouter([initialPath])} />
+    </QueryClientProvider>,
+  );
 };
 
 describe("Pulse UI app shell", () => {
@@ -76,7 +82,15 @@ describe("Pulse UI app shell", () => {
     expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
   });
 
-  test("renders an empty region for routed view content", async () => {
+  test("renders the dashboard hero on the root route", async () => {
+    renderShell("/");
+
+    expect(
+      await screen.findByRole("heading", { name: "Tax Liability Tracker" }),
+    ).toBeInTheDocument();
+  });
+
+  test("still renders placeholder routes that have not been built yet", async () => {
     renderShell("/income");
 
     expect(await screen.findByRole("heading", { name: "Income" })).toBeInTheDocument();
