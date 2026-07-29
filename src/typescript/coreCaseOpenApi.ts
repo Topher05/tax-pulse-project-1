@@ -6,6 +6,10 @@ import {
   authMfaLoginResultSchema,
 } from "./authMfaLogin.js";
 import {
+  mfaChallengeResponseSchema,
+  passwordLoginRequestSchema,
+} from "./authRoutes.js";
+import {
   registrationAccountResponseSchema,
   registrationRequestSchema,
 } from "./authRegistration.js";
@@ -68,6 +72,14 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "AuthMfaLoginResult",
     schema: authMfaLoginResultSchema,
+  },
+  {
+    name: "PasswordLoginRequest",
+    schema: passwordLoginRequestSchema,
+  },
+  {
+    name: "MfaChallengeResponse",
+    schema: mfaChallengeResponseSchema,
   },
   {
     name: "RegistrationRequest",
@@ -197,6 +209,18 @@ const fakeRegistrationRequestExample = {
   password: "synthetic-registration-password",
 };
 
+const fakePasswordLoginRequestExample = {
+  email: "advisor@example.test",
+  password: "synthetic-password",
+};
+
+const fakeMfaChallengeResponseExample = {
+  status: "mfa_challenge_required",
+  tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+  email: fakePasswordLoginRequestExample.email,
+  user_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+};
+
 const fakeRegistrationAccountResponseExample = {
   id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02",
   tenant_id: fakeRegistrationRequestExample.tenant_id,
@@ -277,6 +301,12 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const authMfaLoginResultOpenApiSchema = toOpenApiSchema(
     authMfaLoginResultSchema,
   );
+  const passwordLoginRequestOpenApiSchema = toOpenApiSchema(
+    passwordLoginRequestSchema,
+  );
+  const mfaChallengeResponseOpenApiSchema = toOpenApiSchema(
+    mfaChallengeResponseSchema,
+  );
   const registrationRequestOpenApiSchema = toOpenApiSchema(registrationRequestSchema);
   const registrationAccountResponseOpenApiSchema = toOpenApiSchema(
     registrationAccountResponseSchema,
@@ -314,6 +344,76 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
       },
     ],
     paths: {
+      "/auth/login": {
+        post: {
+          operationId: "startPasswordLogin",
+          tags: ["Authentication"],
+          summary: "Verify a password and start an MFA challenge",
+          description:
+            "Resolves the tenant from the firm-specific login hostname. " +
+            "The request body accepts only email and password; clients must not send tenant_id.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: passwordLoginRequestOpenApiSchema,
+                example: fakePasswordLoginRequestExample,
+              },
+            },
+          },
+          responses: {
+            "202": {
+              description: "The password was accepted and an MFA challenge is required.",
+              content: {
+                "application/json": {
+                  schema: mfaChallengeResponseOpenApiSchema,
+                  example: fakeMfaChallengeResponseExample,
+                },
+              },
+            },
+            "400": {
+              description: "The login request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    ...validationErrorExample,
+                    issues: [{ path: ["email"], message: "Invalid email address", code: "invalid_format" }],
+                  },
+                },
+              },
+            },
+            "401": {
+              description: "The submitted email or password was invalid.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/invalid-credentials",
+                    title: "Invalid Credentials",
+                    status: 401,
+                    detail: "The email or password is invalid.",
+                  },
+                },
+              },
+            },
+            "404": {
+              description: "The login hostname does not identify an active workspace.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tenant-login-not-found",
+                    title: "Login Workspace Not Found",
+                    status: 404,
+                    detail: "The requested login workspace was not found.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       "/auth/register": {
         post: {
           operationId: "registerUser",

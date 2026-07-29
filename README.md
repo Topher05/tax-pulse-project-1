@@ -368,9 +368,25 @@ The auth helpers use Argon2id password hashes. See
 [`ADR-0007`](./adr/0007-argon2id-password-login.md) for the dependency and architecture
 rationale.
 
-`POST /auth/login` accepts `tenant_id`, `email`, and `password`. Valid passwords return
-`202` with an MFA challenge payload, and invalid credentials return a shared `401`
-Problem Details response.
+Tenant context for password login is resolved from firm-specific login hostnames. See
+[`ADR-0021`](./adr/0021-tenant-login-hostname-resolution.md) for the tenancy and security
+rationale.
+
+`POST /auth/login` accepts `email` and `password`. The tenant is resolved server-side from
+the firm-specific login hostname (`{tenant-slug}.taxpulse.example`), so clients never submit
+a raw `tenant_id`. Valid passwords return `202` with an MFA challenge payload, invalid
+credentials return a shared `401` Problem Details response, and unknown login workspaces
+return `404`.
+
+Set `TAXPULSE_LOGIN_BASE_DOMAIN` when the deployment's login hostnames do not use the
+default `taxpulse.example` domain. For example, `TAXPULSE_LOGIN_BASE_DOMAIN=localhost`
+supports local hosts such as `north-star-planning.localhost`.
+
+For local development, retain the `TAXPULSE_LOGIN_BASE_DOMAIN=localhost` value supplied
+by [`.env.example`](./.env.example), then restart the API after changing `.env`. A Bruno
+request can use `POST http://127.0.0.1:3000/auth/login` with the headers
+`Host: {tenant-slug}.localhost:3000` and `Content-Type: application/json`. The request
+body must include only `email` and `password`; the hostname selects the tenant.
 
 The defaults work out of the box. Override these values only when a deployment needs
 different capacity or latency tradeoffs:
@@ -400,7 +416,8 @@ Local setup:
     - Create a new superuser and use its credentials in the config file.
     - Use pgAdmin or `psql`, whichever you prefer.
 5. Copy [`.env.example`](./.env.example) to `.env`.
-6. Edit `.env` and set `DATABASE_URL` to your local PostgreSQL connection string.
+6. Edit `.env`, set `DATABASE_URL` to your local PostgreSQL connection string, and keep
+   `TAXPULSE_LOGIN_BASE_DOMAIN=localhost` for local tenant-host login requests.
 
 Apply all migrations:
 

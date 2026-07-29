@@ -56,6 +56,11 @@ export {
 } from "./authService.js";
 export { createPasswordCredentialStore } from "./authCredentials.js";
 export {
+  createTenantLoginResolver,
+  type TenantLoginResolution,
+  type TenantLoginResolver,
+} from "./tenantLoginResolver.js";
+export {
   auditEntryOutputSchema,
   redactAuditText,
   redactedAuditAmount,
@@ -90,6 +95,7 @@ export {
 } from "./authMfaLoginRoutes.js";
 export {
   createAuthRouter,
+  mfaChallengeResponseSchema,
   passwordLoginRequestSchema,
   type AuthValidationErrorIssue,
   type AuthValidationErrorResponse,
@@ -197,7 +203,11 @@ export {
   type ScenarioComparisonEngineRequest,
   type TaxEngineComparisonRequest,
 } from "./features/taxPlanCycle/index.js";
-export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
+export {
+  getJwtConfigFromEnv,
+  getTenantLoginBaseDomainFromEnv,
+  type JwtConfig,
+} from "./authConfig.js";
 export {
   createJwtAuthenticationMiddleware,
   hydrateUserClaims,
@@ -353,10 +363,14 @@ import {
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
 } from "./features/taxPlanCycle/index.js";
-import { getJwtConfigFromEnv } from "./authConfig.js";
+import {
+  getJwtConfigFromEnv,
+  getTenantLoginBaseDomainFromEnv,
+} from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
+import { createTenantLoginResolver } from "./tenantLoginResolver.js";
 import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
 import { createRegistrationService } from "./authRegistrationService.js";
 import {
@@ -406,6 +420,7 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 
 export async function main(): Promise<Server> {
   const jwtConfig = getJwtConfigFromEnv();
+  const tenantLoginBaseDomain = getTenantLoginBaseDomainFromEnv();
   const logger = createLogger();
 
   const databaseUrl = process.env.DATABASE_URL?.trim();
@@ -417,6 +432,7 @@ export async function main(): Promise<Server> {
   await client.connect();
 
   const credentialReader = createPasswordCredentialStore(client);
+  const tenantLoginResolver = createTenantLoginResolver(client);
   const registrationService = createRegistrationService({
     store: createRegistrationAccountRepository(client),
   });
@@ -498,7 +514,14 @@ export async function main(): Promise<Server> {
           transitionController: taxPlanCycleTransitionController,
         }),
       );
-      app.use(createAuthRouter({ authenticatePassword, registrationService }));
+      app.use(
+        createAuthRouter({
+          authenticatePassword,
+          registrationService,
+          tenantLoginResolver,
+          tenantLoginBaseDomain,
+        }),
+      );
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
       }));
