@@ -24,6 +24,8 @@ import {
   taxPlanCycleTransitionController,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
+import type { ScenarioModelingController } from "./controllers/scenarios.js";
+import { scenarioModelingRequestSchema } from "./scenarioModeling.js";
 import type { ScenarioRepository } from "./repositories/scenarios.js";
 import type { TaxPlanCycleRepository } from "./repositories/repository.js";
 
@@ -226,6 +228,7 @@ export function createTaxPlanCycleRouter(
   const router = Router();
   const controller = options.controller ?? taxPlanCycleCreateController;
   const transitionController = options.transitionController ?? taxPlanCycleTransitionController;
+  const scenarioModelingController = options.scenarioModelingController;
   const taxPlanCycleRepository =
     options.taxPlanCycleRepository ?? {
       async findByCaseId() {
@@ -240,8 +243,6 @@ export function createTaxPlanCycleRouter(
       return [];
     },
   };
-  const scenarioModelingController =
-    options.scenarioModelingController ?? deprecatedScenarioModelingController;
   const auditLogger = options.auditLogger ?? console;
   const auditEntryWriter =
     options.auditEntryWriter ?? deprecatedNoopAuditEntryWriter;

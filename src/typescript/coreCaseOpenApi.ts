@@ -34,6 +34,7 @@ import {
   taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleSchema,
 } from "./features/taxPlanCycle/index.js";
+import { taxPlanCycleReadResponseSchema } from "./features/taxPlanCycle/taxPlanCycle.js";
 
 type JsonValue =
   | string
@@ -65,7 +66,7 @@ export const coreCaseOpenApiSchemaRegistrations = [
   },
   {
     name: "TaxPlanCycleReadResponse",
-    schema: taxPlanCycleReadResponseOpenApiSchema,
+    schema: taxPlanCycleReadResponseSchema,
   },
   {
     name: "TaxPlanCycleQueueItem",
@@ -142,17 +143,20 @@ const fakeTaxPlanCycleExample = {
 
 const fakeTaxPlanCycleQueueExample = [
   {
-    id: fakeTaxPlanCycleExample.id,
-    client_id: fakeTaxPlanCycleExample.client_id,
-    stage: fakeTaxPlanCycleExample.stage,
-    owner: fakeTaxPlanCycleExample.owner,
-    priority: fakeTaxPlanCycleExample.priority,
-    due_date: fakeTaxPlanCycleExample.due_date,
-    on_hold: fakeTaxPlanCycleExample.on_hold,
+    ...fakeTaxPlanCycleExample,
     is_overdue: false,
-    updated_at: "2026-07-27T00:00:00.000Z",
+    updated_at: "2026-07-01T12:00:00.000Z",
   },
 ];
+
+const scenarioOpenApiSchema = z.strictObject({
+  id: z.uuid(),
+  case_id: z.uuid(),
+  name: z.string().min(1),
+  typed_figures: scenarioTypedFiguresSchema,
+  computed_result: scenarioComputedResultSchema,
+  created_at: z.string().datetime(),
+});
 
 const fakeScenarioModelingRequestExample = {
   baseline: {

@@ -7,7 +7,7 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
-import * as queueQueries from "../../pages/taxPlanCycle/queries.ts";
+import * as queueQueries from "../../entities/taxPlanCycleQueries.ts";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -122,7 +122,7 @@ describe("Tax Plan Cycle queue page", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(6);
   });
 
-  test("routes the open button to the details overview", async () => {
+  test("routes the open button to the details view", async () => {
     renderQueue();
 
     const table = await screen.findByRole("table", { name: "Tax Plan Cycle Cases" });
