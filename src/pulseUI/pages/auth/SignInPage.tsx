@@ -17,27 +17,27 @@ export function SignInPage() {
         <p className="authLead">Use your firm credentials to continue.</p>
         <form
           className="authForm"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const formData = new FormData(event.currentTarget);
+          onSubmit={(event) => {
+            event.preventDefault();
+            const formData = new FormData(event.currentTarget);
 
-          setError(null);
-          setIsSubmitting(true);
-          void login({
-            tenantId: String(formData.get("tenantId") ?? ""),
-            email: String(formData.get("email") ?? ""),
-            password: String(formData.get("password") ?? ""),
-          })
-            .then(async (mfaChallenge) => {
-              await navigate({ to: "/sign-in/mfa", state: { mfaChallenge } });
+            setError(null);
+            setIsSubmitting(true);
+            void login({
+              tenantId: String(formData.get("tenantId") ?? ""),
+              email: String(formData.get("email") ?? ""),
+              password: String(formData.get("password") ?? ""),
             })
-            .catch(() => {
-              setError("Unable to sign in. Check your credentials and try again.");
-            })
-            .finally(() => {
-              setIsSubmitting(false);
-            });
-        }}
+              .then(async (mfaChallenge) => {
+                await navigate({ to: "/sign-in/mfa", state: { mfaChallenge } });
+              })
+              .catch(() => {
+                setError("Unable to sign in. Check your credentials and try again.");
+              })
+              .finally(() => {
+                setIsSubmitting(false);
+              });
+          }}
         >
           <label>
             Workspace ID
@@ -51,12 +51,16 @@ export function SignInPage() {
             Password
             <input autoComplete="current-password" name="password" required type="password" />
           </label>
-          {error === null ? null : <p className="authError" role="alert">{error}</p>}
+          {error === null ? null : (
+            <p className="authError" role="alert">{error}</p>
+          )}
           <button className="authPrimaryButton" disabled={isSubmitting} type="submit">
             {isSubmitting ? "Signing in…" : "Continue"}
           </button>
         </form>
-        <Link className="authTextLink" to="/password-reset">Forgot your password?</Link>
+        <Link className="authTextLink" to="/password-reset">
+          Forgot your password?
+        </Link>
       </section>
     </main>
   );
