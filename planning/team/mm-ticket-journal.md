@@ -207,15 +207,16 @@ discuss the case and review its history.
 - The Audit Trail tab renders the case's audit entries read-only with redacted figures.
 - Both tabs render loading and empty states.
 
-**Code Connection:** Filled in the existing Plan Cycle Detail Comments and Audit Trail
-tabs with typed view models, a preserved comment draft input, and a read-only Audit
-Trail surface that fetches redacted case audit entries from the existing
-`/v1/tax-plan-cycles/:caseId/audit-entries` endpoint.
+**Code Connection:** Filled in the existing Plan Cycle Detail Comments tab with a
+no-comments empty state and preserved draft input. The Audit Trail tab lazy-loads
+redacted case audit entries from the existing
+`/v1/tax-plan-cycles/:caseId/audit-entries` endpoint and renders them read-only.
 
 **Project Scope Connection:** Keeps SCRUM-97 scoped to the Pulse UI detail surface and
 reflects the current backend boundary: Comments have no persistence API yet, while
 Audit Trail already has an append-only table and redacted read endpoint, so the UI
-loads audit history by case ID without adding new backend persistence.
+loads audit history by case ID when the Audit Trail tab is opened without adding new
+backend persistence.
 
 **Changed Files:**
 
