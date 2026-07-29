@@ -1,6 +1,9 @@
 import { describe, expect, test } from "vitest";
 
-import { getJwtConfigFromEnv } from "../../src/typescript/authConfig.js";
+import {
+  getJwtConfigFromEnv,
+  getTenantLoginBaseDomainFromEnv,
+} from "../../src/typescript/authConfig.js";
 
 const validEnvironment: NodeJS.ProcessEnv = {
   JWT_ISSUER: "https://auth.taxpulse.example",
@@ -49,5 +52,22 @@ describe("JWT configuration", () => {
     ],
   ])("rejects %s", (_description, environment) => {
     expect(() => getJwtConfigFromEnv(environment)).toThrow();
+  });
+});
+
+describe("tenant login hostname configuration", () => {
+  test("returns a trimmed deployment base domain when configured", () => {
+    expect(
+      getTenantLoginBaseDomainFromEnv({
+        TAXPULSE_LOGIN_BASE_DOMAIN: "  staging.taxpulse.example  ",
+      }),
+    ).toBe("staging.taxpulse.example");
+  });
+
+  test("preserves the hostname parser default when omitted or blank", () => {
+    expect(getTenantLoginBaseDomainFromEnv({})).toBeUndefined();
+    expect(
+      getTenantLoginBaseDomainFromEnv({ TAXPULSE_LOGIN_BASE_DOMAIN: "   " }),
+    ).toBeUndefined();
   });
 });

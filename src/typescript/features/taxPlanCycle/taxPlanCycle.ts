@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { scenarioSchema } from "../../scenario.js";
-
 export const taxPlanCycleStages = [
   "Intake",
   "Data Aggregation",

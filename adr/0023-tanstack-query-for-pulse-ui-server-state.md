@@ -1,4 +1,4 @@
-# ADR-0022: Use TanStack Query for Pulse UI server state
+# ADR-0023: Use TanStack Query for Pulse UI server state
 
 ## Context
 The Pulse UI now needs live reads for the Tax Plan Cycle queue and detail screens.

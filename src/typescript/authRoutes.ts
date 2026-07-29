@@ -15,27 +15,29 @@ import {
 import type { RegistrationService } from "./authRegistrationService.js";
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
 import { ProblemHttpError, type ProblemDetails } from "./errors.js";
+import { parseTenantLoginHostname } from "./tenantLoginHost.js";
+import type { TenantLoginResolver } from "./tenantLoginResolver.js";
 
 export const passwordLoginRequestSchema = z
   .object({
-    tenant_id: z.string().uuid(),
     email: z.string().email(),
     password: z.string().min(1),
   })
   .strict();
 
+export const mfaChallengeResponseSchema = z.object({
+  status: z.literal("mfa_challenge_required"),
+  tenant_id: z.uuid(),
+  email: z.string().email(),
+  user_id: z.uuid(),
+});
+
 export interface PasswordLoginRequest {
-  tenant_id: string;
   email: string;
   password: string;
 }
 
-export interface MfaChallengeResponse {
-  status: "mfa_challenge_required";
-  tenant_id: string;
-  email: string;
-  user_id: string;
-}
+export type MfaChallengeResponse = z.infer<typeof mfaChallengeResponseSchema>;
 
 export interface AuthValidationErrorIssue {
   path: Array<string | number>;
@@ -53,6 +55,8 @@ export type PasswordAuthenticator = (
 ) => Promise<PasswordAuthenticationResult>;
 
 export interface CreateAuthRouterOptions {
+  tenantLoginResolver?: TenantLoginResolver;
+  tenantLoginBaseDomain?: string;
   credentialReader?: PasswordCredentialReader;
   authenticatePassword?: PasswordAuthenticator;
   registrationService?: RegistrationService;
@@ -68,9 +72,12 @@ function toValidationIssue(issue: ZodIssue): AuthValidationErrorIssue {
   };
 }
 
-function toLoginInput(body: PasswordLoginRequest): PasswordCredentialLoginInput {
+function toLoginInput(
+  body: PasswordLoginRequest,
+  tenantId: string,
+): PasswordCredentialLoginInput {
   return {
-    tenantId: body.tenant_id,
+    tenantId,
     email: body.email,
     plaintextPassword: body.password,
   };
@@ -93,6 +100,15 @@ function invalidCredentialsError(): ProblemHttpError {
     title: "Invalid Credentials",
     status: 401,
     detail: "The email or password is invalid.",
+  });
+}
+
+function unknownTenantLoginError(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/tenant-login-not-found",
+    title: "Login Workspace Not Found",
+    status: 404,
+    detail: "The requested login workspace was not found.",
   });
 }
 
@@ -125,6 +141,13 @@ export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router 
   }
 
   if (authenticatePassword) {
+    const tenantLoginResolver = options.tenantLoginResolver;
+    if (!tenantLoginResolver) {
+      throw new Error(
+        "createAuthRouter requires tenantLoginResolver when authentication is enabled.",
+      );
+    }
+
     router.post(
       "/auth/login",
       async (req: Request, res: Response, next: NextFunction) => {
@@ -147,7 +170,23 @@ export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router 
         }
 
         try {
-          const result = await authenticatePassword(toLoginInput(parsedBody.data));
+          const loginSlug = parseTenantLoginHostname(req.hostname, {
+            baseDomain: options.tenantLoginBaseDomain,
+          });
+          if (!loginSlug) {
+            next(unknownTenantLoginError());
+            return;
+          }
+
+          const tenant = await tenantLoginResolver.findActiveTenantByLoginSlug(loginSlug);
+          if (!tenant) {
+            next(unknownTenantLoginError());
+            return;
+          }
+
+          const result = await authenticatePassword(
+            toLoginInput(parsedBody.data, tenant.tenantId),
+          );
           if (result.status === "invalid_credentials") {
             next(invalidCredentialsError());
             return;

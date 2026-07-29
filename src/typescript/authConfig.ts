@@ -7,6 +7,20 @@ export interface JwtConfig {
   refreshTokenLifetimeSeconds: number;
 }
 
+/**
+ * Returns the deployment-owned base domain for tenant login hostnames.
+ *
+ * An omitted value intentionally preserves the default used by
+ * `parseTenantLoginHostname` for existing deployments.
+ */
+export function getTenantLoginBaseDomainFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  const baseDomain = env.TAXPULSE_LOGIN_BASE_DOMAIN?.trim();
+
+  return baseDomain || undefined;
+}
+
 const jwtEnvironmentSchema = z
   .object({
     JWT_ISSUER: z

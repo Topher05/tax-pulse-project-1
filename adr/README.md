@@ -24,4 +24,5 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0019: Tailwind Styling Foundation for Pulse UI](./0019-tailwind-styling-foundation-for-pulse-ui.md)
 - [ADR-0020: Pulse UI Layered Application Structure](./0020-pulse-ui-layered-application-structure.md)
 - [ADR-0021: Keep Plan Cycle Detail navigation state local to Pulse UI](./0021-plan-cycle-detail-navigation-state.md)
-- [ADR-0022: Use TanStack Query for Pulse UI server state](./0022-tanstack-query-for-pulse-ui-server-state.md)
+- [ADR-0022: Resolve tenant context from firm-specific login hostnames](./0022-tenant-login-hostname-resolution.md)
+- [ADR-0023: Use TanStack Query for Pulse UI server state](./0023-tanstack-query-for-pulse-ui-server-state.md)

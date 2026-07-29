@@ -13,6 +13,7 @@ import {
   type AuthMfaLoginController,
   type JwtConfig,
   type PasswordAuthenticator,
+  type TenantLoginResolver,
 } from "../../src/typescript/index.js";
 
 const config: JwtConfig = {
@@ -26,6 +27,12 @@ const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01";
 const userId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61";
 const email = "alex@example.com";
 const validPassword = "synthetic-valid-password-63";
+const tenantLoginHostname = "north-shore-advisors.taxpulse.example";
+const tenantLoginResolver: TenantLoginResolver = {
+  async findActiveTenantByLoginSlug(loginSlug) {
+    return loginSlug === "north-shore-advisors" ? { tenantId, loginSlug } : null;
+  },
+};
 
 async function createAccessToken(): Promise<string> {
   return await new SignJWT({
@@ -77,7 +84,7 @@ async function withAuthNegativePathServer(
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (server) => {
-      server.use(createAuthRouter({ authenticatePassword }));
+      server.use(createAuthRouter({ authenticatePassword, tenantLoginResolver }));
       server.use(createAuthMfaLoginRouter({ controller: { verify: verifyMfa } }));
       server.use("/protected", createJwtAuthenticationMiddleware({ config }));
       server.get("/protected", (req, res) => {
@@ -85,6 +92,7 @@ async function withAuthNegativePathServer(
       });
     },
   });
+  app.set("trust proxy", true);
   const server = app.listen(0);
   await once(server, "listening");
 
@@ -102,9 +110,11 @@ describe("auth negative paths", () => {
     await withAuthNegativePathServer(async (baseUrl) => {
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-host": tenantLoginHostname,
+        },
         body: JSON.stringify({
-          tenant_id: tenantId,
           email,
           password: "wrong-password",
         }),
@@ -122,9 +132,11 @@ describe("auth negative paths", () => {
     await withAuthNegativePathServer(async (baseUrl, { verifyMfa }) => {
       const loginResponse = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-host": tenantLoginHostname,
+        },
         body: JSON.stringify({
-          tenant_id: tenantId,
           email,
           password: validPassword,
         }),
