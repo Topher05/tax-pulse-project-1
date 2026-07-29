@@ -2,26 +2,12 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Settings2 } from "lucide-react";
 import { useState } from "react";
 
+import { useSession } from "../auth/AuthProvider.tsx";
 import { pulseNavGroups } from "../shared/navigation.ts";
 import { getViewTitle } from "../shared/viewTitle.ts";
 
-const viewAsGroups = [
-  {
-    label: "Internal firm staff",
-    options: ["Firm Admin", "Advisor"] as const,
-  },
-  {
-    label: "External client",
-    options: ["Client"] as const,
-  },
-  {
-    label: "Platform",
-    options: ["Platform Admin"] as const,
-  },
-] as const;
-
 export function AppShell() {
-  const [selectedRole, setSelectedRole] = useState("Firm Admin");
+  const { logout, user } = useSession();
   const [liveCalculationEnabled, setLiveCalculationEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -70,26 +56,7 @@ export function AppShell() {
           </div>
 
           <div className="pulseTopbarControls">
-            <label className="pulseRoleField">
-              <span>View as</span>
-              <select
-                className="pulseSelect"
-                value={selectedRole}
-                onChange={(event) => {
-                  setSelectedRole(event.target.value);
-                }}
-              >
-                {viewAsGroups.map((group) => (
-                  <optgroup key={group.label} label={group.label}>
-                    {group.options.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
+            <p className="pulseRoleField">Signed in as {user?.role}</p>
 
             <div className="pulseTopbarActions">
               <button
@@ -116,6 +83,15 @@ export function AppShell() {
               >
                 <Settings2 aria-hidden="true" />
                 <span>Settings</span>
+              </button>
+              <button
+                className="pulseActionButton"
+                type="button"
+                onClick={() => {
+                  void logout().catch(() => undefined);
+                }}
+              >
+                Sign out
               </button>
             </div>
           </div>

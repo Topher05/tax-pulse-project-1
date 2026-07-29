@@ -58,7 +58,7 @@ export type AuthSessionState =
 
 export interface SessionActions {
   login(credentials: LoginCredentials): Promise<MfaChallenge>;
-  completeMfaLogin(challenge: MfaChallenge, code: string): Promise<void>;
+  completeMfaLogin(challenge: MfaChallenge, code: string): Promise<SessionUser | null>;
   logout(): Promise<void>;
   refreshSession(): Promise<void>;
   getAccessToken(): Promise<string | null>;

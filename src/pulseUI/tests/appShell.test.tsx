@@ -56,10 +56,10 @@ describe("Pulse UI app shell", () => {
     ).toBeInTheDocument();
   });
 
-  test("defaults view as to firm admin", async () => {
+  test("shows the authenticated user role", async () => {
     renderShell("/cycles/queue");
 
-    expect(await screen.findByRole("combobox", { name: "View as" })).toHaveValue("Firm Admin");
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
   });
 
   test("toggles live calculation off", async () => {

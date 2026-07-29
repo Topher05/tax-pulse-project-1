@@ -1,7 +1,7 @@
 import type { PropsWithChildren, ReactNode } from "react";
+import { Navigate } from "@tanstack/react-router";
 
 import { useSession } from "./AuthProvider.tsx";
-import { SignInPage } from "../pages/auth/SignInPage.tsx";
 
 /** Blocks workspace routes until the session has been restored and is authenticated. */
 export interface AuthBoundaryProps extends PropsWithChildren {
@@ -16,7 +16,7 @@ export function AuthBoundary({ children, unauthenticatedFallback }: AuthBoundary
   }
 
   if (!isAuthenticated) {
-    return unauthenticatedFallback ?? <SignInPage />;
+    return unauthenticatedFallback ?? <Navigate replace to="/sign-in" />;
   }
 
   return <>{children}</>;

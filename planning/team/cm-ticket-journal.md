@@ -456,7 +456,9 @@ on the auth-context foundation supplied by SCRUM-192.
 - Sign-in, MFA, and password-reset routes are public screens.
 - Sign-in submits credentials through the shared auth context and passes its MFA challenge
   only through browser navigation state to the MFA screen.
-- MFA completion, reset navigation, role landing, and logout remain later slices.
+- MFA completion establishes the session, routes using the authenticated role, and logout
+  returns the SPA to sign-in.
+- Reset navigation and visual polish remain later slices.
 
 **Code Connection:**
 
@@ -464,6 +466,9 @@ on the auth-context foundation supplied by SCRUM-192.
   workspace layout. The boundary uses the new sign-in screen for anonymous sessions.
 - The sign-in form calls `useSession().login`; the typed, ephemeral route state carries
   the returned tenant, email, and user challenge to the MFA view without persisting it.
+- MFA verification returns the authenticated user to the UI for role-based landing
+  selection. The current MVP maps every role to the existing dashboard until the later
+  client and platform-admin landing screens are available.
 
 **Project Scope Connection:**
 
@@ -475,7 +480,11 @@ no BFF endpoint, token, password-reset, or authorization-policy change.
 - `src/pulseUI/app/bootstrap.tsx`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/auth/AuthBoundary.tsx`
+- `src/pulseUI/auth/landingPath.ts`
 - `src/pulseUI/auth/mfaChallengeState.ts`
+- `src/pulseUI/auth/session.ts`
+- `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/components/AppShell.tsx`
 - `src/pulseUI/pages/auth/SignInPage.tsx`
 - `src/pulseUI/pages/auth/MfaChallengePage.tsx`
 - `src/pulseUI/pages/auth/PasswordResetPage.tsx`
@@ -487,6 +496,6 @@ no BFF endpoint, token, password-reset, or authorization-policy change.
 
 **Validation Notes:**
 
-- `npm --prefix src/pulseUI test` passed: 45 tests in 12 files.
+- `npm --prefix src/pulseUI test` passed: 46 tests in 12 files.
 - `npm --prefix src/pulseUI run typecheck` is blocked by the existing missing local
   `@tailwindcss/vite` package referenced by `src/pulseUI/vite.config.ts`.
