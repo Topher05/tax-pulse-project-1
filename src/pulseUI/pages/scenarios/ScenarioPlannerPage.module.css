@@ -1,0 +1,250 @@
+.page {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.launchCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgb(96 165 250 / 12%), transparent 38%),
+    linear-gradient(180deg, rgb(18 21 29 / 96%), rgb(14 17 23 / 96%));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+}
+
+.launchCopy {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.launchKicker,
+.kicker {
+  margin: 0;
+  color: var(--pulse-sidebar-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.launchTitle {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.35rem;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.launchDescription {
+  margin: 0;
+  color: var(--pulse-muted);
+  line-height: 1.55;
+}
+
+.launchButton,
+.primaryButton,
+.secondaryButton,
+.iconButton {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.launchButton,
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 1rem;
+  color: #112235;
+  background: linear-gradient(135deg, var(--pulse-nav-active), #dbeafe);
+  box-shadow: 0 10px 25px rgb(96 165 250 / 18%);
+  font-weight: 800;
+}
+
+.launchButton:hover,
+.primaryButton:hover {
+  transform: translateY(-1px);
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgb(0 0 0 / 64%);
+  backdrop-filter: blur(8px);
+}
+
+.modal {
+  width: min(760px, 100%);
+  max-height: min(90vh, 920px);
+  overflow: auto;
+  border: 1px solid var(--pulse-border);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgb(96 165 250 / 10%), transparent 30%),
+    linear-gradient(180deg, var(--pulse-surface), rgb(18 21 29 / 98%));
+  box-shadow: 0 40px 90px rgb(0 0 0 / 42%);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.headingGroup {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.title {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.45rem;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--pulse-muted);
+  background: var(--pulse-surface-subtle);
+  border-color: var(--pulse-border);
+}
+
+.iconButton:hover {
+  background: var(--pulse-surface-muted);
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.label {
+  color: var(--pulse-sidebar-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.input,
+.select {
+  min-height: 44px;
+  width: 100%;
+  padding: 0 0.9rem;
+  color: var(--pulse-ink);
+  background: var(--pulse-surface);
+  border: 1px solid var(--pulse-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+}
+
+.input::placeholder {
+  color: var(--pulse-muted);
+}
+
+.input:focus-visible,
+.select:focus-visible,
+.launchButton:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.iconButton:focus-visible {
+  outline: 3px solid var(--pulse-accent-light);
+  outline-offset: 2px;
+}
+
+.error {
+  margin: 0;
+  color: var(--pulse-danger);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.secondaryButton {
+  min-height: 44px;
+  padding: 0 1rem;
+  color: var(--pulse-ink);
+  background: var(--pulse-surface-subtle);
+  border-color: var(--pulse-border);
+  font-weight: 700;
+}
+
+.secondaryButton:hover {
+  background: var(--pulse-surface-muted);
+}
+
+.primaryButton:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+@media (max-width: 720px) {
+  .launchCard,
+  .header,
+  .form {
+    padding-inline: 1rem;
+  }
+
+  .launchCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .secondaryButton,
+  .primaryButton,
+  .launchButton {
+    width: 100%;
+  }
+}
