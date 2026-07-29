@@ -1,5 +1,5 @@
-import { caseApiGetJson } from "../../shared/caseApi.ts";
-import type { PlanCycleQueueRow } from "../../entities/taxPlanCycle.ts";
+import { caseApiGetJson } from "../shared/caseApi.ts";
+import type { PlanCycleQueueRow } from "./taxPlanCycle.ts";
 
 export interface TaxPlanCycleQueueApiRow {
   id: string;
@@ -23,7 +23,7 @@ export interface TaxPlanCycleDetailsApiResponse {
   due_date: string;
   on_hold: boolean;
   hold_reason?: string | null;
-  scenarios: readonly unknown[];
+  scenarios?: readonly unknown[];
 }
 
 export interface TaxPlanCycleDetailsView {
@@ -71,6 +71,8 @@ function toQueueRow(row: TaxPlanCycleQueueApiRow): PlanCycleQueueRow {
 function toDetailsView(
   row: TaxPlanCycleDetailsApiResponse,
 ): TaxPlanCycleDetailsView {
+  const scenarios = row.scenarios ?? [];
+
   return {
     caseId: row.id,
     client: row.client_id,
@@ -78,7 +80,7 @@ function toDetailsView(
     owner: row.owner,
     priority: row.priority.charAt(0).toUpperCase() + row.priority.slice(1),
     dueDate: formatDisplayDate(row.due_date),
-    scenarioCount: row.scenarios.length,
+    scenarioCount: scenarios.length,
     onHold: row.on_hold,
     overdue: row.due_date < new Date().toISOString().slice(0, 10),
   };

@@ -1,16 +1,15 @@
-import { useState } from "react";
-import { useParams } from "@tanstack/react-router";
+import { useEffect, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useParams } from "@tanstack/react-router";
 
 import styles from "./Details.module.css";
 import {
   fetchTaxPlanCycleDetails,
   taxPlanCycleDetailsQueryKey,
-} from "./queries.ts";
+} from "../../entities/taxPlanCycleQueries.ts";
 import { EmptyState } from "../../components/EmptyState.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
-import { WorkflowStepper } from "../../components/WorkflowStepper.tsx";
 
 const caseStages = [
   "Intake",
@@ -19,6 +18,7 @@ const caseStages = [
   "Review",
   "Client Approval",
   "Executed",
+  "Archived",
 ] as const;
 
 const detailTabs = ["Overview", "Scenarios", "Comments", "Audit Trail"] as const;
@@ -57,6 +57,9 @@ const sampleAuditEntries = [
   "Review stage entered by Firm Admin",
 ] as const;
 
+type DetailTab = (typeof detailTabs)[number];
+type DetailStage = (typeof caseStages)[number];
+
 function priorityTone(priority: string): "danger" | "warning" | "info" {
   const normalized = priority.toLowerCase();
 
@@ -71,14 +74,45 @@ function priorityTone(priority: string): "danger" | "warning" | "info" {
   return "info";
 }
 
+function isDetailStage(stage: string): stage is DetailStage {
+  return caseStages.includes(stage as DetailStage);
+}
+
+function isDetailTab(tab: string): tab is DetailTab {
+  return detailTabs.includes(tab as DetailTab);
+}
+
 export function DetailsPage() {
   const { id: caseId = "" } = useParams({ from: "/cycles/$id" });
-  const [activeTab, setActiveTab] = useState<(typeof detailTabs)[number]>("Overview");
+  const [activeStage, setActiveStage] = useState<DetailStage | "">("");
+  const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
+  const [commentDraft, setCommentDraft] = useState("");
+  const stageLabelId = useId();
+
+  useEffect(() => {
+    setActiveStage("");
+    setActiveTab("Overview");
+    setCommentDraft("");
+  }, [caseId]);
+
   const detailsQuery = useQuery({
     queryKey: taxPlanCycleDetailsQueryKey(caseId),
     queryFn: () => fetchTaxPlanCycleDetails(caseId),
     enabled: caseId.length > 0,
   });
+
+  useEffect(() => {
+    if (activeStage !== "" || !detailsQuery.data) {
+      return;
+    }
+
+    if (isDetailStage(detailsQuery.data.stage)) {
+      setActiveStage(detailsQuery.data.stage);
+      return;
+    }
+
+    setActiveStage("Intake");
+  }, [activeStage, detailsQuery.data]);
 
   if (detailsQuery.isPending) {
     return (
@@ -110,6 +144,105 @@ export function DetailsPage() {
     return null;
   }
 
+  const selectedStage = activeStage || (isDetailStage(details.stage) ? details.stage : "Intake");
+  const activeStageIndex = caseStages.indexOf(selectedStage);
+
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case "Overview":
+        return (
+          <PanelCard title="Plan Brief">
+            <div className={styles.overviewGrid}>
+              <div>
+                <p className={styles.fieldLabel}>Planning Period</p>
+                <p className={styles.fieldValue}>Q2 2026 (April-June)</p>
+              </div>
+              <div>
+                <p className={styles.fieldLabel}>Recommendation</p>
+                <p className={styles.fieldValue}>Convert $40k traditional to Roth</p>
+              </div>
+              <div>
+                <p className={styles.fieldLabel}>Projected Savings</p>
+                <p className={styles.fieldValuePositive}>$8,420 lifetime</p>
+              </div>
+              <div>
+                <p className={styles.fieldLabel}>Risk Flags</p>
+                <p className={styles.fieldValue}>
+                  <StatusPill tone="warning">SE income spike</StatusPill>
+                </p>
+              </div>
+            </div>
+          </PanelCard>
+        );
+      case "Scenarios":
+        return (
+          <PanelCard title="Scenario Summary">
+            <div className={styles.scenarioList}>
+              {sampleScenarios.map((scenario) => (
+                <article className={styles.scenarioCard} key={scenario.name}>
+                  <div className={styles.scenarioHeader}>
+                    <h3 className={styles.scenarioName}>{scenario.name}</h3>
+                    <StatusPill tone="info">{scenario.result}</StatusPill>
+                  </div>
+                  <p className={styles.scenarioDescription}>{scenario.description}</p>
+                </article>
+              ))}
+            </div>
+          </PanelCard>
+        );
+      case "Comments":
+        return (
+          <PanelCard title="Comments">
+            <div className={styles.commentList}>
+              {sampleComments.map((comment) => (
+                <article className={styles.comment} key={`${comment.author}-${comment.when}`}>
+                  <div className={styles.commentAvatar} aria-hidden="true">
+                    {comment.initials}
+                  </div>
+                  <div className={styles.commentBody}>
+                    <div className={styles.commentHead}>
+                      <span className={styles.commentAuthor}>{comment.author}</span>
+                      <span className={styles.commentTime}>{comment.when}</span>
+                    </div>
+                    <p className={styles.commentText}>{comment.text}</p>
+                  </div>
+                </article>
+              ))}
+              <div className={styles.commentComposer}>
+                <label className={styles.commentComposerField}>
+                  <span className={styles.fieldLabel}>Comment draft</span>
+                  <textarea
+                    aria-label="Comment draft"
+                    className={styles.commentInput}
+                    value={commentDraft}
+                    onChange={(event) => {
+                      setCommentDraft(event.target.value);
+                    }}
+                  />
+                </label>
+                <button className={styles.primaryAction} type="button">
+                  Post
+                </button>
+              </div>
+            </div>
+          </PanelCard>
+        );
+      case "Audit Trail":
+        return (
+          <PanelCard title="Audit Trail">
+            <div className={styles.auditList}>
+              {sampleAuditEntries.map((entry, index) => (
+                <div className={styles.auditItem} key={entry}>
+                  <span className={styles.auditIndex}>{index + 1}</span>
+                  <span className={styles.auditText}>{entry}</span>
+                </div>
+              ))}
+            </div>
+          </PanelCard>
+        );
+    }
+  };
+
   return (
     <div className={styles.page}>
       <PanelCard className={styles.caseHeader}>
@@ -121,7 +254,8 @@ export function DetailsPage() {
             </div>
             <h2 className={styles.caseTitle}>{details.client} - Q2 2026 Tax Plan</h2>
             <p className={styles.caseSubtitle}>
-              Advisor: {details.owner} · Opened Apr 1, 2026 · {details.onHold ? "On hold" : "Active"}
+              Advisor: {details.owner} · Opened Apr 1, 2026 ·{" "}
+              {details.onHold ? "On hold" : "Active"}
             </p>
           </div>
 
@@ -138,7 +272,41 @@ export function DetailsPage() {
           </div>
         </div>
 
-        <WorkflowStepper stages={caseStages} activeStage={details.stage} />
+        <section className={styles.stageSection} aria-labelledby={stageLabelId}>
+          <div className={styles.sectionHeader}>
+            <h3 id={stageLabelId} className={styles.sectionTitle}>
+              Stage
+            </h3>
+            <p className={styles.sectionCopy}>Interactive stage navigation stays local to the page.</p>
+          </div>
+
+          <ol className={styles.stageStepper} aria-label="Case stage progression">
+            {caseStages.map((stage, index) => {
+              const isActive = selectedStage === stage;
+              const isComplete = index < activeStageIndex;
+
+              return (
+                <li key={stage} className={styles.stageStepItem}>
+                  <button
+                    className={[
+                      styles.stageStep,
+                      isActive ? styles.stageStepActive : "",
+                      isComplete ? styles.stageStepComplete : "",
+                    ].join(" ")}
+                    type="button"
+                    aria-current={isActive ? "step" : undefined}
+                    onClick={() => {
+                      setActiveStage(stage);
+                    }}
+                  >
+                    <span className={styles.stageStepNumber}>{index + 1}</span>
+                    <span>{stage}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
       </PanelCard>
 
       <div className={styles.detailGrid}>
@@ -152,7 +320,9 @@ export function DetailsPage() {
                 aria-selected={activeTab === tab}
                 type="button"
                 onClick={() => {
-                  setActiveTab(tab);
+                  if (isDetailTab(tab)) {
+                    setActiveTab(tab);
+                  }
                 }}
               >
                 {tab}
@@ -160,90 +330,7 @@ export function DetailsPage() {
             ))}
           </div>
 
-          {activeTab === "Overview" ? (
-            <PanelCard title="Plan Brief">
-              <div className={styles.overviewGrid}>
-                <div>
-                  <p className={styles.fieldLabel}>Planning Period</p>
-                  <p className={styles.fieldValue}>Q2 2026 (April-June)</p>
-                </div>
-                <div>
-                  <p className={styles.fieldLabel}>Recommendation</p>
-                  <p className={styles.fieldValue}>Convert $40k traditional to Roth</p>
-                </div>
-                <div>
-                  <p className={styles.fieldLabel}>Projected Savings</p>
-                  <p className={styles.fieldValuePositive}>$8,420 lifetime</p>
-                </div>
-                <div>
-                  <p className={styles.fieldLabel}>Risk Flags</p>
-                  <p className={styles.fieldValue}>
-                    <StatusPill tone="warning">SE income spike</StatusPill>
-                  </p>
-                </div>
-              </div>
-            </PanelCard>
-          ) : null}
-
-          {activeTab === "Scenarios" ? (
-            <PanelCard title="Scenario Summary">
-              <div className={styles.scenarioList}>
-                {sampleScenarios.map((scenario) => (
-                  <article className={styles.scenarioCard} key={scenario.name}>
-                    <div className={styles.scenarioHeader}>
-                      <h3 className={styles.scenarioName}>{scenario.name}</h3>
-                      <StatusPill tone="info">{scenario.result}</StatusPill>
-                    </div>
-                    <p className={styles.scenarioDescription}>{scenario.description}</p>
-                  </article>
-                ))}
-              </div>
-            </PanelCard>
-          ) : null}
-
-          {activeTab === "Comments" ? (
-            <PanelCard title="Comments">
-              <div className={styles.commentList}>
-                {sampleComments.map((comment) => (
-                  <article className={styles.comment} key={`${comment.author}-${comment.when}`}>
-                    <div className={styles.commentAvatar} aria-hidden="true">
-                      {comment.initials}
-                    </div>
-                    <div className={styles.commentBody}>
-                      <div className={styles.commentHead}>
-                        <span className={styles.commentAuthor}>{comment.author}</span>
-                        <span className={styles.commentTime}>{comment.when}</span>
-                      </div>
-                      <p className={styles.commentText}>{comment.text}</p>
-                    </div>
-                  </article>
-                ))}
-                <div className={styles.commentComposer}>
-                  <input
-                    className={styles.commentInput}
-                    type="text"
-                    placeholder="Add a comment, @mention a teammate..."
-                  />
-                  <button className={styles.primaryAction} type="button">
-                    Post
-                  </button>
-                </div>
-              </div>
-            </PanelCard>
-          ) : null}
-
-          {activeTab === "Audit Trail" ? (
-            <PanelCard title="Audit Trail">
-              <div className={styles.auditList}>
-                {sampleAuditEntries.map((entry, index) => (
-                  <div className={styles.auditItem} key={entry}>
-                    <span className={styles.auditIndex}>{index + 1}</span>
-                    <span className={styles.auditText}>{entry}</span>
-                  </div>
-                ))}
-              </div>
-            </PanelCard>
-          ) : null}
+          {renderActiveTab()}
         </div>
 
         <aside className={styles.sidePanel}>
@@ -259,7 +346,7 @@ export function DetailsPage() {
               </div>
               <div className={styles.sidePanelRow}>
                 <span className={styles.sidePanelLabel}>Stage Entered</span>
-                <span className={styles.sidePanelValue}>{details.stage}</span>
+                <span className={styles.sidePanelValue}>{selectedStage}</span>
               </div>
               <div className={styles.sidePanelRow}>
                 <span className={styles.sidePanelLabel}>Due Date</span>

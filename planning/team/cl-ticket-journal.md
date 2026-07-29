@@ -37,21 +37,23 @@ Add new ticket entries below using this template.
 
 ## caleb-latimer-jira100 - SCRUM-100
 
-**Branch:** `caleb-latimer-jira100`
+**Branch:** `caleb-latimer-jira-100`
 
 **Assignee:** Caleb Latimer
 
 **Jira Key:** SCRUM-100
 
-**Summary:** Jira-100 Wire the queue and detail screens to live data
+**Summary:** Jira-100 Wire the queue and detail screens to live data and consolidate detail navigation
 
-**Description:** Wire the Tax Plan Cycle queue and detail screens to live server state using TanStack Query so the signed-in user's authorized cycles and cycle detail can be read through the Core service.
+**Description:** Wire the Tax Plan Cycle queue and detail screens to live server state using TanStack Query so the signed-in user's authorized cycles and cycle detail can be read through the Core service, then fold the legacy detail route/navigation state into `Details` and move query helpers into the entity layer.
 
 **Acceptance Criteria:**
 
 - The queue fetches the tenant's cycles via a TanStack Query hook.
 - The detail screen fetches a single cycle by case ID.
 - A scoped Advisor sees only their assigned cases per the permission matrix.
+- The detail page owns its tab, stage, and comment draft state locally after the refactor.
+- The legacy detail wrapper and navigation hook are deleted after the refactor.
 
 **Sequence Diagram:**
 
@@ -62,6 +64,7 @@ sequenceDiagram
     participant Query as TanStack Query
     participant Core as Core Case Service
     participant Repo as Tax Plan Cycle Repository
+    participant Page as Details Page State
 
     Advisor->>UI: Open /cycles/queue
     UI->>Query: useQuery(["taxPlanCycle","queue"])
@@ -79,7 +82,9 @@ sequenceDiagram
     Repo-->>Core: single cycle payload
     Core-->>Query: 200 OK + detail payload
     Query-->>UI: cache cycle detail
-    UI-->>Advisor: render details placeholder plus live details
+    UI->>Page: initialize tabs, stage, and comment draft
+    Advisor->>Page: Switch tabs or stage locally
+    Page-->>Advisor: Update local detail view state
 
     Core-->>UI: 401/502 Problem Details on auth or upstream failure
 ```
@@ -93,10 +98,11 @@ sequenceDiagram
 - `src/pulseUI/app/bootstrap.tsx`
 - `src/pulseUI/app/queryClient.ts`
 - `src/pulseUI/shared/coreCaseApi.ts`
-- `src/pulseUI/pages/taxPlanCycle/queries.ts`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
 - `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Details.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
 - `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
@@ -122,15 +128,21 @@ sequenceDiagram
 - `src/pulseUI/app/bootstrap.tsx`
 - `src/pulseUI/app/queryClient.ts`
 - `src/pulseUI/shared/coreCaseApi.ts`
-- `src/pulseUI/pages/taxPlanCycle/queries.ts`
 - `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Details.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycleDetailRoute.tsx`
+- `src/pulseUI/pages/taxPlanCycle/queries.ts`
+- `src/pulseUI/pages/taxPlanCycle/usePlanCycleDetailNavigation.ts`
 - `src/pulseUI/tests/appShell.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `src/pulseUI/tests/planCycleDetailNavigation.test.tsx`
+- `src/pulseUI/tests/planCycleDetailRoute.test.tsx`
 - `adr/0021-tanstack-query-for-pulse-ui-server-state.md`
 - `adr/README.md`
 - `planning/team/cl-ticket-journal.md`
@@ -141,6 +153,8 @@ sequenceDiagram
 - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd test"` passed in `src/pulseUI`.
 - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd test"` at the repo root failed in the integration suite because Testcontainers could not find a working container runtime strategy in this environment.
 - The queue-state test harness now uses router context so the success branch no longer emits a `useRouter must be used inside a <RouterProvider>` warning.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/taxPlanCycle/Details.test.tsx tests/taxPlanCycle/queries.test.ts tests/taxPlanCycle/Queue.test.tsx tests/taxPlanCycle/QueueState.test.tsx"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
 
 ## caleb-latimer-jira93 - SCRUM-93
 

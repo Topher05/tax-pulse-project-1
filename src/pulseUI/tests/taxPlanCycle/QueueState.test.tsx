@@ -8,7 +8,7 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import type { PlanCycleQueueRow } from "../../entities/taxPlanCycle.ts";
-import * as queueQueries from "../../pages/taxPlanCycle/queries.ts";
+import * as queueQueries from "../../entities/taxPlanCycleQueries.ts";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();

@@ -3,9 +3,12 @@ import { RefreshCw } from "lucide-react";
 
 import styles from "./PlanCycle.module.css";
 import { Queue } from "./Queue.tsx";
-import { fetchTaxPlanCycleQueue, taxPlanCycleQueueQueryKey } from "./queries.ts";
 import { EmptyState } from "../../components/EmptyState.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
+import {
+  fetchTaxPlanCycleQueue,
+  taxPlanCycleQueueQueryKey,
+} from "../../entities/taxPlanCycleQueries.ts";
 
 function PlanCycleQueueLoadingState() {
   const skeletonRows = Array.from({ length: 5 }, (_, index) => index);

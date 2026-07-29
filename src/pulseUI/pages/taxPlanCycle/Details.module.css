@@ -90,6 +90,82 @@
   border-color: rgb(239 68 68 / 22%);
 }
 
+.stageSection {
+  display: grid;
+  gap: 0.85rem;
+  padding-top: 0.4rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.sectionCopy {
+  margin: 0;
+  color: var(--pulse-muted);
+  font-size: 0.82rem;
+}
+
+.stageStepper {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+  list-style: none;
+}
+
+.stageStepItem {
+  min-width: 0;
+}
+
+.stageStep {
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 84px;
+  padding: 0.8rem 0.85rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 14px;
+  background: var(--pulse-surface);
+  color: var(--pulse-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.stageStepComplete {
+  color: var(--pulse-ink);
+  background: var(--pulse-surface-subtle);
+}
+
+.stageStepActive {
+  border-color: var(--pulse-accent);
+  box-shadow: 0 0 0 1px rgb(84 182 177 / 18%);
+  color: var(--pulse-accent-light);
+}
+
+.stageStepNumber {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: var(--pulse-accent-bg);
+  color: var(--pulse-accent-light);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .detailGrid {
   display: grid;
   gap: 1rem;
@@ -242,19 +318,28 @@
 
 .commentComposer {
   display: flex;
+  align-items: flex-end;
   gap: 0.6rem;
   margin-top: 0.4rem;
+}
+
+.commentComposerField {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
 }
 
 .commentInput {
   flex: 1;
   min-width: 0;
-  min-height: 40px;
-  padding: 0 0.9rem;
+  min-height: 108px;
+  padding: 0.8rem 0.9rem;
   color: var(--pulse-ink);
   background: var(--pulse-surface-muted);
   border: 1px solid var(--pulse-border);
   border-radius: 12px;
+  resize: vertical;
 }
 
 .commentInput::placeholder {
@@ -330,6 +415,10 @@
   .detailGrid {
     grid-template-columns: 1fr;
   }
+
+  .stageStepper {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
@@ -345,7 +434,16 @@
     grid-template-columns: 1fr;
   }
 
+  .sectionHeader {
+    flex-direction: column;
+  }
+
+  .stageStepper {
+    grid-template-columns: 1fr;
+  }
+
   .commentComposer {
     flex-direction: column;
+    align-items: stretch;
   }
 }
