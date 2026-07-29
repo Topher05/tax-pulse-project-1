@@ -27,7 +27,7 @@ import {
   taxPlanCycleCreateSchema,
   taxPlanCycleReadParamsSchema,
   taxPlanCycleQueueItemSchema,
-  taxPlanCycleQueueReadResponseSchema,
+  taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleSchema,
 } from "./features/taxPlanCycle/index.js";
 
@@ -81,8 +81,8 @@ export const coreCaseOpenApiSchemaRegistrations = [
     schema: taxPlanCycleQueueItemSchema,
   },
   {
-    name: "TaxPlanCycleQueueReadResponse",
-    schema: taxPlanCycleQueueReadResponseSchema,
+    name: "TaxPlanCycleQueueGetResponse",
+    schema: taxPlanCycleQueueGetResponseSchema,
   },
   {
     name: "TaxPlanCycleCreateAccepted",
@@ -710,7 +710,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
               description: "The tenant-scoped queue was returned.",
               content: {
                 "application/json": {
-                  schema: toOpenApiSchema(taxPlanCycleQueueReadResponseSchema),
+                  schema: toOpenApiSchema(taxPlanCycleQueueGetResponseSchema),
                   example: fakeTaxPlanCycleQueueExample,
                 },
               },

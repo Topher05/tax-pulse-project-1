@@ -14,8 +14,8 @@ import type {
 } from "../../auditEntryRepository.js";
 import { ProblemHttpError, type ProblemDetails } from "../../errors.js";
 import {
-  taxPlanCycleQueueReadResponseSchema,
   taxPlanCycleCreateSchema,
+  taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleReadParamsSchema,
   taxPlanCycleReadResponseSchema,
   taxPlanCycleTransitionParamsSchema,
@@ -265,7 +265,7 @@ export function createTaxPlanCycleRouter(
         }
 
         const queue = await taxPlanCycleRepository.listQueue({ tenantId });
-        const response = taxPlanCycleQueueReadResponseSchema.parse(queue);
+        const response = taxPlanCycleQueueGetResponseSchema.parse(queue);
 
         res.status(200).json(response);
       } catch (error) {
