@@ -454,12 +454,16 @@ on the auth-context foundation supplied by SCRUM-192.
 
 - Anonymous users see sign-in as the protected-workspace entry view.
 - Sign-in, MFA, and password-reset routes are public screens.
-- Later slices wire credentials, MFA completion, reset navigation, role landing, and logout.
+- Sign-in submits credentials through the shared auth context and passes its MFA challenge
+  only through browser navigation state to the MFA screen.
+- MFA completion, reset navigation, role landing, and logout remain later slices.
 
 **Code Connection:**
 
 - The router now separates public authentication routes from an `AuthBoundary`-guarded
   workspace layout. The boundary uses the new sign-in screen for anonymous sessions.
+- The sign-in form calls `useSession().login`; the typed, ephemeral route state carries
+  the returned tenant, email, and user challenge to the MFA view without persisting it.
 
 **Project Scope Connection:**
 
@@ -471,16 +475,18 @@ no BFF endpoint, token, password-reset, or authorization-policy change.
 - `src/pulseUI/app/bootstrap.tsx`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/auth/AuthBoundary.tsx`
+- `src/pulseUI/auth/mfaChallengeState.ts`
 - `src/pulseUI/pages/auth/SignInPage.tsx`
 - `src/pulseUI/pages/auth/MfaChallengePage.tsx`
 - `src/pulseUI/pages/auth/PasswordResetPage.tsx`
 - `src/pulseUI/pages/auth/PasswordResetConfirmationPage.tsx`
 - `src/pulseUI/tests/auth/AuthenticatedSessionProvider.tsx`
+- `src/pulseUI/tests/auth/SignInPage.test.tsx`
 - Existing Pulse UI route/component tests
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
-- `npm --prefix src/pulseUI test` passed: 44 tests in 11 files.
+- `npm --prefix src/pulseUI test` passed: 45 tests in 12 files.
 - `npm --prefix src/pulseUI run typecheck` is blocked by the existing missing local
   `@tailwindcss/vite` package referenced by `src/pulseUI/vite.config.ts`.
