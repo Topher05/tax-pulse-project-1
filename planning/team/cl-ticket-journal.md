@@ -79,10 +79,13 @@ sequenceDiagram
 
 **Code Connection:**
 
+- `src/pulseUI/components/ScenarioPlanningForm.tsx`
+- `src/pulseUI/components/ScenarioPlanningForm.module.css`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
 - `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
 - `src/pulseUI/package.json`
 
 **Project Scope Connection:**
@@ -92,10 +95,13 @@ sequenceDiagram
 
 **Changed Files:**
 
+- `src/pulseUI/components/ScenarioPlanningForm.tsx`
+- `src/pulseUI/components/ScenarioPlanningForm.module.css`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
 - `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
 - `src/pulseUI/package.json`
 - `planning/team/cl-ticket-journal.md`
 
@@ -103,6 +109,8 @@ sequenceDiagram
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/scenarios/ScenarioPlannerPage.test.tsx"` passed.
 - The scenario form test verifies the modal, inline validation, default income type, negative decimal handling, and `console.table()` submit logging.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ScenarioPlanningForm.test.tsx tests/scenarios/ScenarioPlannerPage.test.tsx"` passed.
+- The split tests now cover the extracted component modal behavior, validation, escape close handling, and the page launcher open/close flow.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc -p src/pulseUI/tsconfig.pulseUI.json --noEmit 2>&1 | findstr /C:ScenarioPlannerPage.tsx"` returned no Scenario Planner file errors.
 - The broader Pulse UI typecheck still has pre-existing unrelated errors in `Details.tsx`, `Queue.tsx`, and older route tests that are outside this ticket.
 

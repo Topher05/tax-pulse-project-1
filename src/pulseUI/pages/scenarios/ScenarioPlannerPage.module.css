@@ -24,8 +24,7 @@
   min-width: 0;
 }
 
-.launchKicker,
-.kicker {
+.launchKicker {
   margin: 0;
   color: var(--pulse-sidebar-muted);
   font-size: 0.72rem;
@@ -48,12 +47,18 @@
   line-height: 1.55;
 }
 
-.launchButton,
-.primaryButton,
-.secondaryButton,
-.iconButton {
+.launchButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 1rem;
+  color: #f8fafc;
+  background: var(--pulse-accent);
   border: 1px solid transparent;
   border-radius: 12px;
+  box-shadow: 0 10px 25px rgb(99 102 241 / 24%);
+  font-weight: 800;
   cursor: pointer;
   transition:
     background-color 140ms ease,
@@ -62,198 +67,22 @@
     transform 140ms ease;
 }
 
-.launchButton,
-.primaryButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 1rem;
-  color: #f8fafc;
-  background: var(--pulse-accent);
-  box-shadow: 0 10px 25px rgb(99 102 241 / 24%);
-  font-weight: 800;
-}
-
-.launchButton:hover,
-.primaryButton:hover {
+.launchButton:hover {
   transform: translateY(-1px);
 }
 
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  background: rgb(0 0 0 / 64%);
-  backdrop-filter: blur(8px);
-}
-
-.modal {
-  /* Keep this shell easy to tune if the modal sizing or card treatment changes later. */
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  width: 90%;
-  max-width: 520px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-lg);
-}
-
-.header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.5rem 1.5rem 0;
-}
-
-.headingGroup {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.title {
-  margin: 0;
-  color: var(--pulse-ink);
-  font-size: 1.45rem;
-  line-height: 1.15;
-  font-weight: 800;
-}
-
-.iconButton {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  color: var(--pulse-muted);
-  background: var(--pulse-surface-subtle);
-  border-color: var(--pulse-border);
-}
-
-.iconButton:hover {
-  background: var(--pulse-surface-muted);
-}
-
-.form {
-  display: grid;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem 1.5rem;
-}
-
-.grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.field {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.label {
-  color: var(--pulse-sidebar-muted);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.field[data-invalid="true"] .label {
-  color: #D22B2B;
-}
-
-.input,
-.select {
-  min-height: 44px;
-  width: 100%;
-  padding: 0 0.9rem;
-  color: var(--pulse-ink);
-  background: var(--pulse-surface);
-  border: 1px solid var(--pulse-border);
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
-}
-
-.field[data-invalid="true"] .input,
-.field[data-invalid="true"] .select {
-  border-color: #D22B2B;
-  box-shadow: 0 0 0 1px #D22B2B;
-}
-
-.input::placeholder {
-  color: var(--pulse-muted);
-}
-
-.input:focus-visible,
-.select:focus-visible,
-.launchButton:focus-visible,
-.primaryButton:focus-visible,
-.secondaryButton:focus-visible,
-.iconButton:focus-visible {
+.launchButton:focus-visible {
   outline: 3px solid var(--pulse-accent-light);
   outline-offset: 2px;
 }
 
-.error {
-  margin: 0;
-  color: #D22B2B;
-  font-size: 0.85rem;
-  line-height: 1.4;
-  font-weight: 600;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding-top: 0.25rem;
-}
-
-.secondaryButton {
-  min-height: 44px;
-  padding: 0 1rem;
-  color: var(--pulse-ink);
-  background: var(--pulse-surface-subtle);
-  border-color: var(--pulse-border);
-  font-weight: 700;
-}
-
-.secondaryButton:hover {
-  background: var(--pulse-surface-muted);
-}
-
-.primaryButton:disabled {
-  cursor: progress;
-  opacity: 0.7;
-}
-
 @media (max-width: 720px) {
-  .launchCard,
-  .header,
-  .form {
-    padding-inline: 1rem;
-  }
-
   .launchCard {
     flex-direction: column;
     align-items: stretch;
+    padding-inline: 1rem;
   }
 
-  .grid {
-    grid-template-columns: 1fr;
-  }
-
-  .actions {
-    flex-direction: column-reverse;
-  }
-
-  .secondaryButton,
-  .primaryButton,
   .launchButton {
     width: 100%;
   }
