@@ -1,14 +1,113 @@
 import { useId } from "react";
 
 import {
+  type PlanCycleDetailStage,
   type PlanCycleDetailTab,
   usePlanCycleDetailNavigation,
 } from "./usePlanCycleDetailNavigation.ts";
 
-function OverviewTab() {
+interface PlanCycleOverview {
+  period: string;
+  recommendation: string;
+  projectedSavings: string;
+  riskFlags: readonly string[];
+  advisor: string;
+  reviewer: string;
+  stageEntered: string;
+  dueDate: string;
+  onHold: boolean;
+  priority: "Low" | "Medium" | "High";
+  currentStage: PlanCycleDetailStage;
+}
+
+const overview: PlanCycleOverview = {
+  period: "2026 Q4",
+  recommendation: "Accelerate charitable contributions before year-end and harvest short-term losses.",
+  projectedSavings: "$18,400",
+  riskFlags: ["AMT exposure", "Missing brokerage statement"],
+  advisor: "Avery Advisor",
+  reviewer: "Riley Reviewer",
+  stageEntered: "2026-07-20",
+  dueDate: "2026-08-15",
+  onHold: false,
+  priority: "High",
+  currentStage: "Review",
+};
+
+interface OverviewTabProps {
+  overview: PlanCycleOverview;
+}
+
+function OverviewTab({ overview }: OverviewTabProps) {
   return (
-    <section className="planCycleTabPanel" aria-labelledby="plan-cycle-overview-heading">
+    <section
+      className="planCycleTabPanel planCycleOverview"
+      aria-labelledby="plan-cycle-overview-heading"
+    >
       <h2 id="plan-cycle-overview-heading">Overview</h2>
+      <div className="planCycleOverviewGrid">
+        <section className="planCycleBrief" aria-labelledby="plan-cycle-brief-heading">
+          <div>
+            <p className="planCycleEyebrow">Plan brief</p>
+            <h3 id="plan-cycle-brief-heading">Quarterly tax plan</h3>
+          </div>
+
+          <dl className="planCycleBriefStats">
+            <div>
+              <dt>Period</dt>
+              <dd>{overview.period}</dd>
+            </div>
+            <div>
+              <dt>Projected savings</dt>
+              <dd>{overview.projectedSavings}</dd>
+            </div>
+          </dl>
+
+          <section className="planCycleRecommendation" aria-labelledby="recommendation-heading">
+            <h4 id="recommendation-heading">Recommendation</h4>
+            <p>{overview.recommendation}</p>
+          </section>
+
+          <section className="planCycleRiskFlags" aria-labelledby="risk-flags-heading">
+            <h4 id="risk-flags-heading">Risk flags</h4>
+            <ul>
+              {overview.riskFlags.map((riskFlag) => (
+                <li key={riskFlag}>{riskFlag}</li>
+              ))}
+            </ul>
+          </section>
+        </section>
+
+        <aside className="planCycleProperties" aria-labelledby="case-properties-heading">
+          <h3 id="case-properties-heading">Case Properties</h3>
+          <dl>
+            <div>
+              <dt>Advisor</dt>
+              <dd>{overview.advisor}</dd>
+            </div>
+            <div>
+              <dt>Reviewer</dt>
+              <dd>{overview.reviewer}</dd>
+            </div>
+            <div>
+              <dt>Stage entered</dt>
+              <dd>{overview.stageEntered}</dd>
+            </div>
+            <div>
+              <dt>Due date</dt>
+              <dd>{overview.dueDate}</dd>
+            </div>
+            <div>
+              <dt>On hold</dt>
+              <dd>{overview.onHold ? "Yes" : "No"}</dd>
+            </div>
+            <div>
+              <dt>Priority</dt>
+              <dd>{overview.priority}</dd>
+            </div>
+          </dl>
+        </aside>
+      </div>
     </section>
   );
 }
@@ -63,12 +162,12 @@ export function PlanCycleDetailRoute() {
     setCommentDraft,
     stages,
     tabs,
-  } = usePlanCycleDetailNavigation();
+  } = usePlanCycleDetailNavigation({ initialStage: overview.currentStage });
 
   const renderActiveTab = () => {
     switch (activeTab) {
       case "Overview":
-        return <OverviewTab />;
+        return <OverviewTab overview={overview} />;
       case "Scenarios":
         return <ScenariosTab />;
       case "Comments":

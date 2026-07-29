@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import { scenarioSchema } from "../../scenario.js";
-
 export const taxPlanCycleStages = [
   "Intake",
   "Data Aggregation",
@@ -57,10 +55,6 @@ export const taxPlanCycleSchema = taxPlanCycleBaseSchema.superRefine(
   requireHoldReasonWhenOnHold,
 );
 
-export const taxPlanCycleReadResponseSchema = taxPlanCycleSchema.extend({
-  scenarios: z.array(scenarioSchema),
-});
-
 export const taxPlanCycleCreateSchema = z.strictObject({
   client_id: z.uuid(),
   planning_period: z.string().min(1),
@@ -81,9 +75,6 @@ export const taxPlanCycleTransitionSchema = z.strictObject({
 export type TaxPlanCycleStage = z.infer<typeof taxPlanCycleStageSchema>;
 export type TaxPlanCyclePriority = z.infer<typeof taxPlanCyclePrioritySchema>;
 export type TaxPlanCycle = z.infer<typeof taxPlanCycleSchema>;
-export type TaxPlanCycleReadResponse = z.infer<
-  typeof taxPlanCycleReadResponseSchema
->;
 export type TaxPlanCycleCreateInput = z.infer<typeof taxPlanCycleCreateSchema>;
 export type TaxPlanCycleReadParams = z.infer<
   typeof taxPlanCycleReadParamsSchema

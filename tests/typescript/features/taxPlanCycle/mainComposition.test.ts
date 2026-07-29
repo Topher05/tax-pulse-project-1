@@ -15,15 +15,10 @@ const repository = vi.hoisted(() => ({
     priority: "high",
     due_date: "2026-12-31",
     on_hold: false,
-    scenarios: [],
   })),
   listQueue: vi.fn(),
-  listByCaseId: vi.fn(async () => []),
 }));
 const createTaxPlanCycleRepository = vi.hoisted(() => vi.fn(() => repository));
-const createScenarioRepository = vi.hoisted(() => vi.fn(() => ({
-  listByCaseId: repository.listByCaseId,
-})));
 
 vi.mock("pg", () => ({
   default: {
@@ -71,11 +66,6 @@ vi.mock("redis", () => ({
 vi.mock("../../../../src/typescript/features/taxPlanCycle/repositories/repository.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/repositories/repository.js")>()),
   createTaxPlanCycleRepository,
-}));
-
-vi.mock("../../../../src/typescript/features/taxPlanCycle/repositories/scenarios.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/repositories/scenarios.js")>()),
-  createScenarioRepository,
 }));
 
 const originalEnvironment = { ...process.env };

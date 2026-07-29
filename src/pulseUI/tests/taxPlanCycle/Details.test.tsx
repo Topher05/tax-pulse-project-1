@@ -11,11 +11,12 @@ beforeAll(() => {
 });
 
 describe("Tax Plan Cycle details page", () => {
-  test("renders the blank details placeholder", async () => {
+  test("renders the plan cycle overview", async () => {
     render(<RouterProvider router={createPulseRouter(["/cycles/TP-24018"])} />);
 
-    expect(
-      await screen.findByText(`hello Details page ${String.fromCodePoint(0x1f680)}`),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Cycle Details", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Overview" })).toBeInTheDocument();
+    expect(screen.getByText("2026 Q4")).toBeInTheDocument();
+    expect(screen.getByText("$18,400")).toBeInTheDocument();
   });
 });

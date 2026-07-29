@@ -300,11 +300,8 @@ body::-webkit-scrollbar-thumb {
 .pulseModalOverlay {
   position: fixed;
   inset: 0;
-}
-.planCycleDetail {
   display: grid;
   place-items: center;
-  padding: 24px;
   background: rgb(15 23 42 / 52%);
   z-index: 50;
 }
@@ -559,8 +556,6 @@ body::-webkit-scrollbar-thumb {
 
 .queueRowAction:hover {
   border-color: #b5c1cc;
-    border-radius: 8px;
-  resize: vertical;
 }
 
 /* Queue state boundary: loading, empty, error, and retry states */
@@ -798,6 +793,123 @@ body::-webkit-scrollbar-thumb {
   padding: 18px 0;
 }
 
+.planCycleOverview {
+  gap: 16px;
+}
+
+.planCycleOverviewGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+
+.planCycleBrief,
+.planCycleProperties {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #cdd6df;
+  border-radius: 8px;
+}
+
+.planCycleEyebrow {
+  margin: 0 0 4px;
+  color: #627184;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.planCycleBrief h3,
+.planCycleProperties h3,
+.planCycleRecommendation h4,
+.planCycleRiskFlags h4 {
+  margin: 0;
+  color: #17202a;
+  line-height: 1.2;
+}
+
+.planCycleBrief h3,
+.planCycleProperties h3 {
+  font-size: 1.12rem;
+}
+
+.planCycleRecommendation h4,
+.planCycleRiskFlags h4 {
+  font-size: 0.92rem;
+}
+
+.planCycleBriefStats,
+.planCycleProperties dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.planCycleBriefStats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.planCycleBriefStats div,
+.planCycleProperties dl div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.planCycleBriefStats dt,
+.planCycleProperties dt {
+  color: #627184;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.planCycleBriefStats dd,
+.planCycleProperties dd {
+  margin: 0;
+  color: #17202a;
+  font-weight: 750;
+}
+
+.planCycleBriefStats dd {
+  font-size: 1.22rem;
+}
+
+.planCycleRecommendation,
+.planCycleRiskFlags {
+  display: grid;
+  gap: 8px;
+}
+
+.planCycleRecommendation p {
+  max-width: 680px;
+  margin: 0;
+  color: #344153;
+  line-height: 1.5;
+}
+
+.planCycleRiskFlags ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.planCycleRiskFlags li {
+  padding: 6px 10px;
+  color: #6b3d0c;
+  background: #fff4d7;
+  border: 1px solid #f1cf77;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
 .planCycleCommentBox {
   width: min(100%, 680px);
   min-height: 132px;
@@ -910,6 +1022,12 @@ body::-webkit-scrollbar-thumb {
   .planCycleStepper ol {
     grid-template-columns: 1fr;
   }
+
+  .planCycleOverviewGrid,
+  .planCycleBriefStats {
+    grid-template-columns: 1fr;
+  }
+
   .queueStateError {
     grid-template-columns: 1fr;
   }

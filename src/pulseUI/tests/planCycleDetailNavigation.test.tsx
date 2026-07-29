@@ -3,8 +3,8 @@ import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
 
-import { PlanCycleDetailRoute } from "../planCycles/PlanCycleDetailRoute.tsx";
-import { usePlanCycleDetailNavigation } from "../planCycles/usePlanCycleDetailNavigation.ts";
+import { PlanCycleDetailRoute } from "../pages/taxPlanCycle/PlanCycleDetailRoute.tsx";
+import { usePlanCycleDetailNavigation } from "../pages/taxPlanCycle/usePlanCycleDetailNavigation.ts";
 
 afterEach(() => {
   cleanup();

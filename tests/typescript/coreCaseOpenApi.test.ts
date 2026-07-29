@@ -11,10 +11,12 @@ import {
   createCoreCaseOpenApiDocument,
   createCoreCaseOpenApiRouter,
   createLogger,
+  mfaChallengeResponseSchema,
   mfaEnrollConfirmRequestSchema,
   mfaEnrollConfirmResultSchema,
   mfaEnrollRequestSchema,
   mfaEnrollResultSchema,
+  passwordLoginRequestSchema,
   registrationAccountResponseSchema,
   registrationRequestSchema,
   taxPlanCycleCreateResultSchema,
@@ -233,6 +235,45 @@ describe("Core Case Service OpenAPI document", () => {
     });
   });
 
+  test("documents hostname-scoped password login without tenant_id", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const loginOperation = requiredRecord(
+      requiredRecord(paths, "/auth/login"),
+      "post",
+    );
+    const requestBody = requiredRecord(loginOperation, "requestBody");
+    const requestContent = requiredRecord(requestBody, "content");
+    const requestJson = requiredRecord(requestContent, "application/json");
+    const requestSchema = requiredRecord(requestJson, "schema");
+    const requestProperties = requiredRecord(requestSchema, "properties");
+    const requestExample = requiredRecord(requestJson, "example");
+    const responses = requiredRecord(loginOperation, "responses");
+    const acceptedResponse = requiredRecord(responses, "202");
+    const acceptedContent = requiredRecord(acceptedResponse, "content");
+    const acceptedJson = requiredRecord(acceptedContent, "application/json");
+    const acceptedExample = requiredRecord(acceptedJson, "example");
+
+    expect(loginOperation.operationId).toBe("startPasswordLogin");
+    expect(loginOperation.tags).toEqual(["Authentication"]);
+    expect(loginOperation.description).toContain("hostname");
+    expect(requestProperties).toMatchObject({
+      email: expect.any(Object),
+      password: expect.any(Object),
+    });
+    expect(requestProperties.tenant_id).toBeUndefined();
+    expect(requestExample.tenant_id).toBeUndefined();
+    expect(Object.keys(responses)).toEqual(
+      expect.arrayContaining(["202", "400", "401", "404"]),
+    );
+    expect(acceptedExample).toMatchObject({
+      status: "mfa_challenge_required",
+      tenant_id: expect.any(String),
+      email: requestExample.email,
+      user_id: expect.any(String),
+    });
+  });
+
   test("documents registration with safe account output and duplicate-email conflict", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
@@ -347,6 +388,14 @@ describe("Core Case Service OpenAPI document", () => {
         expect.objectContaining({
           name: "AuthMfaLoginResult",
           schema: authSessionTokenResponseSchema,
+        }),
+        expect.objectContaining({
+          name: "PasswordLoginRequest",
+          schema: passwordLoginRequestSchema,
+        }),
+        expect.objectContaining({
+          name: "MfaChallengeResponse",
+          schema: mfaChallengeResponseSchema,
         }),
         expect.objectContaining({
           name: "RegistrationRequest",

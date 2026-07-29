@@ -49,12 +49,13 @@ describe("Tax Plan Cycle queue page", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(6);
   });
 
-  test("routes the open button to the details placeholder", async () => {
+  test("routes the open button to the details overview", async () => {
     renderQueue();
 
     const table = await screen.findByRole("table", { name: "Tax Plan Cycle Cases" });
     fireEvent.click(within(table).getAllByRole("button", { name: "Open" })[0]!);
 
-    expect(await screen.findByText(`hello Details page ${String.fromCodePoint(0x1f680)}`)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
+    expect(screen.getByText("2026 Q4")).toBeInTheDocument();
   });
 });
