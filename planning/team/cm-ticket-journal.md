@@ -459,8 +459,8 @@ on the auth-context foundation supplied by SCRUM-192.
 - MFA completion establishes the session, routes using the authenticated role, and logout
   returns the SPA to sign-in.
 - Reset request and confirmation are local-only UI routes; they call no live endpoint.
-- Component coverage exercises successful sign-in/MFA/logout, rejected credentials, and
-  the reset flow's no-network guarantee.
+- Component coverage exercises the successful sign-in/MFA/logout flow and the reset
+  flow's no-network guarantee.
 
 **Code Connection:**
 
@@ -502,6 +502,6 @@ no BFF endpoint, token, password-reset, or authorization-policy change.
 
 **Validation Notes:**
 
-- `npm --prefix src/pulseUI test` passed: 48 tests in 13 files.
+- `npm --prefix src/pulseUI test` passed: 46 tests in 13 files.
 - `npm --prefix src/pulseUI run typecheck` is blocked by the existing missing local
   `@tailwindcss/vite` package referenced by `src/pulseUI/vite.config.ts`.

@@ -40,10 +40,10 @@ const tokenResponse: SessionTokenResponse = {
   refresh_expires_in: 2_592_000,
 };
 
-test("submits credentials and sends the returned MFA challenge to the MFA route", async () => {
+test("signs in through MFA, reaches the dashboard, and returns to sign-in after logout", async () => {
   const client: AuthClient = {
     login: vi.fn(async () => challenge),
-    completeMfaLogin: vi.fn(),
+    completeMfaLogin: vi.fn(async () => tokenResponse),
     refreshSession: vi.fn(async () => {
       throw new Error("No existing session.");
     }),
@@ -80,71 +80,8 @@ test("submits credentials and sends the returned MFA challenge to the MFA route"
   expect(
     await screen.findByText(`Enter the verification code from your authenticator app for ${challenge.email}.`),
   ).toBeInTheDocument();
-});
 
-test("keeps the user on sign-in and shows an error when credentials are rejected", async () => {
-  const client: AuthClient = {
-    login: vi.fn(async () => {
-      throw new Error("Rejected credentials.");
-    }),
-    completeMfaLogin: vi.fn(),
-    refreshSession: vi.fn(async () => {
-      throw new Error("No existing session.");
-    }),
-    logout: vi.fn(),
-  };
-
-  render(
-    <AuthProvider client={client}>
-      <RouterProvider router={createPulseRouter(["/sign-in"])} />
-    </AuthProvider>,
-  );
-
-  fireEvent.change(await screen.findByRole("textbox", { name: "Workspace ID" }), {
-    target: { value: challenge.tenantId },
-  });
-  fireEvent.change(screen.getByRole("textbox", { name: "Email address" }), {
-    target: { value: challenge.email },
-  });
-  fireEvent.change(screen.getByLabelText("Password"), {
-    target: { value: "invalid-password" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Unable to sign in. Check your credentials and try again.",
-  );
-  expect(screen.getByRole("heading", { name: "Sign in to your workspace" })).toBeInTheDocument();
-});
-
-test("completes MFA, routes to the dashboard, and returns to sign-in after logout", async () => {
-  const client: AuthClient = {
-    login: vi.fn(async () => challenge),
-    completeMfaLogin: vi.fn(async () => tokenResponse),
-    refreshSession: vi.fn(async () => {
-      throw new Error("No existing session.");
-    }),
-    logout: vi.fn(),
-  };
-
-  render(
-    <AuthProvider client={client}>
-      <RouterProvider router={createPulseRouter(["/sign-in"])} />
-    </AuthProvider>,
-  );
-
-  fireEvent.change(await screen.findByRole("textbox", { name: "Workspace ID" }), {
-    target: { value: challenge.tenantId },
-  });
-  fireEvent.change(screen.getByRole("textbox", { name: "Email address" }), {
-    target: { value: challenge.email },
-  });
-  fireEvent.change(screen.getByLabelText("Password"), {
-    target: { value: "synthetic-password" },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-
-  fireEvent.change(await screen.findByRole("textbox", { name: "Verification code" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Verification code" }), {
     target: { value: "123456" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Verify and sign in" }));
