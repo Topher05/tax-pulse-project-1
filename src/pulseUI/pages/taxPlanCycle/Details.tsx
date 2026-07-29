@@ -1,6 +1,7 @@
 import { useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
+import styles from "./Details.module.css";
 import {
   fetchTaxPlanCycleDetails,
   taxPlanCycleDetailsQueryKey,
@@ -28,51 +29,35 @@ function PlanCycleDetailsCard({
   stage: string;
 }) {
   return (
-    <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <section className={styles.card}>
+      <dl className={styles.grid}>
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Case ID
-          </dt>
-          <dd className="mt-1 text-sm font-medium text-slate-950">{caseId}</dd>
+          <dt className={styles.label}>Case ID</dt>
+          <dd className={styles.value}>{caseId}</dd>
         </div>
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Client
-          </dt>
-          <dd className="mt-1 text-sm font-medium text-slate-950">{client}</dd>
+          <dt className={styles.label}>Client</dt>
+          <dd className={styles.value}>{client}</dd>
         </div>
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Stage
-          </dt>
-          <dd className="mt-1 text-sm font-medium text-slate-950">{stage}</dd>
+          <dt className={styles.label}>Stage</dt>
+          <dd className={styles.value}>{stage}</dd>
         </div>
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Owner
-          </dt>
-          <dd className="mt-1 text-sm font-medium text-slate-950">{owner}</dd>
+          <dt className={styles.label}>Owner</dt>
+          <dd className={styles.value}>{owner}</dd>
         </div>
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Priority
-          </dt>
-          <dd className="mt-1 text-sm font-medium text-slate-950">{priority}</dd>
+          <dt className={styles.label}>Priority</dt>
+          <dd className={styles.value}>{priority}</dd>
         </div>
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Due Date
-          </dt>
-          <dd className="mt-1 text-sm font-medium text-slate-950">
-            {overdue ? "Overdue" : dueDate}
-          </dd>
+          <dt className={styles.label}>Due Date</dt>
+          <dd className={styles.value}>{overdue ? "Overdue" : dueDate}</dd>
         </div>
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Scenarios
-          </dt>
-          <dd className="mt-1 text-sm font-medium text-slate-950">{scenarioCount}</dd>
+          <dt className={styles.label}>Scenarios</dt>
+          <dd className={styles.value}>{scenarioCount}</dd>
         </div>
       </dl>
     </section>
@@ -88,15 +73,15 @@ export function DetailsPage() {
   });
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-      <p className="text-lg font-semibold text-slate-950">{detailsMessage}</p>
+    <section className={styles.page}>
+      <p className={styles.message}>{detailsMessage}</p>
 
       {detailsQuery.isPending ? (
-        <p className="mt-4 text-sm text-slate-600">Loading case details...</p>
+        <p className={styles.loading}>Loading case details...</p>
       ) : null}
 
       {detailsQuery.isError ? (
-        <p className="mt-4 text-sm text-rose-700">
+        <p className={styles.error}>
           {detailsQuery.error instanceof Error
             ? detailsQuery.error.message
             : "Case details request failed."}

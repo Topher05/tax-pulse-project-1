@@ -1,5 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 
+import styles from "./Queue.module.css";
+
 import type { PlanCycleQueueMetric, PlanCycleQueueRow } from "../../entities/taxPlanCycle.ts";
 
 interface QueueProps {
@@ -46,78 +48,80 @@ export function Queue({ rows }: QueueProps) {
   const queueMetrics = buildQueueMetrics(rows);
 
   return (
-    <div className="queuePage">
-      <header className="queueHero">
-        <div className="queueHeroCopy">
-          <p className="queueEyebrow">Tax Plan Cycle</p>
-          <h2 className="queueTitle">Tax Plan Cycle Queue</h2>
-          <p className="queueLead">Track open cycles, review ownership, and timing at a glance.</p>
+    <div className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>Tax Plan Cycle</p>
+          <h2 className={styles.title}>Tax Plan Cycle Queue</h2>
+          <p className={styles.lead}>Track open cycles, review ownership, and timing at a glance.</p>
         </div>
 
-        <button className="queueHeroAction" type="button">
+        <button className={styles.primaryAction} type="button">
           New Cycle
         </button>
       </header>
 
-      <section aria-label="Queue KPIs" className="queueKpiGrid">
+      <section aria-label="Queue KPIs" className={styles.kpiGrid}>
         {queueMetrics.map((metric) => (
-          <article className="queueKpiCard" key={metric.label}>
-            <p className="queueKpiLabel">{metric.label}</p>
-            <p className="queueKpiValue">{metric.value}</p>
-            <p className="queueKpiCaption">{metric.caption}</p>
+          <article className={styles.card} key={metric.label}>
+            <p className={styles.kpiLabel}>{metric.label}</p>
+            <p className={styles.kpiValue}>{metric.value}</p>
+            <p className={styles.kpiCaption}>{metric.caption}</p>
           </article>
         ))}
       </section>
 
-      <section className="queueTableCard">
-        <div className="queueSectionHeader">
+      <section className={styles.tableCard}>
+        <div className={styles.sectionHeader}>
           <div>
-            <h3 className="queueSectionTitle">Tax Plan Cycle Cases</h3>
-            <p className="queueSectionCopy">
+            <h3 className={styles.sectionTitle}>Tax Plan Cycle Cases</h3>
+            <p className={styles.sectionCopy}>
               Five open cases are ready for review, modeling, or presentation.
             </p>
           </div>
 
-          <button className="queueSectionAction" type="button">
+          <button className={styles.secondaryAction} type="button">
             New Cycle
           </button>
         </div>
 
-        <div className="queueTableWrap">
-          <table className="queueTable" aria-label="Tax Plan Cycle Cases">
-            <thead>
+        <div className={styles.tableWrap}>
+          <table className={styles.table} aria-label="Tax Plan Cycle Cases">
+            <thead className={styles.tableHead}>
               <tr>
-                <th>Case ID</th>
-                <th>Client</th>
-                <th>Stage</th>
-                <th>Owner</th>
-                <th>Priority</th>
-                <th>Due Date</th>
-                <th>Updated Date</th>
-                <th>Action</th>
+                <th className={styles.tableHeadCell}>Case ID</th>
+                <th className={styles.tableHeadCell}>Client</th>
+                <th className={styles.tableHeadCell}>Stage</th>
+                <th className={styles.tableHeadCell}>Owner</th>
+                <th className={styles.tableHeadCell}>Priority</th>
+                <th className={styles.tableHeadCell}>Due Date</th>
+                <th className={styles.tableHeadCell}>Updated Date</th>
+                <th className={styles.tableHeadCell}>Action</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.caseId}>
-                  <td className="queueCaseId">{row.caseId}</td>
-                  <td>{row.client}</td>
-                  <td>{row.stage}</td>
-                  <td>{row.owner}</td>
-                  <td>
-                    <span className="queueRowPriority">{row.priority}</span>
+                <tr className={styles.row} key={row.caseId}>
+                  <td className={styles.tableBodyCell}>
+                    <span className={styles.caseId}>{row.caseId}</span>
                   </td>
-                  <td>
+                  <td className={styles.tableBodyCell}>{row.client}</td>
+                  <td className={styles.tableBodyCell}>{row.stage}</td>
+                  <td className={styles.tableBodyCell}>{row.owner}</td>
+                  <td className={styles.tableBodyCell}>
+                    <span className={styles.priority}>{row.priority}</span>
+                  </td>
+                  <td className={styles.tableBodyCell}>
                     {row.overdue ? (
-                      <span className="queueBadge queueBadgeOverdue">Overdue</span>
+                      <span className={styles.overdue}>Overdue</span>
                     ) : (
                       <span>{row.dueDate}</span>
                     )}
                   </td>
-                  <td>{row.updatedDate}</td>
-                  <td>
+                  <td className={styles.tableBodyCell}>{row.updatedDate}</td>
+                  <td className={styles.tableBodyCell}>
                     <button
-                      className="queueRowAction"
+                      className={styles.rowAction}
                       type="button"
                       onClick={() => {
                         navigate({

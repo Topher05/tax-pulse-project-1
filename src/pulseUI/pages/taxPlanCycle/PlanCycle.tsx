@@ -1,6 +1,7 @@
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
+import styles from "./PlanCycle.module.css";
 import { Queue } from "./Queue.tsx";
 import {
   fetchTaxPlanCycleQueue,
@@ -12,27 +13,23 @@ function PlanCycleQueueLoadingState() {
 
   return (
     <section
-      className="queueState queueStateSkeleton"
+      className={`${styles.stateCard} ${styles.skeletonState}`}
       aria-label="Loading Plan Cycle Queue"
       aria-busy="true"
     >
-      <div className="queueSkeletonHeader">
-        <span className="queueSkeletonBlock queueSkeletonSummary" />
-        <span className="queueSkeletonBlock queueSkeletonSummary" />
-        <span className="queueSkeletonBlock queueSkeletonSummary" />
+      <div className={styles.skeletonHeader}>
+        <span className={`${styles.skeletonBlock} ${styles.skeletonSummary}`} />
+        <span className={`${styles.skeletonBlock} ${styles.skeletonSummary}`} />
+        <span className={`${styles.skeletonBlock} ${styles.skeletonSummary}`} />
       </div>
-      <div
-        className="queueSkeletonTable"
-        role="status"
-        aria-label="Loading Plan Cycle Queue"
-      >
-        <span className="srOnly">Loading Plan Cycle Queue</span>
+      <div className={styles.skeletonTable} role="status" aria-label="Loading Plan Cycle Queue">
+        <span className={styles.srOnly}>Loading Plan Cycle Queue</span>
         {skeletonRows.map((row) => (
-          <div className="queueSkeletonRow" key={row}>
-            <span className="queueSkeletonBlock queueSkeletonCellLarge" />
-            <span className="queueSkeletonBlock" />
-            <span className="queueSkeletonBlock" />
-            <span className="queueSkeletonBlock queueSkeletonCellSmall" />
+          <div className={styles.skeletonRow} key={row}>
+            <span className={`${styles.skeletonBlock} ${styles.skeletonCellLarge}`} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+            <span className={`${styles.skeletonBlock} ${styles.skeletonCellSmall}`} />
           </div>
         ))}
       </div>
@@ -42,9 +39,11 @@ function PlanCycleQueueLoadingState() {
 
 function PlanCycleQueueEmptyState() {
   return (
-    <section className="queueState queueStateEmpty" aria-label="Empty Plan Cycle Queue">
-      <h2>No open plan cycles</h2>
-      <p>This tenant has no open cycles right now.</p>
+    <section className={`${styles.stateCard} ${styles.emptyState}`} aria-label="Empty Plan Cycle Queue">
+      <div>
+        <h2 className={styles.stateHeading}>No open plan cycles</h2>
+        <p className={styles.stateCopy}>This tenant has no open cycles right now.</p>
+      </div>
     </section>
   );
 }
@@ -56,16 +55,15 @@ function PlanCycleQueueErrorState({
   message: string;
   onRetry: () => void;
 }) {
-  console.log(1)
   return (
-    <section className="queueState queueStateError" role="alert">
-      <AlertTriangle className="queueStateIcon" aria-hidden />
+    <section className={`${styles.stateCard} ${styles.errorState}`} role="alert">
+      <AlertTriangle className={styles.stateIcon} aria-hidden />
       <div>
-        <h2>Queue could not load</h2>
-        <p>{message}</p>
+        <h2 className={styles.stateHeading}>Queue could not load</h2>
+        <p className={styles.stateCopy}>{message}</p>
       </div>
-      <button className="queueRetryButton" type="button" onClick={onRetry}>
-        <RefreshCw aria-hidden />
+      <button className={styles.retryButton} type="button" onClick={onRetry}>
+        <RefreshCw className={styles.retryButtonIcon} aria-hidden />
         Retry
       </button>
     </section>
