@@ -76,7 +76,7 @@
 }
 
 .primaryAction {
-  background: var(--pulse-nav);
+  background: var(--pulse-accent);
   color: #f8fafc;
 }
 

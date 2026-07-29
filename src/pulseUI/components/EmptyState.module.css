@@ -48,7 +48,7 @@
   min-height: 38px;
   padding: 0 14px;
   color: var(--pulse-nav-text);
-  background: var(--pulse-nav);
+  background: var(--pulse-accent);
   border: 1px solid var(--pulse-border);
   border-radius: 10px;
   font-weight: 700;

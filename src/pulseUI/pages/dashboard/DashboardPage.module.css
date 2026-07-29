@@ -36,7 +36,7 @@
 
 .primaryAction {
   color: #f8fafc;
-  background: var(--pulse-nav);
+  background: var(--pulse-accent);
   border: 1px solid var(--pulse-border);
 }
 
