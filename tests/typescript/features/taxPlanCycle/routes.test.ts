@@ -505,6 +505,7 @@ describe("createTaxPlanCycleRouter", () => {
       listByCaseId: vi.fn(async () => []),
     };
     const taxEngineClient: TaxEngineClient = {
+      calculateTax: vi.fn(),
       compareScenarios: vi.fn(async () => {
         throw new Error("connect ECONNREFUSED 127.0.0.1:8000");
       }),

@@ -1,0 +1,171 @@
+import { describe, expect, test, vi } from "vitest";
+
+import {
+  buildTaxPlanCycleCreateIdempotencyKey,
+  createRedisTaxPlanCycleCreateIdempotencyStore,
+  createTaxPlanCycleCreateController,
+  type TaxPlanCycleCreateIdempotencyClient,
+  type TaxPlanCycleRepository,
+} from "../../../../src/typescript/index.js";
+
+function createInMemoryCreateIdempotencyClient(): TaxPlanCycleCreateIdempotencyClient & {
+  store: Map<string, string>;
+  setCalls: Array<{
+    key: string;
+    value: string;
+    options?: { EX?: number; NX?: boolean };
+  }>;
+} {
+  const store = new Map<string, string>();
+  const setCalls: Array<{
+    key: string;
+    value: string;
+    options?: { EX?: number; NX?: boolean };
+  }> = [];
+
+  return {
+    store,
+    setCalls,
+    async get(key) {
+      return store.get(key) ?? null;
+    },
+    async set(key, value, options) {
+      setCalls.push({ key, value, options });
+
+      if (options?.NX && store.has(key)) {
+        return null;
+      }
+
+      store.set(key, value);
+      return "OK";
+    },
+    async del(key) {
+      store.delete(key);
+      return 1;
+    },
+  };
+}
+
+const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e51";
+const otherTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e52";
+const idempotencyKey = "case-create-key-redis-001";
+const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e53";
+const otherCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e54";
+
+describe("Tax Plan Cycle create idempotency in Redis", () => {
+  test("builds a tenant-scoped Redis key", () => {
+    expect(
+      buildTaxPlanCycleCreateIdempotencyKey({
+        tenantId,
+        idempotencyKey,
+      }),
+    ).toBe(`idem:${tenantId}:${idempotencyKey}`);
+  });
+
+  test("stores the first result for 24 hours and replays it", async () => {
+    const client = createInMemoryCreateIdempotencyClient();
+    const store = createRedisTaxPlanCycleCreateIdempotencyStore(client);
+    const createResult = vi.fn(async () => ({ case_id: caseId }));
+
+    const firstResult = await store.run({ tenantId, idempotencyKey }, createResult);
+    const repeatResult = await store.run({ tenantId, idempotencyKey }, createResult);
+    const redisKey = buildTaxPlanCycleCreateIdempotencyKey({
+      tenantId,
+      idempotencyKey,
+    });
+
+    expect(firstResult).toEqual({ case_id: caseId });
+    expect(repeatResult).toEqual(firstResult);
+    expect(createResult).toHaveBeenCalledTimes(1);
+    expect(client.store.get(redisKey)).toBe(
+      JSON.stringify({
+        status: "completed",
+        result: firstResult,
+      }),
+    );
+    expect(client.setCalls).toContainEqual(
+      expect.objectContaining({
+        key: redisKey,
+        options: { EX: 86_400 },
+      }),
+    );
+  });
+
+  test("allows the same Idempotency-Key value in different tenant scopes", async () => {
+    const client = createInMemoryCreateIdempotencyClient();
+    const store = createRedisTaxPlanCycleCreateIdempotencyStore(client);
+
+    const firstResult = await store.run(
+      { tenantId, idempotencyKey },
+      async () => ({ case_id: caseId }),
+    );
+    const otherTenantResult = await store.run(
+      { tenantId: otherTenantId, idempotencyKey },
+      async () => ({ case_id: otherCaseId }),
+    );
+
+    expect(firstResult.case_id).toBe(caseId);
+    expect(otherTenantResult.case_id).toBe(otherCaseId);
+    expect(
+      client.store.has(
+        buildTaxPlanCycleCreateIdempotencyKey({ tenantId, idempotencyKey }),
+      ),
+    ).toBe(true);
+    expect(
+      client.store.has(
+        buildTaxPlanCycleCreateIdempotencyKey({
+          tenantId: otherTenantId,
+          idempotencyKey,
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  test("waits for an in-flight same-key create and returns the first result", async () => {
+    const client = createInMemoryCreateIdempotencyClient();
+    const store = createRedisTaxPlanCycleCreateIdempotencyStore(client, {
+      pollIntervalMs: 1,
+      waitTimeoutMs: 1_000,
+    });
+    const createResult = vi.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return { case_id: caseId };
+    });
+
+    const [firstResult, secondResult] = await Promise.all([
+      store.run({ tenantId, idempotencyKey }, createResult),
+      store.run({ tenantId, idempotencyKey }, createResult),
+    ]);
+
+    expect(secondResult).toEqual(firstResult);
+    expect(createResult).toHaveBeenCalledTimes(1);
+  });
+
+  test("create controller fails closed when no idempotency store is configured", async () => {
+    const repository: TaxPlanCycleRepository = {
+      create: vi.fn(async () => caseId),
+      insert: vi.fn(),
+      findByCaseId: vi.fn(async () => null),
+      transition: vi.fn(async () => null),
+      listQueue: vi.fn(async () => []),
+    };
+    const controller = createTaxPlanCycleCreateController(repository);
+
+    await expect(
+      controller.create({
+        tenantId,
+        actor: "advisor-001",
+        idempotencyKey,
+        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+        planning_period: "2026-Q4",
+        owner: "advisor-001",
+        priority: "high",
+        due_date: "2026-12-31",
+      }),
+    ).rejects.toMatchObject({
+      status: 503,
+      type: "https://taxpulse.example/problems/idempotency-store-unavailable",
+    });
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+});

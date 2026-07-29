@@ -23,6 +23,8 @@ import {
   taxPlanCycleTransitionController,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
+import type { ScenarioModelingController } from "./controllers/scenarios.js";
+import { scenarioModelingRequestSchema } from "./scenarioModeling.js";
 
 export interface ValidationErrorIssue {
   path: Array<string | number>;
@@ -38,6 +40,7 @@ export interface ValidationErrorResponse extends ProblemDetails {
 export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
   transitionController?: TaxPlanCycleTransitionController;
+  scenarioModelingController?: ScenarioModelingController;
   auditEntryReader?: AuditEntryReader;
   auditEntryWriter?: AuditEntryWriter;
   auditLogger?: Pick<Console, "info">;
@@ -220,6 +223,7 @@ export function createTaxPlanCycleRouter(
   const router = Router();
   const controller = options.controller ?? taxPlanCycleCreateController;
   const transitionController = options.transitionController ?? taxPlanCycleTransitionController;
+  const scenarioModelingController = options.scenarioModelingController;
   const auditLogger = options.auditLogger ?? console;
   const auditEntryWriter =
     options.auditEntryWriter ?? deprecatedNoopAuditEntryWriter;
@@ -361,6 +365,60 @@ export function createTaxPlanCycleRouter(
       }
     },
   );
+
+  if (scenarioModelingController !== undefined) {
+    router.post(
+      "/tax-plan-cycles/:caseId/scenarios",
+      async (req: Request, res: Response, next: NextFunction) => {
+        const parsedParams = taxPlanCycleReadParamsSchema.safeParse(req.params);
+        const parsedBody = scenarioModelingRequestSchema.safeParse(req.body);
+
+        if (!parsedParams.success || !parsedBody.success) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/validation-error",
+              title: "Validation Error",
+              status: 400,
+              detail: "Scenario modeling request failed validation.",
+              extensions: {
+                code: "VALIDATION_ERROR",
+                issues: [
+                  ...(parsedParams.success
+                    ? []
+                    : parsedParams.error.issues.map(toValidationIssue)),
+                  ...(parsedBody.success
+                    ? []
+                    : parsedBody.error.issues.map(toValidationIssue)),
+                ],
+              },
+            }),
+          );
+          return;
+        }
+
+        try {
+          const tenantId = (req as TenantScopedRequest).tenant?.id;
+          const user = (req as TenantScopedRequest).user;
+
+          if (!tenantId || !user?.id || req.headers.authorization === undefined) {
+            next(authenticationRequired());
+            return;
+          }
+
+          const scenarios = await scenarioModelingController.model({
+            tenantId,
+            caseId: parsedParams.data.caseId,
+            authorizationHeader: req.headers.authorization,
+            ...parsedBody.data,
+          });
+
+          res.status(202).json(scenarios);
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+  }
 
   router.patch(
     "/tax-plan-cycles/:caseId/transition",

@@ -28,6 +28,41 @@ vi.mock("pg", () => ({
   },
 }));
 
+vi.mock("redis", () => ({
+  createClient: vi.fn(() => {
+    const store = new Map<string, string>();
+
+    return {
+      async connect(): Promise<void> {},
+      async quit(): Promise<void> {},
+      async get(key: string): Promise<string | null> {
+        return store.get(key) ?? null;
+      },
+      async set(
+        key: string,
+        value: string,
+        options?: { NX?: boolean },
+      ): Promise<"OK" | null> {
+        if (options?.NX && store.has(key)) {
+          return null;
+        }
+
+        store.set(key, value);
+        return "OK";
+      },
+      async del(key: string): Promise<number> {
+        store.delete(key);
+        return 1;
+      },
+      async incr(key: string): Promise<number> {
+        const nextValue = (Number.parseInt(store.get(key) ?? "0", 10) || 0) + 1;
+        store.set(key, String(nextValue));
+        return nextValue;
+      },
+    };
+  }),
+}));
+
 vi.mock("../../../../src/typescript/features/taxPlanCycle/repositories/repository.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/repositories/repository.js")>()),
   createTaxPlanCycleRepository,
@@ -61,6 +96,8 @@ describe("main Tax Plan Cycle composition", () => {
       JWT_SIGNING_SECRET: "a-unique-test-secret-that-is-more-than-32-bytes",
       JWT_ACCESS_TOKEN_TTL_SECONDS: "900",
       JWT_REFRESH_TOKEN_TTL_SECONDS: "1200",
+      LIABILITY_ENGINE_BASE: "http://127.0.0.1:8000",
+      TAXPULSE_REDIS_URL: "redis://localhost:6379",
       LOG_LEVEL: "silent",
       PORT: "0",
     };
@@ -109,7 +146,6 @@ describe("main Tax Plan Cycle composition", () => {
         priority: "high",
         dueDate: "2026-12-31",
         actor: "user-from-jwt",
-        idempotencyKey: "main-composition-key-001",
       });
       expect(repository.findByCaseId).toHaveBeenCalledWith({
         tenantId: "tenant-from-jwt",

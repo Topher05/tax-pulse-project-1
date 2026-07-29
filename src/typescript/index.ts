@@ -130,7 +130,6 @@ export {
   stageTransition,
   stateTaxBracket,
   taxPlanCycle,
-  taxPlanCycleIdempotencyKey,
   tenants,
   users,
   userStatus,
@@ -288,11 +287,16 @@ export {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
+  buildTaxPlanCycleCreateIdempotencyKey,
   buildTaxPlanCycleQueueReadCacheKey,
   buildTaxPlanCycleQueueTenantVersionKey,
   createNoopTaxPlanCycleQueueCacheInvalidator,
+  createUnavailableTaxPlanCycleCreateIdempotencyStore,
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
+  createRedisTaxPlanCycleCreateIdempotencyStore,
+  TaxPlanCycleCreateIdempotencyInProgressError,
+  TaxPlanCycleCreateIdempotencyUnavailableError,
   createTaxPlanCycleQueueDynamoDocumentClient,
   createTaxPlanCycleQueueProjectionStore,
   createTaxPlanCycleQueueReadService,
@@ -304,6 +308,7 @@ export {
   createTaxPlanCycleRouter,
   taxPlanCycleQueueProjectionItemSchema,
   taxPlanCycleQueueProjectionItemsSchema,
+  type CreateTaxPlanCycleCreateControllerOptions,
   type CreateTaxPlanCycleRouterOptions,
   type TaxPlanCycleCreateControllerInput,
   type TaxPlanCycleCreateController,
@@ -312,6 +317,9 @@ export {
   type TaxPlanCycleQueueCacheClient,
   type TaxPlanCycleQueueCacheInvalidator,
   type TaxPlanCycleQueueCacheReadInput,
+  type TaxPlanCycleCreateIdempotencyClient,
+  type TaxPlanCycleCreateIdempotencyInput,
+  type TaxPlanCycleCreateIdempotencyStore,
   type TaxPlanCycleQueueProjectionDynamoClient,
   type TaxPlanCycleQueueProjectionItem,
   type TaxPlanCycleQueueProjectionReader,
@@ -337,6 +345,7 @@ import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
 import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
 import {
   createNoopTaxPlanCycleQueueCacheInvalidator,
+  createRedisTaxPlanCycleCreateIdempotencyStore,
   createTaxPlanCycleCreateController,
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
@@ -417,21 +426,30 @@ export async function main(): Promise<Server> {
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
   let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
+  let createIdempotencyStore: ReturnType<
+    typeof createRedisTaxPlanCycleCreateIdempotencyStore
+  > | undefined;
 
   if (queueRedisUrl) {
     queueCacheRedisClient = createClient({ url: queueRedisUrl });
     await queueCacheRedisClient.connect();
     const queueCache = createTaxPlanCycleQueueCache(queueCacheRedisClient);
+    createIdempotencyStore = createRedisTaxPlanCycleCreateIdempotencyStore(
+      queueCacheRedisClient,
+    );
     queueCacheInvalidator = createTaxPlanCycleQueueCacheInvalidator(
       queueCache,
     );
-    logger.info("Connected to Redis for queue cache invalidation");
+    logger.info("Connected to Redis for queue cache invalidation and create idempotency");
   }
 
   const auditEntryRepository = createAuditEntryRepository(client);
   const auditEntryWriter = createAuditEntryWriter(client);
   const taxPlanCycleController = createTaxPlanCycleCreateController(
     taxPlanCycleRepository,
+    {
+      idempotencyStore: createIdempotencyStore,
+    },
   );
   const taxPlanCycleTransitionController = createTaxPlanCycleTransitionController(
     taxPlanCycleRepository,

@@ -4,23 +4,30 @@ import {
   Building2,
   Calculator,
   CalendarClock,
+  CircleCheckBig,
   FileText,
-  FolderKanban,
-  ListChecks,
   Settings,
   Users,
 } from "lucide-react";
 
-import type { PulseNavGroup } from "./navItem.types.ts";
+export type PulseNavItem = {
+  label: string;
+  path: string;
+  icon: typeof BarChart3;
+};
+
+export type PulseNavGroup = {
+  label: string;
+  items: readonly PulseNavItem[];
+};
 
 export const pulseNavGroups: readonly PulseNavGroup[] = [
   {
     label: "Workspace",
     items: [
       { label: "Dashboard", path: "/", icon: BarChart3 },
-      { label: "Plan Cycle Queue", path: "/plan-cycles", icon: ListChecks },
+      { label: "Tax Plan Cycle Queue", path: "/cycles/queue", icon: CircleCheckBig },
       { label: "Client Roster", path: "/clients", icon: Users },
-      { label: "Plan Cycle Detail", path: "/plan-cycles/$caseId", icon: FolderKanban },
     ],
   },
   {

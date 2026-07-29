@@ -114,6 +114,7 @@ describe("scenario modeling failure boundary", () => {
     const findByCaseId = vi.fn(async () => cycle);
     const createMany = vi.fn(async () => []);
     const taxEngineClient: TaxEngineClient = {
+      calculateTax: vi.fn(),
       compareScenarios: vi.fn(async () => {
         throw engineError;
       }),
