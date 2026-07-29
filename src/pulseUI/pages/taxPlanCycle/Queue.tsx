@@ -7,6 +7,8 @@ interface QueueProps {
 }
 
 function buildQueueMetrics(rows: readonly PlanCycleQueueRow[]): readonly PlanCycleQueueMetric[] {
+  console.log("In build function")
+  console.log(rows)
   const awaitingReviewCount = rows.filter(
     (row) => row.stage === "Review" || row.stage === "Awaiting Review",
   ).length;

@@ -56,6 +56,7 @@ function PlanCycleQueueErrorState({
   message: string;
   onRetry: () => void;
 }) {
+  console.log(1)
   return (
     <section className="queueState queueStateError" role="alert">
       <AlertTriangle className="queueStateIcon" aria-hidden />
@@ -78,10 +79,13 @@ export function PlanCycle() {
   });
 
   if (queueQuery.isPending) {
+    console.log('A')
     return <PlanCycleQueueLoadingState />;
   }
 
   if (queueQuery.isError) {
+    console.log('B')
+    console.log(queueQuery)
     return (
       <PlanCycleQueueErrorState
         message={queueQuery.error instanceof Error ? queueQuery.error.message : "Queue request failed."}
