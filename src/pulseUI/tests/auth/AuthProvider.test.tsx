@@ -74,14 +74,16 @@ describe("AuthProvider", () => {
 
   test("becomes anonymous when session restoration fails", async () => {
     const client = createClient();
+    const clearCachedData = vi.fn();
     vi.mocked(client.refreshSession).mockRejectedValueOnce(new Error("expired"));
     render(
-      <AuthProvider client={client}>
+      <AuthProvider client={client} clearCachedData={clearCachedData}>
         <SessionProbe />
       </AuthProvider>,
     );
 
     expect(await screen.findByText("anonymous:false:none")).toBeInTheDocument();
+    expect(clearCachedData).toHaveBeenCalledTimes(1);
   });
 
   test("establishes identity after the MFA completion action", async () => {

@@ -12,6 +12,7 @@ import {
 
 const AuthContext = createContext<SessionContextValue | null>(null);
 const refreshLeewayMilliseconds = 60_000;
+const noOpClearCachedData = () => undefined;
 
 export interface AuthProviderProps extends PropsWithChildren {
   readonly client?: AuthClient;
@@ -26,22 +27,35 @@ function toAuthenticatedState(response: Awaited<ReturnType<AuthClient["refreshSe
 export function AuthProvider({
   children,
   client: suppliedClient,
-  clearCachedData = () => undefined,
+  clearCachedData = noOpClearCachedData,
 }: AuthProviderProps) {
   const client = useMemo(() => suppliedClient ?? createBrowserAuthClient(), [suppliedClient]);
   const [state, setState] = useState<AuthSessionState>({ status: "initializing" });
 
+  const invalidateSession = useCallback(async (): Promise<AuthSessionState> => {
+    const nextState: AuthSessionState = { status: "anonymous" };
+
+    try {
+      await clearCachedData();
+    } finally {
+      setState(nextState);
+    }
+
+    return nextState;
+  }, [clearCachedData]);
+
   const requestRefresh = useCallback(async (): Promise<AuthSessionState> => {
     try {
       const nextState = toAuthenticatedState(await client.refreshSession());
+      if (nextState.status === "anonymous") {
+        return await invalidateSession();
+      }
       setState(nextState);
       return nextState;
     } catch {
-      const nextState: AuthSessionState = { status: "anonymous" };
-      setState(nextState);
-      return nextState;
+      return await invalidateSession();
     }
-  }, [client]);
+  }, [client, invalidateSession]);
 
   const refreshSession = useCallback(async () => {
     await requestRefresh();
