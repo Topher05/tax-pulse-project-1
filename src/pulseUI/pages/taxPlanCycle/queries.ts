@@ -1,4 +1,4 @@
-import { coreCaseApiGetJson } from "../../shared/coreCaseApi.ts";
+import { caseApiGetJson } from "../../shared/caseApi.ts";
 import type { PlanCycleQueueRow } from "../../entities/taxPlanCycle.ts";
 
 export interface TaxPlanCycleQueueApiRow {
@@ -85,7 +85,7 @@ function toDetailsView(
 }
 
 export async function fetchTaxPlanCycleQueue(): Promise<readonly PlanCycleQueueRow[]> {
-  const payload = await coreCaseApiGetJson<readonly TaxPlanCycleQueueApiRow[]>(
+  const payload = await caseApiGetJson<readonly TaxPlanCycleQueueApiRow[]>(
     "/v1/tax-plan-cycles",
   );
 
@@ -95,7 +95,7 @@ export async function fetchTaxPlanCycleQueue(): Promise<readonly PlanCycleQueueR
 export async function fetchTaxPlanCycleDetails(
   caseId: string,
 ): Promise<TaxPlanCycleDetailsView> {
-  const payload = await coreCaseApiGetJson<TaxPlanCycleDetailsApiResponse>(
+  const payload = await caseApiGetJson<TaxPlanCycleDetailsApiResponse>(
     `/v1/tax-plan-cycles/${caseId}`,
   );
 

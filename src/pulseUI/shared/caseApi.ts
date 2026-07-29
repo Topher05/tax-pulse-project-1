@@ -1,0 +1,52 @@
+export class CaseApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly body: string,
+    message?: string,
+  ) {
+    super(message ?? `Case API request failed with HTTP ${status}.`);
+    this.name = "CaseApiError";
+  }
+}
+
+function getCaseApiBaseUrl(): string {
+  const baseUrl = import.meta.env.VITE_CASE_API_BASE_URL?.trim();
+
+  if (baseUrl && baseUrl.length > 0) {
+    return baseUrl.replace(/\/+$/, "");
+  }
+
+  return "http://localhost:3000";
+}
+
+function getSharedJwtAuthorizationHeader(): string | null {
+  // TODO: JWT check => Refresh on 401 gated by Scrum 99, this needs to be implementation reviewed then integrated post merge
+  // const accessToken = window.localStorage.getItem("taxpulse_shared_jwt");
+  // return accessToken ? `Bearer ${accessToken}` : null;
+  return "Bearer aaa";
+}
+
+function getCaseApiHeaders(): HeadersInit {
+  const authorizationHeader = getSharedJwtAuthorizationHeader();
+
+  if (!authorizationHeader) {
+    throw new CaseApiError(401, "", "A shared JWT is required before the Pulse UI can fetch live case data.");
+  }
+
+  return {
+    authorization: authorizationHeader,
+  };
+}
+
+export async function caseApiGetJson<T>(path: string): Promise<T> {
+  const response = await fetch(new URL(path, `${getCaseApiBaseUrl()}/`).toString(), {
+    headers: getCaseApiHeaders(),
+    mode: "cors",
+  });
+
+  if (!response.ok) {
+    throw new CaseApiError(response.status, await response.text());
+  }
+
+  return (await response.json()) as T;
+}

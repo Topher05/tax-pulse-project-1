@@ -8,21 +8,36 @@ interface QueueProps {
   rows: readonly PlanCycleQueueRow[];
 }
 
-function buildQueueMetrics(rows: readonly PlanCycleQueueRow[]): readonly PlanCycleQueueMetric[] {
-  console.log("In build function")
+interface QueueMetricCounts {
+  awaitingReviewCount: number;
+  overdueCount: number;
+  presentedThisWeekCount: number;
+}
+
+function computeMetric(rows: readonly PlanCycleQueueRow[]): QueueMetricCounts {
+   console.log("In build function")
   console.log(rows)
-  const awaitingReviewCount = rows.filter(
-    (row) => row.stage === "Review" || row.stage === "Awaiting Review",
-  ).length;
-  const overdueCount = rows.filter((row) => row.overdue).length;
-  const presentedThisWeekCount = rows.filter(
-    (row) => row.stage === "Executed" || row.stage === "Presented",
-  ).length;
+  return {
+    awaitingReviewCount: rows.filter(
+      (row) => row.stage === "Review" || row.stage === "Awaiting Review",
+    ).length,
+    overdueCount: rows.filter((row) => row.overdue).length,
+    presentedThisWeekCount: rows.filter(
+      (row) => row.stage === "Executed" || row.stage === "Presented",
+    ).length,
+  };
+}
+
+function buildQueueMetrics(
+  counts: QueueMetricCounts,
+  rowCount: number,
+): readonly PlanCycleQueueMetric[] {
+  const { awaitingReviewCount, overdueCount, presentedThisWeekCount } = counts;
 
   return [
     {
       label: "Open Cycles",
-      value: String(rows.length),
+      value: String(rowCount),
       caption: "7 due this week",
     },
     {
@@ -45,7 +60,7 @@ function buildQueueMetrics(rows: readonly PlanCycleQueueRow[]): readonly PlanCyc
 
 export function Queue({ rows }: QueueProps) {
   const navigate = useNavigate();
-  const queueMetrics = buildQueueMetrics(rows);
+  const queueMetrics = buildQueueMetrics(computeMetric(rows), rows.length);
 
   return (
     <div className={styles.page}>
