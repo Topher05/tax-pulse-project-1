@@ -25,3 +25,4 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0020: Pulse UI Layered Application Structure](./0020-pulse-ui-layered-application-structure.md)
 - [ADR-0021: Keep Plan Cycle Detail navigation state local to Pulse UI](./0021-plan-cycle-detail-navigation-state.md)
 - [ADR-0022: Use TanStack Query for Pulse UI server state](./0022-tanstack-query-for-pulse-ui-server-state.md)
+- [ADR-0023: Delegate Pulse UI form state to react-hook-form and validation to Zod](./0023-pulse-ui-form-library-delegation.md)
