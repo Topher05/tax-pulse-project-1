@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 import { useSession } from "../../auth/AuthProvider.tsx";
 
@@ -10,9 +10,13 @@ export function SignInPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
-    <main aria-labelledby="sign-in-title">
-      <h1 id="sign-in-title">Sign in to TaxPulse Advisory</h1>
-      <form
+    <main className="authPage" aria-labelledby="sign-in-title">
+      <section className="authCard">
+        <p className="authEyebrow">TaxPulse Advisory</p>
+        <h1 id="sign-in-title">Sign in to your workspace</h1>
+        <p className="authLead">Use your firm credentials to continue.</p>
+        <form
+          className="authForm"
         onSubmit={(event) => {
           event.preventDefault();
           const formData = new FormData(event.currentTarget);
@@ -34,24 +38,26 @@ export function SignInPage() {
               setIsSubmitting(false);
             });
         }}
-      >
-        <label>
-          Workspace ID
-          <input autoComplete="organization" name="tenantId" required />
-        </label>
-        <label>
-          Email address
-          <input autoComplete="email" name="email" required type="email" />
-        </label>
-        <label>
-          Password
-          <input autoComplete="current-password" name="password" required type="password" />
-        </label>
-        {error === null ? null : <p role="alert">{error}</p>}
-        <button disabled={isSubmitting} type="submit">
-          {isSubmitting ? "Signing in…" : "Continue"}
-        </button>
-      </form>
+        >
+          <label>
+            Workspace ID
+            <input autoComplete="organization" name="tenantId" required />
+          </label>
+          <label>
+            Email address
+            <input autoComplete="email" name="email" required type="email" />
+          </label>
+          <label>
+            Password
+            <input autoComplete="current-password" name="password" required type="password" />
+          </label>
+          {error === null ? null : <p className="authError" role="alert">{error}</p>}
+          <button className="authPrimaryButton" disabled={isSubmitting} type="submit">
+            {isSubmitting ? "Signing in…" : "Continue"}
+          </button>
+        </form>
+        <Link className="authTextLink" to="/password-reset">Forgot your password?</Link>
+      </section>
     </main>
   );
 }

@@ -15,19 +15,25 @@ export function MfaChallengePage() {
 
   if (mfaChallenge === null) {
     return (
-      <main aria-labelledby="mfa-challenge-title">
-        <h1 id="mfa-challenge-title">Verify your identity</h1>
-        <p>Start by signing in to request a verification code.</p>
-        <Link to="/sign-in">Back to sign in</Link>
+      <main className="authPage" aria-labelledby="mfa-challenge-title">
+        <section className="authCard">
+          <p className="authEyebrow">TaxPulse Advisory</p>
+          <h1 id="mfa-challenge-title">Verify your identity</h1>
+          <p className="authLead">Start by signing in to request a verification code.</p>
+          <Link className="authTextLink" to="/sign-in">Back to sign in</Link>
+        </section>
       </main>
     );
   }
 
   return (
-    <main aria-labelledby="mfa-challenge-title">
-      <h1 id="mfa-challenge-title">Verify your identity</h1>
-      <p>Enter the verification code from your authenticator app for {mfaChallenge.email}.</p>
+    <main className="authPage" aria-labelledby="mfa-challenge-title">
+      <section className="authCard">
+        <p className="authEyebrow">TaxPulse Advisory</p>
+        <h1 id="mfa-challenge-title">Verify your identity</h1>
+        <p className="authLead">Enter the verification code from your authenticator app for {mfaChallenge.email}.</p>
       <form
+        className="authForm"
         onSubmit={(event) => {
           event.preventDefault();
           const formData = new FormData(event.currentTarget);
@@ -60,11 +66,12 @@ export function MfaChallengePage() {
             required
           />
         </label>
-        {error === null ? null : <p role="alert">{error}</p>}
-        <button disabled={isSubmitting} type="submit">
+        {error === null ? null : <p className="authError" role="alert">{error}</p>}
+        <button className="authPrimaryButton" disabled={isSubmitting} type="submit">
           {isSubmitting ? "Verifying…" : "Verify and sign in"}
         </button>
       </form>
+      </section>
     </main>
   );
 }

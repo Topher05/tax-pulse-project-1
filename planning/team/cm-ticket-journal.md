@@ -458,7 +458,7 @@ on the auth-context foundation supplied by SCRUM-192.
   only through browser navigation state to the MFA screen.
 - MFA completion establishes the session, routes using the authenticated role, and logout
   returns the SPA to sign-in.
-- Reset navigation and visual polish remain later slices.
+- Reset request and confirmation are local-only UI routes; they call no live endpoint.
 
 **Code Connection:**
 
@@ -469,6 +469,8 @@ on the auth-context foundation supplied by SCRUM-192.
 - MFA verification returns the authenticated user to the UI for role-based landing
   selection. The current MVP maps every role to the existing dashboard until the later
   client and platform-admin landing screens are available.
+- Shared authentication-screen styles use the established TaxPulse navy, gold, teal, and
+  Inter design language. The reset request form navigates locally to confirmation only.
 
 **Project Scope Connection:**
 
@@ -485,17 +487,19 @@ no BFF endpoint, token, password-reset, or authorization-policy change.
 - `src/pulseUI/auth/session.ts`
 - `src/pulseUI/auth/AuthProvider.tsx`
 - `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/shared/styles.css`
 - `src/pulseUI/pages/auth/SignInPage.tsx`
 - `src/pulseUI/pages/auth/MfaChallengePage.tsx`
 - `src/pulseUI/pages/auth/PasswordResetPage.tsx`
 - `src/pulseUI/pages/auth/PasswordResetConfirmationPage.tsx`
 - `src/pulseUI/tests/auth/AuthenticatedSessionProvider.tsx`
 - `src/pulseUI/tests/auth/SignInPage.test.tsx`
+- `src/pulseUI/tests/auth/PasswordResetPage.test.tsx`
 - Existing Pulse UI route/component tests
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
-- `npm --prefix src/pulseUI test` passed: 46 tests in 12 files.
+- `npm --prefix src/pulseUI test` passed: 47 tests in 13 files.
 - `npm --prefix src/pulseUI run typecheck` is blocked by the existing missing local
   `@tailwindcss/vite` package referenced by `src/pulseUI/vite.config.ts`.

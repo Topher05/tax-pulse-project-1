@@ -56,6 +56,11 @@ test("submits credentials and sends the returned MFA challenge to the MFA route"
     </AuthProvider>,
   );
 
+  expect(await screen.findByRole("link", { name: "Forgot your password?" })).toHaveAttribute(
+    "href",
+    "/password-reset",
+  );
+
   fireEvent.change(await screen.findByRole("textbox", { name: "Workspace ID" }), {
     target: { value: challenge.tenantId },
   });
@@ -116,6 +121,6 @@ test("completes MFA, routes to the dashboard, and returns to sign-in after logou
 
   await vi.waitFor(() => expect(client.logout).toHaveBeenCalledTimes(1));
   expect(
-    await screen.findByRole("heading", { name: "Sign in to TaxPulse Advisory", level: 1 }),
+    await screen.findByRole("heading", { name: "Sign in to your workspace", level: 1 }),
   ).toBeInTheDocument();
 });
