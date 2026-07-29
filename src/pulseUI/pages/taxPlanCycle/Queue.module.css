@@ -1,0 +1,266 @@
+.page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.card {
+  background: var(--pulse-surface);
+  border: 1px solid var(--pulse-border);
+  border-radius: 24px;
+  box-shadow: 0 1px 2px rgb(16 24 40 / 6%);
+}
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1.35rem;
+}
+
+.heroCopy {
+  max-width: 42rem;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0.5rem 0 0;
+  color: var(--pulse-ink);
+  font-size: 2rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.lead {
+  margin: 0.75rem 0 0;
+  color: var(--pulse-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.primaryAction,
+.secondaryAction,
+.rowAction {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.primaryAction {
+  color: white;
+  background: var(--pulse-nav);
+  border: 1px solid var(--pulse-nav);
+}
+
+.primaryAction:hover {
+  background: #10263c;
+}
+
+.kpiGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.kpiCard {
+  padding: 1.25rem;
+}
+
+.kpiLabel {
+  margin: 0;
+  color: var(--pulse-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.kpiValue {
+  margin: 0.9rem 0 0;
+  color: var(--pulse-ink);
+  font-size: 2.65rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.kpiCaption {
+  margin: 0.6rem 0 0;
+  color: var(--pulse-subtle);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.tableCard {
+  overflow: hidden;
+}
+
+.sectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--pulse-border);
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.25rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.sectionCopy {
+  margin: 0.4rem 0 0;
+  color: var(--pulse-muted);
+  font-size: 0.92rem;
+}
+
+.secondaryAction {
+  color: var(--pulse-nav);
+  background: var(--pulse-surface-subtle);
+  border: 1px solid var(--pulse-border-strong);
+}
+
+.secondaryAction:hover,
+.rowAction:hover {
+  background: var(--pulse-surface-muted);
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tableHead {
+  background: #f8fafc;
+}
+
+.tableHeadCell {
+  padding: 0.85rem 1.5rem;
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.tableBodyCell {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--pulse-border);
+  color: #344054;
+  font-size: 0.92rem;
+  vertical-align: middle;
+}
+
+.row {
+  transition: background-color 120ms ease;
+}
+
+.row:hover td {
+  background: #fbfcfe;
+}
+
+.caseId {
+  color: var(--pulse-ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge,
+.priority {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.priority {
+  color: #344054;
+  background: #eef2f7;
+}
+
+.overdue {
+  color: #b42318;
+  background: #fef3f2;
+}
+
+.rowAction {
+  color: var(--pulse-ink);
+  background: var(--pulse-surface);
+  border: 1px solid var(--pulse-border-strong);
+}
+
+.rowAction:hover {
+  border-color: #b5c1cc;
+}
+
+@media (max-width: 860px) {
+  .hero {
+    padding-inline: 1.25rem;
+  }
+
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sectionHeader {
+    padding-inline: 1.25rem;
+  }
+
+  .tableHeadCell,
+  .tableBodyCell {
+    padding-inline: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 1.25rem;
+  }
+
+  .title {
+    font-size: 1.65rem;
+  }
+
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpiValue {
+    font-size: 2.25rem;
+  }
+
+  .sectionHeader {
+    padding-block: 1rem;
+  }
+}

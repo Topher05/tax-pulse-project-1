@@ -1,0 +1,52 @@
+.page {
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  border: 1px solid var(--pulse-border);
+  border-radius: 32px;
+  background: var(--pulse-surface);
+  padding: 2rem;
+  box-shadow: 0 1px 2px rgb(16 24 40 / 6%);
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.label {
+  color: var(--pulse-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.value {
+  margin-top: 0.25rem;
+  color: var(--pulse-ink);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.message {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.loading {
+  margin-top: 1rem;
+  color: var(--pulse-muted);
+  font-size: 0.875rem;
+}
+
+.error {
+  margin-top: 1rem;
+  color: #b42318;
+  font-size: 0.875rem;
+}
