@@ -1008,11 +1008,26 @@ body::-webkit-scrollbar-thumb {
   background: #f8fafc;
 }
 
+.planCycleStatePanelError {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
 .planCycleStatePanel h3 {
   margin: 0;
   color: #17202a;
   font-size: 0.94rem;
   line-height: 1.25;
+}
+
+.planCycleStateSkeleton {
+  display: block;
+  width: min(100%, 240px);
+  min-height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #edf1f5 0%, #f7f9fb 52%, #edf1f5 100%);
+  background-size: 200% 100%;
+  animation: queueSkeletonPulse 1.4s ease-in-out infinite;
 }
 
 .pulseNavLink:focus-visible,

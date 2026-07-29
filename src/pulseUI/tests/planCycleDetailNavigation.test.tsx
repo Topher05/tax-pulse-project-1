@@ -1,12 +1,27 @@
 import "@testing-library/jest-dom/vitest";
 
+import { RouterProvider } from "@tanstack/react-router";
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { PlanCycleDetailRoute } from "../pages/taxPlanCycle/PlanCycleDetailRoute.tsx";
+import { createPulseRouter } from "../app/createPulseRouter.ts";
 import { usePlanCycleDetailNavigation } from "../pages/taxPlanCycle/usePlanCycleDetailNavigation.ts";
 
+const emptyAuditResponse = {
+  ok: true,
+  json: () => Promise.resolve({ audit_entries: [] }),
+} as Response;
+
+beforeAll(() => {
+  window.scrollTo = vi.fn();
+});
+
+beforeEach(() => {
+  vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(emptyAuditResponse)));
+});
+
 afterEach(() => {
+  vi.unstubAllGlobals();
   cleanup();
 });
 
@@ -51,10 +66,10 @@ describe("usePlanCycleDetailNavigation", () => {
     expect(result.current.activeStageIndex).toBe(4);
   });
 
-  test("preserves unsaved comment input when switching tabs", () => {
-    render(<PlanCycleDetailRoute />);
+  test("preserves unsaved comment input when switching tabs", async () => {
+    render(<RouterProvider router={createPulseRouter(["/cycles/example"])} />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Comments" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Comments" }));
 
     const commentBox = screen.getByRole("textbox", { name: "Comment draft" });
 

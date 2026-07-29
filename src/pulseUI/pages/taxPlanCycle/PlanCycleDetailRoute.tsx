@@ -1,4 +1,5 @@
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
+import { useParams } from "@tanstack/react-router";
 
 import {
   type PlanCycleDetailStage,
@@ -42,6 +43,21 @@ interface PlanCycleTabStateCopy {
   emptyDetail: string;
 }
 
+interface AuditEntryApiRow {
+  id: string;
+  case_id: string;
+  actor: string;
+  action: string;
+  outcome: string;
+  occurred_at: string;
+}
+
+type AuditTrailState =
+  | { status: "loading" }
+  | { status: "empty" }
+  | { status: "ready"; entries: readonly PlanCycleAuditEntry[] }
+  | { status: "error" };
+
 const overview: PlanCycleOverview = {
   period: "2026 Q4",
   recommendation: "Accelerate charitable contributions before year-end and harvest short-term losses.",
@@ -66,6 +82,18 @@ const auditStateCopy: PlanCycleTabStateCopy = {
   id: "audit-trail",
   emptyTitle: "No audit entries yet",
   emptyDetail: "Workflow history will appear after the first recorded case action.",
+};
+
+const auditLoadingCopy = {
+  id: "audit-trail-loading",
+  title: "Loading audit trail",
+  detail: "Audit entries will appear here after the case history loads.",
+};
+
+const auditErrorCopy = {
+  id: "audit-trail-error",
+  title: "Audit trail unavailable",
+  detail: "The audit trail could not be loaded. Try refreshing the case.",
 };
 
 interface OverviewTabProps {
@@ -169,6 +197,29 @@ function EmptyTabState({ copy }: { copy: PlanCycleTabStateCopy }) {
   );
 }
 
+function LoadingTabState({ copy }: { copy: typeof auditLoadingCopy }) {
+  return (
+    <section className="planCycleStatePanel" aria-labelledby={`${copy.id}-heading`}>
+      <span className="planCycleStateSkeleton" aria-hidden="true" />
+      <h3 id={`${copy.id}-heading`}>{copy.title}</h3>
+      <p>{copy.detail}</p>
+    </section>
+  );
+}
+
+function ErrorTabState({ copy }: { copy: typeof auditErrorCopy }) {
+  return (
+    <section
+      className="planCycleStatePanel planCycleStatePanelError"
+      aria-labelledby={`${copy.id}-heading`}
+      role="alert"
+    >
+      <h3 id={`${copy.id}-heading`}>{copy.title}</h3>
+      <p>{copy.detail}</p>
+    </section>
+  );
+}
+
 function CommentsTab({
   comments,
   commentDraft,
@@ -216,19 +267,28 @@ function CommentsTab({
 }
 
 interface AuditTrailTabProps {
-  auditEntries: readonly PlanCycleAuditEntry[];
+  auditTrailState: AuditTrailState;
 }
 
-function AuditTrailTab({ auditEntries }: AuditTrailTabProps) {
+function AuditTrailTab({ auditTrailState }: AuditTrailTabProps) {
   return (
     <section
       className="planCycleTabPanel planCycleAudit"
       aria-labelledby="plan-cycle-audit-trail-heading"
     >
       <h2 id="plan-cycle-audit-trail-heading">Audit Trail</h2>
-      {auditEntries.length > 0 ? (
+      {auditTrailState.status === "loading" ? (
+        <LoadingTabState copy={auditLoadingCopy} />
+      ) : null}
+      {auditTrailState.status === "error" ? (
+        <ErrorTabState copy={auditErrorCopy} />
+      ) : null}
+      {auditTrailState.status === "empty" ? (
+        <EmptyTabState copy={auditStateCopy} />
+      ) : null}
+      {auditTrailState.status === "ready" ? (
         <ol className="planCycleAuditList" aria-label="Read-only audit entries">
-          {auditEntries.map((entry) => (
+          {auditTrailState.entries.map((entry) => (
             <li className="planCycleAuditItem" key={entry.id}>
               <div className="planCycleEntryHeader">
                 <div>
@@ -241,18 +301,56 @@ function AuditTrailTab({ auditEntries }: AuditTrailTabProps) {
             </li>
           ))}
         </ol>
-      ) : (
-        <EmptyTabState copy={auditStateCopy} />
-      )}
+      ) : null}
     </section>
   );
+}
+
+function isAuditEntryApiRow(value: unknown): value is AuditEntryApiRow {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const row = value as Record<string, unknown>;
+
+  return (
+    typeof row.id === "string" &&
+    typeof row.case_id === "string" &&
+    typeof row.actor === "string" &&
+    typeof row.action === "string" &&
+    typeof row.outcome === "string" &&
+    typeof row.occurred_at === "string"
+  );
+}
+
+function parseAuditEntriesResponse(payload: unknown): readonly PlanCycleAuditEntry[] {
+  if (typeof payload !== "object" || payload === null) {
+    throw new Error("Audit trail response was not an object.");
+  }
+
+  const rows = (payload as Record<string, unknown>).audit_entries;
+
+  if (!Array.isArray(rows) || !rows.every(isAuditEntryApiRow)) {
+    throw new Error("Audit trail response did not include valid audit entries.");
+  }
+
+  return rows.map((entry) => ({
+    id: entry.id,
+    actor: entry.actor,
+    action: entry.action,
+    outcome: entry.outcome,
+    occurredAt: entry.occurred_at,
+  }));
 }
 
 export function PlanCycleDetailRoute() {
   const tabLabelId = useId();
   const stageLabelId = useId();
+  const { caseId } = useParams({ strict: false }) as { caseId?: string };
   const comments: readonly PlanCycleComment[] = [];
-  const auditEntries: readonly PlanCycleAuditEntry[] = [];
+  const [auditTrailState, setAuditTrailState] = useState<AuditTrailState>({
+    status: "loading",
+  });
   const {
     activeStage,
     activeStageIndex,
@@ -264,6 +362,43 @@ export function PlanCycleDetailRoute() {
     stages,
     tabs,
   } = usePlanCycleDetailNavigation({ initialStage: overview.currentStage });
+
+  useEffect(() => {
+    if (!caseId) {
+      setAuditTrailState({ status: "error" });
+      return;
+    }
+
+    const abortController = new AbortController();
+
+    setAuditTrailState({ status: "loading" });
+    void fetch(`/v1/tax-plan-cycles/${encodeURIComponent(caseId)}/audit-entries`, {
+      signal: abortController.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Audit trail request failed.");
+        }
+
+        return parseAuditEntriesResponse(await response.json());
+      })
+      .then((entries) => {
+        setAuditTrailState(
+          entries.length > 0 ? { status: "ready", entries } : { status: "empty" },
+        );
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        setAuditTrailState({ status: "error" });
+      });
+
+    return () => {
+      abortController.abort();
+    };
+  }, [caseId]);
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -280,7 +415,7 @@ export function PlanCycleDetailRoute() {
           />
         );
       case "Audit Trail":
-        return <AuditTrailTab auditEntries={auditEntries} />;
+        return <AuditTrailTab auditTrailState={auditTrailState} />;
     }
   };
 

@@ -208,26 +208,27 @@ discuss the case and review its history.
 - Both tabs render loading and empty states.
 
 **Code Connection:** Filled in the existing Plan Cycle Detail Comments and Audit Trail
-tabs with typed view models, loaded-empty default states, a preserved comment draft
-input, and a read-only Audit Trail surface that does not expose raw financial amounts
-without backend audit data.
+tabs with typed view models, a preserved comment draft input, and a read-only Audit
+Trail surface that fetches redacted case audit entries from the existing
+`/v1/tax-plan-cycles/:caseId/audit-entries` endpoint.
 
 **Project Scope Connection:** Keeps SCRUM-97 scoped to the Pulse UI detail surface and
-reflects the current backend boundary: Comments have no persistence API yet, and Audit
-Trail entries are not wired into this route yet, so both tabs start empty without
-inventing backend persistence or new workflow state.
+reflects the current backend boundary: Comments have no persistence API yet, while
+Audit Trail already has an append-only table and redacted read endpoint, so the UI
+loads audit history by case ID without adding new backend persistence.
 
 **Changed Files:**
 
 - `src/pulseUI/pages/taxPlanCycle/PlanCycleDetailRoute.tsx`
 - `src/pulseUI/shared/styles.css`
+- `src/pulseUI/tests/planCycleDetailNavigation.test.tsx`
 - `src/pulseUI/tests/planCycleDetailRoute.test.tsx`
 - `planning/team/mm-ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm run typecheck` passed.
-- `npm --prefix src/pulseUI run test` passed with 26 tests.
+- `npm --prefix src/pulseUI run test` passed with 28 tests.
 - `npm --prefix src/pulseUI run build` passed.
 
 <!--
