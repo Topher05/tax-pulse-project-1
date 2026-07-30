@@ -2,19 +2,20 @@ import { fileURLToPath } from "node:url";
 import type { Server } from "node:http";
 
 export {
-  clientIncomeDeductionAggregationPayloadSchema,
+  clientDeductionAggregationPayloadSchema,
+  deductionReadParamsSchema,
   deductionSchema,
   incomeEventSchema,
-  type ClientIncomeDeductionAggregationPayload,
+  type ClientDeductionAggregationPayload,
   type Deduction,
   type IncomeEvent,
-} from "./aggregationPayload.js";
+} from "./deductionAggregation.js";
 export {
   AggregationTimeoutError,
   TaxPulseAggregationClient,
   type AggregationDataSource,
   type TaxPulseAggregationClientOptions,
-} from "./aggregationClient.js";
+} from "./features/deductions/deductionAggregationClient.js";
 export { InMemoryMockAggregationDataSource } from "./mockAggregationDataSource.js";
 export { createApp, type CreateAppOptions } from "./app.js";
 export {
@@ -78,6 +79,13 @@ export {
   type AuditEntryWriteInput,
   type AuditEntryWriter,
 } from "./auditEntryRepository.js";
+export {
+  createDeductionController,
+  createDeductionsRouter,
+  type CreateDeductionsRouterOptions,
+  type DeductionController,
+  type DeductionControllerOptions,
+} from "./features/deductions/index.js";
 export {
   authMfaLoginRequestSchema,
   authMfaLoginResultSchema,
@@ -374,6 +382,10 @@ import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
 import { createTenantLoginResolver } from "./tenantLoginResolver.js";
+import {
+  createDeductionController,
+  createDeductionsRouter,
+} from "./features/deductions/index.js";
 import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
 import { createRegistrationService } from "./authRegistrationService.js";
 import {
@@ -386,13 +398,14 @@ import {
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
 import { createMfaEnrollmentController } from "./mfaEnrollment.js";
 import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
+import { InMemoryMockAggregationDataSource } from "./mockAggregationDataSource.js";
 import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
 import { createTokenService } from "./tokenService.js";
+import { TaxPulseAggregationClient } from "./features/deductions/deductionAggregationClient.js";
 
 loadEnv();
 const { Client } = pg;
 const taxPlanCycleApiPrefix = "/v1";
-const taxPlanCycleApiBasePath = `${taxPlanCycleApiPrefix}/tax-plan-cycles`;
 
 export {
   createMfaEnrollmentRouter,
@@ -443,6 +456,12 @@ export async function main(): Promise<Server> {
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
   const scenarioRepository = createScenarioRepository(client);
+  const aggregationClient = new TaxPulseAggregationClient(
+    new InMemoryMockAggregationDataSource(),
+  );
+  const deductionController = createDeductionController({
+    aggregationClient,
+  });
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   const liabilityEngineBase = process.env.LIABILITY_ENGINE_BASE?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
@@ -517,9 +536,9 @@ export async function main(): Promise<Server> {
       app.use(createMfaEnrollmentRouter({
         controller: mfaEnrollmentController,
       }));
-      // CL Version-scoped auth middleware for Tax Plan Cycle routes; review before removing or widening this guard.
+      // CL Version-scoped auth middleware for v1 routes; review before removing or widening this guard.
       app.use(
-        taxPlanCycleApiBasePath,
+        taxPlanCycleApiPrefix,
         createJwtAuthenticationMiddleware({ config: jwtConfig }),
         hydrateUserClaims(),
         createCostAccountingMiddleware(),
@@ -535,6 +554,12 @@ export async function main(): Promise<Server> {
           scenarioRepository,
           scenarioModelingController,
           transitionController: taxPlanCycleTransitionController,
+        }),
+      );
+      app.use(
+        taxPlanCycleApiPrefix,
+        createDeductionsRouter({
+          controller: deductionController,
         }),
       );
       app.use(

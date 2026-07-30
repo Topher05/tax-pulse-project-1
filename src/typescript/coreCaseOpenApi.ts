@@ -18,6 +18,10 @@ import {
   scenarioTypedFiguresSchema,
 } from "./scenario.js";
 import {
+  clientDeductionAggregationPayloadSchema,
+  deductionReadParamsSchema,
+} from "./deductionAggregation.js";
+import {
   scenarioModelingRequestSchema,
 } from "./features/taxPlanCycle/scenarioModeling.js";
 import { taxPlanCycleCreateResultSchema } from "./features/taxPlanCycle/index.js";
@@ -79,6 +83,14 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "TaxPlanCycleCreateAccepted",
     schema: taxPlanCycleCreateResultSchema,
+  },
+  {
+    name: "DeductionReadParams",
+    schema: deductionReadParamsSchema,
+  },
+  {
+    name: "DeductionAggregationPayload",
+    schema: clientDeductionAggregationPayloadSchema,
   },
   {
     name: "AuthMfaLoginRequest",
@@ -319,6 +331,16 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
+  const deductionReadParamsOpenApiSchema = toOpenApiSchema(
+    deductionReadParamsSchema,
+  );
+  const deductionReadClientIdSchema = requireObjectProperty(
+    deductionReadParamsOpenApiSchema,
+    "clientId",
+  );
+  const deductionAggregationResponseSchema = toOpenApiSchema(
+    clientDeductionAggregationPayloadSchema,
+  );
   const authMfaLoginRequestOpenApiSchema = toOpenApiSchema(
     authMfaLoginRequestSchema,
   );
@@ -761,6 +783,84 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     title: "MFA Already Enrolled",
                     status: 409,
                     detail: "The user already has an active MFA enrollment.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/clients/{clientId}/deductions": {
+        get: {
+          operationId: "readClientDeductions",
+          tags: ["Core Case Service"],
+          summary: "Read the client deductions aggregation payload",
+          description:
+            "Returns the client deductions aggregation payload. The date fields are emitted as strings so the UI can consume them without date conversion.",
+          parameters: [
+            {
+              name: "clientId",
+              in: "path",
+              required: true,
+              description:
+                "Synthetic client identifier scoped by the request tenant.",
+              schema: deductionReadClientIdSchema,
+              example: "client-123",
+            },
+          ],
+          responses: {
+            "200": {
+              description: "The client deductions aggregation payload was returned.",
+              content: {
+                "application/json": {
+                  schema: deductionAggregationResponseSchema,
+                  example: {
+                    clientId: "client-123",
+                    incomeEvents: [
+                      {
+                        source: "W-2 wages",
+                        amount: 125000,
+                        withholding: 24500,
+                      },
+                    ],
+                    deductions: [
+                      {
+                        id: "ded-001",
+                        date: "2026-07-30",
+                        description: "Client lunches and travel for business development 1",
+                        category: "Business Expense",
+                        amount: 780,
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "404": {
+              description: "No deduction aggregation payload was found for the client.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/client-deductions-not-found",
+                    title: "Client Deductions Not Found",
+                    status: 404,
+                    detail: "No deductions payload was found for the requested client ID.",
                   },
                 },
               },

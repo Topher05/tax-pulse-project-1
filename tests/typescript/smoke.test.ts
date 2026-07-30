@@ -3,11 +3,11 @@ import { test } from "node:test";
 import { z } from "zod";
 
 import {
-  clientIncomeDeductionAggregationPayloadSchema,
   createGreeting,
+  clientDeductionAggregationPayloadSchema,
   taxPlanCycleSchema,
   taxPlanCycleStages,
-  type ClientIncomeDeductionAggregationPayload,
+  type ClientDeductionAggregationPayload,
   type TaxPlanCycle,
   type TaxPlanCycleStage,
 } from "../../src/typescript/index.js";
@@ -107,8 +107,8 @@ test("tax plan cycle accepts a hold reason when on hold", () => {
   assert.deepEqual(taxPlanCycleSchema.parse(heldCycle), heldCycle);
 });
 
-test("client income and deduction aggregation payload validates", () => {
-  const payload: ClientIncomeDeductionAggregationPayload = {
+test("client deduction aggregation payload validates", () => {
+  const payload: ClientDeductionAggregationPayload = {
     clientId: "client-123",
     incomeEvents: [
       {
@@ -124,6 +124,9 @@ test("client income and deduction aggregation payload validates", () => {
     ],
     deductions: [
       {
+        id: "ded-001",
+        date: "2026-07-30",
+        description: "Mortgage interest",
         category: "Mortgage interest",
         amount: 18500,
       },
@@ -131,13 +134,13 @@ test("client income and deduction aggregation payload validates", () => {
   };
 
   assert.deepEqual(
-    clientIncomeDeductionAggregationPayloadSchema.parse(payload),
+    clientDeductionAggregationPayloadSchema.parse(payload),
     payload,
   );
 });
 
-test("client income and deduction aggregation payload rejects negative money amounts", () => {
-  const payload: ClientIncomeDeductionAggregationPayload = {
+test("client deduction aggregation payload rejects negative money amounts", () => {
+  const payload: ClientDeductionAggregationPayload = {
     clientId: "client-123",
     incomeEvents: [
       {
@@ -148,6 +151,9 @@ test("client income and deduction aggregation payload rejects negative money amo
     ],
     deductions: [
       {
+        id: "ded-001",
+        date: "2026-07-30",
+        description: "Mortgage interest",
         category: "Mortgage interest",
         amount: 18500,
       },
@@ -171,7 +177,7 @@ test("client income and deduction aggregation payload rejects negative money amo
 
   for (const invalidPayload of negativeAmountPayloads) {
     assert.equal(
-      clientIncomeDeductionAggregationPayloadSchema.safeParse(invalidPayload)
+      clientDeductionAggregationPayloadSchema.safeParse(invalidPayload)
         .success,
       false,
     );

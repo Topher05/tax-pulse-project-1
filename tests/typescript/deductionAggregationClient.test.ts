@@ -4,9 +4,9 @@ import {
   AggregationTimeoutError,
   InMemoryMockAggregationDataSource,
   TaxPulseAggregationClient,
-  clientIncomeDeductionAggregationPayloadSchema,
+  clientDeductionAggregationPayloadSchema,
   type AggregationDataSource,
-  type ClientIncomeDeductionAggregationPayload,
+  type ClientDeductionAggregationPayload,
 } from "../../src/typescript/index.js";
 
 describe("TaxPulseAggregationClient", () => {
@@ -22,7 +22,7 @@ describe("TaxPulseAggregationClient", () => {
     const payload = await client.fetchAggregationPayload("client-123");
 
     expect(
-      clientIncomeDeductionAggregationPayloadSchema.parse(payload),
+      clientDeductionAggregationPayloadSchema.parse(payload),
     ).toStrictEqual(payload);
     expect(payload).toMatchObject({
       clientId: "client-123",
@@ -40,11 +40,15 @@ describe("TaxPulseAggregationClient", () => {
       ],
       deductions: [
         {
-          category: "Mortgage interest",
-          amount: 18500,
+          id: "ded-001",
+          date: "2026-07-30",
+          description: "Client lunches and travel for business development 1",
+          category: "Business Expense",
+          amount: 780,
         },
       ],
     });
+    expect(payload.deductions).toHaveLength(25);
   });
 
   test("resolves concurrent aggregation calls for two clients independently", async () => {
@@ -58,10 +62,10 @@ describe("TaxPulseAggregationClient", () => {
     ]);
 
     expect(
-      clientIncomeDeductionAggregationPayloadSchema.parse(firstPayload),
+      clientDeductionAggregationPayloadSchema.parse(firstPayload),
     ).toStrictEqual(firstPayload);
     expect(
-      clientIncomeDeductionAggregationPayloadSchema.parse(secondPayload),
+      clientDeductionAggregationPayloadSchema.parse(secondPayload),
     ).toStrictEqual(secondPayload);
     expect(firstPayload.clientId).toBe("client-123");
     expect(secondPayload.clientId).toBe("client-456");
@@ -73,7 +77,7 @@ describe("TaxPulseAggregationClient", () => {
     const client = new TaxPulseAggregationClient(
       {
         async fetchClientAggregationPayload() {
-          return await new Promise<ClientIncomeDeductionAggregationPayload>(
+          return await new Promise<ClientDeductionAggregationPayload>(
             () => {},
           );
         },
@@ -96,7 +100,7 @@ describe("TaxPulseAggregationClient", () => {
 
   test("resolves a fast source before the configured timeout elapses", async () => {
     vi.useFakeTimers();
-    const fastPayload: ClientIncomeDeductionAggregationPayload = {
+    const fastPayload: ClientDeductionAggregationPayload = {
       clientId: "client-fast",
       incomeEvents: [
         {
@@ -107,7 +111,10 @@ describe("TaxPulseAggregationClient", () => {
       ],
       deductions: [
         {
-          category: "Synthetic retirement contribution",
+          id: "ded-fast-001",
+          date: "2026-07-30",
+          description: "Synthetic retirement contribution",
+          category: "Retirement Contribution",
           amount: 6000,
         },
       ],
@@ -122,7 +129,7 @@ describe("TaxPulseAggregationClient", () => {
     const payload = await client.fetchAggregationPayload("client-fast");
 
     expect(
-      clientIncomeDeductionAggregationPayloadSchema.parse(payload),
+      clientDeductionAggregationPayloadSchema.parse(payload),
     ).toStrictEqual(payload);
     expect(payload).toStrictEqual(fastPayload);
   });

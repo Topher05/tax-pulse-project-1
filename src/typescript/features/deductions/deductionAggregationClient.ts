@@ -1,9 +1,9 @@
-import type { ClientIncomeDeductionAggregationPayload } from "./aggregationPayload.js";
+import type { ClientDeductionAggregationPayload } from "../../deductionAggregation.js";
 
 export interface AggregationDataSource {
   fetchClientAggregationPayload(
     clientId: string,
-  ): Promise<ClientIncomeDeductionAggregationPayload>;
+  ): Promise<ClientDeductionAggregationPayload>;
 }
 
 export interface TaxPulseAggregationClientOptions {
@@ -38,7 +38,7 @@ export class TaxPulseAggregationClient {
 
   async fetchAggregationPayload(
     clientId: string,
-  ): Promise<ClientIncomeDeductionAggregationPayload> {
+  ): Promise<ClientDeductionAggregationPayload> {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const sourcePromise = this.dataSource.fetchClientAggregationPayload(clientId);
     const timeoutPromise = new Promise<never>((_resolve, reject) => {
