@@ -6,6 +6,15 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 
+function getTodayDateString(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 beforeAll(() => {
   window.scrollTo = vi.fn();
 });
@@ -25,6 +34,16 @@ describe("DeductionsPage", () => {
     expect(await screen.findByRole("button", { name: "Add Deduction" })).toBeInTheDocument();
     expect(await screen.findByRole("table", { name: "Deduction records" })).toBeInTheDocument();
     expect(screen.getAllByRole("row")).toHaveLength(26);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(6);
+    expect(screen.getByRole("columnheader", { name: "Date" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Description" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Category" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Amount" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Tax Impact" })).toBeInTheDocument();
+    expect(screen.getAllByText(getTodayDateString())).toHaveLength(25);
+    expect(screen.getAllByText("Business Expense").length).toBeGreaterThan(0);
+    expect(screen.getByText("-$780")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(25);
     expect(screen.getByText("Track deductible expenses to reduce your tax liability")).toBeInTheDocument();
     expect(screen.getByText("Estimated Tax Savings")).toBeInTheDocument();
     expect(screen.getByText("$950.55")).toBeInTheDocument();

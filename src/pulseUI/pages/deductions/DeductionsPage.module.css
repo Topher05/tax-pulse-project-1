@@ -48,21 +48,67 @@
 .amountCell {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-}
-
-.deductionNameCell {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.deductionName {
-  color: var(--pulse-ink);
+  color: #22c55e;
   font-weight: 700;
 }
 
-.deductionNote {
-  color: var(--pulse-muted);
-  font-size: 0.86rem;
+.dateCell {
+  font-variant-numeric: tabular-nums;
+}
+
+.taxImpactCell {
+  color: #22c55e;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badgeBlue {
+  background: var(--accent-bg);
+  color: var(--accent-light);
+}
+
+.greenValue {
+  color: #22c55e;
+}
+
+.greenValue,
+.amountCell,
+.taxImpactCell {
+  font-variant-numeric: tabular-nums;
+}
+
+.removeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  color: var(--pulse-danger);
+  background: var(--pulse-danger-bg);
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.removeButton:hover {
+  transform: translateY(-1px);
 }
 
 .modalOverlay {

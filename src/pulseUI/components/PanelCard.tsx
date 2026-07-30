@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import styles from "./PanelCard.module.css";
 
 interface PanelCardProps {
-  title?: string;
-  description?: string;
-  action?: ReactNode;
+  title?: string | null;
+  description?: string | null;
+  action?: ReactNode | null;
   children: ReactNode;
   className?: string;
 }

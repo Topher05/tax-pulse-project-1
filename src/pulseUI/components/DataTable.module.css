@@ -23,6 +23,10 @@
   border-bottom: 1px solid rgb(42 49 62 / 82%);
 }
 
+.table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .table tbody tr:last-child {
   border-bottom: 0;
 }
@@ -33,6 +37,7 @@
   font-size: 0.95rem;
   line-height: 1.45;
   vertical-align: middle;
+  transition: background-color 140ms ease;
 }
 
 .emptyCell {

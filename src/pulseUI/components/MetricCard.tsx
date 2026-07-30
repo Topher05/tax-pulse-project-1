@@ -10,6 +10,7 @@ interface MetricCardProps {
   caption: string;
   tone?: MetricTone;
   icon?: ReactNode;
+  valueClassName?: string;
 }
 
 export function MetricCard({
@@ -18,6 +19,7 @@ export function MetricCard({
   caption,
   tone = "indigo",
   icon,
+  valueClassName,
 }: MetricCardProps) {
   return (
     <article className={styles.card}>
@@ -27,7 +29,7 @@ export function MetricCard({
         </span>
         <p className={styles.label}>{label}</p>
       </div>
-      <p className={styles.value}>{value}</p>
+      <p className={[styles.value, valueClassName].filter(Boolean).join(" ")}>{value}</p>
       <p className={styles.caption}>{caption}</p>
     </article>
   );

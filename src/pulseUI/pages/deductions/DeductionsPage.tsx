@@ -5,20 +5,23 @@ import styles from "./DeductionsPage.module.css";
 import { DataTable } from "../../components/DataTable.tsx";
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
-import { StatusPill } from "../../components/StatusPill.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
 
-export type DeductionStatus = "Ready" | "Planned" | "Needs Review" | "Applied";
-export type DeductionCadence = "One-time" | "Monthly" | "Quarterly" | "Annual";
+export type DeductionCategory =
+  | "Business Expense"
+  | "Home Office"
+  | "Charitable Giving"
+  | "Health & Medical"
+  | "Education"
+  | "Retirement Contribution"
+  | "Other";
 
 export interface DeductionRecord {
   id: string;
-  name: string;
-  category: string;
+  date: string;
+  description: string;
+  category: DeductionCategory;
   amount: number;
-  cadence: DeductionCadence;
-  status: DeductionStatus;
-  note: string;
 }
 
 export interface DeductionsScreenProps {
@@ -28,36 +31,24 @@ export interface DeductionsScreenProps {
   onCloseAddDeduction: () => void;
 }
 
-const deductionStatuses: readonly DeductionStatus[] = [
-  "Ready",
-  "Planned",
-  "Needs Review",
-  "Applied",
-] as const;
-
-const deductionCategories = [
-  "Retirement",
-  "State Tax",
-  "Business",
-  "Healthcare",
+const deductionCategories: readonly DeductionCategory[] = [
+  "Business Expense",
+  "Home Office",
+  "Charitable Giving",
+  "Health & Medical",
   "Education",
-  "Property",
+  "Retirement Contribution",
+  "Other",
 ] as const;
 
-const deductionCadences: readonly DeductionCadence[] = [
-  "Annual",
-  "Quarterly",
-  "Monthly",
-  "One-time",
-] as const;
-
-const deductionNames = [
-  "Retirement contribution",
-  "Home office allocation",
-  "Charitable gifts",
-  "Health savings deposit",
-  "Business mileage log",
-  "Continuing education",
+const deductionDescriptions = [
+  "Client lunches and travel for business development",
+  "Dedicated workspace and office supplies",
+  "Donations to qualified charitable organizations",
+  "Premiums and out-of-pocket health costs",
+  "Tuition and certification fees",
+  "IRA and retirement plan contribution review",
+  "Miscellaneous deductible expense follow-up",
 ] as const;
 
 function formatCurrency(value: number): string {
@@ -68,36 +59,31 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function getTodayDateString(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function buildPlaceholderDeductions(): readonly DeductionRecord[] {
+  const today = getTodayDateString();
+
   return Array.from({ length: 25 }, (_, index) => {
-    const name = deductionNames[index % deductionNames.length] ?? "Deduction item";
-    const category = deductionCategories[index % deductionCategories.length] ?? "General";
-    const cadence = deductionCadences[index % deductionCadences.length] ?? "Annual";
-    const status = deductionStatuses[index % deductionStatuses.length] ?? "Planned";
+    const description =
+      deductionDescriptions[index % deductionDescriptions.length] ?? "Deduction item";
+    const category = deductionCategories[index % deductionCategories.length] ?? "Other";
 
     return {
       id: `DED-${String(index + 1).padStart(3, "0")}`,
-      name: `${name} ${index + 1}`,
+      date: today,
+      description: `${description} ${index + 1}`,
       category,
       amount: 780 + index * 145,
-      cadence,
-      status,
-      note: "Placeholder deduction record for the initial screen scaffold.",
     } satisfies DeductionRecord;
   });
-}
-
-function getStatusTone(status: DeductionStatus): "success" | "warning" | "info" | "neutral" {
-  switch (status) {
-    case "Ready":
-      return "success";
-    case "Needs Review":
-      return "warning";
-    case "Applied":
-      return "neutral";
-    case "Planned":
-      return "info";
-  }
 }
 
 function DeductionsModal({
@@ -161,21 +147,20 @@ export function DeductionsScreen({
 
   const columns = [
     {
-      header: "Deduction",
+      header: "Date",
       render: (row: DeductionRecord) => (
-        <div className={styles.deductionNameCell}>
-          <span className={styles.deductionName}>{row.name}</span>
-          <span className={styles.deductionNote}>{row.note}</span>
-        </div>
+        <time dateTime={row.date} className={styles.dateCell}>
+          {row.date}
+        </time>
       ),
     },
     {
-      header: "Category",
-      render: (row: DeductionRecord) => row.category,
+      header: "Description",
+      render: (row: DeductionRecord) => row.description,
     },
     {
-      header: "Cadence",
-      render: (row: DeductionRecord) => row.cadence,
+      header: "Category",
+      render: (row: DeductionRecord) => <span className={`${styles.badge} ${styles.badgeBlue}`}>{row.category}</span>,
     },
     {
       header: "Amount",
@@ -183,8 +168,17 @@ export function DeductionsScreen({
       cellClassName: styles.amountCell,
     },
     {
-      header: "Status",
-      render: (row: DeductionRecord) => <StatusPill tone={getStatusTone(row.status)}>{row.status}</StatusPill>,
+      header: "Tax Impact",
+      render: (row: DeductionRecord) => formatCurrency(-row.amount),
+      cellClassName: styles.taxImpactCell,
+    },
+    {
+      header: "",
+      render: () => (
+        <button className={styles.removeButton} type="button">
+          Remove
+        </button>
+      ),
     },
   ] as const;
 
@@ -214,6 +208,7 @@ export function DeductionsScreen({
           caption=""
           tone="green"
           icon={<CircleCheckBig aria-hidden="true" />}
+          valueClassName={styles.greenValue}
         />
         <MetricCard
           label="Deduction Method"
@@ -224,10 +219,7 @@ export function DeductionsScreen({
         />
       </section>
 
-      <PanelCard
-        title="Deduction Records"
-        description="Inert placeholder records for the deductions screen scaffold."
-      >
+      <PanelCard title={null} description={null}>
         <DataTable
           ariaLabel="Deduction records"
           columns={columns}
