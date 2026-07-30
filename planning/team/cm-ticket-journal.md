@@ -436,3 +436,53 @@ add additional state datasets.
 - `npm run db:check` passed after generating the Drizzle migration.
 - Focused PostgreSQL tests and `npm run test:migration` require Testcontainers; they are
   blocked in this environment because no working container runtime is available.
+
+## christopher-martus-jira105 - SCRUM-105
+
+**Branch:** `christopher-martus-jira105`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-105
+
+**Summary:** Scaffold the Income screen component from the wireframe
+
+**Description:** As a Frontend Developer, I want a typed Income screen component
+scaffolded from the wireframe, so that the screen has a stable structure before data is
+wired.
+
+**Acceptance Criteria:**
+
+- A typed React component renders the Income screen layout (header, KPI region, table
+  region) matching the wireframe.
+- The component declares typed props for the income data it will receive.
+- The component renders inert placeholder regions with no data fetching yet.
+
+**Code Connection:**
+
+- `IncomePage` exports typed income-event and screen-prop contracts, then renders the
+  wireframe-aligned Income Events header, five source KPI placeholders, table shell, and
+  empty placeholder state without reading from an API or query hook.
+- The `/income` route preserves its authentication boundary and provides an empty typed
+  payload so the scaffold can be reached without introducing live data behavior.
+
+**Project Scope Connection:**
+
+This creates the stable presentation seam for the React SPA's Income workspace. It
+intentionally excludes the income query hook, loading/error states, add-income form,
+live table rendering, and component/accessibility tests, which are owned by subsequent
+Income tickets.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm run typecheck` is blocked by existing unresolved `react-hook-form` and
+  `@hookform/resolvers/zod` imports in `ScenarioPlanningForm.tsx`.
+- `npm run build` is blocked by the same existing unresolved dependencies.
