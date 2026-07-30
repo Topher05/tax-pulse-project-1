@@ -1,0 +1,88 @@
+.card {
+  border: 1px solid var(--pulse-border);
+  border-radius: 24px;
+  background: var(--pulse-surface);
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.iconindigo {
+  background: var(--pulse-accent-bg);
+  color: var(--pulse-accent-light);
+}
+
+.iconcyan {
+  background: var(--pulse-cyan-bg);
+  color: var(--pulse-cyan);
+}
+
+.iconamber {
+  background: var(--pulse-amber-bg);
+  color: var(--pulse-amber);
+}
+
+.icongreen {
+  background: var(--pulse-success-bg);
+  color: var(--pulse-success);
+}
+
+.iconrose {
+  background: var(--pulse-negative-bg);
+  color: var(--pulse-danger);
+}
+
+.label {
+  margin: 0;
+  color: var(--pulse-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.value {
+  margin: 0.85rem 0 0;
+  color: var(--pulse-ink);
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.caption {
+  margin: 0.55rem 0 0;
+  color: var(--pulse-subtle);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+  .card {
+    border-radius: 20px;
+  }
+
+  .value {
+    font-size: 1.8rem;
+  }
+}

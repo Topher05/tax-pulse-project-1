@@ -11,10 +11,12 @@ import {
   createCoreCaseOpenApiDocument,
   createCoreCaseOpenApiRouter,
   createLogger,
+  mfaChallengeResponseSchema,
   mfaEnrollConfirmRequestSchema,
   mfaEnrollConfirmResultSchema,
   mfaEnrollRequestSchema,
   mfaEnrollResultSchema,
+  passwordLoginRequestSchema,
   registrationAccountResponseSchema,
   registrationRequestSchema,
   taxPlanCycleCreateResultSchema,
@@ -161,6 +163,10 @@ describe("Core Case Service OpenAPI document", () => {
   test("documents create and read operations", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
+    const queueOperation = requiredRecord(
+      requiredRecord(paths, "/v1/tax-plan-cycles"),
+      "get",
+    );
     const createOperation = requiredRecord(
       requiredRecord(paths, "/v1/tax-plan-cycles"),
       "post",
@@ -170,8 +176,10 @@ describe("Core Case Service OpenAPI document", () => {
       "get",
     );
 
+    expect(queueOperation.operationId).toBe("listTaxPlanCycleQueue");
     expect(createOperation.operationId).toBe("createTaxPlanCycle");
     expect(readOperation.operationId).toBe("readTaxPlanCycle");
+    expect(queueOperation.tags).toEqual(["Core Case Service"]);
     expect(createOperation.tags).toEqual(["Core Case Service"]);
     expect(readOperation.tags).toEqual(["Core Case Service"]);
   });
@@ -231,6 +239,45 @@ describe("Core Case Service OpenAPI document", () => {
       tenant_id: enrollExample.tenant_id,
       user_id: enrollExample.user_id,
       code: "123456",
+    });
+  });
+
+  test("documents hostname-scoped password login without tenant_id", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const loginOperation = requiredRecord(
+      requiredRecord(paths, "/auth/login"),
+      "post",
+    );
+    const requestBody = requiredRecord(loginOperation, "requestBody");
+    const requestContent = requiredRecord(requestBody, "content");
+    const requestJson = requiredRecord(requestContent, "application/json");
+    const requestSchema = requiredRecord(requestJson, "schema");
+    const requestProperties = requiredRecord(requestSchema, "properties");
+    const requestExample = requiredRecord(requestJson, "example");
+    const responses = requiredRecord(loginOperation, "responses");
+    const acceptedResponse = requiredRecord(responses, "202");
+    const acceptedContent = requiredRecord(acceptedResponse, "content");
+    const acceptedJson = requiredRecord(acceptedContent, "application/json");
+    const acceptedExample = requiredRecord(acceptedJson, "example");
+
+    expect(loginOperation.operationId).toBe("startPasswordLogin");
+    expect(loginOperation.tags).toEqual(["Authentication"]);
+    expect(loginOperation.description).toContain("hostname");
+    expect(requestProperties).toMatchObject({
+      email: expect.any(Object),
+      password: expect.any(Object),
+    });
+    expect(requestProperties.tenant_id).toBeUndefined();
+    expect(requestExample.tenant_id).toBeUndefined();
+    expect(Object.keys(responses)).toEqual(
+      expect.arrayContaining(["202", "400", "401", "404"]),
+    );
+    expect(acceptedExample).toMatchObject({
+      status: "mfa_challenge_required",
+      tenant_id: expect.any(String),
+      email: requestExample.email,
+      user_id: expect.any(String),
     });
   });
 
@@ -348,6 +395,14 @@ describe("Core Case Service OpenAPI document", () => {
         expect.objectContaining({
           name: "AuthMfaLoginResult",
           schema: authMfaLoginResultSchema,
+        }),
+        expect.objectContaining({
+          name: "PasswordLoginRequest",
+          schema: passwordLoginRequestSchema,
+        }),
+        expect.objectContaining({
+          name: "MfaChallengeResponse",
+          schema: mfaChallengeResponseSchema,
         }),
         expect.objectContaining({
           name: "RegistrationRequest",

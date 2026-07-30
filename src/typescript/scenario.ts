@@ -49,7 +49,7 @@ export const scenarioSchema = z.strictObject({
   name: z.string().min(1),
   typed_figures: scenarioTypedFiguresSchema,
   computed_result: scenarioComputedResultSchema,
-  created_at: z.date(),
+  created_at: z.iso.datetime(),
 });
 
 export type ScenarioTypedFigures = z.infer<typeof scenarioTypedFiguresSchema>;

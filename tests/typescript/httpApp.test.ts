@@ -61,6 +61,20 @@ async function captureResponse(
   }
 }
 
+async function captureRequest(
+  app: Express,
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
+  const server = await startServer(app);
+
+  try {
+    return await fetch(`${server.baseUrl}${path}`, init);
+  } finally {
+    await server.close();
+  }
+}
+
 describe("createApp", () => {
   test("returns the health payload on GET /health", async () => {
     const response = await captureResponse(
@@ -169,5 +183,26 @@ describe("createApp", () => {
       statusCode: 200,
     });
     expect(requestCompletedLog?.responseTime).toEqual(expect.any(Number));
+  });
+
+  test("answers CORS preflight requests for browser API calls", async () => {
+    const response = await captureRequest(createApp({ logger: silentLogger }), "/health", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Authorization, Content-Type, Idempotency-Key",
+      },
+    });
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe("*");
+    expect(response.headers.get("access-control-allow-methods")).toBe(
+      "GET,POST,PATCH,PUT,DELETE,OPTIONS",
+    );
+    expect(response.headers.get("access-control-allow-headers")).toBe(
+      "Authorization, Content-Type, Idempotency-Key",
+    );
+    expect(response.headers.get("access-control-max-age")).toBe("600");
   });
 });

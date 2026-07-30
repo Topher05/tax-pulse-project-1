@@ -105,6 +105,19 @@ describe("main Tax Plan Cycle composition", () => {
     const server = await main();
     const address = server.address() as AddressInfo;
     const token = await createAccessToken();
+    repository.listQueue.mockResolvedValue([
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+        stage: "Modeling",
+        owner: "postman-test-owner",
+        priority: "high",
+        due_date: "2026-12-31",
+        on_hold: false,
+        is_overdue: false,
+        updated_at: "2026-07-27T00:00:00.000Z",
+      },
+    ]);
 
     try {
       const createResponse = await fetch(`http://127.0.0.1:${address.port}/v1/tax-plan-cycles`, {
@@ -126,6 +139,10 @@ describe("main Tax Plan Cycle composition", () => {
         `http://127.0.0.1:${address.port}/v1/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91`,
         { headers: { authorization: `Bearer ${token}` } },
       );
+      const queueResponse = await fetch(
+        `http://127.0.0.1:${address.port}/v1/tax-plan-cycles`,
+        { headers: { authorization: `Bearer ${token}` } },
+      );
       const unversionedResponse = await fetch(
         `http://127.0.0.1:${address.port}/tax-plan-cycles`,
       );
@@ -135,6 +152,7 @@ describe("main Tax Plan Cycle composition", () => {
 
       expect(createResponse.status).toBe(202);
       expect(readResponse.status).toBe(200);
+      expect(queueResponse.status).toBe(200);
       expect(unversionedResponse.status).toBe(404);
       expect(unknownVersionResponse.status).toBe(404);
       expect(createTaxPlanCycleRepository).toHaveBeenCalledTimes(1);
@@ -150,6 +168,9 @@ describe("main Tax Plan Cycle composition", () => {
       expect(repository.findByCaseId).toHaveBeenCalledWith({
         tenantId: "tenant-from-jwt",
         caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+      });
+      expect(repository.listQueue).toHaveBeenCalledWith({
+        tenantId: "tenant-from-jwt",
       });
     } finally {
       server.close();

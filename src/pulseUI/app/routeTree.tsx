@@ -1,9 +1,11 @@
 import { createRootRoute, createRoute } from "@tanstack/react-router";
 
-import { PlanCycleDetailRoute } from "../pages/taxPlanCycle/PlanCycleDetailRoute.tsx";
 import { AppShell } from "../components/AppShell.tsx";
+import { DashboardPage } from "../pages/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
+import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
+import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
 
 const rootRoute = createRootRoute({
   component: AppShell,
@@ -12,7 +14,7 @@ const rootRoute = createRootRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: EmptyPage,
+  component: DashboardPage,
 });
 
 const cyclesQueueRoute = createRoute({
@@ -23,8 +25,9 @@ const cyclesQueueRoute = createRoute({
 
 const cycleDetailsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/cycles/$caseId",
-  component: PlanCycleDetailRoute,
+  path: "/cycles/$id",
+  component: DetailsPage,
+  validateSearch: (search) => validateDetailsSearch(search),
 });
 
 const scenarioPlannerRoute = createRoute({

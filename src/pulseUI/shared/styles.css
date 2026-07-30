@@ -2,11 +2,32 @@
 
 /* Root/base styles shared by the entire Pulse UI shell */
 :root {
-  color: #17202a;
+  --pulse-ink: #17202a;
+  --pulse-muted: #526173;
+  --pulse-subtle: #6b7280;
+  --pulse-page: #f6f7f9;
+  --pulse-surface: #ffffff;
+  --pulse-surface-subtle: #f3f6f9;
+  --pulse-surface-muted: #e7ebef;
+  --pulse-border: #d9e0e7;
+  --pulse-border-strong: #cdd6df;
+  --pulse-nav: #17324d;
+  --pulse-nav-hover: #244969;
+  --pulse-nav-active: #f3c969;
+  --pulse-nav-text: #e5edf5;
+  --pulse-sidebar-text: #f8fafc;
+  --pulse-sidebar-muted: #bad7f2;
+  --pulse-accent: #54b6b1;
+  --pulse-success: #22c55e;
+  --pulse-success-bg: #f0fdf4;
+  --pulse-negative-bg: #fef2f2;
+  --pulse-danger: #b93815;
+  --pulse-danger-bg: #fff8f5;
+  --pulse-danger-border: #f0b8a8;
+  color: var(--pulse-ink);
   background:
     radial-gradient(circle at top, rgb(255 255 255 / 88%) 0%, rgb(246 247 249 / 100%) 44%, rgb(235 239 245 / 100%) 100%);
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -27,9 +48,10 @@ html {
 body {
   min-width: 320px;
   min-height: 100vh;
-  margin: 0;
+   margin: 0;
+  color: var(--pulse-ink);
   line-height: 1.5;
-  background: #f6f7f9;
+  background: var(--pulse-page);
 }
 
 #root {
@@ -51,7 +73,7 @@ body::-webkit-scrollbar-track {
 }
 
 body::-webkit-scrollbar-thumb {
-  background: #cdd6df;
+  background: var(--pulse-border-strong);
   border-radius: 9999px;
 }
 
@@ -910,84 +932,6 @@ body::-webkit-scrollbar-thumb {
   font-weight: 800;
 }
 
-.planCycleDiscussion,
-.planCycleAudit {
-  gap: 16px;
-}
-
-.planCycleAuditList {
-  display: grid;
-  gap: 10px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.planCycleAuditItem,
-.planCycleCommentComposer,
-.planCycleStatePanel {
-  display: grid;
-  gap: 10px;
-  padding: 16px;
-  background: #ffffff;
-  border: 1px solid #cdd6df;
-  border-radius: 8px;
-}
-
-.planCycleStatePanel p {
-  margin: 0;
-  color: #344153;
-  line-height: 1.5;
-}
-
-.planCycleEntryHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.planCycleEntryHeader h3 {
-  margin: 0;
-  color: #17202a;
-  font-size: 0.96rem;
-  line-height: 1.25;
-}
-
-.planCycleEntryHeader p,
-.planCycleEntryHeader time {
-  margin: 3px 0 0;
-  color: #627184;
-  font-size: 0.8rem;
-  font-weight: 750;
-}
-
-.planCycleAuditItem {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-}
-
-.planCycleAuditOutcome {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 26px;
-  padding: 0 10px;
-  color: #1f5f4a;
-  background: #e8f7ef;
-  border: 1px solid #9fd9bd;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.planCycleCommentComposer label {
-  color: #17202a;
-  font-weight: 800;
-}
-
 .planCycleCommentBox {
   width: min(100%, 680px);
   min-height: 132px;
@@ -997,34 +941,6 @@ body::-webkit-scrollbar-thumb {
   border: 1px solid #cdd6df;
   border-radius: 8px;
   resize: vertical;
-}
-
-.planCycleStatePanel {
-  min-height: 118px;
-  align-content: start;
-  background: #f8fafc;
-}
-
-.planCycleStatePanelError {
-  background: #fff7ed;
-  border-color: #fdba74;
-}
-
-.planCycleStatePanel h3 {
-  margin: 0;
-  color: #17202a;
-  font-size: 0.94rem;
-  line-height: 1.25;
-}
-
-.planCycleStateSkeleton {
-  display: block;
-  width: min(100%, 240px);
-  min-height: 14px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #edf1f5 0%, #f7f9fb 52%, #edf1f5 100%);
-  background-size: 200% 100%;
-  animation: queueSkeletonPulse 1.4s ease-in-out infinite;
 }
 
 .pulseNavLink:focus-visible,
@@ -1132,19 +1048,6 @@ body::-webkit-scrollbar-thumb {
   .planCycleOverviewGrid,
   .planCycleBriefStats {
     grid-template-columns: 1fr;
-  }
-
-  .planCycleAuditItem,
-  .planCycleEntryHeader {
-    grid-template-columns: 1fr;
-  }
-
-  .planCycleEntryHeader {
-    display: grid;
-  }
-
-  .planCycleAuditOutcome {
-    justify-self: start;
   }
 
   .queueStateError {

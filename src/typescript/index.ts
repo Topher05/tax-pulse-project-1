@@ -56,6 +56,11 @@ export {
 } from "./authService.js";
 export { createPasswordCredentialStore } from "./authCredentials.js";
 export {
+  createTenantLoginResolver,
+  type TenantLoginResolution,
+  type TenantLoginResolver,
+} from "./tenantLoginResolver.js";
+export {
   auditEntryOutputSchema,
   redactAuditText,
   redactedAuditAmount,
@@ -90,6 +95,7 @@ export {
 } from "./authMfaLoginRoutes.js";
 export {
   createAuthRouter,
+  mfaChallengeResponseSchema,
   passwordLoginRequestSchema,
   type AuthValidationErrorIssue,
   type AuthValidationErrorResponse,
@@ -197,7 +203,11 @@ export {
   type ScenarioComparisonEngineRequest,
   type TaxEngineComparisonRequest,
 } from "./features/taxPlanCycle/index.js";
-export { getJwtConfigFromEnv, type JwtConfig } from "./authConfig.js";
+export {
+  getJwtConfigFromEnv,
+  getTenantLoginBaseDomainFromEnv,
+  type JwtConfig,
+} from "./authConfig.js";
 export {
   createJwtAuthenticationMiddleware,
   hydrateUserClaims,
@@ -352,11 +362,18 @@ import {
   createTaxPlanCycleRepository,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
+  createScenarioModelingController,
+  createScenarioRepository,
+  createTaxEngineClient,
 } from "./features/taxPlanCycle/index.js";
-import { getJwtConfigFromEnv } from "./authConfig.js";
+import {
+  getJwtConfigFromEnv,
+  getTenantLoginBaseDomainFromEnv,
+} from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
+import { createTenantLoginResolver } from "./tenantLoginResolver.js";
 import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
 import { createRegistrationService } from "./authRegistrationService.js";
 import {
@@ -406,6 +423,7 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 
 export async function main(): Promise<Server> {
   const jwtConfig = getJwtConfigFromEnv();
+  const tenantLoginBaseDomain = getTenantLoginBaseDomainFromEnv();
   const logger = createLogger();
 
   const databaseUrl = process.env.DATABASE_URL?.trim();
@@ -417,18 +435,24 @@ export async function main(): Promise<Server> {
   await client.connect();
 
   const credentialReader = createPasswordCredentialStore(client);
+  const tenantLoginResolver = createTenantLoginResolver(client);
   const registrationService = createRegistrationService({
     store: createRegistrationAccountRepository(client),
   });
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const scenarioRepository = createScenarioRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
+  const liabilityEngineBase = process.env.LIABILITY_ENGINE_BASE?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
   let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
   let createIdempotencyStore: ReturnType<
     typeof createRedisTaxPlanCycleCreateIdempotencyStore
   > | undefined;
+  let scenarioModelingController:
+    | ReturnType<typeof createScenarioModelingController>
+    | undefined;
 
   if (queueRedisUrl) {
     queueCacheRedisClient = createClient({ url: queueRedisUrl });
@@ -441,6 +465,18 @@ export async function main(): Promise<Server> {
       queueCache,
     );
     logger.info("Connected to Redis for queue cache invalidation and create idempotency");
+  }
+
+  if (liabilityEngineBase) {
+    const taxEngineClient = createTaxEngineClient({
+      baseUrl: liabilityEngineBase,
+    });
+    scenarioModelingController = createScenarioModelingController({
+      taxPlanCycleRepository,
+      scenarioRepository,
+      taxEngineClient,
+    });
+    logger.info("Connected to the liability engine for scenario modeling");
   }
 
   const auditEntryRepository = createAuditEntryRepository(client);
@@ -495,10 +531,20 @@ export async function main(): Promise<Server> {
           auditEntryReader: auditEntryRepository,
           auditEntryWriter,
           controller: taxPlanCycleController,
+          taxPlanCycleRepository,
+          scenarioRepository,
+          scenarioModelingController,
           transitionController: taxPlanCycleTransitionController,
         }),
       );
-      app.use(createAuthRouter({ authenticatePassword, registrationService }));
+      app.use(
+        createAuthRouter({
+          authenticatePassword,
+          registrationService,
+          tenantLoginResolver,
+          tenantLoginBaseDomain,
+        }),
+      );
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
       }));

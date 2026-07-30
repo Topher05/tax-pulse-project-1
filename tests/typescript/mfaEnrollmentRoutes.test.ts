@@ -17,6 +17,7 @@ import {
   type MfaTenantUser,
   type MfaTotpProvider,
   type PasswordAuthenticator,
+  type TenantLoginResolver,
   type MfaValidationErrorResponse,
 } from "../../src/typescript/index.js";
 
@@ -26,6 +27,12 @@ const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01";
 const userId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61";
 const userEmail = "alex@example.com";
 const validCode = "123456";
+const tenantLoginHostname = "north-shore-advisors.taxpulse.example";
+const tenantLoginResolver: TenantLoginResolver = {
+  async findActiveTenantByLoginSlug(loginSlug) {
+    return loginSlug === "north-shore-advisors" ? { tenantId, loginSlug } : null;
+  },
+};
 
 class InMemoryMfaEnrollmentRepository implements MfaEnrollmentRepository {
   readonly tenantUser: MfaTenantUser = {
@@ -366,10 +373,11 @@ describe("createMfaEnrollmentRouter", () => {
     const app = createApp({
       logger: silentLogger,
       registerRoutes: (app) => {
-        app.use(createAuthRouter({ authenticatePassword }));
+        app.use(createAuthRouter({ authenticatePassword, tenantLoginResolver }));
         app.use(createMfaEnrollmentRouter({ controller }));
       },
     });
+    app.set("trust proxy", true);
 
     const server = app.listen(0);
     await once(server, "listening");
@@ -379,9 +387,11 @@ describe("createMfaEnrollmentRouter", () => {
       const baseUrl = `http://127.0.0.1:${address.port}`;
       const loginResponse = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-host": tenantLoginHostname,
+        },
         body: JSON.stringify({
-          tenant_id: tenantId,
           email: userEmail,
           password: "correct-password",
         }),

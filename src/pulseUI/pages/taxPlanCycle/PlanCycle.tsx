@@ -1,173 +1,99 @@
-import { AlertTriangle, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
 
+import styles from "./PlanCycle.module.css";
 import { Queue } from "./Queue.tsx";
-
-type PlanCycleQueueStateItem = unknown;
-
-type PlanCycleQueueLoader = () => Promise<readonly PlanCycleQueueStateItem[]>;
-
-const defaultPlanCycleQueueLoader: PlanCycleQueueLoader = async () => [
-  { case_id: "default-queue-item" },
-];
-
-type QueueRequestState =
-  | { status: "loading" }
-  | { status: "empty" }
-  | { status: "loaded"; itemCount: number }
-  | { status: "error"; message: string };
-
-interface PlanCycleProps {
-  loadQueue?: PlanCycleQueueLoader;
-  renderSuccess?: () => ReactNode;
-}
-
-export function PlanCycle({
-  loadQueue = defaultPlanCycleQueueLoader,
-  renderSuccess = () => <Queue />,
-}: PlanCycleProps = {}) {
-  return (
-    <PlanCycleQueueStateManager loadQueue={loadQueue} renderSuccess={renderSuccess} />
-  );
-}
-
-interface PlanCycleQueueStateManagerProps {
-  loadQueue: PlanCycleQueueLoader;
-  renderSuccess: () => ReactNode;
-}
-
-function PlanCycleQueueStateManager({
-  loadQueue,
-  renderSuccess,
-}: PlanCycleQueueStateManagerProps) {
-  const [requestState, setRequestState] = useState<QueueRequestState>({
-    status: "loading",
-  });
-  const [requestAttempt, setRequestAttempt] = useState(0);
-
-  useEffect(() => {
-    let isCurrentRequest = true;
-
-    setRequestState({ status: "loading" });
-
-    loadQueue()
-      .then((items) => {
-        if (!isCurrentRequest) {
-          return;
-        }
-
-        if (items.length === 0) {
-          setRequestState({ status: "empty" });
-          return;
-        }
-
-        setRequestState({ status: "loaded", itemCount: items.length });
-      })
-      .catch((error: unknown) => {
-        if (!isCurrentRequest) {
-          return;
-        }
-
-        setRequestState({
-          status: "error",
-          message: error instanceof Error ? error.message : "Queue request failed.",
-        });
-      });
-
-    return () => {
-      isCurrentRequest = false;
-    };
-  }, [loadQueue, requestAttempt]);
-
-  const retryQueueRequest = useCallback(() => {
-    setRequestAttempt((attempt) => attempt + 1);
-  }, []);
-
-  if (requestState.status === "loading") {
-    return <PlanCycleQueueLoadingState />;
-  }
-
-  if (requestState.status === "empty") {
-    return <PlanCycleQueueEmptyState />;
-  }
-
-  if (requestState.status === "error") {
-    return (
-      <PlanCycleQueueErrorState
-        message={requestState.message}
-        onRetry={retryQueueRequest}
-      />
-    );
-  }
-
-  // The dynamic loader can be extracted into its own reusable component later
-  // if another route needs the same request-state orchestration.
-  void requestState.itemCount;
-  return <>{renderSuccess()}</>;
-}
+import { EmptyState } from "../../components/EmptyState.tsx";
+import { PanelCard } from "../../components/PanelCard.tsx";
+import {
+  fetchTaxPlanCycleQueue,
+  taxPlanCycleQueueQueryKey,
+} from "../../entities/taxPlanCycleQueries.ts";
 
 function PlanCycleQueueLoadingState() {
   const skeletonRows = Array.from({ length: 5 }, (_, index) => index);
 
   return (
-    <section
-      className="queueState queueStateSkeleton"
-      aria-label="Loading Plan Cycle Queue"
-      aria-busy="true"
+    <PanelCard
+      className={styles.stateCard}
+      title="Loading Plan Cycle Queue"
+      description="Fetching the latest queue and applying the current tenant filters."
     >
-      <div className="queueSkeletonHeader">
-        <span className="queueSkeletonBlock queueSkeletonSummary" />
-        <span className="queueSkeletonBlock queueSkeletonSummary" />
-        <span className="queueSkeletonBlock queueSkeletonSummary" />
-      </div>
-      <div
-        className="queueSkeletonTable"
-        role="status"
-        aria-label="Loading Plan Cycle Queue"
-      >
+      <div className={styles.skeletonTable} role="status" aria-label="Loading Plan Cycle Queue">
         <span className="srOnly">Loading Plan Cycle Queue</span>
+        <div className={styles.skeletonHeader}>
+          <span className={styles.skeletonBlock} />
+          <span className={styles.skeletonBlock} />
+          <span className={styles.skeletonBlock} />
+        </div>
         {skeletonRows.map((row) => (
-          <div className="queueSkeletonRow" key={row}>
-            <span className="queueSkeletonBlock queueSkeletonCellLarge" />
-            <span className="queueSkeletonBlock" />
-            <span className="queueSkeletonBlock" />
-            <span className="queueSkeletonBlock queueSkeletonCellSmall" />
+          <div className={styles.skeletonRow} key={row}>
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
           </div>
         ))}
       </div>
-    </section>
+    </PanelCard>
   );
 }
 
 function PlanCycleQueueEmptyState() {
   return (
-    <section className="queueState queueStateEmpty" aria-label="Empty Plan Cycle Queue">
-      <h2>No open plan cycles</h2>
-      <p>This tenant has no open cycles right now.</p>
-    </section>
+    <EmptyState
+      title="No open plan cycles"
+      description="This tenant has no open cycles right now."
+    />
   );
-}
-
-interface PlanCycleQueueErrorStateProps {
-  message: string;
-  onRetry: () => void;
 }
 
 function PlanCycleQueueErrorState({
   message,
   onRetry,
-}: PlanCycleQueueErrorStateProps) {
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
-    <section className="queueState queueStateError" role="alert">
-      <AlertTriangle className="queueStateIcon" aria-hidden />
-      <div>
-        <h2>Queue could not load</h2>
-        <p>{message}</p>
-      </div>
-      <button className="queueRetryButton" type="button" onClick={onRetry}>
-        <RefreshCw aria-hidden />
-        Retry
-      </button>
-    </section>
+    <div role="alert">
+      <EmptyState
+        title="Queue could not load"
+        description={message}
+        actionLabel="Retry"
+        onAction={onRetry}
+        icon={<RefreshCw />}
+      />
+    </div>
   );
+}
+
+export function PlanCycle() {
+  const queueQuery = useQuery({
+    queryKey: taxPlanCycleQueueQueryKey,
+    queryFn: fetchTaxPlanCycleQueue,
+  });
+
+  if (queueQuery.isPending) {
+    return <PlanCycleQueueLoadingState />;
+  }
+
+  if (queueQuery.isError) {
+    return (
+      <PlanCycleQueueErrorState
+        message={queueQuery.error instanceof Error ? queueQuery.error.message : "Queue request failed."}
+        onRetry={() => {
+          void queueQuery.refetch();
+        }}
+      />
+    );
+  }
+
+  const queueRows = queueQuery.data ?? [];
+
+  if (queueRows.length === 0) {
+    return <PlanCycleQueueEmptyState />;
+  }
+
+  return <Queue rows={queueRows} />;
 }
