@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { createTenantLoginResolver } from "../../src/typescript/tenantLoginResolver.js";
-import { applyDrizzleMigrations } from "../../src/typescript/postgresMigrations.js";
+import { applyDrizzleMigrations } from "../../src/typescript/shared/scripts/postgresMigrations.js";
 import { withDrizzleTestSchema } from "./bootstrap/migrationTestUtils.js";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();

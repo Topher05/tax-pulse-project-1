@@ -3,7 +3,7 @@
 // Leans on legacy migration approach pre-drizzle & zod integrations
 import { describe, expect, test } from "vitest";
 
-import { applyDrizzleMigrations } from "../../src/typescript/postgresMigrations.js";
+import { applyDrizzleMigrations } from "../../src/typescript/shared/scripts/postgresMigrations.js";
 import { withDrizzleTestSchema } from "./bootstrap/migrationTestUtils.js";
 import { expectPgError } from "./bootstrap/tableTestUtils.js";
 

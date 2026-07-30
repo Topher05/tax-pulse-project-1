@@ -5,7 +5,7 @@ import { Client } from "pg";
 import {
   applyDrizzleMigrations,
   withDatabaseClient,
-} from "../../../src/typescript/postgresMigrations.js";
+} from "../../../src/typescript/shared/scripts/postgresMigrations.js";
 import { applySeed } from "../../../src/typescript/shared/database/seed.js";
 import { startDockerPostgresContainer } from "./dockerPostgres.js";
 

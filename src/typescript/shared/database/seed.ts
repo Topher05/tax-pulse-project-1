@@ -6,7 +6,7 @@ import {
   applyDrizzleMigrations,
   getDatabaseUrlFromEnv,
   withDatabaseClient,
-} from "../../postgresMigrations.js";
+} from "../scripts/postgresMigrations.js";
 
 import {
   credential,

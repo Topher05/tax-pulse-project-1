@@ -36,7 +36,7 @@ import {
   applyDrizzleMigrations,
   drizzleAppliedMigrationsTableName,
   drizzleMigrationsDirectory,
-} from "../../../../src/typescript/postgresMigrations.js";
+} from "../../../../src/typescript/shared/scripts/postgresMigrations.js";
 import { startDockerPostgresContainer } from "../../bootstrap/dockerPostgres.js";
 import {
   hydrateUserClaims,

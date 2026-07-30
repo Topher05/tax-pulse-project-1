@@ -65,8 +65,8 @@ export async function withDatabaseClient<T>(
   }
 }
 
-// Deprecated: this legacy SQL migration path exists for compatibility with
-// older hand-written migrations. Prefer `applyDrizzleMigrations` for new work.
+// Deprecated: this legacy migration path exists for compatibility with older
+// hand-written migrations. Prefer `applyDrizzleMigrations` for new work.
 export async function applyMigrations(client: Client): Promise<void> {
   const migrationFiles = listMigrationFiles(migrationsDirectory);
 
