@@ -122,7 +122,6 @@ describe("AuthProvider", () => {
     function LoginProbe() {
       const session = useSession();
       return <button onClick={() => void session.login({
-        tenantId: challenge.tenantId,
         email: challenge.email,
         password: "synthetic-password",
       })}>Login</button>;
@@ -137,7 +136,6 @@ describe("AuthProvider", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Login" }));
 
     await vi.waitFor(() => expect(client.login).toHaveBeenCalledWith({
-      tenantId: challenge.tenantId,
       email: challenge.email,
       password: "synthetic-password",
     }));

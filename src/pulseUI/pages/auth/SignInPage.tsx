@@ -24,7 +24,6 @@ export function SignInPage() {
             setError(null);
             setIsSubmitting(true);
             void login({
-              tenantId: String(formData.get("tenantId") ?? ""),
               email: String(formData.get("email") ?? ""),
               password: String(formData.get("password") ?? ""),
             })
@@ -39,10 +38,6 @@ export function SignInPage() {
               });
           }}
         >
-          <label>
-            Workspace ID
-            <input autoComplete="organization" name="tenantId" required />
-          </label>
           <label>
             Email address
             <input autoComplete="email" name="email" required type="email" />

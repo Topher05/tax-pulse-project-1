@@ -61,10 +61,7 @@ test("signs in through MFA, reaches the dashboard, and returns to sign-in after 
     "/password-reset",
   );
 
-  fireEvent.change(await screen.findByRole("textbox", { name: "Workspace ID" }), {
-    target: { value: challenge.tenantId },
-  });
-  fireEvent.change(screen.getByRole("textbox", { name: "Email address" }), {
+  fireEvent.change(await screen.findByRole("textbox", { name: "Email address" }), {
     target: { value: challenge.email },
   });
   fireEvent.change(screen.getByLabelText("Password"), {
@@ -73,7 +70,6 @@ test("signs in through MFA, reaches the dashboard, and returns to sign-in after 
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
   await vi.waitFor(() => expect(client.login).toHaveBeenCalledWith({
-    tenantId: challenge.tenantId,
     email: challenge.email,
     password: "synthetic-password",
   }));

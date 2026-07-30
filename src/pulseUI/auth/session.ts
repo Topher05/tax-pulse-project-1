@@ -33,7 +33,6 @@ export interface SessionTokenResponse {
 }
 
 export interface LoginCredentials {
-  readonly tenantId: string;
   readonly email: string;
   readonly password: string;
 }

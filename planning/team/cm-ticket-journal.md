@@ -437,13 +437,13 @@ add additional state datasets.
 - Focused PostgreSQL tests and `npm run test:migration` require Testcontainers; they are
   blocked in this environment because no working container runtime is available.
 
-## christopher-martus-jira192 - SCRUM-192 / requested SCRUM-193 UI slice
+## christopher-martus-jira193 - SCRUM-193
 
-**Branch:** `christopher-martus-jira192`
+**Branch:** `christopher-martus-jira193`
 
 **Assignee:** Christopher Martus
 
-**Jira Key:** SCRUM-192 (the requested sign-in UI acceptance criteria are catalogued as SCRUM-193)
+**Jira Key:** SCRUM-193
 
 **Summary:** Build the sign-in, MFA, and password-reset UI wired to the auth context
 
@@ -473,6 +473,9 @@ on the auth-context foundation supplied by SCRUM-192.
   client and platform-admin landing screens are available.
 - Shared authentication-screen styles use the established TaxPulse navy, gold, teal, and
   Inter design language. The reset request form navigates locally to confirmation only.
+- Vite proxies only the local BFF auth endpoints while preserving the tenant subdomain;
+  this leaves Vite's `/auth/*.tsx` source-module URLs available to the browser. Password
+  login sends only email and password; the BFF derives tenant identity from that hostname.
 
 **Project Scope Connection:**
 
@@ -488,8 +491,10 @@ no BFF endpoint, token, password-reset, or authorization-policy change.
 - `src/pulseUI/auth/mfaChallengeState.ts`
 - `src/pulseUI/auth/session.ts`
 - `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/auth/authClient.ts`
 - `src/pulseUI/components/AppShell.tsx`
 - `src/pulseUI/shared/styles.css`
+- `src/pulseUI/vite.config.ts`
 - `src/pulseUI/pages/auth/SignInPage.tsx`
 - `src/pulseUI/pages/auth/MfaChallengePage.tsx`
 - `src/pulseUI/pages/auth/PasswordResetPage.tsx`
@@ -497,11 +502,12 @@ no BFF endpoint, token, password-reset, or authorization-policy change.
 - `src/pulseUI/tests/auth/AuthenticatedSessionProvider.tsx`
 - `src/pulseUI/tests/auth/SignInPage.test.tsx`
 - `src/pulseUI/tests/auth/PasswordResetPage.test.tsx`
+- `src/pulseUI/tests/auth/authClient.test.tsx`
 - Existing Pulse UI route/component tests
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm --prefix src/pulseUI test` passed: 46 tests in 13 files.
-- `npm --prefix src/pulseUI run typecheck` is blocked by the existing missing local
-  `@tailwindcss/vite` package referenced by `src/pulseUI/vite.config.ts`.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run build` passed.
