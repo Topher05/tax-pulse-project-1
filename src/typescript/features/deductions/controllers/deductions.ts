@@ -1,5 +1,5 @@
 import type { TaxPulseAggregationClient } from "../deductionAggregationClient.js";
-import type { ClientDeductionAggregationPayload } from "../../../deductionAggregation.js";
+import type { ClientDeductionAggregationPayload } from "../deductionAggregation.js";
 
 export interface DeductionController {
   read(input: { clientId: string }): Promise<ClientDeductionAggregationPayload>;

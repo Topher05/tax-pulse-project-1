@@ -6,7 +6,7 @@ import { ProblemHttpError } from "../../errors.js";
 import {
   clientDeductionAggregationPayloadSchema,
   deductionReadParamsSchema,
-} from "../../deductionAggregation.js";
+} from "./deductionAggregation.js";
 import type { DeductionController } from "./controllers/deductions.js";
 
 interface TenantScopedRequest extends Request {
