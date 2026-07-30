@@ -4,6 +4,7 @@ import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
+import { QuarterlyPaymentsPage } from "../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
@@ -53,7 +54,7 @@ const deductionsRoute = createRoute({
 const quarterlyPaymentsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/quarterly-payments",
-  component: EmptyPage,
+  component: QuarterlyPaymentsPage,
 });
 
 const clientsRoute = createRoute({

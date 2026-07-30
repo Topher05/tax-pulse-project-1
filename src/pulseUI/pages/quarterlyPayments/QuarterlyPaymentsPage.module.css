@@ -1,0 +1,149 @@
+.page {
+  display: grid;
+  gap: 1rem;
+}
+
+.metricGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.contentGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+}
+
+.greenValue {
+  color: #22c55e;
+}
+
+.amberValue {
+  color: #f59e0b;
+}
+
+.greenValue,
+.amberValue {
+  font-variant-numeric: tabular-nums;
+}
+
+.timelineList {
+  display: grid;
+  gap: 0.85rem;
+  list-style: none;
+}
+
+.timelineItem {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 18px;
+  background: var(--pulse-surface-muted);
+}
+
+.timelineDate {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+}
+
+.timelineQuarter {
+  color: var(--pulse-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.timelineDue {
+  color: var(--pulse-ink);
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.timelineCopy {
+  min-width: 0;
+}
+
+.timelineLabel {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.timelineMeta {
+  margin: 0.2rem 0 0;
+  color: var(--pulse-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.timelineAmount {
+  display: grid;
+  justify-items: end;
+  gap: 0.3rem;
+}
+
+.timelineValue {
+  color: var(--pulse-ink);
+  font-size: 1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.timelineBalance {
+  color: var(--pulse-muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tbdCard {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 220px;
+  place-items: center;
+  border: 1px dashed var(--pulse-border-strong);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  text-align: center;
+}
+
+.tbdLabel {
+  color: var(--pulse-accent-light);
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tbdCopy {
+  margin: 0;
+  color: var(--pulse-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  max-width: 24ch;
+}
+
+@media (max-width: 1080px) {
+  .metricGrid,
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .timelineItem {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .timelineAmount {
+    justify-items: start;
+  }
+}

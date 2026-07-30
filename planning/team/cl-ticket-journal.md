@@ -859,3 +859,47 @@ sequenceDiagram
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
+
+## caleb-latimer-jira117 - SCRUM-117
+
+**Branch:** `caleb-latimer-jira117`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-117
+
+**Summary:** Scaffold the Quarterly Payments screen component from the wireframe
+
+**Description:** As an Advisor, I want a read-only Quarterly Payments screen, so that I can review the estimated installment schedule and withholding coverage before charting and payment actions are added later.
+
+**Acceptance Criteria:**
+
+- The `/quarterly-payments` route renders a typed quarterly payments screen instead of the empty page.
+- The screen shows a KPI region with the second card styled green and the last card styled amber.
+- The screen shows a read-only quarter timeline with exactly seven seeded estimate items.
+- The screen includes a withholding progress placeholder card with `TBD` content.
+- The screen does not scaffold payment recording or mark-paid actions.
+
+**Code Connection:**
+
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Plan tools screen scaffolding
+
+**Changed Files:**
+
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- Validation pending after implementation.
