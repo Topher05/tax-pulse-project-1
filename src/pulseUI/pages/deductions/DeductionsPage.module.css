@@ -48,8 +48,6 @@
 .amountCell {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  color: #22c55e;
-  font-weight: 700;
 }
 
 .dateCell {
@@ -57,7 +55,7 @@
 }
 
 .taxImpactCell {
-  color: #22c55e;
+  color: #22c55e !important;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }

@@ -40,6 +40,7 @@ describe("DeductionsPage", () => {
     expect(screen.getByRole("columnheader", { name: "Category" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Amount" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Tax Impact" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "ACTION" })).toBeInTheDocument();
     expect(screen.getAllByText(getTodayDateString())).toHaveLength(25);
     expect(screen.getAllByText("Business Expense").length).toBeGreaterThan(0);
     expect(screen.getByText("-$780")).toBeInTheDocument();

@@ -173,7 +173,7 @@ export function DeductionsScreen({
       cellClassName: styles.taxImpactCell,
     },
     {
-      header: "",
+      header: "ACTION",
       render: () => (
         <button className={styles.removeButton} type="button">
           Remove
