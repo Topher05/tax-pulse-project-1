@@ -1,9 +1,10 @@
 import { createRootRoute, createRoute } from "@tanstack/react-router";
 
 import { AppShell } from "../components/AppShell.tsx";
-import { DashboardPage } from "../pages/DashboardPage.tsx";
+import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
+import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
 
@@ -33,7 +34,7 @@ const cycleDetailsRoute = createRoute({
 const scenarioPlannerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/scenarios",
-  component: EmptyPage,
+  component: ScenarioPlannerPage,
 });
 
 const incomeRoute = createRoute({

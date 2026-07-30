@@ -66,12 +66,12 @@
 
 .primaryAction {
   color: #f8fafc;
-  background: var(--pulse-nav);
+  background: var(--pulse-accent);
   border: 1px solid var(--pulse-border);
 }
 
 .primaryAction:hover {
-  background: var(--pulse-nav-hover);
+  background: var(--pulse-accent-light);
 }
 
 .metricGrid {
@@ -125,7 +125,7 @@
 }
 
 .row:hover td {
-  background: rgb(255 255 255 / 2%);
+  background: rgb(99 102 241 / 5%);
 }
 
 .tableBodyCell {

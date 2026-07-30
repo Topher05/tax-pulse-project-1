@@ -35,6 +35,85 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira101 - SCRUM-101
+
+**Branch:** `caleb-latimer-jira101`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-101
+
+**Summary:** Build the Scenario Planner form with react-hook-form + zod
+
+**Description:** As an Advisor, I want a Scenario Planner form, so that I can enter a scenario inside a local modal on the Pulse UI `/scenarios` page.
+
+**Acceptance Criteria:**
+
+- The `/scenarios` page renders a button that opens a modal titled `New What-If Scenario`.
+- The form uses `react-hook-form` with Zod validation and shows inline field errors.
+- Submitting logs the form payload locally with `console.table()` and does not call the backend.
+- The submission path keeps the Scrum-102 follow-up comment in place and leaves backend submission for later.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant UI as Pulse UI
+    participant Form as react-hook-form
+    participant Schema as Zod
+
+    Advisor->>UI: Open /scenarios
+    UI-->>Advisor: Render Scenario Planner entry button
+    Advisor->>UI: Open modal
+    UI->>Form: mount local form state
+    Advisor->>Form: Enter scenario fields
+    Form->>Schema: validate locally
+    Schema-->>Form: field-level success or inline errors
+    Advisor->>Form: Click Create Scenario
+    Form->>Schema: validate current form values
+    Schema-->>Form: valid payload or errors
+    Form-->>Advisor: console.table(formData)
+    Note over Form,Advisor: Submission work is handled in Scrum-102
+```
+
+**Code Connection:**
+
+- `src/pulseUI/components/ScenarioPlanningForm.tsx`
+- `src/pulseUI/components/ScenarioPlanningForm.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
+- `src/pulseUI/package.json`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Tax Plan Cycle scenario-planning UI work
+
+**Changed Files:**
+
+- `src/pulseUI/components/ScenarioPlanningForm.tsx`
+- `src/pulseUI/components/ScenarioPlanningForm.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
+- `src/pulseUI/package.json`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/scenarios/ScenarioPlannerPage.test.tsx"` passed.
+- The scenario form test verifies the modal, inline validation, default income type, negative decimal handling, and `console.table()` submit logging.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ScenarioPlanningForm.test.tsx tests/scenarios/ScenarioPlannerPage.test.tsx"` passed.
+- The split tests now cover the extracted component modal behavior, validation, escape close handling, and the page launcher open/close flow.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc -p src/pulseUI/tsconfig.pulseUI.json --noEmit 2>&1 | findstr /C:ScenarioPlannerPage.tsx"` returned no Scenario Planner file errors.
+- The broader Pulse UI typecheck still has pre-existing unrelated errors in `Details.tsx`, `Queue.tsx`, and older route tests that are outside this ticket.
+
 ## caleb-latimer-jira100 - SCRUM-100
 
 **Branch:** `caleb-latimer-jira-100`

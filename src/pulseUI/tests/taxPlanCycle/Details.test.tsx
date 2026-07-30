@@ -19,17 +19,17 @@ afterEach(() => {
 });
 
 function renderDetails() {
-  vi.spyOn(detailQueries, "fetchTaxPlanCycleDetails").mockResolvedValue({
-    caseId: "TP-24018",
-    client: "North Shore Family Office",
-    stage: "Review",
-    owner: "Maya Reed",
-    priority: "High",
-    dueDate: "May 12, 2026",
-    scenarioCount: 2,
-    onHold: false,
-    overdue: true,
-  });
+    vi.spyOn(detailQueries, "fetchTaxPlanCycleDetails").mockResolvedValue({
+      caseId: "TP-24018",
+      client: "North Shore Family Office",
+      stage: "Review",
+      owner: "Maya Reed",
+      priority: "High",
+      dueDate: "May 12, 2026",
+      scenarioCount: 2,
+      onHold: false,
+      overdue: true,
+    });
 
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
