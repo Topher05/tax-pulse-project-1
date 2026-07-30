@@ -12,7 +12,7 @@ import {
 } from "../../entities/deductionQueries.ts";
 import styles from "./DeductionsPage.module.css";
 
-const defaultClientId = "client-123";
+const defaultClientId = "client-123"; // TODO: Remove this once we have case-id wired up via the scenarios ticket, for now this will serve as a manual entry point
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -66,13 +66,9 @@ function buildColumns() {
 function DeductionsScreen({
   deductions,
   onAddDeduction,
-  onCloseAddDeduction,
-  isAddDeductionModalOpen,
 }: {
   deductions: readonly DeductionQueryRecord[];
   onAddDeduction: () => void;
-  onCloseAddDeduction: () => void;
-  isAddDeductionModalOpen: boolean;
 }) {
   const totalDeductions = deductions.reduce((sum, deduction) => sum + deduction.amount, 0);
   const columns = buildColumns();
@@ -124,8 +120,6 @@ function DeductionsScreen({
       </PanelCard>
 
       <footer className={styles.pageFooter}>Track deductible expenses to reduce your tax liability</footer>
-
-      {isAddDeductionModalOpen ? <DeductionEntryForm onClose={onCloseAddDeduction} /> : null}
     </div>
   );
 }
@@ -148,6 +142,12 @@ function DeductionsPageChrome({
 export function DeductionsPage() {
   const [isAddDeductionModalOpen, setIsAddDeductionModalOpen] = useState(false);
   const query = useDeductionsQuery(defaultClientId);
+  const modal = isAddDeductionModalOpen ? (
+    <DeductionEntryForm onClose={() => setIsAddDeductionModalOpen(false)} />
+  ) : null;
+  const footer = (
+    <footer className={styles.pageFooter}>Track deductible expenses to reduce your tax liability</footer>
+  );
   const addDeductionAction = (
     <button className={styles.launchButton} type="button" onClick={() => setIsAddDeductionModalOpen(true)}>
       <Plus aria-hidden="true" />
@@ -157,21 +157,29 @@ export function DeductionsPage() {
 
   if (query.isLoading) {
     return (
-      <DeductionsPageChrome action={addDeductionAction}>
-        <PanelCard title={null} description={null}>
-          <p className={styles.stateCopy}>Loading deductions...</p>
-        </PanelCard>
-      </DeductionsPageChrome>
+      <>
+        <DeductionsPageChrome action={addDeductionAction}>
+          <PanelCard title={null} description={null}>
+            <p className={styles.stateCopy}>Loading deductions...</p>
+          </PanelCard>
+        </DeductionsPageChrome>
+        {footer}
+        {modal}
+      </>
     );
   }
 
   if (query.isError) {
     return (
-      <DeductionsPageChrome action={addDeductionAction}>
-        <PanelCard title={null} description={null}>
-          <p className={styles.stateCopy}>Unable to load deductions.</p>
-        </PanelCard>
-      </DeductionsPageChrome>
+      <>
+        <DeductionsPageChrome action={addDeductionAction}>
+          <PanelCard title={null} description={null}>
+            <p className={styles.stateCopy}>Unable to load deductions.</p>
+          </PanelCard>
+        </DeductionsPageChrome>
+        {footer}
+        {modal}
+      </>
     );
   }
 
@@ -182,15 +190,15 @@ export function DeductionsPage() {
   }
 
   return (
-    <DeductionsScreen
-      deductions={deductions}
-      isAddDeductionModalOpen={isAddDeductionModalOpen}
-      onAddDeduction={() => {
-        setIsAddDeductionModalOpen(true);
-      }}
-      onCloseAddDeduction={() => {
-        setIsAddDeductionModalOpen(false);
-      }}
-    />
+    <>
+      <DeductionsScreen
+        deductions={deductions}
+        onAddDeduction={() => {
+          setIsAddDeductionModalOpen(true);
+        }}
+      />
+      {footer}
+      {modal}
+    </>
   );
 }

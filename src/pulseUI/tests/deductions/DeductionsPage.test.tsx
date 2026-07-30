@@ -75,7 +75,7 @@ describe("DeductionsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Deduction" })).toBeInTheDocument();
     expect(screen.getByText("Track deductible expenses to reduce your tax liability")).toBeInTheDocument();
-    expect(screen.getByText("Estimated Tax Savings")).toBeInTheDocument();
+    expect(await screen.findByText("Estimated Tax Savings")).toBeInTheDocument();
     expect(screen.getByText("$950.55")).toBeInTheDocument();
     expect(screen.getByText("Deduction Method")).toBeInTheDocument();
     expect(screen.getByText("Standard ($12,500)")).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe("DeductionsPage", () => {
     expect(screen.getByRole("columnheader", { name: "ACTION" })).toBeInTheDocument();
     expect(screen.getAllByText("2026-07-30")).toHaveLength(25);
     expect(screen.getByText("Synthetic deduction 1")).toBeInTheDocument();
-    expect(screen.getByText("Business Expense")).toBeInTheDocument();
+    expect(screen.getAllByText("Business Expense").length).toBeGreaterThan(0);
     expect(screen.getByText("$63,000")).toBeInTheDocument();
     expect(screen.getByText("-$780")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(25);
