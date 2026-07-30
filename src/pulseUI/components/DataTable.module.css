@@ -1,0 +1,42 @@
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 880px;
+}
+
+.table thead th {
+  padding: 0.9rem 1rem;
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--pulse-border);
+}
+
+.table tbody tr {
+  border-bottom: 1px solid rgb(42 49 62 / 82%);
+}
+
+.table tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.cell {
+  padding: 0.95rem 1rem;
+  color: var(--pulse-ink);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  vertical-align: middle;
+}
+
+.emptyCell {
+  padding: 1.25rem 1rem;
+  color: var(--pulse-muted);
+  text-align: center;
+}
