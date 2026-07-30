@@ -237,6 +237,49 @@ the follow-on SCRUM-99/SCRUM-192 auth scope.
 - `npm --prefix src/pulseUI run test` passed with 7 files and 28 tests.
 - `npm --prefix src/pulseUI run build` passed.
 
+## martins-okorie-jira99 - SCRUM-99
+
+**Branch:** `martins-okorie-jira99`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-99
+
+**Summary:** Attach JWT and refresh-on-401 in TanStack Query
+
+**Description:** As an Advisor, I want TanStack Query to attach the JWT and refresh on
+401, so that authorized data loads without manual re-login.
+
+**Acceptance Criteria:**
+
+- TanStack Query attaches the access token to API calls.
+- A 401 triggers a token refresh and one retry.
+- A failed refresh logs the user out rather than retrying indefinitely.
+
+**Code Connection:** The shared Pulse UI case API helper now reads the SCRUM-98
+`taxpulse_shared_jwt` access token, sends it as the `Authorization` bearer for
+TanStack Query-backed live data requests, and handles a single refresh attempt through
+`POST /auth/refresh` when a request returns 401. Refreshed tokens are stored in the
+Pulse session helper, while failed refreshes and repeated 401s clear the local session.
+
+**Project Scope Connection:** This connects SCRUM-98 route guarding with SCRUM-100 live
+queue/detail data loading so tenant-scoped case reads use the signed-in user's JWT
+instead of a hardcoded local testing token. Login UI and central auth context remain in
+the later SCRUM-192 scope.
+
+**Changed Files:**
+
+- `src/pulseUI/app/authSession.ts`
+- `src/pulseUI/shared/caseApi.ts`
+- `src/pulseUI/tests/caseApi.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test` passed with 8 files and 33 tests.
+- `npm --prefix src/pulseUI run build` passed.
+
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 
