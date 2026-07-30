@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Settings2 } from "lucide-react";
+import { LogOut, Settings2 } from "lucide-react";
 import { useState } from "react";
 
 import styles from "./AppShell.module.css";
@@ -67,6 +67,23 @@ export function AppShell() {
             </section>
           ))}
         </nav>
+
+        <footer className={styles.sidebarFooter} aria-label="Session">
+          <div className={styles.userCard}>
+            <div className={styles.userAvatar} aria-hidden="true">
+              JL
+            </div>
+            <div className={styles.userCopy}>
+              <p className={styles.userName}>Jordan Lee</p>
+              <p className={styles.userRole}>Firm Admin</p>
+            </div>
+          </div>
+
+          <button className={styles.logoutButton} type="button">
+            <LogOut className={styles.logoutIcon} aria-hidden="true" />
+            <span>Logout</span>
+          </button>
+        </footer>
       </aside>
 
       <div className={styles.workspace}>
