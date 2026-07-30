@@ -120,9 +120,3 @@
     grid-template-columns: 1fr;
   }
 }
-
-@media (max-width: 720px) {
-  .modalOverlay {
-    padding: 0.75rem;
-  }
-}
