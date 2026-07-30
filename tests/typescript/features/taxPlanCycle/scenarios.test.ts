@@ -53,7 +53,7 @@ describe("scenario persistence contract", () => {
         name: "Increase retirement contributions",
         typed_figures: typedFigures,
         computed_result: computedResult,
-        created_at: new Date("2026-07-23T12:00:00.000Z"),
+        created_at: "2026-07-23T12:00:00.000Z",
       }),
     ).toMatchObject({
       name: "Increase retirement contributions",
@@ -67,7 +67,7 @@ describe("scenario persistence contract", () => {
         name: "Keep baseline",
         typed_figures: typedFigures,
         computed_result: comparisonSummary,
-        created_at: new Date("2026-07-23T12:05:00.000Z"),
+        created_at: "2026-07-23T12:05:00.000Z",
       }),
     ).toMatchObject({
       name: "Keep baseline",
@@ -97,6 +97,39 @@ describe("scenario persistence contract", () => {
       }).success,
     ).toBe(false);
   });
+
+  test("rejects raw dates and malformed timestamps for created_at", () => {
+    expect(
+      scenarioSchema.safeParse({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d53",
+        case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d33",
+        name: "Raw date object",
+        typed_figures: typedFigures,
+        computed_result: computedResult,
+        created_at: new Date("2026-07-23T12:10:00.000Z"),
+      }).success,
+    ).toBe(false);
+    expect(
+      scenarioSchema.safeParse({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d54",
+        case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d34",
+        name: "Missing time",
+        typed_figures: typedFigures,
+        computed_result: comparisonSummary,
+        created_at: "2026-07-23",
+      }).success,
+    ).toBe(false);
+    expect(
+      scenarioSchema.safeParse({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d55",
+        case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d35",
+        name: "Malformed timestamp",
+        typed_figures: typedFigures,
+        computed_result: comparisonSummary,
+        created_at: "not-a-timestamp",
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("scenario modeling failure boundary", () => {
@@ -114,7 +147,19 @@ describe("scenario modeling failure boundary", () => {
     const findByCaseId = vi.fn(async () => cycle);
     const createMany = vi.fn(async () => []);
     const taxEngineClient: TaxEngineClient = {
-      calculateTax: vi.fn(),
+      calculateTax: vi.fn(async () => ({
+        income: "0",
+        deductions: "0",
+        state: "CA",
+        filing_status: "single" as const,
+        taxable_income: "0",
+        federal_liability: "0",
+        state_liability: "0",
+        total_liability: "0",
+        effective_rate: "0",
+        marginal_rate: "0",
+        currency: "USD",
+      })),
       compareScenarios: vi.fn(async () => {
         throw engineError;
       }),

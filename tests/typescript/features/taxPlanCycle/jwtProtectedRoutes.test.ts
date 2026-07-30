@@ -173,6 +173,10 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
       expect(createResponse.status).toBe(202);
       expect(readResponse.status).toBe(200);
       expect(auditResponse.status).toBe(200);
+      await expect(readResponse.json()).resolves.toEqual({
+        ...cycle,
+        scenarios: [],
+      });
       expect(create).toHaveBeenCalledWith({
         ...validCreateBody,
         tenantId: "tenant-from-jwt",
@@ -188,6 +192,36 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
         caseId: cycle.id,
       });
     }, { auditEntryReader: { listByCase } });
+  });
+
+  test("answers CORS preflight requests for the protected Tax Plan Cycle read endpoint", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: cycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
+
+    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${cycle.id}`, {
+        method: "OPTIONS",
+        headers: {
+          Origin: "http://localhost:5173",
+          "Access-Control-Request-Method": "GET",
+          "Access-Control-Request-Headers": "Authorization, Content-Type",
+        },
+      });
+
+      expect(response.status).toBe(204);
+      expect(response.headers.get("access-control-allow-origin")).toBe("*");
+      expect(response.headers.get("access-control-allow-methods")).toBe(
+        "GET,POST,PATCH,PUT,DELETE,OPTIONS",
+      );
+      expect(response.headers.get("access-control-allow-headers")).toBe(
+        "Authorization, Content-Type, Idempotency-Key",
+      );
+      expect(response.headers.get("access-control-max-age")).toBe("600");
+      expect(create).not.toHaveBeenCalled();
+      expect(findByCaseId).not.toHaveBeenCalled();
+    });
   });
 
   test("emits operation-specific cost headers for protected Tax Plan Cycle requests", async () => {

@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, max, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
@@ -44,6 +44,7 @@ export interface TaxPlanCycleTransitionInput {
 
 export type TaxPlanCycleQueueItem = TaxPlanCycle & {
   is_overdue: boolean;
+  updated_at: string;
 };
 
 export interface TaxPlanCycleRepository {
@@ -87,12 +88,15 @@ function todayIsoDate(): string {
 function toTaxPlanCycleQueueItem(
   row: Parameters<typeof toTaxPlanCycle>[0],
   asOfDate: string,
+  updatedAt: Date | null,
 ): TaxPlanCycleQueueItem {
   const cycle = toTaxPlanCycle(row);
+  const queueUpdatedAt = updatedAt ?? new Date(`${cycle.due_date}T00:00:00.000Z`);
 
   return {
     ...cycle,
     is_overdue: cycle.due_date < asOfDate,
+    updated_at: queueUpdatedAt.toISOString(),
   };
 }
 
@@ -269,22 +273,45 @@ export function createTaxPlanCycleRepository(
     },
 
     async listQueue({ tenantId, asOfDate = todayIsoDate() }) {
-      const rows = await db
-        .select({
-          id: taxPlanCycleTable.id,
-          clientId: taxPlanCycleTable.clientId,
-          stage: taxPlanCycleTable.stage,
-          owner: taxPlanCycleTable.owner,
-          priority: taxPlanCycleTable.priority,
-          dueDate: taxPlanCycleTable.dueDate,
-          onHold: taxPlanCycleTable.onHold,
-          holdReason: taxPlanCycleTable.holdReason,
-        })
-        .from(taxPlanCycleTable)
-        .where(eq(taxPlanCycleTable.tenantId, tenantId))
-        .orderBy(asc(taxPlanCycleTable.dueDate));
+      const [rows, latestTransitions] = await Promise.all([
+        db
+          .select({
+            id: taxPlanCycleTable.id,
+            clientId: taxPlanCycleTable.clientId,
+            stage: taxPlanCycleTable.stage,
+            owner: taxPlanCycleTable.owner,
+            priority: taxPlanCycleTable.priority,
+            dueDate: taxPlanCycleTable.dueDate,
+            onHold: taxPlanCycleTable.onHold,
+            holdReason: taxPlanCycleTable.holdReason,
+          })
+          .from(taxPlanCycleTable)
+          .where(eq(taxPlanCycleTable.tenantId, tenantId))
+          .orderBy(asc(taxPlanCycleTable.dueDate)),
+        db
+          .select({
+            caseId: stageTransitionTable.caseId,
+            updatedAt: max(stageTransitionTable.occurredAt),
+          })
+          .from(stageTransitionTable)
+          .innerJoin(
+            taxPlanCycleTable,
+            eq(taxPlanCycleTable.id, stageTransitionTable.caseId),
+          )
+          .where(eq(taxPlanCycleTable.tenantId, tenantId))
+          .groupBy(stageTransitionTable.caseId),
+      ]);
+      const latestTransitionByCaseId = new Map(
+        latestTransitions.map((row) => [row.caseId, row.updatedAt ?? null]),
+      );
 
-      return rows.map((row) => toTaxPlanCycleQueueItem(row, asOfDate));
+      return rows.map((row) =>
+        toTaxPlanCycleQueueItem(
+          row,
+          asOfDate,
+          latestTransitionByCaseId.get(row.id) ?? null,
+        ),
+      );
     },
   };
 }

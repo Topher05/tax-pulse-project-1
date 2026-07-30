@@ -1,0 +1,44 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 24px;
+  padding: 0.25rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.neutral {
+  color: var(--pulse-nav-text);
+  background: rgb(255 255 255 / 4%);
+  border: 1px solid rgb(255 255 255 / 6%);
+}
+
+.info {
+  color: var(--pulse-accent-light);
+  background: var(--pulse-accent-bg);
+  border: 1px solid rgb(99 102 241 / 30%);
+}
+
+.success {
+  color: var(--pulse-success);
+  background: var(--pulse-success-bg);
+  border: 1px solid rgb(34 197 94 / 25%);
+}
+
+.warning {
+  color: var(--pulse-amber);
+  background: var(--pulse-amber-bg);
+  border: 1px solid rgb(245 158 11 / 25%);
+}
+
+.danger {
+  color: var(--pulse-danger);
+  background: var(--pulse-negative-bg);
+  border: 1px solid rgb(239 68 68 / 25%);
+}
