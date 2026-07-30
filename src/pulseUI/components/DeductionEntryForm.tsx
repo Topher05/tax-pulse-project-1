@@ -103,9 +103,9 @@ export function DeductionEntryForm({ onClose }: DeductionEntryFormProps) {
   );
 
   return (
-    <div className={styles.overlay} role="presentation" onClick={closeModal}>
+    <div className="modalOverlay" role="presentation" onClick={closeModal}>
       <section
-        className={styles.modal}
+        className="modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby={modalTitleId}

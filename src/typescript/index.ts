@@ -9,14 +9,14 @@ export {
   type ClientDeductionAggregationPayload,
   type Deduction,
   type IncomeEvent,
-} from "./deductionAggregation.js";
+} from "./features/deductions/deductionAggregation.js";
 export {
   AggregationTimeoutError,
   TaxPulseAggregationClient,
   type AggregationDataSource,
   type TaxPulseAggregationClientOptions,
 } from "./features/deductions/deductionAggregationClient.js";
-export { InMemoryMockAggregationDataSource } from "./mockAggregationDataSource.js";
+export { InMemoryMockAggregationDataSource } from "./features/deductions/mockAggregationDataSource.js";
 export { createApp, type CreateAppOptions } from "./app.js";
 export {
   ProblemHttpError,
@@ -398,7 +398,7 @@ import {
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
 import { createMfaEnrollmentController } from "./mfaEnrollment.js";
 import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
-import { InMemoryMockAggregationDataSource } from "./mockAggregationDataSource.js";
+import { InMemoryMockAggregationDataSource } from "./features/deductions/mockAggregationDataSource.js";
 import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
 import { createTokenService } from "./tokenService.js";
 import { TaxPulseAggregationClient } from "./features/deductions/deductionAggregationClient.js";

@@ -20,7 +20,7 @@ import {
 import {
   clientDeductionAggregationPayloadSchema,
   deductionReadParamsSchema,
-} from "./deductionAggregation.js";
+} from "./features/deductions/deductionAggregation.js";
 import {
   scenarioModelingRequestSchema,
 } from "./features/taxPlanCycle/scenarioModeling.js";
