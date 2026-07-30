@@ -188,6 +188,55 @@ workflows from response-shape drift across the polyglot service boundary.
   pre-existing formatting changes needed in `src/tax_liability_engine/scenario_comparison.py`
   and `tests/tax_liability_engine/smoke_test.py`.
 
+## martins-okorie-jira98 - SCRUM-98
+
+**Branch:** `martins-okorie-jira98`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-98
+
+**Summary:** Guard internal routes with TanStack Router
+
+**Description:** As an Advisor, I want TanStack Router guarding internal routes, so
+that only authenticated users reach the workspace.
+
+**Acceptance Criteria:**
+
+- TanStack Router guards the internal workspace routes.
+- An unauthenticated user is redirected to login.
+- A test asserts the guard redirects without a token.
+
+**Code Connection:** The Pulse route tree now uses a shared TanStack Router
+`beforeLoad` guard for internal workspace routes. The guard checks the existing
+Pulse UI shared JWT key in local storage and redirects unauthenticated users to an
+unguarded `/login` route. The app shell renders the login route without the protected
+workspace sidebar and topbar.
+
+**Project Scope Connection:** This supports the TaxPulse multi-tenant advisory
+workspace by keeping internal advisor and firm screens behind a frontend
+authentication boundary. Token attachment, refresh-on-401, retry, and logout stay in
+the follow-on SCRUM-99/SCRUM-192 auth scope.
+
+**Changed Files:**
+
+- `src/pulseUI/app/authSession.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/AppShell.module.css`
+- `src/pulseUI/pages/LoginPage.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test` passed with 7 files and 28 tests.
+- `npm --prefix src/pulseUI run build` passed.
+
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 
