@@ -3,30 +3,17 @@ import { CircleCheckBig, HandCoins, ShieldAlert } from "lucide-react";
 import styles from "./QuarterlyPaymentsPage.module.css";
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
-import { StatusPill } from "../../components/StatusPill.tsx";
+import {
+  QuarterlyTimelineItem,
+  type QuarterlyEstimateRecord,
+} from "../../components/QuarterlyTimelineItem.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
 
-export type QuarterlyEstimateStatus = "Paid" | "Due Soon" | "Upcoming" | "Projected";
-
-export interface QuarterlyEstimateRecord {
-  id: string;
-  quarter: string;
-  dueDate: string;
-  estimatedPayment: number;
-  withholdingApplied: number;
-  status: QuarterlyEstimateStatus;
-}
+export type { QuarterlyEstimateRecord, QuarterlyEstimateStatus } from "../../components/QuarterlyTimelineItem.tsx";
 
 export interface QuarterlyPaymentsScreenProps {
   quarterlyEstimates: readonly QuarterlyEstimateRecord[];
 }
-
-const quarterlyEstimateStatusTone: Record<QuarterlyEstimateStatus, "success" | "warning" | "info" | "neutral"> = {
-  Paid: "success",
-  "Due Soon": "warning",
-  Upcoming: "info",
-  Projected: "neutral",
-};
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -40,7 +27,6 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
   return [
     {
       id: "QP-001",
-      quarter: "Q1 2026",
       dueDate: "2026-04-15",
       estimatedPayment: 3620,
       withholdingApplied: 2140,
@@ -48,7 +34,6 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-002",
-      quarter: "Q2 2026",
       dueDate: "2026-06-15",
       estimatedPayment: 3620,
       withholdingApplied: 2060,
@@ -56,7 +41,6 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-003",
-      quarter: "Q3 2026",
       dueDate: "2026-09-15",
       estimatedPayment: 3620,
       withholdingApplied: 1820,
@@ -64,7 +48,6 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-004",
-      quarter: "Q4 2026",
       dueDate: "2027-01-15",
       estimatedPayment: 3740,
       withholdingApplied: 1640,
@@ -72,7 +55,6 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-005",
-      quarter: "Q1 2027",
       dueDate: "2027-04-15",
       estimatedPayment: 3740,
       withholdingApplied: 1680,
@@ -80,7 +62,6 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-006",
-      quarter: "Q2 2027",
       dueDate: "2027-06-15",
       estimatedPayment: 3740,
       withholdingApplied: 1740,
@@ -88,7 +69,6 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-007",
-      quarter: "Q3 2027",
       dueDate: "2027-09-15",
       estimatedPayment: 3860,
       withholdingApplied: 1790,
@@ -143,31 +123,14 @@ export function QuarterlyPaymentsScreen({ quarterlyEstimates }: QuarterlyPayment
       </PanelCard>
 
       <div className={styles.contentGrid}>
-        <PanelCard title="Quarter Timeline" description="Seven synthetic estimate checkpoints for the planning horizon.">
+        <PanelCard
+          title="Quarter Timeline"
+          description="Seven synthetic estimate checkpoints for the planning horizon."
+        >
           <ul className={styles.timelineList} aria-label="Quarter timeline">
-            {quarterlyEstimates.map((payment) => {
-              const remaining = payment.estimatedPayment - payment.withholdingApplied;
-
-              return (
-                <li className={styles.timelineItem} key={payment.id}>
-                  <div className={styles.timelineDate}>
-                    <span className={styles.timelineQuarter}>{payment.quarter}</span>
-                    <span className={styles.timelineDue}>{payment.dueDate}</span>
-                  </div>
-
-                  <div className={styles.timelineCopy}>
-                    <p className={styles.timelineLabel}>Estimated quarterly payment</p>
-                    <p className={styles.timelineMeta}>Withholding applied: {formatCurrency(payment.withholdingApplied)}</p>
-                  </div>
-
-                  <div className={styles.timelineAmount}>
-                    <span className={styles.timelineValue}>{formatCurrency(payment.estimatedPayment)}</span>
-                    <span className={styles.timelineBalance}>{formatCurrency(remaining)} remaining</span>
-                    <StatusPill tone={quarterlyEstimateStatusTone[payment.status]}>{payment.status}</StatusPill>
-                  </div>
-                </li>
-              );
-            })}
+            {quarterlyEstimates.map((payment) => (
+              <QuarterlyTimelineItem key={payment.id} estimate={payment} />
+            ))}
           </ul>
         </PanelCard>
       </div>

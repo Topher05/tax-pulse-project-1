@@ -38,75 +38,6 @@
   list-style: none;
 }
 
-.timelineItem {
-  display: grid;
-  grid-template-columns: 80px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid var(--pulse-border);
-  border-radius: 18px;
-  background: var(--pulse-surface-muted);
-}
-
-.timelineDate {
-  display: grid;
-  justify-items: center;
-  gap: 0.15rem;
-}
-
-.timelineQuarter {
-  color: var(--pulse-muted);
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.timelineDue {
-  color: var(--pulse-ink);
-  font-size: 1.05rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.timelineCopy {
-  min-width: 0;
-}
-
-.timelineLabel {
-  margin: 0;
-  color: var(--pulse-ink);
-  font-size: 0.94rem;
-  font-weight: 700;
-}
-
-.timelineMeta {
-  margin: 0.2rem 0 0;
-  color: var(--pulse-muted);
-  font-size: 0.84rem;
-  line-height: 1.5;
-}
-
-.timelineAmount {
-  display: grid;
-  justify-items: end;
-  gap: 0.3rem;
-}
-
-.timelineValue {
-  color: var(--pulse-ink);
-  font-size: 1rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.timelineBalance {
-  color: var(--pulse-muted);
-  font-size: 0.82rem;
-  font-variant-numeric: tabular-nums;
-}
-
 .tbdCard {
   display: grid;
   gap: 0.45rem;
@@ -142,12 +73,7 @@
 }
 
 @media (max-width: 720px) {
-  .timelineItem {
-    grid-template-columns: 1fr;
-    justify-items: start;
-  }
-
-  .timelineAmount {
-    justify-items: start;
+  .timelineList {
+    gap: 0.7rem;
   }
 }

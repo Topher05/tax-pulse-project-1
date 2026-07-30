@@ -884,6 +884,8 @@ sequenceDiagram
 
 - `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
 - `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
+- `src/pulseUI/components/QuarterlyTimelineItem.tsx`
+- `src/pulseUI/components/QuarterlyTimelineItem.module.css`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
 
@@ -894,6 +896,8 @@ sequenceDiagram
 
 **Changed Files:**
 
+- `src/pulseUI/components/QuarterlyTimelineItem.tsx`
+- `src/pulseUI/components/QuarterlyTimelineItem.module.css`
 - `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
 - `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
 - `src/pulseUI/app/routeTree.tsx`
@@ -902,4 +906,5 @@ sequenceDiagram
 
 **Validation Notes:**
 
-- Validation pending after implementation.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc --noEmit"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx"` passed.
