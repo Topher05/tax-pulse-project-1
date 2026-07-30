@@ -1,5 +1,5 @@
 import { Plus, CircleCheckBig, HandCoins, ShieldAlert } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { DeductionEntryForm } from "../../components/DeductionEntryForm.tsx";
 import { DataTable } from "../../components/DataTable.tsx";
@@ -130,29 +130,48 @@ function DeductionsScreen({
   );
 }
 
+function DeductionsPageChrome({
+  action,
+  children,
+}: {
+  action: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className={styles.page}>
+      <ToolHeader title="Deductions & Expenses" action={action} />
+      {children}
+    </div>
+  );
+}
+
 export function DeductionsPage() {
   const [isAddDeductionModalOpen, setIsAddDeductionModalOpen] = useState(false);
   const query = useDeductionsQuery(defaultClientId);
+  const addDeductionAction = (
+    <button className={styles.launchButton} type="button" onClick={() => setIsAddDeductionModalOpen(true)}>
+      <Plus aria-hidden="true" />
+      Add Deduction
+    </button>
+  );
 
   if (query.isLoading) {
     return (
-      <div className={styles.page}>
-        <ToolHeader title="Deductions & Expenses" />
+      <DeductionsPageChrome action={addDeductionAction}>
         <PanelCard title={null} description={null}>
           <p className={styles.stateCopy}>Loading deductions...</p>
         </PanelCard>
-      </div>
+      </DeductionsPageChrome>
     );
   }
 
   if (query.isError) {
     return (
-      <div className={styles.page}>
-        <ToolHeader title="Deductions & Expenses" />
+      <DeductionsPageChrome action={addDeductionAction}>
         <PanelCard title={null} description={null}>
           <p className={styles.stateCopy}>Unable to load deductions.</p>
         </PanelCard>
-      </div>
+      </DeductionsPageChrome>
     );
   }
 

@@ -1,4 +1,4 @@
-import type { ClientDeductionAggregationPayload } from "./deductionAggregation.js";
+import type { ClientDeductionAggregationPayload } from "../repositories/deduction.js";
 
 export interface AggregationDataSource {
   fetchClientAggregationPayload(

@@ -6,14 +6,14 @@ export {
   type ClientDeductionAggregationPayload,
   type Deduction,
   type IncomeEvent,
-} from "./deductionAggregation.js";
+} from "./repositories/deduction.js";
 export {
   AggregationTimeoutError,
   TaxPulseAggregationClient,
   type AggregationDataSource,
   type TaxPulseAggregationClientOptions,
-} from "./deductionAggregationClient.js";
-export { InMemoryMockAggregationDataSource } from "./mockAggregationDataSource.js";
+} from "./infrastructure/aggregationClient.js";
+export { InMemoryMockAggregationDataSource } from "./repositories/mockAggregationDataSource.js";
 export {
   createDeductionController,
   type DeductionController,

@@ -1,5 +1,7 @@
-import type { AggregationDataSource } from "./deductionAggregationClient.js";
-import type { ClientDeductionAggregationPayload } from "./deductionAggregation.js";
+// Deprecated: keep this in-memory source only while the deductions feature is
+// still using synthetic fixture data. Remove once the real source is wired.
+import type { AggregationDataSource } from "../infrastructure/aggregationClient.js";
+import type { ClientDeductionAggregationPayload } from "./deduction.js";
 
 const syntheticDeductionCategories = [
   "Business Expense",

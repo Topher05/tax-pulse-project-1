@@ -9,14 +9,14 @@ export {
   type ClientDeductionAggregationPayload,
   type Deduction,
   type IncomeEvent,
-} from "./features/deductions/deductionAggregation.js";
+} from "./features/deductions/repositories/deduction.js";
 export {
   AggregationTimeoutError,
   TaxPulseAggregationClient,
   type AggregationDataSource,
   type TaxPulseAggregationClientOptions,
-} from "./features/deductions/deductionAggregationClient.js";
-export { InMemoryMockAggregationDataSource } from "./features/deductions/mockAggregationDataSource.js";
+} from "./features/deductions/infrastructure/aggregationClient.js";
+export { InMemoryMockAggregationDataSource } from "./features/deductions/repositories/mockAggregationDataSource.js";
 export { createApp, type CreateAppOptions } from "./app.js";
 export {
   ProblemHttpError,
@@ -398,10 +398,10 @@ import {
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
 import { createMfaEnrollmentController } from "./mfaEnrollment.js";
 import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
-import { InMemoryMockAggregationDataSource } from "./features/deductions/mockAggregationDataSource.js";
+import { InMemoryMockAggregationDataSource } from "./features/deductions/repositories/mockAggregationDataSource.js";
 import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
 import { createTokenService } from "./tokenService.js";
-import { TaxPulseAggregationClient } from "./features/deductions/deductionAggregationClient.js";
+import { TaxPulseAggregationClient } from "./features/deductions/infrastructure/aggregationClient.js";
 
 loadEnv();
 const { Client } = pg;

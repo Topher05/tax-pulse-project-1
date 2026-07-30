@@ -95,6 +95,7 @@ export function DeductionEntryForm({ onClose }: DeductionEntryFormProps) {
   const submitForm = handleSubmit(
     (values) => {
       console.table(values);
+      // TODO Submission work is handled in Scrum-114.
       closeModal();
     },
     (validationErrors) => {
