@@ -1,0 +1,53 @@
+.card {
+  border: 1px solid var(--pulse-border);
+  border-radius: 24px;
+  background: var(--pulse-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 0;
+}
+
+.headingGroup {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.05rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.description {
+  margin: 0.35rem 0 0;
+  color: var(--pulse-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.action {
+  flex-shrink: 0;
+}
+
+.body {
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .header,
+  .body {
+    padding-inline: 1rem;
+  }
+
+  .header {
+    padding-top: 1rem;
+  }
+}

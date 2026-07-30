@@ -3,6 +3,7 @@ import { Settings2 } from "lucide-react";
 import { useState } from "react";
 
 import { useSession } from "../auth/AuthProvider.tsx";
+import styles from "./AppShell.module.css";
 import { pulseNavGroups } from "../shared/navigation.ts";
 import { getViewTitle } from "../shared/viewTitle.ts";
 
@@ -14,30 +15,35 @@ export function AppShell() {
   const viewTitle = getViewTitle(pathname);
 
   return (
-    <div className="pulseShell">
-      <aside className="pulseSidebar" aria-label="Primary">
-        <div className="pulseBrand">
-          <span className="pulseBrandMark" aria-hidden="true">
+    <div className={styles.shell}>
+      <aside className={styles.sidebar} aria-label="Primary">
+        <div className={styles.brand}>
+          <span className={styles.brandMark} aria-hidden="true">
             TP
           </span>
           <div>
-            <span className="pulseBrandName">TaxPulse</span>
-            <span className="pulseBrandContext">Advisory</span>
+            <span className={styles.brandName}>TaxPulse</span>
+            <span className={styles.brandContext}>Advisory</span>
           </div>
         </div>
 
-        <nav className="pulseNav" aria-label="Primary">
+        <nav className={styles.nav} aria-label="Primary">
           {pulseNavGroups.map((group) => (
-            <section className="pulseNavGroup" key={group.label}>
-              <h2>{group.label}</h2>
-              <ul>
+            <section key={group.label}>
+              <h2 className={styles.navGroupHeading}>{group.label}</h2>
+              <ul className={styles.navList}>
                 {group.items.map((item) => {
                   const Icon = item.icon;
 
                   return (
                     <li key={`${group.label}-${item.label}`}>
-                      <Link className="pulseNavLink" to={item.path} activeProps={{ "data-active": "true" }} preload={false}>
-                        <Icon className="pulseNavIcon" aria-hidden />
+                      <Link
+                        className={styles.navLink}
+                        to={item.path}
+                        activeProps={{ "data-active": "true" }}
+                        preload={false}
+                      >
+                        <Icon className={styles.navIcon} aria-hidden />
                         <span>{item.label}</span>
                       </Link>
                     </li>
@@ -49,43 +55,50 @@ export function AppShell() {
         </nav>
       </aside>
 
-      <div className="pulseWorkspace">
-        <header className="pulseTopbar">
-          <div className="pulseTopbarHeading">
-            <h1>{viewTitle}</h1>
+      <div className={styles.workspace}>
+        <header className={styles.topbar}>
+          <div className={styles.topbarHeading}>
+            <h1 className={styles.topbarTitle}>{viewTitle}</h1>
           </div>
 
-          <div className="pulseTopbarControls">
-            <p className="pulseRoleField">Signed in as {user?.role}</p>
+          <div className={styles.topbarControls}>
+            <p className={styles.roleField}>Signed in as {user?.role}</p>
 
-            <div className="pulseTopbarActions">
+            <div className={styles.actionCluster}>
               <button
-                className={`pulseLiveIndicator ${liveCalculationEnabled ? "is-live" : "is-offline"}`}
+                className={`${styles.liveIndicator} ${
+                  liveCalculationEnabled ? styles.liveIndicatorOn : styles.liveIndicatorOff
+                }`}
                 type="button"
                 aria-pressed={liveCalculationEnabled}
                 onClick={() => {
                   setLiveCalculationEnabled((current) => !current);
                 }}
               >
-                <span className="pulseLiveIndicatorDot" aria-hidden="true" />
+                <span
+                  className={`${styles.liveDot} ${
+                    liveCalculationEnabled ? styles.liveDotOn : styles.liveDotOff
+                  }`}
+                  aria-hidden="true"
+                />
                 <span>Live calculation</span>
-                <span className="pulseLiveIndicatorState">
+                <span className={styles.liveState}>
                   {liveCalculationEnabled ? "Live" : "Paused"}
                 </span>
               </button>
 
               <button
-                className="pulseActionButton"
+                className={styles.actionButton}
                 type="button"
                 onClick={() => {
                   setSettingsOpen(true);
                 }}
               >
-                <Settings2 aria-hidden="true" />
+                <Settings2 className={styles.actionButtonIcon} aria-hidden="true" />
                 <span>Settings</span>
               </button>
               <button
-                className="pulseActionButton"
+                className={styles.actionButton}
                 type="button"
                 onClick={() => {
                   void logout().catch(() => undefined);
@@ -97,21 +110,21 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="pulseContent" aria-label="Routed view content">
+        <main className={styles.content} aria-label="Routed view content">
           <Outlet />
         </main>
       </div>
 
       {settingsOpen ? (
         <div
-          className="pulseModalOverlay"
+          className={styles.modalOverlay}
           role="presentation"
           onClick={() => {
             setSettingsOpen(false);
           }}
         >
           <div
-            className="pulseModal"
+            className={styles.modal}
             role="dialog"
             aria-modal="true"
             aria-label="Settings"
@@ -120,7 +133,7 @@ export function AppShell() {
             }}
           >
             <button
-              className="pulseModalClose"
+              className={styles.modalClose}
               type="button"
               aria-label="Close settings modal"
               onClick={() => {

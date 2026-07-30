@@ -1,7 +1,7 @@
 import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
 
-import { PlanCycleDetailRoute } from "../pages/taxPlanCycle/PlanCycleDetailRoute.tsx";
 import { AppShell } from "../components/AppShell.tsx";
+import { DashboardPage } from "../pages/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { AuthBoundary } from "../auth/AuthBoundary.tsx";
@@ -9,6 +9,8 @@ import { MfaChallengePage } from "../pages/auth/MfaChallengePage.tsx";
 import { PasswordResetConfirmationPage } from "../pages/auth/PasswordResetConfirmationPage.tsx";
 import { PasswordResetPage } from "../pages/auth/PasswordResetPage.tsx";
 import { SignInPage } from "../pages/auth/SignInPage.tsx";
+import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
+import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
 
 const rootRoute = createRootRoute({
   component: Outlet,
@@ -24,7 +26,7 @@ function AuthenticatedWorkspace() {
 
 const workspaceRoute = createRoute({
   getParentRoute: () => rootRoute,
-  id: "workspace",
+  id: "_workspace",
   component: AuthenticatedWorkspace,
 });
 
@@ -55,7 +57,7 @@ const passwordResetConfirmationRoute = createRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/",
-  component: EmptyPage,
+  component: DashboardPage,
 });
 
 const cyclesQueueRoute = createRoute({
@@ -66,8 +68,9 @@ const cyclesQueueRoute = createRoute({
 
 const cycleDetailsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
-  path: "/cycles/$caseId",
-  component: PlanCycleDetailRoute,
+  path: "/cycles/$id",
+  component: DetailsPage,
+  validateSearch: (search) => validateDetailsSearch(search),
 });
 
 const scenarioPlannerRoute = createRoute({
