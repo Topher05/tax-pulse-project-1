@@ -445,6 +445,10 @@ add additional state datasets.
 
 **Jira Key:** SCRUM-193
 
+**Ticket:** [SCRUM-193](../Tax_pulse.csv)
+
+**Related ADRs:** [ADR-0017: Pulse UI React/Vite shell](../../adr/0017-pulse-ui-react-vite-shell.md) and [ADR-0020: Pulse UI layered application structure](../../adr/0020-pulse-ui-layered-application-structure.md)
+
 **Summary:** Build the sign-in, MFA, and password-reset UI wired to the auth context
 
 **Description:** Provide SPA sign-in, MFA challenge, and mocked password-reset screens
@@ -461,6 +465,15 @@ on the auth-context foundation supplied by SCRUM-192.
 - Reset request and confirmation are local-only UI routes; they call no live endpoint.
 - Component coverage exercises the successful sign-in/MFA/logout flow and the reset
   flow's no-network guarantee.
+
+**Deferred Role-Landing Note:**
+
+The SPA preserves the authenticated role and invokes role-based landing selection after
+MFA. All roles currently land on the shared dashboard because distinct role-specific
+views have not yet been delivered. The client portal is planned in SCRUM-142 and
+SCRUM-144; Firm Admin screens in SCRUM-146 through SCRUM-150; and TaxPulse Platform
+Admin screens in SCRUM-151 and SCRUM-152. This ticket must be revisited when those
+destinations are available.
 
 **Code Connection:**
 
@@ -481,6 +494,17 @@ on the auth-context foundation supplied by SCRUM-192.
 
 This is the first UI-routing slice for the React SPA authentication flow. It introduces
 no BFF endpoint, token, password-reset, or authorization-policy change.
+
+**Migration Impact:**
+
+None. This ticket changes browser routes and UI state only; it adds no schema, data, or
+service migration.
+
+**Risk Notes:**
+
+Until the deferred role-specific views ship, all authenticated users share the dashboard
+landing route. Server-side authorization and tenant-scoped BFF enforcement remain the
+source of truth for access control.
 
 **Changed Files:**
 
@@ -508,6 +532,12 @@ no BFF endpoint, token, password-reset, or authorization-policy change.
 
 **Validation Notes:**
 
-- `npm --prefix src/pulseUI test` passed: 46 tests in 13 files.
+- `npm --prefix src/pulseUI test` passed: 48 tests in 13 files.
 - `npm --prefix src/pulseUI run typecheck` passed.
-- `npm --prefix src/pulseUI run build` passed.
+- Root `npm run typecheck` passed after restoring the lockfile-pinned
+  `@pact-foundation/pact` development dependency.
+- `npm --prefix src/pulseUI run build` reaches production bundling but is blocked in this
+  checkout because Windows holds `dist/pulseUI/assets/index-BSegwS6H.css` open. Release
+  the external file lock or remove the stale generated output before rerunning the build.
+- Vitest result caching is disabled in the UI config so test runs do not depend on writing
+  to the local `node_modules/.vite` cache directory.
