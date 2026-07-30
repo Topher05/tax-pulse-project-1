@@ -4,6 +4,7 @@ import { hasPulseAccessToken } from "./authSession.ts";
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
+import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
 import { LoginPage } from "../pages/LoginPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
@@ -60,7 +61,7 @@ const deductionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/deductions",
   beforeLoad: requirePulseAuthentication,
-  component: EmptyPage,
+  component: DeductionsPage,
 });
 
 const quarterlyPaymentsRoute = createRoute({
@@ -91,6 +92,24 @@ const firmSettingsRoute = createRoute({
   component: EmptyPage,
 });
 
+const administrationTenantsUsersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/administration/tenants-users",
+  component: EmptyPage,
+});
+
+const administrationRolesPermissionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/administration/roles-permissions",
+  component: EmptyPage,
+});
+
+const administrationAuditLogRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/administration/audit-log",
+  component: EmptyPage,
+});
+
 function requirePulseAuthentication() {
   if (!hasPulseAccessToken()) {
     throw redirect({ to: "/login" });
@@ -109,4 +128,7 @@ export const routeTree = rootRoute.addChildren([
   clientsRoute,
   firmUsersRoute,
   firmSettingsRoute,
+  administrationTenantsUsersRoute,
+  administrationRolesPermissionsRoute,
+  administrationAuditLogRoute,
 ]);

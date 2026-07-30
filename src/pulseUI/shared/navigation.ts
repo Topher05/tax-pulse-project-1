@@ -5,9 +5,12 @@ import {
   Calculator,
   CalendarClock,
   CircleCheckBig,
-  FileText,
+  Percent,
+  ShieldCheck,
   Settings,
+  FileClock,
   Users,
+  UsersRound,
 } from "lucide-react";
 
 export type PulseNavItem = {
@@ -35,7 +38,7 @@ export const pulseNavGroups: readonly PulseNavGroup[] = [
     items: [
       { label: "Scenario Planner", path: "/scenarios", icon: Calculator },
       { label: "Income", path: "/income", icon: BriefcaseBusiness },
-      { label: "Deductions", path: "/deductions", icon: FileText },
+      { label: "Deductions & Expenses", path: "/deductions", icon: Percent },
       { label: "Quarterly Payments", path: "/quarterly-payments", icon: CalendarClock },
     ],
   },
@@ -44,6 +47,14 @@ export const pulseNavGroups: readonly PulseNavGroup[] = [
     items: [
       { label: "Team & Users", path: "/firm/users", icon: Building2 },
       { label: "Firm Settings", path: "/firm/settings", icon: Settings },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { label: "All Tenants & Users", path: "/administration/tenants-users", icon: UsersRound },
+      { label: "Roles & Permissions", path: "/administration/roles-permissions", icon: ShieldCheck },
+      { label: "Audit Log", path: "/administration/audit-log", icon: FileClock },
     ],
   },
 ] as const;
