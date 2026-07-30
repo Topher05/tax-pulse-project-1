@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 
 import { useSession } from "./AuthProvider.tsx";
+import type { AuthSessionState } from "./session.ts";
 
 export interface AuthenticatedRequestSession {
   getAccessToken(): Promise<string | null>;
-  refreshSession(): Promise<void>;
+  refreshSession(): Promise<AuthSessionState>;
   logout(): Promise<void>;
 }
 
@@ -34,14 +35,16 @@ export function createAuthenticatedFetch(
       return firstResponse;
     }
 
-    await session.refreshSession();
-    const refreshedToken = await session.getAccessToken();
-    if (refreshedToken === null) {
+    const refreshedSession = await session.refreshSession();
+    if (refreshedSession.status !== "authenticated") {
       await session.logout();
       return firstResponse;
     }
 
-    const retryResponse = await fetcher(input, withBearerToken(input, init, refreshedToken));
+    const retryResponse = await fetcher(
+      input,
+      withBearerToken(input, init, refreshedSession.session.accessToken),
+    );
     if (retryResponse.status === 401) {
       await session.logout();
     }

@@ -57,9 +57,10 @@ export function AuthProvider({
     }
   }, [client, invalidateSession]);
 
-  const refreshSession = useCallback(async () => {
-    await requestRefresh();
-  }, [requestRefresh]);
+  const refreshSession = useCallback(
+    async (): Promise<AuthSessionState> => await requestRefresh(),
+    [requestRefresh],
+  );
 
   useEffect(() => {
     void refreshSession();
