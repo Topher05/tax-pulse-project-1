@@ -860,6 +860,99 @@ sequenceDiagram
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
 
+## caleb-latimer-jira112 - SCRUM-112
+
+**Branch:** `caleb-latimer-jira112`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-112
+
+**Summary:** Add the TanStack Query hook to the deductions endpoint
+
+**Description:** As a Frontend Developer, I want a TanStack Query hook fetching the client's deductions, so that the Deductions screen reads live data through one typed boundary.
+
+**Acceptance Criteria:**
+
+- The Core Case service exposes a typed client deductions endpoint under `/v1/clients/:clientId/deductions`.
+- The endpoint returns a deduction aggregation payload with date fields emitted as strings.
+- The Pulse UI reads deductions through a dedicated TanStack Query hook.
+- The Deductions screen opens a local add-deduction modal and logs form payloads locally with `console.table()`.
+- The new hook and endpoint are covered by regression tests.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant UI as Pulse UI
+    participant Query as useDeductionsQuery
+    participant API as Core Case Service
+    participant Controller as Deductions Controller
+    participant Store as Mock Aggregation Data Source
+
+    UI->>Query: mount Deductions page
+    Query->>API: GET /v1/clients/{clientId}/deductions
+    API->>Controller: validate params and auth context
+    Controller->>Store: fetchAggregationPayload(clientId)
+    Store-->>Controller: typed deductions payload
+    Controller-->>API: parsed client deductions response
+    API-->>Query: JSON payload
+    Query-->>UI: render deductions list and KPI data
+```
+
+**Code Connection:**
+
+- `src/typescript/features/deductions/deductionAggregationClient.ts`
+- `src/typescript/deductionAggregation.ts`
+- `src/typescript/mockAggregationDataSource.ts`
+- `src/typescript/features/deductions/controllers/deductions.ts`
+- `src/typescript/features/deductions/routes.ts`
+- `src/typescript/features/deductions/index.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/components/DeductionEntryForm.tsx`
+- `src/pulseUI/components/DeductionEntryForm.module.css`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.module.css`
+- `src/typescript/features/deductions/routes.test.ts`
+- `src/pulseUI/tests/entities/deductionQueries.test.ts`
+- `src/pulseUI/tests/components/DeductionEntryForm.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Core Case service API surface for plan-tool data
+
+**Changed Files:**
+
+- `src/typescript/features/deductions/deductionAggregationClient.ts`
+- `src/typescript/deductionAggregation.ts`
+- `src/typescript/mockAggregationDataSource.ts`
+- `src/typescript/features/deductions/controllers/deductions.ts`
+- `src/typescript/features/deductions/routes.ts`
+- `src/typescript/features/deductions/index.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/components/DeductionEntryForm.tsx`
+- `src/pulseUI/components/DeductionEntryForm.module.css`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.module.css`
+- `src/pulseUI/tests/entities/deductionQueries.test.ts`
+- `src/pulseUI/tests/components/DeductionEntryForm.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `tests/typescript/features/deductions/routes.test.ts`
+- `tests/typescript/deductionAggregationClient.test.ts`
+- `tests/typescript/smoke.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- Focused Vitest runs for the new backend and Pulse UI tests were blocked by the Windows Node profile-path issue (`EPERM lstat C:\Users`) in this environment.
+
 ## caleb-latimer-jira117 - SCRUM-117
 
 **Branch:** `caleb-latimer-jira117`
