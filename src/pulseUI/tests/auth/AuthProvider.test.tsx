@@ -7,6 +7,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { AuthProvider, useSession } from "../../auth/AuthProvider.tsx";
 import type { AuthClient } from "../../auth/authClient.ts";
 import type { MfaChallenge, SessionTokenResponse } from "../../auth/session.ts";
+import { createAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
 
 const challenge: MfaChallenge = {
   tenantId: "tenant-synthetic-001",
@@ -84,6 +85,35 @@ describe("AuthProvider", () => {
 
     expect(await screen.findByText("anonymous:false:none")).toBeInTheDocument();
     expect(clearCachedData).toHaveBeenCalledTimes(1);
+  });
+
+  test("clears cached data when an authenticated session refresh fails", async () => {
+    const client = createClient();
+    const clearCachedData = vi.fn();
+    vi.mocked(client.refreshSession)
+      .mockResolvedValueOnce({ ...tokenResponse, expires_in: 1 })
+      .mockRejectedValueOnce(new Error("expired"));
+
+    function RefreshProbe() {
+      const session = useSession();
+      return (
+        <>
+          <output>{session.status}</output>
+          <button onClick={() => void session.getAccessToken()}>Refresh session</button>
+        </>
+      );
+    }
+
+    render(
+      <AuthProvider client={client} clearCachedData={clearCachedData}>
+        <RefreshProbe />
+      </AuthProvider>,
+    );
+
+    await screen.findByText("authenticated");
+    fireEvent.click(screen.getByRole("button", { name: "Refresh session" }));
+
+    await vi.waitFor(() => expect(clearCachedData).toHaveBeenCalledTimes(1));
   });
 
   test("establishes identity after the MFA completion action", async () => {
@@ -172,6 +202,46 @@ describe("AuthProvider", () => {
 
     expect(await screen.findByText(`${createAccessToken()}-refreshed`)).toBeInTheDocument();
     expect(client.refreshSession).toHaveBeenCalledTimes(2);
+  });
+
+  test("retries a rejected request with the token returned by refresh before React rerenders", async () => {
+    const client = createClient();
+    const refreshedResponse = { ...tokenResponse, access_token: `${createAccessToken()}-refreshed` };
+    vi.mocked(client.refreshSession)
+      .mockResolvedValueOnce(tokenResponse)
+      .mockResolvedValueOnce(refreshedResponse);
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(new Response("ok", { status: 200 }));
+
+    function RetryProbe() {
+      const session = useSession();
+      const authenticatedFetch = createAuthenticatedFetch(session, fetcher);
+      return (
+        <>
+          <output>{session.status}</output>
+          <button onClick={() => void authenticatedFetch("/v1/cycles")}>Retry request</button>
+        </>
+      );
+    }
+
+    render(
+      <AuthProvider client={client}>
+        <RetryProbe />
+      </AuthProvider>,
+    );
+
+    await screen.findByText("authenticated");
+    fireEvent.click(screen.getByRole("button", { name: "Retry request" }));
+
+    await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+    expect(new Headers(fetcher.mock.calls[0]?.[1]?.headers).get("authorization")).toBe(
+      `Bearer ${tokenResponse.access_token}`,
+    );
+    expect(new Headers(fetcher.mock.calls[1]?.[1]?.headers).get("authorization")).toBe(
+      `Bearer ${refreshedResponse.access_token}`,
+    );
   });
 
   test("clears supplied cached data even when the logout request fails", async () => {

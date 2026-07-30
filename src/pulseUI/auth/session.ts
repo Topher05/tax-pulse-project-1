@@ -59,7 +59,7 @@ export interface SessionActions {
   login(credentials: LoginCredentials): Promise<MfaChallenge>;
   completeMfaLogin(challenge: MfaChallenge, code: string): Promise<SessionUser | null>;
   logout(): Promise<void>;
-  refreshSession(): Promise<void>;
+  refreshSession(): Promise<AuthSessionState>;
   getAccessToken(): Promise<string | null>;
 }
 
