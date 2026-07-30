@@ -15,8 +15,8 @@
 
 .neutral {
   color: var(--pulse-nav-text);
-  background: rgb(255 255 255 / 4%);
-  border: 1px solid rgb(255 255 255 / 6%);
+  background: rgba(30, 36, 49, 0.88);
+  border: 1px solid rgba(71, 85, 105, 0.55);
 }
 
 .info {

@@ -34,6 +34,98 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira192 - SCRUM-192
+
+**Branch:** `christopher-martus-jira192`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-192
+
+**Summary:** Provide an auth context and session hooks for login, refresh, and logout
+
+**Description:** As a Frontend Developer, I want an auth context that holds the session
+and a hook for login, token refresh, and logout, so that every screen, route guard, and
+query reads identity from one source.
+
+**Acceptance Criteria:**
+
+- An auth context provider holds the authenticated session and restores it across reloads.
+- A session hook exposes identity, authentication state, and session actions.
+- Login stores issued tokens; logout clears the session and cached data.
+- Refresh and invalidation are centralized and covered by component tests.
+
+**Code Connection:**
+
+- The first implementation slice defines the Pulse UI's typed session, BFF token-response,
+  MFA challenge, and hook contracts. It validates JWT identity claims centrally and maps
+  issued token responses to a browser session without retaining a refresh token in
+  JavaScript state.
+- The BFF now sets refresh tokens only in a `Secure`, `HttpOnly`, `SameSite=Strict`
+  cookie after MFA. `POST /auth/refresh` atomically revokes the presented active token
+  before issuing a replacement pair, and `POST /auth/logout` revokes when possible and
+  always clears the cookie.
+- `AuthProvider` restores the cookie-backed session at application startup and exposes
+  `useSession` actions for login, MFA completion, refresh, logout, and current access
+  token retrieval. The injected client seam keeps the component behavior testable.
+- Access-token access now refreshes within a 60-second expiry leeway. The shared
+  authenticated fetch wrapper retries a 401 exactly once after refresh, then invalidates
+  through logout; logout always invokes the supplied cache-clearing seam.
+- The browser auth client validates the BFF's login, MFA, refresh, and logout contracts
+  before session state changes; the provider keeps the user anonymous until MFA completes.
+- `useSession` now directly exposes `user` and `isAuthenticated`. The application-level
+  auth boundary blocks protected routed content while restoration is pending or when the
+  session is anonymous, forcing re-authentication through SCRUM-193's forthcoming UI.
+
+**Project Scope Connection:**
+
+This establishes the frontend identity boundary for the React SPA. Subsequent slices add
+the provider, BFF refresh/logout contract, and authenticated request behavior while
+preserving tenant and role isolation.
+
+**Changed Files:**
+
+- `src/pulseUI/auth/session.ts`
+- `src/pulseUI/auth/authClient.ts`
+- `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/auth/AuthBoundary.tsx`
+- `src/pulseUI/auth/authenticatedFetch.ts`
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/tests/auth/session.test.tsx`
+- `src/pulseUI/tests/auth/AuthProvider.test.tsx`
+- `src/pulseUI/tests/auth/authClient.test.tsx`
+- `src/pulseUI/tests/auth/authenticatedFetch.test.tsx`
+- `src/pulseUI/tests/auth/AuthBoundary.test.tsx`
+- `src/typescript/authSessionCookies.ts`
+- `src/typescript/authSessionRoutes.ts`
+- `src/typescript/authMfaLoginRoutes.ts`
+- `src/typescript/refreshTokenRepository.ts`
+- `src/typescript/tokenService.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authSessionRoutes.test.ts`
+- `tests/typescript/authMfaLoginRoutes.test.ts`
+- `tests/typescript/authMfaLogin.test.ts`
+- `tests/typescript/tokenService.test.ts`
+- `tests/typescript/bootstrap/authFlow.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm test -- --run tests/auth/session.test.tsx --cache=false` passed (3 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx --cache=false` passed (7 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx --cache=false` passed (12 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/authClient.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx --cache=false` passed (17 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/authClient.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx tests/auth/AuthBoundary.test.tsx --cache=false` passed (20 tests).
+- `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/tokenService.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed (22 tests).
+- Root `npm run typecheck` remains blocked by pre-existing missing
+  `@pact-foundation/pact` resolution and incomplete Tax Engine test doubles. The new
+  auth contract compiles before those unrelated test failures.
+- Pulse UI `npm run typecheck` remains blocked by pre-existing route parameter/import
+  errors and missing `@tailwindcss/vite` type resolution. None reference the auth
+  provider or client.
+
 ## christopher-martus-jira195 - SCRUM-195
 
 **Branch:** `christopher-martus-jira195`

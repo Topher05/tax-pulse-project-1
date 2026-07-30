@@ -2,10 +2,11 @@ import { createRootRoute, createRoute, redirect } from "@tanstack/react-router";
 
 import { hasPulseAccessToken } from "./authSession.ts";
 import { AppShell } from "../components/AppShell.tsx";
-import { DashboardPage } from "../pages/DashboardPage.tsx";
+import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { LoginPage } from "../pages/LoginPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
+import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
 
