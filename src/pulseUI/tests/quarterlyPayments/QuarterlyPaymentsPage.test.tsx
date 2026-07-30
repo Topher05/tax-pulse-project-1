@@ -106,5 +106,8 @@ describe("QuarterlyPaymentsPage", () => {
 
     expect(screen.queryByRole("button", { name: /pay/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /mark paid/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Synthetic read-only estimate total")).not.toBeInTheDocument();
+    expect(screen.queryByText("Withholding coverage applied")).not.toBeInTheDocument();
+    expect(screen.queryByText("Estimated amount still payable")).not.toBeInTheDocument();
   });
 });

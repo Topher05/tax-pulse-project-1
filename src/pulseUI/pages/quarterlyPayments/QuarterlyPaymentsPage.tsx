@@ -106,21 +106,21 @@ export function QuarterlyPaymentsScreen({ quarterlyEstimates }: QuarterlyPayment
     <div className={styles.page}>
       <ToolHeader
         title="Quarterly Payments"
-        description="Read-only quarterly estimate schedule and withholding coverage preview."
+        description="Read-only quarterly breakdown — IRS 1040-ES deadlines and estimated amounts. Recording payments is out of MVP scope."
       />
 
       <section className={styles.metricGrid} aria-label="Quarterly payments KPI region">
         <MetricCard
           label="Total Estimated"
           value={formatCurrency(totalEstimated)}
-          caption="Synthetic read-only estimate total"
+          caption=""
           tone="indigo"
           icon={<HandCoins aria-hidden="true" />}
         />
         <MetricCard
-          label="Covered by Withholding"
+          label="Paid So Far"
           value={formatCurrency(totalWithholding)}
-          caption="Withholding coverage applied"
+          caption=""
           tone="green"
           icon={<CircleCheckBig aria-hidden="true" />}
           valueClassName={styles.greenValue}
@@ -128,18 +128,22 @@ export function QuarterlyPaymentsScreen({ quarterlyEstimates }: QuarterlyPayment
         <MetricCard
           label="Remaining Due"
           value={formatCurrency(totalRemaining)}
-          caption="Estimated amount still payable"
+          caption=""
           tone="amber"
           icon={<ShieldAlert aria-hidden="true" />}
           valueClassName={styles.amberValue}
         />
       </section>
 
+      <PanelCard title="Withholding Progress" className={styles.fullWidthCard}>
+        <div className={styles.tbdCard}>
+          <span className={styles.tbdLabel}>TBD</span>
+          <p className={styles.tbdCopy}>Placeholder only for the withholding progress visualization.</p>
+        </div>
+      </PanelCard>
+
       <div className={styles.contentGrid}>
-        <PanelCard
-          title="Quarter Timeline"
-          description="Seven synthetic estimate checkpoints for the planning horizon."
-        >
+        <PanelCard title="Quarter Timeline" description="Seven synthetic estimate checkpoints for the planning horizon.">
           <ul className={styles.timelineList} aria-label="Quarter timeline">
             {quarterlyEstimates.map((payment) => {
               const remaining = payment.estimatedPayment - payment.withholdingApplied;
@@ -153,9 +157,7 @@ export function QuarterlyPaymentsScreen({ quarterlyEstimates }: QuarterlyPayment
 
                   <div className={styles.timelineCopy}>
                     <p className={styles.timelineLabel}>Estimated quarterly payment</p>
-                    <p className={styles.timelineMeta}>
-                      Withholding applied: {formatCurrency(payment.withholdingApplied)}
-                    </p>
+                    <p className={styles.timelineMeta}>Withholding applied: {formatCurrency(payment.withholdingApplied)}</p>
                   </div>
 
                   <div className={styles.timelineAmount}>
@@ -167,18 +169,6 @@ export function QuarterlyPaymentsScreen({ quarterlyEstimates }: QuarterlyPayment
               );
             })}
           </ul>
-        </PanelCard>
-
-        <PanelCard
-          title="Withholding Progress"
-          description="Charting is deferred until the charting library decision is finalized."
-        >
-          <div className={styles.tbdCard}>
-            <span className={styles.tbdLabel}>TBD</span>
-            <p className={styles.tbdCopy}>
-              Placeholder only for the withholding progress visualization.
-            </p>
-          </div>
         </PanelCard>
       </div>
     </div>
