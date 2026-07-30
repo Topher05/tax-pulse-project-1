@@ -26,6 +26,15 @@ export function AppShell() {
   const [liveCalculationEnabled, setLiveCalculationEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  if (pathname === "/login") {
+    return (
+      <main className={styles.login} aria-label="Authentication">
+        <Outlet />
+      </main>
+    );
+  }
+
   const viewTitle = getViewTitle(pathname);
 
   return (

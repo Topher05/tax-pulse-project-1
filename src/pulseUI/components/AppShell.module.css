@@ -5,6 +5,38 @@
   background: var(--pulse-page);
 }
 
+.login {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--pulse-page);
+}
+
+.loginPanel {
+  display: grid;
+  width: min(100%, 420px);
+  gap: 0.65rem;
+  padding: 1.5rem;
+  color: var(--pulse-ink);
+  background: var(--pulse-surface);
+  border: 1px solid var(--pulse-border);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 28%);
+}
+
+.loginPanel h1 {
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.loginPanel p {
+  margin: 0;
+  color: var(--pulse-muted);
+}
+
 .sidebar {
   position: sticky;
   top: 0;
