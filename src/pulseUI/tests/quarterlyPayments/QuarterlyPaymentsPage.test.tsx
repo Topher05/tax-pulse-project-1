@@ -96,7 +96,7 @@ describe("QuarterlyPaymentsPage", () => {
     expect(screen.getByRole("list", { name: "Quarter timeline" })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(7);
 
-    const firstItem = screen.getAllByRole("listitem")[0];
+    const firstItem = screen.getAllByRole("listitem")[0]!;
     expect(within(firstItem).getByText("Apr")).toBeInTheDocument();
     expect(within(firstItem).getByText("15")).toBeInTheDocument();
     expect(within(firstItem).getByText("Estimated quarterly payment")).toBeInTheDocument();
