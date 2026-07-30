@@ -158,8 +158,6 @@ export function DeductionsScreen({
 }: DeductionsScreenProps) {
   const modalTitleId = useId();
   const totalDeductions = deductions.reduce((sum, deduction) => sum + deduction.amount, 0);
-  const readyCount = deductions.filter((deduction) => deduction.status === "Ready").length;
-  const reviewCount = deductions.filter((deduction) => deduction.status === "Needs Review").length;
 
   const columns = [
     {
@@ -206,21 +204,21 @@ export function DeductionsScreen({
         <MetricCard
           label="Total Deductions"
           value={formatCurrency(totalDeductions)}
-          caption="Placeholder aggregate from the scaffolded table"
+          caption=""
           tone="indigo"
           icon={<HandCoins aria-hidden="true" />}
         />
         <MetricCard
-          label="Ready to Claim"
-          value={String(readyCount)}
-          caption="Items that look ready to move forward"
+          label="Estimated Tax Savings"
+          value="$950.55"
+          caption=""
           tone="green"
           icon={<CircleCheckBig aria-hidden="true" />}
         />
         <MetricCard
-          label="Needs Review"
-          value={String(reviewCount)}
-          caption="Entries that still need attention"
+          label="Deduction Method"
+          value="Standard ($12,500)"
+          caption=""
           tone="amber"
           icon={<ShieldAlert aria-hidden="true" />}
         />

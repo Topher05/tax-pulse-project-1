@@ -26,6 +26,10 @@ describe("DeductionsPage", () => {
     expect(await screen.findByRole("table", { name: "Deduction records" })).toBeInTheDocument();
     expect(screen.getAllByRole("row")).toHaveLength(26);
     expect(screen.getByText("Track deductible expenses to reduce your tax liability")).toBeInTheDocument();
+    expect(screen.getByText("Estimated Tax Savings")).toBeInTheDocument();
+    expect(screen.getByText("$950.55")).toBeInTheDocument();
+    expect(screen.getByText("Deduction Method")).toBeInTheDocument();
+    expect(screen.getByText("Standard ($12,500)")).toBeInTheDocument();
   });
 
   test("opens the placeholder modal shell from the add button", async () => {
