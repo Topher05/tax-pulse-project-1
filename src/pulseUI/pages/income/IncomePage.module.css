@@ -1,0 +1,200 @@
+.page {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+  padding: 1.75rem 2rem 3rem;
+  color: #e2e8f0;
+  background: #0f1117;
+  border-radius: 10px;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 1rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.description {
+  margin: 0.2rem 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.addButton,
+.emptyStateButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 6px;
+  color: #ffffff;
+  background: #6366f1;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.addButton {
+  min-height: 34px;
+  padding: 0.55rem 1.1rem;
+}
+
+.addButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+.addButton:disabled,
+.emptyStateButton:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.kpiCard,
+.tableCard {
+  border: 1px solid #2a2d3e;
+  border-radius: 10px;
+  background: #1a1d2b;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%), 0 1px 2px rgb(0 0 0 / 20%);
+}
+
+.kpiCard {
+  min-height: 98px;
+  padding: 1.15rem 1.25rem;
+}
+
+.kpiLabel {
+  margin: 0 0 0.35rem;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.kpiValue {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 1.55rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.tableCard {
+  overflow: hidden;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #2a2d3e;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table th:last-child {
+  width: 1%;
+}
+
+.emptyState {
+  display: grid;
+  justify-items: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.emptyState svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  color: #64748b;
+  stroke-width: 1.5;
+}
+
+.emptyState h3 {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.emptyState p {
+  margin: 0.35rem 0 1.25rem;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.emptyStateButton {
+  min-height: 30px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 1.25rem 1rem;
+  }
+
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .addButton {
+    width: 100%;
+  }
+
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+}
