@@ -2,7 +2,7 @@ import type { TaxPulseAggregationClient } from "../infrastructure/aggregationCli
 import type { ClientDeductionAggregationPayload } from "../repositories/deduction.js";
 
 export interface DeductionController {
-  read(input: { clientId: string }): Promise<ClientDeductionAggregationPayload>;
+  read(input: { caseId: string }): Promise<ClientDeductionAggregationPayload>;
 }
 
 export interface DeductionControllerOptions {
@@ -14,7 +14,7 @@ export function createDeductionController(
 ): DeductionController {
   return {
     async read(input) {
-      return await options.aggregationClient.fetchAggregationPayload(input.clientId);
+      return await options.aggregationClient.fetchAggregationPayload(input.caseId);
     },
   };
 }

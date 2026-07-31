@@ -1,8 +1,8 @@
 import type { ClientDeductionAggregationPayload } from "../repositories/deduction.js";
 
 export interface AggregationDataSource {
-  fetchClientAggregationPayload(
-    clientId: string,
+  fetchCaseAggregationPayload(
+    caseId: string,
   ): Promise<ClientDeductionAggregationPayload>;
 }
 
@@ -13,15 +13,15 @@ export interface TaxPulseAggregationClientOptions {
 const defaultAggregationTimeoutMs = 1_000;
 
 export class AggregationTimeoutError extends Error {
-  readonly clientId: string;
+  readonly caseId: string;
   readonly timeoutMs: number;
 
-  constructor(clientId: string, timeoutMs: number) {
+  constructor(caseId: string, timeoutMs: number) {
     super(
-      `Aggregation source timed out for client ${clientId} after ${timeoutMs}ms.`,
+      `Aggregation source timed out for case ${caseId} after ${timeoutMs}ms.`,
     );
     this.name = "AggregationTimeoutError";
-    this.clientId = clientId;
+    this.caseId = caseId;
     this.timeoutMs = timeoutMs;
   }
 }
@@ -37,13 +37,13 @@ export class TaxPulseAggregationClient {
   }
 
   async fetchAggregationPayload(
-    clientId: string,
+    caseId: string,
   ): Promise<ClientDeductionAggregationPayload> {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    const sourcePromise = this.dataSource.fetchClientAggregationPayload(clientId);
+    const sourcePromise = this.dataSource.fetchCaseAggregationPayload(caseId);
     const timeoutPromise = new Promise<never>((_resolve, reject) => {
       timeoutId = setTimeout(() => {
-        reject(new AggregationTimeoutError(clientId, this.timeoutMs));
+        reject(new AggregationTimeoutError(caseId, this.timeoutMs));
       }, this.timeoutMs);
     });
 

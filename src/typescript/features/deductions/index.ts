@@ -1,8 +1,11 @@
 export {
   clientDeductionAggregationPayloadSchema,
   deductionReadParamsSchema,
+  deductionCategorySchema,
+  deductionCategoryValues,
   deductionSchema,
   incomeEventSchema,
+  type DeductionCategory,
   type ClientDeductionAggregationPayload,
   type Deduction,
   type IncomeEvent,

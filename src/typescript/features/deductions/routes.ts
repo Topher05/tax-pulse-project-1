@@ -46,7 +46,7 @@ export function createDeductionsRouter(
   const controller = options.controller;
 
   router.get(
-    "/clients/:clientId/deductions",
+    "/cases/:caseId/deductions",
     async (req: Request, res: Response, next: NextFunction) => {
       const parsedParams = deductionReadParamsSchema.safeParse(req.params);
 
@@ -88,7 +88,7 @@ export function createDeductionsRouter(
         }
 
         const payload = await controller.read({
-          clientId: parsedParams.data.clientId,
+          caseId: parsedParams.data.caseId,
         });
 
         res.status(200).json(clientDeductionAggregationPayloadSchema.parse(payload));

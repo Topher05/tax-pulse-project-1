@@ -4,8 +4,11 @@ import type { Server } from "node:http";
 export {
   clientDeductionAggregationPayloadSchema,
   deductionReadParamsSchema,
+  deductionCategorySchema,
+  deductionCategoryValues,
   deductionSchema,
   incomeEventSchema,
+  type DeductionCategory,
   type ClientDeductionAggregationPayload,
   type Deduction,
   type IncomeEvent,
@@ -136,6 +139,7 @@ export {
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
   auditEntry,
+  deduction,
   credential,
   federalTaxBracket,
   mfaEnrollment,

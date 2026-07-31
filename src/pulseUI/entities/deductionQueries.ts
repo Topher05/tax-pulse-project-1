@@ -6,7 +6,7 @@ import { caseApiGetJson } from "../shared/caseApi.ts";
 const deductionAmountSchema = z.number().finite().nonnegative();
 
 const deductionQuerySchema = z.object({
-  clientId: z.string().min(1),
+  caseId: z.string().min(1),
   incomeEvents: z.array(
     z.object({
       source: z.string().min(1),
@@ -28,20 +28,20 @@ const deductionQuerySchema = z.object({
 export type DeductionQueryPayload = z.infer<typeof deductionQuerySchema>;
 export type DeductionQueryRecord = DeductionQueryPayload["deductions"][number];
 
-export function deductionsQueryKey(clientId: string) {
-  return ["deductions", clientId] as const;
+export function deductionsQueryKey(caseId: string) {
+  return ["deductions", caseId] as const;
 }
 
 export async function fetchDeductions(
-  clientId: string,
+  caseId: string,
 ): Promise<DeductionQueryPayload> {
-  const payload = await caseApiGetJson<unknown>(`/v1/clients/${clientId}/deductions`);
+  const payload = await caseApiGetJson<unknown>(`/v1/cases/${caseId}/deductions`);
   return deductionQuerySchema.parse(payload);
 }
 
-export function useDeductionsQuery(clientId: string) {
+export function useDeductionsQuery(caseId: string) {
   return useQuery({
-    queryKey: deductionsQueryKey(clientId),
-    queryFn: () => fetchDeductions(clientId),
+    queryKey: deductionsQueryKey(caseId),
+    queryFn: () => fetchDeductions(caseId),
   });
 }
