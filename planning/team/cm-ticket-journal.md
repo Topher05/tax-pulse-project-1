@@ -461,18 +461,20 @@ client's tax picture is visible at a glance.
 - The initial implementation slice adds the typed read-model contract consumed by the
   dashboard chart region. It carries one calculation identifier, exactly four labelled
   quarterly estimates, and income totals grouped by source. `DashboardPage` now accepts
-  the latest snapshot at its component boundary, ready for the chart components in the
-  next slice.
+  the latest snapshot at its component boundary. The Estimated Tax by Quarter component
+  renders those four estimates as responsive bars.
 
 **Project Scope Connection:**
 
 This is the front-end contract for the Read-models/BFF data used by the two dashboard
-charts. It does not add a BFF endpoint, persistence, a charting dependency, or chart
-rendering ahead of the subsequent ticket slices.
+charts. It does not add a BFF endpoint, persistence, or a charting dependency. Income
+Breakdown remains the next implementation slice.
 
 **Changed Files:**
 
 - `src/pulseUI/pages/dashboard/dashboardChartData.ts`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.tsx`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.module.css`
 - `src/pulseUI/pages/dashboard/DashboardPage.tsx`
 - `planning/team/cm-ticket-journal.md`
 
@@ -480,5 +482,5 @@ rendering ahead of the subsequent ticket slices.
 
 - `npm run typecheck` passed.
 - `git diff --check` passed.
-- No test was added in this deliberately contract-only first slice; the focused chart
-  re-render test remains the final implementation step.
+- No test has been added yet; the focused chart re-render test remains the final
+  implementation step.

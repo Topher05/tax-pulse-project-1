@@ -6,6 +6,7 @@ import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
 import { WorkflowStepper } from "../../components/WorkflowStepper.tsx";
+import { QuarterlyTaxChart } from "./QuarterlyTaxChart.tsx";
 import type { DashboardChartData } from "./dashboardChartData.ts";
 
 const dashboardMetrics = [
@@ -105,6 +106,15 @@ export function DashboardPage({ chartData }: DashboardPageProps = {}) {
           <MetricCard key={metric.label} {...metric} />
         ))}
       </section>
+
+      {chartData ? (
+        <PanelCard
+          title="Estimated Tax by Quarter"
+          description="Projected estimated tax payments for the current calculation."
+        >
+          <QuarterlyTaxChart estimates={chartData.quarterlyEstimates} />
+        </PanelCard>
+      ) : null}
 
       <div className={styles.contentGrid}>
         <PanelCard
