@@ -13,7 +13,7 @@ import {
 } from "../../../../src/typescript/index.js";
 
 const samplePayload: ClientDeductionAggregationPayload = {
-  clientId: "client-123",
+  caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
   incomeEvents: [
     {
       source: "W-2 wages",
@@ -54,7 +54,7 @@ async function withRouter(
 }
 
 describe("createDeductionsRouter", () => {
-  test("returns the typed client deductions payload for a client id", async () => {
+  test("returns the typed case deductions payload for a case id", async () => {
     const controller: DeductionController = {
       read: vi.fn(async () => samplePayload),
     };
@@ -73,11 +73,11 @@ describe("createDeductionsRouter", () => {
         app.use("/v1", createDeductionsRouter({ controller }));
       },
       async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/v1/clients/client-123/deductions`);
+        const response = await fetch(`${baseUrl}/v1/cases/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22/deductions`);
 
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toEqual(samplePayload);
-        expect(controller.read).toHaveBeenCalledWith({ clientId: "client-123" });
+        expect(controller.read).toHaveBeenCalledWith({ caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22" });
       },
     );
   });
@@ -92,7 +92,7 @@ describe("createDeductionsRouter", () => {
         app.use("/v1", createDeductionsRouter({ controller }));
       },
       async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/v1/clients/client-123/deductions`);
+        const response = await fetch(`${baseUrl}/v1/cases/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22/deductions`);
 
         expect(response.status).toBe(401);
         expect(controller.read).not.toHaveBeenCalled();

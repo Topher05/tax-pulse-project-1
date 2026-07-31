@@ -10,7 +10,7 @@ import * as caseApi from "../../shared/caseApi.ts";
 import { useDeductionsQuery } from "../../entities/deductionQueries.ts";
 
 const samplePayload = {
-  clientId: "client-123",
+  caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
   incomeEvents: [
     {
       source: "W-2 wages",
@@ -44,7 +44,7 @@ describe("useDeductionsQuery", () => {
       )
     );
 
-    const { result } = renderHook(() => useDeductionsQuery("client-123"), { wrapper });
+    const { result } = renderHook(() => useDeductionsQuery("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22"), { wrapper });
 
     expect(result.current.isPending || result.current.isLoading).toBe(true);
 

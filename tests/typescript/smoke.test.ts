@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   createGreeting,
   clientDeductionAggregationPayloadSchema,
+  deductionCategoryValues,
   taxPlanCycleSchema,
   taxPlanCycleStages,
   type ClientDeductionAggregationPayload,
@@ -109,7 +110,7 @@ test("tax plan cycle accepts a hold reason when on hold", () => {
 
 test("client deduction aggregation payload validates", () => {
   const payload: ClientDeductionAggregationPayload = {
-    clientId: "client-123",
+    caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
     incomeEvents: [
       {
         source: "W-2 wages",
@@ -127,7 +128,7 @@ test("client deduction aggregation payload validates", () => {
         id: "ded-001",
         date: "2026-07-30",
         description: "Mortgage interest",
-        category: "Mortgage interest",
+        category: deductionCategoryValues[0],
         amount: 18500,
       },
     ],
@@ -139,9 +140,9 @@ test("client deduction aggregation payload validates", () => {
   );
 });
 
-test("client deduction aggregation payload rejects negative money amounts", () => {
+test("client deduction aggregation payload rejects invalid category values", () => {
   const payload: ClientDeductionAggregationPayload = {
-    clientId: "client-123",
+    caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
     incomeEvents: [
       {
         source: "W-2 wages",
@@ -154,7 +155,42 @@ test("client deduction aggregation payload rejects negative money amounts", () =
         id: "ded-001",
         date: "2026-07-30",
         description: "Mortgage interest",
-        category: "Mortgage interest",
+        category: deductionCategoryValues[0],
+        amount: 18500,
+      },
+    ],
+  };
+
+  const invalidPayload: unknown = {
+    ...payload,
+    deductions: [
+      { ...payload.deductions[0], category: "Mortgage interest" as never },
+    ],
+  };
+
+  assert.equal(
+    clientDeductionAggregationPayloadSchema.safeParse(invalidPayload)
+      .success,
+    false,
+  );
+});
+
+test("client deduction aggregation payload rejects negative money amounts", () => {
+  const payload: ClientDeductionAggregationPayload = {
+    caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+    incomeEvents: [
+      {
+        source: "W-2 wages",
+        amount: 125000,
+        withholding: 24500,
+      },
+    ],
+    deductions: [
+      {
+        id: "ded-001",
+        date: "2026-07-30",
+        description: "Mortgage interest",
+        category: deductionCategoryValues[0],
         amount: 18500,
       },
     ],

@@ -21,7 +21,7 @@ const deductionCategories = [
 
 function buildMockPayload() {
   return {
-    clientId: "client-123",
+    caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
     incomeEvents: [
       {
         source: "W-2 wages",
@@ -67,6 +67,7 @@ describe("DeductionsPage", () => {
     const caseApiSpy = vi
       .spyOn(caseApi, "caseApiGetJson")
       .mockResolvedValueOnce(payload as never);
+    const consoleTableSpy = vi.spyOn(console, "table").mockImplementation(() => undefined);
 
     renderDeductionsPage();
 
@@ -91,7 +92,11 @@ describe("DeductionsPage", () => {
     expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(25);
 
     await waitFor(() => {
-      expect(caseApiSpy).toHaveBeenCalledWith("/v1/clients/client-123/deductions");
+      expect(caseApiSpy).toHaveBeenCalledWith("/v1/cases/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22/deductions");
+    });
+
+    await waitFor(() => {
+      expect(consoleTableSpy).toHaveBeenCalledWith(payload.deductions);
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Add Deduction" }));

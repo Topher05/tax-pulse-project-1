@@ -4,10 +4,14 @@ export {
   deductionCategorySchema,
   deductionCategoryValues,
   deductionSchema,
+  deductionTableRowSchema,
+  deductionTableRowsSchema,
   incomeEventSchema,
   type DeductionCategory,
   type ClientDeductionAggregationPayload,
   type Deduction,
+  type DeductionTableRow,
+  type DeductionTableRows,
   type IncomeEvent,
 } from "./repositories/deduction.js";
 export {
@@ -16,12 +20,11 @@ export {
   type AggregationDataSource,
   type TaxPulseAggregationClientOptions,
 } from "./infrastructure/aggregationClient.js";
-export { InMemoryMockAggregationDataSource } from "./repositories/mockAggregationDataSource.js";
 export {
-  createDeductionController,
-  type DeductionController,
-  type DeductionControllerOptions,
-} from "./controllers/deductions.js";
+  createDeductionRepository,
+  type DeductionListInput,
+  type DeductionRepository,
+} from "./repositories/repository.js";
 export {
   createDeductionsRouter,
   type CreateDeductionsRouterOptions,

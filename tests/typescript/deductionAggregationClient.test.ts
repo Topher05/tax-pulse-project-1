@@ -19,13 +19,13 @@ describe("TaxPulseAggregationClient", () => {
       new InMemoryMockAggregationDataSource(),
     );
 
-    const payload = await client.fetchAggregationPayload("client-123");
+    const payload = await client.fetchAggregationPayload("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22");
 
     expect(
       clientDeductionAggregationPayloadSchema.parse(payload),
     ).toStrictEqual(payload);
     expect(payload).toMatchObject({
-      clientId: "client-123",
+      caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
       incomeEvents: [
         {
           source: "W-2 wages",
@@ -38,17 +38,15 @@ describe("TaxPulseAggregationClient", () => {
           withholding: 0,
         },
       ],
-      deductions: [
-        {
-          id: "ded-001",
-          date: "2026-07-30",
-          description: "Client lunches and travel for business development 1",
-          category: "Business Expense",
-          amount: 780,
-        },
-      ],
     });
     expect(payload.deductions).toHaveLength(25);
+    expect(payload.deductions[0]).toMatchObject({
+      id: "ded-001",
+      date: "2026-07-30",
+      description: "Client lunches and travel for business development 1",
+      category: "Business Expense",
+      amount: 780,
+    });
   });
 
   test("resolves concurrent aggregation calls for two clients independently", async () => {
@@ -57,8 +55,8 @@ describe("TaxPulseAggregationClient", () => {
     const secondClient = new TaxPulseAggregationClient(dataSource);
 
     const [firstPayload, secondPayload] = await Promise.all([
-      firstClient.fetchAggregationPayload("client-123"),
-      secondClient.fetchAggregationPayload("client-456"),
+      firstClient.fetchAggregationPayload("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22"),
+      secondClient.fetchAggregationPayload("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23"),
     ]);
 
     expect(
@@ -67,8 +65,8 @@ describe("TaxPulseAggregationClient", () => {
     expect(
       clientDeductionAggregationPayloadSchema.parse(secondPayload),
     ).toStrictEqual(secondPayload);
-    expect(firstPayload.clientId).toBe("client-123");
-    expect(secondPayload.clientId).toBe("client-456");
+    expect(firstPayload.caseId).toBe("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22");
+    expect(secondPayload.caseId).toBe("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23");
     expect(firstPayload).not.toBe(secondPayload);
   });
 
@@ -76,7 +74,7 @@ describe("TaxPulseAggregationClient", () => {
     vi.useFakeTimers();
     const client = new TaxPulseAggregationClient(
       {
-        async fetchClientAggregationPayload() {
+        async fetchCaseAggregationPayload() {
           return await new Promise<ClientDeductionAggregationPayload>(
             () => {},
           );
@@ -85,9 +83,9 @@ describe("TaxPulseAggregationClient", () => {
       { timeoutMs: 25 },
     );
 
-    const payloadPromise = client.fetchAggregationPayload("client-timeout");
+    const payloadPromise = client.fetchAggregationPayload("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24");
     const rejectionExpectation = expect(payloadPromise).rejects.toMatchObject({
-      clientId: "client-timeout",
+      caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24",
       timeoutMs: 25,
     });
 
@@ -101,7 +99,7 @@ describe("TaxPulseAggregationClient", () => {
   test("resolves a fast source before the configured timeout elapses", async () => {
     vi.useFakeTimers();
     const fastPayload: ClientDeductionAggregationPayload = {
-      clientId: "client-fast",
+      caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d25",
       incomeEvents: [
         {
           source: "Synthetic salary",
@@ -120,13 +118,13 @@ describe("TaxPulseAggregationClient", () => {
       ],
     };
     const fastSource: AggregationDataSource = {
-      async fetchClientAggregationPayload() {
+      async fetchCaseAggregationPayload() {
         return fastPayload;
       },
     };
     const client = new TaxPulseAggregationClient(fastSource, { timeoutMs: 25 });
 
-    const payload = await client.fetchAggregationPayload("client-fast");
+    const payload = await client.fetchAggregationPayload("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d25");
 
     expect(
       clientDeductionAggregationPayloadSchema.parse(payload),
