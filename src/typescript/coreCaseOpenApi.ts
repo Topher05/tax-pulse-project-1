@@ -34,6 +34,7 @@ import {
   taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleSchema,
 } from "./features/taxPlanCycle/index.js";
+import { taxPlanCycleReadResponseSchema } from "./features/taxPlanCycle/taxPlanCycle.js";
 
 type JsonValue =
   | string
@@ -62,6 +63,18 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "TaxPlanCycle",
     schema: taxPlanCycleSchema,
+  },
+  {
+    name: "TaxPlanCycleReadResponse",
+    schema: taxPlanCycleReadResponseSchema,
+  },
+  {
+    name: "TaxPlanCycleQueueItem",
+    schema: taxPlanCycleQueueItemSchema,
+  },
+  {
+    name: "TaxPlanCycleQueueGetResponse",
+    schema: taxPlanCycleQueueGetResponseSchema,
   },
   {
     name: "TaxPlanCycleCreateAccepted",
@@ -125,6 +138,7 @@ const fakeTaxPlanCycleExample = {
   priority: fakeTaxPlanCycleCreateExample.priority,
   due_date: fakeTaxPlanCycleCreateExample.due_date,
   on_hold: false,
+  scenarios: [],
 };
 
 const fakeTaxPlanCycleQueueExample = [

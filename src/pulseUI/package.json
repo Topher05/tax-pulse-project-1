@@ -15,11 +15,14 @@
     "typecheck": "tsc -p tsconfig.pulseUI.json --noEmit"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.5.7",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-router": "^1.133.1",
     "lucide-react": "^0.553.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-hook-form": "^7.83.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

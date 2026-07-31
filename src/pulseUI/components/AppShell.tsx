@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Settings2 } from "lucide-react";
+import { LogOut, Settings2 } from "lucide-react";
 import { useState } from "react";
 
 import { useSession } from "../auth/AuthProvider.tsx";
@@ -12,6 +12,15 @@ export function AppShell() {
   const [liveCalculationEnabled, setLiveCalculationEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  if (pathname === "/login") {
+    return (
+      <main className={styles.login} aria-label="Authentication">
+        <Outlet />
+      </main>
+    );
+  }
+
   const viewTitle = getViewTitle(pathname);
 
   return (
@@ -53,6 +62,23 @@ export function AppShell() {
             </section>
           ))}
         </nav>
+
+        <footer className={styles.sidebarFooter} aria-label="Session">
+          <div className={styles.userCard}>
+            <div className={styles.userAvatar} aria-hidden="true">
+              JL
+            </div>
+            <div className={styles.userCopy}>
+              <p className={styles.userName}>Jordan Lee</p>
+              <p className={styles.userRole}>Firm Admin</p>
+            </div>
+          </div>
+
+          <button className={styles.logoutButton} type="button">
+            <LogOut className={styles.logoutIcon} aria-hidden="true" />
+            <span>Logout</span>
+          </button>
+        </footer>
       </aside>
 
       <div className={styles.workspace}>

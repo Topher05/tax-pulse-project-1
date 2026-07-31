@@ -35,9 +35,194 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira101 - SCRUM-101
+
+**Branch:** `caleb-latimer-jira101`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-101
+
+**Summary:** Build the Scenario Planner form with react-hook-form + zod
+
+**Description:** As an Advisor, I want a Scenario Planner form, so that I can enter a scenario inside a local modal on the Pulse UI `/scenarios` page.
+
+**Acceptance Criteria:**
+
+- The `/scenarios` page renders a button that opens a modal titled `New What-If Scenario`.
+- The form uses `react-hook-form` with Zod validation and shows inline field errors.
+- Submitting logs the form payload locally with `console.table()` and does not call the backend.
+- The submission path keeps the Scrum-102 follow-up comment in place and leaves backend submission for later.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant UI as Pulse UI
+    participant Form as react-hook-form
+    participant Schema as Zod
+
+    Advisor->>UI: Open /scenarios
+    UI-->>Advisor: Render Scenario Planner entry button
+    Advisor->>UI: Open modal
+    UI->>Form: mount local form state
+    Advisor->>Form: Enter scenario fields
+    Form->>Schema: validate locally
+    Schema-->>Form: field-level success or inline errors
+    Advisor->>Form: Click Create Scenario
+    Form->>Schema: validate current form values
+    Schema-->>Form: valid payload or errors
+    Form-->>Advisor: console.table(formData)
+    Note over Form,Advisor: Submission work is handled in Scrum-102
+```
+
+**Code Connection:**
+
+- `src/pulseUI/components/ScenarioPlanningForm.tsx`
+- `src/pulseUI/components/ScenarioPlanningForm.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
+- `src/pulseUI/package.json`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Tax Plan Cycle scenario-planning UI work
+
+**Changed Files:**
+
+- `src/pulseUI/components/ScenarioPlanningForm.tsx`
+- `src/pulseUI/components/ScenarioPlanningForm.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
+- `src/pulseUI/package.json`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/scenarios/ScenarioPlannerPage.test.tsx"` passed.
+- The scenario form test verifies the modal, inline validation, default income type, negative decimal handling, and `console.table()` submit logging.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ScenarioPlanningForm.test.tsx tests/scenarios/ScenarioPlannerPage.test.tsx"` passed.
+- The split tests now cover the extracted component modal behavior, validation, escape close handling, and the page launcher open/close flow.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc -p src/pulseUI/tsconfig.pulseUI.json --noEmit 2>&1 | findstr /C:ScenarioPlannerPage.tsx"` returned no Scenario Planner file errors.
+- The broader Pulse UI typecheck still has pre-existing unrelated errors in `Details.tsx`, `Queue.tsx`, and older route tests that are outside this ticket.
+
 ## caleb-latimer-jira100 - SCRUM-100
 
 **Branch:** `caleb-latimer-jira-100`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-100
+
+**Summary:** Jira-100 Wire the queue and detail screens to live data and consolidate detail navigation
+
+**Description:** Wire the Tax Plan Cycle queue and detail screens to live server state using TanStack Query so the signed-in user's authorized cycles and cycle detail can be read through the Core service, then fold the legacy detail route/navigation state into `Details` and move query helpers into the entity layer.
+
+**Acceptance Criteria:**
+
+- The queue fetches the tenant's cycles via a TanStack Query hook.
+- The detail screen fetches a single cycle by case ID.
+- A scoped Advisor sees only their assigned cases per the permission matrix.
+- The detail page owns its tab, stage, and comment draft state locally after the refactor.
+- The legacy detail wrapper and navigation hook are deleted after the refactor.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant UI as Pulse UI
+    participant Query as TanStack Query
+    participant Core as Core Case Service
+    participant Repo as Tax Plan Cycle Repository
+    participant Page as Details Page State
+
+    Advisor->>UI: Open /cycles/queue
+    UI->>Query: useQuery(["taxPlanCycle","queue"])
+    Query->>Core: GET /v1/tax-plan-cycles
+    Core->>Repo: listQueue(tenantId)
+    Repo-->>Core: queue rows
+    Core-->>Query: 200 OK + queue payload
+    Query-->>UI: cache queue data
+    UI-->>Advisor: render queue table and KPIs
+
+    Advisor->>UI: Open /cycles/:id
+    UI->>Query: useQuery(["taxPlanCycle","details",caseId])
+    Query->>Core: GET /v1/tax-plan-cycles/:id
+    Core->>Repo: findByCaseId(tenantId, caseId)
+    Repo-->>Core: single cycle payload
+    Core-->>Query: 200 OK + detail payload
+    Query-->>UI: cache cycle detail
+    UI->>Page: initialize tabs, stage, and comment draft
+    Advisor->>Page: Switch tabs or stage locally
+    Page-->>Advisor: Update local detail view state
+
+    Core-->>UI: 401/502 Problem Details on auth or upstream failure
+```
+
+**Code Connection:**
+
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/queryClient.ts`
+- `src/pulseUI/shared/coreCaseApi.ts`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
+- `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `adr/0021-tanstack-query-for-pulse-ui-server-state.md`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Core Case Service tax plan cycle read wiring
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/index.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/queryClient.ts`
+- `src/pulseUI/shared/coreCaseApi.ts`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Queue.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycleDetailRoute.tsx`
+- `src/pulseUI/pages/taxPlanCycle/queries.ts`
+- `src/pulseUI/pages/taxPlanCycle/usePlanCycleDetailNavigation.ts`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/taxPlanCycle/Details.test.tsx tests/taxPlanCycle/queries.test.ts tests/taxPlanCycle/Queue.test.tsx tests/taxPlanCycle/QueueState.test.tsx"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
 
 **Assignee:** Caleb Latimer
 
@@ -609,3 +794,68 @@ sequenceDiagram
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` passed after fixing the stale `test:express` script reference and scoping Vitest away from the React UI tree.
 - Deviation from the original change set: the scenario-local logger was removed entirely because it did not improve the failure output enough to justify the added scope.
 - Deviation from the original change set: the root test harness was repaired as part of the same pass so the Node test run is exclusive from the React UI tree and `npm test` is meaningful again.
+
+## caleb-latimer-jira111 - SCRUM-111
+
+**Branch:** `caleb-latimer-jira111`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-111
+
+**Summary:** Scaffold the Deductions & Expenses screen component from the wireframe and refine shell navigation
+
+**Description:** Scaffold a typed Pulse UI `/deductions` screen with a reusable tool header, KPI region, and table region, then update the shell navigation and sidebar footer copy so the layout is stable before data wiring lands.
+
+**Acceptance Criteria:**
+
+- The `/deductions` route renders a typed deductions screen scaffold instead of the empty page.
+- The screen uses reusable shared UI where it already exists, especially `MetricCard`.
+- The screen includes a local placeholder modal shell opened by the Add Deduction button.
+- The screen stays fully local and inert with no data fetching or backend changes.
+- The sidebar includes an Administration section plus a footer user card and Logout button.
+- The deductions nav entry uses the percent icon and the title copy reads `Deductions & Expenses`.
+
+**Code Connection:**
+
+- `src/pulseUI/components/ToolHeader.tsx`
+- `src/pulseUI/components/DataTable.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.module.css`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/AppShell.module.css`
+- `src/pulseUI/shared/navigation.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/components/ToolHeader.test.tsx`
+- `src/pulseUI/tests/components/DataTable.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Plan tools screen scaffolding
+
+**Changed Files:**
+
+- `src/pulseUI/components/ToolHeader.tsx`
+- `src/pulseUI/components/ToolHeader.module.css`
+- `src/pulseUI/components/DataTable.tsx`
+- `src/pulseUI/components/DataTable.module.css`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.module.css`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/AppShell.module.css`
+- `src/pulseUI/shared/navigation.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/components/ToolHeader.test.tsx`
+- `src/pulseUI/tests/components/DataTable.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.

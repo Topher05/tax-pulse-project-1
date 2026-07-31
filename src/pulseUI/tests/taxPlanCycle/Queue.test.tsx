@@ -5,6 +5,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
+import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import { AuthenticatedSessionProvider } from "../auth/AuthenticatedSessionProvider.tsx";
@@ -15,11 +16,14 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  localStorage.clear();
   cleanup();
   vi.restoreAllMocks();
 });
 
 function renderQueue() {
+  localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+
   vi.spyOn(queueQueries, "fetchTaxPlanCycleQueue").mockResolvedValue([
     {
       caseId: "TP-24018",
@@ -130,7 +134,6 @@ describe("Tax Plan Cycle queue page", () => {
 
     const table = await screen.findByRole("table", { name: "Tax Plan Cycle Cases" });
     fireEvent.click(within(table).getAllByRole("button", { name: "Open" })[0]!);
-
     expect(
       await screen.findByRole("heading", {
         name: "North Shore Family Office - Q2 2026 Tax Plan",

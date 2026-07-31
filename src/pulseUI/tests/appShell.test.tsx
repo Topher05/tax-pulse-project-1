@@ -5,6 +5,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
+import { pulseAccessTokenStorageKey } from "../app/authSession.ts";
 import { createPulseQueryClient } from "../app/queryClient.ts";
 import { createPulseRouter } from "../app/createPulseRouter.ts";
 import { AuthenticatedSessionProvider } from "./auth/AuthenticatedSessionProvider.tsx";
@@ -14,10 +15,15 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  localStorage.clear();
   cleanup();
 });
 
-const renderShell = (initialPath: string = "/") => {
+const renderShell = (initialPath: string = "/", authenticated = true) => {
+  if (authenticated) {
+    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+  }
+
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
       <AuthenticatedSessionProvider>
@@ -28,6 +34,13 @@ const renderShell = (initialPath: string = "/") => {
 };
 
 describe("Pulse UI app shell", () => {
+  test("redirects unauthenticated internal routes to login", async () => {
+    renderShell("/cycles/queue", false);
+
+    expect(await screen.findByRole("heading", { name: "Sign in", level: 1 })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
+  });
+
   test("renders the workspace sidebar heading", async () => {
     renderShell("/cycles/queue");
 
@@ -42,6 +55,14 @@ describe("Pulse UI app shell", () => {
     const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
 
     expect(within(primaryNav).getByRole("heading", { name: "Plan Tools" })).toBeInTheDocument();
+  });
+
+  test("renders the administration sidebar heading", async () => {
+    renderShell("/cycles/queue");
+
+    const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
+
+    expect(within(primaryNav).getByRole("heading", { name: "Administration" })).toBeInTheDocument();
   });
 
   test("renders the firm sidebar heading", async () => {
@@ -66,6 +87,20 @@ describe("Pulse UI app shell", () => {
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
   });
 
+  test("renders the administration view title", async () => {
+    renderShell("/administration/tenants-users");
+
+    expect(
+      await screen.findByRole("heading", { name: "All Tenants & Users", level: 1 }),
+    ).toBeInTheDocument();
+  });
+
+  test("defaults view as to firm admin", async () => {
+    renderShell("/cycles/queue");
+
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
+  });
+
   test("toggles live calculation off", async () => {
     renderShell("/cycles/queue");
 
@@ -83,6 +118,16 @@ describe("Pulse UI app shell", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
 
     expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
+  });
+
+  test("renders the sidebar footer session card and logout button", async () => {
+    renderShell("/cycles/queue");
+
+    const sessionFooter = await screen.findByLabelText("Session");
+
+    expect(within(sessionFooter).getByText("Jordan Lee")).toBeInTheDocument();
+    expect(within(sessionFooter).getByText("Firm Admin")).toBeInTheDocument();
+    expect(within(sessionFooter).getByRole("button", { name: "Logout" })).toBeInTheDocument();
   });
 
   test("renders the dashboard hero on the root route", async () => {
