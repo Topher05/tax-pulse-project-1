@@ -20,28 +20,24 @@ const deductionCategories = [
 ] as const;
 
 function buildMockPayload() {
-  return {
-    caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
-    incomeEvents: [
-      {
-        source: "W-2 wages",
-        amount: 125000,
-        withholding: 24500,
-      },
-      {
-        source: "1099 interest",
-        amount: 1400,
-        withholding: 0,
-      },
-    ],
-    deductions: Array.from({ length: 25 }, (_value, index) => ({
-      id: `ded-${String(index + 1).padStart(3, "0")}`,
-      date: "2026-07-30",
-      description: `Synthetic deduction ${index + 1}`,
-      category: deductionCategories[index % deductionCategories.length] ?? "Other",
-      amount: 780 + index * 145,
-    })),
-  };
+  return Array.from({ length: 25 }, (_value, index) => ({
+    id: `ded-${String(index + 1).padStart(3, "0")}`,
+    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+    date: "2026-07-30",
+    description: `Synthetic deduction ${index + 1}`,
+    category: deductionCategories[index % deductionCategories.length] ?? "Other",
+    amount: String(780 + index * 145),
+    tax_impact: String(195 + index * 35),
+    deleted: false,
+  }));
+}
+
+function buildParsedPayload() {
+  return buildMockPayload().map((row) => ({
+    ...row,
+    amount: Number(row.amount),
+    tax_impact: Number(row.tax_impact),
+  }));
 }
 
 beforeAll(() => {
@@ -64,6 +60,7 @@ function renderDeductionsPage() {
 describe("DeductionsPage", () => {
   test("renders the live deductions scaffold and opens the form modal", async () => {
     const payload = buildMockPayload();
+    const parsedPayload = buildParsedPayload();
     const caseApiSpy = vi
       .spyOn(caseApi, "caseApiGetJson")
       .mockResolvedValueOnce(payload as never);
@@ -80,23 +77,15 @@ describe("DeductionsPage", () => {
     expect(screen.getByText("$950.55")).toBeInTheDocument();
     expect(screen.getByText("Deduction Method")).toBeInTheDocument();
     expect(screen.getByText("Standard ($12,500)")).toBeInTheDocument();
-    expect(await screen.findByRole("table", { name: "Deduction records" })).toBeInTheDocument();
-    expect(screen.getAllByRole("row")).toHaveLength(26);
-    expect(screen.getAllByRole("columnheader")).toHaveLength(6);
-    expect(screen.getByRole("columnheader", { name: "ACTION" })).toBeInTheDocument();
-    expect(screen.getAllByText("2026-07-30")).toHaveLength(25);
-    expect(screen.getByText("Synthetic deduction 1")).toBeInTheDocument();
-    expect(screen.getAllByText("Business Expense").length).toBeGreaterThan(0);
+    expect(screen.getByText("Deduction table wiring is disabled pending scrum-115.")).toBeInTheDocument();
     expect(screen.getByText("$63,000")).toBeInTheDocument();
-    expect(screen.getByText("-$780")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(25);
 
     await waitFor(() => {
       expect(caseApiSpy).toHaveBeenCalledWith("/v1/cases/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22/deductions");
     });
 
     await waitFor(() => {
-      expect(consoleTableSpy).toHaveBeenCalledWith(payload.deductions);
+      expect(consoleTableSpy).toHaveBeenCalledWith(parsedPayload);
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Add Deduction" }));

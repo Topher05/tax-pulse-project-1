@@ -868,90 +868,94 @@ sequenceDiagram
 
 **Jira Key:** SCRUM-112
 
-**Summary:** Add the TanStack Query hook to the deductions endpoint
+**Summary:** Replace deductions GET mocks with a Postgres-backed list endpoint and align the Pulse UI query consumer to integration a TanStack Query hook to the deductions endpoint
 
-**Description:** As a Frontend Developer, I want a TanStack Query hook fetching the client's deductions, so that the Deductions screen reads live data through one typed boundary.
+**Description:** As a Core Case Service engineer, I want `GET /v1/cases/:caseId/deductions` to read directly from Postgres and return a JSON array of deduction rows, so that the Deductions screen can consume tenant-scoped live data through a typed query boundary instead of a synthetic aggregation payload.
 
 **Acceptance Criteria:**
 
-- The Core Case service exposes a typed client deductions endpoint under `/v1/clients/:clientId/deductions`.
-- The endpoint returns a deduction aggregation payload with date fields emitted as strings.
-- The Pulse UI reads deductions through a dedicated TanStack Query hook.
-- The Deductions screen opens a local add-deduction modal and logs form payloads locally with `console.table()`.
-- The new hook and endpoint are covered by regression tests.
+- `GET /v1/cases/:caseId/deductions` queries the `deduction` table directly.
+- The repository filters by the authenticated tenant and requested case.
+- The endpoint returns a JSON array of deduction rows with ISO date strings and numeric fields serialized for JSON transport.
+- The deductions backend no longer depends on the in-memory aggregation mock, controller stub, or 404 placeholder path.
+- The Pulse UI query layer treats the response as `Deduction[]`, and the Deductions page logs the parsed array with `console.table()`.
+- Repository, route, and UI regression tests cover the owning tenant, cross-tenant access, empty-list cases, and the parsed response shape.
+- The OpenAPI contract reflects the new list response.
 
 **Sequence Diagram:**
 
 ```mermaid
 sequenceDiagram
+    participant Advisor
     participant UI as Pulse UI
     participant Query as useDeductionsQuery
     participant API as Core Case Service
-    participant Controller as Deductions Controller
-    participant Store as Mock Aggregation Data Source
+    participant Route as deductions route
+    participant Repo as Deductions repository
+    participant DB as Postgres deduction table
 
-    UI->>Query: mount Deductions page
-    Query->>API: GET /v1/clients/{clientId}/deductions
-    API->>Controller: validate params and auth context
-    Controller->>Store: fetchAggregationPayload(clientId)
-    Store-->>Controller: typed deductions payload
-    Controller-->>API: parsed client deductions response
-    API-->>Query: JSON payload
-    Query-->>UI: render deductions list and KPI data
+    Advisor->>UI: Open /deductions
+    UI->>Query: mount DeductionsPage with caseId
+    Query->>API: GET /v1/cases/{caseId}/deductions
+    API->>Route: authenticate and route request
+    Route->>Repo: listByCaseId(tenantId, caseId)
+    Repo->>DB: SELECT deduction rows joined through tax_plan_cycle
+    DB-->>Repo: matching deduction rows
+    Repo-->>Route: tenant-scoped Deduction[]
+    Route-->>API: 200 OK + JSON array
+    API-->>Query: parsed Deduction[]
+    Query-->>UI: query data available
+    UI->>UI: console.table(query.data)
+    Note over UI: Main table wiring stays disabled for Scrum-115
 ```
 
 **Code Connection:**
 
-- `src/typescript/features/deductions/deductionAggregationClient.ts`
-- `src/typescript/deductionAggregation.ts`
-- `src/typescript/mockAggregationDataSource.ts`
-- `src/typescript/features/deductions/controllers/deductions.ts`
+- `src/typescript/features/deductions/repositories/repository.ts`
+- `src/typescript/features/deductions/repositories/deduction.ts`
 - `src/typescript/features/deductions/routes.ts`
-- `src/typescript/features/deductions/index.ts`
+- `src/typescript/features/deductions/controllers/deductions.ts`
+- `src/typescript/features/deductions/repositories/mockAggregationDataSource.ts`
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
 - `src/pulseUI/entities/deductionQueries.ts`
-- `src/pulseUI/components/DeductionEntryForm.tsx`
-- `src/pulseUI/components/DeductionEntryForm.module.css`
 - `src/pulseUI/pages/deductions/DeductionsPage.tsx`
-- `src/pulseUI/pages/deductions/DeductionsPage.module.css`
-- `src/typescript/features/deductions/routes.test.ts`
 - `src/pulseUI/tests/entities/deductionQueries.test.ts`
-- `src/pulseUI/tests/components/DeductionEntryForm.test.tsx`
 - `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `tests/typescript/features/deductions/repository.test.ts`
+- `tests/typescript/features/deductions/routes.test.ts`
+- `tests/typescript/deductionAggregationClient.test.ts`
 
 **Project Scope Connection:**
 
-- React SPA - Operator & Portal Experience
-- Core Case service API surface for plan-tool data
+- Core Case Service backend
+- Tenant-scoped read path and API contract cleanup
+- Pulse UI deductions query boundary alignment
 
 **Changed Files:**
 
-- `src/typescript/features/deductions/deductionAggregationClient.ts`
-- `src/typescript/deductionAggregation.ts`
-- `src/typescript/mockAggregationDataSource.ts`
-- `src/typescript/features/deductions/controllers/deductions.ts`
+- `src/typescript/features/deductions/repositories/repository.ts`
+- `src/typescript/features/deductions/repositories/deduction.ts`
 - `src/typescript/features/deductions/routes.ts`
-- `src/typescript/features/deductions/index.ts`
+- `src/typescript/features/deductions/controllers/deductions.ts`
+- `src/typescript/features/deductions/repositories/mockAggregationDataSource.ts`
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
 - `src/pulseUI/entities/deductionQueries.ts`
-- `src/pulseUI/components/DeductionEntryForm.tsx`
-- `src/pulseUI/components/DeductionEntryForm.module.css`
 - `src/pulseUI/pages/deductions/DeductionsPage.tsx`
-- `src/pulseUI/pages/deductions/DeductionsPage.module.css`
 - `src/pulseUI/tests/entities/deductionQueries.test.ts`
-- `src/pulseUI/tests/components/DeductionEntryForm.test.tsx`
 - `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `tests/typescript/features/deductions/repository.test.ts`
 - `tests/typescript/features/deductions/routes.test.ts`
 - `tests/typescript/deductionAggregationClient.test.ts`
-- `tests/typescript/smoke.test.ts`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
-- Focused Vitest runs for the new backend and Pulse UI tests were blocked by the Windows Node profile-path issue (`EPERM lstat C:\Users`) in this environment.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` still fails in this host because the existing suite depends on Docker/Testcontainers integration and one pre-existing `jwtProtectedRoutes` assertion mismatch remains outside this change.
 
 ## caleb-latimer-jira117 - SCRUM-117
 

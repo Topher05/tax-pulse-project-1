@@ -7,10 +7,14 @@ export {
   deductionCategorySchema,
   deductionCategoryValues,
   deductionSchema,
+  deductionTableRowSchema,
+  deductionTableRowsSchema,
   incomeEventSchema,
   type DeductionCategory,
   type ClientDeductionAggregationPayload,
   type Deduction,
+  type DeductionTableRow,
+  type DeductionTableRows,
   type IncomeEvent,
 } from "./features/deductions/repositories/deduction.js";
 export {
@@ -19,7 +23,6 @@ export {
   type AggregationDataSource,
   type TaxPulseAggregationClientOptions,
 } from "./features/deductions/infrastructure/aggregationClient.js";
-export { InMemoryMockAggregationDataSource } from "./features/deductions/repositories/mockAggregationDataSource.js";
 export { createApp, type CreateAppOptions } from "./app.js";
 export {
   ProblemHttpError,
@@ -83,11 +86,11 @@ export {
   type AuditEntryWriter,
 } from "./auditEntryRepository.js";
 export {
-  createDeductionController,
+  createDeductionRepository,
   createDeductionsRouter,
   type CreateDeductionsRouterOptions,
-  type DeductionController,
-  type DeductionControllerOptions,
+  type DeductionListInput,
+  type DeductionRepository,
 } from "./features/deductions/index.js";
 export {
   authMfaLoginRequestSchema,
@@ -387,7 +390,7 @@ import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
 import { createTenantLoginResolver } from "./tenantLoginResolver.js";
 import {
-  createDeductionController,
+  createDeductionRepository,
   createDeductionsRouter,
 } from "./features/deductions/index.js";
 import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
@@ -402,10 +405,8 @@ import {
 import { authenticatePasswordForMfaChallenge } from "./authService.js";
 import { createMfaEnrollmentController } from "./mfaEnrollment.js";
 import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
-import { InMemoryMockAggregationDataSource } from "./features/deductions/repositories/mockAggregationDataSource.js";
 import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
 import { createTokenService } from "./tokenService.js";
-import { TaxPulseAggregationClient } from "./features/deductions/infrastructure/aggregationClient.js";
 
 loadEnv();
 const { Client } = pg;
@@ -460,12 +461,7 @@ export async function main(): Promise<Server> {
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
   const scenarioRepository = createScenarioRepository(client);
-  const aggregationClient = new TaxPulseAggregationClient(
-    new InMemoryMockAggregationDataSource(),
-  );
-  const deductionController = createDeductionController({
-    aggregationClient,
-  });
+  const deductionRepository = createDeductionRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   const liabilityEngineBase = process.env.LIABILITY_ENGINE_BASE?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
@@ -563,7 +559,7 @@ export async function main(): Promise<Server> {
       app.use(
         taxPlanCycleApiPrefix,
         createDeductionsRouter({
-          controller: deductionController,
+          repository: deductionRepository,
         }),
       );
       app.use(

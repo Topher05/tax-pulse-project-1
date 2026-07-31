@@ -10,23 +10,14 @@ import * as caseApi from "../../shared/caseApi.ts";
 import { useDeductionsQuery } from "../../entities/deductionQueries.ts";
 
 const samplePayload = {
-  caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
-  incomeEvents: [
-    {
-      source: "W-2 wages",
-      amount: 125000,
-      withholding: 24500,
-    },
-  ],
-  deductions: [
-    {
-      id: "ded-001",
-      date: "2026-07-30",
-      description: "Mortgage interest",
-      category: "Home Office",
-      amount: 18500,
-    },
-  ],
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+  case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+  date: "2026-07-30",
+  description: "Mortgage interest",
+  category: "Home Office",
+  amount: "18500.00",
+  tax_impact: "4625.00",
+  deleted: false,
 };
 
 afterEach(() => {
@@ -52,7 +43,13 @@ describe("useDeductionsQuery", () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(result.current.data).toEqual(samplePayload);
-    expect(result.current.data?.deductions[0]?.id).toBe("ded-001");
+    expect(result.current.data).toEqual([
+      {
+        ...samplePayload,
+        amount: 18500,
+        tax_impact: 4625,
+      },
+    ]);
+    expect(result.current.data?.[0]?.id).toBe("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01");
   });
 });

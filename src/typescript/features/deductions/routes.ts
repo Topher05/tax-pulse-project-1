@@ -4,10 +4,10 @@ import type { ZodIssue } from "zod";
 
 import { ProblemHttpError } from "../../errors.js";
 import {
-  clientDeductionAggregationPayloadSchema,
+  deductionTableRowsSchema,
   deductionReadParamsSchema,
 } from "./repositories/deduction.js";
-import type { DeductionController } from "./controllers/deductions.js";
+import type { DeductionRepository } from "./repositories/repository.js";
 
 interface TenantScopedRequest extends Request {
   tenant?: {
@@ -36,14 +36,14 @@ function toValidationIssue(issue: Pick<ZodIssue, "path" | "message" | "code">) {
 }
 
 export interface CreateDeductionsRouterOptions {
-  controller?: DeductionController;
+  repository: DeductionRepository;
 }
 
 export function createDeductionsRouter(
-  options: CreateDeductionsRouterOptions = {},
+  options: CreateDeductionsRouterOptions,
 ): Router {
   const router = Router();
-  const controller = options.controller;
+  const repository = options.repository;
 
   router.get(
     "/cases/:caseId/deductions",
@@ -75,23 +75,12 @@ export function createDeductionsRouter(
       }
 
       try {
-        if (controller === undefined) {
-          next(
-            new ProblemHttpError({
-              type: "https://taxpulse.example/problems/case-deductions-not-found",
-              title: "Case Deductions Not Found",
-              status: 404,
-              detail: "No deductions payload was found for the requested case ID.",
-            }),
-          );
-          return;
-        }
-
-        const payload = await controller.read({
+        const deductions = await repository.listByCase({
+          tenantId: tenant.id,
           caseId: parsedParams.data.caseId,
         });
 
-        res.status(200).json(clientDeductionAggregationPayloadSchema.parse(payload));
+        res.status(200).json(deductionTableRowsSchema.parse(deductions));
       } catch (error) {
         next(error);
       }

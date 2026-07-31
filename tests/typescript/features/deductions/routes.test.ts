@@ -2,35 +2,21 @@ import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
 import type { Request } from "express";
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 
 import {
   createApp,
+  createDeductionRepository,
   createDeductionsRouter,
   createLogger,
-  type ClientDeductionAggregationPayload,
-  type DeductionController,
 } from "../../../../src/typescript/index.js";
-
-const samplePayload: ClientDeductionAggregationPayload = {
-  caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
-  incomeEvents: [
-    {
-      source: "W-2 wages",
-      amount: 125000,
-      withholding: 24500,
-    },
-  ],
-  deductions: [
-    {
-      id: "ded-001",
-      date: "2026-07-30",
-      description: "Client lunches and travel for business development 1",
-      category: "Business Expense",
-      amount: 18500,
-    },
-  ],
-};
+import { applyDrizzleMigrations } from "../../../../src/typescript/shared/scripts/postgresMigrations.js";
+import {
+  taxPlanCycleRows,
+  tenantRows,
+} from "../../../../src/typescript/shared/database/seed.model.js";
+import { applySeed } from "../../../../src/typescript/shared/database/seed.js";
+import { withDrizzleTestSchema } from "../../bootstrap/migrationTestUtils.js";
 
 async function withRouter(
   registerRoutes: (app: ReturnType<typeof createApp>) => void,
@@ -53,50 +39,67 @@ async function withRouter(
   }
 }
 
-describe("createDeductionsRouter", () => {
-  test("returns the typed case deductions payload for a case id", async () => {
-    const controller: DeductionController = {
-      read: vi.fn(async () => samplePayload),
-    };
+const databaseUrl = process.env.DATABASE_URL?.trim();
+const describeDatabase = databaseUrl ? describe : describe.skip;
 
-    await withRouter(
-      (app) => {
-        app.use("/v1", (req, _res, next) => {
-          (req as Request & { tenant: { id: string }; user: { id: string } }).tenant = {
-            id: "tenant-001",
-          };
-          (req as Request & { tenant: { id: string }; user: { id: string } }).user = {
-            id: "user-001",
-          };
-          next();
+describeDatabase("createDeductionsRouter", () => {
+  test(
+    "returns the seeded deduction rows for the authenticated tenant",
+    { timeout: 60000 },
+    async () => {
+      await withDrizzleTestSchema(async (client) => {
+        await applyDrizzleMigrations(client);
+        await applySeed(client);
+        const repository = createDeductionRepository(client);
+        const expected = await repository.listByCase({
+          tenantId: tenantRows[1].id,
+          caseId: taxPlanCycleRows[1].id,
         });
-        app.use("/v1", createDeductionsRouter({ controller }));
-      },
-      async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/v1/cases/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22/deductions`);
 
-        expect(response.status).toBe(200);
-        await expect(response.json()).resolves.toEqual(samplePayload);
-        expect(controller.read).toHaveBeenCalledWith({ caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22" });
-      },
-    );
-  });
+        await withRouter(
+          (app) => {
+            app.use("/v1", (req, _res, next) => {
+              (req as Request & { tenant: { id: string }; user: { id: string } }).tenant = {
+                id: tenantRows[1].id,
+              };
+              (req as Request & { tenant: { id: string }; user: { id: string } }).user = {
+                id: "user-001",
+              };
+              next();
+            });
+            app.use("/v1", createDeductionsRouter({ repository }));
+          },
+          async (baseUrl) => {
+            const response = await fetch(
+              `${baseUrl}/v1/cases/${taxPlanCycleRows[1].id}/deductions`,
+            );
+
+            expect(response.status).toBe(200);
+            await expect(response.json()).resolves.toEqual(expected);
+          },
+        );
+      });
+    },
+  );
 
   test("returns 401 when the auth context is missing", async () => {
-    const controller: DeductionController = {
-      read: vi.fn(async () => samplePayload),
-    };
+    await withDrizzleTestSchema(async (client) => {
+      await applyDrizzleMigrations(client);
+      await applySeed(client);
+      const repository = createDeductionRepository(client);
 
-    await withRouter(
-      (app) => {
-        app.use("/v1", createDeductionsRouter({ controller }));
-      },
-      async (baseUrl) => {
-        const response = await fetch(`${baseUrl}/v1/cases/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22/deductions`);
+      await withRouter(
+        (app) => {
+          app.use("/v1", createDeductionsRouter({ repository }));
+        },
+        async (baseUrl) => {
+          const response = await fetch(
+            `${baseUrl}/v1/cases/${taxPlanCycleRows[1].id}/deductions`,
+          );
 
-        expect(response.status).toBe(401);
-        expect(controller.read).not.toHaveBeenCalled();
-      },
-    );
+          expect(response.status).toBe(401);
+        },
+      );
+    });
   });
 });

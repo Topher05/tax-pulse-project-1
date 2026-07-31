@@ -1,18 +1,14 @@
 import { Plus, CircleCheckBig, HandCoins, ShieldAlert } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { DeductionEntryForm } from "../../components/DeductionEntryForm.tsx";
-import { DataTable } from "../../components/DataTable.tsx";
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
-import {
-  type DeductionQueryRecord,
-  useDeductionsQuery,
-} from "../../entities/deductionQueries.ts";
+import { type DeductionQueryRecord, useDeductionsQuery } from "../../entities/deductionQueries.ts";
 import styles from "./DeductionsPage.module.css";
 
-const defaultClientId = "client-123"; // TODO: Remove this once we have case-id wired up via the scenarios ticket, for now this will serve as a manual entry point
+const defaultCaseId = "your Case ID here"; // TODO: Remove this once we have case-id wired up via the scenarios ticket, for now this will serve as a manual entry point
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -20,47 +16,6 @@ function formatCurrency(value: number): string {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function buildColumns() {
-  return [
-    {
-      header: "Date",
-      render: (row: DeductionQueryRecord) => (
-        <time dateTime={row.date} className={styles.dateCell}>
-          {row.date}
-        </time>
-      ),
-    },
-    {
-      header: "Description",
-      render: (row: DeductionQueryRecord) => row.description,
-    },
-    {
-      header: "Category",
-      render: (row: DeductionQueryRecord) => (
-        <span className={`${styles.badge} ${styles.badgeBlue}`}>{row.category}</span>
-      ),
-    },
-    {
-      header: "Amount",
-      render: (row: DeductionQueryRecord) => formatCurrency(row.amount),
-      cellClassName: styles.amountCell,
-    },
-    {
-      header: "Tax Impact",
-      render: (row: DeductionQueryRecord) => formatCurrency(-row.amount),
-      cellClassName: styles.taxImpactCell,
-    },
-    {
-      header: "ACTION",
-      render: () => (
-        <button className={styles.removeButton} type="button">
-          Remove
-        </button>
-      ),
-    },
-  ] as const;
 }
 
 function DeductionsScreen({
@@ -71,7 +26,6 @@ function DeductionsScreen({
   onAddDeduction: () => void;
 }) {
   const totalDeductions = deductions.reduce((sum, deduction) => sum + deduction.amount, 0);
-  const columns = buildColumns();
 
   return (
     <div className={styles.page}>
@@ -111,12 +65,7 @@ function DeductionsScreen({
       </section>
 
       <PanelCard title={null} description={null}>
-        <DataTable
-          ariaLabel="Deduction records"
-          columns={columns}
-          rows={deductions}
-          rowKey={(row) => row.id}
-        />
+        <p className={styles.stateCopy}>Deduction table wiring is disabled pending scrum-115.</p>
       </PanelCard>
 
       <footer className={styles.pageFooter}>Track deductible expenses to reduce your tax liability</footer>
@@ -141,7 +90,18 @@ function DeductionsPageChrome({
 
 export function DeductionsPage() {
   const [isAddDeductionModalOpen, setIsAddDeductionModalOpen] = useState(false);
-  const query = useDeductionsQuery(defaultClientId);
+  const query = useDeductionsQuery(defaultCaseId);
+
+  useEffect(() => {
+    // TODO: Post integration this block can be removed
+    console.info(`Loader results are ${query.status} integration of data and load states is in 115, 113`);
+    if (query.data === undefined || query.data.length === 0) {
+      return;
+    }
+
+    console.table(query.data);
+  }, [query.data]);
+
   const modal = isAddDeductionModalOpen ? (
     <DeductionEntryForm onClose={() => setIsAddDeductionModalOpen(false)} />
   ) : null;
@@ -183,7 +143,7 @@ export function DeductionsPage() {
     );
   }
 
-  const deductions = query.data?.deductions;
+  const deductions = query.data;
 
   if (deductions === undefined) {
     return null;

@@ -5,28 +5,25 @@ import { caseApiGetJson } from "../shared/caseApi.ts";
 
 const deductionAmountSchema = z.number().finite().nonnegative();
 
-const deductionQuerySchema = z.object({
-  caseId: z.string().min(1),
-  incomeEvents: z.array(
-    z.object({
-      source: z.string().min(1),
-      amount: deductionAmountSchema,
-      withholding: deductionAmountSchema,
-    }),
+const deductionRecordSchema = z.object({
+  id: z.string().min(1),
+  case_id: z.string().min(1),
+  date: z.string().min(1),
+  description: z.string().min(1),
+  category: z.string().min(1),
+  amount: z.union([z.string().min(1), deductionAmountSchema]).transform((value) =>
+    typeof value === "string" ? Number(value) : value,
   ),
-  deductions: z.array(
-    z.object({
-      id: z.string().min(1),
-      date: z.string().min(1),
-      description: z.string().min(1),
-      category: z.string().min(1),
-      amount: deductionAmountSchema,
-    }),
+  tax_impact: z.union([z.string().min(1), deductionAmountSchema]).transform((value) =>
+    typeof value === "string" ? Number(value) : value,
   ),
+  deleted: z.boolean(),
 });
 
-export type DeductionQueryPayload = z.infer<typeof deductionQuerySchema>;
-export type DeductionQueryRecord = DeductionQueryPayload["deductions"][number];
+const deductionQuerySchema = z.array(deductionRecordSchema);
+
+export type DeductionQueryRecord = z.infer<typeof deductionRecordSchema>;
+export type DeductionQueryPayload = DeductionQueryRecord[];
 
 export function deductionsQueryKey(caseId: string) {
   return ["deductions", caseId] as const;

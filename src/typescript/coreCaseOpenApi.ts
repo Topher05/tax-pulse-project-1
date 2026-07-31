@@ -18,8 +18,8 @@ import {
   scenarioTypedFiguresSchema,
 } from "./scenario.js";
 import {
-  clientDeductionAggregationPayloadSchema,
   deductionReadParamsSchema,
+  deductionTableRowsSchema,
 } from "./features/deductions/repositories/deduction.js";
 import {
   scenarioModelingRequestSchema,
@@ -89,8 +89,8 @@ export const coreCaseOpenApiSchemaRegistrations = [
     schema: deductionReadParamsSchema,
   },
   {
-    name: "DeductionAggregationPayload",
-    schema: clientDeductionAggregationPayloadSchema,
+    name: "DeductionRows",
+    schema: deductionTableRowsSchema,
   },
   {
     name: "AuthMfaLoginRequest",
@@ -335,9 +335,7 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
     toOpenApiSchema(deductionReadParamsSchema),
     "caseId",
   );
-  const deductionAggregationResponseSchema = toOpenApiSchema(
-    clientDeductionAggregationPayloadSchema,
-  );
+  const deductionRowsResponseSchema = toOpenApiSchema(deductionTableRowsSchema);
   const authMfaLoginRequestOpenApiSchema = toOpenApiSchema(
     authMfaLoginRequestSchema,
   );
@@ -791,45 +789,38 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
         get: {
           operationId: "readCaseDeductions",
           tags: ["Core Case Service"],
-          summary: "Read the case deductions aggregation payload",
+          summary: "Read the case deduction rows",
           description:
-            "Returns the case deductions aggregation payload. The date fields are emitted as strings so the UI can consume them without date conversion.",
+            "Returns the deduction table rows for the requested case as a JSON array. Date and numeric fields are serialized as strings so clients can consume them without special parsing.",
           parameters: [
             {
               name: "caseId",
               in: "path",
               required: true,
               description:
-                "Synthetic case identifier scoped by the request tenant.",
+                "Case identifier scoped by the authenticated request tenant.",
               schema: deductionReadCaseIdSchema,
               example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
             },
           ],
           responses: {
             "200": {
-              description: "The case deductions aggregation payload was returned.",
+              description: "The case deduction rows were returned.",
               content: {
                 "application/json": {
-                  schema: deductionAggregationResponseSchema,
-                  example: {
-                    caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
-                    incomeEvents: [
-                      {
-                        source: "W-2 wages",
-                        amount: 125000,
-                        withholding: 24500,
-                      },
-                    ],
-                    deductions: [
-                      {
-                        id: "ded-001",
-                        date: "2026-07-30",
-                        description: "Client lunches and travel for business development 1",
-                        category: "Business Expense",
-                        amount: 780,
-                      },
-                    ],
-                  },
+                  schema: deductionRowsResponseSchema,
+                  example: [
+                    {
+                      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+                      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+                      date: "2026-07-16",
+                      description: "State filing fee",
+                      category: "Other",
+                      amount: "135.00",
+                      tax_impact: "33.75",
+                      deleted: false,
+                    },
+                  ],
                 },
               },
             },
@@ -844,20 +835,6 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     title: "Authentication Required",
                     status: 401,
                     detail: "A valid access token is required.",
-                  },
-                },
-              },
-            },
-            "404": {
-              description: "No deduction aggregation payload was found for the case.",
-              content: {
-                "application/problem+json": {
-                  schema: problemDetailsSchema,
-                  example: {
-                    type: "https://taxpulse.example/problems/case-deductions-not-found",
-                    title: "Case Deductions Not Found",
-                    status: 404,
-                    detail: "No deductions payload was found for the requested case ID.",
                   },
                 },
               },

@@ -2,22 +2,67 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
   AggregationTimeoutError,
-  InMemoryMockAggregationDataSource,
   TaxPulseAggregationClient,
   clientDeductionAggregationPayloadSchema,
   type AggregationDataSource,
   type ClientDeductionAggregationPayload,
 } from "../../src/typescript/index.js";
 
+const deductionCategories = [
+  "Business Expense",
+  "Home Office",
+  "Charitable Giving",
+  "Health & Medical",
+  "Education",
+  "Retirement Contribution",
+  "Other",
+] as const;
+
+function buildSyntheticDeductions(
+  totalCount: number,
+): ClientDeductionAggregationPayload["deductions"] {
+  return Array.from({ length: totalCount }, (_value, index) => ({
+    id: `ded-${String(index + 1).padStart(3, "0")}`,
+    date: "2026-07-30",
+    description: `Client lunches and travel for business development ${index + 1}`,
+    category: deductionCategories[index % deductionCategories.length] ?? "Other",
+    amount: 780 + index * 145,
+  }));
+}
+
+function buildAggregationPayload(
+  caseId: string,
+  deductionCount: number,
+): ClientDeductionAggregationPayload {
+  return {
+    caseId,
+    incomeEvents: [
+      {
+        source: "W-2 wages",
+        amount: 125000,
+        withholding: 24500,
+      },
+      {
+        source: "1099 interest",
+        amount: 1400,
+        withholding: 0,
+      },
+    ],
+    deductions: buildSyntheticDeductions(deductionCount),
+  };
+}
+
 describe("TaxPulseAggregationClient", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  test("fetches a typed aggregation payload from the in-memory mock source", async () => {
-    const client = new TaxPulseAggregationClient(
-      new InMemoryMockAggregationDataSource(),
-    );
+  test("fetches a typed aggregation payload from the inline test source", async () => {
+    const client = new TaxPulseAggregationClient({
+      async fetchCaseAggregationPayload(caseId) {
+        return buildAggregationPayload(caseId, 25);
+      },
+    });
 
     const payload = await client.fetchAggregationPayload("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22");
 
@@ -50,7 +95,11 @@ describe("TaxPulseAggregationClient", () => {
   });
 
   test("resolves concurrent aggregation calls for two clients independently", async () => {
-    const dataSource = new InMemoryMockAggregationDataSource();
+    const dataSource: AggregationDataSource = {
+      async fetchCaseAggregationPayload(caseId) {
+        return buildAggregationPayload(caseId, 25);
+      },
+    };
     const firstClient = new TaxPulseAggregationClient(dataSource);
     const secondClient = new TaxPulseAggregationClient(dataSource);
 
