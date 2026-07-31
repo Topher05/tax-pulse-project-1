@@ -461,20 +461,22 @@ client's tax picture is visible at a glance.
 - The initial implementation slice adds the typed read-model contract consumed by the
   dashboard chart region. It carries one calculation identifier, exactly four labelled
   quarterly estimates, and income totals grouped by source. `DashboardPage` now accepts
-  the latest snapshot at its component boundary. The Estimated Tax by Quarter component
-  renders those four estimates as responsive bars.
+  the latest snapshot at its component boundary. Responsive Estimated Tax by Quarter and
+  Income Breakdown components render the supplied quarter estimates and income sources.
 
 **Project Scope Connection:**
 
 This is the front-end contract for the Read-models/BFF data used by the two dashboard
-charts. It does not add a BFF endpoint, persistence, or a charting dependency. Income
-Breakdown remains the next implementation slice.
+charts. It does not add a BFF endpoint, persistence, or a charting dependency. The
+focused chart re-render test remains the final implementation slice.
 
 **Changed Files:**
 
 - `src/pulseUI/pages/dashboard/dashboardChartData.ts`
 - `src/pulseUI/pages/dashboard/QuarterlyTaxChart.tsx`
 - `src/pulseUI/pages/dashboard/QuarterlyTaxChart.module.css`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.tsx`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.module.css`
 - `src/pulseUI/pages/dashboard/DashboardPage.tsx`
 - `planning/team/cm-ticket-journal.md`
 

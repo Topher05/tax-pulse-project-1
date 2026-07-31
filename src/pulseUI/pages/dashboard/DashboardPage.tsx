@@ -6,6 +6,7 @@ import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
 import { WorkflowStepper } from "../../components/WorkflowStepper.tsx";
+import { IncomeBreakdownChart } from "./IncomeBreakdownChart.tsx";
 import { QuarterlyTaxChart } from "./QuarterlyTaxChart.tsx";
 import type { DashboardChartData } from "./dashboardChartData.ts";
 
@@ -108,12 +109,20 @@ export function DashboardPage({ chartData }: DashboardPageProps = {}) {
       </section>
 
       {chartData ? (
-        <PanelCard
-          title="Estimated Tax by Quarter"
-          description="Projected estimated tax payments for the current calculation."
-        >
-          <QuarterlyTaxChart estimates={chartData.quarterlyEstimates} />
-        </PanelCard>
+        <div className={styles.chartGrid}>
+          <PanelCard
+            title="Estimated Tax by Quarter"
+            description="Projected estimated tax payments for the current calculation."
+          >
+            <QuarterlyTaxChart estimates={chartData.quarterlyEstimates} />
+          </PanelCard>
+          <PanelCard
+            title="Income Breakdown"
+            description="Income grouped by source for the current calculation."
+          >
+            <IncomeBreakdownChart incomeBySource={chartData.incomeBySource} />
+          </PanelCard>
+        </div>
       ) : null}
 
       <div className={styles.contentGrid}>
