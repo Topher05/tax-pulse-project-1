@@ -2,54 +2,14 @@ import styles from "./ClientRosterPage.module.css";
 import { DataTable } from "../../components/DataTable.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
+import type { ClientRosterRow } from "../../entities/clientRoster.ts";
+import { useClientRosterQuery } from "../../entities/clientRosterQueries.ts";
 
-export interface ClientRosterRow {
-  id: string;
-  clientName: string;
-  filingSummary: string;
-  ytdIncome: number;
-  estimatedTax: number;
-  quarterlyStatus: string | null;
-}
+export type { ClientRosterRow } from "../../entities/clientRoster.ts";
 
 export interface ClientRosterScreenProps {
   clients: readonly ClientRosterRow[];
 }
-
-const prototypeClients: readonly ClientRosterRow[] = [
-  {
-    id: "client-avery-chen",
-    clientName: "Avery Chen",
-    filingSummary: "Single - 1099",
-    ytdIncome: 108_500,
-    estimatedTax: 32_100,
-    quarterlyStatus: "Q2 due Jun 15",
-  },
-  {
-    id: "client-sam-rivera",
-    clientName: "Sam Rivera",
-    filingSummary: "Single - 1099",
-    ytdIncome: 142_000,
-    estimatedTax: 38_240,
-    quarterlyStatus: "Q2 due Jun 15",
-  },
-  {
-    id: "client-morgan-acme",
-    clientName: "Morgan Acme",
-    filingSummary: "MFJ - W-2 + RSU",
-    ytdIncome: 414_000,
-    estimatedTax: 138_400,
-    quarterlyStatus: "Q2 due Jun 15",
-  },
-  {
-    id: "client-riley-khan",
-    clientName: "Riley Khan",
-    filingSummary: "HoH - W-2",
-    ytdIncome: 72_500,
-    estimatedTax: 11_140,
-    quarterlyStatus: null,
-  },
-] as const;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -124,5 +84,7 @@ export function ClientRosterScreen({ clients }: ClientRosterScreenProps) {
 }
 
 export function ClientRosterPage() {
-  return <ClientRosterScreen clients={prototypeClients} />;
+  const clientRosterQuery = useClientRosterQuery();
+
+  return <ClientRosterScreen clients={clientRosterQuery.data ?? []} />;
 }
