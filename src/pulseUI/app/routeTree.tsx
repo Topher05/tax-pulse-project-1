@@ -4,6 +4,7 @@ import { hasPulseAccessToken } from "./authSession.ts";
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
+import { ClientRosterPage } from "../pages/clients/ClientRosterPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
 import { LoginPage } from "../pages/LoginPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
@@ -75,7 +76,7 @@ const clientsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/clients",
   beforeLoad: requirePulseAuthentication,
-  component: EmptyPage,
+  component: ClientRosterPage,
 });
 
 const firmUsersRoute = createRoute({
