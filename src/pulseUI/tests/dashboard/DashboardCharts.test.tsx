@@ -9,6 +9,23 @@ import type { DashboardChartData } from "../../pages/dashboard/dashboardChartDat
 
 const initialChartData: DashboardChartData = {
   calculationId: "calculation-1",
+  kpis: {
+    estimatedTotalTax: 30_000,
+    effectiveRate: 20,
+    ytdGrossIncome: 150_000,
+    outstandingPayments: 7_500,
+  },
+  taxBreakdown: {
+    federalTax: 18_000,
+    stateTax: 6_000,
+    effectiveRate: 20,
+  },
+  yearOverYearTax: {
+    currentYear: 2026,
+    currentYearTax: 30_000,
+    priorYear: 2025,
+    priorYearTax: 27_000,
+  },
   quarterlyEstimates: [
     { quarter: "Q1", amount: 1_000 },
     { quarter: "Q2", amount: 1_200 },
@@ -23,6 +40,23 @@ const initialChartData: DashboardChartData = {
 
 const updatedChartData: DashboardChartData = {
   calculationId: "calculation-2",
+  kpis: {
+    estimatedTotalTax: 36_000,
+    effectiveRate: 21,
+    ytdGrossIncome: 180_000,
+    outstandingPayments: 9_000,
+  },
+  taxBreakdown: {
+    federalTax: 21_000,
+    stateTax: 7_500,
+    effectiveRate: 21,
+  },
+  yearOverYearTax: {
+    currentYear: 2027,
+    currentYearTax: 36_000,
+    priorYear: 2026,
+    priorYearTax: 30_000,
+  },
   quarterlyEstimates: [
     { quarter: "Q1", amount: 1_500 },
     { quarter: "Q2", amount: 1_700 },
