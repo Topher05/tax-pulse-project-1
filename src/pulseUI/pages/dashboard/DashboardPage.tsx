@@ -6,6 +6,7 @@ import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
 import { WorkflowStepper } from "../../components/WorkflowStepper.tsx";
+import type { DashboardChartData } from "./dashboardChartData.ts";
 
 const dashboardMetrics = [
   {
@@ -71,9 +72,17 @@ const scenarioSummary = [
   },
 ];
 
-export function DashboardPage() {
+export interface DashboardPageProps {
+  /**
+   * The latest calculation snapshot for the dashboard charts. Chart components added
+   * in this ticket consume this value directly, so a new snapshot re-renders them.
+   */
+  chartData?: DashboardChartData;
+}
+
+export function DashboardPage({ chartData }: DashboardPageProps = {}) {
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-calculation-id={chartData?.calculationId}>
       <PanelCard
         className={styles.hero}
         title="Tax Liability Tracker"
