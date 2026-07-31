@@ -64,7 +64,7 @@ export const defaultDashboardChartData: DashboardChartData = {
     outstandingPayments: 14_620,
   },
   taxBreakdown: {
-    federalTax: 31_200,
+    federalTax: 47_880,
     stateTax: 10_540,
     effectiveRate: 22.8,
   },

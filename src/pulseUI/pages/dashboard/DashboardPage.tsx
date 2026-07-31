@@ -59,7 +59,9 @@ export function DashboardPage({ chartData }: DashboardPageProps = {}) {
   const dashboardMetrics = [
     {
       label: "Estimated Total Tax",
-      value: currencyFormatter.format(kpis.estimatedTotalTax),
+      // The KPI is explicitly labelled as the combined federal and state tax, so keep
+      // it tied to the figures displayed in the Tax Breakdown panel.
+      value: currencyFormatter.format(taxTotal),
       caption: "Federal + state combined",
       tone: "indigo" as const,
       icon: <ChartColumnBig aria-hidden="true" />,

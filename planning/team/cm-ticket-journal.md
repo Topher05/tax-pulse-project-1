@@ -541,3 +541,5 @@ persistence, or a third-party chart dependency.
 - `npm --prefix src/pulseUI run test -- --run tests/dashboard/DashboardCharts.test.tsx`
   passed (2 tests).
 - `git diff --check` passed.
+- The Estimated Total Tax KPI is derived from the displayed federal and state amounts,
+  preventing the summary from disagreeing with the Tax Breakdown panel.

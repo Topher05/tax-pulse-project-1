@@ -22,8 +22,8 @@ const initialChartData: DashboardChartData = {
     outstandingPayments: 7_500,
   },
   taxBreakdown: {
-    federalTax: 18_000,
-    stateTax: 6_000,
+    federalTax: 22_500,
+    stateTax: 7_500,
     effectiveRate: 20,
   },
   yearOverYearTax: {
@@ -53,7 +53,7 @@ const updatedChartData: DashboardChartData = {
     outstandingPayments: 9_000,
   },
   taxBreakdown: {
-    federalTax: 21_000,
+    federalTax: 28_500,
     stateTax: 7_500,
     effectiveRate: 21,
   },
@@ -109,6 +109,7 @@ test("dashboard renders tax summary visuals from the calculation snapshot", () =
   expect(screen.getByRole("heading", { name: "Tax Breakdown" })).toBeInTheDocument();
   expect(screen.getByText("Federal Income Tax")).toBeInTheDocument();
   expect(screen.getByText("State Income Tax")).toBeInTheDocument();
+  expect(screen.getAllByText("$30,000")).toHaveLength(2);
   expect(screen.getByRole("img", { name: "Year-over-year estimated total tax" })).toHaveTextContent(
     "2025$27,0002026$30,000",
   );
