@@ -28,7 +28,8 @@ export interface DashboardChartData {
 }
 
 /**
- * Synthetic dashboard data used until the dashboard BFF read-model is available.
+ * TODO: Replace this synthetic fallback with a tenant-scoped dashboard BFF read-model.
+ * Synthetic dashboard data is used until that dashboard BFF read-model is available.
  * A supplied calculation snapshot always takes precedence over this presentation data.
  */
 export const defaultDashboardChartData: DashboardChartData = {
