@@ -54,6 +54,14 @@ describe("Pulse UI app shell", () => {
     expect(within(primaryNav).getByRole("heading", { name: "Plan Tools" })).toBeInTheDocument();
   });
 
+  test("renders the administration sidebar heading", async () => {
+    renderShell("/cycles/queue");
+
+    const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
+
+    expect(within(primaryNav).getByRole("heading", { name: "Administration" })).toBeInTheDocument();
+  });
+
   test("renders the firm sidebar heading", async () => {
     renderShell("/cycles/queue");
 
@@ -67,6 +75,14 @@ describe("Pulse UI app shell", () => {
 
     expect(
       await screen.findByRole("heading", { name: "Tax Plan Cycle Queue", level: 1 }),
+    ).toBeInTheDocument();
+  });
+
+  test("renders the administration view title", async () => {
+    renderShell("/administration/tenants-users");
+
+    expect(
+      await screen.findByRole("heading", { name: "All Tenants & Users", level: 1 }),
     ).toBeInTheDocument();
   });
 
@@ -93,6 +109,16 @@ describe("Pulse UI app shell", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
 
     expect(screen.getByRole("dialog", { name: "Settings" })).toBeInTheDocument();
+  });
+
+  test("renders the sidebar footer session card and logout button", async () => {
+    renderShell("/cycles/queue");
+
+    const sessionFooter = await screen.findByLabelText("Session");
+
+    expect(within(sessionFooter).getByText("Jordan Lee")).toBeInTheDocument();
+    expect(within(sessionFooter).getByText("Firm Admin")).toBeInTheDocument();
+    expect(within(sessionFooter).getByRole("button", { name: "Logout" })).toBeInTheDocument();
   });
 
   test("renders the dashboard hero on the root route", async () => {

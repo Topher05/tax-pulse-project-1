@@ -131,7 +131,6 @@ describe("Tax Plan Cycle queue page", () => {
 
     const table = await screen.findByRole("table", { name: "Tax Plan Cycle Cases" });
     fireEvent.click(within(table).getAllByRole("button", { name: "Open" })[0]!);
-
     expect(
       await screen.findByRole("heading", {
         name: "North Shore Family Office - Q2 2026 Tax Plan",
