@@ -478,11 +478,13 @@ focused chart re-render test remains the final implementation slice.
 - `src/pulseUI/pages/dashboard/IncomeBreakdownChart.tsx`
 - `src/pulseUI/pages/dashboard/IncomeBreakdownChart.module.css`
 - `src/pulseUI/pages/dashboard/DashboardPage.tsx`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm run typecheck` passed.
 - `git diff --check` passed.
-- No test has been added yet; the focused chart re-render test remains the final
-  implementation step.
+- `npm --prefix src/pulseUI test -- DashboardCharts.test.tsx` passed (1 test).
+- `DashboardCharts.test.tsx` covers initial chart values and re-rendering after a new
+  calculation snapshot is received.
