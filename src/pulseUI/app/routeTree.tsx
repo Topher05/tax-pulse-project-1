@@ -3,7 +3,9 @@ import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
+import { ClientRosterPage } from "../pages/clients/ClientRosterPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
+import { IncomePage } from "../pages/income/IncomePage.tsx";
 import { LoginPage } from "../pages/LoginPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { AuthBoundary } from "../auth/AuthBoundary.tsx";
@@ -91,7 +93,7 @@ const scenarioPlannerRoute = createRoute({
 const incomeRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/income",
-  component: EmptyPage,
+  component: () => <IncomePage clientId="" taxYear={2026} incomeEvents={[]} />,
 });
 
 const deductionsRoute = createRoute({
@@ -109,7 +111,7 @@ const quarterlyPaymentsRoute = createRoute({
 const clientsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/clients",
-  component: EmptyPage,
+  component: ClientRosterPage,
 });
 
 const firmUsersRoute = createRoute({

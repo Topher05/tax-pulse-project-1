@@ -585,3 +585,107 @@ changing tenancy resolution or authorization policy.
 - `npm run typecheck` passed.
 - `npm --prefix src/pulseUI test -- --run tests/auth` passed: 24 tests in 7 files.
 - `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts --config vitest.config.ts` passed.
+- `planning/team/cm-ticket-journal.md`
+
+## christopher-martus-jira103 - SCRUM-103
+
+**Branch:** `christopher-martus-jira103`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-103
+
+**Summary:** Render Estimated Tax by Quarter and Income Breakdown charts
+
+**Description:** As an Advisor, I want the quarterly and income charts, so that the
+client's tax picture is visible at a glance.
+
+**Acceptance Criteria:**
+
+- An Estimated Tax by Quarter bar chart renders the four quarterly estimates.
+- An Income Breakdown chart renders income by source.
+- Charts re-render when the underlying calculation data changes.
+
+**Code Connection:**
+
+- The initial implementation slice adds the typed read-model contract consumed by the
+  dashboard chart region. It carries one calculation identifier, exactly four labelled
+  quarterly estimates, and income totals grouped by source. `DashboardPage` now accepts
+  the latest snapshot at its component boundary. Responsive Estimated Tax by Quarter and
+  Income Breakdown components render the supplied quarter estimates and income sources.
+
+**Project Scope Connection:**
+
+This is the front-end contract for the Read-models/BFF data used by the two dashboard
+charts. It does not add a BFF endpoint, persistence, or a charting dependency. The
+dashboard shows clearly synthetic fallback chart values until the BFF supplies a current
+calculation snapshot.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/dashboard/dashboardChartData.ts`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.tsx`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.module.css`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.tsx`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.module.css`
+- `src/pulseUI/pages/dashboard/DashboardPage.tsx`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
+- - `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI test -- DashboardCharts.test.tsx` passed (1 test).
+- `DashboardCharts.test.tsx` covers initial chart values and re-rendering after a new
+  calculation snapshot is received.
+
+## christopher-martus-jira105 - SCRUM-105
+
+**Branch:** `christopher-martus-jira105`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-105
+
+**Summary:** Scaffold the Income screen component from the wireframe
+
+**Description:** As a Frontend Developer, I want a typed Income screen component
+scaffolded from the wireframe, so that the screen has a stable structure before data is
+wired.
+
+**Acceptance Criteria:**
+
+- A typed React component renders the Income screen layout (header, KPI region, table
+  region) matching the wireframe.
+- The component declares typed props for the income data it will receive.
+- The component renders inert placeholder regions with no data fetching yet.
+
+**Code Connection:**
+
+- `IncomePage` exports typed income-event and screen-prop contracts, then renders the
+  wireframe-aligned Income Events header, five source KPI placeholders, table shell, and
+  empty placeholder state without reading from an API or query hook.
+- The `/income` route preserves its authentication boundary and provides an empty typed
+  payload so the scaffold can be reached without introducing live data behavior.
+
+**Project Scope Connection:**
+
+This creates the stable presentation seam for the React SPA's Income workspace. It
+intentionally excludes the income query hook, loading/error states, add-income form,
+live table rendering, and component/accessibility tests, which are owned by subsequent
+Income tickets.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm run typecheck` is blocked by existing unresolved `react-hook-form` and
+  `@hookform/resolvers/zod` imports in `ScenarioPlanningForm.tsx`.
+- `npm run build` is blocked by the same existing unresolved dependencies.
+

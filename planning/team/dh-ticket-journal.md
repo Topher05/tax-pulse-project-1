@@ -5,6 +5,50 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira122 - SCRUM-122
+
+**Branch:** `dylan-harle-jira122`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-122
+
+**Summary:** Scaffold the Client Roster screen component from the wireframe.
+
+**Description:** As a Frontend Developer, I want a typed Client Roster screen scaffolded from the wireframe, so that the screen has a stable structure before data is wired.
+
+**Acceptance Criteria:**
+
+- A typed React component renders the Client Roster layout (header, table region) matching the wireframe.
+- The component declares typed props for the roster data it will receive.
+- The component renders an inert table region with no data fetching yet.
+
+**Code Connection:**
+
+- Added a typed Pulse UI Client Roster route at `/clients` using the prototype's header copy, table columns, sample roster rows, and inert `Open Books` affordance.
+- Exported `ClientRosterRow` and `ClientRosterScreenProps` so later roster data/query tickets can wire into the same screen boundary.
+- Documented the roster scaffold decision in ADR-0025 so the ADR can be updated as the feature is expanded.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Establishes the internal advisor/firm-admin Client Roster screen structure before SCRUM-123 live data wiring, SCRUM-124 request states, and SCRUM-125 TanStack Table behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
+- `adr/0025-client-roster-screen-scaffold.md`
+- `adr/README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+
 ## dylan-harle-jira94 - SCRUM-94
 
 **Branch:** `dylan-harle-jira94`
