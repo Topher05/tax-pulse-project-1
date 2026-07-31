@@ -490,6 +490,61 @@ calculation snapshot.
 - `DashboardCharts.test.tsx` covers initial chart values and re-rendering after a new
   calculation snapshot is received.
 
+## christopher-martus-jira104 - SCRUM-104
+
+**Branch:** `christopher-martus-jira104`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-104
+
+**Summary:** Render Tax Breakdown and Year-over-Year charts
+
+**Description:** As an Advisor, I want the Tax Breakdown and Year-over-Year visuals, so
+that the dashboard is complete per the wireframe.
+
+**Acceptance Criteria:**
+
+- A Tax Breakdown panel renders federal, state, and effective-rate figures.
+- A Year-over-Year chart compares the current year against the prior year.
+- The four dashboard KPI cards (Estimated Total Tax, Effective Rate, YTD Gross Income,
+  Outstanding Payments) render.
+
+**Code Connection:**
+
+- The typed dashboard read-model now includes KPI, tax-breakdown, and current/prior-year
+  tax comparison fields, along with clearly synthetic fallback data.
+- `DashboardPage` renders the four required KPI cards and a data-driven federal, state,
+  and effective-rate breakdown. `YearOverYearTaxChart` presents the current and prior
+  tax years with accessible labels and proportional bars.
+- The dashboard visual test renders the page with two calculation snapshots and confirms
+  the required visual labels and updated values.
+
+**Project Scope Connection:**
+
+This completes the MVP dashboard presentation layer for the Read-models/BFF workstream.
+It consumes the existing typed component boundary and does not add a BFF endpoint,
+persistence, or a third-party chart dependency.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/dashboard/dashboardChartData.ts`
+- `src/pulseUI/pages/dashboard/DashboardPage.tsx`
+- `src/pulseUI/pages/dashboard/YearOverYearTaxChart.tsx`
+- `src/pulseUI/pages/dashboard/YearOverYearTaxChart.module.css`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- --run tests/dashboard/DashboardCharts.test.tsx`
+  passed (2 tests).
+- `git diff --check` passed.
+- The Estimated Total Tax KPI is derived from the displayed federal and state amounts,
+  preventing the summary from disagreeing with the Tax Breakdown panel.
+
+
 ## christopher-martus-jira105 - SCRUM-105
 
 **Branch:** `christopher-martus-jira105`
@@ -539,4 +594,7 @@ Income tickets.
 - `npm run typecheck` is blocked by existing unresolved `react-hook-form` and
   `@hookform/resolvers/zod` imports in `ScenarioPlanningForm.tsx`.
 - `npm run build` is blocked by the same existing unresolved dependencies.
+
+
+
 
