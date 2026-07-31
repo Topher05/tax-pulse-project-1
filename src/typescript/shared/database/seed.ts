@@ -46,6 +46,7 @@ export async function applySeed(client: Client): Promise<void> {
     await client.query(`
       TRUNCATE TABLE
         "audit_entry",
+        "scenario",
         "deduction",
         "stage_transition",
         "tax_plan_cycle",

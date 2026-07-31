@@ -106,7 +106,6 @@ export type SeedTaxPlanCycleInsertRow = Omit<SeedTaxPlanCycleRow, "dueDate"> & {
 };
 
 export type SeedDeductionRow = {
-  id: string;
   caseId: string;
   date: string;
   description: string;
@@ -459,7 +458,6 @@ export const taxPlanCycleRows = [
 
 export const deductionRows = [
   {
-    id: "ded-001",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-30",
     description: "Business development travel and meals",
@@ -469,7 +467,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-002",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-29",
     description: "Home office internet allocation",
@@ -479,7 +476,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-003",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-28",
     description: "Charitable cash contribution",
@@ -489,7 +485,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-004",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-27",
     description: "Annual physical and labs",
@@ -499,7 +494,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-005",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-26",
     description: "Course fees for continuing education",
@@ -509,7 +503,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-006",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-25",
     description: "Retirement plan contribution",
@@ -519,7 +512,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-007",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-24",
     description: "Miscellaneous deductible expense",
@@ -529,7 +521,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-008",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-23",
     description: "Office supplies and postage",
@@ -539,7 +530,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-009",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-22",
     description: "Dedicated workspace utilities",
@@ -549,7 +539,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-010",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-21",
     description: "Food bank donation",
@@ -559,7 +548,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-011",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-20",
     description: "Prescription and therapy expenses",
@@ -569,7 +557,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-012",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-19",
     description: "Professional certification renewal",
@@ -579,7 +566,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-013",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-18",
     description: "IRA contribution",
@@ -589,7 +575,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-014",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-17",
     description: "Client welcome gift supplies",
@@ -599,7 +584,6 @@ export const deductionRows = [
     deleted: false,
   },
   {
-    id: "ded-015",
     caseId: taxPlanCycleRows[1].id,
     date: "2026-07-16",
     description: "State filing fee",
