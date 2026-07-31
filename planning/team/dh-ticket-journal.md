@@ -239,6 +239,49 @@ Add new ticket entries below using this template.
 - `npm --prefix src/pulseUI run test` passed.
 - `npm --prefix src/pulseUI run typecheck` passed.
 
+## dylan-harle-jira123 - SCRUM-123
+
+**Branch:** `dylan-harle-jira123`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-123
+
+**Summary:** Add the TanStack Query hook to the client roster endpoint.
+
+**Description:** As a Frontend Developer, I want a TanStack Query hook fetching the firm's client roster, so that the screen reads live data through one typed boundary.
+
+**Acceptance Criteria:**
+
+- A TanStack Query hook calls the roster endpoint and returns typed client rows.
+- The hook exposes loading, error, and data states to callers.
+- A test asserts the hook returns parsed client rows for a mocked response.
+
+**Code Connection:**
+
+- Added a tenant-scoped Client Roster query hook that calls `/v1/clients` without accepting a tenant ID, leaving firm/advisor scoping to the authenticated API context.
+- Moved the roster row type into the Pulse UI entity layer and kept the Client Roster screen wired through the same typed row boundary established by SCRUM-122.
+- Updated the Client Roster route to read rows through TanStack Query instead of prototype data.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Builds directly on SCRUM-122's typed inert Client Roster screen and prepares SCRUM-124 request states plus SCRUM-125 TanStack Table rendering.
+
+**Changed Files:**
+
+- `src/pulseUI/entities/clientRoster.ts`
+- `src/pulseUI/entities/clientRosterQueries.ts`
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
+- `src/pulseUI/tests/clients/ClientRosterQueries.test.tsx`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterQueries.test.tsx tests/clients/ClientRosterPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
 
