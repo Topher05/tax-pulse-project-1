@@ -10,6 +10,7 @@ import {
 
 import {
   credential,
+  deduction,
   federalTaxBracket,
   mfaEnrollment,
   roles,
@@ -25,6 +26,7 @@ import {
   buildTaxPlanCycleInsertRows,
   californiaTaxBracketRows,
   credentialRows,
+  deductionRows,
   federalTaxBracketRows,
   mfaEnrollmentRows,
   roleRows,
@@ -44,6 +46,7 @@ export async function applySeed(client: Client): Promise<void> {
     await client.query(`
       TRUNCATE TABLE
         "audit_entry",
+        "deduction",
         "stage_transition",
         "tax_plan_cycle",
         "state_tax_bracket",
@@ -64,6 +67,7 @@ export async function applySeed(client: Client): Promise<void> {
     await db.insert(credential).values([...credentialRows]);
     await db.insert(mfaEnrollment).values([...mfaEnrollmentRows]);
     await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
+    await db.insert(deduction).values([...deductionRows]);
     await db.insert(stageTransition).values([...stageTransitionRows]);
     await db.insert(federalTaxBracket).values([...federalTaxBracketRows]);
     await db.insert(stateTaxBracket).values([...californiaTaxBracketRows]);

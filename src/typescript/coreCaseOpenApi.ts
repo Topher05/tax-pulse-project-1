@@ -331,12 +331,9 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
-  const deductionReadParamsOpenApiSchema = toOpenApiSchema(
-    deductionReadParamsSchema,
-  );
-  const deductionReadClientIdSchema = requireObjectProperty(
-    deductionReadParamsOpenApiSchema,
-    "clientId",
+  const deductionReadCaseIdSchema = requireObjectProperty(
+    toOpenApiSchema(deductionReadParamsSchema),
+    "caseId",
   );
   const deductionAggregationResponseSchema = toOpenApiSchema(
     clientDeductionAggregationPayloadSchema,
@@ -790,32 +787,32 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           },
         },
       },
-      "/v1/clients/{clientId}/deductions": {
+      "/v1/cases/{caseId}/deductions": {
         get: {
-          operationId: "readClientDeductions",
+          operationId: "readCaseDeductions",
           tags: ["Core Case Service"],
-          summary: "Read the client deductions aggregation payload",
+          summary: "Read the case deductions aggregation payload",
           description:
-            "Returns the client deductions aggregation payload. The date fields are emitted as strings so the UI can consume them without date conversion.",
+            "Returns the case deductions aggregation payload. The date fields are emitted as strings so the UI can consume them without date conversion.",
           parameters: [
             {
-              name: "clientId",
+              name: "caseId",
               in: "path",
               required: true,
               description:
-                "Synthetic client identifier scoped by the request tenant.",
-              schema: deductionReadClientIdSchema,
-              example: "client-123",
+                "Synthetic case identifier scoped by the request tenant.",
+              schema: deductionReadCaseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
             },
           ],
           responses: {
             "200": {
-              description: "The client deductions aggregation payload was returned.",
+              description: "The case deductions aggregation payload was returned.",
               content: {
                 "application/json": {
                   schema: deductionAggregationResponseSchema,
                   example: {
-                    clientId: "client-123",
+                    caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
                     incomeEvents: [
                       {
                         source: "W-2 wages",
@@ -852,15 +849,15 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
               },
             },
             "404": {
-              description: "No deduction aggregation payload was found for the client.",
+              description: "No deduction aggregation payload was found for the case.",
               content: {
                 "application/problem+json": {
                   schema: problemDetailsSchema,
                   example: {
-                    type: "https://taxpulse.example/problems/client-deductions-not-found",
-                    title: "Client Deductions Not Found",
+                    type: "https://taxpulse.example/problems/case-deductions-not-found",
+                    title: "Case Deductions Not Found",
                     status: 404,
-                    detail: "No deductions payload was found for the requested client ID.",
+                    detail: "No deductions payload was found for the requested case ID.",
                   },
                 },
               },

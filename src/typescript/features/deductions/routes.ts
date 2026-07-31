@@ -78,10 +78,10 @@ export function createDeductionsRouter(
         if (controller === undefined) {
           next(
             new ProblemHttpError({
-              type: "https://taxpulse.example/problems/client-deductions-not-found",
-              title: "Client Deductions Not Found",
+              type: "https://taxpulse.example/problems/case-deductions-not-found",
+              title: "Case Deductions Not Found",
               status: 404,
-              detail: "No deductions payload was found for the requested client ID.",
+              detail: "No deductions payload was found for the requested case ID.",
             }),
           );
           return;
