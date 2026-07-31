@@ -3,7 +3,6 @@ import { describe, expect, test } from "vitest";
 import {
   createDeductionRepository,
 } from "../../../../src/typescript/index.js";
-import { applyDrizzleMigrations } from "../../../../src/typescript/shared/scripts/postgresMigrations.js";
 import {
   deductionRows,
   taxPlanCycleRows,
@@ -21,7 +20,6 @@ describeDatabase("createDeductionRepository", () => {
     { timeout: 60000 },
     async () => {
       await withDrizzleTestSchema(async (client) => {
-        await applyDrizzleMigrations(client);
         await applySeed(client);
         const repository = createDeductionRepository(client);
         const rows = await repository.listByCase({
@@ -57,7 +55,6 @@ describeDatabase("createDeductionRepository", () => {
     { timeout: 60000 },
     async () => {
       await withDrizzleTestSchema(async (client) => {
-        await applyDrizzleMigrations(client);
         await applySeed(client);
         const repository = createDeductionRepository(client);
         const rows = await repository.listByCase({
@@ -75,7 +72,6 @@ describeDatabase("createDeductionRepository", () => {
     { timeout: 60000 },
     async () => {
       await withDrizzleTestSchema(async (client) => {
-        await applyDrizzleMigrations(client);
         await applySeed(client);
         const repository = createDeductionRepository(client);
         const rows = await repository.listByCase({

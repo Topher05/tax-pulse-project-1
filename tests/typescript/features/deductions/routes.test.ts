@@ -10,7 +10,6 @@ import {
   createDeductionsRouter,
   createLogger,
 } from "../../../../src/typescript/index.js";
-import { applyDrizzleMigrations } from "../../../../src/typescript/shared/scripts/postgresMigrations.js";
 import {
   taxPlanCycleRows,
   tenantRows,
@@ -48,7 +47,6 @@ describeDatabase("createDeductionsRouter", () => {
     { timeout: 60000 },
     async () => {
       await withDrizzleTestSchema(async (client) => {
-        await applyDrizzleMigrations(client);
         await applySeed(client);
         const repository = createDeductionRepository(client);
         const expected = await repository.listByCase({
@@ -84,7 +82,6 @@ describeDatabase("createDeductionsRouter", () => {
 
   test("returns 401 when the auth context is missing", async () => {
     await withDrizzleTestSchema(async (client) => {
-      await applyDrizzleMigrations(client);
       await applySeed(client);
       const repository = createDeductionRepository(client);
 

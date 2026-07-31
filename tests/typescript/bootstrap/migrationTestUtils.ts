@@ -5,13 +5,14 @@ import { Client } from "pg";
 import {
   applyDrizzleMigrations,
   withDatabaseClient,
-} from "../../../src/typescript/shared/scripts/postgresMigrations.js";
+} from "../../../src/typescript/shared/scripts/drizzleMigrations.js";
 import { applySeed } from "../../../src/typescript/shared/database/seed.js";
 import { startDockerPostgresContainer } from "./dockerPostgres.js";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 
 export const drizzleEnumTypeNames = [
+  "deduction_category",
   "user_role_name",
   "user_status_value",
 ] as const;

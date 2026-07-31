@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 
 import { createTenantLoginResolver } from "../../src/typescript/tenantLoginResolver.js";
-import { applyDrizzleMigrations } from "../../src/typescript/shared/scripts/postgresMigrations.js";
 import { withDrizzleTestSchema } from "./bootstrap/migrationTestUtils.js";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
@@ -10,7 +9,6 @@ const describeResolver = databaseUrl ? describe : describe.skip;
 describeResolver("tenant login resolver", () => {
   test("resolves only the matching active tenant", async () => {
     await withDrizzleTestSchema(async (client) => {
-      await applyDrizzleMigrations(client);
       await client.query(`
         INSERT INTO tenants (id, name, login_slug, is_active) VALUES
           ('018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71', 'Active Tenant', 'active-tenant', true),

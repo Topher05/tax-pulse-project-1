@@ -6,7 +6,7 @@ import {
   applyDrizzleMigrations,
   getDatabaseUrlFromEnv,
   withDatabaseClient,
-} from "../scripts/postgresMigrations.js";
+} from "../scripts/drizzleMigrations.js";
 
 import {
   credential,
@@ -94,7 +94,7 @@ export async function main(): Promise<void> {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch((error: unknown) => {
-    console.info('Failed seed')
+    console.info("Failed seed");
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
   });
