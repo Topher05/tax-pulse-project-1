@@ -436,6 +436,59 @@ add additional state datasets.
 - `npm run db:check` passed after generating the Drizzle migration.
 - Focused PostgreSQL tests and `npm run test:migration` require Testcontainers; they are
   blocked in this environment because no working container runtime is available.
+- `planning/team/cm-ticket-journal.md`
+
+## christopher-martus-jira103 - SCRUM-103
+
+**Branch:** `christopher-martus-jira103`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-103
+
+**Summary:** Render Estimated Tax by Quarter and Income Breakdown charts
+
+**Description:** As an Advisor, I want the quarterly and income charts, so that the
+client's tax picture is visible at a glance.
+
+**Acceptance Criteria:**
+
+- An Estimated Tax by Quarter bar chart renders the four quarterly estimates.
+- An Income Breakdown chart renders income by source.
+- Charts re-render when the underlying calculation data changes.
+
+**Code Connection:**
+
+- The initial implementation slice adds the typed read-model contract consumed by the
+  dashboard chart region. It carries one calculation identifier, exactly four labelled
+  quarterly estimates, and income totals grouped by source. `DashboardPage` now accepts
+  the latest snapshot at its component boundary. Responsive Estimated Tax by Quarter and
+  Income Breakdown components render the supplied quarter estimates and income sources.
+
+**Project Scope Connection:**
+
+This is the front-end contract for the Read-models/BFF data used by the two dashboard
+charts. It does not add a BFF endpoint, persistence, or a charting dependency. The
+dashboard shows clearly synthetic fallback chart values until the BFF supplies a current
+calculation snapshot.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/dashboard/dashboardChartData.ts`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.tsx`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.module.css`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.tsx`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.module.css`
+- `src/pulseUI/pages/dashboard/DashboardPage.tsx`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
+- - `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI test -- DashboardCharts.test.tsx` passed (1 test).
+- `DashboardCharts.test.tsx` covers initial chart values and re-rendering after a new
+  calculation snapshot is received.
 
 ## christopher-martus-jira105 - SCRUM-105
 
@@ -486,3 +539,4 @@ Income tickets.
 - `npm run typecheck` is blocked by existing unresolved `react-hook-form` and
   `@hookform/resolvers/zod` imports in `ScenarioPlanningForm.tsx`.
 - `npm run build` is blocked by the same existing unresolved dependencies.
+
