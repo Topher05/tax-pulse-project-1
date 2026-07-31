@@ -541,3 +541,47 @@ source of truth for access control.
   the external file lock or remove the stale generated output before rerunning the build.
 - Vitest result caching is disabled in the UI config so test runs do not depend on writing
   to the local `node_modules/.vite` cache directory.
+
+## Follow-up: merged sign-in regression repair
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Restore the sign-in UI after the merged route and session changes.
+
+**Description:** Remove duplicated Pulse UI route registrations that prevent router construction.
+Retain hostname-derived tenant selection and allow refresh cookies over local HTTP while keeping
+production cookies secure.
+
+**Acceptance Criteria:**
+
+- The SPA router constructs without duplicate route identifiers.
+- Tenant identity continues to derive from the `{tenant-slug}.localhost` hostname.
+- Local HTTP sessions retain refresh cookies; production sessions retain the `Secure` cookie flag.
+
+**Code Connection:** Workspace routes are registered only beneath the authenticated workspace
+layout and rely on its `AuthBoundary`; the obsolete `localStorage` route guard no longer bypasses
+the auth context. The production composition passes cookie security based on `NODE_ENV`, while
+router defaults preserve secure cookies for non-local consumers and focused test servers.
+
+**Project Scope Connection:** This repairs SCRUM-193's sign-in and MFA session flow without
+changing tenancy resolution or authorization policy.
+
+**Changed Files:**
+
+- `src/pulseUI/app/routeTree.tsx`
+- `src/typescript/authSessionCookies.ts`
+- `src/typescript/authSessionRoutes.ts`
+- `src/typescript/authMfaLoginRoutes.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authSessionRoutes.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI test -- --run tests/auth` passed: 24 tests in 7 files.
+- `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts --config vitest.config.ts` passed.

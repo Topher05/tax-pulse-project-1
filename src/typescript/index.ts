@@ -559,8 +559,12 @@ export async function main(): Promise<Server> {
       );
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
+        secureCookies: process.env.NODE_ENV === "production",
       }));
-      app.use(createAuthSessionRouter({ tokenService }));
+      app.use(createAuthSessionRouter({
+        tokenService,
+        secureCookies: process.env.NODE_ENV === "production",
+      }));
     },
   });
   const port = getPortFromEnv();
