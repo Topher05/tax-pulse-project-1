@@ -8,6 +8,7 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
+import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
 
 const deductionCategories = [
   "Business Expense",
@@ -20,9 +21,11 @@ const deductionCategories = [
 ] as const;
 
 function buildMockPayload() {
+  const seededCaseId = taxPlanCycleRows[1].id;
+
   return Array.from({ length: 25 }, (_value, index) => ({
     id: `ded-${String(index + 1).padStart(3, "0")}`,
-    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+    case_id: seededCaseId,
     date: "2026-07-30",
     description: `Synthetic deduction ${index + 1}`,
     category: deductionCategories[index % deductionCategories.length] ?? "Other",
@@ -81,7 +84,7 @@ describe("DeductionsPage", () => {
     expect(screen.getByText("$63,000")).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(caseApiSpy).toHaveBeenCalledWith("/v1/cases/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22/deductions");
+      expect(caseApiSpy).toHaveBeenCalledWith(`/v1/cases/your Case ID here/deductions`);
     });
 
     await waitFor(() => {
