@@ -468,7 +468,8 @@ client's tax picture is visible at a glance.
 
 This is the front-end contract for the Read-models/BFF data used by the two dashboard
 charts. It does not add a BFF endpoint, persistence, or a charting dependency. The
-focused chart re-render test remains the final implementation slice.
+dashboard shows clearly synthetic fallback chart values until the BFF supplies a current
+calculation snapshot.
 
 **Changed Files:**
 

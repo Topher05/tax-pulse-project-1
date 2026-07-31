@@ -26,3 +26,22 @@ export interface DashboardChartData {
   ];
   incomeBySource: readonly DashboardIncomeSource[];
 }
+
+/**
+ * Synthetic dashboard data used until the dashboard BFF read-model is available.
+ * A supplied calculation snapshot always takes precedence over this presentation data.
+ */
+export const defaultDashboardChartData: DashboardChartData = {
+  calculationId: "dashboard-example-2026",
+  quarterlyEstimates: [
+    { quarter: "Q1", amount: 3_620 },
+    { quarter: "Q2", amount: 3_620 },
+    { quarter: "Q3", amount: 3_620 },
+    { quarter: "Q4", amount: 3_760 },
+  ],
+  incomeBySource: [
+    { source: "W-2 wages", amount: 125_000 },
+    { source: "K-1 partnership income", amount: 82_000 },
+    { source: "1099 interest", amount: 1_400 },
+  ],
+};

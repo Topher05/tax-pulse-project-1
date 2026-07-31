@@ -8,7 +8,10 @@ import { StatusPill } from "../../components/StatusPill.tsx";
 import { WorkflowStepper } from "../../components/WorkflowStepper.tsx";
 import { IncomeBreakdownChart } from "./IncomeBreakdownChart.tsx";
 import { QuarterlyTaxChart } from "./QuarterlyTaxChart.tsx";
-import type { DashboardChartData } from "./dashboardChartData.ts";
+import {
+  defaultDashboardChartData,
+  type DashboardChartData,
+} from "./dashboardChartData.ts";
 
 const dashboardMetrics = [
   {
@@ -83,8 +86,10 @@ export interface DashboardPageProps {
 }
 
 export function DashboardPage({ chartData }: DashboardPageProps = {}) {
+  const dashboardChartData = chartData ?? defaultDashboardChartData;
+
   return (
-    <div className={styles.page} data-calculation-id={chartData?.calculationId}>
+    <div className={styles.page} data-calculation-id={dashboardChartData.calculationId}>
       <PanelCard
         className={styles.hero}
         title="Tax Liability Tracker"
@@ -108,22 +113,20 @@ export function DashboardPage({ chartData }: DashboardPageProps = {}) {
         ))}
       </section>
 
-      {chartData ? (
-        <div className={styles.chartGrid}>
-          <PanelCard
-            title="Estimated Tax by Quarter"
-            description="Projected estimated tax payments for the current calculation."
-          >
-            <QuarterlyTaxChart estimates={chartData.quarterlyEstimates} />
-          </PanelCard>
-          <PanelCard
-            title="Income Breakdown"
-            description="Income grouped by source for the current calculation."
-          >
-            <IncomeBreakdownChart incomeBySource={chartData.incomeBySource} />
-          </PanelCard>
-        </div>
-      ) : null}
+      <div className={styles.chartGrid}>
+        <PanelCard
+          title="Estimated Tax by Quarter"
+          description="Projected estimated tax payments for the current calculation."
+        >
+          <QuarterlyTaxChart estimates={dashboardChartData.quarterlyEstimates} />
+        </PanelCard>
+        <PanelCard
+          title="Income Breakdown"
+          description="Income grouped by source for the current calculation."
+        >
+          <IncomeBreakdownChart incomeBySource={dashboardChartData.incomeBySource} />
+        </PanelCard>
+      </div>
 
       <div className={styles.contentGrid}>
         <PanelCard
