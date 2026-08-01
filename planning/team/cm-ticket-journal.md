@@ -34,6 +34,98 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira192 - SCRUM-192
+
+**Branch:** `christopher-martus-jira192`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-192
+
+**Summary:** Provide an auth context and session hooks for login, refresh, and logout
+
+**Description:** As a Frontend Developer, I want an auth context that holds the session
+and a hook for login, token refresh, and logout, so that every screen, route guard, and
+query reads identity from one source.
+
+**Acceptance Criteria:**
+
+- An auth context provider holds the authenticated session and restores it across reloads.
+- A session hook exposes identity, authentication state, and session actions.
+- Login stores issued tokens; logout clears the session and cached data.
+- Refresh and invalidation are centralized and covered by component tests.
+
+**Code Connection:**
+
+- The first implementation slice defines the Pulse UI's typed session, BFF token-response,
+  MFA challenge, and hook contracts. It validates JWT identity claims centrally and maps
+  issued token responses to a browser session without retaining a refresh token in
+  JavaScript state.
+- The BFF now sets refresh tokens only in a `Secure`, `HttpOnly`, `SameSite=Strict`
+  cookie after MFA. `POST /auth/refresh` atomically revokes the presented active token
+  before issuing a replacement pair, and `POST /auth/logout` revokes when possible and
+  always clears the cookie.
+- `AuthProvider` restores the cookie-backed session at application startup and exposes
+  `useSession` actions for login, MFA completion, refresh, logout, and current access
+  token retrieval. The injected client seam keeps the component behavior testable.
+- Access-token access now refreshes within a 60-second expiry leeway. The shared
+  authenticated fetch wrapper retries a 401 exactly once after refresh, then invalidates
+  through logout; logout always invokes the supplied cache-clearing seam.
+- The browser auth client validates the BFF's login, MFA, refresh, and logout contracts
+  before session state changes; the provider keeps the user anonymous until MFA completes.
+- `useSession` now directly exposes `user` and `isAuthenticated`. The application-level
+  auth boundary blocks protected routed content while restoration is pending or when the
+  session is anonymous, forcing re-authentication through SCRUM-193's forthcoming UI.
+
+**Project Scope Connection:**
+
+This establishes the frontend identity boundary for the React SPA. Subsequent slices add
+the provider, BFF refresh/logout contract, and authenticated request behavior while
+preserving tenant and role isolation.
+
+**Changed Files:**
+
+- `src/pulseUI/auth/session.ts`
+- `src/pulseUI/auth/authClient.ts`
+- `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/auth/AuthBoundary.tsx`
+- `src/pulseUI/auth/authenticatedFetch.ts`
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/tests/auth/session.test.tsx`
+- `src/pulseUI/tests/auth/AuthProvider.test.tsx`
+- `src/pulseUI/tests/auth/authClient.test.tsx`
+- `src/pulseUI/tests/auth/authenticatedFetch.test.tsx`
+- `src/pulseUI/tests/auth/AuthBoundary.test.tsx`
+- `src/typescript/authSessionCookies.ts`
+- `src/typescript/authSessionRoutes.ts`
+- `src/typescript/authMfaLoginRoutes.ts`
+- `src/typescript/refreshTokenRepository.ts`
+- `src/typescript/tokenService.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authSessionRoutes.test.ts`
+- `tests/typescript/authMfaLoginRoutes.test.ts`
+- `tests/typescript/authMfaLogin.test.ts`
+- `tests/typescript/tokenService.test.ts`
+- `tests/typescript/bootstrap/authFlow.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm test -- --run tests/auth/session.test.tsx --cache=false` passed (3 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx --cache=false` passed (7 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx --cache=false` passed (12 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/authClient.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx --cache=false` passed (17 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/authClient.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx tests/auth/AuthBoundary.test.tsx --cache=false` passed (20 tests).
+- `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/tokenService.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed (22 tests).
+- Root `npm run typecheck` remains blocked by pre-existing missing
+  `@pact-foundation/pact` resolution and incomplete Tax Engine test doubles. The new
+  auth contract compiles before those unrelated test failures.
+- Pulse UI `npm run typecheck` remains blocked by pre-existing route parameter/import
+  errors and missing `@tailwindcss/vite` type resolution. None reference the auth
+  provider or client.
+
 ## christopher-martus-jira195 - SCRUM-195
 
 **Branch:** `christopher-martus-jira195`
@@ -344,3 +436,165 @@ add additional state datasets.
 - `npm run db:check` passed after generating the Drizzle migration.
 - Focused PostgreSQL tests and `npm run test:migration` require Testcontainers; they are
   blocked in this environment because no working container runtime is available.
+- `planning/team/cm-ticket-journal.md`
+
+## christopher-martus-jira103 - SCRUM-103
+
+**Branch:** `christopher-martus-jira103`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-103
+
+**Summary:** Render Estimated Tax by Quarter and Income Breakdown charts
+
+**Description:** As an Advisor, I want the quarterly and income charts, so that the
+client's tax picture is visible at a glance.
+
+**Acceptance Criteria:**
+
+- An Estimated Tax by Quarter bar chart renders the four quarterly estimates.
+- An Income Breakdown chart renders income by source.
+- Charts re-render when the underlying calculation data changes.
+
+**Code Connection:**
+
+- The initial implementation slice adds the typed read-model contract consumed by the
+  dashboard chart region. It carries one calculation identifier, exactly four labelled
+  quarterly estimates, and income totals grouped by source. `DashboardPage` now accepts
+  the latest snapshot at its component boundary. Responsive Estimated Tax by Quarter and
+  Income Breakdown components render the supplied quarter estimates and income sources.
+
+**Project Scope Connection:**
+
+This is the front-end contract for the Read-models/BFF data used by the two dashboard
+charts. It does not add a BFF endpoint, persistence, or a charting dependency. The
+dashboard shows clearly synthetic fallback chart values until the BFF supplies a current
+calculation snapshot.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/dashboard/dashboardChartData.ts`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.tsx`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.module.css`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.tsx`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.module.css`
+- `src/pulseUI/pages/dashboard/DashboardPage.tsx`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
+- - `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI test -- DashboardCharts.test.tsx` passed (1 test).
+- `DashboardCharts.test.tsx` covers initial chart values and re-rendering after a new
+  calculation snapshot is received.
+
+## christopher-martus-jira104 - SCRUM-104
+
+**Branch:** `christopher-martus-jira104`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-104
+
+**Summary:** Render Tax Breakdown and Year-over-Year charts
+
+**Description:** As an Advisor, I want the Tax Breakdown and Year-over-Year visuals, so
+that the dashboard is complete per the wireframe.
+
+**Acceptance Criteria:**
+
+- A Tax Breakdown panel renders federal, state, and effective-rate figures.
+- A Year-over-Year chart compares the current year against the prior year.
+- The four dashboard KPI cards (Estimated Total Tax, Effective Rate, YTD Gross Income,
+  Outstanding Payments) render.
+
+**Code Connection:**
+
+- The typed dashboard read-model now includes KPI, tax-breakdown, and current/prior-year
+  tax comparison fields, along with clearly synthetic fallback data.
+- `DashboardPage` renders the four required KPI cards and a data-driven federal, state,
+  and effective-rate breakdown. `YearOverYearTaxChart` presents the current and prior
+  tax years with accessible labels and proportional bars.
+- The dashboard visual test renders the page with two calculation snapshots and confirms
+  the required visual labels and updated values.
+
+**Project Scope Connection:**
+
+This completes the MVP dashboard presentation layer for the Read-models/BFF workstream.
+It consumes the existing typed component boundary and does not add a BFF endpoint,
+persistence, or a third-party chart dependency.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/dashboard/dashboardChartData.ts`
+- `src/pulseUI/pages/dashboard/DashboardPage.tsx`
+- `src/pulseUI/pages/dashboard/YearOverYearTaxChart.tsx`
+- `src/pulseUI/pages/dashboard/YearOverYearTaxChart.module.css`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- --run tests/dashboard/DashboardCharts.test.tsx`
+  passed (2 tests).
+- `git diff --check` passed.
+- The Estimated Total Tax KPI is derived from the displayed federal and state amounts,
+  preventing the summary from disagreeing with the Tax Breakdown panel.
+
+
+## christopher-martus-jira105 - SCRUM-105
+
+**Branch:** `christopher-martus-jira105`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-105
+
+**Summary:** Scaffold the Income screen component from the wireframe
+
+**Description:** As a Frontend Developer, I want a typed Income screen component
+scaffolded from the wireframe, so that the screen has a stable structure before data is
+wired.
+
+**Acceptance Criteria:**
+
+- A typed React component renders the Income screen layout (header, KPI region, table
+  region) matching the wireframe.
+- The component declares typed props for the income data it will receive.
+- The component renders inert placeholder regions with no data fetching yet.
+
+**Code Connection:**
+
+- `IncomePage` exports typed income-event and screen-prop contracts, then renders the
+  wireframe-aligned Income Events header, five source KPI placeholders, table shell, and
+  empty placeholder state without reading from an API or query hook.
+- The `/income` route preserves its authentication boundary and provides an empty typed
+  payload so the scaffold can be reached without introducing live data behavior.
+
+**Project Scope Connection:**
+
+This creates the stable presentation seam for the React SPA's Income workspace. It
+intentionally excludes the income query hook, loading/error states, add-income form,
+live table rendering, and component/accessibility tests, which are owned by subsequent
+Income tickets.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm run typecheck` is blocked by existing unresolved `react-hook-form` and
+  `@hookform/resolvers/zod` imports in `ScenarioPlanningForm.tsx`.
+- `npm run build` is blocked by the same existing unresolved dependencies.
+
+
+
+

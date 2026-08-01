@@ -188,6 +188,140 @@ workflows from response-shape drift across the polyglot service boundary.
   pre-existing formatting changes needed in `src/tax_liability_engine/scenario_comparison.py`
   and `tests/tax_liability_engine/smoke_test.py`.
 
+## martins-okorie-jira97 - SCRUM-97
+
+**Branch:** `martins-okorie-jira97`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-97
+
+**Summary:** Build the Comments and Audit Trail tabs.
+
+**Description:** As an Advisor, I want the Comments and Audit Trail tabs, so that I can
+discuss the case and review its history.
+
+**Acceptance Criteria:**
+
+- The Comments tab lists comments and offers an add-comment input.
+- The Audit Trail tab renders the case's audit entries read-only with redacted figures.
+- Both tabs render loading and empty states.
+
+**Code Connection:** Filled in the existing Plan Cycle Detail Comments tab with a
+no-comments empty state and preserved draft input. The Audit Trail tab lazy-loads
+redacted case audit entries from the existing
+`/v1/tax-plan-cycles/:caseId/audit-entries` endpoint and renders them read-only.
+
+**Project Scope Connection:** Keeps SCRUM-97 scoped to the Pulse UI detail surface and
+reflects the current backend boundary: Comments have no persistence API yet, while
+Audit Trail already has an append-only table and redacted read endpoint, so the UI
+loads audit history by case ID when the Audit Trail tab is opened without adding new
+backend persistence.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/taxPlanCycle/PlanCycleDetailRoute.tsx`
+- `src/pulseUI/shared/styles.css`
+- `src/pulseUI/tests/planCycleDetailNavigation.test.tsx`
+- `src/pulseUI/tests/planCycleDetailRoute.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test` passed with 28 tests.
+- `npm --prefix src/pulseUI run build` passed.
+
+## martins-okorie-jira98 - SCRUM-98
+
+**Branch:** `martins-okorie-jira98`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-98
+
+**Summary:** Guard internal routes with TanStack Router
+
+**Description:** As an Advisor, I want TanStack Router guarding internal routes, so
+that only authenticated users reach the workspace.
+
+**Acceptance Criteria:**
+
+- TanStack Router guards the internal workspace routes.
+- An unauthenticated user is redirected to login.
+- A test asserts the guard redirects without a token.
+
+**Code Connection:** The Pulse route tree now uses a shared TanStack Router
+`beforeLoad` guard for internal workspace routes. The guard checks the existing
+Pulse UI shared JWT key in local storage and redirects unauthenticated users to an
+unguarded `/login` route. The app shell renders the login route without the protected
+workspace sidebar and topbar.
+
+**Project Scope Connection:** This supports the TaxPulse multi-tenant advisory
+workspace by keeping internal advisor and firm screens behind a frontend
+authentication boundary. Token attachment, refresh-on-401, retry, and logout stay in
+the follow-on SCRUM-99/SCRUM-192 auth scope.
+
+**Changed Files:**
+
+- `src/pulseUI/app/authSession.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/AppShell.module.css`
+- `src/pulseUI/pages/LoginPage.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test` passed with 7 files and 28 tests.
+- `npm --prefix src/pulseUI run build` passed.
+
+## martins-okorie-jira99 - SCRUM-99
+
+**Branch:** `martins-okorie-jira99`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-99
+
+**Summary:** Attach JWT and refresh-on-401 in TanStack Query
+
+**Description:** As an Advisor, I want TanStack Query to attach the JWT and refresh on
+401, so that authorized data loads without manual re-login.
+
+**Acceptance Criteria:**
+
+- TanStack Query attaches the access token to API calls.
+- A 401 triggers a token refresh and one retry.
+- A failed refresh logs the user out rather than retrying indefinitely.
+
+**Code Connection:** The shared Pulse UI case API helper now reads the SCRUM-98
+`taxpulse_shared_jwt` access token, sends it as the `Authorization` bearer for
+TanStack Query-backed live data requests, and handles a single refresh attempt through
+`POST /auth/refresh` when a request returns 401. Refreshed tokens are stored in the
+Pulse session helper, while failed refreshes and repeated 401s clear the local session.
+
+**Project Scope Connection:** This connects SCRUM-98 route guarding with SCRUM-100 live
+queue/detail data loading so tenant-scoped case reads use the signed-in user's JWT
+instead of a hardcoded local testing token. Login UI and central auth context remain in
+the later SCRUM-192 scope.
+
+**Changed Files:**
+
+- `src/pulseUI/app/authSession.ts`
+- `src/pulseUI/shared/caseApi.ts`
+- `src/pulseUI/tests/caseApi.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test` passed with 8 files and 33 tests.
+- `npm --prefix src/pulseUI run build` passed.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 

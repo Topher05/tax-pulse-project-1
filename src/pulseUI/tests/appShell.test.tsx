@@ -5,6 +5,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
+import { pulseAccessTokenStorageKey } from "../app/authSession.ts";
 import { createPulseQueryClient } from "../app/queryClient.ts";
 import { createPulseRouter } from "../app/createPulseRouter.ts";
 
@@ -13,10 +14,15 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  localStorage.clear();
   cleanup();
 });
 
-const renderShell = (initialPath: string = "/") => {
+const renderShell = (initialPath: string = "/", authenticated = true) => {
+  if (authenticated) {
+    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+  }
+
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
       <RouterProvider router={createPulseRouter([initialPath])} />
@@ -25,6 +31,13 @@ const renderShell = (initialPath: string = "/") => {
 };
 
 describe("Pulse UI app shell", () => {
+  test("redirects unauthenticated internal routes to login", async () => {
+    renderShell("/cycles/queue", false);
+
+    expect(await screen.findByRole("heading", { name: "Sign in", level: 1 })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
+  });
+
   test("renders the workspace sidebar heading", async () => {
     renderShell("/cycles/queue");
 

@@ -1,3 +1,10 @@
+import {
+  clearPulseSession,
+  getPulseAccessToken,
+  getPulseRefreshToken,
+  storePulseSession,
+} from "../app/authSession.ts";
+
 export class CaseApiError extends Error {
   constructor(
     readonly status: number,
@@ -21,26 +28,95 @@ function getCaseApiBaseUrl(): string {
 
 function getSharedJwtAuthorizationHeader(): string | null {
   // TODO: JWT check => Refresh on 401 gated by Scrum 99, this needs to be implementation reviewed then integrated post merge
-  const accessToken = window.localStorage.getItem("taxpulse_shared_jwt");
+  const accessToken = getPulseAccessToken();
   return accessToken ? `Bearer ${accessToken}` : null;
 }
 
 function getCaseApiHeaders(): HeadersInit {
-  // const authorizationHeader = getSharedJwtAuthorizationHeader();
+  const authorizationHeader = getSharedJwtAuthorizationHeader();
 
-  /* if (!authorizationHeader) {
+  if (!authorizationHeader) {
+    clearPulseSession();
     throw new CaseApiError(401, "", "A shared JWT is required before the Pulse UI can fetch live case data.");
   }
-  */
-  return { // TODO: Above code is commented out for token auth, add the token to the below line for auth manually for local testing
-    authorization: `Bearer your-token-for-testing`,
+
+  // TODO: Above code is commented out for token auth, add the token to the below line for auth manually for local testing
+  return {
+    authorization: authorizationHeader,
   };
 }
 
-export async function caseApiGetJson<T>(path: string): Promise<T> {
-  const response = await fetch(new URL(path, `${getCaseApiBaseUrl()}/`).toString(), {
+interface PulseRefreshResponse {
+  access_token?: unknown;
+  refresh_token?: unknown;
+}
+
+function toCaseApiUrl(path: string): string {
+  return new URL(path, `${getCaseApiBaseUrl()}/`).toString();
+}
+
+async function refreshPulseSession(): Promise<boolean> {
+  const refreshToken = getPulseRefreshToken();
+
+  if (!refreshToken) {
+    clearPulseSession();
+    return false;
+  }
+
+  try {
+    const response = await fetch(toCaseApiUrl("/auth/refresh"), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      clearPulseSession();
+      return false;
+    }
+
+    const payload = (await response.json()) as PulseRefreshResponse;
+
+    if (typeof payload.access_token !== "string" || payload.access_token.trim().length === 0) {
+      clearPulseSession();
+      return false;
+    }
+
+    storePulseSession({
+      accessToken: payload.access_token,
+      refreshToken:
+        typeof payload.refresh_token === "string" && payload.refresh_token.trim().length > 0
+          ? payload.refresh_token
+          : undefined,
+    });
+
+    return true;
+  } catch {
+    clearPulseSession();
+    return false;
+  }
+}
+
+async function fetchCaseApi(path: string): Promise<Response> {
+  return await fetch(toCaseApiUrl(path), {
     headers: getCaseApiHeaders(),
   });
+}
+
+export async function caseApiGetJson<T>(path: string): Promise<T> {
+  let response = await fetchCaseApi(path);
+
+  if (response.status === 401) {
+    const refreshed = await refreshPulseSession();
+
+    if (refreshed) {
+      response = await fetchCaseApi(path);
+    }
+  }
+
+  if (response.status === 401) {
+    clearPulseSession();
+  }
 
   if (!response.ok) {
     throw new CaseApiError(response.status, await response.text());

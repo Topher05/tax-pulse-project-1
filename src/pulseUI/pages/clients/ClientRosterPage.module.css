@@ -1,0 +1,62 @@
+.page {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.clientName {
+  color: var(--pulse-ink);
+  font-weight: 800;
+}
+
+.filingCell {
+  color: var(--pulse-muted);
+  font-size: 0.88rem;
+}
+
+.moneyCell {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.quarterlyBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 10px;
+  color: var(--pulse-amber);
+  background: var(--pulse-amber-bg);
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.quietQuarterly {
+  color: var(--pulse-muted);
+}
+
+.actionCell {
+  text-align: right;
+}
+
+.openBooksButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 0.8rem;
+  color: var(--pulse-muted);
+  background: transparent;
+  border: 1px solid var(--pulse-border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: default;
+}
+
+.openBooksButton:disabled {
+  opacity: 1;
+}

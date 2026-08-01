@@ -38,7 +38,7 @@ async function withRouteServer(
 }
 
 describe("createAuthMfaLoginRouter", () => {
-  test("returns the full token pair after valid MFA verification", async () => {
+  test("sets the refresh token in a secure cookie after valid MFA verification", async () => {
     const verify = vi.fn<AuthMfaLoginController["verify"]>(async () => ({
       access_token: "signed.access.jwt",
       refresh_token: "opaque-refresh-token",
@@ -57,11 +57,13 @@ describe("createAuthMfaLoginRouter", () => {
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toEqual({
         access_token: "signed.access.jwt",
-        refresh_token: "opaque-refresh-token",
         token_type: "Bearer",
         expires_in: 900,
         refresh_expires_in: 2_592_000,
       });
+      expect(response.headers.get("set-cookie")).toMatch(
+        /taxpulse_refresh_token=opaque-refresh-token; Max-Age=2592000; Path=\/auth; Expires=[^;]+; HttpOnly; Secure; SameSite=Strict/i,
+      );
     });
   });
 

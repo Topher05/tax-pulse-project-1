@@ -5,6 +5,50 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira122 - SCRUM-122
+
+**Branch:** `dylan-harle-jira122`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-122
+
+**Summary:** Scaffold the Client Roster screen component from the wireframe.
+
+**Description:** As a Frontend Developer, I want a typed Client Roster screen scaffolded from the wireframe, so that the screen has a stable structure before data is wired.
+
+**Acceptance Criteria:**
+
+- A typed React component renders the Client Roster layout (header, table region) matching the wireframe.
+- The component declares typed props for the roster data it will receive.
+- The component renders an inert table region with no data fetching yet.
+
+**Code Connection:**
+
+- Added a typed Pulse UI Client Roster route at `/clients` using the prototype's header copy, table columns, sample roster rows, and inert `Open Books` affordance.
+- Exported `ClientRosterRow` and `ClientRosterScreenProps` so later roster data/query tickets can wire into the same screen boundary.
+- Documented the roster scaffold decision in ADR-0025 so the ADR can be updated as the feature is expanded.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Establishes the internal advisor/firm-admin Client Roster screen structure before SCRUM-123 live data wiring, SCRUM-124 request states, and SCRUM-125 TanStack Table behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
+- `adr/0025-client-roster-screen-scaffold.md`
+- `adr/README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+
 ## dylan-harle-jira94 - SCRUM-94
 
 **Branch:** `dylan-harle-jira94`
@@ -194,6 +238,49 @@ Add new ticket entries below using this template.
 
 - `npm --prefix src/pulseUI run test` passed.
 - `npm --prefix src/pulseUI run typecheck` passed.
+
+## dylan-harle-jira123 - SCRUM-123
+
+**Branch:** `dylan-harle-jira123`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-123
+
+**Summary:** Add the TanStack Query hook to the client roster endpoint.
+
+**Description:** As a Frontend Developer, I want a TanStack Query hook fetching the firm's client roster, so that the screen reads live data through one typed boundary.
+
+**Acceptance Criteria:**
+
+- A TanStack Query hook calls the roster endpoint and returns typed client rows.
+- The hook exposes loading, error, and data states to callers.
+- A test asserts the hook returns parsed client rows for a mocked response.
+
+**Code Connection:**
+
+- Added a tenant-scoped Client Roster query hook that calls `/v1/clients` without accepting a tenant ID, leaving firm/advisor scoping to the authenticated API context.
+- Moved the roster row type into the Pulse UI entity layer and kept the Client Roster screen wired through the same typed row boundary established by SCRUM-122.
+- Updated the Client Roster route to read rows through TanStack Query instead of prototype data.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Builds directly on SCRUM-122's typed inert Client Roster screen and prepares SCRUM-124 request states plus SCRUM-125 TanStack Table rendering.
+
+**Changed Files:**
+
+- `src/pulseUI/entities/clientRoster.ts`
+- `src/pulseUI/entities/clientRosterQueries.ts`
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
+- `src/pulseUI/tests/clients/ClientRosterQueries.test.tsx`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterQueries.test.tsx tests/clients/ClientRosterPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
 
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
