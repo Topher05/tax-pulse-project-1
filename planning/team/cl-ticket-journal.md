@@ -1090,3 +1090,50 @@ sequenceDiagram
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
 - Focused Pulse UI tests were not completed: the sandboxed command failed before Vitest started with the known Windows `EPERM` path issue, and no escalated rerun was performed.
 - No additional tests will be run until the feature is manually verified.
+
+**Pre-Review Update:**
+
+- Main problem: every plan tool is independently case-gated, any plan tool can initialize the current case selection, and once selected all plan-tool nav links preserve that `caseId`.
+- Design direction: rather than manage separate selected-case state, bind the case context to the domain and application flow through TanStack Router search state.
+- Page behavior model: the app state is the enabled state where a valid `caseId` allows fetch/load behavior and post buttons to be interactable; the detached state is the disabled state where no case ID exists, the user must pick one, post buttons are disabled, and the disabled display/gate is shown.
+- Pre-review implementation adjustment: shared case-selection infrastructure remains in place, but direct page wiring was removed from Deductions, Scenarios, and Quarterly Payments so each individual story can explicitly reconnect to the shared case-routing component.
+- Route activation is intentionally commented out in `routeTree.tsx` with `TODO: Implement case ID routing component`; future story work should uncomment and attach the route contract where needed.
+- AppShell no longer propagates `caseId` across plan-tool nav links while the routing component is disabled; the propagation contract remains documented in ADR-0026 and covered by helper/component tests.
+- UI/UX terminology: the selected control pattern is an Input Group with an appended action, with the native select retained instead of a full Combo Box until searchable case labels or higher case volume justify typeahead.
+- `CurrentCaseSelector` uses an overlapping `Case ID` label, native dropdown caret, muted placeholder state, exact select padding, and full-row stacking in the compact header layout.
+- Disabled plan-tool action buttons integrate `aria-disabled` and the requested disabled styles: `opacity-50 cursor-not-allowed`.
+- Environment convention was corrected for the Pulse UI case service base URL: `CASE_SERVICE_BASE_URL` is loaded from the repo root via Vite `envDir` and exposed through `envPrefix`.
+
+**Pre-Review Changed Files:**
+
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/ToolHeader.tsx`
+- `src/pulseUI/components/ToolHeader.module.css`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/PlanToolCaseGate.tsx`
+- `src/pulseUI/shared/planToolCase.ts`
+- `src/pulseUI/shared/usePlanToolCase.ts`
+- `src/pulseUI/shared/caseApi.ts`
+- `src/pulseUI/vite.config.ts`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/tests/components/CurrentCaseSelector.test.tsx`
+- `src/pulseUI/tests/components/PlanToolCaseGate.test.tsx`
+- `src/pulseUI/tests/components/ToolHeader.test.tsx`
+- `src/pulseUI/tests/shared/planToolCase.test.ts`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `.env.example`
+- `adr/0026-route-driven-case-context.md`
+- `adr/README.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Pre-Review Validation Notes:**
+
+- `npm.cmd test` in `src/pulseUI` passed: 16 test files passed, 57 tests passed.
+- `npm.cmd test` at the repository root passed: TypeScript typecheck passed, 49 Vitest files passed, 232 tests passed, 1 skipped.
+- `git diff --check` passed with no whitespace errors; Git reported only CRLF normalization warnings.
