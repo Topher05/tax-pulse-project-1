@@ -33,6 +33,12 @@
   transform: translateY(-1px);
 }
 
+.launchButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
 .launchButton svg {
   width: 18px;
   height: 18px;
@@ -42,6 +48,12 @@
   margin: 0.25rem 0 0;
   color: var(--pulse-muted);
   font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.stateCopy {
+  margin: 0;
+  color: var(--pulse-muted);
   line-height: 1.5;
 }
 
@@ -109,83 +121,8 @@
   transform: translateY(-1px);
 }
 
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: grid;
-  place-items: center;
-  padding: 1.25rem;
-  background: rgb(15 17 23 / 85%);
-}
-
-.modal {
-  /* Baseline modal shell that can be adjusted later if the scaffold evolves. */
-  background: var(--pulse-surface);
-  border: 1px solid var(--pulse-border);
-  border-radius: 12px;
-  width: 90%;
-  max-width: 520px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 45px rgb(0 0 0 / 36%);
-}
-
-.modalHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.25rem 1.25rem 0;
-}
-
-.modalKicker {
-  margin: 0;
-  color: var(--pulse-sidebar-muted);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.modalTitle {
-  margin: 0.35rem 0 0;
-  color: var(--pulse-ink);
-  font-size: 1.25rem;
-  font-weight: 800;
-}
-
-.modalCloseButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 0.9rem;
-  color: var(--pulse-ink);
-  background: rgb(255 255 255 / 4%);
-  border: 1px solid var(--pulse-border);
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.modalBody {
-  padding: 1rem 1.25rem 1.25rem;
-}
-
-.modalCopy {
-  margin: 0;
-  color: var(--pulse-muted);
-  line-height: 1.55;
-}
-
 @media (max-width: 920px) {
   .metricGrid {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .modalOverlay {
-    padding: 0.75rem;
   }
 }

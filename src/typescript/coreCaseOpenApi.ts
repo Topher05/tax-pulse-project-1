@@ -18,6 +18,10 @@ import {
   scenarioTypedFiguresSchema,
 } from "./scenario.js";
 import {
+  deductionReadParamsSchema,
+  deductionTableRowsSchema,
+} from "./features/deductions/repositories/deduction.js";
+import {
   scenarioModelingRequestSchema,
 } from "./features/taxPlanCycle/scenarioModeling.js";
 import { taxPlanCycleCreateResultSchema } from "./features/taxPlanCycle/index.js";
@@ -79,6 +83,14 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "TaxPlanCycleCreateAccepted",
     schema: taxPlanCycleCreateResultSchema,
+  },
+  {
+    name: "DeductionReadParams",
+    schema: deductionReadParamsSchema,
+  },
+  {
+    name: "DeductionRows",
+    schema: deductionTableRowsSchema,
   },
   {
     name: "AuthMfaLoginRequest",
@@ -318,6 +330,11 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
+  const deductionReadCaseIdSchema = requireObjectProperty(
+    toOpenApiSchema(deductionReadParamsSchema),
+    "caseId",
+  );
+  const deductionRowsResponseSchema = toOpenApiSchema(deductionTableRowsSchema);
   const authMfaLoginRequestOpenApiSchema = toOpenApiSchema(
     authMfaLoginRequestSchema,
   );
@@ -760,6 +777,63 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     title: "MFA Already Enrolled",
                     status: 409,
                     detail: "The user already has an active MFA enrollment.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/cases/{caseId}/deductions": {
+        get: {
+          operationId: "readCaseDeductions",
+          tags: ["Core Case Service"],
+          summary: "Read the case deduction rows",
+          description:
+            "Returns the deduction table rows for the requested case as a JSON array. Date and numeric fields are serialized as strings so clients can consume them without special parsing.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Case identifier scoped by the authenticated request tenant.",
+              schema: deductionReadCaseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+            },
+          ],
+          responses: {
+            "200": {
+              description: "The case deduction rows were returned.",
+              content: {
+                "application/json": {
+                  schema: deductionRowsResponseSchema,
+                  example: [
+                    {
+                      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+                      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+                      date: "2026-07-16",
+                      description: "State filing fee",
+                      category: "Other",
+                      amount: "135.00",
+                      tax_impact: "33.75",
+                      deleted: false,
+                    },
+                  ],
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
                   },
                 },
               },

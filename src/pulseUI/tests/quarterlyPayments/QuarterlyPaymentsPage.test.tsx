@@ -5,6 +5,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
+import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import {
@@ -17,6 +18,7 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  localStorage.clear();
   cleanup();
 });
 
@@ -76,6 +78,8 @@ function buildFixtureEstimates(): readonly QuarterlyEstimateRecord[] {
 
 describe("QuarterlyPaymentsPage", () => {
   test("renders the quarterly payments route", async () => {
+    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+
     render(
       <QueryClientProvider client={createPulseQueryClient()}>
         <RouterProvider router={createPulseRouter(["/quarterly-payments"])} />
@@ -85,6 +89,9 @@ describe("QuarterlyPaymentsPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Quarterly Payments", level: 2 }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Case ID" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Select a case to load/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Quarter Timeline", level: 2 })).toBeInTheDocument();
   });
 
   test("renders the read-only timeline and withholding placeholder", () => {
@@ -96,7 +103,7 @@ describe("QuarterlyPaymentsPage", () => {
     expect(screen.getByRole("list", { name: "Quarter timeline" })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(7);
 
-    const firstItem = screen.getAllByRole("listitem")[0];
+    const firstItem = screen.getAllByRole("listitem")[0]!;
     expect(within(firstItem).getByText("Apr")).toBeInTheDocument();
     expect(within(firstItem).getByText("15")).toBeInTheDocument();
     expect(within(firstItem).getByText("Estimated quarterly payment")).toBeInTheDocument();
