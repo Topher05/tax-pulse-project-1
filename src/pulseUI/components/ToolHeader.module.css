@@ -58,7 +58,7 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1030px) {
   .header {
     flex-direction: column;
     align-items: stretch;
