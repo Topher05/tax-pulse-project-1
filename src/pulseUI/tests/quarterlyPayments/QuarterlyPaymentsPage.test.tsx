@@ -7,27 +7,10 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
-import * as caseApi from "../../shared/caseApi.ts";
 import {
   QuarterlyPaymentsScreen,
   type QuarterlyEstimateRecord,
 } from "../../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
-import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
-
-function buildTaxPlanCycleQueuePayload() {
-  return taxPlanCycleRows.map((row) => ({
-    id: row.id,
-    client_id: row.clientId,
-    stage: row.stage,
-    owner: row.owner,
-    priority: row.priority,
-    due_date: row.dueDate.toISOString().slice(0, 10),
-    on_hold: row.onHold,
-    hold_reason: row.holdReason,
-    is_overdue: false,
-    updated_at: "2026-07-30T00:00:00.000Z",
-  }));
-}
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -35,7 +18,6 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
-  vi.restoreAllMocks();
 });
 
 function buildFixtureEstimates(): readonly QuarterlyEstimateRecord[] {
@@ -94,10 +76,6 @@ function buildFixtureEstimates(): readonly QuarterlyEstimateRecord[] {
 
 describe("QuarterlyPaymentsPage", () => {
   test("renders the quarterly payments route", async () => {
-    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValue(
-      buildTaxPlanCycleQueuePayload() as never,
-    );
-
     render(
       <QueryClientProvider client={createPulseQueryClient()}>
         <RouterProvider router={createPulseRouter(["/quarterly-payments"])} />
@@ -107,9 +85,9 @@ describe("QuarterlyPaymentsPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Quarterly Payments", level: 2 }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Select a case to load quarterly payments" }),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Case ID" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Select a case to load/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Quarter Timeline", level: 2 })).toBeInTheDocument();
   });
 
   test("renders the read-only timeline and withholding placeholder", () => {

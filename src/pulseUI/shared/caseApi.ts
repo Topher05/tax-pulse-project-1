@@ -17,7 +17,7 @@ function getCaseApiBaseUrl(): string {
   }
 
   return baseUrl.replace(/\/+$/, "");
-
+}
 function getSharedJwtAuthorizationHeader(): string | null {
   // TODO: JWT check => Refresh on 401 gated by Scrum 99, this needs to be implementation reviewed then integrated post merge
   const accessToken = window.localStorage.getItem("taxpulse_shared_jwt");
