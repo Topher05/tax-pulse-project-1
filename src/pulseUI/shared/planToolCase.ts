@@ -6,21 +6,21 @@ export const planToolPaths = [
 ] as const;
 
 export type PlanToolPath = (typeof planToolPaths)[number];
+export type Uuid = string & { readonly __brand: "Uuid" };
 
 export interface PlanToolSearch {
-  caseId?: string;
+  caseId?: Uuid;
   invalidCaseId?: boolean;
 }
 
 export interface NormalizedPlanToolSearch {
-  caseId: string | null;
+  caseId: Uuid | null;
   hasInvalidCaseId: boolean;
 }
 
-const uuidPattern =
-/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function isUuid(value: string): boolean {
+export function isUuid(value: string): value is Uuid {
   return uuidPattern.test(value);
 }
 
