@@ -1,0 +1,27 @@
+.field {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--pulse-sidebar-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.select {
+  min-width: min(330px, 100%);
+  min-height: 40px;
+  padding: 0 0.8rem;
+  color: var(--pulse-ink);
+  background: var(--pulse-surface);
+  border: 1px solid var(--pulse-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 24%);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.select:focus-visible {
+  outline: 3px solid var(--pulse-accent-light);
+  outline-offset: 2px;
+}

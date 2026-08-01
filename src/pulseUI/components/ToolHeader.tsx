@@ -6,10 +6,17 @@ interface ToolHeaderProps {
   eyebrow?: string;
   title: string;
   description?: string;
+  contextControl?: ReactNode;
   action?: ReactNode;
 }
 
-export function ToolHeader({ eyebrow, title, description, action }: ToolHeaderProps) {
+export function ToolHeader({
+  eyebrow,
+  title,
+  description,
+  contextControl,
+  action,
+}: ToolHeaderProps) {
   return (
     <section className={styles.header}>
       <div className={styles.copy}>
@@ -18,7 +25,12 @@ export function ToolHeader({ eyebrow, title, description, action }: ToolHeaderPr
         {description ? <p className={styles.description}>{description}</p> : null}
       </div>
 
-      {action ? <div className={styles.action}>{action}</div> : null}
+      {contextControl || action ? (
+        <div className={styles.controls}>
+          {contextControl ? <div className={styles.contextControl}>{contextControl}</div> : null}
+          {action ? <div className={styles.action}>{action}</div> : null}
+        </div>
+      ) : null}
     </section>
   );
 }
