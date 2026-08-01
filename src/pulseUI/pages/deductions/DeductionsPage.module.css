@@ -35,7 +35,7 @@
 
 .launchButton:disabled {
   cursor: not-allowed;
-  opacity: 0.62;
+  opacity: 0.5;
   transform: none;
 }
 

@@ -126,7 +126,7 @@ describe("DeductionsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Deduction" })).toBeDisabled();
 
-    fireEvent.change(await screen.findByRole("combobox", { name: "Client Case ID" }), {
+    fireEvent.change(await screen.findByRole("combobox", { name: "Case ID" }), {
       target: { value: seededCaseId },
     });
 

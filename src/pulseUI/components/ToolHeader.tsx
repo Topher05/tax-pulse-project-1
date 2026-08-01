@@ -27,8 +27,8 @@ export function ToolHeader({
 
       {contextControl || action ? (
         <div className={styles.controls}>
-          {contextControl ? <div className={styles.contextControl}>{contextControl}</div> : null}
           {action ? <div className={styles.action}>{action}</div> : null}
+          {contextControl ? <div className={styles.contextControl}>{contextControl}</div> : null}
         </div>
       ) : null}
     </section>
