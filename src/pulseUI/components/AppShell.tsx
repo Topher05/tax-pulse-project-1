@@ -3,7 +3,6 @@ import { LogOut, Settings2 } from "lucide-react";
 import { useState } from "react";
 
 import styles from "./AppShell.module.css";
-import { isPlanToolPath, normalizePlanToolSearch } from "../shared/planToolCase.ts";
 import { pulseNavGroups } from "../shared/navigation.ts";
 import { getViewTitle } from "../shared/viewTitle.ts";
 
@@ -27,11 +26,7 @@ export function AppShell() {
   const [liveCalculationEnabled, setLiveCalculationEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const search = useRouterState({
-    select: (state) => state.location.search as Record<string, unknown>,
-  });
   const viewTitle = getViewTitle(pathname);
-  const { caseId } = normalizePlanToolSearch(search);
 
   return (
     <div className={styles.shell}>
@@ -59,7 +54,6 @@ export function AppShell() {
                       <Link
                         className={styles.navLink}
                         to={item.path}
-                        search={isPlanToolPath(item.path) && caseId ? { caseId } : undefined}
                         activeProps={{ "data-active": "true" }}
                         preload={false}
                       >

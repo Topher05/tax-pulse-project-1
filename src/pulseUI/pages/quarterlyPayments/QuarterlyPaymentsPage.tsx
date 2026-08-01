@@ -77,7 +77,9 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
   ] as const;
 }
 
-export function QuarterlyPaymentsScreen({ quarterlyEstimates }: QuarterlyPaymentsScreenProps) {
+export function QuarterlyPaymentsScreen({
+  quarterlyEstimates,
+}: QuarterlyPaymentsScreenProps) {
   const totalEstimated = quarterlyEstimates.reduce((sum, payment) => sum + payment.estimatedPayment, 0);
   const totalWithholding = quarterlyEstimates.reduce((sum, payment) => sum + payment.withholdingApplied, 0);
   const totalRemaining = totalEstimated - totalWithholding;
@@ -86,7 +88,7 @@ export function QuarterlyPaymentsScreen({ quarterlyEstimates }: QuarterlyPayment
     <div className={styles.page}>
       <ToolHeader
         title="Quarterly Payments"
-        description="Read-only quarterly breakdown — IRS 1040-ES deadlines and estimated amounts. Recording payments is out of MVP scope."
+        description="Read-only quarterly breakdown - IRS 1040-ES deadlines and estimated amounts. Recording payments is out of MVP scope."
       />
 
       <section className={styles.metricGrid} aria-label="Quarterly payments KPI region">
@@ -141,5 +143,9 @@ export function QuarterlyPaymentsScreen({ quarterlyEstimates }: QuarterlyPayment
 export function QuarterlyPaymentsPage() {
   const quarterlyEstimates = buildPlaceholderQuarterlyEstimates();
 
-  return <QuarterlyPaymentsScreen quarterlyEstimates={quarterlyEstimates} />;
+  return (
+    <QuarterlyPaymentsScreen
+      quarterlyEstimates={quarterlyEstimates}
+    />
+  );
 }
