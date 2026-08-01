@@ -1005,6 +1005,29 @@ sequenceDiagram
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc --noEmit"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx"` passed.
+- Jira 118 was completed inside this branch as the typed quarterly-estimates query boundary for the read-only Quarterly Payments screen.
+
+## caleb-latimer-jira118 - SCRUM-118
+
+**Branch:** `caleb-latimer-jira117`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-118
+
+**Summary:** Add the TanStack Query hook to the quarterly estimates endpoint
+
+**Description:** Jira 118 was implemented inside Jira 117 to add a typed read-only quarterly-estimates query boundary for the Quarterly Payments screen.
+
+**Acceptance Criteria:** Implemented inside SCRUM-117.
+
+**Code Connection:** `src/pulseUI/entities/quarterlyEstimateQueries.ts`, `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`, `src/typescript/features/quarterlyPayments/routes.ts`
+
+**Project Scope Connection:** React SPA - Operator & Portal Experience, Core Case Service read-only quarterly estimates
+
+**Changed Files:** See SCRUM-117 quarterly-payments changes.
+
+**Validation Notes:** Validation was deferred per instruction; no tests were run for this ticket during implementation.
 
 ## caleb-latimer-jira203 - SCRUM-203
 
