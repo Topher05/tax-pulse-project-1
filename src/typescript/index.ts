@@ -386,6 +386,7 @@ import {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleRepository,
+  createQuarterlyPaymentsRouter,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
   createScenarioModelingController,
@@ -572,6 +573,12 @@ export async function main(): Promise<Server> {
         taxPlanCycleApiPrefix,
         createDeductionsRouter({
           repository: deductionRepository,
+        }),
+      );
+      app.use(
+        taxPlanCycleApiPrefix,
+        createQuarterlyPaymentsRouter({
+          taxPlanCycleRepository,
         }),
       );
       app.use(
