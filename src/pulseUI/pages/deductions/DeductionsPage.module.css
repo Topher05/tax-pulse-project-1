@@ -33,6 +33,12 @@
   transform: translateY(-1px);
 }
 
+.launchButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+}
+
 .launchButton svg {
   width: 18px;
   height: 18px;

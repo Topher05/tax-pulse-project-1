@@ -8,10 +8,17 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import * as caseApi from "../../shared/caseApi.ts";
 import { useDeductionsQuery } from "../../entities/deductionQueries.ts";
+import { isUuid } from "../../shared/planToolCase.ts";
+
+const sampleCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22";
+
+if (!isUuid(sampleCaseId)) {
+  throw new Error("Deductions query test fixture must use a UUID-shaped case ID.");
+}
 
 const samplePayload = {
   id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
-  case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+  case_id: sampleCaseId,
   date: "2026-07-30",
   description: "Mortgage interest",
   category: "Home Office",
@@ -35,7 +42,7 @@ describe("useDeductionsQuery", () => {
       )
     );
 
-    const { result } = renderHook(() => useDeductionsQuery("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22"), { wrapper });
+    const { result } = renderHook(() => useDeductionsQuery(sampleCaseId), { wrapper });
 
     expect(result.current.isPending || result.current.isLoading).toBe(true);
 
