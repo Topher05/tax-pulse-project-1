@@ -48,7 +48,21 @@ backend authorization gap to close rather than something the UI can solve safely
 Search propagation must stay limited to plan tools so unrelated screens do not carry
 case context accidentally.
 
+Client name is unreachable, client entity does not exist so going off ID is the only means of accomplishing this. Client entity design most likely in another task scoped to client roster.
+
+Implementation Does NOT scale with large numbers of cases, a giant list of 100+ items to navigate in just a drop down is cumbersome and bad ux, behavior can be ported into a new page or component later if needed as a new ticket, functionality needs functional skeleton to move forward
+
 ## Alternatives considered
-- Store selected case in React context or global state.
-- Persist selected case in local storage.
+- Store selected case in React context or global state. 
+    - Rejected, constraint violation
+- Persist selected case in local storage. 
+    - Rejected, tanstack query design anti-pattern
 - Move all tools under case-path routes such as `/cycles/:caseId/deductions`.
+    - Rejected, tools MUST be independent of one another, there is no gated or controlled flow for how a user works with a case. Usuability violation
+- CurrentCaseProvider simply stores currentCaseID and exposes a hook for setting it via the toolbar.
+    - Rejected, Tradeoff: In memory it'll be lost on refresh or new tab, memoization does not assist with this. Approach should bind domain to it's enforcer which is router
+
+### Implementations considered
+- Idea 1: URL-backed CurrentCaseSelector + CurrentCaseProvider
+- Idea 2: Tool gateway screen
+- Idea 3: route-search driven case context (selected)

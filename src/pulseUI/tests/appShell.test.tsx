@@ -7,6 +7,25 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../app/queryClient.ts";
 import { createPulseRouter } from "../app/createPulseRouter.ts";
+import * as caseApi from "../shared/caseApi.ts";
+import { taxPlanCycleRows } from "../../typescript/shared/database/seed.model.ts";
+
+const seededCaseId = taxPlanCycleRows[1].id;
+
+function buildTaxPlanCycleQueuePayload() {
+  return taxPlanCycleRows.map((row) => ({
+    id: row.id,
+    client_id: row.clientId,
+    stage: row.stage,
+    owner: row.owner,
+    priority: row.priority,
+    due_date: row.dueDate.toISOString().slice(0, 10),
+    on_hold: row.onHold,
+    hold_reason: row.holdReason,
+    is_overdue: false,
+    updated_at: "2026-07-30T00:00:00.000Z",
+  }));
+}
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -14,9 +33,22 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 const renderShell = (initialPath: string = "/") => {
+  vi.spyOn(caseApi, "caseApiGetJson").mockImplementation(async (path) => {
+    if (path === "/v1/tax-plan-cycles") {
+      return buildTaxPlanCycleQueuePayload() as never;
+    }
+
+    if (path === `/v1/cases/${seededCaseId}/deductions`) {
+      return [] as never;
+    }
+
+    throw new Error(`Unexpected request: ${path}`);
+  });
+
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
       <RouterProvider router={createPulseRouter([initialPath])} />
@@ -120,5 +152,32 @@ describe("Pulse UI app shell", () => {
     renderShell("/income");
 
     expect(await screen.findByRole("heading", { name: "Income" })).toBeInTheDocument();
+  });
+
+  test("preserves case ID only across plan tool nav links", async () => {
+    renderShell(`/deductions?caseId=${seededCaseId}`);
+
+    const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
+
+    expect(within(primaryNav).getByRole("link", { name: "Scenario Planner" })).toHaveAttribute(
+      "href",
+      `/scenarios?caseId=${seededCaseId}`,
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Income" })).toHaveAttribute(
+      "href",
+      `/income?caseId=${seededCaseId}`,
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Quarterly Payments" })).toHaveAttribute(
+      "href",
+      `/quarterly-payments?caseId=${seededCaseId}`,
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Dashboard" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Firm Settings" })).toHaveAttribute(
+      "href",
+      "/firm/settings",
+    );
   });
 });
