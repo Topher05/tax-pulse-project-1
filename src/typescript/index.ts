@@ -108,6 +108,17 @@ export {
   type CreateAuthMfaLoginRouterOptions,
 } from "./authMfaLoginRoutes.js";
 export {
+  authSessionTokenResponseSchema,
+  createAuthSessionRouter,
+  type CreateAuthSessionRouterOptions,
+} from "./authSessionRoutes.js";
+export {
+  clearRefreshTokenCookie,
+  getRefreshTokenFromCookie,
+  refreshTokenCookieName,
+  setRefreshTokenCookie,
+} from "./authSessionCookies.js";
+export {
   createAuthRouter,
   mfaChallengeResponseSchema,
   passwordLoginRequestSchema,
@@ -387,6 +398,7 @@ import {
 } from "./authConfig.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
+import { createAuthSessionRouter } from "./authSessionRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
 import { createTenantLoginResolver } from "./tenantLoginResolver.js";
 import {
@@ -573,6 +585,7 @@ export async function main(): Promise<Server> {
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
       }));
+      app.use(createAuthSessionRouter({ tokenService }));
     },
   });
   const port = getPortFromEnv();

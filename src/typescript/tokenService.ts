@@ -13,6 +13,7 @@ import type { RefreshTokenRepository } from "./refreshTokenRepository.js";
 export interface TokenService {
   issue(principal: AuthenticatedPrincipal): Promise<IssuedTokenPair>;
   revokeRefreshToken(rawRefreshToken: string): Promise<boolean>;
+  rotateRefreshToken(rawRefreshToken: string): Promise<IssuedTokenPair | null>;
 }
 
 export interface CreateTokenServiceOptions {
@@ -39,7 +40,7 @@ export function createTokenService(options: CreateTokenServiceOptions): TokenSer
   const randomBytes = options.randomBytes ?? nodeRandomBytes;
   const signingKey = new TextEncoder().encode(options.config.signingSecret);
 
-  return {
+  const service: TokenService = {
     async issue(principal) {
       const issuedAt = toWholeSecondDate(now());
       const accessTokenExpiresAt = addSeconds(
@@ -89,5 +90,27 @@ export function createTokenService(options: CreateTokenServiceOptions): TokenSer
         revokedAt: toWholeSecondDate(now()),
       });
     },
+
+    async rotateRefreshToken(rawRefreshToken) {
+      const currentTime = toWholeSecondDate(now());
+      const tokenHash = hashRefreshToken(rawRefreshToken);
+      const principal = await options.refreshTokenRepository.findActivePrincipalByTokenHash({
+        tokenHash,
+        now: currentTime,
+      });
+
+      if (principal === null) {
+        return null;
+      }
+
+      const wasRevoked = await options.refreshTokenRepository.revokeByTokenHash({
+        tokenHash,
+        revokedAt: currentTime,
+      });
+
+      return wasRevoked ? await service.issue(principal) : null;
+    },
   };
+
+  return service;
 }

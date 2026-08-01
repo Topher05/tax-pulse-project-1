@@ -44,6 +44,9 @@ function createRepository(): {
         revoked.push(input);
         return true;
       },
+      async findActivePrincipalByTokenHash() {
+        return principal;
+      },
     },
   };
 }
@@ -99,6 +102,9 @@ describe("token service", () => {
         async revokeByTokenHash() {
           return false;
         },
+        async findActivePrincipalByTokenHash() {
+          return null;
+        },
       },
       now: () => issuedAt,
       randomBytes: () => Buffer.alloc(32, 7),
@@ -124,5 +130,28 @@ describe("token service", () => {
         revokedAt: new Date("2026-07-16T12:00:00.000Z"),
       },
     ]);
+  });
+
+  test("rotates an active refresh token exactly once", async () => {
+    const state = createRepository();
+    const tokenService = createTokenService({
+      config,
+      refreshTokenRepository: state.repository,
+      now: () => issuedAt,
+      randomBytes: () => Buffer.alloc(32, 3),
+    });
+
+    const pair = await tokenService.rotateRefreshToken("synthetic-refresh-token");
+
+    expect(pair).not.toBeNull();
+    expect(state.revoked).toEqual([
+      {
+        tokenHash: createHash("sha256")
+          .update("synthetic-refresh-token")
+          .digest("hex"),
+        revokedAt: new Date("2026-07-16T12:00:00.000Z"),
+      },
+    ]);
+    expect(state.persisted).toHaveLength(1);
   });
 });
