@@ -1005,3 +1005,88 @@ sequenceDiagram
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc --noEmit"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx"` passed.
+
+## caleb-latimer-jira203 - SCRUM-203
+
+**Branch:** `caleb-latimer-jira203`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-203
+
+**Summary:** Add route-driven case selection for plan tools
+
+**Description:** Plan tools require a Tax Plan Cycle primary key before they can fetch or change case data. This slice introduces a TanStack Router search-param case gate so Deductions, Scenarios, Quarterly Payments, and the visible Income placeholder can independently initialize and consume the selected case ID.
+
+**Acceptance Criteria:**
+
+- Planning tool routes accept an optional UUID-shaped `caseId` search parameter.
+- Missing or invalid case IDs render a shared selector gate and prevent native page fetch/post behavior.
+- Any planning tool can initialize selection through `GET /v1/tax-plan-cycles`.
+- Plan-tool nav links preserve selected `caseId`; unrelated nav links do not.
+- Toolbar form actions are disabled until a valid case ID exists.
+- ADR-0026 records the route-driven case context decision.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant Router as TanStack Router
+    participant Selector as CurrentCaseSelector
+    participant Header as ToolHeader
+    participant Tool as Plan Tool
+    participant API as Core Case Service
+
+    Advisor->>Router: Open /deductions without caseId
+    Router->>Tool: caseId absent from search state
+    Tool->>Header: Render selector and disabled Add action
+    Tool-->>Advisor: Show case-gated empty state
+    Selector->>API: GET /v1/tax-plan-cycles
+    API-->>Selector: Tenant-scoped case list
+    Advisor->>Selector: Select case UUID
+    Selector->>Router: Navigate to current route with ?caseId=...
+    Router->>Tool: Provide validated caseId from search
+    Tool->>API: GET /v1/cases/:caseId/deductions
+    Advisor->>Router: Click Scenarios nav link
+    Router->>Tool: Navigate to /scenarios?caseId=...
+```
+
+**Code Connection:**
+
+- Pulse UI routing and sidebar navigation
+- Shared plan-tool case selector and route-search helpers
+- Deductions, Scenarios, Quarterly Payments, and Income plan-tool gates
+- ADR and local environment configuration
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Tenant-scoped Tax Plan Cycle workflow
+- Case-bound plan tools and server-state fetching
+
+**Changed Files:**
+
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/ToolHeader.tsx`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/PlanToolCaseGate.tsx`
+- `src/pulseUI/shared/planToolCase.ts`
+- `src/pulseUI/shared/usePlanToolCase.ts`
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `.env.example`
+- `.env`
+- `adr/0026-route-driven-case-context.md`
+- `adr/README.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- Focused Pulse UI tests were not completed: the sandboxed command failed before Vitest started with the known Windows `EPERM` path issue, and no escalated rerun was performed.
+- No additional tests will be run until the feature is manually verified.
