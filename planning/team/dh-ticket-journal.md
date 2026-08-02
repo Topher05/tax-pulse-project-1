@@ -51,9 +51,10 @@ Add new ticket entries below using this template.
 - `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts` passed.
 - `npm run typecheck` passed.
 - `git diff --check` passed with line-ending warnings only.
+- Local PostgreSQL 18.4 verified `uuidv7()` support with `uuidv7() IS NOT NULL`.
 - `npm test` passed typecheck and the new stage-changed event test, then failed in existing non-SCRUM-130 coverage:
-  Testcontainers could not find a working container runtime strategy for database-backed tests,
-  `tenantsMigration.test.ts` reported missing `uuidv7()`, and
+  `scenario.test.ts` and `scenarioRepository.test.ts` currently receive `Date` for `created_at` where the schema expects a string,
+  `scenarioMigration.test.ts` timed out after 30000ms, and
   `jwtProtectedRoutes.test.ts` currently expects `scenarios: []` on a read response that omits it.
 
 ## dylan-harle-jira122 - SCRUM-122
