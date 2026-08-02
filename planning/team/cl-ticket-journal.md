@@ -49,10 +49,11 @@ Add new ticket entries below using this template.
 
 **Acceptance Criteria:**
 
-- The `/scenarios` page renders a button that opens a modal titled `New What-If Scenario`.
-- The form uses `react-hook-form` with Zod validation and shows inline field errors.
-- Submitting logs the form payload locally with `console.table()` and does not call the backend.
-- The submission path keeps the Scrum-102 follow-up comment in place and leaves backend submission for later.
+- The `/scenarios` page is gated by case ID and shows the scenario launcher only after a valid case is selected.
+- The modal card title is `New What-If Scenario` and the body header is `New What if Scenario Set`.
+- The form uses `react-hook-form` with Zod validation, logs validation failures to the console, and enforces the 2-5 scenario limit in the UI.
+- Successful submission logs locally with `console.info()` and keeps the Scrum-102 handoff comment in place.
+- The page table area stays deferred to Jira-102.
 
 **Sequence Diagram:**
 
@@ -60,59 +61,98 @@ Add new ticket entries below using this template.
 sequenceDiagram
     participant Advisor
     participant UI as Pulse UI
+    participant Gate as Case gateway
     participant Form as react-hook-form
     participant Schema as Zod
 
-    Advisor->>UI: Open /scenarios
-    UI-->>Advisor: Render Scenario Planner entry button
+    Advisor->>UI: Open /scenarios with caseId
+    UI->>Gate: Confirm valid case access
+    Gate-->>UI: Enable Scenario Planner launcher
     Advisor->>UI: Open modal
-    UI->>Form: mount local form state
-    Advisor->>Form: Enter scenario fields
-    Form->>Schema: validate locally
-    Schema-->>Form: field-level success or inline errors
+    UI->>Form: mount scenario array state
+    Advisor->>Form: Add 2-5 scenario cards
+    Form->>Schema: validate each scenario field and array count
+    Schema-->>Form: inline field errors or valid payload
     Advisor->>Form: Click Create Scenario
-    Form->>Schema: validate current form values
-    Schema-->>Form: valid payload or errors
-    Form-->>Advisor: console.table(formData)
+    Form->>Schema: submit local scenario set
+    Schema-->>Form: console.info payload or console.error validation errors
     Note over Form,Advisor: Submission work is handled in Scrum-102
 ```
 
 **Code Connection:**
 
 - `src/pulseUI/components/ScenarioPlanningForm.tsx`
-- `src/pulseUI/components/ScenarioPlanningForm.module.css`
-- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningForm.tsx`
+- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningForm.module.css`
+- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningScenarioCard.tsx`
+- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningStatusBar.tsx`
+- `src/pulseUI/components/scenario-planning-form/schema.ts`
+- `src/pulseUI/components/PlanToolCaseGate.tsx`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
-- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
 - `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
 - `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
-- `src/pulseUI/package.json`
 
 **Project Scope Connection:**
 
 - React SPA - Operator & Portal Experience
 - Tax Plan Cycle scenario-planning UI work
 
+**Form Structure / Validation Notes:**
+
+- The form is a repeatable scenario array rendered inside a modal card.
+- Each scenario requires name, description, income, deductions, and income type.
+- The UI blocks submission until the scenario count is between 2 and 5.
+- Inline errors render beside the offending field in each scenario card.
+- The add-scenario control disables at 5 and the footer reflects the remaining slots.
+
+**Income Type Mapping:**
+
+```json
+{
+  "rt": "Rental",
+  "cg": "Capital Gains",
+  "se": "1099/Self-Employment",
+  "w2": "W-2 Employment"
+}
+```
+
+**Form Field Mapping:**
+
+```json
+{
+  "scenarios": [
+    {
+      "scenarioName": "string",
+      "description": "string",
+      "additionalIncome": "number",
+      "additionalDeductions": "number",
+      "incomeType": "rt | cg | se | w2"
+    }
+  ]
+}
+```
+
 **Changed Files:**
 
 - `src/pulseUI/components/ScenarioPlanningForm.tsx`
-- `src/pulseUI/components/ScenarioPlanningForm.module.css`
-- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningForm.tsx`
+- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningForm.module.css`
+- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningScenarioCard.tsx`
+- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningStatusBar.tsx`
+- `src/pulseUI/components/scenario-planning-form/constants.ts`
+- `src/pulseUI/components/scenario-planning-form/schema.ts`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
 - `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
 - `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
-- `src/pulseUI/package.json`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/scenarios/ScenarioPlannerPage.test.tsx"` passed.
-- The scenario form test verifies the modal, inline validation, default income type, negative decimal handling, and `console.table()` submit logging.
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ScenarioPlanningForm.test.tsx tests/scenarios/ScenarioPlannerPage.test.tsx"` passed.
-- The split tests now cover the extracted component modal behavior, validation, escape close handling, and the page launcher open/close flow.
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc -p src/pulseUI/tsconfig.pulseUI.json --noEmit 2>&1 | findstr /C:ScenarioPlannerPage.tsx"` returned no Scenario Planner file errors.
-- The broader Pulse UI typecheck still has pre-existing unrelated errors in `Details.tsx`, `Queue.tsx`, and older route tests that are outside this ticket.
+- Testing was intentionally deferred until implementation is complete and reviewed.
+- The updated form logs valid submissions with `console.info()` and validation failures with `console.error()`.
+- The page uses the case gate when `caseId` is absent or invalid.
+- Jira-102 owns the table fetch/post behavior and remains marked in the page area with a TODO comment.
 
 ## caleb-latimer-jira100 - SCRUM-100
 
