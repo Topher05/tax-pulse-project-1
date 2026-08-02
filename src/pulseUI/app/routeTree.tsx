@@ -12,8 +12,7 @@ import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
-// TODO: Implement case ID routing component
-// import { validatePlanToolSearch } from "../shared/planToolCase.ts";
+import { validatePlanToolSearch } from "../shared/planToolCase.ts";
 
 const rootRoute = createRootRoute({
   component: AppShell,
@@ -52,8 +51,7 @@ const scenarioPlannerRoute = createRoute({
   path: "/scenarios",
   component: ScenarioPlannerPage,
   beforeLoad: requirePulseAuthentication,
-  // TODO: Implement case ID routing component
-  // validateSearch: (search) => validatePlanToolSearch(search),
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const incomeRoute = createRoute({
