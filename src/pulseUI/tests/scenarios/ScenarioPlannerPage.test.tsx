@@ -1,10 +1,13 @@
 import "@testing-library/jest-dom/vitest";
 
+import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeAll, describe, expect, test } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, test } from "vitest";
 
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
+import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
 
 const seededCaseId = taxPlanCycleRows[1].id;
@@ -18,10 +21,19 @@ afterEach(() => {
 });
 
 function renderScenarioPlannerRoute(pathname: string) {
-  render(<RouterProvider router={createPulseRouter([pathname])} />);
+  render(
+    <QueryClientProvider client={createPulseQueryClient()}>
+      <RouterProvider router={createPulseRouter([pathname])} />
+    </QueryClientProvider>,
+  );
 }
 
 describe("ScenarioPlannerPage", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+  });
+
   test("renders the case gate when caseId is missing", async () => {
     renderScenarioPlannerRoute("/scenarios");
 

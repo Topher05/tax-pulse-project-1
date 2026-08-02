@@ -104,11 +104,11 @@ describe("ScenarioForm", () => {
     });
   });
 
-  test("starts with a clean form when reopened after validation errors", () => {
+  test("starts with a clean form when reopened after validation errors", async () => {
     const { unmount } = render(<ScenarioForm onClose={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Create Scenario" }));
-    expect(screen.getByText("Scenario Name is required")).toBeInTheDocument();
+    expect(await screen.findByText("Scenario Name is required")).toBeInTheDocument();
 
     unmount();
     renderScenarioForm();

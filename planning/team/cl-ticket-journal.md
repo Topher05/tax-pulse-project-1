@@ -49,9 +49,11 @@ Add new ticket entries below using this template.
 
 **Acceptance Criteria:**
 
-- The `/scenarios` page is gated by case ID and shows the scenario launcher only after a valid case is selected.
+- The `/scenarios` page renders the `CurrentCaseSelector` in the tool header and uses the shared case gate when no valid case is selected.
+- The launcher button is `New scenario` and stays disabled until a valid case is selected.
 - The modal card title is `New What-If Scenario` and the body header is `New What if Scenario Set`.
 - The form uses `react-hook-form` with Zod validation, logs validation failures to the console, and enforces the 2-5 scenario limit in the UI.
+- The form UI stays on CSS modules rather than Tailwind utility styling.
 - Successful submission logs locally with `console.info()` and keeps the Scrum-102 handoff comment in place.
 - The page table area stays deferred to Jira-102.
 
@@ -61,16 +63,22 @@ Add new ticket entries below using this template.
 sequenceDiagram
     participant Advisor
     participant UI as Pulse UI
+    participant Selector as CurrentCaseSelector
     participant Gate as Case gateway
     participant Form as react-hook-form
     participant Schema as Zod
 
-    Advisor->>UI: Open /scenarios with caseId
-    UI->>Gate: Confirm valid case access
-    Gate-->>UI: Enable Scenario Planner launcher
-    Advisor->>UI: Open modal
+    Advisor->>UI: Open /scenarios
+    UI->>Selector: Render case selector in the header
+    Selector-->>UI: Show case gate until a valid case is chosen
+    Advisor->>Selector: Select accessible case ID
+    Selector->>UI: Update route search with caseId
+    UI->>Gate: Render launcher state for selected case
+    Gate-->>UI: Enable New scenario button
+    Advisor->>UI: Open modal with New scenario
     UI->>Form: mount scenario array state
     Advisor->>Form: Add 2-5 scenario cards
+    Form->>Form: reset to clean defaults on reopen
     Form->>Schema: validate each scenario field and array count
     Schema-->>Form: inline field errors or valid payload
     Advisor->>Form: Click Create Scenario
@@ -81,16 +89,20 @@ sequenceDiagram
 
 **Code Connection:**
 
-- `src/pulseUI/components/ScenarioPlanningForm.tsx`
-- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningForm.tsx`
-- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningForm.module.css`
-- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningScenarioCard.tsx`
-- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningStatusBar.tsx`
-- `src/pulseUI/components/scenario-planning-form/schema.ts`
+- `src/pulseUI/components/ScenarioForm.tsx`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/scenario-form/Form.module.css`
+- `src/pulseUI/components/scenario-form/Form.tsx`
+- `src/pulseUI/components/scenario-form/ScenarioCard.tsx`
+- `src/pulseUI/components/scenario-form/ScenarioCard.module.css`
+- `src/pulseUI/components/scenario-form/StatusFooter.tsx`
+- `src/pulseUI/components/scenario-form/StatusFooter.module.css`
+- `src/pulseUI/components/scenario-form/constants.ts`
+- `src/pulseUI/components/scenario-form/schema.ts`
 - `src/pulseUI/components/PlanToolCaseGate.tsx`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
 - `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
-- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
+- `src/pulseUI/tests/components/ScenarioForm.test.tsx`
 
 **Project Scope Connection:**
 
@@ -134,25 +146,38 @@ sequenceDiagram
 
 **Changed Files:**
 
-- `src/pulseUI/components/ScenarioPlanningForm.tsx`
-- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningForm.tsx`
-- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningForm.module.css`
-- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningScenarioCard.tsx`
-- `src/pulseUI/components/scenario-planning-form/ScenarioPlanningStatusBar.tsx`
-- `src/pulseUI/components/scenario-planning-form/constants.ts`
-- `src/pulseUI/components/scenario-planning-form/schema.ts`
+- `src/pulseUI/components/ScenarioForm.tsx`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/scenario-form/Form.module.css`
+- `src/pulseUI/components/scenario-form/Form.tsx`
+- `src/pulseUI/components/scenario-form/ScenarioCard.tsx`
+- `src/pulseUI/components/scenario-form/ScenarioCard.module.css`
+- `src/pulseUI/components/scenario-form/StatusFooter.tsx`
+- `src/pulseUI/components/scenario-form/StatusFooter.module.css`
+- `src/pulseUI/components/scenario-form/constants.ts`
+- `src/pulseUI/components/scenario-form/schema.ts`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
 - `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
-- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
+- `src/pulseUI/tests/components/ScenarioForm.test.tsx`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
-- Testing was intentionally deferred until implementation is complete and reviewed.
+- Testing was intentionally deferred until implementation is complete and reviewed; typecheck is the only validation run so far.
 - The updated form logs valid submissions with `console.info()` and validation failures with `console.error()`.
-- The page uses the case gate when `caseId` is absent or invalid.
+- The page now renders the `CurrentCaseSelector` in the tool header and shows the case gate when `caseId` is absent or invalid.
+- The modal form no longer surfaces `caseId` in the UI or submission payload and starts clean on each reopen.
 - Jira-102 owns the table fetch/post behavior and remains marked in the page area with a TODO comment.
+
+**Additional Scope Impact (append-only):**
+
+- The scenario modal styling was moved back to CSS modules after the utility-first pass, keeping the UI closer to the original component structure.
+- The scenario form now renders a horizontal divider between repeated entries using the requested white-to-gray gradient treatment.
+- The footer actions now read as a horizontal button group with icon affordances and primary/secondary/info emphasis.
+- The form no longer receives or displays `caseId`; case injection remains reserved for Scrum-102 rollup behavior.
+- Reopening the modal now starts from clean default state rather than preserving values or validation state from the previous open.
+- The related page and test updates continue to reflect the case selector harness and the local-only submit flow.
 
 ## caleb-latimer-jira100 - SCRUM-100
 
