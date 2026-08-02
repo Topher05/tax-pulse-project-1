@@ -1028,6 +1028,7 @@ sequenceDiagram
 **Changed Files:** See SCRUM-117 quarterly-payments changes.
 
 **Validation Notes:** Validation was deferred per instruction; no tests were run for this ticket during implementation.
+- Database generation follow-up for this quarterly payments work will be tracked in SCRUM-204.
 
 ## caleb-latimer-jira203 - SCRUM-203
 

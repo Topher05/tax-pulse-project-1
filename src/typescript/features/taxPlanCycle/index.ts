@@ -153,7 +153,7 @@ export {
   type QuarterlyEstimateQuarter,
   type QuarterlyEstimateRow,
   type QuarterlyEstimateRows,
-} from "../quarterlyPayments/quarterlyPayments.js";
+} from "../quarterlyPayments/repositories/quarterlyPayments.js";
 export {
   createQuarterlyPaymentsRouter,
   type CreateQuarterlyPaymentsRouterOptions,

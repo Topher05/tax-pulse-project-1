@@ -11,7 +11,7 @@ export const quarterlyEstimateSchema = z.object({
   withholding_applied: z.string().min(1),
   covered_amount: z.string().min(1),
   remaining_due: z.string().min(1),
-  status: z.string().min(1),
+  status: z.enum(["Paid", "Due"]),
 });
 
 export const quarterlyEstimateRowsSchema = z.array(quarterlyEstimateSchema);

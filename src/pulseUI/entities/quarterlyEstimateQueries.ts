@@ -23,12 +23,13 @@ const quarterlyEstimateRecordSchema = z.object({
   remaining_due: z.union([z.string().min(1), z.number()]).transform((value) =>
     typeof value === "string" ? Number(value) : value,
   ),
-  status: z.enum(["Paid", "Due Soon", "Upcoming", "Projected"]).optional(),
+  status: z.enum(["Paid", "Due"]),
 });
 
 const quarterlyEstimateResponseSchema = z.array(quarterlyEstimateRecordSchema);
 
 export type QuarterlyEstimateRecord = z.infer<typeof quarterlyEstimateRecordSchema>;
+export type QuarterlyEstimateQuarter = z.infer<typeof quarterlyEstimateQuarterSchema>;
 
 export function quarterlyEstimatesQueryKey(caseId: Uuid | "unselected") {
   return ["quarterly-estimates", caseId] as const;

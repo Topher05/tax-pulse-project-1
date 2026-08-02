@@ -8,6 +8,7 @@ import { CurrentCaseSelector } from "../../components/CurrentCaseSelector.tsx";
 import { PlanToolCaseGate } from "../../components/PlanToolCaseGate.tsx";
 import {
   QuarterlyTimelineItem,
+  type QuarterlyEstimateQuarter,
   type QuarterlyEstimateRecord,
 } from "../../components/QuarterlyTimelineItem.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
@@ -33,14 +34,16 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     {
       id: "QP-001",
       taxYear: "2026",
+      quarter: "Q1",
       dueDate: "2026-04-15",
       estimatedPayment: 3620,
-      withholdingApplied: 2140,
+      withholdingApplied: 3620,
       status: "Paid",
     },
     {
       id: "QP-002",
       taxYear: "2026",
+      quarter: "Q2",
       dueDate: "2026-06-15",
       estimatedPayment: 3620,
       withholdingApplied: 3620,
@@ -49,42 +52,20 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     {
       id: "QP-003",
       taxYear: "2026",
+      quarter: "Q3",
       dueDate: "2026-09-15",
-      estimatedPayment: 3620,
-      withholdingApplied: 1820,
-      status: "Due Soon",
+      estimatedPayment: 3400,
+      withholdingApplied: 0,
+      status: "Due",
     },
     {
       id: "QP-004",
-      taxYear: "2027",
+      taxYear: "2026",
+      quarter: "Q4",
       dueDate: "2027-01-15",
-      estimatedPayment: 3740,
-      withholdingApplied: 1640,
-      status: "Upcoming",
-    },
-    {
-      id: "QP-005",
-      taxYear: "2027",
-      dueDate: "2027-04-15",
-      estimatedPayment: 3740,
-      withholdingApplied: 1680,
-      status: "Projected",
-    },
-    {
-      id: "QP-006",
-      taxYear: "2027",
-      dueDate: "2027-06-15",
-      estimatedPayment: 3740,
-      withholdingApplied: 1740,
-      status: "Projected",
-    },
-    {
-      id: "QP-007",
-      taxYear: "2027",
-      dueDate: "2027-09-15",
-      estimatedPayment: 3860,
-      withholdingApplied: 1790,
-      status: "Projected",
+      estimatedPayment: 3960,
+      withholdingApplied: 0,
+      status: "Due",
     },
   ] as const;
 }
@@ -93,32 +74,23 @@ function toQuarterlyEstimateRecord(
   record: {
     case_id: string;
     tax_year: string;
-    quarter: "Q1" | "Q2" | "Q3" | "Q4";
+    quarter: QuarterlyEstimateQuarter;
     due_date: string;
     estimated_payment: number;
     withholding_applied: number;
     covered_amount: number;
     remaining_due: number;
-    status?: "Paid" | "Due Soon" | "Upcoming" | "Projected";
+    status: "Paid" | "Due";
   },
 ): QuarterlyEstimateRecord {
-  const status =
-    record.status ??
-    (record.remaining_due <= 0
-      ? "Paid"
-      : record.remaining_due <= 1500
-        ? "Due Soon"
-        : record.quarter === "Q4"
-          ? "Upcoming"
-          : "Projected");
-
   return {
     id: `${record.case_id}-${record.quarter}`,
     taxYear: record.tax_year,
+    quarter: record.quarter,
     dueDate: record.due_date,
     estimatedPayment: record.estimated_payment,
     withholdingApplied: record.withholding_applied,
-    status,
+    status: record.status,
   };
 }
 
@@ -169,14 +141,13 @@ export function QuarterlyPaymentsScreen({
         <WithholdingProgressChart
           totalEstimated={totalEstimated}
           totalWithholding={totalWithholding}
-          totalRemaining={totalRemaining}
         />
       </PanelCard>
 
       <div className={styles.contentGrid}>
         <PanelCard
           title="Quarter Timeline"
-          description="Seven synthetic estimate checkpoints for the planning horizon."
+          description="Four synthetic estimate checkpoints for the planning horizon."
         >
           <ul className={styles.timelineList} aria-label="Quarter timeline">
             {quarterlyEstimates.map((payment) => (
@@ -194,6 +165,12 @@ export function QuarterlyPaymentsPage() {
   const setCaseId = useSetPlanToolCaseId();
   const quarterlyEstimatesQuery = useQuarterlyEstimatesQuery(caseId);
   const contextControl = <CurrentCaseSelector caseId={caseId} onCaseIdChange={setCaseId} />;
+  // Jira-119 owns the visible loading/error/data UI wiring; this ticket only tracks the states.
+  const quarterlyEstimatesQueryState = quarterlyEstimatesQuery.isLoading
+    ? "loading"
+    : quarterlyEstimatesQuery.isError
+      ? "error"
+      : "data";
 
   const header = (
     <ToolHeader
@@ -221,32 +198,10 @@ export function QuarterlyPaymentsPage() {
     );
   }
 
-  if (quarterlyEstimatesQuery.isLoading) {
-    return (
-      <div className={styles.page}>
-        {header}
-        <PanelCard title="Loading quarterly estimates">
-          <p>Fetching live quarterly estimate data for the selected case.</p>
-        </PanelCard>
-      </div>
-    );
-  }
-
-  if (quarterlyEstimatesQuery.isError) {
-    return (
-      <div className={styles.page}>
-        {header}
-        <PanelCard title="Unable to load quarterly estimates">
-          <p>{quarterlyEstimatesQuery.error instanceof Error ? quarterlyEstimatesQuery.error.message : "Unknown quarterly estimate error."}</p>
-        </PanelCard>
-      </div>
-    );
-  }
-
   const quarterlyEstimates = quarterlyEstimatesQuery.data?.map(toQuarterlyEstimateRecord) ?? buildPlaceholderQuarterlyEstimates();
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-quarterly-query-state={quarterlyEstimatesQueryState}>
       {header}
       <QuarterlyPaymentsScreen quarterlyEstimates={quarterlyEstimates} />
     </div>

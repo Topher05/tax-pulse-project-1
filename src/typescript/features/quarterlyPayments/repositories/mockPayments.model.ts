@@ -1,17 +1,27 @@
-import type { QuarterlyEstimateRows } from "./quarterlyPayments.js";
-
 export interface QuarterlyPaymentsMockCase {
   caseId: string;
   dueDate: string;
 }
 
+export interface QuarterlyEstimateMockRow {
+  case_id: string;
+  tax_year: string;
+  quarter: "Q1" | "Q2" | "Q3" | "Q4";
+  due_date: string;
+  estimated_payment: string;
+  withholding_applied: string;
+  covered_amount: string;
+  remaining_due: string;
+  status: "Paid" | "Due";
+}
+
+export type QuarterlyEstimateMockRows = ReadonlyArray<QuarterlyEstimateMockRow>;
+
 export function buildQuarterlyEstimateMockRows(
   input: QuarterlyPaymentsMockCase,
-): QuarterlyEstimateRows {
+): QuarterlyEstimateMockRows {
   const dueYear = Number(input.dueDate.slice(0, 4));
-  const nextYear = dueYear + 1;
   const taxYear = String(dueYear);
-
   // TODO: Table Generation and persistence of this entity isn't confirmed yet, documented in Jira-204
   return [
     {
@@ -42,21 +52,21 @@ export function buildQuarterlyEstimateMockRows(
       quarter: "Q3",
       due_date: `${dueYear}-09-15`,
       estimated_payment: "3400.00",
-      withholding_applied: "1820.00",
-      covered_amount: "1820.00",
-      remaining_due: "1580.00",
+      withholding_applied: "0.00",
+      covered_amount: "0.00",
+      remaining_due: "3400.00",
       status: "Due",
     },
     {
       case_id: input.caseId,
-      tax_year: String(nextYear),
+      tax_year: taxYear,
       quarter: "Q4",
-      due_date: `${nextYear}-01-15`,
+      due_date: `${dueYear + 1}-01-15`,
       estimated_payment: "3960.00",
-      withholding_applied: "1640.00",
-      covered_amount: "1640.00",
-      remaining_due: "2320.00",
+      withholding_applied: "0.00",
+      covered_amount: "0.00",
+      remaining_due: "3960.00",
       status: "Due",
     },
-  ] as const;
+  ] as QuarterlyEstimateMockRows;
 }

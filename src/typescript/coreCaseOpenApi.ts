@@ -24,7 +24,7 @@ import {
 import {
   quarterlyEstimateReadParamsSchema,
   quarterlyEstimateRowsSchema,
-} from "./features/quarterlyPayments/quarterlyPayments.js";
+} from "./features/quarterlyPayments/repositories/quarterlyPayments.js";
 import {
   scenarioModelingRequestSchema,
 } from "./features/taxPlanCycle/scenarioModeling.js";
