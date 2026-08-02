@@ -868,12 +868,21 @@ sequenceDiagram
 
 **Jira Key:** SCRUM-112
 
-**Summary:** Replace deductions GET mocks with a Postgres-backed list endpoint and align the Pulse UI query consumer to integration a TanStack Query hook to the deductions endpoint
+**Summary:** Replace deductions GET mocks with a Postgres-backed list endpoint and align the Pulse UI query consumer to integration a TanStack Query hook to the deductions endpoint to add the TanStack Query hook to the quarterly estimates endpoint
 
-**Description:** As a Core Case Service engineer, I want `GET /v1/cases/:caseId/deductions` to read directly from Postgres and return a JSON array of deduction rows, so that the Deductions screen can consume tenant-scoped live data through a typed query boundary instead of a synthetic aggregation payload.
+**Description:** As a Frontend Developer, I want a TanStack Query hook fetching the quarterly estimates, so that the Quarterly Payments screen reads live read-only data through one typed boundary.
+
+As a Core Case Service engineer, I want `GET /v1/cases/:caseId/deductions` to read directly from Postgres and return a JSON array of deduction rows, so that the Deductions screen can consume tenant-scoped live data through a typed query boundary instead of a synthetic aggregation payload.
+
+
 
 **Acceptance Criteria:**
 
+- A TanStack Query hook calls the deductions endpoint and returns typed deduction items.
+- The hook exposes loading, error, and data states to callers.
+- The Deductions screen reads the hook boundary instead of a static local scaffold.
+- The route-driven case context from SCRUM-203 remains the case-id source for the query boundary.
+- Loader presentation remains deferred to SCRUM-113 and is only tracked as query state for now.
 - `GET /v1/cases/:caseId/deductions` queries the `deduction` table directly.
 - The repository filters by the authenticated tenant and requested case.
 - The endpoint returns a JSON array of deduction rows with ISO date strings and numeric fields serialized for JSON transport.
@@ -881,7 +890,6 @@ sequenceDiagram
 - The Pulse UI query layer treats the response as `Deduction[]`, and the Deductions page logs the parsed array with `console.table()`.
 - Repository, route, and UI regression tests cover the owning tenant, cross-tenant access, empty-list cases, and the parsed response shape.
 - The OpenAPI contract reflects the new list response.
-
 **Sequence Diagram:**
 
 ```mermaid
@@ -889,6 +897,7 @@ sequenceDiagram
     participant Advisor
     participant UI as Pulse UI
     participant Query as useDeductionsQuery
+    participant Router as TanStack Router
     participant API as Core Case Service
     participant Route as deductions route
     participant Repo as Deductions repository
@@ -907,6 +916,7 @@ sequenceDiagram
     Query-->>UI: query data available
     UI->>UI: console.table(query.data)
     Note over UI: Main table wiring stays disabled for Scrum-115
+    Note over Screen: Loader UI remains deferred to SCRUM-113
 ```
 
 **Code Connection:**
@@ -926,9 +936,17 @@ sequenceDiagram
 - `tests/typescript/features/deductions/repository.test.ts`
 - `tests/typescript/features/deductions/routes.test.ts`
 - `tests/typescript/deductionAggregationClient.test.ts`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/PlanToolCaseGate.tsx`
+- `src/pulseUI/shared/usePlanToolCase.ts`
+- `src/pulseUI/shared/planToolCase.ts`
+- `src/pulseUI/app/routeTree.tsx`
 
 **Project Scope Connection:**
 
+- React SPA - Operator & Portal Experience
+- Read-only quarterly payments query boundary
+- Route-driven case context integration
 - Core Case Service backend
 - Tenant-scoped read path and API contract cleanup
 - Pulse UI deductions query boundary alignment
@@ -954,8 +972,7 @@ sequenceDiagram
 
 **Validation Notes:**
 
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` still fails in this host because the existing suite depends on Docker/Testcontainers integration and one pre-existing `jwtProtectedRoutes` assertion mismatch remains outside this change.
+- Validation was deferred per the Jira 112 implementation note that suspends testing until the requirements are complete.
 
 ## caleb-latimer-jira117 - SCRUM-117
 
