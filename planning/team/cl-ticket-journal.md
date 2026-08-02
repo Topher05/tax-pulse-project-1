@@ -967,15 +967,15 @@ sequenceDiagram
 
 **Summary:** Scaffold the Quarterly Payments screen component from the wireframe
 
-**Description:** As an Advisor, I want a read-only Quarterly Payments screen, so that I can review the estimated installment schedule and withholding coverage before charting and payment actions are added later.
+**Description:** As an Advisor, I want a read-only Quarterly Payments screen, so that I can review the estimated installment schedule and withholding coverage through a case-scoped quarterly-estimates read model before charting and payment actions are added later.
 
 **Acceptance Criteria:**
 
 - The `/quarterly-payments` route renders a typed quarterly payments screen instead of the empty page.
 - The screen shows a KPI region with the second card styled green and the last card styled amber.
-- The screen shows a read-only quarter timeline with exactly seven seeded estimate items.
-- The screen includes a withholding progress placeholder card with `TBD` content.
-- The screen does not scaffold payment recording or mark-paid actions.
+- The screen shows a read-only quarter timeline with four seeded estimate items.
+- The screen includes a computed withholding progress card that reports total estimated, paid so far, and remaining due values.
+- The screen keeps payment recording and mark-paid actions out of scope.
 
 **Code Connection:**
 
@@ -983,6 +983,11 @@ sequenceDiagram
 - `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
 - `src/pulseUI/components/QuarterlyTimelineItem.tsx`
 - `src/pulseUI/components/QuarterlyTimelineItem.module.css`
+- `src/pulseUI/components/WithholdingProgressChart.tsx`
+- `src/pulseUI/entities/quarterlyEstimateQueries.ts`
+- `src/typescript/features/quarterlyPayments/routes.ts`
+- `src/typescript/features/quarterlyPayments/repositories/quarterlyPayments.ts`
+- `src/typescript/features/quarterlyPayments/repositories/mockPayments.model.ts`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
 
@@ -995,8 +1000,13 @@ sequenceDiagram
 
 - `src/pulseUI/components/QuarterlyTimelineItem.tsx`
 - `src/pulseUI/components/QuarterlyTimelineItem.module.css`
+- `src/pulseUI/components/WithholdingProgressChart.tsx`
 - `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
 - `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
+- `src/pulseUI/entities/quarterlyEstimateQueries.ts`
+- `src/typescript/features/quarterlyPayments/routes.ts`
+- `src/typescript/features/quarterlyPayments/repositories/quarterlyPayments.ts`
+- `src/typescript/features/quarterlyPayments/repositories/mockPayments.model.ts`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
 - `planning/team/cl-ticket-journal.md`
@@ -1006,6 +1016,7 @@ sequenceDiagram
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc --noEmit"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx"` passed.
 - Jira 118 was completed inside this branch as the typed quarterly-estimates query boundary for the read-only Quarterly Payments screen.
+- Later quarterly-payments refinements reduced the mock to four items, shrank the quarter statuses to `Paid` and `Due`, and replaced the placeholder chart with computed coverage, paid-so-far, and remaining-due outputs.
 
 ## caleb-latimer-jira118 - SCRUM-118
 
