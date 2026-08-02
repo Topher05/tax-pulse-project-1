@@ -905,14 +905,14 @@ sequenceDiagram
     participant Gate as PlanToolCaseGate
     participant Query as useDeductionsQuery
     participant Router as TanStack Router
-    participant API as Core Case Service
+     participant API as Core Case Service
     participant Route as deductions route
     participant Repo as Deductions repository
     participant DB as Postgres deduction table
     participant API as Case API
 
     Advisor->>UI: Open /deductions
-     UI->>Query: mount DeductionsPage with caseId
+    UI->>Query: mount DeductionsPage with caseId
     Query->>API: GET /v1/cases/{caseId}/deductions
     API->>Route: authenticate and route request
     Route->>Repo: listByCaseId(tenantId, caseId)
@@ -940,6 +940,7 @@ sequenceDiagram
 
 **Code Connection:**
 
+- `src/pulseUI/entities/deductionQueries.ts`
 - `src/typescript/features/deductions/repositories/repository.ts`
 - `src/typescript/features/deductions/repositories/deduction.ts`
 - `src/typescript/features/deductions/routes.ts`
@@ -948,9 +949,8 @@ sequenceDiagram
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
 - `src/typescript/shared/database/seed.model.ts`
-- `src/pulseUI/entities/deductionQueries.ts`
 - `src/pulseUI/pages/deductions/DeductionsPage.tsx`
-- `src/pulseUI/tests/entities/deductionQueries.test.ts`
+`src/pulseUI/tests/entities/deductionQueries.test.ts`
 - `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
 - `tests/typescript/features/deductions/repository.test.ts`
 - `tests/typescript/features/deductions/routes.test.ts`
@@ -963,22 +963,6 @@ sequenceDiagram
 - `src/pulseUI/tests/entities/deductionQueries.test.tsx`
 - `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
 - `src/pulseUI/tests/appShell.test.tsx`
-
-**Project Scope Connection:**
-
-- React SPA - Operator & Portal Experience
-- Read-only quarterly payments query boundary
-- Route-driven case context integration
-- Core Case Service backend
-- Tenant-scoped read path and API contract cleanup
-- Pulse UI deductions query boundary alignment
-- Loader-state exposure deferred to the next Jira
-- Shared plan-tool case selection and gating
-- Core Case Service deductions endpoint compatibility
-
-**Changed Files:**
-
-- `src/pulseUI/entities/deductionQueries.ts`
 - `src/typescript/features/deductions/repositories/repository.ts`
 - `src/typescript/features/deductions/repositories/deduction.ts`
 - `src/typescript/features/deductions/routes.ts`
@@ -986,9 +970,23 @@ sequenceDiagram
 - `src/typescript/features/deductions/repositories/mockAggregationDataSource.ts`
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
--  `src/pulseUI/tests/entities/deductionQueries.test.ts`
 - `src/typescript/shared/database/seed.model.ts`
-- `planning/team/cl-ticket-journal.md`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Route-driven case context integration
+- Pulse UI deductions query boundary alignment
+- Loader-state exposure deferred to the next Jira
+- Shared plan-tool case selection and gating
+- Case-gated deductions fetch behavior
+- Core Case Service backend
+- Tenant-scoped read path and API contract cleanup
+- Core Case Service deductions endpoint compatibility
+
+**Changed Files:**
+
+- `src/pulseUI/entities/deductionQueries.ts`
 - `src/pulseUI/pages/deductions/DeductionsPage.tsx`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/tests/entities/deductionQueries.test.tsx`
@@ -998,9 +996,14 @@ sequenceDiagram
 - `src/pulseUI/components/PlanToolCaseGate.tsx`
 - `src/pulseUI/shared/usePlanToolCase.ts`
 - `src/pulseUI/shared/planToolCase.ts`
--  `tests/typescript/features/deductions/repository.test.ts`
-- `tests/typescript/features/deductions/routes.test.ts`
-- `tests/typescript/deductionAggregationClient.test.ts`
+- `src/typescript/features/deductions/repositories/repository.ts`
+- `src/typescript/features/deductions/repositories/deduction.ts`
+- `src/typescript/features/deductions/routes.ts`
+- `src/typescript/features/deductions/controllers/deductions.ts`
+- `src/typescript/features/deductions/repositories/mockAggregationDataSource.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
