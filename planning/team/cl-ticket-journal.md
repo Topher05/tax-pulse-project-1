@@ -868,11 +868,11 @@ sequenceDiagram
 
 **Jira Key:** SCRUM-112
 
-**Summary:** Replace deductions GET mocks with a Postgres-backed list endpoint and align the Pulse UI query consumer to integration a TanStack Query hook to the deductions endpoint to add the TanStack Query hook to the quarterly estimates endpoint
+**Summary:** Add the TanStack Query hook to the deductions endpoint and wire the Deductions page to the route-driven case gate, Replace deductions GET mocks with a Postgres-backed list endpoint and align the Pulse UI query consumer to integration a TanStack Query hook to the deductions endpoint to add the TanStack Query hook to the quarterly estimates endpoint
 
-**Description:** As a Frontend Developer, I want a TanStack Query hook fetching the quarterly estimates, so that the Quarterly Payments screen reads live read-only data through one typed boundary.
+**Description:** As a Frontend Developer, I want the Deductions screen to read tenant-scoped live data through one typed query boundary, so that the page requires a valid case ID from router state before it fetches and exposes loading, error, and data states for future loader behavior.
 
-As a Core Case Service engineer, I want `GET /v1/cases/:caseId/deductions` to read directly from Postgres and return a JSON array of deduction rows, so that the Deductions screen can consume tenant-scoped live data through a typed query boundary instead of a synthetic aggregation payload.
+As a Core Case Service engineer, I want `GET /v1/cases/:caseId/deductions` to read directly from Postgres and return a JSON array of deduction rows, so that the Deductions screen can consume tenant-scoped live data through a typed query boundary instead of a synthetic aggregation payload. As a React SPA engineer, I want the shared case selector and gate to initialize the current case selection for deductions, so that the page can fetch `GET /v1/cases/:caseId/deductions` only after a valid route-backed case is selected.
 
 
 
@@ -882,7 +882,12 @@ As a Core Case Service engineer, I want `GET /v1/cases/:caseId/deductions` to re
 - The hook exposes loading, error, and data states to callers.
 - The Deductions screen reads the hook boundary instead of a static local scaffold.
 - The route-driven case context from SCRUM-203 remains the case-id source for the query boundary.
+- The shared selector can initialize the current case selection from the deductions page.
 - Loader presentation remains deferred to SCRUM-113 and is only tracked as query state for now.
+- `GET /v1/cases/:caseId/deductions` is fetched only after a valid case ID exists.
+- The Deductions page exposes a query-state marker for future loader wiring without rendering loader UI.
+- The Pulse UI query layer treats the response as `Deduction[]`.
+- Coverage includes missing case gating, selected case fetch behavior, query-state exposure, and typed response parsing.
 - `GET /v1/cases/:caseId/deductions` queries the `deduction` table directly.
 - The repository filters by the authenticated tenant and requested case.
 - The endpoint returns a JSON array of deduction rows with ISO date strings and numeric fields serialized for JSON transport.
@@ -896,15 +901,18 @@ As a Core Case Service engineer, I want `GET /v1/cases/:caseId/deductions` to re
 sequenceDiagram
     participant Advisor
     participant UI as Pulse UI
+    participant Selector as CurrentCaseSelector
+    participant Gate as PlanToolCaseGate
     participant Query as useDeductionsQuery
     participant Router as TanStack Router
     participant API as Core Case Service
     participant Route as deductions route
     participant Repo as Deductions repository
     participant DB as Postgres deduction table
+    participant API as Case API
 
     Advisor->>UI: Open /deductions
-    UI->>Query: mount DeductionsPage with caseId
+     UI->>Query: mount DeductionsPage with caseId
     Query->>API: GET /v1/cases/{caseId}/deductions
     API->>Route: authenticate and route request
     Route->>Repo: listByCaseId(tenantId, caseId)
@@ -917,6 +925,17 @@ sequenceDiagram
     UI->>UI: console.table(query.data)
     Note over UI: Main table wiring stays disabled for Scrum-115
     Note over Screen: Loader UI remains deferred to SCRUM-113
+    UI->>Selector: render shared case selector
+    alt case ID missing or invalid
+        UI->>Gate: show case gate and block fetch
+    else case ID selected
+        Selector->>Router: write caseId into router search
+        UI->>Query: enable deductions query with caseId
+        Query->>API: GET /v1/cases/{caseId}/deductions
+        API-->>Query: Deduction[]
+        Query-->>UI: data, loading, error state exposure
+    end
+    Note over UI: Loader UI remains deferred to SCRUM-113
 ```
 
 **Code Connection:**
@@ -941,6 +960,9 @@ sequenceDiagram
 - `src/pulseUI/shared/usePlanToolCase.ts`
 - `src/pulseUI/shared/planToolCase.ts`
 - `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/entities/deductionQueries.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
 
 **Project Scope Connection:**
 
@@ -950,9 +972,13 @@ sequenceDiagram
 - Core Case Service backend
 - Tenant-scoped read path and API contract cleanup
 - Pulse UI deductions query boundary alignment
+- Loader-state exposure deferred to the next Jira
+- Shared plan-tool case selection and gating
+- Core Case Service deductions endpoint compatibility
 
 **Changed Files:**
 
+- `src/pulseUI/entities/deductionQueries.ts`
 - `src/typescript/features/deductions/repositories/repository.ts`
 - `src/typescript/features/deductions/repositories/deduction.ts`
 - `src/typescript/features/deductions/routes.ts`
@@ -960,19 +986,27 @@ sequenceDiagram
 - `src/typescript/features/deductions/repositories/mockAggregationDataSource.ts`
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
+-  `src/pulseUI/tests/entities/deductionQueries.test.ts`
 - `src/typescript/shared/database/seed.model.ts`
-- `src/pulseUI/entities/deductionQueries.ts`
+- `planning/team/cl-ticket-journal.md`
 - `src/pulseUI/pages/deductions/DeductionsPage.tsx`
-- `src/pulseUI/tests/entities/deductionQueries.test.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/entities/deductionQueries.test.tsx`
 - `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
-- `tests/typescript/features/deductions/repository.test.ts`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/PlanToolCaseGate.tsx`
+- `src/pulseUI/shared/usePlanToolCase.ts`
+- `src/pulseUI/shared/planToolCase.ts`
+-  `tests/typescript/features/deductions/repository.test.ts`
 - `tests/typescript/features/deductions/routes.test.ts`
 - `tests/typescript/deductionAggregationClient.test.ts`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
-- Validation was deferred per the Jira 112 implementation note that suspends testing until the requirements are complete.
+- Focused Pulse UI tests passed: `tests/entities/deductionQueries.test.tsx`, `tests/deductions/DeductionsPage.test.tsx`, and `tests/appShell.test.tsx`.
+- Pulse UI typecheck passed: `npm.cmd run typecheck`.
 
 ## caleb-latimer-jira117 - SCRUM-117
 

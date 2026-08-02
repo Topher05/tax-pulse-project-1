@@ -26,6 +26,7 @@ const samplePayload = {
   tax_impact: "4625.00",
   deleted: false,
 };
+const samplePayloads = [samplePayload] as const;
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -33,7 +34,7 @@ afterEach(() => {
 
 describe("useDeductionsQuery", () => {
   test("parses the deductions payload returned by the case API", async () => {
-    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(samplePayload as never);
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(samplePayloads as never);
     const wrapper = ({ children }: { children: ReactNode }) => (
       createElement(
         QueryClientProvider,
