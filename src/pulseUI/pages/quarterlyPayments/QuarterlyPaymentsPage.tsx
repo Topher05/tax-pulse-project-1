@@ -146,8 +146,8 @@ export function QuarterlyPaymentsScreen({
 
       <div className={styles.contentGrid}>
         <PanelCard
-          title="Quarter Timeline"
-          description="Four synthetic estimate checkpoints for the planning horizon."
+          title="Timeline"
+          description="Federal estimation checkpoints"
         >
           <ul className={styles.timelineList} aria-label="Quarter timeline">
             {quarterlyEstimates.map((payment) => (

@@ -38,8 +38,7 @@ export function WithholdingProgressChart({
       </div>
 
       <p className={`${styles.metaLine} m-0 text-sm text-[var(--pulse-muted)]`}>
-        Paid so far of estimated tax covered by withholdings: {formatCurrency(totalWithholding)} of{" "}
-        {formatCurrency(totalEstimated)}. Remaining due: {formatCurrency(totalRemaining)}.
+        {formatCurrency(totalWithholding)} of{" "} {formatCurrency(totalEstimated)} estimated tax covered by withholdings.
       </p>
     </div>
   );
