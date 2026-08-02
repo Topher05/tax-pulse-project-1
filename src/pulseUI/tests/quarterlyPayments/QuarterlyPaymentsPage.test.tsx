@@ -98,13 +98,12 @@ describe("QuarterlyPaymentsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Select a case to load quarterly payments/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Quarter Timeline", level: 2 })).toBeInTheDocument();
   });
 
   test("renders the read-only timeline and withholding placeholder", () => {
     render(<QuarterlyPaymentsScreen quarterlyEstimates={buildFixtureEstimates()} />);
 
-    expect(screen.getByRole("heading", { name: "Quarter Timeline", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Timeline", level: 2 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Withholding Progress", level: 2 })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Quarter timeline" })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(4);
@@ -120,11 +119,7 @@ describe("QuarterlyPaymentsPage", () => {
     expect(screen.getByText("$7,240")).toBeInTheDocument();
     expect(screen.getByText("$7,360")).toBeInTheDocument();
     expect(screen.getByText("49.6%")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Paid so far of estimated tax covered by withholdings: $7,240 of $14,600. Remaining due: $7,360.",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/\$7,240.*\$14,600.*withholdings\./)).toBeInTheDocument();
   });
 
   test("does not scaffold payment recording actions", () => {

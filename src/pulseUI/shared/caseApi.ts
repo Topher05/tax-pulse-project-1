@@ -26,7 +26,6 @@ function getCaseApiBaseUrl(): string {
   return baseUrl.replace(/\/+$/, "");
 }
 function getSharedJwtAuthorizationHeader(): string | null {
-  // TODO: JWT check => Refresh on 401 gated by Scrum 99, this needs to be implementation reviewed then integrated post merge
   const accessToken = getPulseAccessToken();
   return accessToken ? `Bearer ${accessToken}` : null;
 }
@@ -39,7 +38,6 @@ function getCaseApiHeaders(): HeadersInit {
     throw new CaseApiError(401, "", "A shared JWT is required before the Pulse UI can fetch live case data.");
   }
 
-  // TODO: Above code is commented out for token auth, add the token to the below line for auth manually for local testing
   return {
     authorization: authorizationHeader,
   };
