@@ -5,6 +5,57 @@
 
 Add new ticket entries below using this template.
 
+## development-scrum130 - SCRUM-130
+
+**Branch:** `development`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-130
+
+**Summary:** Define the stage-changed CloudEvents schema.
+
+**Description:** As a Backend Developer, I want a CloudEvents schema for the stage-changed event, so that consumers have a stable event contract.
+
+**Acceptance Criteria:**
+
+- A CloudEvents-shaped schema defines case_id, from_stage, to_stage, tenant_id, and actor.
+- A zod validator parses and rejects malformed events.
+- The schema is versioned and documented.
+
+**Code Connection:**
+
+- Added a versioned CloudEvents 1.0 Zod schema for Tax Plan Cycle stage changes.
+- Reused the existing Tax Plan Cycle stage enum so event validation stays aligned with workflow state.
+- Exported the v1 event constants, schema, and inferred types through the Tax Plan Cycle feature boundary and package root.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration.
+- Establishes the stable event contract required before SCRUM-131 publishes stage-changed events and SCRUM-132 consumes them.
+- Does not add SNS publishing, SQS consumption, migrations, or a separate case status field.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts`
+- `docs/stage-changed-event.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `adr/README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts` passed.
+- `npm run typecheck` passed.
+- `git diff --check` passed with line-ending warnings only.
+- `npm test` passed typecheck and the new stage-changed event test, then failed in existing non-SCRUM-130 coverage:
+  Testcontainers could not find a working container runtime strategy for database-backed tests,
+  `tenantsMigration.test.ts` reported missing `uuidv7()`, and
+  `jwtProtectedRoutes.test.ts` currently expects `scenarios: []` on a read response that omits it.
+
 ## dylan-harle-jira122 - SCRUM-122
 
 **Branch:** `dylan-harle-jira122`
