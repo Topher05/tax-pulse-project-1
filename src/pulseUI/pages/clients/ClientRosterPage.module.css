@@ -4,6 +4,48 @@
   align-content: start;
 }
 
+.stateCard {
+  width: 100%;
+}
+
+.skeletonTable {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.skeletonHeader,
+.skeletonRow {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(160px, 1.6fr) minmax(120px, 1fr) repeat(2, minmax(96px, 0.8fr)) minmax(104px, 0.9fr) minmax(100px, 0.7fr);
+}
+
+.skeletonRow {
+  grid-template-columns: minmax(160px, 1.6fr) minmax(120px, 1fr) repeat(2, minmax(96px, 0.8fr)) minmax(104px, 0.9fr) minmax(100px, 0.7fr);
+}
+
+.skeletonBlock {
+  min-height: 18px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #1a1d2b 0%, #23283a 50%, #1a1d2b 100%);
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.skeletonHeader .skeletonBlock {
+  min-height: 78px;
+}
+
+@keyframes skeletonPulse {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .clientName {
   color: var(--pulse-ink);
   font-weight: 800;
@@ -59,4 +101,11 @@
 
 .openBooksButton:disabled {
   opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .skeletonHeader,
+  .skeletonRow {
+    grid-template-columns: 1fr;
+  }
 }

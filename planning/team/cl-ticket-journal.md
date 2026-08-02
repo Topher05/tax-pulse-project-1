@@ -35,6 +35,49 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira116 - SCRUM-124
+
+**Branch:** `caleb-latimer-jira116`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-124
+
+**Summary:** Add loading, empty, and error states to the Client Roster screen
+
+**Description:** As a Frontend Developer, I want the Client Roster screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the roster request is in flight.
+- An empty state renders when the firm has no clients.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:**
+
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
+- `src/pulseUI/entities/clientRosterQueries.ts`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Client Roster request-state coverage for the advisor and firm-admin workspace
+- Completes the live roster boundary introduced by SCRUM-123 before TanStack Table rendering work in SCRUM-125
+
+**Changed Files:**
+
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
+- `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx` was blocked by a Windows `EPERM: operation not permitted, lstat 'C:\Users\Exia'` environment issue before Vitest could start.
+
 ## caleb-latimer-jira101 - SCRUM-101
 
 **Branch:** `caleb-latimer-jira101`

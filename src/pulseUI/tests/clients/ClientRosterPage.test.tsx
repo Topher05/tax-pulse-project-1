@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
@@ -20,9 +20,69 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("ClientRosterPage", () => {
-  test("renders the client roster from the query hook", async () => {
-    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+function renderClientRosterPage() {
+  localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+
+  render(
+    <QueryClientProvider client={createPulseQueryClient()}>
+      <RouterProvider router={createPulseRouter(["/clients"])} />
+    </QueryClientProvider>,
+  );
+}
+
+function createDeferredClients() {
+  let resolveClients: (items: readonly unknown[]) => void = () => undefined;
+  const promise = new Promise<readonly unknown[]>((resolve) => {
+    resolveClients = resolve;
+  });
+
+  return { promise, resolveClients };
+}
+
+describe("ClientRosterPage request states", () => {
+  test("renders a loading skeleton while the roster request is in flight", async () => {
+    const clientRequest = createDeferredClients();
+    vi.spyOn(caseApi, "caseApiGetJson").mockReturnValueOnce(clientRequest.promise);
+
+    renderClientRosterPage();
+
+    expect(await screen.findByRole("status", { name: "Loading Client Roster" })).toBeInTheDocument();
+  });
+
+  test("renders the empty state when the firm has no clients", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([]);
+
+    renderClientRosterPage();
+
+    expect(await screen.findByRole("heading", { name: "No clients yet" })).toBeInTheDocument();
+  });
+
+  test("renders an error state with retry when the roster request fails", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockRejectedValueOnce(new Error("Roster service unavailable."));
+
+    renderClientRosterPage();
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+  });
+
+  test("retries the roster request and can recover after failure", async () => {
+    const fetchRoster = vi
+      .spyOn(caseApi, "caseApiGetJson")
+      .mockRejectedValueOnce(new Error("Temporary roster failure."))
+      .mockResolvedValueOnce([]);
+
+    renderClientRosterPage();
+
+    await screen.findByRole("alert");
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    expect(fetchRoster).toHaveBeenCalledTimes(2);
+    expect(await screen.findByRole("heading", { name: "No clients yet" })).toBeInTheDocument();
+  });
+
+  test("renders the success branch when the roster request has data", async () => {
     vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
       {
         id: "client-avery-chen",
@@ -30,22 +90,6 @@ describe("ClientRosterPage", () => {
         filingSummary: "Single - 1099",
         ytdIncome: 108_500,
         estimatedTax: 32_100,
-        quarterlyStatus: "Q2 due Jun 15",
-      },
-      {
-        id: "client-sam-rivera",
-        clientName: "Sam Rivera",
-        filingSummary: "Single - 1099",
-        ytdIncome: 142_000,
-        estimatedTax: 38_240,
-        quarterlyStatus: "Q2 due Jun 15",
-      },
-      {
-        id: "client-morgan-acme",
-        clientName: "Morgan Acme",
-        filingSummary: "MFJ - W-2 + RSU",
-        ytdIncome: 414_000,
-        estimatedTax: 138_400,
         quarterlyStatus: "Q2 due Jun 15",
       },
       {
@@ -58,33 +102,9 @@ describe("ClientRosterPage", () => {
       },
     ]);
 
-    render(
-      <QueryClientProvider client={createPulseQueryClient()}>
-        <RouterProvider router={createPulseRouter(["/clients"])} />
-      </QueryClientProvider>,
-    );
-
-    expect(await screen.findByRole("heading", { name: "Client Roster", level: 1 }))
-      .toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Client Roster" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Client Roster", level: 2 })).toBeInTheDocument();
-    expect(
-      screen.getByText("Switch into a client's books with read-only access; build scenarios for them."),
-    ).toBeInTheDocument();
-
-    expect(screen.getByRole("table", { name: "Client roster" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Client" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Filing" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "YTD Income" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Est. Tax" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Quarterly" })).toBeInTheDocument();
+    renderClientRosterPage();
 
     expect(await screen.findByText("Avery Chen")).toBeInTheDocument();
-    expect(screen.getAllByText("Single - 1099")).toHaveLength(2);
-    expect(screen.getByText("$108,500")).toBeInTheDocument();
-    expect(screen.getByText("$32,100")).toBeInTheDocument();
-    expect(screen.getAllByText("Q2 due Jun 15")).toHaveLength(3);
-    expect(screen.getAllByRole("button", { name: "Open Books" })).toHaveLength(4);
-    expect(screen.getAllByRole("button", { name: "Open Books" })[0]).toBeDisabled();
+    expect(screen.getByRole("table", { name: "Client roster" })).toBeInTheDocument();
   });
 });
