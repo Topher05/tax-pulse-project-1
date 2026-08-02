@@ -4,12 +4,14 @@ export const quarterlyEstimateQuarterSchema = z.enum(["Q1", "Q2", "Q3", "Q4"]);
 
 export const quarterlyEstimateSchema = z.object({
   case_id: z.string().min(1),
+  tax_year: z.string().regex(/^\d{4}$/),
   quarter: quarterlyEstimateQuarterSchema,
   due_date: z.string().min(1),
   estimated_payment: z.string().min(1),
   withholding_applied: z.string().min(1),
   covered_amount: z.string().min(1),
   remaining_due: z.string().min(1),
+  status: z.string().min(1),
 });
 
 export const quarterlyEstimateRowsSchema = z.array(quarterlyEstimateSchema);

@@ -32,6 +32,7 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
   return [
     {
       id: "QP-001",
+      taxYear: "2026",
       dueDate: "2026-04-15",
       estimatedPayment: 3620,
       withholdingApplied: 2140,
@@ -39,13 +40,15 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-002",
+      taxYear: "2026",
       dueDate: "2026-06-15",
       estimatedPayment: 3620,
-      withholdingApplied: 2060,
+      withholdingApplied: 3620,
       status: "Paid",
     },
     {
       id: "QP-003",
+      taxYear: "2026",
       dueDate: "2026-09-15",
       estimatedPayment: 3620,
       withholdingApplied: 1820,
@@ -53,6 +56,7 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-004",
+      taxYear: "2027",
       dueDate: "2027-01-15",
       estimatedPayment: 3740,
       withholdingApplied: 1640,
@@ -60,6 +64,7 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-005",
+      taxYear: "2027",
       dueDate: "2027-04-15",
       estimatedPayment: 3740,
       withholdingApplied: 1680,
@@ -67,6 +72,7 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-006",
+      taxYear: "2027",
       dueDate: "2027-06-15",
       estimatedPayment: 3740,
       withholdingApplied: 1740,
@@ -74,6 +80,7 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
     },
     {
       id: "QP-007",
+      taxYear: "2027",
       dueDate: "2027-09-15",
       estimatedPayment: 3860,
       withholdingApplied: 1790,
@@ -85,25 +92,29 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
 function toQuarterlyEstimateRecord(
   record: {
     case_id: string;
+    tax_year: string;
     quarter: "Q1" | "Q2" | "Q3" | "Q4";
     due_date: string;
     estimated_payment: number;
     withholding_applied: number;
     covered_amount: number;
     remaining_due: number;
+    status?: "Paid" | "Due Soon" | "Upcoming" | "Projected";
   },
 ): QuarterlyEstimateRecord {
   const status =
-    record.remaining_due <= 0
+    record.status ??
+    (record.remaining_due <= 0
       ? "Paid"
       : record.remaining_due <= 1500
         ? "Due Soon"
         : record.quarter === "Q4"
           ? "Upcoming"
-          : "Projected";
+          : "Projected");
 
   return {
     id: `${record.case_id}-${record.quarter}`,
+    taxYear: record.tax_year,
     dueDate: record.due_date,
     estimatedPayment: record.estimated_payment,
     withholdingApplied: record.withholding_applied,
@@ -187,7 +198,7 @@ export function QuarterlyPaymentsPage() {
   const header = (
     <ToolHeader
       title="Quarterly Payments"
-      description="Read-only quarterly breakdown - IRS 1040-ES deadlines and estimated amounts. Recording payments is out of MVP scope."
+      description={`Read-only quarterly breakdown for tax year ${quarterlyEstimatesQuery.data?.[0]?.tax_year ?? "2026"} - IRS 1040-ES deadlines and estimated amounts. Recording payments is out of MVP scope.`}
       contextControl={contextControl}
     />
   );

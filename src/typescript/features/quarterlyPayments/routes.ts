@@ -42,43 +42,52 @@ export interface CreateQuarterlyPaymentsRouterOptions {
 function buildQuarterlyEstimates(caseId: string, dueDate: string) {
   const dueYear = Number(dueDate.slice(0, 4));
   const nextYear = dueYear + 1;
+  const taxYear = String(dueYear);
 
   return [
     {
       case_id: caseId,
+      tax_year: taxYear,
       quarter: "Q1" as const,
       due_date: `${dueYear}-04-15`,
       estimated_payment: "3620.00",
       withholding_applied: "2140.00",
       covered_amount: "2140.00",
       remaining_due: "1480.00",
+      status: "Paid",
     },
     {
       case_id: caseId,
+      tax_year: taxYear,
       quarter: "Q2" as const,
       due_date: `${dueYear}-06-15`,
       estimated_payment: "3620.00",
       withholding_applied: "2060.00",
       covered_amount: "2060.00",
       remaining_due: "1560.00",
+      status: "Paid",
     },
     {
       case_id: caseId,
+      tax_year: taxYear,
       quarter: "Q3" as const,
       due_date: `${dueYear}-09-15`,
       estimated_payment: "3620.00",
       withholding_applied: "1820.00",
       covered_amount: "1820.00",
       remaining_due: "1800.00",
+      status: "Due Soon",
     },
     {
       case_id: caseId,
+      tax_year: String(nextYear),
       quarter: "Q4" as const,
       due_date: `${nextYear}-01-15`,
       estimated_payment: "3740.00",
       withholding_applied: "1640.00",
       covered_amount: "1640.00",
       remaining_due: "2100.00",
+      status: "Upcoming",
     },
   ];
 }

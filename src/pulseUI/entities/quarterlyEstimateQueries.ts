@@ -8,6 +8,7 @@ const quarterlyEstimateQuarterSchema = z.enum(["Q1", "Q2", "Q3", "Q4"]);
 
 const quarterlyEstimateRecordSchema = z.object({
   case_id: z.string().min(1),
+  tax_year: z.string().regex(/^\d{4}$/),
   quarter: quarterlyEstimateQuarterSchema,
   due_date: z.string().min(1),
   estimated_payment: z.union([z.string().min(1), z.number()]).transform((value) =>
@@ -22,6 +23,7 @@ const quarterlyEstimateRecordSchema = z.object({
   remaining_due: z.union([z.string().min(1), z.number()]).transform((value) =>
     typeof value === "string" ? Number(value) : value,
   ),
+  status: z.enum(["Paid", "Due Soon", "Upcoming", "Projected"]).optional(),
 });
 
 const quarterlyEstimateResponseSchema = z.array(quarterlyEstimateRecordSchema);

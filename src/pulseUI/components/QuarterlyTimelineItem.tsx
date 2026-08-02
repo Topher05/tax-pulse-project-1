@@ -7,6 +7,7 @@ export type QuarterlyEstimateStatus = "Paid" | "Due Soon" | "Upcoming" | "Projec
 
 export interface QuarterlyEstimateRecord {
   id: string;
+  taxYear: string;
   dueDate: string;
   estimatedPayment: number;
   withholdingApplied: number;
