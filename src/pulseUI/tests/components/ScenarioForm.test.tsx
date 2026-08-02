@@ -3,35 +3,33 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { ScenarioPlanningForm } from "../../components/ScenarioPlanningForm.tsx";
+import { ScenarioForm } from "../../components/ScenarioForm.tsx";
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
 
-function renderScenarioPlanningForm() {
-  render(<ScenarioPlanningForm caseId="TP-24018" onClose={vi.fn()} />);
+function renderScenarioForm() {
+  render(<ScenarioForm caseId="TP-24018" onClose={vi.fn()} />);
 }
 
-describe("ScenarioPlanningForm", () => {
+describe("ScenarioForm", () => {
   test("renders the modal, case id, and default controls", () => {
-    renderScenarioPlanningForm();
+    renderScenarioForm();
 
     expect(screen.getByRole("dialog", { name: "New What-If Scenario" })).toBeInTheDocument();
     expect(screen.getByText("TP-24018")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create Scenario" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Add additional scenario" })).toBeEnabled();
     expect(screen.getByRole("combobox", { name: "Income Type" })).toHaveValue("w2");
-    expect(
-      screen.getByText("4 scenario slots left 1 additional scenario required"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("4 scenario slots left 1 additional scenario required")).toBeInTheDocument();
   });
 
   test("shows inline validation errors and logs invalid submission attempts", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    renderScenarioPlanningForm();
+    renderScenarioForm();
 
     fireEvent.click(screen.getByRole("button", { name: "Create Scenario" }));
 
@@ -51,7 +49,7 @@ describe("ScenarioPlanningForm", () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
-    renderScenarioPlanningForm();
+    renderScenarioForm();
 
     fireEvent.change(screen.getByLabelText("Scenario Name"), {
       target: { value: "Take a freelance project" },
@@ -74,19 +72,25 @@ describe("ScenarioPlanningForm", () => {
     const deductionInputs = screen.getAllByLabelText("Additional Deductions");
     const incomeTypeSelects = screen.getAllByLabelText("Income Type");
 
-    fireEvent.change(scenarioNameInputs[1], {
+    expect(scenarioNameInputs).toHaveLength(2);
+    expect(descriptionInputs).toHaveLength(2);
+    expect(incomeInputs).toHaveLength(2);
+    expect(deductionInputs).toHaveLength(2);
+    expect(incomeTypeSelects).toHaveLength(2);
+
+    fireEvent.change(scenarioNameInputs[1]!, {
       target: { value: "Sell a rental property" },
     });
-    fireEvent.change(descriptionInputs[1], {
+    fireEvent.change(descriptionInputs[1]!, {
       target: { value: "Capture a capital gain event" },
     });
-    fireEvent.change(incomeInputs[1], {
+    fireEvent.change(incomeInputs[1]!, {
       target: { value: "12000.00" },
     });
-    fireEvent.change(deductionInputs[1], {
+    fireEvent.change(deductionInputs[1]!, {
       target: { value: "2500.00" },
     });
-    fireEvent.change(incomeTypeSelects[1], {
+    fireEvent.change(incomeTypeSelects[1]!, {
       target: { value: "cg" },
     });
 
@@ -99,7 +103,7 @@ describe("ScenarioPlanningForm", () => {
   });
 
   test("disables the add scenario control after five total scenarios", () => {
-    renderScenarioPlanningForm();
+    renderScenarioForm();
 
     for (let index = 0; index < 4; index += 1) {
       fireEvent.click(screen.getByRole("button", { name: "Add additional scenario" }));
@@ -107,15 +111,13 @@ describe("ScenarioPlanningForm", () => {
 
     expect(screen.getByText("Scenario 5")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add additional scenario" })).toBeDisabled();
-    expect(
-      screen.getByText("0 scenario slots left, Maximum allowed scenarios"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("0 scenario slots left, Maximum allowed scenarios")).toBeInTheDocument();
   });
 
   test("calls the close handler on escape", () => {
     const onClose = vi.fn();
 
-    render(<ScenarioPlanningForm caseId="TP-24018" onClose={onClose} />);
+    render(<ScenarioForm caseId="TP-24018" onClose={onClose} />);
 
     expect(screen.getByRole("dialog", { name: "New What-If Scenario" })).toBeInTheDocument();
 
@@ -124,4 +126,3 @@ describe("ScenarioPlanningForm", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
-

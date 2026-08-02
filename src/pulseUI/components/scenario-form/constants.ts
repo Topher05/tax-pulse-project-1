@@ -1,14 +1,14 @@
-export const scenarioPlanningMinCount = 2;
-export const scenarioPlanningMaxCount = 5;
+export const scenarioMinCount = 2;
+export const scenarioMaxCount = 5;
 
-export const scenarioPlanningIncomeTypeOptions = [
+export const incomeTypeOptions = [
   { value: "rt", label: "Rental" },
   { value: "cg", label: "Capital Gains" },
   { value: "se", label: "1099/Self-Employment" },
   { value: "w2", label: "W-2 Employment" },
 ] as const;
 
-export function createScenarioPlanningEntry() {
+export function createScenarioEntry() {
   return {
     scenarioName: "",
     description: "",

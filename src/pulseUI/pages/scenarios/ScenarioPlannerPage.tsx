@@ -4,7 +4,7 @@ import { useSearch } from "@tanstack/react-router";
 
 import styles from "./ScenarioPlannerPage.module.css";
 import { PlanToolCaseGate } from "../../components/PlanToolCaseGate.tsx";
-import { ScenarioPlanningForm } from "../../components/ScenarioPlanningForm.tsx";
+import { ScenarioForm } from "../../components/ScenarioForm.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
 
 export function ScenarioPlannerPage() {
@@ -52,7 +52,7 @@ export function ScenarioPlannerPage() {
       </section>
 
       {isModalOpen ? (
-        <ScenarioPlanningForm caseId={caseId} onClose={() => setIsModalOpen(false)} />
+        <ScenarioForm caseId={caseId} onClose={() => setIsModalOpen(false)} />
       ) : null}
     </section>
   );
