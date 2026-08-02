@@ -11,19 +11,20 @@ afterEach(() => {
 });
 
 function renderScenarioForm() {
-  render(<ScenarioForm caseId="TP-24018" onClose={vi.fn()} />);
+  render(<ScenarioForm onClose={vi.fn()} />);
 }
 
 describe("ScenarioForm", () => {
-  test("renders the modal, case id, and default controls", () => {
+  test("renders the modal and default controls", () => {
     renderScenarioForm();
 
     expect(screen.getByRole("dialog", { name: "New What-If Scenario" })).toBeInTheDocument();
-    expect(screen.getByText("TP-24018")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create Scenario" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Add additional scenario" })).toBeEnabled();
     expect(screen.getByRole("combobox", { name: "Income Type" })).toHaveValue("w2");
     expect(screen.getByText("4 scenario slots left 1 additional scenario required")).toBeInTheDocument();
+    expect(screen.getByText("New Scenarios")).toBeInTheDocument();
+    expect(screen.queryByText("Case ID")).not.toBeInTheDocument();
   });
 
   test("shows inline validation errors and logs invalid submission attempts", async () => {
@@ -65,6 +66,7 @@ describe("ScenarioForm", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Add additional scenario" }));
+    expect(screen.getAllByRole("separator")).toHaveLength(1);
 
     const scenarioNameInputs = screen.getAllByLabelText("Scenario Name");
     const descriptionInputs = screen.getAllByLabelText("Description");
@@ -102,6 +104,20 @@ describe("ScenarioForm", () => {
     });
   });
 
+  test("starts with a clean form when reopened after validation errors", () => {
+    const { unmount } = render(<ScenarioForm onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Scenario" }));
+    expect(screen.getByText("Scenario Name is required")).toBeInTheDocument();
+
+    unmount();
+    renderScenarioForm();
+
+    expect(screen.queryByText("Scenario Name is required")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Scenario Name")).toHaveValue("");
+    expect(screen.getByLabelText("Description")).toHaveValue("");
+  });
+
   test("disables the add scenario control after five total scenarios", () => {
     renderScenarioForm();
 
@@ -117,7 +133,7 @@ describe("ScenarioForm", () => {
   test("calls the close handler on escape", () => {
     const onClose = vi.fn();
 
-    render(<ScenarioForm caseId="TP-24018" onClose={onClose} />);
+    render(<ScenarioForm onClose={onClose} />);
 
     expect(screen.getByRole("dialog", { name: "New What-If Scenario" })).toBeInTheDocument();
 

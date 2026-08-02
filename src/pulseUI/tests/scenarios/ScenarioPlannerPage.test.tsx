@@ -25,9 +25,11 @@ describe("ScenarioPlannerPage", () => {
   test("renders the case gate when caseId is missing", async () => {
     renderScenarioPlannerRoute("/scenarios");
 
+    expect(await screen.findByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
     expect(
       await screen.findByRole("heading", { name: "Select a case to load Scenario Planner" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New scenario" })).toBeDisabled();
     expect(screen.getByRole("status")).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -39,10 +41,11 @@ describe("ScenarioPlannerPage", () => {
   test("opens and closes the scenario modal when a caseId is present", async () => {
     renderScenarioPlannerRoute(`/scenarios?caseId=${seededCaseId}`);
 
-    expect(await screen.findByRole("button", { name: "New What-If Scenario" })).toBeEnabled();
+    expect(await screen.findByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "New scenario" })).toBeEnabled();
     expect(await screen.findByText("Scenario workspace")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "New What-If Scenario" }));
+    fireEvent.click(screen.getByRole("button", { name: "New scenario" }));
     expect(await screen.findByRole("dialog", { name: "New What-If Scenario" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
