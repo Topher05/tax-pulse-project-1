@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { ScenarioPlanningForm } from "../../components/ScenarioPlanningForm.tsx";
@@ -11,16 +11,21 @@ afterEach(() => {
 });
 
 function renderScenarioPlanningForm() {
-  render(<ScenarioPlanningForm onClose={vi.fn()} />);
+  render(<ScenarioPlanningForm caseId="TP-24018" onClose={vi.fn()} />);
 }
 
 describe("ScenarioPlanningForm", () => {
-  test("renders the modal and default fields", () => {
+  test("renders the modal, case id, and default controls", () => {
     renderScenarioPlanningForm();
 
     expect(screen.getByRole("dialog", { name: "New What-If Scenario" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Create Scenario" })).not.toBeDisabled();
+    expect(screen.getByText("TP-24018")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create Scenario" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Add additional scenario" })).toBeEnabled();
     expect(screen.getByRole("combobox", { name: "Income Type" })).toHaveValue("w2");
+    expect(
+      screen.getByText("4 scenario slots left 1 additional scenario required"),
+    ).toBeInTheDocument();
   });
 
   test("shows inline validation errors and logs invalid submission attempts", async () => {
@@ -34,18 +39,17 @@ describe("ScenarioPlanningForm", () => {
       expect(consoleErrorSpy).toHaveBeenCalled();
     });
 
-    const dialog = screen.getByRole("dialog", { name: "New What-If Scenario" });
-    expect(within(dialog).getByText("Scenario Name is required")).toBeInTheDocument();
+    expect(screen.getByText("Add at least 2 scenarios")).toBeInTheDocument();
+    expect(screen.getByText("Scenario Name is required")).toBeInTheDocument();
     expect(screen.getByText("Description is required")).toBeInTheDocument();
     expect(screen.getByText("Additional Income is required")).toBeInTheDocument();
     expect(screen.getByText("Additional Deductions is required")).toBeInTheDocument();
     expect(screen.getByLabelText("Scenario Name")).toHaveAttribute("aria-invalid", "true");
-    expect(screen.getByRole("button", { name: "Create Scenario" })).toBeDisabled();
   });
 
-  test("logs successful payloads with console.table", async () => {
+  test("logs successful payloads with console.info after two scenarios are entered", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const consoleTableSpy = vi.spyOn(console, "table").mockImplementation(() => {});
+    const consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
     renderScenarioPlanningForm();
 
@@ -62,40 +66,56 @@ describe("ScenarioPlanningForm", () => {
       target: { value: "1500.00" },
     });
 
+    fireEvent.click(screen.getByRole("button", { name: "Add additional scenario" }));
+
+    const scenarioNameInputs = screen.getAllByLabelText("Scenario Name");
+    const descriptionInputs = screen.getAllByLabelText("Description");
+    const incomeInputs = screen.getAllByLabelText("Additional Income");
+    const deductionInputs = screen.getAllByLabelText("Additional Deductions");
+    const incomeTypeSelects = screen.getAllByLabelText("Income Type");
+
+    fireEvent.change(scenarioNameInputs[1], {
+      target: { value: "Sell a rental property" },
+    });
+    fireEvent.change(descriptionInputs[1], {
+      target: { value: "Capture a capital gain event" },
+    });
+    fireEvent.change(incomeInputs[1], {
+      target: { value: "12000.00" },
+    });
+    fireEvent.change(deductionInputs[1], {
+      target: { value: "2500.00" },
+    });
+    fireEvent.change(incomeTypeSelects[1], {
+      target: { value: "cg" },
+    });
+
     fireEvent.click(screen.getByRole("button", { name: "Create Scenario" }));
 
     await waitFor(() => {
       expect(consoleErrorSpy).not.toHaveBeenCalled();
-      expect(consoleTableSpy).toHaveBeenCalledTimes(1);
+      expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
     });
   });
 
-  test("blocks negative decimal values inline", async () => {
+  test("disables the add scenario control after five total scenarios", () => {
     renderScenarioPlanningForm();
 
-    fireEvent.change(screen.getByLabelText("Scenario Name"), {
-      target: { value: "Take a freelance project" },
-    });
-    fireEvent.change(screen.getByLabelText("Description"), {
-      target: { value: "Additional $20k freelance income" },
-    });
-    fireEvent.change(screen.getByLabelText("Additional Income"), {
-      target: { value: "-1" },
-    });
-    fireEvent.change(screen.getByLabelText("Additional Deductions"), {
-      target: { value: "-5" },
-    });
+    for (let index = 0; index < 4; index += 1) {
+      fireEvent.click(screen.getByRole("button", { name: "Add additional scenario" }));
+    }
 
-    fireEvent.click(screen.getByRole("button", { name: "Create Scenario" }));
-
-    expect(await screen.findByText("Additional Income cannot be negative")).toBeInTheDocument();
-    expect(await screen.findByText("Additional Deductions cannot be negative")).toBeInTheDocument();
+    expect(screen.getByText("Scenario 5")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add additional scenario" })).toBeDisabled();
+    expect(
+      screen.getByText("0 scenario slots left, Maximum allowed scenarios"),
+    ).toBeInTheDocument();
   });
 
   test("calls the close handler on escape", () => {
     const onClose = vi.fn();
 
-    render(<ScenarioPlanningForm onClose={onClose} />);
+    render(<ScenarioPlanningForm caseId="TP-24018" onClose={onClose} />);
 
     expect(screen.getByRole("dialog", { name: "New What-If Scenario" })).toBeInTheDocument();
 
@@ -104,3 +124,4 @@ describe("ScenarioPlanningForm", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+

@@ -1,12 +1,22 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { useSearch } from "@tanstack/react-router";
 
 import styles from "./ScenarioPlannerPage.module.css";
+import { PlanToolCaseGate } from "../../components/PlanToolCaseGate.tsx";
 import { ScenarioPlanningForm } from "../../components/ScenarioPlanningForm.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
 
 export function ScenarioPlannerPage() {
+  const search = useSearch({ from: "/scenarios" });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const caseId = search.caseId ?? null;
+  const hasInvalidCaseId = search.invalidCaseId ?? false;
+
+  if (!caseId) {
+    return <PlanToolCaseGate hasInvalidCaseId={hasInvalidCaseId} toolName="Scenario Planner" />;
+  }
+
   const headerAction = (
     <button
       className={`${styles.launchButton} disabled:cursor-not-allowed disabled:opacity-50`}
@@ -37,7 +47,13 @@ export function ScenarioPlannerPage() {
         </div>
       </div>
 
-      {isModalOpen ? <ScenarioPlanningForm onClose={() => setIsModalOpen(false)} /> : null}
+      <section className={styles.tableShell} aria-label="Scenario table area">
+        {/* TODO: Tanstack table fetch/post behavior in Jira-102 */}
+      </section>
+
+      {isModalOpen ? (
+        <ScenarioPlanningForm caseId={caseId} onClose={() => setIsModalOpen(false)} />
+      ) : null}
     </section>
   );
 }
