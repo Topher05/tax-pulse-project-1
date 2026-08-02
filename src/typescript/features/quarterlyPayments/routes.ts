@@ -4,10 +4,11 @@ import type { ZodIssue } from "zod";
 
 import { ProblemHttpError } from "../../errors.js";
 import {
-  quarterlyEstimateReadParamsSchema,
   quarterlyEstimateRowsSchema,
-} from "./quarterlyPayments.js";
+  quarterlyEstimateReadParamsSchema,
+} from "./repositories/quarterlyPayments.js";
 import type { TaxPlanCycleRepository } from "../taxPlanCycle/repositories/repository.js";
+import { buildQuarterlyEstimateMockRows } from "./repositories/mockPayments.model.js";
 
 interface TenantScopedRequest extends Request {
   tenant?: {
@@ -40,57 +41,10 @@ export interface CreateQuarterlyPaymentsRouterOptions {
 }
 
 function buildQuarterlyEstimates(caseId: string, dueDate: string) {
-  const dueYear = Number(dueDate.slice(0, 4));
-  const nextYear = dueYear + 1;
-  const taxYear = String(dueYear);
-
-  // TODO: Table Generation and persistence of this entity isn't confirmed yet, documented in Jira-204
-  return [
-    {
-      case_id: caseId,
-      tax_year: taxYear,
-      quarter: "Q1" as const,
-      due_date: `${dueYear}-04-15`,
-      estimated_payment: "3620.00",
-      withholding_applied: "3620.00",
-      covered_amount: "3620.00",
-      remaining_due: "0.00",
-      status: "Paid",
-    },
-    {
-      case_id: caseId,
-      tax_year: taxYear,
-      quarter: "Q2" as const,
-      due_date: `${dueYear}-06-15`,
-      estimated_payment: "3620.00",
-      withholding_applied: "3620.00",
-      covered_amount: "3620.00",
-      remaining_due: "0.00",
-      status: "Paid",
-    },
-    {
-      case_id: caseId,
-      tax_year: taxYear,
-      quarter: "Q3" as const,
-      due_date: `${dueYear}-09-15`,
-      estimated_payment: "3400.00",
-      withholding_applied: "1820.00",
-      covered_amount: "1820.00",
-      remaining_due: "1580.00",
-      status: "Due Soon",
-    },
-    {
-      case_id: caseId,
-      tax_year: String(nextYear),
-      quarter: "Q4" as const,
-      due_date: `${nextYear}-01-15`,
-      estimated_payment: "3960.00",
-      withholding_applied: "1640.00",
-      covered_amount: "1640.00",
-      remaining_due: "2320.00",
-      status: "Upcoming",
-    },
-  ];
+  return buildQuarterlyEstimateMockRows({
+    caseId,
+    dueDate,
+  });
 }
 
 export function createQuarterlyPaymentsRouter(

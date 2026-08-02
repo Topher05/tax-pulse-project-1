@@ -23,3 +23,4 @@ export const quarterlyEstimateReadParamsSchema = z.object({
 export type QuarterlyEstimateQuarter = z.infer<typeof quarterlyEstimateQuarterSchema>;
 export type QuarterlyEstimateRow = z.infer<typeof quarterlyEstimateSchema>;
 export type QuarterlyEstimateRows = z.infer<typeof quarterlyEstimateRowsSchema>;
+export type QuarterlyEstimateRepositoryRow = QuarterlyEstimateRow;
