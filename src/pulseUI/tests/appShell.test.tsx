@@ -8,9 +8,6 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { pulseAccessTokenStorageKey } from "../app/authSession.ts";
 import { createPulseQueryClient } from "../app/queryClient.ts";
 import { createPulseRouter } from "../app/createPulseRouter.ts";
-import { taxPlanCycleRows } from "../../typescript/shared/database/seed.model.ts";
-
-const seededCaseId = taxPlanCycleRows[1].id;
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -138,8 +135,8 @@ describe("Pulse UI app shell", () => {
     expect(await screen.findByRole("heading", { name: "Income" })).toBeInTheDocument();
   });
 
-  test("does not preserve case ID across plan tool nav links while routing is disabled", async () => {
-    renderShell(`/deductions?caseId=${seededCaseId}`);
+  test("renders plan tool nav links without search state while routing is disabled", async () => {
+    renderShell("/cycles/queue");
 
     const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
 

@@ -67,8 +67,7 @@ const deductionsRoute = createRoute({
   path: "/deductions",
   beforeLoad: requirePulseAuthentication,
   component: DeductionsPage,
-  // TODO: Implement case ID routing component
-  // validateSearch: (search) => validatePlanToolSearch(search),
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const quarterlyPaymentsRoute = createRoute({
