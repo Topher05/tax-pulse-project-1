@@ -35,6 +35,49 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira129 - SCRUM-129
+
+**Branch:** `caleb-latimer-jira129`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-129
+
+**Summary:** Add the Lighthouse performance threshold
+
+**Description:** As a Frontend Developer, I want a Lighthouse threshold, so that the SPA stays performant.
+
+**Acceptance Criteria:**
+
+- A Lighthouse run scores at least 90 on the dashboard route.
+- The run is reproducible against the built app.
+- The build fails if the score regresses below threshold.
+
+**Code Connection:**
+
+- `src/pulseUI/scripts/lighthouse-dashboard.mjs`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Performance gating for the dashboard route against the built Pulse UI
+- Uses the existing dashboard shell without changing the screen itself
+
+**Changed Files:**
+
+- `src/pulseUI/scripts/lighthouse-dashboard.mjs`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run test:lighthouse"` passed and reported a Lighthouse performance score of `100/100`.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run test"` runs the Lighthouse gate successfully, then fails later in pre-existing branch tests for `tests/deductions/DeductionsPage.test.tsx` and `tests/scenarios/ScenarioPlannerPage.test.tsx` because those route states are not merged in this branch yet.
+
 ## caleb-latimer-jira101 - SCRUM-101
 
 **Branch:** `caleb-latimer-jira101`
