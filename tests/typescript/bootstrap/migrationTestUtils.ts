@@ -5,13 +5,15 @@ import { Client } from "pg";
 import {
   applyDrizzleMigrations,
   withDatabaseClient,
-} from "../../../src/typescript/postgresMigrations.js";
+} from "../../../src/typescript/shared/scripts/drizzleMigrations.js";
 import { applySeed } from "../../../src/typescript/shared/database/seed.js";
 import { startDockerPostgresContainer } from "./dockerPostgres.js";
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
+const drizzlePublicSchemaLockId = 20_300_801;
 
 export const drizzleEnumTypeNames = [
+  "deduction_category",
   "user_role_name",
   "user_status_value",
 ] as const;
@@ -43,16 +45,23 @@ export async function withDrizzleTestSchema<T>(
     const schemaName = createTestSchemaName("taxpulse_drizzle_migration");
     const quotedSchemaName = quoteIdentifier(schemaName);
 
-    await dropDrizzlePublicTypes(client);
-    await client.query(`CREATE SCHEMA ${quotedSchemaName}`);
-    await client.query(`SET search_path TO ${quotedSchemaName}, public`);
+    await client.query("SELECT pg_advisory_lock($1)", [drizzlePublicSchemaLockId]);
 
     try {
+      await dropDrizzlePublicTypes(client);
+      await client.query("DROP SCHEMA IF EXISTS public CASCADE");
+      await client.query("CREATE SCHEMA public");
+      await client.query("SET search_path TO public");
+      await applyDrizzleMigrations(client);
+      await client.query(`CREATE SCHEMA ${quotedSchemaName}`);
+      await client.query(`SET search_path TO ${quotedSchemaName}, public`);
+
       return await callback(client);
     } finally {
       await client.query("SET search_path TO public");
       await client.query(`DROP SCHEMA IF EXISTS ${quotedSchemaName} CASCADE`);
       await dropDrizzlePublicTypes(client);
+      await client.query("SELECT pg_advisory_unlock($1)", [drizzlePublicSchemaLockId]);
     }
   });
 }

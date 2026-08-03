@@ -1,26 +1,3 @@
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  background: rgb(0 0 0 / 64%);
-  backdrop-filter: blur(8px);
-}
-
-.modal {
-  /* Keep this shell easy to tune if the modal sizing or card treatment changes later. */
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  width: 90%;
-  max-width: 520px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-lg);
-}
-
 .header {
   display: flex;
   align-items: flex-start;
@@ -57,12 +34,6 @@
   display: grid;
   gap: 1rem;
   padding: 1.25rem 1.5rem 1.5rem;
-}
-
-.grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .field {
@@ -176,10 +147,6 @@
   .header,
   .form {
     padding-inline: 1rem;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
   }
 
   .actions {
