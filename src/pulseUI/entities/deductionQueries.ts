@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { caseApiGetJson } from "../shared/caseApi.ts";
+import { caseApiGetJson, caseApiSendJson } from "../shared/caseApi.ts";
 import type { Uuid } from "../shared/planToolCase.ts";
 
 const deductionAmountSchema = z.coerce.number().finite().nonnegative();
@@ -18,9 +18,16 @@ const deductionRecordSchema = z.object({
 });
 
 const deductionQuerySchema = z.array(deductionRecordSchema);
+const deductionCreateSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  description: z.string().trim().min(1),
+  category: z.string().min(1),
+  amount: deductionAmountSchema,
+});
 
 export type DeductionQueryRecord = z.infer<typeof deductionRecordSchema>;
 export type DeductionQueryPayload = DeductionQueryRecord[];
+export type DeductionCreatePayload = z.infer<typeof deductionCreateSchema>;
 
 export function deductionsQueryKey(caseId: Uuid | "unselected") {
   return ["deductions", caseId] as const;
@@ -31,6 +38,17 @@ export async function fetchDeductions(
 ): Promise<DeductionQueryPayload> {
   const payload = await caseApiGetJson<unknown>(`/v1/cases/${caseId}/deductions`);
   return deductionQuerySchema.parse(payload);
+}
+
+export async function createDeduction(
+  caseId: Uuid,
+  input: DeductionCreatePayload,
+): Promise<DeductionQueryRecord> {
+  const payload = await caseApiSendJson<unknown>(`/v1/cases/${caseId}/deductions`, {
+    method: "POST",
+    body: deductionCreateSchema.parse(input),
+  });
+  return deductionRecordSchema.parse(payload);
 }
 
 export function useDeductionsQuery(caseId: Uuid | null) {
@@ -44,5 +62,24 @@ export function useDeductionsQuery(caseId: Uuid | null) {
       return fetchDeductions(caseId);
     },
     enabled: caseId !== null,
+  });
+}
+
+export function useCreateDeductionMutation(caseId: Uuid | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: DeductionCreatePayload) => {
+      if (caseId === null) {
+        throw new Error("A valid case ID is required before creating deductions.");
+      }
+
+      return createDeduction(caseId, input);
+    },
+    onSuccess: async () => {
+      if (caseId !== null) {
+        await queryClient.invalidateQueries({ queryKey: deductionsQueryKey(caseId) });
+      }
+    },
   });
 }

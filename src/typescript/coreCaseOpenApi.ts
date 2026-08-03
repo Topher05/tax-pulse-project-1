@@ -18,7 +18,9 @@ import {
   scenarioTypedFiguresSchema,
 } from "./scenario.js";
 import {
+  deductionCreateSchema,
   deductionReadParamsSchema,
+  deductionTableRowSchema,
   deductionTableRowsSchema,
 } from "./features/deductions/repositories/deduction.js";
 import {
@@ -95,6 +97,14 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "DeductionRows",
     schema: deductionTableRowsSchema,
+  },
+  {
+    name: "DeductionCreateRequest",
+    schema: deductionCreateSchema,
+  },
+  {
+    name: "DeductionRow",
+    schema: deductionTableRowSchema,
   },
   {
     name: "QuarterlyEstimateReadParams",
@@ -346,6 +356,8 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
     toOpenApiSchema(deductionReadParamsSchema),
     "caseId",
   );
+  const deductionCreateRequestSchema = toOpenApiSchema(deductionCreateSchema);
+  const deductionRowResponseSchema = toOpenApiSchema(deductionTableRowSchema);
   const deductionRowsResponseSchema = toOpenApiSchema(deductionTableRowsSchema);
   const quarterlyEstimateParamsSchema = requireObjectProperty(
     toOpenApiSchema(quarterlyEstimateReadParamsSchema),
@@ -851,6 +863,107 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     title: "Authentication Required",
                     status: 401,
                     detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+          },
+        },
+        post: {
+          operationId: "createCaseDeduction",
+          tags: ["Core Case Service"],
+          summary: "Create a case deduction row",
+          description:
+            "Creates a tenant-scoped deduction for the requested case and returns the created row. Tax impact is estimated from the recorded deduction amount.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Case identifier scoped by the authenticated request tenant.",
+              schema: deductionReadCaseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: deductionCreateRequestSchema,
+                example: {
+                  date: "2026-08-01",
+                  description: "Advisor conference fee",
+                  category: "Education",
+                  amount: 900,
+                },
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The deduction row was created.",
+              content: {
+                "application/json": {
+                  schema: deductionRowResponseSchema,
+                  example: {
+                    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e92",
+                    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+                    date: "2026-08-01",
+                    description: "Advisor conference fee",
+                    category: "Education",
+                    amount: "900.00",
+                    tax_impact: "225.00",
+                    deleted: false,
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "The request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    ...validationErrorExample,
+                    detail: "Request body failed validation.",
+                    issues: [
+                      {
+                        path: ["amount"],
+                        message: "Too small: expected number to be >=0",
+                        code: "too_small",
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "404": {
+              description:
+                "No tenant-scoped Tax Plan Cycle was found for the requested case.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+                    title: "Tax Plan Cycle Not Found",
+                    status: 404,
+                    detail: "No tax plan cycle was found for the requested case ID.",
                   },
                 },
               },

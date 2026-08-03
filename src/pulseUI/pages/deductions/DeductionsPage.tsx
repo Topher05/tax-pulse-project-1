@@ -7,12 +7,14 @@ import {
 } from "../../components/DeductionEntryForm.tsx";
 import { CurrentCaseSelector } from "../../components/CurrentCaseSelector.tsx";
 import { EmptyState } from "../../components/EmptyState.tsx";
+import { DataTable, type DataTableColumn } from "../../components/DataTable.tsx";
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { PlanToolCaseGate } from "../../components/PlanToolCaseGate.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
 import {
   type DeductionQueryRecord,
+  useCreateDeductionMutation,
   useDeductionsQuery,
 } from "../../entities/deductionQueries.ts";
 import { usePlanToolCase, useSetPlanToolCaseId } from "../../shared/usePlanToolCase.ts";
@@ -25,6 +27,48 @@ function formatCurrency(value: number): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+function formatDate(value: string): string {
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+const deductionColumns: readonly DataTableColumn<DeductionQueryRecord>[] = [
+  {
+    header: "Date",
+    render: (deduction) => <span className={styles.dateCell}>{formatDate(deduction.date)}</span>,
+  },
+  {
+    header: "Description",
+    render: (deduction) => deduction.description,
+  },
+  {
+    header: "Category",
+    render: (deduction) => (
+      <span className={`${styles.badge} ${styles.badgeBlue}`}>{deduction.category}</span>
+    ),
+  },
+  {
+    header: "Amount",
+    render: (deduction) => formatCurrency(deduction.amount),
+    cellClassName: styles.amountCell,
+  },
+  {
+    header: "Tax Impact",
+    render: (deduction) => formatCurrency(deduction.tax_impact),
+    cellClassName: styles.taxImpactCell,
+  },
+];
 
 function DeductionsLoadingState() {
   const skeletonRows = Array.from({ length: 5 }, (_, index) => index);
@@ -159,7 +203,12 @@ function DeductionsScreen({
       ) : null}
       {queryState === "data" ? (
         <PanelCard title={null} description={null}>
-          <p className={styles.stateCopy}>Deduction table wiring is disabled pending scrum-115.</p>
+          <DataTable
+            ariaLabel="Recorded deductions"
+            columns={deductionColumns}
+            rows={deductions}
+            rowKey={(deduction) => deduction.id}
+          />
         </PanelCard>
       ) : null}
 
@@ -174,8 +223,9 @@ export function DeductionsPage() {
   const contextControl = <CurrentCaseSelector caseId={caseId} onCaseIdChange={setCaseId} />;
   const [isAddDeductionModalOpen, setIsAddDeductionModalOpen] = useState(false);
   const deductionsQuery = useDeductionsQuery(caseId);
-  const createDeduction = async (_payload: DeductionEntryFormValues) => {
-    // TODO Wire this typed create boundary to the deductions mutation in SCRUM-115.
+  const createDeductionMutation = useCreateDeductionMutation(caseId);
+  const createDeduction = async (payload: DeductionEntryFormValues) => {
+    await createDeductionMutation.mutateAsync(payload);
   };
 
   if (caseId === null || hasInvalidCaseId) {

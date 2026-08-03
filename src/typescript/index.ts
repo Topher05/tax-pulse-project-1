@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 
 export {
   clientDeductionAggregationPayloadSchema,
+  deductionCreateSchema,
   deductionReadParamsSchema,
   deductionCategorySchema,
   deductionCategoryValues,
@@ -11,6 +12,7 @@ export {
   deductionTableRowsSchema,
   incomeEventSchema,
   type DeductionCategory,
+  type DeductionCreate,
   type ClientDeductionAggregationPayload,
   type Deduction,
   type DeductionTableRow,

@@ -94,20 +94,26 @@ async function refreshPulseSession(): Promise<boolean> {
   }
 }
 
-async function fetchCaseApi(path: string): Promise<Response> {
+async function fetchCaseApi(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = {
+    ...getCaseApiHeaders(),
+    ...init.headers,
+  };
+
   return await fetch(toCaseApiUrl(path), {
-    headers: getCaseApiHeaders(),
+    ...init,
+    headers,
   });
 }
 
-export async function caseApiGetJson<T>(path: string): Promise<T> {
-  let response = await fetchCaseApi(path);
+async function fetchCaseApiWithRefresh(path: string, init: RequestInit = {}): Promise<Response> {
+  let response = await fetchCaseApi(path, init);
 
   if (response.status === 401) {
     const refreshed = await refreshPulseSession();
 
     if (refreshed) {
-      response = await fetchCaseApi(path);
+      response = await fetchCaseApi(path, init);
     }
   }
 
@@ -118,6 +124,25 @@ export async function caseApiGetJson<T>(path: string): Promise<T> {
   if (!response.ok) {
     throw new CaseApiError(response.status, await response.text());
   }
+
+  return response;
+}
+
+export async function caseApiGetJson<T>(path: string): Promise<T> {
+  const response = await fetchCaseApiWithRefresh(path);
+
+  return (await response.json()) as T;
+}
+
+export async function caseApiSendJson<T>(
+  path: string,
+  init: Omit<RequestInit, "body" | "headers"> & { body?: unknown },
+): Promise<T> {
+  const response = await fetchCaseApiWithRefresh(path, {
+    ...init,
+    headers: { "content-type": "application/json" },
+    body: init.body === undefined ? undefined : JSON.stringify(init.body),
+  });
 
   return (await response.json()) as T;
 }
