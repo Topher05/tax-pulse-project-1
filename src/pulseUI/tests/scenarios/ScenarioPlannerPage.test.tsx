@@ -1,47 +1,35 @@
 import "@testing-library/jest-dom/vitest";
 
-import { QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, test } from "vitest";
 
-import { createPulseQueryClient } from "../../app/queryClient.ts";
-import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { ScenarioPlannerPage } from "../../pages/scenarios/ScenarioPlannerPage.tsx";
 
 beforeAll(() => {
-  window.scrollTo = vi.fn();
+  window.scrollTo = () => undefined;
 });
 
 afterEach(() => {
   cleanup();
-  vi.restoreAllMocks();
 });
 
-function renderScenarioPlanner() {
-  render(
-    <QueryClientProvider client={createPulseQueryClient()}>
-      <RouterProvider router={createPulseRouter(["/scenarios"])} />
-    </QueryClientProvider>,
-  );
-}
+describe("ScenarioPlannerPage", () => {
+  test("renders a single shared page header without case gating", () => {
+    render(<ScenarioPlannerPage />);
 
-describe("Scenario Planner page", () => {
-  test("renders the launch button and opens the modal", async () => {
-    renderScenarioPlanner();
-
-    fireEvent.click(await screen.findByRole("button", { name: "New What-If Scenario" }));
-
-    expect(
-      await screen.findByRole("dialog", { name: "New What-If Scenario" }),
-    ).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: "Scenario Planner" })).toHaveLength(1);
+    expect(screen.queryByRole("combobox", { name: "Case ID" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Select a case to load/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New What-If Scenario" })).toBeEnabled();
   });
 
-  test("closes the modal from the launch-page state by cancel button", async () => {
-    renderScenarioPlanner();
+  test("opens and closes the scenario modal", async () => {
+    render(<ScenarioPlannerPage />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "New What-If Scenario" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "New What-If Scenario" }));
+    expect(await screen.findByRole("dialog", { name: "New What-If Scenario" })).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog", { name: "New What-If Scenario" })).not.toBeInTheDocument();
   });
 });

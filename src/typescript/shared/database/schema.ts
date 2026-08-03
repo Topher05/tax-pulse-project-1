@@ -25,6 +25,21 @@ const stageValuesSql = sql.join(
   sql`, `,
 );
 
+export const deductionCategoryValues = [
+  "Business Expense",
+  "Home Office",
+  "Charitable Giving",
+  "Health & Medical",
+  "Education",
+  "Retirement Contribution",
+  "Other",
+] as const;
+
+export const deductionCategoryEnum = pgEnum(
+  "deduction_category",
+  deductionCategoryValues,
+);
+
 export const tenants = pgTable(
   "tenants",
   {
@@ -261,6 +276,33 @@ export const scenario = pgTable(
     }),
     uniqueIndex("scenario_case_id_name_key").on(table.caseId, table.name),
     index("scenario_case_id_idx").on(table.caseId),
+  ],
+);
+
+export const deduction = pgTable(
+  "deduction",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    caseId: uuid("case_id").notNull(),
+    date: date("date").notNull(),
+    description: text("description").notNull(),
+    category: deductionCategoryEnum("category").notNull(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    taxImpact: numeric("tax_impact", { precision: 14, scale: 2 }).notNull(),
+    deleted: boolean("deleted").default(false).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "deduction_id_pk",
+      columns: [table.id],
+    }),
+    foreignKey({
+      name: "deduction_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    index("deduction_case_id_deleted_idx").on(table.caseId, table.deleted),
+    index("deduction_case_id_date_idx").on(table.caseId, table.date),
   ],
 );
 

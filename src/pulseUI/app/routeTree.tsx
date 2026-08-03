@@ -1,17 +1,19 @@
 import { createRootRoute, createRoute, redirect } from "@tanstack/react-router";
-
 import { hasPulseAccessToken } from "./authSession.ts";
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { ClientRosterPage } from "../pages/clients/ClientRosterPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
+import { QuarterlyPaymentsPage } from "../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { IncomePage } from "../pages/income/IncomePage.tsx";
 import { LoginPage } from "../pages/LoginPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
+// TODO: Implement case ID routing component
+// import { validatePlanToolSearch } from "../shared/planToolCase.ts";
 
 const rootRoute = createRootRoute({
   component: AppShell,
@@ -48,8 +50,10 @@ const cycleDetailsRoute = createRoute({
 const scenarioPlannerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/scenarios",
+  component: ScenarioPlannerPage,
   beforeLoad: requirePulseAuthentication,
-  component: EmptyPage,
+  // TODO: Implement case ID routing component
+  // validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const incomeRoute = createRoute({
@@ -64,13 +68,17 @@ const deductionsRoute = createRoute({
   path: "/deductions",
   beforeLoad: requirePulseAuthentication,
   component: DeductionsPage,
+  // TODO: Implement case ID routing component
+  // validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const quarterlyPaymentsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/quarterly-payments",
+  component: QuarterlyPaymentsPage,
   beforeLoad: requirePulseAuthentication,
-  component: EmptyPage,
+  // TODO: Implement case ID routing component
+  // validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const clientsRoute = createRoute({
