@@ -5,6 +5,63 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira115 - SCRUM-115
+
+**Branch:** `dylan-harle-jira115`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-115
+
+**Summary:** Render the deductions table from live data.
+
+**Description:** As a Frontend Developer, I want the deductions table rendered from the hook data, so that recorded deductions and their tax impact are visible.
+
+**Acceptance Criteria:**
+
+- The table renders date, description, category, amount, and tax-impact columns from the hook data.
+- KPI cards render total deductions, estimated tax savings, and the deduction method.
+- A newly added deduction appears in the table after a successful create.
+
+**Code Connection:**
+
+- Replaced the SCRUM-113 non-empty placeholder with the shared typed data table while preserving loading, empty, error, retry, and case-gated request states.
+- Wired the SCRUM-114 typed Add Deduction form callback into a TanStack mutation and invalidates the selected case deductions query after successful create.
+- Added the minimal tenant-scoped deductions create endpoint and repository insert path needed for the frontend create flow to persist and refetch live rows.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Keeps deductions reads and creates scoped to the selected Tax Plan Cycle and authenticated tenant.
+- Leaves deduction-method calculation as the existing static KPI copy because no live method field exists in the current deductions hook or backend payload.
+
+**Changed Files:**
+
+- `src/pulseUI/shared/caseApi.ts`
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/typescript/features/deductions/repositories/deduction.ts`
+- `src/typescript/features/deductions/repositories/repository.ts`
+- `src/typescript/features/deductions/routes.ts`
+- `src/typescript/features/deductions/index.ts`
+- `src/typescript/index.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/pulseUI/tests/entities/deductionQueries.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `tests/typescript/features/deductions/repository.test.ts`
+- `tests/typescript/features/deductions/routes.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/entities/deductionQueries.test.tsx tests/deductions/DeductionsPage.test.tsx tests/components/DeductionEntryForm.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI test -- tests/caseApi.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/coreCaseOpenApi.test.ts` passed.
+- `npm run test:vitest -- tests/typescript/features/deductions/repository.test.ts tests/typescript/features/deductions/routes.test.ts` could not complete because the configured local Postgres port refused connections (`ECONNREFUSED 127.0.0.1:54318` / `::1:54318`) before assertions ran.
+
 ## dylan-harle-jira114 - SCRUM-114
 
 **Branch:** `dylan-harle-jira114`
