@@ -8,55 +8,22 @@ import { StatusPill } from "../../components/StatusPill.tsx";
 import { WorkflowStepper } from "../../components/WorkflowStepper.tsx";
 import { IncomeBreakdownChart } from "./IncomeBreakdownChart.tsx";
 import { QuarterlyTaxChart } from "./QuarterlyTaxChart.tsx";
+import { YearOverYearTaxChart } from "./YearOverYearTaxChart.tsx";
 import {
   defaultDashboardChartData,
   type DashboardChartData,
 } from "./dashboardChartData.ts";
 
-const dashboardMetrics = [
-  {
-    label: "Estimated Total Tax",
-    value: "$58,420",
-    caption: "Federal + state combined",
-    tone: "indigo" as const,
-    icon: <ChartColumnBig aria-hidden="true" />,
-  },
-  {
-    label: "Effective Tax Rate",
-    value: "22.8%",
-    caption: "Marginal: 32.0%",
-    tone: "cyan" as const,
-    icon: <Sparkles aria-hidden="true" />,
-  },
-  {
-    label: "Outstanding Quarterly",
-    value: "$14,620",
-    caption: "Two payments remain open",
-    tone: "amber" as const,
-    icon: <CalendarDays aria-hidden="true" />,
-  },
-  {
-    label: "Open Plan Cycles",
-    value: "14",
-    caption: "3 due this week",
-    tone: "green" as const,
-    icon: <FolderKanban aria-hidden="true" />,
-  },
-];
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
 
-const breakdown = [
-  { label: "Federal Income Tax", amount: "$31,200", share: 56, tone: "indigo" as const },
-  { label: "State Tax (CA)", amount: "$10,540", share: 19, tone: "cyan" as const },
-  { label: "Self-Employment Tax", amount: "$8,800", share: 16, tone: "amber" as const },
-  { label: "Withholdings", amount: "$16,760", share: 30, tone: "green" as const, subtractive: true },
-];
-
-const quarterlyPayments = [
-  { month: "Q1", date: "Apr 15", amount: "$3,620", subtitle: "Estimated payment", paid: true },
-  { month: "Q2", date: "Jun 15", amount: "$3,620", subtitle: "Estimated payment", paid: true },
-  { month: "Q3", date: "Sep 15", amount: "$3,620", subtitle: "Due soon", paid: false },
-  { month: "Q4", date: "Jan 15", amount: "$3,760", subtitle: "Upcoming", paid: false },
-];
+const percentFormatter = new Intl.NumberFormat("en-US", {
+  style: "percent",
+  maximumFractionDigits: 1,
+});
 
 const queuePreview = [
   { id: "TP-24018", client: "North Shore Family Office", stage: "Review", owner: "Maya Reed", priority: "High", due: "May 12, 2026" },
@@ -87,6 +54,66 @@ export interface DashboardPageProps {
 
 export function DashboardPage({ chartData }: DashboardPageProps = {}) {
   const dashboardChartData = chartData ?? defaultDashboardChartData;
+  const { kpis, taxBreakdown } = dashboardChartData;
+  const taxTotal = taxBreakdown.federalTax + taxBreakdown.stateTax;
+  const dashboardMetrics = [
+    {
+      label: "Estimated Total Tax",
+      // The KPI is explicitly labelled as the combined federal and state tax, so keep
+      // it tied to the figures displayed in the Tax Breakdown panel.
+      value: currencyFormatter.format(taxTotal),
+      caption: "Federal + state combined",
+      tone: "indigo" as const,
+      icon: <ChartColumnBig aria-hidden="true" />,
+    },
+    {
+      label: "Effective Rate",
+      value: percentFormatter.format(kpis.effectiveRate / 100),
+      caption: "Estimated tax as income share",
+      tone: "cyan" as const,
+      icon: <Sparkles aria-hidden="true" />,
+    },
+    {
+      label: "YTD Gross Income",
+      value: currencyFormatter.format(kpis.ytdGrossIncome),
+      caption: "Income recorded this tax year",
+      tone: "green" as const,
+      icon: <FolderKanban aria-hidden="true" />,
+    },
+    {
+      label: "Outstanding Payments",
+      value: currencyFormatter.format(kpis.outstandingPayments),
+      caption: "Remaining estimated payments",
+      tone: "amber" as const,
+      icon: <CalendarDays aria-hidden="true" />,
+    },
+  ];
+  const breakdown: Array<{
+    label: string;
+    amount: string;
+    share: number;
+    tone: "indigo" | "cyan" | "amber";
+    subtractive?: boolean;
+  }> = [
+    {
+      label: "Federal Income Tax",
+      amount: currencyFormatter.format(taxBreakdown.federalTax),
+      share: taxTotal > 0 ? (taxBreakdown.federalTax / taxTotal) * 100 : 0,
+      tone: "indigo" as const,
+    },
+    {
+      label: "State Income Tax",
+      amount: currencyFormatter.format(taxBreakdown.stateTax),
+      share: taxTotal > 0 ? (taxBreakdown.stateTax / taxTotal) * 100 : 0,
+      tone: "cyan" as const,
+    },
+    {
+      label: "Effective Rate",
+      amount: percentFormatter.format(taxBreakdown.effectiveRate / 100),
+      share: taxBreakdown.effectiveRate,
+      tone: "amber" as const,
+    },
+  ];
 
   return (
     <div className={styles.page} data-calculation-id={dashboardChartData.calculationId}>
@@ -131,7 +158,7 @@ export function DashboardPage({ chartData }: DashboardPageProps = {}) {
       <div className={styles.contentGrid}>
         <PanelCard
           title="Tax Breakdown"
-          description="Federal, state, and estimated payment coverage for the current plan."
+          description="Federal, state, and effective-rate figures for the current plan."
         >
           <div className={styles.breakdownList}>
             {breakdown.map((item) => (
@@ -154,27 +181,11 @@ export function DashboardPage({ chartData }: DashboardPageProps = {}) {
           </div>
         </PanelCard>
 
-        <PanelCard title="Quarterly Payments" description="Current estimated schedule and coverage status.">
-          <div className={styles.timeline}>
-            {quarterlyPayments.map((payment) => (
-              <article className={styles.timelineItem} key={payment.month}>
-                <div className={styles.timelineDate}>
-                  <span className={styles.timelineMonth}>{payment.month}</span>
-                  <span className={styles.timelineDay}>{payment.date}</span>
-                </div>
-                <div className={styles.timelineInfo}>
-                  <div className={styles.timelineLabel}>{payment.subtitle}</div>
-                  <div className={styles.timelineDesc}>Estimated quarterly payment</div>
-                </div>
-                <div className={styles.timelineAmount}>
-                  <span className={styles.timelineValue}>{payment.amount}</span>
-                  <StatusPill tone={payment.paid ? "success" : "warning"}>
-                    {payment.paid ? "Paid" : "Open"}
-                  </StatusPill>
-                </div>
-              </article>
-            ))}
-          </div>
+        <PanelCard
+          title="Year-over-Year"
+          description="Estimated total tax compared with the prior tax year."
+        >
+          <YearOverYearTaxChart comparison={dashboardChartData.yearOverYearTax} />
         </PanelCard>
       </div>
 

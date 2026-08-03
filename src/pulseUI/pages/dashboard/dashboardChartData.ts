@@ -1,5 +1,5 @@
 /**
- * Typed read-model boundary for the two dashboard charts.
+ * Typed read-model boundary for the dashboard visuals.
  *
  * A BFF consumer should parse its response here before passing it to DashboardPage.
  * Keeping this data independent of the visual components lets a new calculation
@@ -15,9 +15,32 @@ export interface DashboardIncomeSource {
   amount: number;
 }
 
+export interface DashboardKpis {
+  estimatedTotalTax: number;
+  effectiveRate: number;
+  ytdGrossIncome: number;
+  outstandingPayments: number;
+}
+
+export interface DashboardTaxBreakdown {
+  federalTax: number;
+  stateTax: number;
+  effectiveRate: number;
+}
+
+export interface DashboardYearOverYearTax {
+  currentYear: number;
+  currentYearTax: number;
+  priorYear: number;
+  priorYearTax: number;
+}
+
 export interface DashboardChartData {
   /** Identifies the calculation snapshot that produced these chart values. */
   calculationId: string;
+  kpis: DashboardKpis;
+  taxBreakdown: DashboardTaxBreakdown;
+  yearOverYearTax: DashboardYearOverYearTax;
   quarterlyEstimates: readonly [
     DashboardQuarterEstimate,
     DashboardQuarterEstimate,
@@ -34,6 +57,23 @@ export interface DashboardChartData {
  */
 export const defaultDashboardChartData: DashboardChartData = {
   calculationId: "dashboard-example-2026",
+  kpis: {
+    estimatedTotalTax: 58_420,
+    effectiveRate: 22.8,
+    ytdGrossIncome: 256_400,
+    outstandingPayments: 14_620,
+  },
+  taxBreakdown: {
+    federalTax: 47_880,
+    stateTax: 10_540,
+    effectiveRate: 22.8,
+  },
+  yearOverYearTax: {
+    currentYear: 2026,
+    currentYearTax: 58_420,
+    priorYear: 2025,
+    priorYearTax: 52_860,
+  },
   quarterlyEstimates: [
     { quarter: "Q1", amount: 3_620 },
     { quarter: "Q2", amount: 3_620 },
