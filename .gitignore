@@ -11,3 +11,4 @@ planning/prompt-journal/*
 coverage/*
 .DS_Store
 uv.lock
+codebase_guide/*
