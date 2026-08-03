@@ -4,7 +4,7 @@ import { z } from "zod";
 import { caseApiGetJson } from "../shared/caseApi.ts";
 import type { Uuid } from "../shared/planToolCase.ts";
 
-const deductionAmountSchema = z.number().finite().nonnegative();
+const deductionAmountSchema = z.coerce.number().finite().nonnegative();
 
 const deductionRecordSchema = z.object({
   id: z.string().min(1),
@@ -12,12 +12,8 @@ const deductionRecordSchema = z.object({
   date: z.string().min(1),
   description: z.string().min(1),
   category: z.string().min(1),
-  amount: z.union([z.string().min(1), deductionAmountSchema]).transform((value) =>
-    typeof value === "string" ? Number(value) : value,
-  ),
-  tax_impact: z.union([z.string().min(1), deductionAmountSchema]).transform((value) =>
-    typeof value === "string" ? Number(value) : value,
-  ),
+  amount: deductionAmountSchema,
+  tax_impact: deductionAmountSchema,
   deleted: z.boolean(),
 });
 
