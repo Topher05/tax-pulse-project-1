@@ -5,7 +5,7 @@ import {
   buildRedisSmokeCacheKey,
   buildRedisSmokeQueuePayload,
   runRedisSmoke,
-} from "../../src/typescript/redisSmoke.js";
+} from "../../src/typescript/shared/scripts/redisSmoke.js";
 import { startDockerRedisContainer } from "./bootstrap/dockerRedis.js";
 
 describe("redis smoke integration", () => {

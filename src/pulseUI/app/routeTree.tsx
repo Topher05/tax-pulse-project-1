@@ -1,10 +1,10 @@
-
 import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { ClientRosterPage } from "../pages/clients/ClientRosterPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
+import { QuarterlyPaymentsPage } from "../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { IncomePage } from "../pages/income/IncomePage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { AuthBoundary } from "../auth/AuthBoundary.tsx";
@@ -15,6 +15,7 @@ import { SignInPage } from "../pages/auth/SignInPage.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
+import { validatePlanToolSearch } from "../shared/planToolCase.ts";
 
 const rootRoute = createRootRoute({
   component: Outlet,
@@ -80,7 +81,8 @@ const cycleDetailsRoute = createRoute({
 const scenarioPlannerRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/scenarios",
-  component: EmptyPage,
+  component: ScenarioPlannerPage,
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const incomeRoute = createRoute({
@@ -93,12 +95,14 @@ const deductionsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/deductions",
   component: DeductionsPage,
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const quarterlyPaymentsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/quarterly-payments",
-  component: EmptyPage,
+  component: QuarterlyPaymentsPage,
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const clientsRoute = createRoute({

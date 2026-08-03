@@ -188,6 +188,29 @@ body::before {
   border-radius: 8px;
 }
 
+/* Keep the shared modal shell easy to tune if sizing or card treatment changes later. */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(15, 17, 23, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
 button,
 a,
 select {

@@ -105,6 +105,23 @@ export type SeedTaxPlanCycleInsertRow = Omit<SeedTaxPlanCycleRow, "dueDate"> & {
   holdReason: string | null;
 };
 
+export type SeedDeductionRow = {
+  caseId: string;
+  date: string;
+  description: string;
+  category:
+    | "Business Expense"
+    | "Home Office"
+    | "Charitable Giving"
+    | "Health & Medical"
+    | "Education"
+    | "Retirement Contribution"
+    | "Other";
+  amount: string;
+  taxImpact: string;
+  deleted: boolean;
+};
+
 const federalRates = ["0.1000", "0.1200", "0.2200", "0.2400", "0.3200", "0.3500", "0.3700"] as const;
 const californiaRates = [
   "0.0100",
@@ -326,7 +343,7 @@ export const credentialRows = [
     id: "cm7zq8f4k0001a1b2c3d4e5f6",
     userId: userRows[1].id,
     passwordHash:
-      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtMg$YXV0aC1oYXNoLW9uZS0wMg",
+      "$argon2id$v=19$m=65536,t=3,p=4$LB6kDJl7/qVUyjm9pG8b/A$bHlhCBx1qF+pWKaE4NoQP5eog9iaqryE/Oba3m4zF4Y",
   },
   {
     id: "cm7zq8f4k0002a1b2c3d4e5f6",
@@ -438,6 +455,144 @@ export const taxPlanCycleRows = [
     holdReason: "Archived workpapers pending review",
   },
 ] as const satisfies readonly SeedTaxPlanCycleRow[];
+
+export const deductionRows = [
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-30",
+    description: "Business development travel and meals",
+    category: "Business Expense",
+    amount: "780.00",
+    taxImpact: "195.00",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-29",
+    description: "Home office internet allocation",
+    category: "Home Office",
+    amount: "120.00",
+    taxImpact: "30.00",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-28",
+    description: "Charitable cash contribution",
+    category: "Charitable Giving",
+    amount: "500.00",
+    taxImpact: "125.00",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-27",
+    description: "Annual physical and labs",
+    category: "Health & Medical",
+    amount: "310.00",
+    taxImpact: "77.50",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-26",
+    description: "Course fees for continuing education",
+    category: "Education",
+    amount: "950.00",
+    taxImpact: "237.50",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-25",
+    description: "Retirement plan contribution",
+    category: "Retirement Contribution",
+    amount: "6000.00",
+    taxImpact: "1500.00",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-24",
+    description: "Miscellaneous deductible expense",
+    category: "Other",
+    amount: "215.00",
+    taxImpact: "53.75",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-23",
+    description: "Office supplies and postage",
+    category: "Business Expense",
+    amount: "89.00",
+    taxImpact: "22.25",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-22",
+    description: "Dedicated workspace utilities",
+    category: "Home Office",
+    amount: "164.00",
+    taxImpact: "41.00",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-21",
+    description: "Food bank donation",
+    category: "Charitable Giving",
+    amount: "250.00",
+    taxImpact: "62.50",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-20",
+    description: "Prescription and therapy expenses",
+    category: "Health & Medical",
+    amount: "420.00",
+    taxImpact: "105.00",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-19",
+    description: "Professional certification renewal",
+    category: "Education",
+    amount: "675.00",
+    taxImpact: "168.75",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-18",
+    description: "IRA contribution",
+    category: "Retirement Contribution",
+    amount: "5000.00",
+    taxImpact: "1250.00",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-17",
+    description: "Client welcome gift supplies",
+    category: "Business Expense",
+    amount: "74.00",
+    taxImpact: "18.50",
+    deleted: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-07-16",
+    description: "State filing fee",
+    category: "Other",
+    amount: "135.00",
+    taxImpact: "33.75",
+    deleted: false,
+  },
+] as const satisfies readonly SeedDeductionRow[];
 
 export const stageTransitionRows = [
   {
