@@ -2,7 +2,7 @@ import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { describe, expect, test, vi } from "vitest";
 
 import {
-  createTaxPlanCycleQueueProjectionWriter,
+  createWriter,
   type TaxPlanCycleQueueProjectionItem,
 } from "../../../../src/typescript/index.js";
 
@@ -23,7 +23,7 @@ describe("tax plan cycle queue DynamoDB writer", () => {
       expect(command.input.Item).toEqual(item);
       return {};
     });
-    const writer = createTaxPlanCycleQueueProjectionWriter({
+    const writer = createWriter({
       send,
     });
 

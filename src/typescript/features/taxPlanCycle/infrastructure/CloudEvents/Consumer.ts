@@ -6,27 +6,27 @@ import {
 } from "../../taxPlanCycle.js";
 import type { TaxPlanCycleRepository } from "../../repositories/repository.js";
 import {
-  type TaxPlanCycleQueueProjectionIdempotencyClient,
-  type TaxPlanCycleQueueProjectionConsumerHandleResult,
-  type TaxPlanCycleQueueProjectionConsumerOptions,
-  type TaxPlanCycleQueueProjectionStageChangedCloudEvent,
-  type TaxPlanCycleQueueProjectionWriter,
+  type ConsumerHandleResult,
+  type ConsumerOptions,
+  type IdempotencyClient,
+  type StageChangedCloudEvent,
+  type Writer,
 } from "./model.js";
 import {
-  buildTaxPlanCycleQueueProjectionIdempotencyKey,
-  createRedisTaxPlanCycleQueueProjectionIdempotencyStore,
-  TaxPlanCycleQueueProjectionIdempotencyInProgressError,
-  TaxPlanCycleQueueProjectionIdempotencyUnavailableError,
+  buildIdempotencyKey,
+  createRedisEventDeduplicator,
+  DeduplicatorInProgressError,
+  DeduplicatorUnavailableError,
 } from "./EventDeduplicator.js";
 import {
-  taxPlanCycleQueueProjectionItemSchema,
-  type TaxPlanCycleQueueProjectionItem,
+  taxPlanCycleQueueProjectionItemSchema as queueProjectionItemSchema,
+  type TaxPlanCycleQueueProjectionItem as QueueProjectionItem,
 } from "../queueProjection.js";
 
-export const TAX_PULSE_QUEUE_PROJECTION_CONSUMER_NAME =
+export const TAX_PULSE_STAGE_CHANGED_CONSUMER_NAME =
   "tax-plan-cycle-stage-changed";
 
-const taxPlanCycleQueueProjectionStageChangedEventDataSchema = z.strictObject({
+const stageChangedEventDataSchema = z.strictObject({
   tenant_id: z.uuid(),
   case_id: z.uuid(),
   from_stage: taxPlanCycleStageSchema,
@@ -34,16 +34,15 @@ const taxPlanCycleQueueProjectionStageChangedEventDataSchema = z.strictObject({
   actor: z.string().min(1),
 });
 
-export const taxPlanCycleQueueProjectionStageChangedCloudEventSchema =
-  z.strictObject({
-    specversion: z.literal("1.0"),
-    id: z.string().min(1),
-    source: z.string().min(1),
-    type: z.literal("com.taxpulse.tax-plan-cycle.stage-changed"),
-    time: z.iso.datetime(),
-    datacontenttype: z.literal("application/json").optional(),
-    data: taxPlanCycleQueueProjectionStageChangedEventDataSchema,
-  });
+export const stageChangedCloudEventSchema = z.strictObject({
+  specversion: z.literal("1.0"),
+  id: z.string().min(1),
+  source: z.string().min(1),
+  type: z.literal("com.taxpulse.tax-plan-cycle.stage-changed"),
+  time: z.iso.datetime(),
+  datacontenttype: z.literal("application/json").optional(),
+  data: stageChangedEventDataSchema,
+});
 
 function todayIsoDateFromEventTime(eventTime: string): string {
   return eventTime.slice(0, 10);
@@ -53,8 +52,8 @@ function projectTaxPlanCycleToQueueItem(
   tenantId: string,
   cycle: TaxPlanCycle,
   asOfDate: string,
-): TaxPlanCycleQueueProjectionItem {
-  return taxPlanCycleQueueProjectionItemSchema.parse({
+): QueueProjectionItem {
+  return queueProjectionItemSchema.parse({
     tenant_id: tenantId,
     case_id: cycle.id,
     client: cycle.client_id,
@@ -66,8 +65,8 @@ function projectTaxPlanCycleToQueueItem(
   });
 }
 
-function buildIdempotencyInput(
-  event: TaxPlanCycleQueueProjectionStageChangedCloudEvent,
+function buildDeduplicationInput(
+  event: StageChangedCloudEvent,
   consumerName: string,
 ): {
   tenantId: string;
@@ -81,21 +80,21 @@ function buildIdempotencyInput(
   };
 }
 
-export function createTaxPlanCycleQueueProjectionConsumer(
-  options: TaxPlanCycleQueueProjectionConsumerOptions,
+export function createConsumer(
+  options: ConsumerOptions,
 ): {
   handleStageChangedEvent(
     event: unknown,
-  ): Promise<TaxPlanCycleQueueProjectionConsumerHandleResult>;
+  ): Promise<ConsumerHandleResult>;
 } {
-  const consumerName = options.consumerName ?? TAX_PULSE_QUEUE_PROJECTION_CONSUMER_NAME;
+  const consumerName = options.consumerName ?? TAX_PULSE_STAGE_CHANGED_CONSUMER_NAME;
 
   return {
     async handleStageChangedEvent(
       event: unknown,
-    ): Promise<TaxPlanCycleQueueProjectionConsumerHandleResult> {
-      const parsedEvent = taxPlanCycleQueueProjectionStageChangedCloudEventSchema.parse(event);
-      const idempotencyInput = buildIdempotencyInput(parsedEvent, consumerName);
+    ): Promise<ConsumerHandleResult> {
+      const parsedEvent = stageChangedCloudEventSchema.parse(event);
+      const idempotencyInput = buildDeduplicationInput(parsedEvent, consumerName);
       const claimed = await options.idempotencyStore.claim(idempotencyInput);
 
       if (!claimed) {
@@ -137,10 +136,10 @@ export function createTaxPlanCycleQueueProjectionConsumer(
   };
 }
 
-export function createRedisTaxPlanCycleQueueProjectionConsumer(
-  client: TaxPlanCycleQueueProjectionIdempotencyClient,
+export function createRedisConsumer(
+  client: IdempotencyClient,
   repository: Pick<TaxPlanCycleRepository, "findByCaseId">,
-  writer: TaxPlanCycleQueueProjectionWriter,
+  writer: Writer,
   options: {
     consumerName?: string;
     ttlSeconds?: number;
@@ -148,20 +147,20 @@ export function createRedisTaxPlanCycleQueueProjectionConsumer(
 ): {
   handleStageChangedEvent(
     event: unknown,
-  ): Promise<TaxPlanCycleQueueProjectionConsumerHandleResult>;
+  ): Promise<ConsumerHandleResult>;
 } {
-  return createTaxPlanCycleQueueProjectionConsumer({
+  return createConsumer({
     repository,
     writer,
     consumerName: options.consumerName,
-    idempotencyStore: createRedisTaxPlanCycleQueueProjectionIdempotencyStore(client, {
+    idempotencyStore: createRedisEventDeduplicator(client, {
       ttlSeconds: options.ttlSeconds,
     }),
   });
 }
 
 export {
-  buildTaxPlanCycleQueueProjectionIdempotencyKey,
-  TaxPlanCycleQueueProjectionIdempotencyInProgressError,
-  TaxPlanCycleQueueProjectionIdempotencyUnavailableError,
+  buildIdempotencyKey,
+  DeduplicatorInProgressError,
+  DeduplicatorUnavailableError,
 };

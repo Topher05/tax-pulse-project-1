@@ -1,28 +1,28 @@
 import { z } from "zod";
 
 import type {
-  TaxPlanCycleQueueProjectionIdempotencyClient,
-  TaxPlanCycleQueueProjectionIdempotencyInput,
-  TaxPlanCycleQueueProjectionIdempotencyStore,
+  EventDeduplicator,
+  IdempotencyClient,
+  IdempotencyInput,
 } from "./model.js";
 
-export class TaxPlanCycleQueueProjectionIdempotencyInProgressError extends Error {
+export class DeduplicatorInProgressError extends Error {
   constructor() {
     super("A queue projection event with the same id is still being processed.");
-    this.name = "TaxPlanCycleQueueProjectionIdempotencyInProgressError";
+    this.name = "DeduplicatorInProgressError";
   }
 }
 
-export class TaxPlanCycleQueueProjectionIdempotencyUnavailableError extends Error {
+export class DeduplicatorUnavailableError extends Error {
   constructor() {
     super("Redis idempotency storage is unavailable for the queue projection consumer.");
-    this.name = "TaxPlanCycleQueueProjectionIdempotencyUnavailableError";
+    this.name = "DeduplicatorUnavailableError";
   }
 }
 
 const defaultIdempotencyTtlSeconds = 24 * 60 * 60;
 
-const queueProjectionIdempotencyRecordSchema = z.discriminatedUnion("status", [
+const deduplicationRecordSchema = z.discriminatedUnion("status", [
   z.object({
     status: z.literal("pending"),
   }),
@@ -43,8 +43,8 @@ function completedValue(): string {
   return JSON.stringify({ status: "completed" });
 }
 
-function parseIdempotencyRecord(value: string): "pending" | "completed" | null {
-  const parsed = queueProjectionIdempotencyRecordSchema.safeParse(JSON.parse(value) as unknown);
+function parseDeduplicationRecord(value: string): "pending" | "completed" | null {
+  const parsed = deduplicationRecordSchema.safeParse(JSON.parse(value) as unknown);
 
   if (!parsed.success) {
     return null;
@@ -53,7 +53,7 @@ function parseIdempotencyRecord(value: string): "pending" | "completed" | null {
   return parsed.data.status;
 }
 
-export function buildTaxPlanCycleQueueProjectionIdempotencyKey(input: {
+export function buildIdempotencyKey(input: {
   tenantId: string;
   consumerName: string;
   eventId: string;
@@ -61,17 +61,15 @@ export function buildTaxPlanCycleQueueProjectionIdempotencyKey(input: {
   return `idem:queue-projection:${input.tenantId}:${input.consumerName}:${input.eventId}`;
 }
 
-export function createRedisTaxPlanCycleQueueProjectionIdempotencyStore(
-  client: TaxPlanCycleQueueProjectionIdempotencyClient,
+export function createRedisEventDeduplicator(
+  client: IdempotencyClient,
   options: {
     ttlSeconds?: number;
   } = {},
-): TaxPlanCycleQueueProjectionIdempotencyStore {
+): EventDeduplicator {
   const ttlSeconds = options.ttlSeconds ?? defaultIdempotencyTtlSeconds;
 
-  async function readRecord(
-    key: string,
-  ): Promise<"pending" | "completed" | null> {
+  async function readRecord(key: string): Promise<"pending" | "completed" | null> {
     const value = await client.get(key);
 
     if (value === null) {
@@ -79,16 +77,14 @@ export function createRedisTaxPlanCycleQueueProjectionIdempotencyStore(
     }
 
     try {
-      return parseIdempotencyRecord(value);
+      return parseDeduplicationRecord(value);
     } catch {
       return null;
     }
   }
 
-  async function claim(
-    input: TaxPlanCycleQueueProjectionIdempotencyInput,
-  ): Promise<boolean> {
-    const key = buildTaxPlanCycleQueueProjectionIdempotencyKey(input);
+  async function claim(input: IdempotencyInput): Promise<boolean> {
+    const key = buildIdempotencyKey(input);
 
     try {
       const existingRecord = await readRecord(key);
@@ -98,7 +94,7 @@ export function createRedisTaxPlanCycleQueueProjectionIdempotencyStore(
       }
 
       if (existingRecord === "pending") {
-        throw new TaxPlanCycleQueueProjectionIdempotencyInProgressError();
+        throw new DeduplicatorInProgressError();
       }
 
       const claimResult = await client.set(key, pendingValue(), {
@@ -117,30 +113,26 @@ export function createRedisTaxPlanCycleQueueProjectionIdempotencyStore(
       }
 
       if (claimedRecord === "pending") {
-        throw new TaxPlanCycleQueueProjectionIdempotencyInProgressError();
+        throw new DeduplicatorInProgressError();
       }
 
-      throw new TaxPlanCycleQueueProjectionIdempotencyUnavailableError();
+      throw new DeduplicatorUnavailableError();
     } catch (error) {
-      if (error instanceof TaxPlanCycleQueueProjectionIdempotencyInProgressError) {
+      if (error instanceof DeduplicatorInProgressError) {
         throw error;
       }
 
-      throw new TaxPlanCycleQueueProjectionIdempotencyUnavailableError();
+      throw new DeduplicatorUnavailableError();
     }
   }
 
-  async function complete(
-    input: TaxPlanCycleQueueProjectionIdempotencyInput,
-  ): Promise<void> {
-    const key = buildTaxPlanCycleQueueProjectionIdempotencyKey(input);
+  async function complete(input: IdempotencyInput): Promise<void> {
+    const key = buildIdempotencyKey(input);
     await client.set(key, completedValue(), { EX: ttlSeconds });
   }
 
-  async function release(
-    input: TaxPlanCycleQueueProjectionIdempotencyInput,
-  ): Promise<void> {
-    const key = buildTaxPlanCycleQueueProjectionIdempotencyKey(input);
+  async function release(input: IdempotencyInput): Promise<void> {
+    const key = buildIdempotencyKey(input);
     await client.del(key).catch(() => undefined);
   }
 

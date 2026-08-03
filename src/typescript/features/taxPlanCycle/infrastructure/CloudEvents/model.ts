@@ -2,17 +2,17 @@ import type { PutCommand } from "@aws-sdk/lib-dynamodb";
 
 import type { TaxPlanCycleRepository } from "../../repositories/repository.js";
 import type { TaxPlanCycle } from "../../taxPlanCycle.js";
-import type { TaxPlanCycleQueueProjectionItem } from "../queueProjection.js";
+import type { TaxPlanCycleQueueProjectionItem as QueueProjectionItem } from "../queueProjection.js";
 
-export interface TaxPlanCycleQueueProjectionWriterClient {
+export interface WriterClient {
   send(command: PutCommand): Promise<unknown>;
 }
 
-export interface TaxPlanCycleQueueProjectionWriter {
-  upsert(item: TaxPlanCycleQueueProjectionItem): Promise<void>;
+export interface Writer {
+  upsert(item: QueueProjectionItem): Promise<void>;
 }
 
-export interface TaxPlanCycleQueueProjectionIdempotencyClient {
+export interface IdempotencyClient {
   get(key: string): Promise<string | null>;
   set(
     key: string,
@@ -22,19 +22,19 @@ export interface TaxPlanCycleQueueProjectionIdempotencyClient {
   del(key: string): Promise<unknown>;
 }
 
-export interface TaxPlanCycleQueueProjectionIdempotencyInput {
+export interface IdempotencyInput {
   tenantId: string;
   consumerName: string;
   eventId: string;
 }
 
-export interface TaxPlanCycleQueueProjectionIdempotencyStore {
-  claim(input: TaxPlanCycleQueueProjectionIdempotencyInput): Promise<boolean>;
-  complete(input: TaxPlanCycleQueueProjectionIdempotencyInput): Promise<void>;
-  release(input: TaxPlanCycleQueueProjectionIdempotencyInput): Promise<void>;
+export interface EventDeduplicator {
+  claim(input: IdempotencyInput): Promise<boolean>;
+  complete(input: IdempotencyInput): Promise<void>;
+  release(input: IdempotencyInput): Promise<void>;
 }
 
-export interface TaxPlanCycleQueueProjectionStageChangedEventData {
+export interface StageChangedEventData {
   tenant_id: string;
   case_id: string;
   from_stage: TaxPlanCycle["stage"];
@@ -42,24 +42,24 @@ export interface TaxPlanCycleQueueProjectionStageChangedEventData {
   actor: string;
 }
 
-export interface TaxPlanCycleQueueProjectionStageChangedCloudEvent {
+export interface StageChangedCloudEvent {
   specversion: "1.0";
   id: string;
   source: string;
   type: "com.taxpulse.tax-plan-cycle.stage-changed";
   time: string;
   datacontenttype?: "application/json";
-  data: TaxPlanCycleQueueProjectionStageChangedEventData;
+  data: StageChangedEventData;
 }
 
-export interface TaxPlanCycleQueueProjectionConsumerHandleResult {
+export interface ConsumerHandleResult {
   status: "processed" | "duplicate";
-  item?: TaxPlanCycleQueueProjectionItem;
+  item?: QueueProjectionItem;
 }
 
-export interface TaxPlanCycleQueueProjectionConsumerOptions {
+export interface ConsumerOptions {
   repository: Pick<TaxPlanCycleRepository, "findByCaseId">;
-  writer: TaxPlanCycleQueueProjectionWriter;
-  idempotencyStore: TaxPlanCycleQueueProjectionIdempotencyStore;
+  writer: Writer;
+  idempotencyStore: EventDeduplicator;
   consumerName?: string;
 }
