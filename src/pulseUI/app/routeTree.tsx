@@ -9,7 +9,6 @@ import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
 import { IncomePage } from "../pages/income/IncomePage.tsx";
 import { LoginPage } from "../pages/LoginPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
-import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
 
