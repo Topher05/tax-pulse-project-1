@@ -1,10 +1,4 @@
-<<<<<<< martins-okorie-jira99
 import { createRootRoute, createRoute } from "@tanstack/react-router";
-
-=======
-import { createRootRoute, createRoute, redirect } from "@tanstack/react-router";
-import { hasPulseAccessToken } from "./authSession.ts";
->>>>>>> development
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";

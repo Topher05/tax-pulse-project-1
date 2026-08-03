@@ -76,7 +76,7 @@ describe("CurrentCaseSelector", () => {
     renderSelector();
 
     await waitFor(() => {
-      expect(caseApi.caseApiGetJson).toHaveBeenCalledWith("/v1/tax-plan-cycles");
+      expect(caseApi.caseApiGetJson).toHaveBeenCalledWith("/v1/tax-plan-cycles", undefined);
     });
 
     expect(await screen.findByRole("option", { name: seededCaseId })).toBeInTheDocument();

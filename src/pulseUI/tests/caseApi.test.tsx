@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { CaseApiError, caseApiGetJson } from "../shared/caseApi.ts";
 
@@ -17,6 +17,14 @@ function textResponse(body: string, init: ResponseInit): Response {
 }
 
 describe("caseApiGetJson", () => {
+  beforeEach(() => {
+    vi.stubEnv("CASE_SERVICE_BASE_URL", apiBaseUrl);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   test("fetches the case API path through the supplied authenticated fetcher", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(jsonResponse({ ok: true }));
 
