@@ -5,6 +5,49 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira114 - SCRUM-114
+
+**Branch:** `dylan-harle-jira114`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-114
+
+**Summary:** Build the Add Deduction form with zod validation.
+
+**Description:** As a Frontend Developer, I want an Add Deduction form validated with zod, so that malformed deduction entries are caught at the boundary.
+
+**Acceptance Criteria:**
+
+- The form captures description, category, and amount and validates with react-hook-form + zod.
+- A negative amount or missing required field surfaces an inline validation message and blocks submit.
+- A valid submit invokes the create handler with the typed payload.
+
+**Code Connection:**
+
+- Replaced the SCRUM-112 placeholder `console.table` submit path with a typed `onCreate` callback boundary.
+- Kept the existing date field from SCRUM-112 while validating description, category, and amount through the local zod schema.
+- Preserved SCRUM-113 request-state rendering and SCRUM-115's table handoff by limiting page wiring to a local typed create handler.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Adds client-side boundary validation for deduction entry without changing tenant-scoped deductions fetch behavior or backend mutation contracts.
+- Leaves live create persistence and newly-created-row table behavior to SCRUM-115.
+
+**Changed Files:**
+
+- `src/pulseUI/components/DeductionEntryForm.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/tests/components/DeductionEntryForm.test.tsx`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/components/DeductionEntryForm.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm.cmd --prefix src/pulseUI test` passed.
+
 ## dylan-harle-jira113 - SCRUM-113
 
 **Branch:** `dylan-harle-jira113`
