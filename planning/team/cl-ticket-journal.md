@@ -1172,3 +1172,50 @@ sequenceDiagram
 - `npm.cmd test` in `src/pulseUI` passed: 16 test files passed, 57 tests passed.
 - `npm.cmd test` at the repository root passed: TypeScript typecheck passed, 49 Vitest files passed, 232 tests passed, 1 skipped.
 - `git diff --check` passed with no whitespace errors; Git reported only CRLF normalization warnings.
+
+## caleb-latimer-jira136 - SCRUM-136
+
+**Branch:** `caleb-latimer-jira136`
+
+**Owner:** Caleb Latimer
+
+**Jira Key:** SCRUM-136
+
+**Summary:** Make the queue-projection consumer idempotent
+
+**Description:** As a Backend Developer, I want the queue-projection consumer idempotent, so that a redelivered event does not double-apply.
+
+**Acceptance Criteria:**
+
+- The consumer records processed event IDs and skips duplicates.
+- Re-processing the same stage-changed event yields the same projection.
+- A test asserts an at-least-once redelivery is handled idempotently.
+
+**Code Connection:**
+
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionIdempotency.ts` adds the Redis-backed processed-event ledger with explicit `SET` semantics and tenant/consumer scoping.
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionConsumer.ts` validates stage-changed CloudEvents, short-circuits duplicate deliveries, and writes the queue projection from the source repository state.
+- `src/typescript/features/taxPlanCycle/infrastructure/queueDynamoWriter.ts` provides the DynamoDB `PutCommand` upsert adapter for the queue projection row.
+- `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts` covers the first-delivery, duplicate-delivery, and Redis-unavailable paths.
+- `tests/typescript/features/taxPlanCycle/queueDynamoWriter.test.ts` pins the DynamoDB writer command shape.
+
+**Project Scope Connection:**
+
+This ticket keeps Redis in the disposable operational-state role described by ADR-0010 and ADR-0014. The queue-read cache-aside path is unchanged; this work adds a separate idempotency ledger for the stage-changed queue consumer so redeliveries do not double-apply the projection.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionIdempotency.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueDynamoWriter.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionConsumer.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts`
+- `tests/typescript/features/taxPlanCycle/queueDynamoWriter.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- `npm.cmd test` at the repository root timed out before completion.
+- Direct Vitest launches in this Windows sandbox hit the known `EPERM: operation not permitted, lstat 'C:\Users\Exia'` path-resolution issue before tests started.

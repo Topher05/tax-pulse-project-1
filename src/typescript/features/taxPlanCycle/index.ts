@@ -53,6 +53,15 @@ export {
   type TaxPlanCycleQueueCacheReadInput,
 } from "./infrastructure/queueCache.js";
 export {
+  buildTaxPlanCycleQueueProjectionIdempotencyKey,
+  createRedisTaxPlanCycleQueueProjectionIdempotencyStore,
+  TaxPlanCycleQueueProjectionIdempotencyInProgressError,
+  TaxPlanCycleQueueProjectionIdempotencyUnavailableError,
+  type TaxPlanCycleQueueProjectionIdempotencyClient,
+  type TaxPlanCycleQueueProjectionIdempotencyInput,
+  type TaxPlanCycleQueueProjectionIdempotencyStore,
+} from "./infrastructure/queueProjectionIdempotency.js";
+export {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
@@ -66,6 +75,20 @@ export {
   type TaxPlanCycleQueueProjectionDynamoClient,
   type TaxPlanCycleQueueProjectionReader,
 } from "./infrastructure/queueDynamoStore.js";
+export {
+  createTaxPlanCycleQueueProjectionWriter,
+  type TaxPlanCycleQueueProjectionWriter,
+  type TaxPlanCycleQueueProjectionWriterClient,
+} from "./infrastructure/queueDynamoWriter.js";
+export {
+  TAX_PULSE_QUEUE_PROJECTION_CONSUMER_NAME,
+  createRedisTaxPlanCycleQueueProjectionConsumer,
+  createTaxPlanCycleQueueProjectionConsumer,
+  taxPlanCycleQueueProjectionStageChangedCloudEventSchema,
+  type TaxPlanCycleQueueProjectionConsumerHandleResult,
+  type TaxPlanCycleQueueProjectionConsumerOptions,
+  type TaxPlanCycleQueueProjectionStageChangedCloudEvent,
+} from "./infrastructure/queueProjectionConsumer.js";
 export {
   createTaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadService,
