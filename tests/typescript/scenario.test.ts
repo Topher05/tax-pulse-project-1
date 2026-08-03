@@ -34,7 +34,7 @@ describe("scenario persistence contract", () => {
         name: "Increase retirement contributions",
         typed_figures: typedFigures,
         computed_result: computedResult,
-        created_at: new Date("2026-07-23T12:00:00.000Z"),
+        created_at: "2026-07-23T12:00:00.000Z",
       }),
     ).toMatchObject({
       name: "Increase retirement contributions",

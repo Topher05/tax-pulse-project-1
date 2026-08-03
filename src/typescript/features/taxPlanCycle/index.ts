@@ -145,3 +145,16 @@ export {
   type TaxCalculationEngineResult,
   type ScenarioComparisonEngineRequest,
 } from "./infrastructure/engineClient.js";
+export {
+  quarterlyEstimateQuarterSchema,
+  quarterlyEstimateReadParamsSchema,
+  quarterlyEstimateRowsSchema,
+  quarterlyEstimateSchema,
+  type QuarterlyEstimateQuarter,
+  type QuarterlyEstimateRow,
+  type QuarterlyEstimateRows,
+} from "../quarterlyPayments/repositories/quarterlyPayments.js";
+export {
+  createQuarterlyPaymentsRouter,
+  type CreateQuarterlyPaymentsRouterOptions,
+} from "../quarterlyPayments/routes.js";

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
   clearPulseSession,
@@ -35,9 +35,14 @@ function stubFetch(...responses: readonly Response[]) {
 }
 
 describe("caseApiGetJson", () => {
+  beforeEach(() => {
+    vi.stubEnv("CASE_SERVICE_BASE_URL", apiBaseUrl);
+  });
+
   afterEach(() => {
     clearPulseSession();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   test("attaches the stored access token to API requests", async () => {

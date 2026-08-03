@@ -1,21 +1,19 @@
-// Deprecated: manual SQL migration runner kept for compatibility while the
-// Drizzle migration flow remains the primary path.
 import { fileURLToPath } from "node:url";
 
 import {
-  applyMigrations,
+  applyDrizzleMigrations,
   getDatabaseUrlFromEnv,
   withDatabaseClient,
-} from "./postgresMigrations.js";
+} from "./drizzleMigrations.js";
 
 export async function main(): Promise<void> {
   const databaseUrl = getDatabaseUrlFromEnv();
 
   await withDatabaseClient(databaseUrl, async (client) => {
-    await applyMigrations(client);
+    await applyDrizzleMigrations(client);
   });
 
-  console.log("Applied PostgreSQL migrations from migrations/");
+  console.log("Applied PostgreSQL migrations from drizzle-migrations/");
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
