@@ -7,6 +7,7 @@ import { ToolHeader } from "../../components/ToolHeader.tsx";
 import { EmptyPage } from "../EmptyPage.tsx";
 import type { ClientRosterRow } from "../../entities/clientRoster.ts";
 import { useClientRosterQuery } from "../../entities/clientRosterQueries.ts";
+import { reloadPage } from "../../shared/pageReload.ts";
 
 export type { ClientRosterRow } from "../../entities/clientRoster.ts";
 
@@ -89,7 +90,6 @@ export function ClientRosterScreen({ clients }: ClientRosterScreenProps) {
 export function ClientRosterPage() {
   const clientRosterQuery = useClientRosterQuery();
 
-  // TODO: Remove mock integration before PR.
   if (clientRosterQuery.isPending) {
     return <ClientRosterSkeletonLoader />;
   }
@@ -104,7 +104,7 @@ export function ClientRosterPage() {
               ? clientRosterQuery.error.message
               : "Client roster request failed."
           }
-          onRetry={() => window.location.reload()}
+          onRetry={reloadPage}
         />
       </div>
     );

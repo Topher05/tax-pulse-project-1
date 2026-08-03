@@ -1,10 +1,9 @@
 import type { ClientRosterRow } from "../entities/clientRoster.ts";
 
-// TODO: Remove mock integration before PR.
 export const mockedClientListings = [
   {
     id: "client-avery-chen",
-    clientName: "Averrussy Chen",
+    clientName: "Avery Chen",
     filingSummary: "Single - 1099",
     ytdIncome: 108_500,
     estimatedTax: 32_100,

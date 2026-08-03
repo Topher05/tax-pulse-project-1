@@ -2,7 +2,6 @@ import styles from "./ClientRosterSkeletonLoader.module.css";
 import { PanelCard } from "./PanelCard.tsx";
 
 export function ClientRosterSkeletonLoader() {
-  // TODO: Remove mock integration before PR.
   const skeletonRows = Array.from({ length: 25 }, (_, index) => index);
 
   return (

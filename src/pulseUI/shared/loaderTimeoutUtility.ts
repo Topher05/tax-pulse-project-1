@@ -16,6 +16,7 @@ function getGlobalLocationSearch(): string {
 }
 
 export function getLoaderTimeoutMode(): LoaderTimeoutMode {
+  // Use ?loaderMode=... to force a deterministic loader state during manual testing.
   const url = new URLSearchParams(getGlobalLocationSearch());
   const queryMode = url.get(loaderTimeoutTestingConfig.localTestingQueryParam);
 
@@ -35,7 +36,6 @@ async function waitForTimeout(): Promise<void> {
 export async function loadClientRosterForLoaderTimeout(
   mode: LoaderTimeoutMode,
 ): Promise<readonly ClientRosterRow[]> {
-  // TODO: Remove mock integration before PR.
   switch (mode) {
     case "success":
       return mockedClientListings;

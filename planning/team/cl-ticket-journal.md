@@ -35,9 +35,9 @@ Add new ticket entries below using this template.
 -
 -->
 
-## caleb-latimer-jira116 - SCRUM-124
+## caleb-latimer-jira124 - SCRUM-124
 
-**Branch:** `caleb-latimer-jira116`
+**Branch:** `caleb-latimer-jira124`
 
 **Assignee:** Caleb Latimer
 
@@ -55,28 +55,46 @@ Add new ticket entries below using this template.
 
 **Code Connection:**
 
+- `src/pulseUI/components/ClientRosterSkeletonLoader.tsx`
+- `src/pulseUI/components/RetryToolbar.tsx`
+- `src/pulseUI/entities/clientRosterQueries.ts`
 - `src/pulseUI/pages/clients/ClientRosterPage.tsx`
 - `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/pages/EmptyPage.tsx`
+- `src/pulseUI/shared/loaderTimeoutTestingConfig.ts`
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/shared/loaderTimeoutUtility.ts`
+- `src/pulseUI/shared/mockedClientListings.model.ts`
+- `src/pulseUI/shared/pageReload.ts`
 - `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
-- `src/pulseUI/entities/clientRosterQueries.ts`
 
 **Project Scope Connection:**
 
 - React SPA - Operator & Portal Experience
 - Client Roster request-state coverage for the advisor and firm-admin workspace
+- Keeps the temporary loader harness available in shared Pulse UI code, but decoupled from the normal client roster data flow
 - Completes the live roster boundary introduced by SCRUM-123 before TanStack Table rendering work in SCRUM-125
 
 **Changed Files:**
 
+- `src/pulseUI/components/ClientRosterSkeletonLoader.tsx`
+- `src/pulseUI/components/RetryToolbar.tsx`
+- `src/pulseUI/entities/clientRosterQueries.ts`
 - `src/pulseUI/pages/clients/ClientRosterPage.tsx`
 - `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/pages/EmptyPage.tsx`
+- `src/pulseUI/shared/loaderTimeoutTestingConfig.ts`
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/shared/loaderTimeoutUtility.ts`
+- `src/pulseUI/shared/mockedClientListings.model.ts`
+- `src/pulseUI/shared/pageReload.ts`
 - `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
-- `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx` was blocked by a Windows `EPERM: operation not permitted, lstat 'C:\Users\Exia'` environment issue before Vitest could start.
+- `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx` was previously blocked by a Windows `EPERM: operation not permitted, lstat 'C:\Users\Exia'` environment issue before Vitest could start; the roster test file has since been rewritten to use the real API path again.
 
 ## caleb-latimer-jira101 - SCRUM-101
 

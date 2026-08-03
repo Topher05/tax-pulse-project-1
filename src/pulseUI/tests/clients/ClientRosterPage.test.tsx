@@ -8,94 +8,98 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
-import { loaderTimeoutTestingConfig } from "../../shared/loaderTimeoutTestingConfig.ts";
-import { mockedClientListings } from "../../shared/mockedClientListings.model.ts";
+import * as caseApi from "../../shared/caseApi.ts";
+import * as pageReload from "../../shared/pageReload.ts";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
-  Object.defineProperty(window.location, "reload", {
-    configurable: true,
-    value: vi.fn(),
-  });
 });
 
 afterEach(() => {
   localStorage.clear();
   cleanup();
   vi.restoreAllMocks();
-  vi.useRealTimers();
 });
 
-function renderClientRosterPage(loaderMode?: string) {
+function renderClientRosterPage() {
   localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
-
-  const querySuffix = loaderMode ? `?${new URLSearchParams({ loaderMode }).toString()}` : "";
 
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <RouterProvider router={createPulseRouter([`/clients${querySuffix}`])} />
+      <RouterProvider router={createPulseRouter(["/clients"])} />
     </QueryClientProvider>,
   );
 }
 
-describe("ClientRosterPage loader modes", () => {
-  test("renders 25 skeleton rows while loading", async () => {
-    renderClientRosterPage("infinite load");
+describe("ClientRosterPage", () => {
+  test("renders a loading skeleton while the roster request is in flight", async () => {
+    let resolveRequest: (value: unknown) => void = () => undefined;
+    const request = new Promise((resolve) => {
+      resolveRequest = resolve;
+    });
+
+    vi.spyOn(caseApi, "caseApiGetJson").mockReturnValueOnce(request);
+
+    renderClientRosterPage();
 
     const skeleton = await screen.findByRole("status", { name: "Loading Client Roster" });
 
     expect(skeleton.querySelectorAll("div")).toHaveLength(26);
+
+    resolveRequest([]);
   });
 
-  test("renders the success branch with mocked client listings", async () => {
-    renderClientRosterPage("success");
+  test("renders the success branch with client roster data", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      {
+        id: "client-avery-chen",
+        clientName: "Avery Chen",
+        filingSummary: "Single - 1099",
+        ytdIncome: 108_500,
+        estimatedTax: 32_100,
+        quarterlyStatus: "Q2 due Jun 15",
+      },
+      {
+        id: "client-riley-khan",
+        clientName: "Riley Khan",
+        filingSummary: "HoH - W-2",
+        ytdIncome: 72_500,
+        estimatedTax: 11_140,
+        quarterlyStatus: null,
+      },
+    ]);
 
-    expect(await screen.findByText(mockedClientListings[0].clientName)).toBeInTheDocument();
+    renderClientRosterPage();
+
+    expect(await screen.findByText("Avery Chen")).toBeInTheDocument();
     expect(screen.getByRole("table", { name: "Client roster" })).toBeInTheDocument();
   });
 
-  test("renders the empty page for the empty loader mode", async () => {
-    renderClientRosterPage("empty");
+  test("renders the empty page when the firm has no clients", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([]);
+    const reloadSpy = vi.spyOn(pageReload, "reloadPage").mockImplementation(() => undefined);
+
+    renderClientRosterPage();
 
     expect(await screen.findByRole("heading", { name: "No data generated" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Refresh" })).toBeInTheDocument();
+    screen.getByRole("button", { name: "Refresh" }).click();
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  test("renders an error state when the request fails immediately", async () => {
-    renderClientRosterPage("error");
+  test("renders an error state with a refresh retry affordance", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockRejectedValueOnce(new Error("Roster service unavailable."));
+
+    renderClientRosterPage();
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
-  test("renders a delayed success after the timeout window", async () => {
-    vi.useFakeTimers();
+  test("retry triggers a page refresh", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockRejectedValueOnce(new Error("Temporary roster failure."));
+    const reloadSpy = vi.spyOn(pageReload, "reloadPage").mockImplementation(() => undefined);
 
-    renderClientRosterPage("success after 10 seconds");
-
-    expect(await screen.findByRole("status", { name: "Loading Client Roster" })).toBeInTheDocument();
-
-    await vi.advanceTimersByTimeAsync(loaderTimeoutTestingConfig.timeoutMs);
-
-    expect(await screen.findByText(mockedClientListings[0].clientName)).toBeInTheDocument();
-  });
-
-  test("renders a delayed error after the timeout window", async () => {
-    vi.useFakeTimers();
-
-    renderClientRosterPage("error after 10 seconds");
-
-    expect(await screen.findByRole("status", { name: "Loading Client Roster" })).toBeInTheDocument();
-
-    await vi.advanceTimersByTimeAsync(loaderTimeoutTestingConfig.timeoutMs);
-
-    expect(await screen.findByRole("alert")).toBeInTheDocument();
-  });
-
-  test("retries the roster request when the retry action is clicked", async () => {
-    const reloadSpy = vi.mocked(window.location.reload);
-
-    renderClientRosterPage("error");
+    renderClientRosterPage();
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
 

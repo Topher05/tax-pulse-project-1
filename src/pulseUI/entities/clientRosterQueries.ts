@@ -1,9 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import {
-  getLoaderTimeoutMode,
-  loadClientRosterForLoaderTimeout,
-} from "../shared/loaderTimeoutUtility.ts";
+import { caseApiGetJson } from "../shared/caseApi.ts";
 import type { ClientRosterRow } from "./clientRoster.ts";
 
 export interface ClientRosterApiRow {
@@ -17,12 +14,26 @@ export interface ClientRosterApiRow {
 
 export const clientRosterQueryKey = ["clientRoster"] as const;
 
-export function useClientRosterQuery() {
-  const loaderTimeoutMode = getLoaderTimeoutMode();
+function toClientRosterRow(row: ClientRosterApiRow): ClientRosterRow {
+  return {
+    id: row.id,
+    clientName: row.clientName,
+    filingSummary: row.filingSummary,
+    ytdIncome: row.ytdIncome,
+    estimatedTax: row.estimatedTax,
+    quarterlyStatus: row.quarterlyStatus,
+  };
+}
 
-  // TODO: Remove mock integration before PR.
+export async function fetchClientRoster(): Promise<readonly ClientRosterRow[]> {
+  const payload = await caseApiGetJson<readonly ClientRosterApiRow[]>("/v1/clients");
+
+  return payload.map(toClientRosterRow);
+}
+
+export function useClientRosterQuery() {
   return useQuery({
-    queryKey: [...clientRosterQueryKey, loaderTimeoutMode] as const,
-    queryFn: () => loadClientRosterForLoaderTimeout(loaderTimeoutMode),
+    queryKey: clientRosterQueryKey,
+    queryFn: fetchClientRoster,
   });
 }

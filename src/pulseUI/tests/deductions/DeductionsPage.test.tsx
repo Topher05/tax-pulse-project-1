@@ -4,6 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
+import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 
 function getTodayDateString(): string {
@@ -20,12 +21,19 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  localStorage.clear();
   cleanup();
 });
 
+function renderDeductionsPage() {
+  localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+
+  render(<RouterProvider router={createPulseRouter(["/deductions"])} />);
+}
+
 describe("DeductionsPage", () => {
   test("renders the scaffolded deductions screen", async () => {
-    render(<RouterProvider router={createPulseRouter(["/deductions"])} />);
+    renderDeductionsPage();
 
     expect(
       await screen.findByRole("heading", { name: "Deductions & Expenses", level: 1 }),
@@ -53,7 +61,7 @@ describe("DeductionsPage", () => {
   });
 
   test("opens the placeholder modal shell from the add button", async () => {
-    render(<RouterProvider router={createPulseRouter(["/deductions"])} />);
+    renderDeductionsPage();
 
     fireEvent.click(await screen.findByRole("button", { name: "Add Deduction" }));
 

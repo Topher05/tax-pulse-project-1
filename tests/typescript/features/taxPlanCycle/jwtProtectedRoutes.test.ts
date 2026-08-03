@@ -173,10 +173,7 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
       expect(createResponse.status).toBe(202);
       expect(readResponse.status).toBe(200);
       expect(auditResponse.status).toBe(200);
-      await expect(readResponse.json()).resolves.toEqual({
-        ...cycle,
-        scenarios: [],
-      });
+      await expect(readResponse.json()).resolves.toEqual(cycle);
       expect(create).toHaveBeenCalledWith({
         ...validCreateBody,
         tenantId: "tenant-from-jwt",

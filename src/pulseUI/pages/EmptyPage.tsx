@@ -1,3 +1,4 @@
+import { reloadPage } from "../shared/pageReload.ts";
 import type { CSSProperties } from "react";
 
 const pageStyle: CSSProperties = {
@@ -89,7 +90,7 @@ export function EmptyPage() {
           <h2 style={titleStyle}>No data generated</h2>
           <p style={descriptionStyle}>Please try a refresh.</p>
         </div>
-        <button style={actionStyle} type="button" onClick={() => window.location.reload()}>
+        <button style={actionStyle} type="button" onClick={reloadPage}>
           Refresh
         </button>
       </div>
