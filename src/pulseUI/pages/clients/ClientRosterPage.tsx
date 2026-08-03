@@ -1,10 +1,10 @@
-import { RefreshCw } from "lucide-react";
-
 import styles from "./ClientRosterPage.module.css";
-import { EmptyState } from "../../components/EmptyState.tsx";
+import { ClientRosterSkeletonLoader } from "../../components/ClientRosterSkeletonLoader.tsx";
 import { DataTable } from "../../components/DataTable.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
+import { RetryToolbar } from "../../components/RetryToolbar.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
+import { EmptyPage } from "../EmptyPage.tsx";
 import type { ClientRosterRow } from "../../entities/clientRoster.ts";
 import { useClientRosterQuery } from "../../entities/clientRosterQueries.ts";
 
@@ -12,69 +12,6 @@ export type { ClientRosterRow } from "../../entities/clientRoster.ts";
 
 export interface ClientRosterScreenProps {
   clients: readonly ClientRosterRow[];
-}
-
-function ClientRosterLoadingState() {
-  const skeletonRows = Array.from({ length: 4 }, (_, index) => index);
-
-  return (
-    <PanelCard
-      className={styles.stateCard}
-      title="Loading Client Roster"
-      description="Fetching the latest roster for the current firm."
-    >
-      <div className={styles.skeletonTable} role="status" aria-label="Loading Client Roster">
-        <span className="srOnly">Loading Client Roster</span>
-        <div className={styles.skeletonHeader}>
-          <span className={styles.skeletonBlock} />
-          <span className={styles.skeletonBlock} />
-          <span className={styles.skeletonBlock} />
-          <span className={styles.skeletonBlock} />
-          <span className={styles.skeletonBlock} />
-          <span className={styles.skeletonBlock} />
-        </div>
-        {skeletonRows.map((row) => (
-          <div className={styles.skeletonRow} key={row}>
-            <span className={styles.skeletonBlock} />
-            <span className={styles.skeletonBlock} />
-            <span className={styles.skeletonBlock} />
-            <span className={styles.skeletonBlock} />
-            <span className={styles.skeletonBlock} />
-            <span className={styles.skeletonBlock} />
-          </div>
-        ))}
-      </div>
-    </PanelCard>
-  );
-}
-
-function ClientRosterEmptyState() {
-  return (
-    <EmptyState
-      title="No clients yet"
-      description="This firm does not have any clients in the roster yet."
-    />
-  );
-}
-
-function ClientRosterErrorState({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry: () => void;
-}) {
-  return (
-    <div role="alert">
-      <EmptyState
-        title="Client roster could not load"
-        description={message}
-        actionLabel="Retry"
-        onAction={onRetry}
-        icon={<RefreshCw />}
-      />
-    </div>
-  );
 }
 
 function formatCurrency(value: number): string {
@@ -152,29 +89,31 @@ export function ClientRosterScreen({ clients }: ClientRosterScreenProps) {
 export function ClientRosterPage() {
   const clientRosterQuery = useClientRosterQuery();
 
+  // TODO: Remove mock integration before PR.
   if (clientRosterQuery.isPending) {
-    return <ClientRosterLoadingState />;
+    return <ClientRosterSkeletonLoader />;
   }
 
   if (clientRosterQuery.isError) {
     return (
-      <ClientRosterErrorState
-        message={
-          clientRosterQuery.error instanceof Error
-            ? clientRosterQuery.error.message
-            : "Client roster request failed."
-        }
-        onRetry={() => {
-          void clientRosterQuery.refetch();
-        }}
-      />
+      <div role="alert">
+        <RetryToolbar
+          title="Client roster could not load"
+          description={
+            clientRosterQuery.error instanceof Error
+              ? clientRosterQuery.error.message
+              : "Client roster request failed."
+          }
+          onRetry={() => window.location.reload()}
+        />
+      </div>
     );
   }
 
   const clients = clientRosterQuery.data ?? [];
 
   if (clients.length === 0) {
-    return <ClientRosterEmptyState />;
+    return <EmptyPage />;
   }
 
   return <ClientRosterScreen clients={clients} />;
