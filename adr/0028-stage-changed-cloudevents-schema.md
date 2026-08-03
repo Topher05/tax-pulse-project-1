@@ -35,6 +35,11 @@ This decision does not introduce SNS publishing, SQS consumption, database chang
 a separate case status. Those behaviors remain owned by later event-driven workflow
 tickets.
 
+SCRUM-131 later implements the first publisher against this contract as a plain
+TypeScript service method that validates the CloudEvent with
+`stageChangedCloudEventSchemaV1` before publishing the JSON body to SNS. That follow-on
+work uses the same v1 event shape and does not revise this schema decision.
+
 ## Alternatives considered
 - Publish an unversioned custom JSON object, which would be smaller but weaker for
   consumer compatibility.

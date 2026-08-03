@@ -5,6 +5,62 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira131 - SCRUM-131
+
+**Branch:** `dylan-harle-jira131`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-131
+
+**Summary:** Publish stage-changed events to SNS.
+
+**Description:** As a Backend Developer, I want each stage transition to publish a stage-changed event, so that downstream consumers react without polling.
+
+**Acceptance Criteria:**
+
+- Advancing a case publishes a stage-changed event to an SNS topic.
+- The published event validates against the CloudEvents schema.
+- The publisher runs as a plain service method, not a cloud runtime, in this sprint.
+
+**Code Connection:**
+
+- Added an injected plain TypeScript stage-changed event publisher for successful Tax Plan Cycle transitions.
+- Built SNS message bodies from the SCRUM-130 CloudEvents v1 contract and validated them with `stageChangedCloudEventSchemaV1` before publishing.
+- Passed the route's known `fromStage` into the transition controller so the publisher can emit `from_stage` without an extra read.
+- Wired production composition to an SNS client and `TAXPULSE_STAGE_CHANGED_TOPIC_ARN`.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration.
+- Builds directly on SCRUM-130, `docs/stage-changed-event.md`, and ADR-0028.
+- Prepares SCRUM-132 consumers to receive validated stage-changed events without adding SQS consumption, Lambda runtime behavior, an outbox table, or a separate case status.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `.env.example`
+- `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts`
+- `tests/typescript/features/taxPlanCycle/transitionController.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `docs/stage-changed-event.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/transitions.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts` passed.
+- `npm run typecheck` passed.
+- `git diff --check` passed with line-ending warnings only.
+- `npm test` passed typecheck and the SCRUM-131 tests, then failed in existing non-SCRUM-131 coverage: `scenario.test.ts` and `scenarioRepository.test.ts` still receive `Date` for `created_at` where the schema expects a string, `scenarioMigration.test.ts` timed out after 30000ms, `jwtProtectedRoutes.test.ts` still expects `scenarios: []` on a read response that omits it, and `tenantsMigration.test.ts` / `tenantLoginResolver.test.ts` hit PostgreSQL connection refusals on port 54318.
+
 ## development-scrum130 - SCRUM-130
 
 **Branch:** `development`
