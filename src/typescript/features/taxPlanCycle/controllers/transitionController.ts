@@ -5,10 +5,16 @@ import type {
   TaxPlanCycleTransitionInput,
 } from "../repositories/repository.js";
 import type { TaxPlanCycleQueueCacheInvalidator } from "../infrastructure/queueCache.js";
+import type { StageChangedEventPublisher } from "../infrastructure/stageChangedSnsPublisher.js";
+
+export interface TaxPlanCycleTransitionControllerInput
+  extends TaxPlanCycleTransitionInput {
+  fromStage: TaxPlanCycle["stage"];
+}
 
 export interface TaxPlanCycleTransitionController {
   transition(
-    input: TaxPlanCycleTransitionInput,
+    input: TaxPlanCycleTransitionControllerInput,
   ): Promise<TaxPlanCycle | null> | TaxPlanCycle | null;
   findByCaseId(
     input: TaxPlanCycleReadInput,
@@ -17,6 +23,7 @@ export interface TaxPlanCycleTransitionController {
 
 export interface TaxPlanCycleTransitionControllerOptions {
   queueCacheInvalidator?: TaxPlanCycleQueueCacheInvalidator;
+  stageChangedEventPublisher?: StageChangedEventPublisher;
 }
 
 export function createTaxPlanCycleTransitionController(
@@ -27,7 +34,21 @@ export function createTaxPlanCycleTransitionController(
     transition: async (input) => {
       const transitioned = await repository.transition(input);
 
-      if (transitioned && options.queueCacheInvalidator) {
+      if (!transitioned) {
+        return null;
+      }
+
+      if (options.stageChangedEventPublisher) {
+        await options.stageChangedEventPublisher.publishStageChanged({
+          tenantId: input.tenantId,
+          caseId: input.caseId,
+          fromStage: input.fromStage,
+          toStage: input.toStage,
+          actor: input.actor,
+        });
+      }
+
+      if (options.queueCacheInvalidator) {
         // Cache invalidation is best-effort because Redis is disposable state.
         try {
           await options.queueCacheInvalidator.invalidateAfterStageChange({
