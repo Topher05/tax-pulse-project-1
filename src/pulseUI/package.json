@@ -11,6 +11,7 @@
     "build": "vite build --config vite.config.ts",
     "dev": "vite --config vite.config.ts",
     "test": "vitest run --config vitest.config.ts",
+    "test:ax": "vitest run --config vitest.config.ts tests/deductions/mockDeductionsPage.test.tsx",
     "test:cov": "vitest run --config vitest.config.ts --coverage",
     "typecheck": "tsc -p tsconfig.pulseUI.json --noEmit"
   },
@@ -37,6 +38,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^5.8.0",
     "vite": "5.4.21",
-    "vitest": "^2.1.9"
+    "vitest": "^2.1.9",
+    "vitest-axe": "^0.1.0"
   }
 }

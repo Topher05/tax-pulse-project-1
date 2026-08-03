@@ -17,7 +17,7 @@ export function CurrentCaseSelector({
 }: CurrentCaseSelectorProps) {
   const queueQuery = useQuery({
     queryKey: taxPlanCycleQueueQueryKey,
-    queryFn: fetchTaxPlanCycleQueue,
+    queryFn: () => fetchTaxPlanCycleQueue(),
   });
 
   const cases = queueQuery.data ?? [];

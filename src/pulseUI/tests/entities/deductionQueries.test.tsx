@@ -26,6 +26,7 @@ const samplePayload = {
   tax_impact: "4625.00",
   deleted: false,
 };
+const samplePayloads = [samplePayload] as const;
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -33,7 +34,7 @@ afterEach(() => {
 
 describe("useDeductionsQuery", () => {
   test("parses the deductions payload returned by the case API", async () => {
-    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(samplePayload as never);
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(samplePayloads as never);
     const wrapper = ({ children }: { children: ReactNode }) => (
       createElement(
         QueryClientProvider,
@@ -58,5 +59,51 @@ describe("useDeductionsQuery", () => {
       },
     ]);
     expect(result.current.data?.[0]?.id).toBe("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01");
+  });
+
+  test("accepts zero-valued amounts and rejects malformed numeric strings", async () => {
+    const zeroPayload = [
+      {
+        ...samplePayload,
+        amount: "0",
+        tax_impact: "0.00",
+      },
+    ];
+
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(zeroPayload as never);
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      createElement(
+        QueryClientProvider,
+        { client: createPulseQueryClient() },
+        children,
+      )
+    );
+
+    const { result } = renderHook(() => useDeductionsQuery(sampleCaseId), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual([
+      {
+        ...samplePayload,
+        amount: 0,
+        tax_impact: 0,
+      },
+    ]);
+
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      {
+        ...samplePayload,
+        amount: "abc",
+      },
+    ] as never);
+
+    const malformedHook = renderHook(() => useDeductionsQuery(sampleCaseId), { wrapper });
+
+    await waitFor(() => {
+      expect(malformedHook.result.current.isError).toBe(true);
+    });
   });
 });
