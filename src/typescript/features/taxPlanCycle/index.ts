@@ -20,6 +20,16 @@ export {
   type TaxPlanCycleStage,
 } from "./taxPlanCycle.js";
 export {
+  stageChangedCloudEventSchemaV1,
+  stageChangedEventDataSchema,
+  stageChangedEventDataSchemaV1,
+  stageChangedEventSchemaVersion,
+  stageChangedEventSource,
+  stageChangedEventType,
+  type StageChangedCloudEventV1,
+  type StageChangedEventDataV1,
+} from "./stageChangedEvent.js";
+export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
   type TaxPlanCycleInsertInput,
@@ -145,3 +155,16 @@ export {
   type TaxCalculationEngineResult,
   type ScenarioComparisonEngineRequest,
 } from "./infrastructure/engineClient.js";
+export {
+  quarterlyEstimateQuarterSchema,
+  quarterlyEstimateReadParamsSchema,
+  quarterlyEstimateRowsSchema,
+  quarterlyEstimateSchema,
+  type QuarterlyEstimateQuarter,
+  type QuarterlyEstimateRow,
+  type QuarterlyEstimateRows,
+} from "../quarterlyPayments/repositories/quarterlyPayments.js";
+export {
+  createQuarterlyPaymentsRouter,
+  type CreateQuarterlyPaymentsRouterOptions,
+} from "../quarterlyPayments/routes.js";

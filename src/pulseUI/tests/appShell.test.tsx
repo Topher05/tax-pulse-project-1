@@ -133,4 +133,31 @@ describe("Pulse UI app shell", () => {
 
     expect(await screen.findByRole("heading", { name: "Income" })).toBeInTheDocument();
   });
+
+  test("renders plan tool nav links without search state while routing is disabled", async () => {
+    renderShell("/cycles/queue");
+
+    const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
+
+    expect(within(primaryNav).getByRole("link", { name: "Scenario Planner" })).toHaveAttribute(
+      "href",
+      "/scenarios",
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Income" })).toHaveAttribute(
+      "href",
+      "/income",
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Quarterly Payments" })).toHaveAttribute(
+      "href",
+      "/quarterly-payments",
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Dashboard" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Firm Settings" })).toHaveAttribute(
+      "href",
+      "/firm/settings",
+    );
+  });
 });

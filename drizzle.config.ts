@@ -12,7 +12,7 @@ if (!connectionString) {
 export default defineConfig({
   dialect: "postgresql",
   schema: "./src/typescript/shared/database/schema.ts",
-  out: "./src/typescript/db/drizzle-migrations",
+  out: "./src/typescript/shared/database/drizzle-migrations",
   migrations: {
     table: 'tax_pulse_drizzle_migration_log',
   },

@@ -10,13 +10,13 @@ export class CaseApiError extends Error {
 }
 
 function getCaseApiBaseUrl(): string {
-  const baseUrl = import.meta.env.VITE_CASE_API_BASE_URL?.trim();
+  const baseUrl = import.meta.env.CASE_SERVICE_BASE_URL?.trim();
 
-  if (baseUrl && baseUrl.length > 0) {
-    return baseUrl.replace(/\/+$/, "");
+  if (!baseUrl) {
+    throw new Error("CASE_SERVICE_BASE_URL is required for Pulse UI case API requests.");
   }
 
-  return "http://localhost:3000";
+  return baseUrl.replace(/\/+$/, "");
 }
 
 function toCaseApiUrl(path: string): string {

@@ -1,0 +1,79 @@
+.page {
+  display: grid;
+  gap: 1rem;
+}
+
+.metricGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.contentGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.fullWidthCard {
+  width: 100%;
+}
+
+.greenValue {
+  color: #22c55e;
+}
+
+.amberValue {
+  color: #f59e0b;
+}
+
+.greenValue,
+.amberValue {
+  font-variant-numeric: tabular-nums;
+}
+
+.timelineList {
+  display: grid;
+  gap: 0.85rem;
+  list-style: none;
+}
+
+.tbdCard {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 220px;
+  place-items: center;
+  border: 1px dashed var(--pulse-border-strong);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  text-align: center;
+}
+
+.tbdLabel {
+  color: var(--pulse-accent-light);
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tbdCopy {
+  margin: 0;
+  color: var(--pulse-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  max-width: 24ch;
+}
+
+@media (max-width: 1080px) {
+  .metricGrid,
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .timelineList {
+    gap: 0.7rem;
+  }
+}
