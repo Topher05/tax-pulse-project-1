@@ -1,7 +1,10 @@
 import { Plus, CircleCheckBig, HandCoins, RefreshCw, ShieldAlert } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
-import { DeductionEntryForm } from "../../components/DeductionEntryForm.tsx";
+import {
+  DeductionEntryForm,
+  type DeductionEntryFormValues,
+} from "../../components/DeductionEntryForm.tsx";
 import { CurrentCaseSelector } from "../../components/CurrentCaseSelector.tsx";
 import { EmptyState } from "../../components/EmptyState.tsx";
 import { MetricCard } from "../../components/MetricCard.tsx";
@@ -171,6 +174,9 @@ export function DeductionsPage() {
   const contextControl = <CurrentCaseSelector caseId={caseId} onCaseIdChange={setCaseId} />;
   const [isAddDeductionModalOpen, setIsAddDeductionModalOpen] = useState(false);
   const deductionsQuery = useDeductionsQuery(caseId);
+  const createDeduction = async (_payload: DeductionEntryFormValues) => {
+    // TODO Wire this typed create boundary to the deductions mutation in SCRUM-115.
+  };
 
   if (caseId === null || hasInvalidCaseId) {
     return (
@@ -193,7 +199,10 @@ export function DeductionsPage() {
       : "data";
 
   const modal = isAddDeductionModalOpen ? (
-    <DeductionEntryForm onClose={() => setIsAddDeductionModalOpen(false)} />
+    <DeductionEntryForm
+      onClose={() => setIsAddDeductionModalOpen(false)}
+      onCreate={createDeduction}
+    />
   ) : null;
 
   return (
