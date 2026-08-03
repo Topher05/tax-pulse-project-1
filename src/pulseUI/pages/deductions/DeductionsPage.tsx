@@ -1,13 +1,17 @@
-import { Plus, CircleCheckBig, HandCoins, ShieldAlert } from "lucide-react";
+import { Plus, CircleCheckBig, HandCoins, RefreshCw, ShieldAlert } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { DeductionEntryForm } from "../../components/DeductionEntryForm.tsx";
 import { CurrentCaseSelector } from "../../components/CurrentCaseSelector.tsx";
+import { EmptyState } from "../../components/EmptyState.tsx";
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { PlanToolCaseGate } from "../../components/PlanToolCaseGate.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
-import { useDeductionsQuery } from "../../entities/deductionQueries.ts";
+import {
+  type DeductionQueryRecord,
+  useDeductionsQuery,
+} from "../../entities/deductionQueries.ts";
 import { usePlanToolCase, useSetPlanToolCaseId } from "../../shared/usePlanToolCase.ts";
 import styles from "./DeductionsPage.module.css";
 
@@ -19,18 +23,85 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function DeductionsLoadingState() {
+  const skeletonRows = Array.from({ length: 5 }, (_, index) => index);
+
+  return (
+    <PanelCard
+      title="Loading deductions"
+      description="Fetching the selected case's deduction records."
+    >
+      <div className={styles.skeletonTable} role="status" aria-label="Loading deductions">
+        <span className="srOnly">Loading deductions</span>
+        <div className={styles.skeletonHeader}>
+          <span className={styles.skeletonBlock} />
+          <span className={styles.skeletonBlock} />
+          <span className={styles.skeletonBlock} />
+        </div>
+        {skeletonRows.map((row) => (
+          <div className={styles.skeletonRow} key={row}>
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+          </div>
+        ))}
+      </div>
+    </PanelCard>
+  );
+}
+
+function DeductionsEmptyState() {
+  return (
+    <EmptyState
+      title="No deductions yet"
+      description="This case has no recorded deductions."
+      icon={<HandCoins />}
+    />
+  );
+}
+
+function DeductionsErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div role="alert">
+      <EmptyState
+        title="Deductions could not load"
+        description={message}
+        actionLabel="Retry"
+        onAction={onRetry}
+        icon={<RefreshCw />}
+      />
+    </div>
+  );
+}
+
 function DeductionsScreen({
   deductions,
   contextControl,
   queryState,
   onAddDeduction,
+  onRetry,
+  errorMessage,
 }: {
-  deductions: readonly { amount: number }[];
+  deductions: readonly DeductionQueryRecord[];
   contextControl: ReactNode;
-  queryState: "loading" | "error" | "data";
+  queryState: "loading" | "error" | "empty" | "data";
   onAddDeduction: () => void;
+  onRetry: () => void;
+  errorMessage?: string;
 }) {
   const totalDeductions = deductions.reduce((sum, deduction) => sum + deduction.amount, 0);
+  const estimatedTaxSavings = deductions.reduce(
+    (sum, deduction) => sum + deduction.tax_impact,
+    0,
+  );
 
   return (
     <div className={styles.page} data-deductions-query-state={queryState}>
@@ -60,7 +131,7 @@ function DeductionsScreen({
         />
         <MetricCard
           label="Estimated Tax Savings"
-          value="$950.55"
+          value={formatCurrency(estimatedTaxSavings)}
           caption=""
           tone="green"
           icon={<CircleCheckBig aria-hidden="true" />}
@@ -75,9 +146,19 @@ function DeductionsScreen({
         />
       </section>
 
-      <PanelCard title={null} description={null}>
-        <p className={styles.stateCopy}>Deduction table wiring is disabled pending scrum-115.</p>
-      </PanelCard>
+      {queryState === "loading" ? <DeductionsLoadingState /> : null}
+      {queryState === "empty" ? <DeductionsEmptyState /> : null}
+      {queryState === "error" ? (
+        <DeductionsErrorState
+          message={errorMessage ?? "Deductions request failed."}
+          onRetry={onRetry}
+        />
+      ) : null}
+      {queryState === "data" ? (
+        <PanelCard title={null} description={null}>
+          <p className={styles.stateCopy}>Deduction table wiring is disabled pending scrum-115.</p>
+        </PanelCard>
+      ) : null}
 
       <footer className={styles.pageFooter}>Track deductible expenses to reduce your tax liability</footer>
     </div>
@@ -107,6 +188,8 @@ export function DeductionsPage() {
     ? "loading"
     : deductionsQuery.isError
       ? "error"
+      : deductionsQuery.data?.length === 0
+        ? "empty"
       : "data";
 
   const modal = isAddDeductionModalOpen ? (
@@ -122,6 +205,14 @@ export function DeductionsPage() {
         onAddDeduction={() => {
           setIsAddDeductionModalOpen(true);
         }}
+        onRetry={() => {
+          void deductionsQuery.refetch();
+        }}
+        errorMessage={
+          deductionsQuery.error instanceof Error
+            ? deductionsQuery.error.message
+            : "Deductions request failed."
+        }
       />
       {modal}
     </>
