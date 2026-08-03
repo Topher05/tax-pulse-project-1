@@ -8,10 +8,12 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import * as caseApi from "../../shared/caseApi.ts";
 import {
   QuarterlyPaymentsScreen,
   type QuarterlyEstimateRecord,
 } from "../../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
+import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -26,59 +28,64 @@ function buildFixtureEstimates(): readonly QuarterlyEstimateRecord[] {
   return [
     {
       id: "QP-001",
+      quarter: "Q1",
+      taxYear: "2026",
       dueDate: "2026-04-15",
       estimatedPayment: 3620,
-      withholdingApplied: 2140,
+      withholdingApplied: 3620,
       status: "Paid",
     },
     {
       id: "QP-002",
+      quarter: "Q2",
+      taxYear: "2026",
       dueDate: "2026-06-15",
       estimatedPayment: 3620,
-      withholdingApplied: 2060,
+      withholdingApplied: 3620,
       status: "Paid",
     },
     {
       id: "QP-003",
+      quarter: "Q3",
+      taxYear: "2026",
       dueDate: "2026-09-15",
-      estimatedPayment: 3620,
-      withholdingApplied: 1820,
-      status: "Due Soon",
+      estimatedPayment: 3400,
+      withholdingApplied: 0,
+      status: "Due",
     },
     {
       id: "QP-004",
+      quarter: "Q4",
+      taxYear: "2026",
       dueDate: "2027-01-15",
-      estimatedPayment: 3740,
-      withholdingApplied: 1640,
-      status: "Upcoming",
-    },
-    {
-      id: "QP-005",
-      dueDate: "2027-04-15",
-      estimatedPayment: 3740,
-      withholdingApplied: 1680,
-      status: "Projected",
-    },
-    {
-      id: "QP-006",
-      dueDate: "2027-06-15",
-      estimatedPayment: 3740,
-      withholdingApplied: 1740,
-      status: "Projected",
-    },
-    {
-      id: "QP-007",
-      dueDate: "2027-09-15",
-      estimatedPayment: 3860,
-      withholdingApplied: 1790,
-      status: "Projected",
+      estimatedPayment: 3960,
+      withholdingApplied: 0,
+      status: "Due",
     },
   ] as const;
+}
+
+function buildTaxPlanCycleQueuePayload() {
+  return [
+    {
+      id: taxPlanCycleRows[1].id,
+      client_id: taxPlanCycleRows[1].clientId,
+      stage: taxPlanCycleRows[1].stage,
+      owner: taxPlanCycleRows[1].owner,
+      priority: taxPlanCycleRows[1].priority,
+      due_date: taxPlanCycleRows[1].dueDate.toISOString().slice(0, 10),
+      on_hold: taxPlanCycleRows[1].onHold,
+      hold_reason: taxPlanCycleRows[1].holdReason,
+      is_overdue: false,
+      updated_at: "2026-07-30T00:00:00.000Z",
+    },
+  ];
 }
 
 describe("QuarterlyPaymentsPage", () => {
   test("renders the quarterly payments route", async () => {
     localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(buildTaxPlanCycleQueuePayload() as never);
 
     render(
       <QueryClientProvider client={createPulseQueryClient()}>
@@ -89,31 +96,30 @@ describe("QuarterlyPaymentsPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Quarterly Payments", level: 2 }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("combobox", { name: "Case ID" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: /Select a case to load/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Quarter Timeline", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Select a case to load quarterly payments/i })).toBeInTheDocument();
   });
 
   test("renders the read-only timeline and withholding placeholder", () => {
     render(<QuarterlyPaymentsScreen quarterlyEstimates={buildFixtureEstimates()} />);
 
-    expect(screen.getByRole("heading", { name: "Quarter Timeline", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Timeline", level: 2 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Withholding Progress", level: 2 })).toBeInTheDocument();
-    expect(screen.getByText("TBD")).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Quarter timeline" })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(7);
+    expect(screen.getAllByRole("listitem")).toHaveLength(4);
 
     const firstItem = screen.getAllByRole("listitem")[0]!;
     expect(within(firstItem).getByText("Apr")).toBeInTheDocument();
     expect(within(firstItem).getByText("15")).toBeInTheDocument();
-    expect(within(firstItem).getByText("Estimated quarterly payment")).toBeInTheDocument();
-    expect(within(firstItem).getByText("Withholding applied: $2,140")).toBeInTheDocument();
+    expect(within(firstItem).getByText("Q1 2026 Estimation")).toBeInTheDocument();
+    expect(within(firstItem).getByText("Withholding applied: $3,620")).toBeInTheDocument();
     expect(within(firstItem).getByText("Paid")).toBeInTheDocument();
 
-    expect(screen.getByText("$25,940")).toBeInTheDocument();
-    expect(screen.getByText("$12,870")).toBeInTheDocument();
-    expect(screen.getByText("$13,070")).toBeInTheDocument();
-    expect(screen.queryByText("remaining")).not.toBeInTheDocument();
+    expect(screen.getByText("$14,600")).toBeInTheDocument();
+    expect(screen.getByText("$7,240")).toBeInTheDocument();
+    expect(screen.getByText("$7,360")).toBeInTheDocument();
+    expect(screen.getByText("49.6%")).toBeInTheDocument();
+    expect(screen.getByText(/\$7,240.*\$14,600.*withholdings\./)).toBeInTheDocument();
   });
 
   test("does not scaffold payment recording actions", () => {

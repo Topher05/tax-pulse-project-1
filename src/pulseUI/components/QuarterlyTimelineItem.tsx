@@ -1,12 +1,15 @@
-import { CircleCheckBig, Clock3, ShieldAlert } from "lucide-react";
+import { CircleCheckBig, ShieldAlert } from "lucide-react";
 
 import styles from "./QuarterlyTimelineItem.module.css";
 import { StatusPill } from "./StatusPill.tsx";
 
-export type QuarterlyEstimateStatus = "Paid" | "Due Soon" | "Upcoming" | "Projected";
+export type QuarterlyEstimateQuarter = "Q1" | "Q2" | "Q3" | "Q4";
+export type QuarterlyEstimateStatus = "Paid" | "Due";
 
 export interface QuarterlyEstimateRecord {
   id: string;
+  taxYear: string;
+  quarter: QuarterlyEstimateQuarter;
   dueDate: string;
   estimatedPayment: number;
   withholdingApplied: number;
@@ -19,16 +22,12 @@ export interface QuarterlyTimelineItemProps {
 
 const quarterlyEstimateStatusTone: Record<QuarterlyEstimateStatus, "success" | "warning" | "info" | "neutral"> = {
   Paid: "success",
-  "Due Soon": "warning",
-  Upcoming: "info",
-  Projected: "neutral",
+  Due: "warning",
 };
 
 const quarterlyEstimateStatusIcon: Record<QuarterlyEstimateStatus, typeof CircleCheckBig> = {
   Paid: CircleCheckBig,
-  "Due Soon": ShieldAlert,
-  Upcoming: Clock3,
-  Projected: Clock3,
+  Due: ShieldAlert,
 };
 
 function formatCurrency(value: number): string {
@@ -56,6 +55,7 @@ function formatDay(dateValue: string): string {
 export function QuarterlyTimelineItem({ estimate }: QuarterlyTimelineItemProps) {
   const statusTone = quarterlyEstimateStatusTone[estimate.status];
   const StatusIcon = quarterlyEstimateStatusIcon[estimate.status];
+  const estimateLabel = `${estimate.quarter} ${estimate.taxYear} Estimation`;
 
   return (
     <li className={styles.item}>
@@ -67,7 +67,7 @@ export function QuarterlyTimelineItem({ estimate }: QuarterlyTimelineItemProps) 
       <div className={styles.dataSection}>
         <span className={styles.statusDot} data-tone={statusTone} aria-hidden="true" />
         <div className={styles.dataCopy}>
-          <p className={styles.mainText}>Estimated quarterly payment</p>
+          <p className={styles.mainText}>{estimateLabel}</p>
           <p className={styles.subText}>
             Withholding applied: {formatCurrency(estimate.withholdingApplied)}
           </p>

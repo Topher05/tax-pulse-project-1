@@ -22,6 +22,10 @@ import {
   deductionTableRowsSchema,
 } from "./features/deductions/repositories/deduction.js";
 import {
+  quarterlyEstimateReadParamsSchema,
+  quarterlyEstimateRowsSchema,
+} from "./features/quarterlyPayments/repositories/quarterlyPayments.js";
+import {
   scenarioModelingRequestSchema,
 } from "./features/taxPlanCycle/scenarioModeling.js";
 import { taxPlanCycleCreateResultSchema } from "./features/taxPlanCycle/index.js";
@@ -91,6 +95,14 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "DeductionRows",
     schema: deductionTableRowsSchema,
+  },
+  {
+    name: "QuarterlyEstimateReadParams",
+    schema: quarterlyEstimateReadParamsSchema,
+  },
+  {
+    name: "QuarterlyEstimateRows",
+    schema: quarterlyEstimateRowsSchema,
   },
   {
     name: "AuthMfaLoginRequest",
@@ -335,6 +347,11 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
     "caseId",
   );
   const deductionRowsResponseSchema = toOpenApiSchema(deductionTableRowsSchema);
+  const quarterlyEstimateParamsSchema = requireObjectProperty(
+    toOpenApiSchema(quarterlyEstimateReadParamsSchema),
+    "caseId",
+  );
+  const quarterlyEstimateRowsResponseSchema = toOpenApiSchema(quarterlyEstimateRowsSchema);
   const authMfaLoginRequestOpenApiSchema = toOpenApiSchema(
     authMfaLoginRequestSchema,
   );
@@ -1060,6 +1077,62 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     title: "Tax Engine Unavailable",
                     status: 502,
                     detail: "The liability engine request failed after retries.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/tax-plan-cycles/{caseId}/quarterly-estimates": {
+        get: {
+          operationId: "readQuarterlyEstimates",
+          tags: ["Core Case Service"],
+          summary: "Read the quarterly estimates for a case",
+          description:
+            "Returns the read-only quarterly estimate schedule for the requested case as a JSON array.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Synthetic UUID case identifier scoped by the request tenant.",
+              schema: quarterlyEstimateParamsSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+            },
+          ],
+          responses: {
+            "200": {
+              description: "The quarterly estimates were returned.",
+              content: {
+                "application/json": {
+                  schema: quarterlyEstimateRowsResponseSchema,
+                  example: [
+                    {
+                      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+                      quarter: "Q1",
+                      due_date: "2026-04-15",
+                      estimated_payment: "3620.00",
+                      withholding_applied: "2140.00",
+                      covered_amount: "2140.00",
+                      remaining_due: "1480.00",
+                    },
+                  ],
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
                   },
                 },
               },
