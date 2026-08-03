@@ -918,3 +918,57 @@ sequenceDiagram
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
+
+## caleb-latimer-jira116 - SCRUM-116
+
+**Branch:** `caleb-latimer-jira116`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-116
+
+**Summary:** Add accessibility and a component test for the Deductions screen
+
+**Description:** As a Frontend Developer, I want the Deductions screen to pass an axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the table renders rows and the empty state for no data.
+- The form's inputs carry accessible labels and the test asserts a validation error is announced.
+
+**Code Connection:**
+
+- `src/pulseUI/vitest.setup.ts`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.tsx`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.test.tsx`
+- `src/pulseUI/vitest.config.ts`
+- `src/pulseUI/package.json`
+- `adr/0027-vitest-axe-accessibility-testing.md`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Deductions screen accessibility and regression coverage
+- Real-route axe coverage for the authenticated `/deductions` screen plus a story-only mock seam for the blocked UI edge cases
+
+**Changed Files:**
+
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/vitest.setup.ts`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.tsx`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.test.tsx`
+- `src/pulseUI/vitest.config.ts`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `adr/0027-vitest-axe-accessibility-testing.md`
+- `adr/README.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- Dependency install completed with `npm.cmd --prefix src/pulseUI install --save-dev vitest-axe`.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/deductions/DeductionsPage.test.tsx"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/deductions/mockDeductionsPage.test.tsx"` passed.
