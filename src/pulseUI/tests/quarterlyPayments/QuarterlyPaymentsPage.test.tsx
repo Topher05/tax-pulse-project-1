@@ -20,7 +20,6 @@ beforeAll(() => {
 });
 
 afterEach(() => {
-  localStorage.clear();
   cleanup();
 });
 

@@ -925,6 +925,53 @@ sequenceDiagram
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
 
+
+## caleb-latimer-jira116 - SCRUM-116
+
+**Branch:** `caleb-latimer-jira116`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-116
+
+**Summary:** Add accessibility and a component test for the Deductions screen
+
+**Description:** As a Frontend Developer, I want the Deductions screen to pass an axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the table renders rows and the empty state for no data.
+- The form's inputs carry accessible labels and the test asserts a validation error is announced.
+
+**Code Connection:**
+
+- `src/pulseUI/vitest.setup.ts`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.tsx`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.test.tsx`
+- `src/pulseUI/vitest.config.ts`
+- `src/pulseUI/package.json`
+- `adr/0027-vitest-axe-accessibility-testing.md`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Deductions screen accessibility and regression coverage
+- Real-route axe coverage for the authenticated `/deductions` screen plus a story-only mock seam for the blocked UI edge cases
+
+**Changed Files:**
+
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/vitest.setup.ts`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.tsx`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.test.tsx`
+- `src/pulseUI/vitest.config.ts`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `adr/0027-vitest-axe-accessibility-testing.md`
+
+
 ## caleb-latimer-jira112 - SCRUM-112
 
 **Branch:** `caleb-latimer-jira112`
@@ -1036,10 +1083,6 @@ sequenceDiagram
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
 - `src/typescript/shared/database/seed.model.ts`
-
-**Project Scope Connection:**
-
-- React SPA - Operator & Portal Experience
 - Route-driven case context integration
 - Pulse UI deductions query boundary alignment
 - Loader-state exposure deferred to the next Jira
@@ -1236,10 +1279,17 @@ sequenceDiagram
 - `.env.example`
 - `.env`
 - `adr/0026-route-driven-case-context.md`
+
 - `adr/README.md`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
+
+
+- Dependency install completed with `npm.cmd --prefix src/pulseUI install --save-dev vitest-axe`.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/deductions/DeductionsPage.test.tsx"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/deductions/mockDeductionsPage.test.tsx"` passed.
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
 - Focused Pulse UI tests were not completed: the sandboxed command failed before Vitest started with the known Windows `EPERM` path issue, and no escalated rerun was performed.
@@ -1291,3 +1341,50 @@ sequenceDiagram
 - `npm.cmd test` in `src/pulseUI` passed: 16 test files passed, 57 tests passed.
 - `npm.cmd test` at the repository root passed: TypeScript typecheck passed, 49 Vitest files passed, 232 tests passed, 1 skipped.
 - `git diff --check` passed with no whitespace errors; Git reported only CRLF normalization warnings.
+
+## caleb-latimer-jira136 - SCRUM-136
+
+**Branch:** `caleb-latimer-jira136`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-136
+
+**Summary:** Make the queue-projection consumer idempotent
+
+**Description:** As a Backend Developer, I want the queue-projection consumer idempotent, so that a redelivered event does not double-apply.
+
+**Acceptance Criteria:**
+
+- The consumer records processed event IDs and skips duplicates.
+- Re-processing the same stage-changed event yields the same projection.
+- A test asserts an at-least-once redelivery is handled idempotently.
+
+**Code Connection:**
+
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionIdempotency.ts` adds the Redis-backed processed-event ledger with explicit `SET` semantics and tenant/consumer scoping.
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionConsumer.ts` validates stage-changed CloudEvents, short-circuits duplicate deliveries, and writes the queue projection from the source repository state.
+- `src/typescript/features/taxPlanCycle/infrastructure/queueDynamoWriter.ts` provides the DynamoDB `PutCommand` upsert adapter for the queue projection row.
+- `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts` covers the first-delivery, duplicate-delivery, and Redis-unavailable paths.
+- `tests/typescript/features/taxPlanCycle/queueDynamoWriter.test.ts` pins the DynamoDB writer command shape.
+
+**Project Scope Connection:**
+
+This ticket keeps Redis in the disposable operational-state role described by ADR-0010 and ADR-0014. The queue-read cache-aside path is unchanged; this work adds a separate idempotency ledger for the stage-changed queue consumer so redeliveries do not double-apply the projection.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionIdempotency.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueDynamoWriter.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionConsumer.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts`
+- `tests/typescript/features/taxPlanCycle/queueDynamoWriter.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- `npm.cmd test` at the repository root timed out before completion.
+- Direct Vitest launches in this Windows sandbox hit the known `EPERM: operation not permitted, lstat 'C:\Users\Exia'` path-resolution issue before tests started.

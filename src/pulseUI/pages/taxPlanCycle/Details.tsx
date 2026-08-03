@@ -14,6 +14,7 @@ import {
   fetchTaxPlanCycleDetails,
   taxPlanCycleDetailsQueryKey,
 } from "../../entities/taxPlanCycleQueries.ts";
+import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
 import { EmptyState } from "../../components/EmptyState.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
@@ -74,6 +75,7 @@ export function DetailsPage() {
   const [commentDraft, setCommentDraft] = useState("");
   const [selectedStageOverride, setSelectedStageOverride] = useState<DetailStage | null>(null);
   const stageLabelId = useId();
+  const authenticatedFetch = useAuthenticatedFetch();
 
   useEffect(() => {
     setActiveTab("Overview");
@@ -83,7 +85,7 @@ export function DetailsPage() {
 
   const detailsQuery = useQuery({
     queryKey: taxPlanCycleDetailsQueryKey(caseId),
-    queryFn: () => fetchTaxPlanCycleDetails(caseId),
+    queryFn: () => fetchTaxPlanCycleDetails(caseId, authenticatedFetch),
     enabled: caseId.length > 0,
   });
 

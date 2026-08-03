@@ -12,7 +12,6 @@ export function AppShell() {
   const [liveCalculationEnabled, setLiveCalculationEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-
   const viewTitle = getViewTitle(pathname);
 
   const handleLogout = () => {

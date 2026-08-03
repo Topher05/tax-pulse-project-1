@@ -8,12 +8,12 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
-import { DeductionsPage } from "../../pages/deductions/DeductionsPage.tsx";
 import { isUuid } from "../../shared/planToolCase.ts";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
 import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 const seededCaseId = taxPlanCycleRows[1].id;
+
 type DeductionApiRow = {
   id: string;
   case_id: string;
@@ -84,7 +84,6 @@ beforeAll(() => {
 });
 
 afterEach(() => {
-  localStorage.clear();
   cleanup();
   vi.restoreAllMocks();
 });
@@ -109,9 +108,7 @@ describe("DeductionsPage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add Deduction" })).not.toBeInTheDocument();
-    expect(
-      caseApiMock.mock.calls.some(([path]) => String(path).startsWith("/v1/cases/")),
-    ).toBe(false);
+    expect(caseApiMock.mock.calls.some(([path]) => String(path).startsWith("/v1/cases/"))).toBe(false);
   });
 
   test("fetches deductions once a valid case ID is selected and exposes loading then data state", async () => {
