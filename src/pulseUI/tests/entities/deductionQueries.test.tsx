@@ -7,7 +7,10 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import * as caseApi from "../../shared/caseApi.ts";
-import { useDeductionsQuery } from "../../entities/deductionQueries.ts";
+import {
+  createDeduction,
+  useDeductionsQuery,
+} from "../../entities/deductionQueries.ts";
 import { isUuid } from "../../shared/planToolCase.ts";
 
 const sampleCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22";
@@ -104,6 +107,43 @@ describe("useDeductionsQuery", () => {
 
     await waitFor(() => {
       expect(malformedHook.result.current.isError).toBe(true);
+    });
+  });
+
+  test("creates a deduction through the case API and parses the created row", async () => {
+    const createdPayload = {
+      ...samplePayload,
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02",
+      description: "Client education course",
+      category: "Education",
+      amount: "1200.50",
+      tax_impact: "300.13",
+    };
+    const caseApiMock = vi
+      .spyOn(caseApi, "caseApiSendJson")
+      .mockResolvedValueOnce(createdPayload as never);
+
+    await expect(
+      createDeduction(sampleCaseId, {
+        date: "2026-07-31",
+        description: "Client education course",
+        category: "Education",
+        amount: 1200.5,
+      }),
+    ).resolves.toEqual({
+      ...createdPayload,
+      amount: 1200.5,
+      tax_impact: 300.13,
+    });
+
+    expect(caseApiMock).toHaveBeenCalledWith(`/v1/cases/${sampleCaseId}/deductions`, {
+      method: "POST",
+      body: {
+        date: "2026-07-31",
+        description: "Client education course",
+        category: "Education",
+        amount: 1200.5,
+      },
     });
   });
 });
