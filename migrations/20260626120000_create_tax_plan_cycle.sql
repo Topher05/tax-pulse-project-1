@@ -1,27 +1,27 @@
 -- Deprecated: legacy hand-written migration kept for reference only.
 -- Current migrations live in `src/typescript/db/drizzle-migrations/`.
-CREATE TABLE IF NOT EXISTS tax_plan_cycle (
-  id UUID CONSTRAINT tax_plan_cycle_id_pk PRIMARY KEY DEFAULT uuidv7(),
-  client_id UUID NOT NULL,
-  tenant_id UUID NOT NULL CONSTRAINT tax_plan_cycle_tenant_id_fk REFERENCES tenants (id),
-  planning_period TEXT NOT NULL,
-  stage TEXT NOT NULL CONSTRAINT tax_plan_cycle_stage_check CHECK (
-    stage IN (
-      'Intake',
-      'Data Aggregation',
-      'Modeling',
-      'Review',
-      'Client Approval',
-      'Executed',
-      'Archived'
-    )
-  ),
-  owner TEXT NOT NULL,
-  priority TEXT NOT NULL,
-  due_date DATE NOT NULL,
-  on_hold BOOLEAN NOT NULL DEFAULT FALSE,
-  hold_reason TEXT
-);
+-- CREATE TABLE IF NOT EXISTS tax_plan_cycle (
+--   id UUID CONSTRAINT tax_plan_cycle_id_pk PRIMARY KEY DEFAULT uuidv7(),
+--   client_id UUID NOT NULL,
+--   tenant_id UUID NOT NULL CONSTRAINT tax_plan_cycle_tenant_id_fk REFERENCES tenants (id),
+--   planning_period TEXT NOT NULL,
+--   stage TEXT NOT NULL CONSTRAINT tax_plan_cycle_stage_check CHECK (
+--     stage IN (
+--       'Intake',
+--       'Data Aggregation',
+--       'Modeling',
+--       'Review',
+--       'Client Approval',
+--       'Executed',
+--       'Archived'
+--     )
+--   ),
+--   owner TEXT NOT NULL,
+--   priority TEXT NOT NULL,
+--   due_date DATE NOT NULL,
+--   on_hold BOOLEAN NOT NULL DEFAULT FALSE,
+--   hold_reason TEXT
+-- );
 
-CREATE INDEX IF NOT EXISTS tax_plan_cycle_tenant_id_due_date_idx
-  ON tax_plan_cycle (tenant_id, due_date);
+-- CREATE INDEX IF NOT EXISTS tax_plan_cycle_tenant_id_due_date_idx
+--   ON tax_plan_cycle (tenant_id, due_date);

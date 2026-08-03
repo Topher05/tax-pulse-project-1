@@ -5,10 +5,6 @@
 }
 
 .launchCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.25rem;
   padding: 1.5rem;
   border: 1px solid var(--pulse-border);
   border-radius: 24px;
@@ -33,14 +29,6 @@
   text-transform: uppercase;
 }
 
-.launchTitle {
-  margin: 0;
-  color: var(--pulse-ink);
-  font-size: 1.35rem;
-  line-height: 1.15;
-  font-weight: 800;
-}
-
 .launchDescription {
   margin: 0;
   color: var(--pulse-muted);
@@ -51,6 +39,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.55rem;
   min-height: 44px;
   padding: 0 1rem;
   color: #f8fafc;
@@ -71,6 +60,12 @@
   transform: translateY(-1px);
 }
 
+.launchButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
 .launchButton:focus-visible {
   outline: 3px solid var(--pulse-accent-light);
   outline-offset: 2px;
@@ -78,12 +73,6 @@
 
 @media (max-width: 720px) {
   .launchCard {
-    flex-direction: column;
-    align-items: stretch;
     padding-inline: 1rem;
-  }
-
-  .launchButton {
-    width: 100%;
   }
 }

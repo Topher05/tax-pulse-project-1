@@ -859,3 +859,281 @@ sequenceDiagram
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
+
+## caleb-latimer-jira112 - SCRUM-112
+
+**Branch:** `caleb-latimer-jira112`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-112
+
+**Summary:** Replace deductions GET mocks with a Postgres-backed list endpoint and align the Pulse UI query consumer to integration a TanStack Query hook to the deductions endpoint
+
+**Description:** As a Core Case Service engineer, I want `GET /v1/cases/:caseId/deductions` to read directly from Postgres and return a JSON array of deduction rows, so that the Deductions screen can consume tenant-scoped live data through a typed query boundary instead of a synthetic aggregation payload.
+
+**Acceptance Criteria:**
+
+- `GET /v1/cases/:caseId/deductions` queries the `deduction` table directly.
+- The repository filters by the authenticated tenant and requested case.
+- The endpoint returns a JSON array of deduction rows with ISO date strings and numeric fields serialized for JSON transport.
+- The deductions backend no longer depends on the in-memory aggregation mock, controller stub, or 404 placeholder path.
+- The Pulse UI query layer treats the response as `Deduction[]`, and the Deductions page logs the parsed array with `console.table()`.
+- Repository, route, and UI regression tests cover the owning tenant, cross-tenant access, empty-list cases, and the parsed response shape.
+- The OpenAPI contract reflects the new list response.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant UI as Pulse UI
+    participant Query as useDeductionsQuery
+    participant API as Core Case Service
+    participant Route as deductions route
+    participant Repo as Deductions repository
+    participant DB as Postgres deduction table
+
+    Advisor->>UI: Open /deductions
+    UI->>Query: mount DeductionsPage with caseId
+    Query->>API: GET /v1/cases/{caseId}/deductions
+    API->>Route: authenticate and route request
+    Route->>Repo: listByCaseId(tenantId, caseId)
+    Repo->>DB: SELECT deduction rows joined through tax_plan_cycle
+    DB-->>Repo: matching deduction rows
+    Repo-->>Route: tenant-scoped Deduction[]
+    Route-->>API: 200 OK + JSON array
+    API-->>Query: parsed Deduction[]
+    Query-->>UI: query data available
+    UI->>UI: console.table(query.data)
+    Note over UI: Main table wiring stays disabled for Scrum-115
+```
+
+**Code Connection:**
+
+- `src/typescript/features/deductions/repositories/repository.ts`
+- `src/typescript/features/deductions/repositories/deduction.ts`
+- `src/typescript/features/deductions/routes.ts`
+- `src/typescript/features/deductions/controllers/deductions.ts`
+- `src/typescript/features/deductions/repositories/mockAggregationDataSource.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/tests/entities/deductionQueries.test.ts`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `tests/typescript/features/deductions/repository.test.ts`
+- `tests/typescript/features/deductions/routes.test.ts`
+- `tests/typescript/deductionAggregationClient.test.ts`
+
+**Project Scope Connection:**
+
+- Core Case Service backend
+- Tenant-scoped read path and API contract cleanup
+- Pulse UI deductions query boundary alignment
+
+**Changed Files:**
+
+- `src/typescript/features/deductions/repositories/repository.ts`
+- `src/typescript/features/deductions/repositories/deduction.ts`
+- `src/typescript/features/deductions/routes.ts`
+- `src/typescript/features/deductions/controllers/deductions.ts`
+- `src/typescript/features/deductions/repositories/mockAggregationDataSource.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/tests/entities/deductionQueries.test.ts`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `tests/typescript/features/deductions/repository.test.ts`
+- `tests/typescript/features/deductions/routes.test.ts`
+- `tests/typescript/deductionAggregationClient.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` still fails in this host because the existing suite depends on Docker/Testcontainers integration and one pre-existing `jwtProtectedRoutes` assertion mismatch remains outside this change.
+
+## caleb-latimer-jira117 - SCRUM-117
+
+**Branch:** `caleb-latimer-jira117`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-117
+
+**Summary:** Scaffold the Quarterly Payments screen component from the wireframe
+
+**Description:** As an Advisor, I want a read-only Quarterly Payments screen, so that I can review the estimated installment schedule and withholding coverage before charting and payment actions are added later.
+
+**Acceptance Criteria:**
+
+- The `/quarterly-payments` route renders a typed quarterly payments screen instead of the empty page.
+- The screen shows a KPI region with the second card styled green and the last card styled amber.
+- The screen shows a read-only quarter timeline with exactly seven seeded estimate items.
+- The screen includes a withholding progress placeholder card with `TBD` content.
+- The screen does not scaffold payment recording or mark-paid actions.
+
+**Code Connection:**
+
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
+- `src/pulseUI/components/QuarterlyTimelineItem.tsx`
+- `src/pulseUI/components/QuarterlyTimelineItem.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Plan tools screen scaffolding
+
+**Changed Files:**
+
+- `src/pulseUI/components/QuarterlyTimelineItem.tsx`
+- `src/pulseUI/components/QuarterlyTimelineItem.module.css`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc --noEmit"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx"` passed.
+
+## caleb-latimer-jira203 - SCRUM-203
+
+**Branch:** `caleb-latimer-jira203`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-203
+
+**Summary:** Add route-driven case selection for plan tools
+
+**Description:** Plan tools require a Tax Plan Cycle primary key before they can fetch or change case data. This slice introduces a TanStack Router search-param case gate so Deductions, Scenarios, Quarterly Payments, and the visible Income placeholder can independently initialize and consume the selected case ID.
+
+**Acceptance Criteria:**
+
+- Planning tool routes accept an optional UUID-shaped `caseId` search parameter.
+- Missing or invalid case IDs render a shared selector gate and prevent native page fetch/post behavior.
+- Any planning tool can initialize selection through `GET /v1/tax-plan-cycles`.
+- Plan-tool nav links preserve selected `caseId`; unrelated nav links do not.
+- Toolbar form actions are disabled until a valid case ID exists.
+- ADR-0026 records the route-driven case context decision.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant Router as TanStack Router
+    participant Selector as CurrentCaseSelector
+    participant Header as ToolHeader
+    participant Tool as Plan Tool
+    participant API as Core Case Service
+
+    Advisor->>Router: Open /deductions without caseId
+    Router->>Tool: caseId absent from search state
+    Tool->>Header: Render selector and disabled Add action
+    Tool-->>Advisor: Show case-gated empty state
+    Selector->>API: GET /v1/tax-plan-cycles
+    API-->>Selector: Tenant-scoped case list
+    Advisor->>Selector: Select case UUID
+    Selector->>Router: Navigate to current route with ?caseId=...
+    Router->>Tool: Provide validated caseId from search
+    Tool->>API: GET /v1/cases/:caseId/deductions
+    Advisor->>Router: Click Scenarios nav link
+    Router->>Tool: Navigate to /scenarios?caseId=...
+```
+
+**Code Connection:**
+
+- Pulse UI routing and sidebar navigation
+- Shared plan-tool case selector and route-search helpers
+- Deductions, Scenarios, Quarterly Payments, and Income plan-tool gates
+- ADR and local environment configuration
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Tenant-scoped Tax Plan Cycle workflow
+- Case-bound plan tools and server-state fetching
+
+**Changed Files:**
+
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/ToolHeader.tsx`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/PlanToolCaseGate.tsx`
+- `src/pulseUI/shared/planToolCase.ts`
+- `src/pulseUI/shared/usePlanToolCase.ts`
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `.env.example`
+- `.env`
+- `adr/0026-route-driven-case-context.md`
+- `adr/README.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- Focused Pulse UI tests were not completed: the sandboxed command failed before Vitest started with the known Windows `EPERM` path issue, and no escalated rerun was performed.
+- No additional tests will be run until the feature is manually verified.
+
+**Pre-Review Update:**
+
+- Main problem: every plan tool is independently case-gated, any plan tool can initialize the current case selection, and once selected all plan-tool nav links preserve that `caseId`.
+- Design direction: rather than manage separate selected-case state, bind the case context to the domain and application flow through TanStack Router search state.
+- Page behavior model: the app state is the enabled state where a valid `caseId` allows fetch/load behavior and post buttons to be interactable; the detached state is the disabled state where no case ID exists, the user must pick one, post buttons are disabled, and the disabled display/gate is shown.
+- Pre-review implementation adjustment: shared case-selection infrastructure remains in place, but direct page wiring was removed from Deductions, Scenarios, and Quarterly Payments so each individual story can explicitly reconnect to the shared case-routing component.
+- Route activation is intentionally commented out in `routeTree.tsx` with `TODO: Implement case ID routing component`; future story work should uncomment and attach the route contract where needed.
+- AppShell no longer propagates `caseId` across plan-tool nav links while the routing component is disabled; the propagation contract remains documented in ADR-0026 and covered by helper/component tests.
+- UI/UX terminology: the selected control pattern is an Input Group with an appended action, with the native select retained instead of a full Combo Box until searchable case labels or higher case volume justify typeahead.
+- `CurrentCaseSelector` uses an overlapping `Case ID` label, native dropdown caret, muted placeholder state, exact select padding, and full-row stacking in the compact header layout.
+- Disabled plan-tool action buttons integrate `aria-disabled` and the requested disabled styles: `opacity-50 cursor-not-allowed`.
+- Environment convention was corrected for the Pulse UI case service base URL: `CASE_SERVICE_BASE_URL` is loaded from the repo root via Vite `envDir` and exposed through `envPrefix`.
+
+**Pre-Review Changed Files:**
+
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/ToolHeader.tsx`
+- `src/pulseUI/components/ToolHeader.module.css`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/PlanToolCaseGate.tsx`
+- `src/pulseUI/shared/planToolCase.ts`
+- `src/pulseUI/shared/usePlanToolCase.ts`
+- `src/pulseUI/shared/caseApi.ts`
+- `src/pulseUI/vite.config.ts`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/tests/components/CurrentCaseSelector.test.tsx`
+- `src/pulseUI/tests/components/PlanToolCaseGate.test.tsx`
+- `src/pulseUI/tests/components/ToolHeader.test.tsx`
+- `src/pulseUI/tests/shared/planToolCase.test.ts`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `.env.example`
+- `adr/0026-route-driven-case-context.md`
+- `adr/README.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Pre-Review Validation Notes:**
+
+- `npm.cmd test` in `src/pulseUI` passed: 16 test files passed, 57 tests passed.
+- `npm.cmd test` at the repository root passed: TypeScript typecheck passed, 49 Vitest files passed, 232 tests passed, 1 skipped.
+- `git diff --check` passed with no whitespace errors; Git reported only CRLF normalization warnings.

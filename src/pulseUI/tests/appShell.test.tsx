@@ -8,6 +8,9 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { pulseAccessTokenStorageKey } from "../app/authSession.ts";
 import { createPulseQueryClient } from "../app/queryClient.ts";
 import { createPulseRouter } from "../app/createPulseRouter.ts";
+import { taxPlanCycleRows } from "../../typescript/shared/database/seed.model.ts";
+
+const seededCaseId = taxPlanCycleRows[1].id;
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -133,5 +136,32 @@ describe("Pulse UI app shell", () => {
     renderShell("/income");
 
     expect(await screen.findByRole("heading", { name: "Income" })).toBeInTheDocument();
+  });
+
+  test("does not preserve case ID across plan tool nav links while routing is disabled", async () => {
+    renderShell(`/deductions?caseId=${seededCaseId}`);
+
+    const primaryNav = await screen.findByRole("navigation", { name: "Primary" });
+
+    expect(within(primaryNav).getByRole("link", { name: "Scenario Planner" })).toHaveAttribute(
+      "href",
+      "/scenarios",
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Income" })).toHaveAttribute(
+      "href",
+      "/income",
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Quarterly Payments" })).toHaveAttribute(
+      "href",
+      "/quarterly-payments",
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Dashboard" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    expect(within(primaryNav).getByRole("link", { name: "Firm Settings" })).toHaveAttribute(
+      "href",
+      "/firm/settings",
+    );
   });
 });

@@ -1,22 +1,12 @@
 import "@testing-library/jest-dom/vitest";
 
-import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, test } from "vitest";
 
-import { createPulseRouter } from "../../app/createPulseRouter.ts";
-
-function getTodayDateString(): string {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
+import { DeductionsPage } from "../../pages/deductions/DeductionsPage.tsx";
 
 beforeAll(() => {
-  window.scrollTo = vi.fn();
+  window.scrollTo = () => undefined;
 });
 
 afterEach(() => {
@@ -24,40 +14,23 @@ afterEach(() => {
 });
 
 describe("DeductionsPage", () => {
-  test("renders the scaffolded deductions screen", async () => {
-    render(<RouterProvider router={createPulseRouter(["/deductions"])} />);
+  test("renders placeholder deductions content without case gating", () => {
+    render(<DeductionsPage />);
 
-    expect(
-      await screen.findByRole("heading", { name: "Deductions & Expenses", level: 1 }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Deductions & Expenses" })).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "Add Deduction" })).toBeInTheDocument();
-    expect(await screen.findByRole("table", { name: "Deduction records" })).toBeInTheDocument();
-    expect(screen.getAllByRole("row")).toHaveLength(26);
-    expect(screen.getAllByRole("columnheader")).toHaveLength(6);
-    expect(screen.getByRole("columnheader", { name: "Date" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Description" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Category" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Amount" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Tax Impact" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "ACTION" })).toBeInTheDocument();
-    expect(screen.getAllByText(getTodayDateString())).toHaveLength(25);
-    expect(screen.getAllByText("Business Expense").length).toBeGreaterThan(0);
-    expect(screen.getByText("-$780")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Remove" })).toHaveLength(25);
-    expect(screen.getByText("Track deductible expenses to reduce your tax liability")).toBeInTheDocument();
-    expect(screen.getByText("Estimated Tax Savings")).toBeInTheDocument();
-    expect(screen.getByText("$950.55")).toBeInTheDocument();
-    expect(screen.getByText("Deduction Method")).toBeInTheDocument();
-    expect(screen.getByText("Standard ($12,500)")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Deductions & Expenses" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Case ID" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Select a case to load/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add Deduction" })).toBeEnabled();
+    expect(screen.getByText("Deduction table wiring is disabled pending scrum-115.")).toBeInTheDocument();
+    expect(screen.getByText("$0")).toBeInTheDocument();
   });
 
-  test("opens the placeholder modal shell from the add button", async () => {
-    render(<RouterProvider router={createPulseRouter(["/deductions"])} />);
+  test("opens the deduction modal without selecting a case", async () => {
+    render(<DeductionsPage />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Add Deduction" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add Deduction" }));
 
-    expect(await screen.findByRole("dialog", { name: "Add Deduction" })).toBeInTheDocument();
-    expect(screen.getByText("Placeholder modal shell for a later ticket.")).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "New Deduction" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create Deduction" })).toBeInTheDocument();
   });
 });

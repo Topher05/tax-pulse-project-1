@@ -18,7 +18,7 @@ export const credentialRows = [
     id: "cm7zq8f4k0001a1b2c3d4e5f6",
     userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
     passwordHash:
-      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtMg$YXV0aC1oYXNoLW9uZS0wMg",
+      "$argon2id$v=19$m=65536,t=3,p=4$LB6kDJl7/qVUyjm9pG8b/A$bHlhCBx1qF+pWKaE4NoQP5eog9iaqryE/Oba3m4zF4Y",
   },
   {
     id: "cm7zq8f4k0002a1b2c3d4e5f6",
