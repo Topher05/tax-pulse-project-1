@@ -5,6 +5,49 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira113 - SCRUM-113
+
+**Branch:** `dylan-harle-jira113`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-113
+
+**Summary:** Add loading, empty, and error states to the Deductions screen.
+
+**Description:** As a Frontend Developer, I want the Deductions screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the deductions request is in flight.
+- An empty state renders when the client has no deductions.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:**
+
+- Added visible Deductions request-state rendering on top of the SCRUM-112 TanStack Query hook boundary.
+- Kept ADR-0026 route-driven case gating intact so missing or invalid case IDs still block deductions fetches.
+- Preserved SCRUM-115's future table handoff by rendering the existing non-empty success placeholder only after data resolves with deduction rows.
+- Added retry behavior through `deductionsQuery.refetch()` without changing the shared query client's retry defaults.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Improves predictable selected-case Deductions behavior while preserving tenant-scoped backend reads through the existing case API.
+- Leaves Add Deduction submission behavior for SCRUM-114, live row/table rendering for SCRUM-115, and broader accessibility coverage for SCRUM-116.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.module.css`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/entities/deductionQueries.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+
 ## dylan-harle-jira122 - SCRUM-122
 
 **Branch:** `dylan-harle-jira122`
