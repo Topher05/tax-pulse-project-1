@@ -43,16 +43,16 @@ Add new ticket entries below using this template.
 
 **Jira Key:** SCRUM-146
 
-**Summary:** Scaffold the Firm Team & Users screen component from the wireframe
+**Summary:** Refine the Firm Team & Users screen component from the wireframe
 
 **Description:** As a Frontend Developer, I want a typed Team & Users screen scaffolded from the wireframe, so that the screen has a stable structure before data is wired.
 
 **Acceptance Criteria:**
 
-- A typed React component renders the Team & Users layout with a header, summary cards, roster table, and side notes.
+- A typed React component renders the Team & Users layout with a toolbar, KPI row, and roster table.
 - The visual treatment follows the prototype's dark slate shell, indigo accent, compact spacing, and rounded card language.
 - The screen exposes typed roster props so the rows can be data-driven in the next ticket.
-- The screen remains UI-only and does not connect to live data or permission logic yet.
+- The screen remains UI-only and keeps the future admin/platform-admin gate as a disabled placeholder comment.
 
 **Code Connection:**
 
@@ -70,11 +70,15 @@ Add new ticket entries below using this template.
 - `src/pulseUI/pages/firm/TeamUsersPage.tsx`
 - `src/pulseUI/pages/firm/TeamUsersPage.module.css`
 - `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx` (deleted)
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test"` passed with `21` test files and `73` tests green.
 
 ## caleb-latimer-jira101 - SCRUM-101
 

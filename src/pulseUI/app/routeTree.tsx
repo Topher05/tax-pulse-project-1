@@ -85,6 +85,7 @@ const firmUsersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/firm/users",
   beforeLoad: requirePulseAuthentication,
+  // TODO: add an admin/platform-admin guard here once the session exposes role claims.
   component: TeamUsersPage,
 });
 
