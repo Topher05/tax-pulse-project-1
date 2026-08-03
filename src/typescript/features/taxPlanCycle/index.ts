@@ -23,11 +23,14 @@ export {
   stageChangedCloudEventSchemaV1,
   stageChangedEventDataSchema,
   stageChangedEventDataSchemaV1,
+  createStageChangedCloudEvent,
   stageChangedEventSchemaVersion,
   stageChangedEventSource,
   stageChangedEventType,
   type StageChangedCloudEventV1,
   type StageChangedEventDataV1,
+  type StageChangedEventPublishInput,
+  type CreateStageChangedCloudEventOptions,
 } from "./stageChangedEvent.js";
 export {
   createTaxPlanCycleRepository,
@@ -66,21 +69,18 @@ export {
   buildIdempotencyKey,
   createConsumer,
   createRedisConsumer,
-  createRedisEventDeduplicator,
+  createRedisIdempotencyStore,
   createWriter,
-  DeduplicatorInProgressError,
-  DeduplicatorUnavailableError,
-  stageChangedCloudEventSchema,
-  TAX_PULSE_STAGE_CHANGED_CONSUMER_NAME,
+  IdempotencyInProgressError,
+  IdempotencyUnavailableError,
+  STAGE_CHANGED_CONSUMER_NAME,
 } from "./infrastructure/CloudEvents/index.js";
 export type {
   ConsumerHandleResult,
   ConsumerOptions,
-  EventDeduplicator,
-  IdempotencyClient,
+  IdempotencyGuard,
   IdempotencyInput,
-  StageChangedCloudEvent,
-  StageChangedEventData,
+  IdempotencyStore,
   Writer,
   WriterClient,
 } from "./infrastructure/CloudEvents/index.js";
@@ -115,6 +115,8 @@ export {
 export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
+  type StageChangedEventPublisher,
+  type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";

@@ -1,14 +1,13 @@
 export {
   buildIdempotencyKey,
-  createRedisEventDeduplicator,
-  DeduplicatorInProgressError,
-  DeduplicatorUnavailableError,
+  createRedisIdempotencyStore,
+  IdempotencyInProgressError,
+  IdempotencyUnavailableError,
 } from "./EventDeduplicator.js";
 export {
-  TAX_PULSE_STAGE_CHANGED_CONSUMER_NAME,
+  STAGE_CHANGED_CONSUMER_NAME,
   createConsumer,
   createRedisConsumer,
-  stageChangedCloudEventSchema,
 } from "./Consumer.js";
 export {
   createWriter,
@@ -16,11 +15,9 @@ export {
 export type {
   ConsumerHandleResult,
   ConsumerOptions,
-  EventDeduplicator,
-  IdempotencyClient,
+  IdempotencyGuard,
   IdempotencyInput,
-  StageChangedCloudEvent,
-  StageChangedEventData,
+  IdempotencyStore,
   Writer,
   WriterClient,
 } from "./model.js";

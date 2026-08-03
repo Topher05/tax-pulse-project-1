@@ -1,7 +1,6 @@
 import type { PutCommand } from "@aws-sdk/lib-dynamodb";
 
 import type { TaxPlanCycleRepository } from "../../repositories/repository.js";
-import type { TaxPlanCycle } from "../../taxPlanCycle.js";
 import type { TaxPlanCycleQueueProjectionItem as QueueProjectionItem } from "../queueProjection.js";
 
 export interface WriterClient {
@@ -12,7 +11,7 @@ export interface Writer {
   upsert(item: QueueProjectionItem): Promise<void>;
 }
 
-export interface IdempotencyClient {
+export interface IdempotencyGuard {
   get(key: string): Promise<string | null>;
   set(
     key: string,
@@ -28,28 +27,10 @@ export interface IdempotencyInput {
   eventId: string;
 }
 
-export interface EventDeduplicator {
+export interface IdempotencyStore {
   claim(input: IdempotencyInput): Promise<boolean>;
   complete(input: IdempotencyInput): Promise<void>;
   release(input: IdempotencyInput): Promise<void>;
-}
-
-export interface StageChangedEventData {
-  tenant_id: string;
-  case_id: string;
-  from_stage: TaxPlanCycle["stage"];
-  to_stage: TaxPlanCycle["stage"];
-  actor: string;
-}
-
-export interface StageChangedCloudEvent {
-  specversion: "1.0";
-  id: string;
-  source: string;
-  type: "com.taxpulse.tax-plan-cycle.stage-changed";
-  time: string;
-  datacontenttype?: "application/json";
-  data: StageChangedEventData;
 }
 
 export interface ConsumerHandleResult {
@@ -60,6 +41,6 @@ export interface ConsumerHandleResult {
 export interface ConsumerOptions {
   repository: Pick<TaxPlanCycleRepository, "findByCaseId">;
   writer: Writer;
-  idempotencyStore: EventDeduplicator;
+  idempotencyStore: IdempotencyStore;
   consumerName?: string;
 }

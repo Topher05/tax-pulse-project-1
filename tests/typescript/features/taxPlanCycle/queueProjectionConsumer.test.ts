@@ -1,18 +1,18 @@
 import { describe, expect, test, vi } from "vitest";
 
 import {
-  buildIdempotencyKey,
+  STAGE_CHANGED_CONSUMER_NAME,
   createRedisConsumer,
-  TAX_PULSE_STAGE_CHANGED_CONSUMER_NAME,
-  DeduplicatorUnavailableError,
+  createStageChangedCloudEvent,
+  stageChangedCloudEventSchemaV1,
+  buildIdempotencyKey,
+  type IdempotencyGuard,
   type TaxPlanCycle,
-  type IdempotencyClient,
-  type StageChangedCloudEvent,
 } from "../../../../src/typescript/index.js";
 
 function createInMemoryRedisClient(
   seed: Record<string, string> = {},
-): IdempotencyClient & {
+): IdempotencyGuard & {
   store: Map<string, string>;
   getCalls: string[];
   setCalls: Array<{
@@ -59,21 +59,21 @@ const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e62";
 const clientId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e63";
 const eventId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e64";
 
-const stageChangedEvent: StageChangedCloudEvent = {
-  specversion: "1.0",
-  id: eventId,
-  source: "urn:taxpulse:core-case-service",
-  type: "com.taxpulse.tax-plan-cycle.stage-changed",
-  time: "2026-07-22T12:00:00.000Z",
-  datacontenttype: "application/json",
-  data: {
-    tenant_id: tenantId,
-    case_id: caseId,
-    from_stage: "Modeling",
-    to_stage: "Review",
-    actor: "advisor-001",
-  },
-};
+const stageChangedEvent = stageChangedCloudEventSchemaV1.parse(
+  createStageChangedCloudEvent(
+    {
+      tenantId,
+      caseId,
+      fromStage: "Modeling",
+      toStage: "Review",
+      actor: "advisor-001",
+    },
+    {
+      idFactory: () => eventId,
+      now: () => new Date("2026-07-22T12:00:00.000Z"),
+    },
+  ),
+);
 
 const expectedQueueItem = {
   tenant_id: tenantId,
@@ -105,17 +105,13 @@ describe("tax plan cycle queue projection consumer", () => {
     const writer = {
       upsert: vi.fn(async () => undefined),
     };
-    const consumer = createRedisConsumer(
-      redisClient,
-      repository,
-      writer,
-    );
+    const consumer = createRedisConsumer(redisClient, repository, writer);
 
     const firstResult = await consumer.handleStageChangedEvent(stageChangedEvent);
     const secondResult = await consumer.handleStageChangedEvent(stageChangedEvent);
     const redisKey = buildIdempotencyKey({
       tenantId,
-      consumerName: TAX_PULSE_STAGE_CHANGED_CONSUMER_NAME,
+      consumerName: STAGE_CHANGED_CONSUMER_NAME,
       eventId,
     });
 
@@ -149,7 +145,7 @@ describe("tax plan cycle queue projection consumer", () => {
     const writer = {
       upsert: vi.fn(async () => undefined),
     };
-    const redisClient: IdempotencyClient = {
+    const redisClient: IdempotencyGuard = {
       async get(): Promise<string | null> {
         throw new Error("redis unavailable");
       },
@@ -160,15 +156,11 @@ describe("tax plan cycle queue projection consumer", () => {
         return 1;
       },
     };
-    const consumer = createRedisConsumer(
-      redisClient,
-      repository,
-      writer,
-    );
+    const consumer = createRedisConsumer(redisClient, repository, writer);
 
     await expect(
       consumer.handleStageChangedEvent(stageChangedEvent),
-    ).rejects.toBeInstanceOf(DeduplicatorUnavailableError);
+    ).rejects.toThrow("Redis idempotency storage is unavailable");
     expect(repository.findByCaseId).not.toHaveBeenCalled();
     expect(writer.upsert).not.toHaveBeenCalled();
   });

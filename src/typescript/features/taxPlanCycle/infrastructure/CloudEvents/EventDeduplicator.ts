@@ -1,22 +1,22 @@
 import { z } from "zod";
 
 import type {
-  EventDeduplicator,
-  IdempotencyClient,
+  IdempotencyGuard,
   IdempotencyInput,
+  IdempotencyStore,
 } from "./model.js";
 
-export class DeduplicatorInProgressError extends Error {
+export class IdempotencyInProgressError extends Error {
   constructor() {
     super("A queue projection event with the same id is still being processed.");
-    this.name = "DeduplicatorInProgressError";
+    this.name = "IdempotencyInProgressError";
   }
 }
 
-export class DeduplicatorUnavailableError extends Error {
+export class IdempotencyUnavailableError extends Error {
   constructor() {
     super("Redis idempotency storage is unavailable for the queue projection consumer.");
-    this.name = "DeduplicatorUnavailableError";
+    this.name = "IdempotencyUnavailableError";
   }
 }
 
@@ -61,12 +61,12 @@ export function buildIdempotencyKey(input: {
   return `idem:queue-projection:${input.tenantId}:${input.consumerName}:${input.eventId}`;
 }
 
-export function createRedisEventDeduplicator(
-  client: IdempotencyClient,
+export function createRedisIdempotencyStore(
+  client: IdempotencyGuard,
   options: {
     ttlSeconds?: number;
   } = {},
-): EventDeduplicator {
+): IdempotencyStore {
   const ttlSeconds = options.ttlSeconds ?? defaultIdempotencyTtlSeconds;
 
   async function readRecord(key: string): Promise<"pending" | "completed" | null> {
@@ -94,7 +94,7 @@ export function createRedisEventDeduplicator(
       }
 
       if (existingRecord === "pending") {
-        throw new DeduplicatorInProgressError();
+        throw new IdempotencyInProgressError();
       }
 
       const claimResult = await client.set(key, pendingValue(), {
@@ -113,16 +113,16 @@ export function createRedisEventDeduplicator(
       }
 
       if (claimedRecord === "pending") {
-        throw new DeduplicatorInProgressError();
+        throw new IdempotencyInProgressError();
       }
 
-      throw new DeduplicatorUnavailableError();
+      throw new IdempotencyUnavailableError();
     } catch (error) {
-      if (error instanceof DeduplicatorInProgressError) {
+      if (error instanceof IdempotencyInProgressError) {
         throw error;
       }
 
-      throw new DeduplicatorUnavailableError();
+      throw new IdempotencyUnavailableError();
     }
   }
 
