@@ -5,6 +5,7 @@ import { useState } from "react";
 import styles from "./AppShell.module.css";
 import { pulseNavGroups } from "../shared/navigation.ts";
 import { getViewTitle } from "../shared/viewTitle.ts";
+import { useSession } from "../auth/AuthProvider.tsx";
 
 const viewAsGroups = [
   {
@@ -26,11 +27,25 @@ export function AppShell() {
   const [liveCalculationEnabled, setLiveCalculationEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const session = useSession();
 
   if (pathname === "/login") {
     return (
       <main className={styles.login} aria-label="Authentication">
         <Outlet />
+      </main>
+    );
+  }
+
+  if (session.status === "initializing") {
+    return <p role="status">Restoring your session...</p>;
+  }
+
+  if (!session.isAuthenticated) {
+    return (
+      <main>
+        <h1>Sign in required</h1>
+        <p>Your session has ended. Sign in to continue to TaxPulse Advisory.</p>
       </main>
     );
   }

@@ -5,15 +5,15 @@ import { RouterProvider } from "@tanstack/react-router";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
-import { DeductionsPage } from "../../pages/deductions/DeductionsPage.tsx";
 import { isUuid } from "../../shared/planToolCase.ts";
+import { TestAuthProvider } from "../testAuth.tsx";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
 
 const seededCaseId = taxPlanCycleRows[1].id;
+
 type DeductionApiRow = {
   id: string;
   case_id: string;
@@ -70,11 +70,11 @@ function createDeferred<T>() {
 }
 
 function renderDeductionsPage(initialPath: string) {
-  localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
-
   return render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <RouterProvider router={createPulseRouter([initialPath])} />
+      <TestAuthProvider>
+        <RouterProvider router={createPulseRouter([initialPath])} />
+      </TestAuthProvider>
     </QueryClientProvider>,
   );
 }
@@ -84,7 +84,6 @@ beforeAll(() => {
 });
 
 afterEach(() => {
-  localStorage.clear();
   cleanup();
   vi.restoreAllMocks();
 });
@@ -109,9 +108,7 @@ describe("DeductionsPage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add Deduction" })).not.toBeInTheDocument();
-    expect(
-      caseApiMock.mock.calls.some(([path]) => String(path).startsWith("/v1/cases/")),
-    ).toBe(false);
+    expect(caseApiMock.mock.calls.some(([path]) => String(path).startsWith("/v1/cases/"))).toBe(false);
   });
 
   test("fetches deductions once a valid case ID is selected and exposes loading then data state", async () => {
