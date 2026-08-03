@@ -13,15 +13,11 @@ export function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
-  if (pathname === "/login") {
-    return (
-      <main className={styles.login} aria-label="Authentication">
-        <Outlet />
-      </main>
-    );
-  }
-
   const viewTitle = getViewTitle(pathname);
+
+  const handleLogout = () => {
+    void logout().catch(() => undefined);
+  };
 
   return (
     <div className={styles.shell}>
@@ -74,7 +70,7 @@ export function AppShell() {
             </div>
           </div>
 
-          <button className={styles.logoutButton} type="button">
+          <button className={styles.logoutButton} type="button" onClick={handleLogout}>
             <LogOut className={styles.logoutIcon} aria-hidden="true" />
             <span>Logout</span>
           </button>
@@ -126,9 +122,7 @@ export function AppShell() {
               <button
                 className={styles.actionButton}
                 type="button"
-                onClick={() => {
-                  void logout().catch(() => undefined);
-                }}
+                onClick={handleLogout}
               >
                 Sign out
               </button>

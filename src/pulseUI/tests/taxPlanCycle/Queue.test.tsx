@@ -8,7 +8,7 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
-import { AuthenticatedSessionProvider } from "../auth/AuthenticatedSessionProvider.tsx";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 import * as queueQueries from "../../entities/taxPlanCycleQueries.ts";
 
 beforeAll(() => {
@@ -91,9 +91,9 @@ function renderQueue() {
 
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <AuthenticatedSessionProvider>
+      <TestSessionProvider>
         <RouterProvider router={createPulseRouter(["/cycles/queue"])} />
-      </AuthenticatedSessionProvider>
+      </TestSessionProvider>
     </QueryClientProvider>,
   );
 }

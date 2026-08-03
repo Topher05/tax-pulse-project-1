@@ -6,7 +6,6 @@ import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { ClientRosterPage } from "../pages/clients/ClientRosterPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
 import { IncomePage } from "../pages/income/IncomePage.tsx";
-import { LoginPage } from "../pages/LoginPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { AuthBoundary } from "../auth/AuthBoundary.tsx";
 import { MfaChallengePage } from "../pages/auth/MfaChallengePage.tsx";
@@ -65,12 +64,6 @@ const dashboardRoute = createRoute({
   component: DashboardPage,
 });
 
-const loginRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/login",
-  component: LoginPage,
-});
-
 const cyclesQueueRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/cycles/queue",
@@ -127,19 +120,19 @@ const firmSettingsRoute = createRoute({
 });
 
 const administrationTenantsUsersRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/administration/tenants-users",
   component: EmptyPage,
 });
 
 const administrationRolesPermissionsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/administration/roles-permissions",
   component: EmptyPage,
 });
 
 const administrationAuditLogRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/administration/audit-log",
   component: EmptyPage,
 });
@@ -160,9 +153,8 @@ export const routeTree = rootRoute.addChildren([
     clientsRoute,
     firmUsersRoute,
     firmSettingsRoute,
+    administrationTenantsUsersRoute,
+    administrationRolesPermissionsRoute,
+    administrationAuditLogRoute,
   ]),
-  loginRoute,
-  administrationTenantsUsersRoute,
-  administrationRolesPermissionsRoute,
-  administrationAuditLogRoute,
 ]);

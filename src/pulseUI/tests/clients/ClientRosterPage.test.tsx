@@ -8,7 +8,7 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
-import { AuthenticatedSessionProvider } from "../auth/AuthenticatedSessionProvider.tsx";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 import * as caseApi from "../../shared/caseApi.ts";
 
 beforeAll(() => {
@@ -59,11 +59,11 @@ describe("ClientRosterPage", () => {
       },
     ]);
     render(
-      <AuthenticatedSessionProvider>
+      <TestSessionProvider>
         <QueryClientProvider client={createPulseQueryClient()}>
           <RouterProvider router={createPulseRouter(["/clients"])} />
         </QueryClientProvider>
-      </AuthenticatedSessionProvider>,
+      </TestSessionProvider>,
     );
 
     expect(await screen.findByRole("heading", { name: "Client Roster", level: 1 }))

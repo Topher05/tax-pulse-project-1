@@ -5,10 +5,10 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { pulseAccessTokenStorageKey } from "../app/authSession.ts";
 import { createPulseQueryClient } from "../app/queryClient.ts";
 import { createPulseRouter } from "../app/createPulseRouter.ts";
-import { AuthenticatedSessionProvider } from "./auth/AuthenticatedSessionProvider.tsx";
+import type { AuthClient } from "../auth/authClient.ts";
+import { TestSessionProvider } from "./auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -19,27 +19,39 @@ afterEach(() => {
   cleanup();
 });
 
-const renderShell = (initialPath: string = "/", authenticated = true) => {
-  if (authenticated) {
-    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
-  }
-
+const renderShell = (
+  initialPath: string = "/",
+  authenticated = true,
+  clientOverrides?: Partial<AuthClient>,
+) => {
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <AuthenticatedSessionProvider>
+      <TestSessionProvider
+        authenticated={authenticated}
+        clientOverrides={clientOverrides}
+      >
         <RouterProvider router={createPulseRouter([initialPath])} />
-      </AuthenticatedSessionProvider>
+      </TestSessionProvider>
     </QueryClientProvider>,
   );
 };
 
 describe("Pulse UI app shell", () => {
-  test("redirects unauthenticated internal routes to login", async () => {
-    renderShell("/cycles/queue", false);
-
-    expect(await screen.findByRole("heading", { name: "Sign in", level: 1 })).toBeInTheDocument();
-    expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
+  test("does not register the obsolete login route", () => {
+    expect(Object.keys(createPulseRouter().routesByPath)).not.toContain("/login");
   });
+
+  test.each(["/", "/cycles/queue", "/administration/tenants-users"])(
+    "redirects unauthenticated route %s to sign-in",
+    async (initialPath) => {
+      renderShell(initialPath, false);
+
+      expect(
+        await screen.findByRole("heading", { name: "Sign in to your workspace", level: 1 }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
+    },
+  );
 
   test("renders the workspace sidebar heading", async () => {
     renderShell("/cycles/queue");
@@ -129,6 +141,22 @@ describe("Pulse UI app shell", () => {
     expect(within(sessionFooter).getByText("Firm Admin")).toBeInTheDocument();
     expect(within(sessionFooter).getByRole("button", { name: "Logout" })).toBeInTheDocument();
   });
+
+  test.each(["Logout", "Sign out"])(
+    "%s clears the session and returns to sign-in",
+    async (buttonName) => {
+      const logout = vi.fn(async () => undefined);
+      renderShell("/cycles/queue", true, { logout });
+
+      fireEvent.click(await screen.findByRole("button", { name: buttonName }));
+
+      await vi.waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
+      expect(
+        await screen.findByRole("heading", { name: "Sign in to your workspace", level: 1 }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
+    },
+  );
 
   test("renders the dashboard hero on the root route", async () => {
     renderShell("/");

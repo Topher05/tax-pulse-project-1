@@ -744,6 +744,80 @@ Income tickets.
   `@hookform/resolvers/zod` imports in `ScenarioPlanningForm.tsx`.
 - `npm run build` is blocked by the same existing unresolved dependencies.
 
+## christopher-martus-jira193 - SCRUM-193 authentication completion follow-up
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Complete the SPA authentication route and logout acceptance criteria
+
+**Description:** Remove the duplicate placeholder login experience, place all workspace
+routes behind the shared authentication boundary, wire every visible logout control, make
+anonymous route tests restore an actually anonymous session, and document tenant-aware
+local SPA login.
+
+**Acceptance Criteria:**
+
+- `/sign-in` is the only registered SPA sign-in route; the obsolete `/login` route and
+  placeholder page are removed.
+- Root, operator, and administration workspace routes redirect anonymous sessions to the
+  real sign-in screen.
+- Both the sidebar Logout and topbar Sign out controls call the auth-context logout path
+  and return the user to sign-in.
+- Component coverage exercises anonymous refresh failure, authenticated administration,
+  sign-in through MFA, and both visible logout controls.
+- Local development guidance uses `{tenant-login-slug}.localhost:5173` and explains why
+  plain localhost cannot resolve a login workspace.
+
+**Code Connection:**
+
+- Administration routes are children of the `AuthBoundary`-guarded workspace layout, and
+  the root route exposes only the public sign-in, MFA, and password-reset screens.
+- `AppShell` shares one logout handler between its sidebar and topbar controls, relying on
+  the auth provider's existing finally-path to clear the session before redirecting.
+- `TestSessionProvider` can return a valid refresh session or reject refresh for anonymous
+  coverage, while allowing focused client-method spies.
+- The README documents the tenant-subdomain URL already preserved by the Vite proxy; no
+  tenant ID is added to the login payload and no backend contract changes.
+
+**Project Scope Connection:**
+
+This closes the remaining SCRUM-193 SPA entry, route protection, logout, and local-login
+usability gaps while preserving server-controlled tenant resolution and existing
+role-landing behavior.
+
+**Changed Files:**
+
+- `README.md`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/AppShell.module.css`
+- `src/pulseUI/pages/LoginPage.tsx` (removed)
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/auth/AuthenticatedSessionProvider.tsx` (replaced)
+- `src/pulseUI/tests/auth/TestSessionProvider.tsx`
+- Authenticated workspace component tests updated to import `TestSessionProvider`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Focused Pulse UI auth/workspace validation passed: 38 tests in 7 files.
+- `npm run typecheck` passed for application, tests, and Pulse UI.
+- The full Pulse UI run passed 77 tests and retained four pre-existing failures: the
+  Deductions and Scenario Planner route tests render protected routes without an auth
+  provider. Supplying authentication also exposes that `/scenarios` currently renders
+  `EmptyPage`, outside SCRUM-193.
+- `npm --prefix src/pulseUI run build` transformed all modules but could not empty the
+  output directory because Windows holds `dist/pulseUI/assets/index-CkhYVya1.js` open.
+- Root `npm test` completed typechecking but remains blocked by unavailable Testcontainers
+  runtime tests and the existing Tax Plan Cycle JWT response assertion that expects a
+  `scenarios` field.
+
 
 
 

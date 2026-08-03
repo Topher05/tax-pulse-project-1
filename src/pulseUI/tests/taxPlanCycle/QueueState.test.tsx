@@ -10,7 +10,7 @@ import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import type { PlanCycleQueueRow } from "../../entities/taxPlanCycle.ts";
 import * as queueQueries from "../../entities/taxPlanCycleQueries.ts";
-import { AuthenticatedSessionProvider } from "../auth/AuthenticatedSessionProvider.tsx";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -27,9 +27,9 @@ function renderPlanCycle() {
 
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <AuthenticatedSessionProvider>
+      <TestSessionProvider>
         <RouterProvider router={createPulseRouter(["/cycles/queue"])} />
-      </AuthenticatedSessionProvider>
+      </TestSessionProvider>
     </QueryClientProvider>,
   );
 }
