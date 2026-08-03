@@ -7,6 +7,7 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { TestAuthProvider } from "../testAuth.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -20,7 +21,9 @@ afterEach(() => {
 function renderScenarioPlanner() {
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <RouterProvider router={createPulseRouter(["/scenarios"])} />
+      <TestAuthProvider>
+        <RouterProvider router={createPulseRouter(["/scenarios"])} />
+      </TestAuthProvider>
     </QueryClientProvider>,
   );
 }

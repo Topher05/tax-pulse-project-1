@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { TestAuthProvider } from "../testAuth.tsx";
 
 function getTodayDateString(): string {
   const today = new Date();
@@ -25,7 +26,11 @@ afterEach(() => {
 
 describe("DeductionsPage", () => {
   test("renders the scaffolded deductions screen", async () => {
-    render(<RouterProvider router={createPulseRouter(["/deductions"])} />);
+    render(
+      <TestAuthProvider>
+        <RouterProvider router={createPulseRouter(["/deductions"])} />
+      </TestAuthProvider>,
+    );
 
     expect(
       await screen.findByRole("heading", { name: "Deductions & Expenses", level: 1 }),
@@ -53,7 +58,11 @@ describe("DeductionsPage", () => {
   });
 
   test("opens the placeholder modal shell from the add button", async () => {
-    render(<RouterProvider router={createPulseRouter(["/deductions"])} />);
+    render(
+      <TestAuthProvider>
+        <RouterProvider router={createPulseRouter(["/deductions"])} />
+      </TestAuthProvider>,
+    );
 
     fireEvent.click(await screen.findByRole("button", { name: "Add Deduction" }));
 
