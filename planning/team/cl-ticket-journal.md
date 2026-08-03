@@ -35,6 +35,47 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira146 - SCRUM-146
+
+**Branch:** `caleb-latimer-jira146`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-146
+
+**Summary:** Scaffold the Firm Team & Users screen component from the wireframe
+
+**Description:** As a Frontend Developer, I want a typed Team & Users screen scaffolded from the wireframe, so that the screen has a stable structure before data is wired.
+
+**Acceptance Criteria:**
+
+- A typed React component renders the Team & Users layout with a header, summary cards, roster table, and side notes.
+- The visual treatment follows the prototype's dark slate shell, indigo accent, compact spacing, and rounded card language.
+- The screen exposes typed roster props so the rows can be data-driven in the next ticket.
+- The screen remains UI-only and does not connect to live data or permission logic yet.
+
+**Code Connection:**
+
+- `src/pulseUI/pages/firm/TeamUsersPage.tsx`
+- `src/pulseUI/pages/firm/TeamUsersPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Firm administration UI completion
+
+**Changed Files:**
+
+- `src/pulseUI/pages/firm/TeamUsersPage.tsx`
+- `src/pulseUI/pages/firm/TeamUsersPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
+
 ## caleb-latimer-jira101 - SCRUM-101
 
 **Branch:** `caleb-latimer-jira101`

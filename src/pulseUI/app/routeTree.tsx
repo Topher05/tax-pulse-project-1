@@ -5,6 +5,7 @@ import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { ClientRosterPage } from "../pages/clients/ClientRosterPage.tsx";
+import { TeamUsersPage } from "../pages/firm/TeamUsersPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
 import { IncomePage } from "../pages/income/IncomePage.tsx";
 import { LoginPage } from "../pages/LoginPage.tsx";
@@ -84,7 +85,7 @@ const firmUsersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/firm/users",
   beforeLoad: requirePulseAuthentication,
-  component: EmptyPage,
+  component: TeamUsersPage,
 });
 
 const firmSettingsRoute = createRoute({
