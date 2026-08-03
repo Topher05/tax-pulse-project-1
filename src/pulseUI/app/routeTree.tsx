@@ -51,8 +51,7 @@ const scenarioPlannerRoute = createRoute({
   path: "/scenarios",
   component: ScenarioPlannerPage,
   beforeLoad: requirePulseAuthentication,
-  // TODO: Implement case ID routing component
-  // validateSearch: (search) => validatePlanToolSearch(search),
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const incomeRoute = createRoute({

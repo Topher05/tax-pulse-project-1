@@ -71,6 +71,12 @@
   outline-offset: 2px;
 }
 
+.tableShell {
+  min-height: 160px;
+  border: 1px dashed rgb(148 163 184 / 30%);
+  border-radius: 24px;
+}
+
 @media (max-width: 720px) {
   .launchCard {
     padding-inline: 1rem;
