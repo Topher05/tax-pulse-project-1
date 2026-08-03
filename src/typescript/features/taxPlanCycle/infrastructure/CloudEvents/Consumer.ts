@@ -3,22 +3,25 @@ import { z } from "zod";
 import {
   taxPlanCycleStageSchema,
   type TaxPlanCycle,
-} from "../taxPlanCycle.js";
-import type { TaxPlanCycleRepository } from "../repositories/repository.js";
+} from "../../taxPlanCycle.js";
+import type { TaxPlanCycleRepository } from "../../repositories/repository.js";
+import {
+  type TaxPlanCycleQueueProjectionIdempotencyClient,
+  type TaxPlanCycleQueueProjectionConsumerHandleResult,
+  type TaxPlanCycleQueueProjectionConsumerOptions,
+  type TaxPlanCycleQueueProjectionStageChangedCloudEvent,
+  type TaxPlanCycleQueueProjectionWriter,
+} from "./model.js";
 import {
   buildTaxPlanCycleQueueProjectionIdempotencyKey,
   createRedisTaxPlanCycleQueueProjectionIdempotencyStore,
   TaxPlanCycleQueueProjectionIdempotencyInProgressError,
   TaxPlanCycleQueueProjectionIdempotencyUnavailableError,
-  type TaxPlanCycleQueueProjectionIdempotencyClient,
-  type TaxPlanCycleQueueProjectionIdempotencyInput,
-  type TaxPlanCycleQueueProjectionIdempotencyStore,
-} from "./queueProjectionIdempotency.js";
+} from "./EventDeduplicator.js";
 import {
   taxPlanCycleQueueProjectionItemSchema,
   type TaxPlanCycleQueueProjectionItem,
-} from "./queueProjection.js";
-import type { TaxPlanCycleQueueProjectionWriter } from "./queueDynamoWriter.js";
+} from "../queueProjection.js";
 
 export const TAX_PULSE_QUEUE_PROJECTION_CONSUMER_NAME =
   "tax-plan-cycle-stage-changed";
@@ -41,22 +44,6 @@ export const taxPlanCycleQueueProjectionStageChangedCloudEventSchema =
     datacontenttype: z.literal("application/json").optional(),
     data: taxPlanCycleQueueProjectionStageChangedEventDataSchema,
   });
-
-export type TaxPlanCycleQueueProjectionStageChangedCloudEvent = z.infer<
-  typeof taxPlanCycleQueueProjectionStageChangedCloudEventSchema
->;
-
-export interface TaxPlanCycleQueueProjectionConsumerHandleResult {
-  status: "processed" | "duplicate";
-  item?: TaxPlanCycleQueueProjectionItem;
-}
-
-export interface TaxPlanCycleQueueProjectionConsumerOptions {
-  repository: Pick<TaxPlanCycleRepository, "findByCaseId">;
-  writer: TaxPlanCycleQueueProjectionWriter;
-  idempotencyStore: TaxPlanCycleQueueProjectionIdempotencyStore;
-  consumerName?: string;
-}
 
 function todayIsoDateFromEventTime(eventTime: string): string {
   return eventTime.slice(0, 10);
@@ -82,7 +69,11 @@ function projectTaxPlanCycleToQueueItem(
 function buildIdempotencyInput(
   event: TaxPlanCycleQueueProjectionStageChangedCloudEvent,
   consumerName: string,
-): TaxPlanCycleQueueProjectionIdempotencyInput {
+): {
+  tenantId: string;
+  consumerName: string;
+  eventId: string;
+} {
   return {
     tenantId: event.data.tenant_id,
     consumerName,
@@ -171,7 +162,6 @@ export function createRedisTaxPlanCycleQueueProjectionConsumer(
 
 export {
   buildTaxPlanCycleQueueProjectionIdempotencyKey,
-  createRedisTaxPlanCycleQueueProjectionIdempotencyStore,
   TaxPlanCycleQueueProjectionIdempotencyInProgressError,
   TaxPlanCycleQueueProjectionIdempotencyUnavailableError,
 };

@@ -54,13 +54,26 @@ export {
 } from "./infrastructure/queueCache.js";
 export {
   buildTaxPlanCycleQueueProjectionIdempotencyKey,
+  createRedisTaxPlanCycleQueueProjectionConsumer,
   createRedisTaxPlanCycleQueueProjectionIdempotencyStore,
+  createTaxPlanCycleQueueProjectionConsumer,
+  createTaxPlanCycleQueueProjectionWriter,
+  TAX_PULSE_QUEUE_PROJECTION_CONSUMER_NAME,
   TaxPlanCycleQueueProjectionIdempotencyInProgressError,
   TaxPlanCycleQueueProjectionIdempotencyUnavailableError,
-  type TaxPlanCycleQueueProjectionIdempotencyClient,
-  type TaxPlanCycleQueueProjectionIdempotencyInput,
-  type TaxPlanCycleQueueProjectionIdempotencyStore,
-} from "./infrastructure/queueProjectionIdempotency.js";
+  taxPlanCycleQueueProjectionStageChangedCloudEventSchema,
+} from "./infrastructure/CloudEvents/index.js";
+export type {
+  TaxPlanCycleQueueProjectionConsumerHandleResult,
+  TaxPlanCycleQueueProjectionConsumerOptions,
+  TaxPlanCycleQueueProjectionIdempotencyClient,
+  TaxPlanCycleQueueProjectionIdempotencyInput,
+  TaxPlanCycleQueueProjectionIdempotencyStore,
+  TaxPlanCycleQueueProjectionStageChangedCloudEvent,
+  TaxPlanCycleQueueProjectionStageChangedEventData,
+  TaxPlanCycleQueueProjectionWriter,
+  TaxPlanCycleQueueProjectionWriterClient,
+} from "./infrastructure/CloudEvents/index.js";
 export {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
@@ -75,20 +88,6 @@ export {
   type TaxPlanCycleQueueProjectionDynamoClient,
   type TaxPlanCycleQueueProjectionReader,
 } from "./infrastructure/queueDynamoStore.js";
-export {
-  createTaxPlanCycleQueueProjectionWriter,
-  type TaxPlanCycleQueueProjectionWriter,
-  type TaxPlanCycleQueueProjectionWriterClient,
-} from "./infrastructure/queueDynamoWriter.js";
-export {
-  TAX_PULSE_QUEUE_PROJECTION_CONSUMER_NAME,
-  createRedisTaxPlanCycleQueueProjectionConsumer,
-  createTaxPlanCycleQueueProjectionConsumer,
-  taxPlanCycleQueueProjectionStageChangedCloudEventSchema,
-  type TaxPlanCycleQueueProjectionConsumerHandleResult,
-  type TaxPlanCycleQueueProjectionConsumerOptions,
-  type TaxPlanCycleQueueProjectionStageChangedCloudEvent,
-} from "./infrastructure/queueProjectionConsumer.js";
 export {
   createTaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadService,

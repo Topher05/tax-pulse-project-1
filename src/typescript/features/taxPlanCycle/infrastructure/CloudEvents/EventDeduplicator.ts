@@ -1,15 +1,10 @@
 import { z } from "zod";
 
-import type { TaxPlanCycleCreateIdempotencyClient } from "./createIdempotency.js";
-
-export interface TaxPlanCycleQueueProjectionIdempotencyClient
-  extends Pick<TaxPlanCycleCreateIdempotencyClient, "get" | "set" | "del"> {}
-
-export interface TaxPlanCycleQueueProjectionIdempotencyInput {
-  tenantId: string;
-  consumerName: string;
-  eventId: string;
-}
+import type {
+  TaxPlanCycleQueueProjectionIdempotencyClient,
+  TaxPlanCycleQueueProjectionIdempotencyInput,
+  TaxPlanCycleQueueProjectionIdempotencyStore,
+} from "./model.js";
 
 export class TaxPlanCycleQueueProjectionIdempotencyInProgressError extends Error {
   constructor() {
@@ -64,12 +59,6 @@ export function buildTaxPlanCycleQueueProjectionIdempotencyKey(input: {
   eventId: string;
 }): string {
   return `idem:queue-projection:${input.tenantId}:${input.consumerName}:${input.eventId}`;
-}
-
-export interface TaxPlanCycleQueueProjectionIdempotencyStore {
-  claim(input: TaxPlanCycleQueueProjectionIdempotencyInput): Promise<boolean>;
-  complete(input: TaxPlanCycleQueueProjectionIdempotencyInput): Promise<void>;
-  release(input: TaxPlanCycleQueueProjectionIdempotencyInput): Promise<void>;
 }
 
 export function createRedisTaxPlanCycleQueueProjectionIdempotencyStore(
