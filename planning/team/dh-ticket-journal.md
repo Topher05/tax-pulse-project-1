@@ -5,6 +5,92 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira114 - SCRUM-114
+
+**Branch:** `dylan-harle-jira114`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-114
+
+**Summary:** Build the Add Deduction form with zod validation.
+
+**Description:** As a Frontend Developer, I want an Add Deduction form validated with zod, so that malformed deduction entries are caught at the boundary.
+
+**Acceptance Criteria:**
+
+- The form captures description, category, and amount and validates with react-hook-form + zod.
+- A negative amount or missing required field surfaces an inline validation message and blocks submit.
+- A valid submit invokes the create handler with the typed payload.
+
+**Code Connection:**
+
+- Replaced the SCRUM-112 placeholder `console.table` submit path with a typed `onCreate` callback boundary.
+- Kept the existing date field from SCRUM-112 while validating description, category, and amount through the local zod schema.
+- Preserved SCRUM-113 request-state rendering and SCRUM-115's table handoff by limiting page wiring to a local typed create handler.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Adds client-side boundary validation for deduction entry without changing tenant-scoped deductions fetch behavior or backend mutation contracts.
+- Leaves live create persistence and newly-created-row table behavior to SCRUM-115.
+
+**Changed Files:**
+
+- `src/pulseUI/components/DeductionEntryForm.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/tests/components/DeductionEntryForm.test.tsx`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/components/DeductionEntryForm.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm.cmd --prefix src/pulseUI test` passed.
+
+## dylan-harle-jira113 - SCRUM-113
+
+**Branch:** `dylan-harle-jira113`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-113
+
+**Summary:** Add loading, empty, and error states to the Deductions screen.
+
+**Description:** As a Frontend Developer, I want the Deductions screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the deductions request is in flight.
+- An empty state renders when the client has no deductions.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:**
+
+- Added visible Deductions request-state rendering on top of the SCRUM-112 TanStack Query hook boundary.
+- Kept ADR-0026 route-driven case gating intact so missing or invalid case IDs still block deductions fetches.
+- Preserved SCRUM-115's future table handoff by rendering the existing non-empty success placeholder only after data resolves with deduction rows.
+- Added retry behavior through `deductionsQuery.refetch()` without changing the shared query client's retry defaults.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Improves predictable selected-case Deductions behavior while preserving tenant-scoped backend reads through the existing case API.
+- Leaves Add Deduction submission behavior for SCRUM-114, live row/table rendering for SCRUM-115, and broader accessibility coverage for SCRUM-116.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.module.css`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/entities/deductionQueries.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+
 ## dylan-harle-jira131 - SCRUM-131
 
 **Branch:** `dylan-harle-jira131`
@@ -64,49 +150,6 @@ Add new ticket entries below using this template.
 - Review follow-up: `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts` passed.
 - Review follow-up: `npm run typecheck` passed.
 - `npm test` passed typecheck and the SCRUM-131 tests, then failed in existing non-SCRUM-131 coverage: `scenario.test.ts` and `scenarioRepository.test.ts` still receive `Date` for `created_at` where the schema expects a string, `scenarioMigration.test.ts` timed out after 30000ms, `jwtProtectedRoutes.test.ts` still expects `scenarios: []` on a read response that omits it, and `tenantsMigration.test.ts` / `tenantLoginResolver.test.ts` hit PostgreSQL connection refusals on port 54318.
-
-## dylan-harle-jira113 - SCRUM-113
-
-**Branch:** `dylan-harle-jira113`
-
-**Assignee:** Dylan Harle
-
-**Jira Key:** SCRUM-113
-
-**Summary:** Add loading, empty, and error states to the Deductions screen.
-
-**Description:** As a Frontend Developer, I want the Deductions screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.
-
-**Acceptance Criteria:**
-
-- A loading skeleton renders while the deductions request is in flight.
-- An empty state renders when the client has no deductions.
-- An error state renders with a retry affordance on request failure.
-
-**Code Connection:**
-
-- Added visible Deductions request-state rendering on top of the SCRUM-112 TanStack Query hook boundary.
-- Kept ADR-0026 route-driven case gating intact so missing or invalid case IDs still block deductions fetches.
-- Preserved SCRUM-115's future table handoff by rendering the existing non-empty success placeholder only after data resolves with deduction rows.
-- Added retry behavior through `deductionsQuery.refetch()` without changing the shared query client's retry defaults.
-
-**Project Scope Connection:**
-
-- React SPA - Operator & Portal Experience.
-- Improves predictable selected-case Deductions behavior while preserving tenant-scoped backend reads through the existing case API.
-- Leaves Add Deduction submission behavior for SCRUM-114, live row/table rendering for SCRUM-115, and broader accessibility coverage for SCRUM-116.
-
-**Changed Files:**
-
-- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
-- `src/pulseUI/pages/deductions/DeductionsPage.module.css`
-- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
-- `planning/team/dh-ticket-journal.md`
-
-**Validation Notes:**
-
-- `npm.cmd --prefix src/pulseUI test -- tests/entities/deductionQueries.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
-- `npm.cmd --prefix src/pulseUI run typecheck` passed.
 
 ## development-scrum130 - SCRUM-130
 
