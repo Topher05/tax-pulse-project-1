@@ -293,6 +293,12 @@ export { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
+  stageChangedCloudEventSchemaV1,
+  stageChangedEventDataSchema,
+  stageChangedEventDataSchemaV1,
+  stageChangedEventSchemaVersion,
+  stageChangedEventSource,
+  stageChangedEventType,
   taxPlanCycleCreateSchema,
   taxPlanCyclePrioritySchema,
   taxPlanCycleReadParamsSchema,
@@ -308,6 +314,8 @@ export {
   type TaxPlanCycleTransitionInput,
   type TaxPlanCycleTransitionParams,
   type TaxPlanCycleStage,
+  type StageChangedCloudEventV1,
+  type StageChangedEventDataV1,
 } from "./features/taxPlanCycle/index.js";
 export {
   createTaxPlanCycleRepository,

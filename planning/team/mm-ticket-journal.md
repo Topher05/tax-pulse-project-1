@@ -299,29 +299,46 @@ the follow-on SCRUM-99/SCRUM-192 auth scope.
 - A 401 triggers a token refresh and one retry.
 - A failed refresh logs the user out rather than retrying indefinitely.
 
-**Code Connection:** The shared Pulse UI case API helper now reads the SCRUM-98
-`taxpulse_shared_jwt` access token, sends it as the `Authorization` bearer for
-TanStack Query-backed live data requests, and handles a single refresh attempt through
-`POST /auth/refresh` when a request returns 401. Refreshed tokens are stored in the
-Pulse session helper, while failed refreshes and repeated 401s clear the local session.
+**Code Connection:** The Pulse UI now routes TanStack Query-backed live data requests
+through the shared AuthProvider session instead of reading JWTs from localStorage. The
+authenticated fetch wrapper attaches the in-memory access token, performs one
+refresh-and-retry on a 401 through the BFF's cookie-backed `POST /auth/refresh`
+contract, and clears query/session state when refresh fails. The generic case API helper
+now only handles URL construction, credentials inclusion, JSON parsing, and HTTP error
+mapping.
 
 **Project Scope Connection:** This connects SCRUM-98 route guarding with SCRUM-100 live
 queue/detail data loading so tenant-scoped case reads use the signed-in user's JWT
 instead of a hardcoded local testing token. Login UI and central auth context remain in
-the later SCRUM-192 scope.
+the later SCRUM-192 scope. Refresh tokens remain server-managed through Secure,
+HttpOnly, SameSite=Strict cookies and are not exposed to browser JavaScript.
 
 **Changed Files:**
 
-- `src/pulseUI/app/authSession.ts`
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/entities/clientRosterQueries.ts`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
 - `src/pulseUI/shared/caseApi.ts`
+- `src/pulseUI/tests/appShell.test.tsx`
 - `src/pulseUI/tests/caseApi.test.tsx`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
+- `src/pulseUI/tests/clients/ClientRosterQueries.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
+- `src/pulseUI/tests/testAuth.tsx`
 - `planning/team/mm-ticket-journal.md`
 
 **Validation Notes:**
 
-- `npm run typecheck` passed.
-- `npm --prefix src/pulseUI run test` passed with 8 files and 33 tests.
-- `npm --prefix src/pulseUI run build` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test` passed with 21 files and 72 tests.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 

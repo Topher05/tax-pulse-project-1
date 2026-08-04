@@ -5,6 +5,49 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira114 - SCRUM-114
+
+**Branch:** `dylan-harle-jira114`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-114
+
+**Summary:** Build the Add Deduction form with zod validation.
+
+**Description:** As a Frontend Developer, I want an Add Deduction form validated with zod, so that malformed deduction entries are caught at the boundary.
+
+**Acceptance Criteria:**
+
+- The form captures description, category, and amount and validates with react-hook-form + zod.
+- A negative amount or missing required field surfaces an inline validation message and blocks submit.
+- A valid submit invokes the create handler with the typed payload.
+
+**Code Connection:**
+
+- Replaced the SCRUM-112 placeholder `console.table` submit path with a typed `onCreate` callback boundary.
+- Kept the existing date field from SCRUM-112 while validating description, category, and amount through the local zod schema.
+- Preserved SCRUM-113 request-state rendering and SCRUM-115's table handoff by limiting page wiring to a local typed create handler.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Adds client-side boundary validation for deduction entry without changing tenant-scoped deductions fetch behavior or backend mutation contracts.
+- Leaves live create persistence and newly-created-row table behavior to SCRUM-115.
+
+**Changed Files:**
+
+- `src/pulseUI/components/DeductionEntryForm.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/tests/components/DeductionEntryForm.test.tsx`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/components/DeductionEntryForm.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm.cmd --prefix src/pulseUI test` passed.
+
 ## dylan-harle-jira113 - SCRUM-113
 
 **Branch:** `dylan-harle-jira113`
@@ -47,6 +90,58 @@ Add new ticket entries below using this template.
 
 - `npm.cmd --prefix src/pulseUI test -- tests/entities/deductionQueries.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
 - `npm.cmd --prefix src/pulseUI run typecheck` passed.
+
+## development-scrum130 - SCRUM-130
+
+**Branch:** `development`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-130
+
+**Summary:** Define the stage-changed CloudEvents schema.
+
+**Description:** As a Backend Developer, I want a CloudEvents schema for the stage-changed event, so that consumers have a stable event contract.
+
+**Acceptance Criteria:**
+
+- A CloudEvents-shaped schema defines case_id, from_stage, to_stage, tenant_id, and actor.
+- A zod validator parses and rejects malformed events.
+- The schema is versioned and documented.
+
+**Code Connection:**
+
+- Added a versioned CloudEvents 1.0 Zod schema for Tax Plan Cycle stage changes.
+- Reused the existing Tax Plan Cycle stage enum so event validation stays aligned with workflow state.
+- Exported the v1 event constants, schema, and inferred types through the Tax Plan Cycle feature boundary and package root.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration.
+- Establishes the stable event contract required before SCRUM-131 publishes stage-changed events and SCRUM-132 consumes them.
+- Does not add SNS publishing, SQS consumption, migrations, or a separate case status field.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts`
+- `docs/stage-changed-event.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `adr/README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts` passed.
+- `npm run typecheck` passed.
+- `git diff --check` passed with line-ending warnings only.
+- Local PostgreSQL 18.4 verified `uuidv7()` support with `uuidv7() IS NOT NULL`.
+- `npm test` passed typecheck and the new stage-changed event test, then failed in existing non-SCRUM-130 coverage:
+  `scenario.test.ts` and `scenarioRepository.test.ts` currently receive `Date` for `created_at` where the schema expects a string,
+  `scenarioMigration.test.ts` timed out after 30000ms, and
+  `jwtProtectedRoutes.test.ts` currently expects `scenarios: []` on a read response that omits it.
 
 ## dylan-harle-jira122 - SCRUM-122
 

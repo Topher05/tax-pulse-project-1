@@ -5,24 +5,21 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as detailQueries from "../../entities/taxPlanCycleQueries.ts";
+import { TestAuthProvider } from "../testAuth.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
 });
 
 afterEach(() => {
-  localStorage.clear();
   cleanup();
   vi.restoreAllMocks();
 });
 
 function renderDetails() {
-  localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
-
   vi.spyOn(detailQueries, "fetchTaxPlanCycleDetails").mockResolvedValue({
     caseId: "TP-24018",
     client: "North Shore Family Office",
@@ -37,7 +34,9 @@ function renderDetails() {
 
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <RouterProvider router={createPulseRouter(["/cycles/TP-24018"])} />
+      <TestAuthProvider>
+        <RouterProvider router={createPulseRouter(["/cycles/TP-24018"])} />
+      </TestAuthProvider>
     </QueryClientProvider>,
   );
 }
