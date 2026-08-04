@@ -35,6 +35,85 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira137 - SCRUM-137
+
+**Branch:** `caleb-latimer-jira137`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-137
+
+**Summary:** Create the action_item table and present-to-client event
+
+**Description:** As a Backend Developer, I want an action_item table and a present-to-client event, so that presenting a cycle can create action items.
+
+**Acceptance Criteria:**
+
+- A schema-backed `action_item` table exists with `case_id`, `description`, `deadline`, and `completed`.
+- The present-to-client boundary can publish a CloudEvent for action-item creation.
+- A consumer can materialize action items into the portal read model from that event.
+
+**Code Connection:**
+
+- `src/typescript/shared/database/schema.ts` adds the `action_item` table definition and foreign key to `tax_plan_cycle`.
+- `src/typescript/shared/database/seed.model.ts` adds the action-item seed model and three stubbed rows for case `018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12`.
+- `src/typescript/shared/database/seed.ts` truncates and seeds `action_item` rows through Drizzle.
+- `src/typescript/features/taxPlanCycle/actionItem.ts` defines the imposed action-item model.
+- `src/typescript/features/taxPlanCycle/actionItemCreatedEvent.ts` defines the CloudEvent contract and factory for action-item creation.
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts` adds the scaffolded action-item publish boundary with `TODO: Need sync with Jira 131`.
+- `src/typescript/features/taxPlanCycle/repositories/actionItems.ts` provides the action-item repository for the portal read model.
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/ActionItemConsumer.ts` consumes the action-item CloudEvent with Redis idempotency.
+- `tests/typescript/features/taxPlanCycle/actionItem.test.ts`, `tests/typescript/features/taxPlanCycle/actionItemCreatedEvent.test.ts`, `tests/typescript/features/taxPlanCycle/actionItemConsumer.test.ts`, and `tests/typescript/features/taxPlanCycle/transitionController.test.ts` cover the schema, event, consumer, and transition wiring.
+- `src/pulseUI/vitest.setup.ts` and `src/pulseUI/tests/deductions/mockDeductionsPage.test.tsx` were adjusted so the repo-wide suite stays green.
+
+**ERD:**
+
+```text
+TaxPlanCycle (existing)
+  1 ────< ActionItem
+            case_id FK -> TaxPlanCycle.id
+            description
+            deadline
+            completed
+```
+
+**Project Scope Connection:**
+
+- Keeps the work inside the Event-Driven Workflow & Legacy Integration epic.
+- Reuses the CloudEvents/idempotency patterns from SCRUM-136 instead of introducing a parallel event stack.
+- Stages the present-to-client hook so it can be synced with SCRUM-131 before the end-to-end runtime wiring is finalized.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/features/taxPlanCycle/actionItem.ts`
+- `src/typescript/features/taxPlanCycle/actionItemCreatedEvent.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/repositories/actionItems.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/ActionItemConsumer.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/EventDeduplicator.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/model.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/vitest.setup.ts`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.test.tsx`
+- `tests/typescript/features/taxPlanCycle/actionItem.test.ts`
+- `tests/typescript/features/taxPlanCycle/actionItemCreatedEvent.test.ts`
+- `tests/typescript/features/taxPlanCycle/actionItemConsumer.test.ts`
+- `tests/typescript/features/taxPlanCycle/transitionController.test.ts`
+- `tests/typescript/authNegativePaths.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm test` passes end to end.
+- Repo-wide TypeScript typecheck passes, including Pulse UI.
+- Focused Vitest coverage passed for the changed tax-plan-cycle files before the full suite run.
+- Targeted TypeScript compile passed for the changed source and seed files.
+
 ## caleb-latimer-jira101 - SCRUM-101
 
 **Branch:** `caleb-latimer-jira101`

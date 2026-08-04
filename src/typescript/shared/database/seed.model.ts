@@ -105,6 +105,14 @@ export type SeedTaxPlanCycleInsertRow = Omit<SeedTaxPlanCycleRow, "dueDate"> & {
   holdReason: string | null;
 };
 
+export type SeedActionItemRow = {
+  id: string;
+  caseId: string;
+  description: string;
+  deadline: Date;
+  completed: boolean;
+};
+
 export type SeedDeductionRow = {
   caseId: string;
   date: string;
@@ -456,6 +464,30 @@ export const taxPlanCycleRows = [
   },
 ] as const satisfies readonly SeedTaxPlanCycleRow[];
 
+export const actionItemRows = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e41",
+    caseId: taxPlanCycleRows[1].id,
+    description: "Send the client checklist",
+    deadline: new Date("2026-08-18T00:00:00Z"),
+    completed: false,
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e42",
+    caseId: taxPlanCycleRows[1].id,
+    description: "Confirm client meeting availability",
+    deadline: new Date("2026-08-19T00:00:00Z"),
+    completed: false,
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e43",
+    caseId: taxPlanCycleRows[1].id,
+    description: "Upload signed recommendation packet",
+    deadline: new Date("2026-08-20T00:00:00Z"),
+    completed: false,
+  },
+] as const satisfies readonly SeedActionItemRow[];
+
 export const deductionRows = [
   {
     caseId: taxPlanCycleRows[1].id,
@@ -641,5 +673,14 @@ export function buildTaxPlanCycleInsertRows(): SeedTaxPlanCycleInsertRow[] {
   return taxPlanCycleRows.map((row) => ({
     ...row,
     dueDate: row.dueDate.toISOString().replace(/T.+/, ""),
+  }));
+}
+
+export function buildActionItemInsertRows(): Array<
+  Omit<SeedActionItemRow, "deadline"> & { deadline: string }
+> {
+  return actionItemRows.map((row) => ({
+    ...row,
+    deadline: row.deadline.toISOString().replace(/T.+/, ""),
   }));
 }

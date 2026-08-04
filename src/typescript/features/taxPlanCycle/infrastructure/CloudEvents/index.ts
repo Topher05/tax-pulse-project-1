@@ -12,6 +12,12 @@ export {
 export {
   createWriter,
 } from "./Writer.js";
+export {
+  ACTION_ITEM_CREATED_CONSUMER_NAME,
+  ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
+  createActionItemConsumer,
+  createRedisActionItemConsumer,
+} from "./ActionItemConsumer.js";
 export type {
   ConsumerHandleResult,
   ConsumerOptions,

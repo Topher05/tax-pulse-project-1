@@ -153,6 +153,7 @@ export {
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
   auditEntry,
+  actionItem,
   deduction,
   credential,
   federalTaxBracket,
@@ -206,6 +207,30 @@ export {
   type ScenarioComparisonEngineOutputScenario,
   type ScenarioComparisonResponse,
   type ScenarioComparisonResult,
+} from "./features/taxPlanCycle/index.js";
+export {
+  actionItemSchema,
+  type ActionItem,
+  actionItemCreatedCloudEventSchemaV1,
+  actionItemCreatedEventDataSchema,
+  actionItemCreatedEventDataSchemaV1,
+  actionItemCreatedEventSchemaVersion,
+  actionItemCreatedEventSource,
+  actionItemCreatedEventType,
+  createActionItemCreatedCloudEvent,
+  type ActionItemCreatedCloudEventV1,
+  type ActionItemCreatedEventDataV1,
+  type ActionItemCreatedEventInput,
+  type ActionItemCreatedEventPublishInput,
+  type CreateActionItemCreatedCloudEventOptions,
+  createActionItemRepository,
+  type ActionItemCreateInput,
+  type ActionItemRepository,
+  type ActionItemCreatedEventPublisher,
+  ACTION_ITEM_CREATED_CONSUMER_NAME,
+  ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
+  createActionItemConsumer,
+  createRedisActionItemConsumer,
 } from "./features/taxPlanCycle/index.js";
 export {
   scenarioComputedResultSchema,

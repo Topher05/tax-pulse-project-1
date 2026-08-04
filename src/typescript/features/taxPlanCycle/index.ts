@@ -32,6 +32,22 @@ export {
   type StageChangedEventPublishInput,
   type CreateStageChangedCloudEventOptions,
 } from "./stageChangedEvent.js";
+export { actionItemSchema } from "./actionItem.js";
+export type { ActionItem } from "./actionItem.js";
+export {
+  actionItemCreatedCloudEventSchemaV1,
+  actionItemCreatedEventDataSchema,
+  actionItemCreatedEventDataSchemaV1,
+  actionItemCreatedEventSchemaVersion,
+  actionItemCreatedEventSource,
+  actionItemCreatedEventType,
+  createActionItemCreatedCloudEvent,
+  type ActionItemCreatedCloudEventV1,
+  type ActionItemCreatedEventDataV1,
+  type ActionItemCreatedEventInput,
+  type ActionItemCreatedEventPublishInput,
+  type CreateActionItemCreatedCloudEventOptions,
+} from "./actionItemCreatedEvent.js";
 export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
@@ -74,6 +90,10 @@ export {
   IdempotencyInProgressError,
   IdempotencyUnavailableError,
   STAGE_CHANGED_CONSUMER_NAME,
+  ACTION_ITEM_CREATED_CONSUMER_NAME,
+  ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
+  createActionItemConsumer,
+  createRedisActionItemConsumer,
 } from "./infrastructure/CloudEvents/index.js";
 export type {
   ConsumerHandleResult,
@@ -116,10 +136,16 @@ export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
   type StageChangedEventPublisher,
+  type ActionItemCreatedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
+export {
+  createActionItemRepository,
+  type ActionItemCreateInput,
+  type ActionItemRepository,
+} from "./repositories/actionItems.js";
 export {
   createTaxPlanCycleRouter,
   type CreateTaxPlanCycleRouterOptions,

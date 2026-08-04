@@ -252,6 +252,29 @@ export const taxPlanCycle = pgTable(
   ],
 );
 
+export const actionItem = pgTable(
+  "action_item",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    caseId: uuid("case_id").notNull(),
+    description: text("description").notNull(),
+    deadline: date("deadline").notNull(),
+    completed: boolean("completed").default(false).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "action_item_id_pk",
+      columns: [table.id],
+    }),
+    foreignKey({
+      name: "action_item_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    index("action_item_case_id_idx").on(table.caseId),
+  ],
+);
+
 export const scenario = pgTable(
   "scenario",
   {

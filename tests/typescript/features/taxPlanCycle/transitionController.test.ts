@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 
 import {
+  type ActionItemCreatedEventPublisher,
   createTaxPlanCycleTransitionController,
   type StageChangedEventPublisher,
   type TaxPlanCycle,
@@ -54,6 +55,52 @@ describe("createTaxPlanCycleTransitionController", () => {
       fromStage: "Modeling",
       toStage: "Review",
       actor: "advisor-001",
+    });
+  });
+
+  test("publishes the action-item payload when present-to-client details are supplied", async () => {
+    const transitionedCycle: TaxPlanCycle = {
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e81",
+      client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e82",
+      stage: "Client Approval",
+      owner: "advisor-001",
+      priority: "high",
+      due_date: "2026-08-01",
+      on_hold: false,
+    };
+    const repository: TaxPlanCycleRepository = {
+      create: vi.fn(),
+      insert: vi.fn(),
+      listQueue: vi.fn(),
+      transition: vi.fn(async () => transitionedCycle),
+      findByCaseId: vi.fn(async () => transitionedCycle),
+    };
+    const publisher: ActionItemCreatedEventPublisher = {
+      publishActionItemCreated: vi.fn(async () => undefined),
+    };
+    const controller = createTaxPlanCycleTransitionController(repository, {
+      actionItemEventPublisher: publisher,
+    });
+
+    const result = await controller.transition({
+      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e83",
+      caseId: transitionedCycle.id,
+      fromStage: "Review",
+      toStage: "Client Approval",
+      actor: "advisor-001",
+      actionItem: {
+        description: "Send the client checklist",
+        deadline: "2026-08-21",
+      },
+    });
+
+    expect(result).toBe(transitionedCycle);
+    expect(publisher.publishActionItemCreated).toHaveBeenCalledWith({
+      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e83",
+      caseId: transitionedCycle.id,
+      actor: "advisor-001",
+      description: "Send the client checklist",
+      deadline: "2026-08-21",
     });
   });
 });

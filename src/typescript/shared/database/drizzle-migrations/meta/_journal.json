@@ -57,6 +57,13 @@
       "when": 1785515169663,
       "tag": "0007_lush_archangel",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785806429478,
+      "tag": "0008_serious_agent_zero",
+      "breakpoints": true
     }
   ]
 }

@@ -8,14 +8,14 @@ import type {
 
 export class IdempotencyInProgressError extends Error {
   constructor() {
-    super("A queue projection event with the same id is still being processed.");
+    super("A consumer event with the same id is still being processed.");
     this.name = "IdempotencyInProgressError";
   }
 }
 
 export class IdempotencyUnavailableError extends Error {
   constructor() {
-    super("Redis idempotency storage is unavailable for the queue projection consumer.");
+    super("Redis idempotency storage is unavailable for the consumer.");
     this.name = "IdempotencyUnavailableError";
   }
 }
@@ -57,8 +57,10 @@ export function buildIdempotencyKey(input: {
   tenantId: string;
   consumerName: string;
   eventId: string;
+  namespace?: string;
 }): string {
-  return `idem:queue-projection:${input.tenantId}:${input.consumerName}:${input.eventId}`;
+  const namespace = input.namespace ?? "queue-projection";
+  return `idem:${namespace}:${input.tenantId}:${input.consumerName}:${input.eventId}`;
 }
 
 export function createRedisIdempotencyStore(

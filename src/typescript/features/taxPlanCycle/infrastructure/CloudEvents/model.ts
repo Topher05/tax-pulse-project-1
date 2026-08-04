@@ -25,6 +25,7 @@ export interface IdempotencyInput {
   tenantId: string;
   consumerName: string;
   eventId: string;
+  namespace?: string;
 }
 
 export interface IdempotencyStore {

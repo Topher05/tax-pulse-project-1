@@ -47,9 +47,7 @@ async function createAccessToken(): Promise<string> {
 }
 
 function tamperToken(token: string): string {
-  const replacement = token.endsWith("a") ? "b" : "a";
-
-  return `${token.slice(0, -1)}${replacement}`;
+  return `${token}.tampered`;
 }
 
 async function withAuthNegativePathServer(

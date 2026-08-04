@@ -6,6 +6,10 @@ import type {
 } from "../repositories/repository.js";
 import type { TaxPlanCycleQueueCacheInvalidator } from "../infrastructure/queueCache.js";
 import type { StageChangedEventPublishInput } from "../stageChangedEvent.js";
+import type {
+  ActionItemCreatedEventInput,
+  ActionItemCreatedEventPublishInput,
+} from "../actionItemCreatedEvent.js";
 
 export interface StageChangedEventPublisher {
   publishStageChanged(
@@ -13,9 +17,16 @@ export interface StageChangedEventPublisher {
   ): Promise<void> | void;
 }
 
+export interface ActionItemCreatedEventPublisher {
+  publishActionItemCreated(
+    input: ActionItemCreatedEventPublishInput,
+  ): Promise<void> | void;
+}
+
 export interface TaxPlanCycleTransitionControllerInput
   extends TaxPlanCycleTransitionInput {
   fromStage: TaxPlanCycle["stage"];
+  actionItem?: ActionItemCreatedEventInput;
 }
 
 export interface TaxPlanCycleTransitionController {
@@ -30,6 +41,7 @@ export interface TaxPlanCycleTransitionController {
 export interface TaxPlanCycleTransitionControllerOptions {
   queueCacheInvalidator?: TaxPlanCycleQueueCacheInvalidator;
   stageChangedEventPublisher?: StageChangedEventPublisher;
+  actionItemEventPublisher?: ActionItemCreatedEventPublisher;
 }
 
 export function createTaxPlanCycleTransitionController(
@@ -47,6 +59,16 @@ export function createTaxPlanCycleTransitionController(
           fromStage: input.fromStage,
           toStage: input.toStage,
           actor: input.actor,
+        });
+      }
+
+      if (transitioned && options.actionItemEventPublisher && input.actionItem) {
+        // TODO: Need sync with Jira 131
+        await options.actionItemEventPublisher.publishActionItemCreated({
+          tenantId: input.tenantId,
+          caseId: input.caseId,
+          actor: input.actor,
+          ...input.actionItem,
         });
       }
 
