@@ -1,5 +1,4 @@
-import { createRootRoute, createRoute, redirect } from "@tanstack/react-router";
-import { hasPulseAccessToken } from "./authSession.ts";
+import { createRootRoute, createRoute } from "@tanstack/react-router";
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
@@ -12,8 +11,7 @@ import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
-// TODO: Implement case ID routing component
-// import { validatePlanToolSearch } from "../shared/planToolCase.ts";
+import { validatePlanToolSearch } from "../shared/planToolCase.ts";
 
 const rootRoute = createRootRoute({
   component: AppShell,
@@ -22,7 +20,6 @@ const rootRoute = createRootRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  beforeLoad: requirePulseAuthentication,
   component: DashboardPage,
 });
 
@@ -35,14 +32,12 @@ const loginRoute = createRoute({
 const cyclesQueueRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/cycles/queue",
-  beforeLoad: requirePulseAuthentication,
   component: PlanCycle,
 });
 
 const cycleDetailsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/cycles/$id",
-  beforeLoad: requirePulseAuthentication,
   component: DetailsPage,
   validateSearch: (search) => validateDetailsSearch(search),
 });
@@ -51,54 +46,44 @@ const scenarioPlannerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/scenarios",
   component: ScenarioPlannerPage,
-  beforeLoad: requirePulseAuthentication,
-  // TODO: Implement case ID routing component
-  // validateSearch: (search) => validatePlanToolSearch(search),
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const incomeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/income",
-  beforeLoad: requirePulseAuthentication,
   component: () => <IncomePage clientId="" taxYear={2026} incomeEvents={[]} />,
 });
 
 const deductionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/deductions",
-  beforeLoad: requirePulseAuthentication,
   component: DeductionsPage,
-  // TODO: Implement case ID routing component
-  // validateSearch: (search) => validatePlanToolSearch(search),
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const quarterlyPaymentsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/quarterly-payments",
   component: QuarterlyPaymentsPage,
-  beforeLoad: requirePulseAuthentication,
-  // TODO: Implement case ID routing component
-  // validateSearch: (search) => validatePlanToolSearch(search),
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const clientsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/clients",
-  beforeLoad: requirePulseAuthentication,
   component: ClientRosterPage,
 });
 
 const firmUsersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/firm/users",
-  beforeLoad: requirePulseAuthentication,
   component: EmptyPage,
 });
 
 const firmSettingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/firm/settings",
-  beforeLoad: requirePulseAuthentication,
   component: EmptyPage,
 });
 
@@ -119,12 +104,6 @@ const administrationAuditLogRoute = createRoute({
   path: "/administration/audit-log",
   component: EmptyPage,
 });
-
-function requirePulseAuthentication() {
-  if (!hasPulseAccessToken()) {
-    throw redirect({ to: "/login" });
-  }
-}
 
 export const routeTree = rootRoute.addChildren([
   dashboardRoute,

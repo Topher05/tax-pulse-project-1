@@ -49,10 +49,13 @@ Add new ticket entries below using this template.
 
 **Acceptance Criteria:**
 
-- The `/scenarios` page renders a button that opens a modal titled `New What-If Scenario`.
-- The form uses `react-hook-form` with Zod validation and shows inline field errors.
-- Submitting logs the form payload locally with `console.table()` and does not call the backend.
-- The submission path keeps the Scrum-102 follow-up comment in place and leaves backend submission for later.
+- The `/scenarios` page renders the `CurrentCaseSelector` in the tool header and uses the shared case gate when no valid case is selected.
+- The launcher button is `New scenario` and stays disabled until a valid case is selected.
+- The modal card title is `New What-If Scenario` and the body header is `New What if Scenario Set`.
+- The form uses `react-hook-form` with Zod validation, logs validation failures to the console, and enforces the 2-5 scenario limit in the UI.
+- The form UI stays on CSS modules rather than Tailwind utility styling.
+- Successful submission logs locally with `console.info()` and keeps the Scrum-102 handoff comment in place.
+- The page table area stays deferred to Jira-102.
 
 **Sequence Diagram:**
 
@@ -60,59 +63,121 @@ Add new ticket entries below using this template.
 sequenceDiagram
     participant Advisor
     participant UI as Pulse UI
+    participant Selector as CurrentCaseSelector
+    participant Gate as Case gateway
     participant Form as react-hook-form
     participant Schema as Zod
 
     Advisor->>UI: Open /scenarios
-    UI-->>Advisor: Render Scenario Planner entry button
-    Advisor->>UI: Open modal
-    UI->>Form: mount local form state
-    Advisor->>Form: Enter scenario fields
-    Form->>Schema: validate locally
-    Schema-->>Form: field-level success or inline errors
+    UI->>Selector: Render case selector in the header
+    Selector-->>UI: Show case gate until a valid case is chosen
+    Advisor->>Selector: Select accessible case ID
+    Selector->>UI: Update route search with caseId
+    UI->>Gate: Render launcher state for selected case
+    Gate-->>UI: Enable New scenario button
+    Advisor->>UI: Open modal with New scenario
+    UI->>Form: mount scenario array state
+    Advisor->>Form: Add 2-5 scenario cards
+    Form->>Form: reset to clean defaults on reopen
+    Form->>Schema: validate each scenario field and array count
+    Schema-->>Form: inline field errors or valid payload
     Advisor->>Form: Click Create Scenario
-    Form->>Schema: validate current form values
-    Schema-->>Form: valid payload or errors
-    Form-->>Advisor: console.table(formData)
+    Form->>Schema: submit local scenario set
+    Schema-->>Form: console.info payload or console.error validation errors
     Note over Form,Advisor: Submission work is handled in Scrum-102
 ```
 
 **Code Connection:**
 
-- `src/pulseUI/components/ScenarioPlanningForm.tsx`
-- `src/pulseUI/components/ScenarioPlanningForm.module.css`
-- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/ScenarioForm.tsx`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/scenario-form/Form.module.css`
+- `src/pulseUI/components/scenario-form/Form.tsx`
+- `src/pulseUI/components/scenario-form/ScenarioCard.tsx`
+- `src/pulseUI/components/scenario-form/ScenarioCard.module.css`
+- `src/pulseUI/components/scenario-form/StatusFooter.tsx`
+- `src/pulseUI/components/scenario-form/StatusFooter.module.css`
+- `src/pulseUI/components/scenario-form/constants.ts`
+- `src/pulseUI/components/scenario-form/schema.ts`
+- `src/pulseUI/components/PlanToolCaseGate.tsx`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
-- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
 - `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
-- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
-- `src/pulseUI/package.json`
+- `src/pulseUI/tests/components/ScenarioForm.test.tsx`
 
 **Project Scope Connection:**
 
 - React SPA - Operator & Portal Experience
 - Tax Plan Cycle scenario-planning UI work
 
+**Form Structure / Validation Notes:**
+
+- The form is a repeatable scenario array rendered inside a modal card.
+- Each scenario requires name, description, income, deductions, and income type.
+- The UI blocks submission until the scenario count is between 2 and 5.
+- Inline errors render beside the offending field in each scenario card.
+- The add-scenario control disables at 5 and the footer reflects the remaining slots.
+
+**Income Type Mapping:**
+
+```json
+{
+  "rt": "Rental",
+  "cg": "Capital Gains",
+  "se": "1099/Self-Employment",
+  "w2": "W-2 Employment"
+}
+```
+
+**Form Field Mapping:**
+
+```json
+{
+  "scenarios": [
+    {
+      "scenarioName": "string",
+      "description": "string",
+      "additionalIncome": "number",
+      "additionalDeductions": "number",
+      "incomeType": "rt | cg | se | w2"
+    }
+  ]
+}
+```
+
 **Changed Files:**
 
-- `src/pulseUI/components/ScenarioPlanningForm.tsx`
-- `src/pulseUI/components/ScenarioPlanningForm.module.css`
-- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/ScenarioForm.tsx`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/scenario-form/Form.module.css`
+- `src/pulseUI/components/scenario-form/Form.tsx`
+- `src/pulseUI/components/scenario-form/ScenarioCard.tsx`
+- `src/pulseUI/components/scenario-form/ScenarioCard.module.css`
+- `src/pulseUI/components/scenario-form/StatusFooter.tsx`
+- `src/pulseUI/components/scenario-form/StatusFooter.module.css`
+- `src/pulseUI/components/scenario-form/constants.ts`
+- `src/pulseUI/components/scenario-form/schema.ts`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
 - `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
 - `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
-- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
-- `src/pulseUI/package.json`
+- `src/pulseUI/tests/components/ScenarioForm.test.tsx`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/scenarios/ScenarioPlannerPage.test.tsx"` passed.
-- The scenario form test verifies the modal, inline validation, default income type, negative decimal handling, and `console.table()` submit logging.
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ScenarioPlanningForm.test.tsx tests/scenarios/ScenarioPlannerPage.test.tsx"` passed.
-- The split tests now cover the extracted component modal behavior, validation, escape close handling, and the page launcher open/close flow.
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc -p src/pulseUI/tsconfig.pulseUI.json --noEmit 2>&1 | findstr /C:ScenarioPlannerPage.tsx"` returned no Scenario Planner file errors.
-- The broader Pulse UI typecheck still has pre-existing unrelated errors in `Details.tsx`, `Queue.tsx`, and older route tests that are outside this ticket.
+- Testing was intentionally deferred until implementation is complete and reviewed; typecheck is the only validation run so far.
+- The updated form logs valid submissions with `console.info()` and validation failures with `console.error()`.
+- The page now renders the `CurrentCaseSelector` in the tool header and shows the case gate when `caseId` is absent or invalid.
+- The modal form no longer surfaces `caseId` in the UI or submission payload and starts clean on each reopen.
+- Jira-102 owns the table fetch/post behavior and remains marked in the page area with a TODO comment.
+
+**Additional Scope Impact (append-only):**
+
+- The scenario modal styling was moved back to CSS modules after the utility-first pass, keeping the UI closer to the original component structure.
+- The scenario form now renders a horizontal divider between repeated entries using the requested white-to-gray gradient treatment.
+- The footer actions now read as a horizontal button group with icon affordances and primary/secondary/info emphasis.
+- The form no longer receives or displays `caseId`; case injection remains reserved for Scrum-102 rollup behavior.
+- Reopening the modal now starts from clean default state rather than preserving values or validation state from the previous open.
+- The related page and test updates continue to reflect the case selector harness and the local-only submit flow.
 
 ## caleb-latimer-jira100 - SCRUM-100
 
@@ -860,6 +925,53 @@ sequenceDiagram
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx tests/deductions/DeductionsPage.test.tsx"` passed.
 
+
+## caleb-latimer-jira116 - SCRUM-116
+
+**Branch:** `caleb-latimer-jira116`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-116
+
+**Summary:** Add accessibility and a component test for the Deductions screen
+
+**Description:** As a Frontend Developer, I want the Deductions screen to pass an axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the table renders rows and the empty state for no data.
+- The form's inputs carry accessible labels and the test asserts a validation error is announced.
+
+**Code Connection:**
+
+- `src/pulseUI/vitest.setup.ts`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.tsx`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.test.tsx`
+- `src/pulseUI/vitest.config.ts`
+- `src/pulseUI/package.json`
+- `adr/0027-vitest-axe-accessibility-testing.md`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Deductions screen accessibility and regression coverage
+- Real-route axe coverage for the authenticated `/deductions` screen plus a story-only mock seam for the blocked UI edge cases
+
+**Changed Files:**
+
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/vitest.setup.ts`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.tsx`
+- `src/pulseUI/tests/deductions/mockDeductionsPage.test.tsx`
+- `src/pulseUI/vitest.config.ts`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `adr/0027-vitest-axe-accessibility-testing.md`
+
+
 ## caleb-latimer-jira112 - SCRUM-112
 
 **Branch:** `caleb-latimer-jira112`
@@ -868,12 +980,26 @@ sequenceDiagram
 
 **Jira Key:** SCRUM-112
 
-**Summary:** Replace deductions GET mocks with a Postgres-backed list endpoint and align the Pulse UI query consumer to integration a TanStack Query hook to the deductions endpoint
+**Summary:** Add the TanStack Query hook to the deductions endpoint and wire the Deductions page to the route-driven case gate, Replace deductions GET mocks with a Postgres-backed list endpoint and align the Pulse UI query consumer to integration a TanStack Query hook to the deductions endpoint to add the TanStack Query hook to the quarterly estimates endpoint
 
-**Description:** As a Core Case Service engineer, I want `GET /v1/cases/:caseId/deductions` to read directly from Postgres and return a JSON array of deduction rows, so that the Deductions screen can consume tenant-scoped live data through a typed query boundary instead of a synthetic aggregation payload.
+**Description:** As a Frontend Developer, I want the Deductions screen to read tenant-scoped live data through one typed query boundary, so that the page requires a valid case ID from router state before it fetches and exposes loading, error, and data states for future loader behavior.
+
+As a Core Case Service engineer, I want `GET /v1/cases/:caseId/deductions` to read directly from Postgres and return a JSON array of deduction rows, so that the Deductions screen can consume tenant-scoped live data through a typed query boundary instead of a synthetic aggregation payload. As a React SPA engineer, I want the shared case selector and gate to initialize the current case selection for deductions, so that the page can fetch `GET /v1/cases/:caseId/deductions` only after a valid route-backed case is selected.
+
+
 
 **Acceptance Criteria:**
 
+- A TanStack Query hook calls the deductions endpoint and returns typed deduction items.
+- The hook exposes loading, error, and data states to callers.
+- The Deductions screen reads the hook boundary instead of a static local scaffold.
+- The route-driven case context from SCRUM-203 remains the case-id source for the query boundary.
+- The shared selector can initialize the current case selection from the deductions page.
+- Loader presentation remains deferred to SCRUM-113 and is only tracked as query state for now.
+- `GET /v1/cases/:caseId/deductions` is fetched only after a valid case ID exists.
+- The Deductions page exposes a query-state marker for future loader wiring without rendering loader UI.
+- The Pulse UI query layer treats the response as `Deduction[]`.
+- Coverage includes missing case gating, selected case fetch behavior, query-state exposure, and typed response parsing.
 - `GET /v1/cases/:caseId/deductions` queries the `deduction` table directly.
 - The repository filters by the authenticated tenant and requested case.
 - The endpoint returns a JSON array of deduction rows with ISO date strings and numeric fields serialized for JSON transport.
@@ -881,18 +1007,21 @@ sequenceDiagram
 - The Pulse UI query layer treats the response as `Deduction[]`, and the Deductions page logs the parsed array with `console.table()`.
 - Repository, route, and UI regression tests cover the owning tenant, cross-tenant access, empty-list cases, and the parsed response shape.
 - The OpenAPI contract reflects the new list response.
-
 **Sequence Diagram:**
 
 ```mermaid
 sequenceDiagram
     participant Advisor
     participant UI as Pulse UI
+    participant Selector as CurrentCaseSelector
+    participant Gate as PlanToolCaseGate
     participant Query as useDeductionsQuery
-    participant API as Core Case Service
+    participant Router as TanStack Router
+     participant API as Core Case Service
     participant Route as deductions route
     participant Repo as Deductions repository
     participant DB as Postgres deduction table
+    participant API as Case API
 
     Advisor->>UI: Open /deductions
     UI->>Query: mount DeductionsPage with caseId
@@ -907,10 +1036,23 @@ sequenceDiagram
     Query-->>UI: query data available
     UI->>UI: console.table(query.data)
     Note over UI: Main table wiring stays disabled for Scrum-115
+    Note over Screen: Loader UI remains deferred to SCRUM-113
+    UI->>Selector: render shared case selector
+    alt case ID missing or invalid
+        UI->>Gate: show case gate and block fetch
+    else case ID selected
+        Selector->>Router: write caseId into router search
+        UI->>Query: enable deductions query with caseId
+        Query->>API: GET /v1/cases/{caseId}/deductions
+        API-->>Query: Deduction[]
+        Query-->>UI: data, loading, error state exposure
+    end
+    Note over UI: Loader UI remains deferred to SCRUM-113
 ```
 
 **Code Connection:**
 
+- `src/pulseUI/entities/deductionQueries.ts`
 - `src/typescript/features/deductions/repositories/repository.ts`
 - `src/typescript/features/deductions/repositories/deduction.ts`
 - `src/typescript/features/deductions/routes.ts`
@@ -919,22 +1061,49 @@ sequenceDiagram
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
 - `src/typescript/shared/database/seed.model.ts`
-- `src/pulseUI/entities/deductionQueries.ts`
 - `src/pulseUI/pages/deductions/DeductionsPage.tsx`
-- `src/pulseUI/tests/entities/deductionQueries.test.ts`
+`src/pulseUI/tests/entities/deductionQueries.test.ts`
 - `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
 - `tests/typescript/features/deductions/repository.test.ts`
 - `tests/typescript/features/deductions/routes.test.ts`
 - `tests/typescript/deductionAggregationClient.test.ts`
-
-**Project Scope Connection:**
-
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/PlanToolCaseGate.tsx`
+- `src/pulseUI/shared/usePlanToolCase.ts`
+- `src/pulseUI/shared/planToolCase.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/entities/deductionQueries.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/typescript/features/deductions/repositories/repository.ts`
+- `src/typescript/features/deductions/repositories/deduction.ts`
+- `src/typescript/features/deductions/routes.ts`
+- `src/typescript/features/deductions/controllers/deductions.ts`
+- `src/typescript/features/deductions/repositories/mockAggregationDataSource.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- Route-driven case context integration
+- Pulse UI deductions query boundary alignment
+- Loader-state exposure deferred to the next Jira
+- Shared plan-tool case selection and gating
+- Case-gated deductions fetch behavior
 - Core Case Service backend
 - Tenant-scoped read path and API contract cleanup
-- Pulse UI deductions query boundary alignment
+- Core Case Service deductions endpoint compatibility
 
 **Changed Files:**
 
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/entities/deductionQueries.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/components/PlanToolCaseGate.tsx`
+- `src/pulseUI/shared/usePlanToolCase.ts`
+- `src/pulseUI/shared/planToolCase.ts`
 - `src/typescript/features/deductions/repositories/repository.ts`
 - `src/typescript/features/deductions/repositories/deduction.ts`
 - `src/typescript/features/deductions/routes.ts`
@@ -943,19 +1112,12 @@ sequenceDiagram
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
 - `src/typescript/shared/database/seed.model.ts`
-- `src/pulseUI/entities/deductionQueries.ts`
-- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
-- `src/pulseUI/tests/entities/deductionQueries.test.ts`
-- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
-- `tests/typescript/features/deductions/repository.test.ts`
-- `tests/typescript/features/deductions/routes.test.ts`
-- `tests/typescript/deductionAggregationClient.test.ts`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd test"` still fails in this host because the existing suite depends on Docker/Testcontainers integration and one pre-existing `jwtProtectedRoutes` assertion mismatch remains outside this change.
+- Focused Pulse UI tests passed: `tests/entities/deductionQueries.test.tsx`, `tests/deductions/DeductionsPage.test.tsx`, and `tests/appShell.test.tsx`.
+- Pulse UI typecheck passed: `npm.cmd run typecheck`.
 
 ## caleb-latimer-jira117 - SCRUM-117
 
@@ -967,15 +1129,15 @@ sequenceDiagram
 
 **Summary:** Scaffold the Quarterly Payments screen component from the wireframe
 
-**Description:** As an Advisor, I want a read-only Quarterly Payments screen, so that I can review the estimated installment schedule and withholding coverage before charting and payment actions are added later.
+**Description:** As an Advisor, I want a read-only Quarterly Payments screen, so that I can review the estimated installment schedule and withholding coverage through a case-scoped quarterly-estimates read model before charting and payment actions are added later.
 
 **Acceptance Criteria:**
 
 - The `/quarterly-payments` route renders a typed quarterly payments screen instead of the empty page.
 - The screen shows a KPI region with the second card styled green and the last card styled amber.
-- The screen shows a read-only quarter timeline with exactly seven seeded estimate items.
-- The screen includes a withholding progress placeholder card with `TBD` content.
-- The screen does not scaffold payment recording or mark-paid actions.
+- The screen shows a read-only quarter timeline with four seeded estimate items.
+- The screen includes a computed withholding progress card that reports total estimated, paid so far, and remaining due values.
+- The screen keeps payment recording and mark-paid actions out of scope.
 
 **Code Connection:**
 
@@ -983,6 +1145,11 @@ sequenceDiagram
 - `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
 - `src/pulseUI/components/QuarterlyTimelineItem.tsx`
 - `src/pulseUI/components/QuarterlyTimelineItem.module.css`
+- `src/pulseUI/components/WithholdingProgressChart.tsx`
+- `src/pulseUI/entities/quarterlyEstimateQueries.ts`
+- `src/typescript/features/quarterlyPayments/routes.ts`
+- `src/typescript/features/quarterlyPayments/repositories/quarterlyPayments.ts`
+- `src/typescript/features/quarterlyPayments/repositories/mockPayments.model.ts`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
 
@@ -995,8 +1162,13 @@ sequenceDiagram
 
 - `src/pulseUI/components/QuarterlyTimelineItem.tsx`
 - `src/pulseUI/components/QuarterlyTimelineItem.module.css`
+- `src/pulseUI/components/WithholdingProgressChart.tsx`
 - `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
 - `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
+- `src/pulseUI/entities/quarterlyEstimateQueries.ts`
+- `src/typescript/features/quarterlyPayments/routes.ts`
+- `src/typescript/features/quarterlyPayments/repositories/quarterlyPayments.ts`
+- `src/typescript/features/quarterlyPayments/repositories/mockPayments.model.ts`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
 - `planning/team/cl-ticket-journal.md`
@@ -1005,6 +1177,31 @@ sequenceDiagram
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npx tsc --noEmit"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx tests/appShell.test.tsx tests/components/ToolHeader.test.tsx tests/components/DataTable.test.tsx"` passed.
+- Jira 118 was completed inside this branch as the typed quarterly-estimates query boundary for the read-only Quarterly Payments screen.
+- Later quarterly-payments refinements reduced the mock to four items, shrank the quarter statuses to `Paid` and `Due`, and replaced the placeholder chart with computed coverage, paid-so-far, and remaining-due outputs.
+
+## caleb-latimer-jira118 - SCRUM-118
+
+**Branch:** `caleb-latimer-jira117`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-118
+
+**Summary:** Add the TanStack Query hook to the quarterly estimates endpoint
+
+**Description:** Jira 118 was implemented inside Jira 117 to add a typed read-only quarterly-estimates query boundary for the Quarterly Payments screen.
+
+**Acceptance Criteria:** Implemented inside SCRUM-117.
+
+**Code Connection:** `src/pulseUI/entities/quarterlyEstimateQueries.ts`, `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`, `src/typescript/features/quarterlyPayments/routes.ts`
+
+**Project Scope Connection:** React SPA - Operator & Portal Experience, Core Case Service read-only quarterly estimates
+
+**Changed Files:** See SCRUM-117 quarterly-payments changes.
+
+**Validation Notes:** Validation was deferred per instruction; no tests were run for this ticket during implementation.
+- Database generation follow-up for this quarterly payments work will be tracked in SCRUM-204.
 
 ## caleb-latimer-jira203 - SCRUM-203
 
@@ -1082,10 +1279,17 @@ sequenceDiagram
 - `.env.example`
 - `.env`
 - `adr/0026-route-driven-case-context.md`
+
 - `adr/README.md`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
+
+
+- Dependency install completed with `npm.cmd --prefix src/pulseUI install --save-dev vitest-axe`.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/deductions/DeductionsPage.test.tsx"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/deductions/mockDeductionsPage.test.tsx"` passed.
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
 - Focused Pulse UI tests were not completed: the sandboxed command failed before Vitest started with the known Windows `EPERM` path issue, and no escalated rerun was performed.
@@ -1137,3 +1341,50 @@ sequenceDiagram
 - `npm.cmd test` in `src/pulseUI` passed: 16 test files passed, 57 tests passed.
 - `npm.cmd test` at the repository root passed: TypeScript typecheck passed, 49 Vitest files passed, 232 tests passed, 1 skipped.
 - `git diff --check` passed with no whitespace errors; Git reported only CRLF normalization warnings.
+
+## caleb-latimer-jira136 - SCRUM-136
+
+**Branch:** `caleb-latimer-jira136`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-136
+
+**Summary:** Make the queue-projection consumer idempotent
+
+**Description:** As a Backend Developer, I want the queue-projection consumer idempotent, so that a redelivered event does not double-apply.
+
+**Acceptance Criteria:**
+
+- The consumer records processed event IDs and skips duplicates.
+- Re-processing the same stage-changed event yields the same projection.
+- A test asserts an at-least-once redelivery is handled idempotently.
+
+**Code Connection:**
+
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionIdempotency.ts` adds the Redis-backed processed-event ledger with explicit `SET` semantics and tenant/consumer scoping.
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionConsumer.ts` validates stage-changed CloudEvents, short-circuits duplicate deliveries, and writes the queue projection from the source repository state.
+- `src/typescript/features/taxPlanCycle/infrastructure/queueDynamoWriter.ts` provides the DynamoDB `PutCommand` upsert adapter for the queue projection row.
+- `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts` covers the first-delivery, duplicate-delivery, and Redis-unavailable paths.
+- `tests/typescript/features/taxPlanCycle/queueDynamoWriter.test.ts` pins the DynamoDB writer command shape.
+
+**Project Scope Connection:**
+
+This ticket keeps Redis in the disposable operational-state role described by ADR-0010 and ADR-0014. The queue-read cache-aside path is unchanged; this work adds a separate idempotency ledger for the stage-changed queue consumer so redeliveries do not double-apply the projection.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionIdempotency.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueDynamoWriter.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionConsumer.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts`
+- `tests/typescript/features/taxPlanCycle/queueDynamoWriter.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+- `npm.cmd test` at the repository root timed out before completion.
+- Direct Vitest launches in this Windows sandbox hit the known `EPERM: operation not permitted, lstat 'C:\Users\Exia'` path-resolution issue before tests started.

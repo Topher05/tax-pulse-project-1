@@ -5,28 +5,27 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import type { PlanCycleQueueRow } from "../../entities/taxPlanCycle.ts";
 import * as queueQueries from "../../entities/taxPlanCycleQueries.ts";
+import { TestAuthProvider } from "../testAuth.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
 });
 
 afterEach(() => {
-  localStorage.clear();
   cleanup();
   vi.restoreAllMocks();
 });
 
 function renderPlanCycle() {
-  localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
-
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <RouterProvider router={createPulseRouter(["/cycles/queue"])} />
+      <TestAuthProvider>
+        <RouterProvider router={createPulseRouter(["/cycles/queue"])} />
+      </TestAuthProvider>
     </QueryClientProvider>,
   );
 }

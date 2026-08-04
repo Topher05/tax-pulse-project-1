@@ -86,9 +86,12 @@ function toDetailsView(
   };
 }
 
-export async function fetchTaxPlanCycleQueue(): Promise<readonly PlanCycleQueueRow[]> {
+export async function fetchTaxPlanCycleQueue(
+  fetcher?: typeof fetch,
+): Promise<readonly PlanCycleQueueRow[]> {
   const payload = await caseApiGetJson<readonly TaxPlanCycleQueueApiRow[]>(
     "/v1/tax-plan-cycles",
+    fetcher,
   );
 
   return payload.map(toQueueRow);
@@ -96,9 +99,11 @@ export async function fetchTaxPlanCycleQueue(): Promise<readonly PlanCycleQueueR
 
 export async function fetchTaxPlanCycleDetails(
   caseId: string,
+  fetcher?: typeof fetch,
 ): Promise<TaxPlanCycleDetailsView> {
   const payload = await caseApiGetJson<TaxPlanCycleDetailsApiResponse>(
     `/v1/tax-plan-cycles/${caseId}`,
+    fetcher,
   );
 
   return toDetailsView(payload);
