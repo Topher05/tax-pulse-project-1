@@ -73,7 +73,9 @@ export function AuthProvider({
 
   const completeMfaLogin = useCallback(
     async (challenge: MfaChallenge, code: string) => {
-      setState(toAuthenticatedState(await client.completeMfaLogin(challenge, code)));
+      const nextState = toAuthenticatedState(await client.completeMfaLogin(challenge, code));
+      setState(nextState);
+      return nextState.status === "authenticated" ? nextState.session.user : null;
     },
     [client],
   );

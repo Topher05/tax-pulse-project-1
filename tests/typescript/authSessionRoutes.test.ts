@@ -30,11 +30,12 @@ function createTokenService(): TokenService {
 async function withRouteServer(
   tokenService: TokenService,
   run: (baseUrl: string) => Promise<void>,
+  secureCookies: boolean = true,
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (expressApp) => {
-      expressApp.use(createAuthSessionRouter({ tokenService }));
+      expressApp.use(createAuthSessionRouter({ tokenService, secureCookies }));
     },
   });
   const server = app.listen(0);
@@ -89,6 +90,20 @@ describe("auth session routes", () => {
         /taxpulse_refresh_token=; Path=\/auth; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=Strict/i,
       );
     });
+  });
+
+  test("uses non-secure refresh cookies for the local HTTP BFF", async () => {
+    const tokenService = createTokenService();
+
+    await withRouteServer(tokenService, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/auth/refresh`, {
+        method: "POST",
+        headers: { cookie: "taxpulse_refresh_token=prior-refresh-token" },
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("set-cookie")).not.toContain("Secure");
+    }, false);
   });
 
   test("logout revokes the refresh session when present and always clears its cookie", async () => {
