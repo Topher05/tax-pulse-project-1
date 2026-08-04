@@ -18,6 +18,14 @@ export {
   createActionItemConsumer,
   createRedisActionItemConsumer,
 } from "./ActionItemConsumer.js";
+export {
+  createPresentToClientSaga,
+  type PresentToClientActionItemCreatedEventPublisher,
+  type PresentToClientSaga,
+  type PresentToClientSagaInput,
+  type PresentToClientSagaOptions,
+  type PresentToClientStageChangedEventPublisher,
+} from "./PresentToClientSaga.js";
 export type {
   ConsumerHandleResult,
   ConsumerOptions,

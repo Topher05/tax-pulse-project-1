@@ -94,6 +94,7 @@ export {
   ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
   createActionItemConsumer,
   createRedisActionItemConsumer,
+  createPresentToClientSaga,
 } from "./infrastructure/CloudEvents/index.js";
 export type {
   ConsumerHandleResult,
@@ -101,6 +102,11 @@ export type {
   IdempotencyGuard,
   IdempotencyInput,
   IdempotencyStore,
+  PresentToClientActionItemCreatedEventPublisher,
+  PresentToClientSaga,
+  PresentToClientSagaInput,
+  PresentToClientSagaOptions,
+  PresentToClientStageChangedEventPublisher,
   Writer,
   WriterClient,
 } from "./infrastructure/CloudEvents/index.js";
