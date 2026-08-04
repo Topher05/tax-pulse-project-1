@@ -943,12 +943,14 @@ react-hook-form and zod, so that malformed income entries are rejected at the bo
 - The fourth slice styles the form with the Income screen's established Segoe UI stack,
   dark surfaces, slate text, indigo actions, responsive layout, and visible validation
   and focus states while reusing the shared modal shell.
+- The final slice covers missing fields, negative amounts, and successful submission of
+  parsed numeric values through the typed create handler.
 
 **Project Scope Connection:**
 
-This establishes the typed validation boundary, functional Add Income form, and Income
-page launch flow and visual treatment. Focused tests remain in the final SCRUM-108
-implementation slice; API persistence and table refresh remain outside this ticket.
+This completes the typed validation boundary, functional Add Income form, Income page
+launch flow, visual treatment, and focused acceptance coverage. API persistence and
+table refresh remain outside this ticket.
 
 **Changed Files:**
 
@@ -956,9 +958,12 @@ implementation slice; API persistence and table refresh remain outside this tick
 - `src/pulseUI/pages/income/IncomeEntryForm.tsx`
 - `src/pulseUI/pages/income/IncomeEntryForm.module.css`
 - `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/components/IncomeEntryForm.test.tsx`
 - `src/pulseUI/app/routeTree.tsx`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test -- --run tests/components/IncomeEntryForm.test.tsx`
+  passed: 3 tests.
