@@ -58,4 +58,31 @@ describe("cloud tap script", () => {
     expect(result.compensation.rollbackCount).toBe(1);
     expect(result.compensation.stageChangedEvents).toBe(2);
   });
+
+  test("writes Redis-visible trace keys for manual present-to-client verification", async () => {
+    const writes: Array<{ key: string; value: string }> = [];
+    const traceWriter = {
+      async set(key: string, value: string): Promise<unknown> {
+        writes.push({ key, value });
+        return "OK";
+      },
+    };
+
+    await runPresentToClientCloudTap(traceWriter);
+
+    expect(writes.map((entry) => entry.key)).toEqual([
+      "cloudtap:present-to-client:success:forward-stage-changed",
+      "cloudtap:present-to-client:success:action-item-created",
+      "cloudtap:present-to-client:success:result",
+      "cloudtap:present-to-client:compensation:forward-stage-changed",
+      "cloudtap:present-to-client:compensation:action-item-created",
+      "cloudtap:present-to-client:compensation:compensating-stage-changed",
+      "cloudtap:present-to-client:compensation:result",
+    ]);
+
+    expect(writes[0]?.value).toContain('"toStage": "Client Approval"');
+    expect(writes[2]?.value).toContain('"finalStage": "Client Approval"');
+    expect(writes[5]?.value).toContain('"toStage": "Review"');
+    expect(writes[6]?.value).toContain('"finalStage": "Review"');
+  });
 });

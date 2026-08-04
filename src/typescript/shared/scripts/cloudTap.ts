@@ -50,6 +50,14 @@ export interface CloudTapLogger {
   log(message: string): void;
 }
 
+export interface CloudTapTraceWriter {
+  set(
+    key: string,
+    value: string,
+    options?: { EX?: number; NX?: boolean },
+  ): Promise<unknown>;
+}
+
 function createInMemoryRedisClient(): IdempotencyGuard {
   const store = new Map<string, string>();
 
@@ -102,6 +110,23 @@ function buildCloudTapCycle(): TaxPlanCycle {
     priority: "high",
     due_date: "2026-08-02",
     on_hold: false,
+  };
+}
+
+function createInMemoryTraceWriter(): {
+  traceWriter: CloudTapTraceWriter;
+  entries: Array<{ key: string; value: string }>;
+} {
+  const entries: Array<{ key: string; value: string }> = [];
+
+  return {
+    traceWriter: {
+      async set(key: string, value: string): Promise<unknown> {
+        entries.push({ key, value });
+        return "OK";
+      },
+    },
+    entries,
   };
 }
 
@@ -159,8 +184,61 @@ function createInMemoryTransitionRepository(
   };
 }
 
+function serializeCloudTapTrace(value: unknown): string {
+  return JSON.stringify(value, null, 2);
+}
+
+async function writePresentToClientCloudTapTrace(
+  traceWriter: CloudTapTraceWriter | undefined,
+  sequence: "success" | "compensation",
+  input: {
+    tenantId: string;
+    caseId: string;
+    actor: string;
+    actionItem: ActionItemCreatedEventInput;
+  },
+  result: PresentToClientCloudTapSequenceResult,
+  stageChangedEvents: StageChangedEventPublishInput[],
+): Promise<void> {
+  if (!traceWriter) {
+    return;
+  }
+
+  const prefix = `cloudtap:present-to-client:${sequence}`;
+  const [forwardStageChangedEvent, compensatingStageChangedEvent] =
+    stageChangedEvents;
+
+  await traceWriter.set(
+    `${prefix}:forward-stage-changed`,
+    serializeCloudTapTrace(forwardStageChangedEvent ?? null),
+  );
+  await traceWriter.set(
+    `${prefix}:action-item-created`,
+    serializeCloudTapTrace({
+      tenantId: input.tenantId,
+      caseId: input.caseId,
+      actor: input.actor,
+      actionItem: input.actionItem,
+    }),
+  );
+
+  if (compensatingStageChangedEvent) {
+    await traceWriter.set(
+      `${prefix}:compensating-stage-changed`,
+      serializeCloudTapTrace(compensatingStageChangedEvent),
+    );
+  }
+
+  await traceWriter.set(
+    `${prefix}:result`,
+    serializeCloudTapTrace(result),
+  );
+}
+
 async function runPresentToClientCloudTapSequence(
+  sequence: "success" | "compensation",
   shouldFailActionItemPublish: boolean,
+  traceWriter?: CloudTapTraceWriter,
 ): Promise<PresentToClientCloudTapSequenceResult> {
   const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e95";
   const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e96";
@@ -222,18 +300,42 @@ async function runPresentToClientCloudTapSequence(
     actionItem,
   }).catch(() => undefined);
 
-  return {
+  const result = {
     finalStage: repository.getCurrentCycle().stage,
     actionItemStatus,
     rollbackCount: repository.transitions.filter((entry) => entry.toStage === "Review").length,
     stageChangedEvents: stageChangedEvents.length,
   };
+
+  await writePresentToClientCloudTapTrace(
+    traceWriter,
+    sequence,
+    {
+      tenantId,
+      caseId,
+      actor,
+      actionItem,
+    },
+    result,
+    stageChangedEvents,
+  );
+
+  return result;
 }
 
-export async function runPresentToClientCloudTap(): Promise<PresentToClientCloudTapResult> {
+export async function runPresentToClientCloudTap(
+  traceWriter?: CloudTapTraceWriter,
+): Promise<PresentToClientCloudTapResult> {
+  const success = await runPresentToClientCloudTapSequence("success", false, traceWriter);
+  const compensation = await runPresentToClientCloudTapSequence(
+    "compensation",
+    true,
+    traceWriter,
+  );
+
   return {
-    success: await runPresentToClientCloudTapSequence(false),
-    compensation: await runPresentToClientCloudTapSequence(true),
+    success,
+    compensation,
   };
 }
 
@@ -285,7 +387,21 @@ export async function runCloudTap(
 export async function main(): Promise<void> {
   const redisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   const result = await runCloudTap(redisUrl);
-  const presentToClient = await runPresentToClientCloudTap();
+  const traceWriter = redisUrl ? createClient({ url: redisUrl }) : undefined;
+
+  if (traceWriter) {
+    await traceWriter.connect();
+  }
+
+  let presentToClient: PresentToClientCloudTapResult;
+
+  try {
+    presentToClient = await runPresentToClientCloudTap(traceWriter);
+  } finally {
+    if (traceWriter) {
+      await traceWriter.quit().catch(() => undefined);
+    }
+  }
 
   console.log(`Cloud tap mode: ${result.mode}`);
   console.log(`Consumer: ${STAGE_CHANGED_CONSUMER_NAME}`);
@@ -293,6 +409,7 @@ export async function main(): Promise<void> {
   console.log(`First delivery: ${result.firstStatus}`);
   console.log(`Second delivery: ${result.secondStatus}`);
   console.log(`Projection writes: ${result.projectionWrites}`);
+  console.log(`Present-to-client Redis trace prefix: cloudtap:present-to-client`);
   console.log(`Present-to-client success final stage: ${presentToClient.success.finalStage}`);
   console.log(`Present-to-client compensation final stage: ${presentToClient.compensation.finalStage}`);
   console.log(`Present-to-client compensation rollbacks: ${presentToClient.compensation.rollbackCount}`);
