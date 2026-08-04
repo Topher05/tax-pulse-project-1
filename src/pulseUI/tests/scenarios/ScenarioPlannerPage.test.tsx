@@ -7,8 +7,8 @@ import { afterEach, beforeAll, describe, expect, test } from "vitest";
 
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
-import { TestAuthProvider } from "../testAuth.tsx";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 const seededCaseId = taxPlanCycleRows[1].id;
 
@@ -23,9 +23,9 @@ afterEach(() => {
 function renderScenarioPlannerRoute(pathname: string) {
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <TestAuthProvider>
+      <TestSessionProvider>
         <RouterProvider router={createPulseRouter([pathname])} />
-      </TestAuthProvider>
+      </TestSessionProvider>
     </QueryClientProvider>,
   );
 }

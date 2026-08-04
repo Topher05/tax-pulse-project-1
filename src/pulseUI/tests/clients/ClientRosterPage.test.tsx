@@ -7,8 +7,8 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 import * as caseApi from "../../shared/caseApi.ts";
-import { TestAuthProvider } from "../testAuth.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -55,13 +55,12 @@ describe("ClientRosterPage", () => {
         quarterlyStatus: null,
       },
     ]);
-
     render(
-      <QueryClientProvider client={createPulseQueryClient()}>
-        <TestAuthProvider>
+      <TestSessionProvider>
+        <QueryClientProvider client={createPulseQueryClient()}>
           <RouterProvider router={createPulseRouter(["/clients"])} />
-        </TestAuthProvider>
-      </QueryClientProvider>,
+        </QueryClientProvider>
+      </TestSessionProvider>,
     );
 
     expect(await screen.findByRole("heading", { name: "Client Roster", level: 1 }))

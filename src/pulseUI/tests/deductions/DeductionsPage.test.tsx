@@ -9,8 +9,8 @@ import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
 import { isUuid } from "../../shared/planToolCase.ts";
-import { TestAuthProvider } from "../testAuth.tsx";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 const seededCaseId = taxPlanCycleRows[1].id;
 
@@ -72,9 +72,9 @@ function createDeferred<T>() {
 function renderDeductionsPage(initialPath: string) {
   return render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <TestAuthProvider>
+      <TestSessionProvider>
         <RouterProvider router={createPulseRouter([initialPath])} />
-      </TestAuthProvider>
+      </TestSessionProvider>
     </QueryClientProvider>,
   );
 }
@@ -145,7 +145,10 @@ describe("DeductionsPage", () => {
     });
 
     expect(screen.getByText("$18,500")).toBeInTheDocument();
-    expect(caseApiMock).toHaveBeenCalledWith(`/v1/cases/${seededCaseId}/deductions`);
+    expect(caseApiMock).toHaveBeenCalledWith(
+      `/v1/cases/${seededCaseId}/deductions`,
+      expect.any(Function),
+    );
   });
 
   test("exposes the error state when the deductions request fails", async () => {

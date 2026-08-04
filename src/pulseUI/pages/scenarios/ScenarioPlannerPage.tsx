@@ -9,7 +9,7 @@ import { ScenarioForm } from "../../components/ScenarioForm.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
 
 export function ScenarioPlannerPage() {
-  const search = useSearch({ from: "/scenarios" });
+  const search = useSearch({ from: "/_workspace/scenarios" });
   const navigate = useNavigate({ from: "/scenarios" });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const caseId = search.caseId ?? null;

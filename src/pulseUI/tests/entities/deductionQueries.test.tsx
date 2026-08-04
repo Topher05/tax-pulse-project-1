@@ -2,13 +2,14 @@ import "@testing-library/jest-dom/vitest";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
-import { createElement, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import * as caseApi from "../../shared/caseApi.ts";
 import { useDeductionsQuery } from "../../entities/deductionQueries.ts";
 import { isUuid } from "../../shared/planToolCase.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 const sampleCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22";
 
@@ -36,11 +37,9 @@ describe("useDeductionsQuery", () => {
   test("parses the deductions payload returned by the case API", async () => {
     vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(samplePayloads as never);
     const wrapper = ({ children }: { children: ReactNode }) => (
-      createElement(
-        QueryClientProvider,
-        { client: createPulseQueryClient() },
-        children,
-      )
+      <QueryClientProvider client={createPulseQueryClient()}>
+        <TestSessionProvider>{children}</TestSessionProvider>
+      </QueryClientProvider>
     );
 
     const { result } = renderHook(() => useDeductionsQuery(sampleCaseId), { wrapper });
@@ -59,6 +58,10 @@ describe("useDeductionsQuery", () => {
       },
     ]);
     expect(result.current.data?.[0]?.id).toBe("018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01");
+    expect(caseApi.caseApiGetJson).toHaveBeenCalledWith(
+      `/v1/cases/${sampleCaseId}/deductions`,
+      expect.any(Function),
+    );
   });
 
   test("accepts zero-valued amounts and rejects malformed numeric strings", async () => {
@@ -72,11 +75,9 @@ describe("useDeductionsQuery", () => {
 
     vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(zeroPayload as never);
     const wrapper = ({ children }: { children: ReactNode }) => (
-      createElement(
-        QueryClientProvider,
-        { client: createPulseQueryClient() },
-        children,
-      )
+      <QueryClientProvider client={createPulseQueryClient()}>
+        <TestSessionProvider>{children}</TestSessionProvider>
+      </QueryClientProvider>
     );
 
     const { result } = renderHook(() => useDeductionsQuery(sampleCaseId), { wrapper });

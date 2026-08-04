@@ -5,6 +5,7 @@ export default defineConfig({
     jsx: "automatic",
   },
   test: {
+    cache: false,
     testTimeout: 30_000,
     environment: "jsdom",
     exclude: ["**/dist/**", "**/node_modules/**"],
