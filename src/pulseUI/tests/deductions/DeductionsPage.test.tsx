@@ -111,7 +111,7 @@ describe("DeductionsPage", () => {
     expect(caseApiMock.mock.calls.some(([path]) => String(path).startsWith("/v1/cases/"))).toBe(false);
   });
 
-  test("fetches deductions once a valid case ID is selected and exposes loading then data state", async () => {
+  test("fetches deductions once a valid case ID is selected and renders loading then data state", async () => {
     const deferred = createDeferred<readonly DeductionApiRow[]>();
     const caseApiMock = vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
       if (path === "/v1/tax-plan-cycles") {
@@ -134,6 +134,7 @@ describe("DeductionsPage", () => {
 
     expect(selector).toHaveValue(seededCaseId);
     expect(container.querySelector('[data-deductions-query-state="loading"]')).not.toBeNull();
+    expect(screen.getByRole("status", { name: "Loading deductions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Deduction" })).toBeEnabled();
 
     await act(async () => {
@@ -145,10 +146,46 @@ describe("DeductionsPage", () => {
     });
 
     expect(screen.getByText("$18,500")).toBeInTheDocument();
+    expect(screen.getByText("$4,625")).toBeInTheDocument();
+    expect(
+      screen.getByText("Deduction table wiring is disabled pending scrum-115."),
+    ).toBeInTheDocument();
     expect(caseApiMock).toHaveBeenCalledWith(`/v1/cases/${seededCaseId}/deductions`);
   });
 
-  test("exposes the error state when the deductions request fails", async () => {
+  test("renders the empty state when the selected case has no deductions", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
+      if (path === "/v1/tax-plan-cycles") {
+        return Promise.resolve(buildTaxPlanCycleQueuePayload() as never);
+      }
+
+      if (path === `/v1/cases/${seededCaseId}/deductions`) {
+        return Promise.resolve([] as never);
+      }
+
+      throw new Error(`Unexpected deductions request: ${path}`);
+    });
+
+    const { container } = renderDeductionsPage("/deductions");
+
+    const selector = await screen.findByRole("combobox", { name: "Case ID" });
+    await screen.findByRole("option", { name: seededCaseId });
+
+    fireEvent.change(selector, { target: { value: seededCaseId } });
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-deductions-query-state="empty"]')).not.toBeNull();
+    });
+
+    expect(screen.getByRole("heading", { name: "No deductions yet" })).toBeInTheDocument();
+    expect(screen.getByText("This case has no recorded deductions.")).toBeInTheDocument();
+    expect(screen.getAllByText("$0")).toHaveLength(2);
+    expect(
+      screen.queryByText("Deduction table wiring is disabled pending scrum-115."),
+    ).not.toBeInTheDocument();
+  });
+
+  test("renders the error state with retry when the deductions request fails", async () => {
     const deferred = createDeferred<readonly DeductionApiRow[]>();
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
@@ -180,6 +217,53 @@ describe("DeductionsPage", () => {
       expect(container.querySelector('[data-deductions-query-state="error"]')).not.toBeNull();
     });
 
-    expect(screen.getByText("Deduction table wiring is disabled pending scrum-115.")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Deductions could not load" })).toBeInTheDocument();
+    expect(screen.getByText("deductions endpoint unavailable")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(
+      screen.queryByText("Deduction table wiring is disabled pending scrum-115."),
+    ).not.toBeInTheDocument();
+  });
+
+  test("retries the deductions request and can recover after failure", async () => {
+    let deductionsRequestCount = 0;
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const caseApiMock = vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
+      if (path === "/v1/tax-plan-cycles") {
+        return Promise.resolve(buildTaxPlanCycleQueuePayload() as never);
+      }
+
+      if (path === `/v1/cases/${seededCaseId}/deductions`) {
+        deductionsRequestCount += 1;
+
+        if (deductionsRequestCount === 1) {
+          return Promise.reject(new Error("Temporary deductions failure.")) as never;
+        }
+
+        return Promise.resolve([] as never);
+      }
+
+      throw new Error(`Unexpected deductions request: ${path}`);
+    });
+
+    const { container } = renderDeductionsPage("/deductions");
+
+    const selector = await screen.findByRole("combobox", { name: "Case ID" });
+    await screen.findByRole("option", { name: seededCaseId });
+
+    fireEvent.change(selector, { target: { value: seededCaseId } });
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-deductions-query-state="empty"]')).not.toBeNull();
+    });
+
+    expect(screen.getByRole("heading", { name: "No deductions yet" })).toBeInTheDocument();
+    expect(caseApiMock).toHaveBeenCalledWith(`/v1/cases/${seededCaseId}/deductions`);
+    expect(deductionsRequestCount).toBe(2);
   });
 });
