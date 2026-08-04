@@ -9,6 +9,7 @@ import {
 } from "../../postgresMigrations.js";
 
 import {
+  clientRoster,
   credential,
   federalTaxBracket,
   mfaEnrollment,
@@ -24,6 +25,7 @@ import {
 import {
   buildTaxPlanCycleInsertRows,
   californiaTaxBracketRows,
+  clientRosterRows,
   credentialRows,
   federalTaxBracketRows,
   mfaEnrollmentRows,
@@ -45,6 +47,7 @@ export async function applySeed(client: Client): Promise<void> {
       TRUNCATE TABLE
         "audit_entry",
         "stage_transition",
+        "client_roster",
         "tax_plan_cycle",
         "state_tax_bracket",
         "federal_tax_bracket",
@@ -64,6 +67,7 @@ export async function applySeed(client: Client): Promise<void> {
     await db.insert(credential).values([...credentialRows]);
     await db.insert(mfaEnrollment).values([...mfaEnrollmentRows]);
     await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
+    await db.insert(clientRoster).values([...clientRosterRows]);
     await db.insert(stageTransition).values([...stageTransitionRows]);
     await db.insert(federalTaxBracket).values([...federalTaxBracketRows]);
     await db.insert(stateTaxBracket).values([...californiaTaxBracketRows]);
