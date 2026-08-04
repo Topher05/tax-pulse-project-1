@@ -932,16 +932,21 @@ react-hook-form and zod, so that malformed income entries are rejected at the bo
   monetary input strings to finite, non-negative numbers.
 - `IncomePage` consumes and re-exports the shared category type so the screen and future
   form use one income-type contract.
+- The second slice adds `IncomeEntryForm`, which delegates form state to react-hook-form
+  and validation to the Zod resolver. Required and invalid values render associated
+  inline alerts, while valid parsed payloads invoke the typed create handler before the
+  modal closes.
 
 **Project Scope Connection:**
 
-This establishes the typed validation boundary for the Add Income form. Form markup,
-submission wiring, inline error rendering, and focused tests remain in subsequent
+This establishes the typed validation boundary and functional Add Income form. Income
+page launch wiring, ticket-specific styling, and focused tests remain in subsequent
 SCRUM-108 implementation slices.
 
 **Changed Files:**
 
 - `src/pulseUI/pages/income/incomeEntrySchema.ts`
+- `src/pulseUI/pages/income/IncomeEntryForm.tsx`
 - `src/pulseUI/pages/income/IncomePage.tsx`
 - `planning/team/cm-ticket-journal.md`
 
