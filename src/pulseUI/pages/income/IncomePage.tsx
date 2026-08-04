@@ -30,14 +30,6 @@ export interface IncomePageProps {
   onCreateIncome: (payload: IncomeCreatePayload) => void | Promise<void>;
 }
 
-const incomeKpis = [
-  "W-2 Employment",
-  "1099 Freelance",
-  "Capital Gains",
-  "Rental Income",
-  "Other",
-] as const;
-
 const incomeTypeLabels: Record<IncomeSourceCategory, string> = {
   w2: "W-2",
   "1099": "1099",
@@ -45,6 +37,14 @@ const incomeTypeLabels: Record<IncomeSourceCategory, string> = {
   rental: "Rental",
   other: "Other",
 };
+
+const incomeKpiCategories: readonly IncomeSourceCategory[] = [
+  "w2",
+  "1099",
+  "capital-gains",
+  "rental",
+  "other",
+];
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -71,6 +71,19 @@ function formatDate(value: string): string {
  */
 export function IncomePage({ incomeEvents, onCreateIncome }: IncomePageProps) {
   const [isAddIncomeFormOpen, setIsAddIncomeFormOpen] = useState(false);
+  const incomeTotals = incomeEvents.reduce<Record<IncomeSourceCategory, number>>(
+    (totals, incomeEvent) => {
+      totals[incomeEvent.category] += incomeEvent.amount;
+      return totals;
+    },
+    {
+      w2: 0,
+      "1099": 0,
+      "capital-gains": 0,
+      rental: 0,
+      other: 0,
+    },
+  );
 
   return (
     <section className={styles.page} aria-labelledby="income-page-title">
@@ -94,11 +107,11 @@ export function IncomePage({ incomeEvents, onCreateIncome }: IncomePageProps) {
       </header>
 
       <section className={styles.kpiGrid} aria-label="Income source summaries">
-        {incomeKpis.map((label) => (
-          <article className={styles.kpiCard} key={label}>
-            <p className={styles.kpiLabel}>{label}</p>
-            <p className={styles.kpiValue} aria-label={`${label} placeholder value`}>
-              —
+        {incomeKpiCategories.map((category) => (
+          <article className={styles.kpiCard} key={category}>
+            <p className={styles.kpiLabel}>{incomeTypeLabels[category]}</p>
+            <p className={styles.kpiValue}>
+              {currencyFormatter.format(incomeTotals[category])}
             </p>
           </article>
         ))}
