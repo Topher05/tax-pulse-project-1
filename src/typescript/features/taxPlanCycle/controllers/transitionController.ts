@@ -21,15 +21,22 @@ export interface TaxPlanCycleTransitionController {
   ): Promise<TaxPlanCycle | null> | TaxPlanCycle | null;
 }
 
+export interface TaxPlanCycleTransitionEventLogger {
+  warn(...args: unknown[]): void;
+}
+
 export interface TaxPlanCycleTransitionControllerOptions {
   queueCacheInvalidator?: TaxPlanCycleQueueCacheInvalidator;
   stageChangedEventPublisher?: StageChangedEventPublisher;
+  stageChangedEventLogger?: TaxPlanCycleTransitionEventLogger;
 }
 
 export function createTaxPlanCycleTransitionController(
   repository: TaxPlanCycleRepository,
   options: TaxPlanCycleTransitionControllerOptions = {},
 ): TaxPlanCycleTransitionController {
+  const eventLogger = options.stageChangedEventLogger ?? console;
+
   return {
     transition: async (input) => {
       const transitioned = await repository.transition(input);
@@ -39,7 +46,7 @@ export function createTaxPlanCycleTransitionController(
       }
 
       if (options.stageChangedEventPublisher) {
-        // Event publishing is best-effort because the database transition has already committed.
+        // Event publishing is best-effort because the database transition already committed.
         try {
           await options.stageChangedEventPublisher.publishStageChanged({
             tenantId: input.tenantId,
@@ -48,8 +55,18 @@ export function createTaxPlanCycleTransitionController(
             toStage: input.toStage,
             actor: input.actor,
           });
-        } catch {
-          // Ignore publish failures so clients do not see a failed mutation after a committed transition.
+        } catch (error) {
+          eventLogger.warn(
+            {
+              err: error,
+              tenant_id: input.tenantId,
+              case_id: input.caseId,
+              from_stage: input.fromStage,
+              to_stage: input.toStage,
+              actor: input.actor,
+            },
+            "Stage-changed event publish failed after transition commit",
+          );
         }
       }
 

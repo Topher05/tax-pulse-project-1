@@ -30,6 +30,7 @@ Add new ticket entries below using this template.
 - Passed the route's known `fromStage` into the transition controller so the publisher can emit `from_stage` without an extra read.
 - Wired production composition to an SNS client and `TAXPULSE_STAGE_CHANGED_TOPIC_ARN`.
 - Wrapped SNS publishing as a best-effort post-transition side effect so a publish failure does not make a committed stage change appear failed to the client.
+- Added a structured warning log for best-effort SNS publish failures to preserve tracing context.
 
 **Project Scope Connection:**
 
@@ -60,6 +61,8 @@ Add new ticket entries below using this template.
 - `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/transitions.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts` passed.
 - `npm run typecheck` passed.
 - `git diff --check` passed with line-ending warnings only.
+- Review follow-up: `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts` passed.
+- Review follow-up: `npm run typecheck` passed.
 - `npm test` passed typecheck and the SCRUM-131 tests, then failed in existing non-SCRUM-131 coverage: `scenario.test.ts` and `scenarioRepository.test.ts` still receive `Date` for `created_at` where the schema expects a string, `scenarioMigration.test.ts` timed out after 30000ms, `jwtProtectedRoutes.test.ts` still expects `scenarios: []` on a read response that omits it, and `tenantsMigration.test.ts` / `tenantLoginResolver.test.ts` hit PostgreSQL connection refusals on port 54318.
 
 ## development-scrum130 - SCRUM-130

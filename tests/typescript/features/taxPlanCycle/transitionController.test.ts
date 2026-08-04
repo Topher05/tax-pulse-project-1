@@ -91,10 +91,12 @@ describe("TaxPlanCycleTransitionController", () => {
     const publishStageChanged = vi.fn(async () => {
       throw publishError;
     });
+    const eventLogger = { warn: vi.fn() };
     const controller = createTaxPlanCycleTransitionController(
       createRepository(vi.fn(async () => transitionedCycle)),
       {
         stageChangedEventPublisher: { publishStageChanged },
+        stageChangedEventLogger: eventLogger,
       },
     );
 
@@ -108,5 +110,16 @@ describe("TaxPlanCycleTransitionController", () => {
       }),
     ).resolves.toEqual(transitionedCycle);
     expect(publishStageChanged).toHaveBeenCalledTimes(1);
+    expect(eventLogger.warn).toHaveBeenCalledWith(
+      {
+        err: publishError,
+        tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e93",
+        case_id: originalCycle.id,
+        from_stage: "Intake",
+        to_stage: "Data Aggregation",
+        actor: "advisor-controller-001",
+      },
+      "Stage-changed event publish failed after transition commit",
+    );
   });
 });

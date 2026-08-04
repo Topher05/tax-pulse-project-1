@@ -379,6 +379,7 @@ export {
   type StageChangedSnsClient,
   type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionControllerInput,
+  type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
   type ValidationErrorIssue,
   type ValidationErrorResponse,
@@ -547,6 +548,7 @@ export async function main(): Promise<Server> {
         createStageChangedSnsClient(),
         getStageChangedTopicArnFromEnv(),
       ),
+      stageChangedEventLogger: logger,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
