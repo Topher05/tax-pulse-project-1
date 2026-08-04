@@ -967,3 +967,60 @@ table refresh remain outside this ticket.
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `npm --prefix src/pulseUI test -- --run tests/components/IncomeEntryForm.test.tsx`
   passed: 3 tests.
+
+
+## christopher-martus-jira109 - SCRUM-109
+
+**Branch:** `christopher-martus-jira109`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-109
+
+**Summary:** Render the income table from live data
+
+**Description:** As a Frontend Developer, I want the income table rendered from the hook
+data, so that recorded income events and their amounts are visible.
+
+**Acceptance Criteria:**
+
+- The table renders date, source, type, amount, and withholding columns from the hook data.
+- Per-source KPI cards (W-2, 1099, Capital Gains, Rental, Other) render above the table.
+- A newly added income event appears in the table after a successful create.
+
+**Code Connection:**
+
+- `IncomePage` now renders its typed `incomeEvents` input as table rows with readable
+  income-type labels, UTC-safe display dates, and USD-formatted amount and withholding
+  values. The empty state only renders when that collection is empty.
+- The five existing KPI cards now aggregate event amounts by W-2, 1099, Capital Gains,
+  Rental, and Other, including zero-dollar values for categories without events.
+- A compact component-flow test supplies the same prop contract that the SCRUM-106 hook
+  will use. It verifies table and KPI rendering, then exercises a successful form callback
+  and confirms the updated collection renders the new row and KPI value.
+- Live query and cache-invalidation wiring remains intentionally deferred until the
+  SCRUM-106 income hook is available; no temporary API client or duplicate production
+  state was introduced.
+
+**Project Scope Connection:**
+
+This supplies the minimal presentation and aggregation behavior required for recorded
+income events while preserving the typed composition seam for the tenant-scoped income
+query. The remaining hook integration will make this presentation contract live without
+rewriting the table or KPI logic.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- The focused Income page test passed: 1 test.
+- Full Pulse UI coverage passed: 111 tests in 31 files.
+- `npm --prefix src/pulseUI run build` passed; Vite reported its existing large-chunk
+  advisory warning.
+- `git diff --check` passed.
