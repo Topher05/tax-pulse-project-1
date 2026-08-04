@@ -1,9 +1,9 @@
-/**
- * The income-source categories the screen will summarize once live data is wired.
- */
-export type IncomeSourceCategory = "w2" | "1099" | "capital-gains" | "rental" | "other";
 import { Plus, ReceiptText } from "lucide-react";
+
+import type { IncomeSourceCategory } from "./incomeEntrySchema.ts";
 import styles from "./IncomePage.module.css";
+
+export type { IncomeSourceCategory } from "./incomeEntrySchema.ts";
 
 /**
  * Presentation contract for an income entry returned by the future income boundary.

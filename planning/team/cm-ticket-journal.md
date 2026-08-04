@@ -903,3 +903,48 @@ behavior.
 
 
 
+## christopher-martus-jira108 - SCRUM-108
+
+**Branch:** `christopher-martus-jira108`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-108
+
+**Summary:** Build the Add Income form with react-hook-form and zod
+
+**Description:** As a Frontend Developer, I want an Add Income form validated with
+react-hook-form and zod, so that malformed income entries are rejected at the boundary.
+
+**Acceptance Criteria:**
+
+- The form captures source, type, amount, and withholding and validates with
+  react-hook-form and zod.
+- A negative amount or missing required field surfaces an inline validation message and
+  blocks submit.
+- A valid submit invokes the create handler with the typed payload.
+
+**Code Connection:**
+
+- The first implementation slice defines the route-local Zod schema for source, type,
+  amount, and withholding. It separates raw form input from the parsed create payload,
+  trims the source, restricts type to the existing income categories, and converts
+  monetary input strings to finite, non-negative numbers.
+- `IncomePage` consumes and re-exports the shared category type so the screen and future
+  form use one income-type contract.
+
+**Project Scope Connection:**
+
+This establishes the typed validation boundary for the Add Income form. Form markup,
+submission wiring, inline error rendering, and focused tests remain in subsequent
+SCRUM-108 implementation slices.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/incomeEntrySchema.ts`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
