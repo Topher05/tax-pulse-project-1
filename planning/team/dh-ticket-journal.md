@@ -262,11 +262,14 @@ Add new ticket entries below using this template.
 - Added a tenant-scoped Client Roster query hook that calls `/v1/clients` without accepting a tenant ID, leaving firm/advisor scoping to the authenticated API context.
 - Moved the roster row type into the Pulse UI entity layer and kept the Client Roster screen wired through the same typed row boundary established by SCRUM-122.
 - Updated the Client Roster route to read rows through TanStack Query instead of prototype data.
+- Added the persistent `client_roster` table, seeded fake roster rows, and a tenant-scoped Core Case `GET /v1/clients` endpoint for the hook to fetch.
+- Documented the endpoint in the Core Case OpenAPI document and kept TanStack Table rendering/sorting out of scope for SCRUM-125.
 
 **Project Scope Connection:**
 
 - React SPA - Operator & Portal Experience.
 - Builds directly on SCRUM-122's typed inert Client Roster screen and prepares SCRUM-124 request states plus SCRUM-125 TanStack Table rendering.
+- Establishes the persistent roster source that SCRUM-125 can render without defining backend storage.
 
 **Changed Files:**
 
@@ -275,12 +278,29 @@ Add new ticket entries below using this template.
 - `src/pulseUI/pages/clients/ClientRosterPage.tsx`
 - `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
 - `src/pulseUI/tests/clients/ClientRosterQueries.test.tsx`
+- `src/typescript/features/clientRoster/clientRoster.ts`
+- `src/typescript/features/clientRoster/repository.ts`
+- `src/typescript/features/clientRoster/routes.ts`
+- `src/typescript/features/clientRoster/index.ts`
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/shared/database/drizzle-migrations/0009_client_roster.sql`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/clientRoster/clientRosterRepository.test.ts`
+- `tests/typescript/clientRoster/clientRosterRoutes.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `adr/0025-client-roster-screen-scaffold.md`
+- `adr/README.md`
 - `planning/team/dh-ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterQueries.test.tsx tests/clients/ClientRosterPage.test.tsx` passed.
 - `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/clientRoster/clientRosterRoutes.test.ts tests/typescript/clientRoster/clientRosterRepository.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed.
 
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX

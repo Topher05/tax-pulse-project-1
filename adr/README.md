@@ -27,4 +27,4 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0022: Resolve tenant context from firm-specific login hostnames](./0022-tenant-login-hostname-resolution.md)
 - [ADR-0023: Use TanStack Query for Pulse UI server state](./0023-tanstack-query-for-pulse-ui-server-state.md)
 - [ADR-0024: Delegate Pulse UI form state to react-hook-form and validation to Zod](./0024-pulse-ui-form-library-delegation.md)
-- [ADR-0025: Scaffold the Pulse UI Client Roster as a typed inert screen](./0025-client-roster-screen-scaffold.md)
+- [ADR-0025: Scaffold and wire the Pulse UI Client Roster through a typed query boundary](./0025-client-roster-screen-scaffold.md)
