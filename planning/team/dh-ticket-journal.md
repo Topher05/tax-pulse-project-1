@@ -47,6 +47,9 @@ Add new ticket entries below using this template.
 - `npm.cmd --prefix src/pulseUI test -- tests/components/DeductionEntryForm.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
 - `npm.cmd --prefix src/pulseUI run typecheck` passed.
 - `npm.cmd --prefix src/pulseUI test` passed.
+- PR review follow-up: strengthened the missing-required-fields test to verify the disabled submit state recovers after valid corrections and submits the typed payload.
+- `npm.cmd --prefix src/pulseUI test -- tests/components/DeductionEntryForm.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
 
 ## dylan-harle-jira113 - SCRUM-113
 
