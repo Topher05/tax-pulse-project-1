@@ -5,7 +5,6 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
@@ -14,13 +13,13 @@ import {
   type QuarterlyEstimateRecord,
 } from "../../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
 });
 
 afterEach(() => {
-  localStorage.clear();
   cleanup();
 });
 
@@ -84,12 +83,13 @@ function buildTaxPlanCycleQueuePayload() {
 
 describe("QuarterlyPaymentsPage", () => {
   test("renders the quarterly payments route", async () => {
-    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
     vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(buildTaxPlanCycleQueuePayload() as never);
 
     render(
       <QueryClientProvider client={createPulseQueryClient()}>
-        <RouterProvider router={createPulseRouter(["/quarterly-payments"])} />
+        <TestSessionProvider>
+          <RouterProvider router={createPulseRouter(["/quarterly-payments"])} />
+        </TestSessionProvider>
       </QueryClientProvider>,
     );
 
