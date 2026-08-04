@@ -940,18 +940,21 @@ react-hook-form and zod, so that malformed income entries are rejected at the bo
   Add Income controls, and uses page-local state to open and close the form. The route
   supplies the composition seam that SCRUM-109 can replace with live creation and table
   refresh behavior.
+- The fourth slice styles the form with the Income screen's established Segoe UI stack,
+  dark surfaces, slate text, indigo actions, responsive layout, and visible validation
+  and focus states while reusing the shared modal shell.
 
 **Project Scope Connection:**
 
 This establishes the typed validation boundary, functional Add Income form, and Income
-page launch flow. Ticket-specific styling and focused tests remain in subsequent
-SCRUM-108 implementation slices; API persistence and table refresh remain outside this
-ticket.
+page launch flow and visual treatment. Focused tests remain in the final SCRUM-108
+implementation slice; API persistence and table refresh remain outside this ticket.
 
 **Changed Files:**
 
 - `src/pulseUI/pages/income/incomeEntrySchema.ts`
 - `src/pulseUI/pages/income/IncomeEntryForm.tsx`
+- `src/pulseUI/pages/income/IncomeEntryForm.module.css`
 - `src/pulseUI/pages/income/IncomePage.tsx`
 - `src/pulseUI/app/routeTree.tsx`
 - `planning/team/cm-ticket-journal.md`

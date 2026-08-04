@@ -8,6 +8,7 @@ import {
   type IncomeCreatePayload,
   type IncomeEntryFormInput,
 } from "./incomeEntrySchema.ts";
+import styles from "./IncomeEntryForm.module.css";
 
 const defaultValues: DefaultValues<IncomeEntryFormInput> = {
   source: "",
@@ -72,7 +73,7 @@ export function IncomeEntryForm({ onClose, onCreate }: IncomeEntryFormProps) {
   return (
     <div className="modalOverlay" role="presentation" onClick={closeForm}>
       <section
-        className="modal"
+        className={`modal ${styles.modal}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${formId}-title`}
@@ -80,17 +81,18 @@ export function IncomeEntryForm({ onClose, onCreate }: IncomeEntryFormProps) {
           event.stopPropagation();
         }}
       >
-        <header>
-          <h2 id={`${formId}-title`}>Add Income</h2>
-          <button type="button" aria-label="Close Add Income form" onClick={closeForm}>
+        <header className={styles.header}>
+          <h2 className={styles.title} id={`${formId}-title`}>Add Income</h2>
+          <button className={styles.iconButton} type="button" aria-label="Close Add Income form" onClick={closeForm}>
             <X aria-hidden="true" />
           </button>
         </header>
 
-        <form noValidate onSubmit={submitForm}>
-          <div>
-            <label htmlFor={`${formId}-source`}>Source</label>
+        <form className={styles.form} noValidate onSubmit={submitForm}>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${formId}-source`}>Source</label>
             <input
+              className={styles.control}
               id={`${formId}-source`}
               type="text"
               placeholder="e.g. Acme Corporation"
@@ -99,15 +101,16 @@ export function IncomeEntryForm({ onClose, onCreate }: IncomeEntryFormProps) {
               {...register("source")}
             />
             {errors.source ? (
-              <p id={`${formId}-source-error`} role="alert">
+              <p className={styles.error} id={`${formId}-source-error`} role="alert">
                 {errors.source.message}
               </p>
             ) : null}
           </div>
 
-          <div>
-            <label htmlFor={`${formId}-type`}>Type</label>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${formId}-type`}>Type</label>
             <select
+              className={styles.control}
               id={`${formId}-type`}
               aria-invalid={errors.type ? "true" : undefined}
               aria-describedby={errors.type ? `${formId}-type-error` : undefined}
@@ -120,15 +123,16 @@ export function IncomeEntryForm({ onClose, onCreate }: IncomeEntryFormProps) {
               ))}
             </select>
             {errors.type ? (
-              <p id={`${formId}-type-error`} role="alert">
+              <p className={styles.error} id={`${formId}-type-error`} role="alert">
                 {errors.type.message}
               </p>
             ) : null}
           </div>
 
-          <div>
-            <label htmlFor={`${formId}-amount`}>Amount</label>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${formId}-amount`}>Amount</label>
             <input
+              className={styles.control}
               id={`${formId}-amount`}
               type="number"
               min="0"
@@ -140,15 +144,16 @@ export function IncomeEntryForm({ onClose, onCreate }: IncomeEntryFormProps) {
               {...register("amount")}
             />
             {errors.amount ? (
-              <p id={`${formId}-amount-error`} role="alert">
+              <p className={styles.error} id={`${formId}-amount-error`} role="alert">
                 {errors.amount.message}
               </p>
             ) : null}
           </div>
 
-          <div>
-            <label htmlFor={`${formId}-withholding`}>Withholding</label>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${formId}-withholding`}>Withholding</label>
             <input
+              className={styles.control}
               id={`${formId}-withholding`}
               type="number"
               min="0"
@@ -162,17 +167,17 @@ export function IncomeEntryForm({ onClose, onCreate }: IncomeEntryFormProps) {
               {...register("withholding")}
             />
             {errors.withholding ? (
-              <p id={`${formId}-withholding-error`} role="alert">
+              <p className={styles.error} id={`${formId}-withholding-error`} role="alert">
                 {errors.withholding.message}
               </p>
             ) : null}
           </div>
 
-          <footer>
-            <button type="button" onClick={closeForm}>
+          <footer className={styles.actions}>
+            <button className={styles.secondaryButton} type="button" onClick={closeForm}>
               Cancel
             </button>
-            <button type="submit" disabled={isSubmitting}>
+            <button className={styles.primaryButton} type="submit" disabled={isSubmitting}>
               Add Income
             </button>
           </footer>
