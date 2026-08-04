@@ -27,7 +27,7 @@ describe("ClientRosterPage", () => {
       {
         id: "client-avery-chen",
         clientName: "Avery Chen",
-        filingSummary: "Single - 1099",
+        filingStatus: "Single - 1099",
         ytdIncome: 108_500,
         estimatedTax: 32_100,
         quarterlyStatus: "Q2 due Jun 15",
@@ -35,7 +35,7 @@ describe("ClientRosterPage", () => {
       {
         id: "client-sam-rivera",
         clientName: "Sam Rivera",
-        filingSummary: "Single - 1099",
+        filingStatus: "Single - 1099",
         ytdIncome: 142_000,
         estimatedTax: 38_240,
         quarterlyStatus: "Q2 due Jun 15",
@@ -43,7 +43,7 @@ describe("ClientRosterPage", () => {
       {
         id: "client-morgan-acme",
         clientName: "Morgan Acme",
-        filingSummary: "MFJ - W-2 + RSU",
+        filingStatus: "MFJ - W-2 + RSU",
         ytdIncome: 414_000,
         estimatedTax: 138_400,
         quarterlyStatus: "Q2 due Jun 15",
@@ -51,7 +51,7 @@ describe("ClientRosterPage", () => {
       {
         id: "client-riley-khan",
         clientName: "Riley Khan",
-        filingSummary: "HoH - W-2",
+        filingStatus: "HoH - W-2",
         ytdIncome: 72_500,
         estimatedTax: 11_140,
         quarterlyStatus: null,
