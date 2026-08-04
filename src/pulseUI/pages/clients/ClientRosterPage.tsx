@@ -30,7 +30,7 @@ export function ClientRosterScreen({ clients }: ClientRosterScreenProps) {
     {
       header: "Filing",
       render: (row: ClientRosterRow) => (
-        <span className={styles.filingCell}>{row.filingSummary}</span>
+        <span className={styles.filingCell}>{row.filingStatus}</span>
       ),
     },
     {
