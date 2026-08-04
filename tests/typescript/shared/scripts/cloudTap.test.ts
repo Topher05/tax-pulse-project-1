@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildCloudTapEvent,
   runCloudTap,
+  runPresentToClientCloudTap,
 } from "../../../../src/typescript/shared/scripts/cloudTap.js";
 import {
   stageChangedCloudEventSchemaV1,
@@ -42,5 +43,19 @@ describe("cloud tap script", () => {
     expect(result.firstStatus).toBe("processed");
     expect(result.secondStatus).toBe("duplicate");
     expect(result.projectionWrites).toBe(1);
+  });
+
+  test("proves the present-to-client success and compensation paths in memory", async () => {
+    const result = await runPresentToClientCloudTap();
+
+    expect(result.success.finalStage).toBe("Client Approval");
+    expect(result.success.actionItemStatus).toBe("processed");
+    expect(result.success.rollbackCount).toBe(0);
+    expect(result.success.stageChangedEvents).toBe(1);
+
+    expect(result.compensation.finalStage).toBe("Review");
+    expect(result.compensation.actionItemStatus).toBe("failed");
+    expect(result.compensation.rollbackCount).toBe(1);
+    expect(result.compensation.stageChangedEvents).toBe(2);
   });
 });

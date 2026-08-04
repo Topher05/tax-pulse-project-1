@@ -10,6 +10,7 @@ import type {
   ActionItemCreatedEventInput,
   ActionItemCreatedEventPublishInput,
 } from "../actionItemCreatedEvent.js";
+import { createPresentToClientSaga } from "../infrastructure/CloudEvents/PresentToClientSaga.js";
 
 export interface StageChangedEventPublisher {
   publishStageChanged(
@@ -64,11 +65,18 @@ export function createTaxPlanCycleTransitionController(
 
       if (transitioned && options.actionItemEventPublisher && input.actionItem) {
         // TODO: Need sync with Jira 131
-        await options.actionItemEventPublisher.publishActionItemCreated({
+        const presentToClientSaga = createPresentToClientSaga({
+          repository,
+          stageChangedEventPublisher: options.stageChangedEventPublisher,
+          actionItemEventPublisher: options.actionItemEventPublisher,
+        });
+
+        await presentToClientSaga.run({
+          transitionedCycle: transitioned,
           tenantId: input.tenantId,
           caseId: input.caseId,
           actor: input.actor,
-          ...input.actionItem,
+          actionItem: input.actionItem,
         });
       }
 
