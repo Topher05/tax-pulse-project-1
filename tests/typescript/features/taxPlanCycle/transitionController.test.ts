@@ -86,16 +86,15 @@ describe("TaxPlanCycleTransitionController", () => {
     expect(publishStageChanged).not.toHaveBeenCalled();
   });
 
-  test("surfaces SNS publisher failures to the caller", async () => {
+  test("keeps a committed transition successful when SNS publishing fails", async () => {
     const publishError = new Error("SNS publish failed");
+    const publishStageChanged = vi.fn(async () => {
+      throw publishError;
+    });
     const controller = createTaxPlanCycleTransitionController(
       createRepository(vi.fn(async () => transitionedCycle)),
       {
-        stageChangedEventPublisher: {
-          publishStageChanged: vi.fn(async () => {
-            throw publishError;
-          }),
-        },
+        stageChangedEventPublisher: { publishStageChanged },
       },
     );
 
@@ -107,6 +106,7 @@ describe("TaxPlanCycleTransitionController", () => {
         toStage: "Data Aggregation",
         actor: "advisor-controller-001",
       }),
-    ).rejects.toThrow("SNS publish failed");
+    ).resolves.toEqual(transitionedCycle);
+    expect(publishStageChanged).toHaveBeenCalledTimes(1);
   });
 });

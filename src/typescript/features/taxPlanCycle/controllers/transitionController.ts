@@ -39,13 +39,18 @@ export function createTaxPlanCycleTransitionController(
       }
 
       if (options.stageChangedEventPublisher) {
-        await options.stageChangedEventPublisher.publishStageChanged({
-          tenantId: input.tenantId,
-          caseId: input.caseId,
-          fromStage: input.fromStage,
-          toStage: input.toStage,
-          actor: input.actor,
-        });
+        // Event publishing is best-effort because the database transition has already committed.
+        try {
+          await options.stageChangedEventPublisher.publishStageChanged({
+            tenantId: input.tenantId,
+            caseId: input.caseId,
+            fromStage: input.fromStage,
+            toStage: input.toStage,
+            actor: input.actor,
+          });
+        } catch {
+          // Ignore publish failures so clients do not see a failed mutation after a committed transition.
+        }
       }
 
       if (options.queueCacheInvalidator) {

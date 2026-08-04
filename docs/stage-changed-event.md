@@ -51,7 +51,9 @@ processing. Breaking changes require a new event type and data schema URI versio
 ## Publication
 SCRUM-131 publishes this exact CloudEvent JSON as the SNS message body for successful
 Tax Plan Cycle stage transitions. The publisher validates the CloudEvent with
-`stageChangedCloudEventSchemaV1` before sending it.
+`stageChangedCloudEventSchemaV1` before sending it. Publish failures are best-effort
+after the committed database transition, so they do not turn a successful stage change
+into a failed client response.
 
 Runtime configuration:
 

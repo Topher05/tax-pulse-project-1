@@ -29,6 +29,7 @@ Add new ticket entries below using this template.
 - Built SNS message bodies from the SCRUM-130 CloudEvents v1 contract and validated them with `stageChangedCloudEventSchemaV1` before publishing.
 - Passed the route's known `fromStage` into the transition controller so the publisher can emit `from_stage` without an extra read.
 - Wired production composition to an SNS client and `TAXPULSE_STAGE_CHANGED_TOPIC_ARN`.
+- Wrapped SNS publishing as a best-effort post-transition side effect so a publish failure does not make a committed stage change appear failed to the client.
 
 **Project Scope Connection:**
 
