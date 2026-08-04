@@ -7,8 +7,8 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 import * as detailQueries from "../../entities/taxPlanCycleQueries.ts";
-import { TestAuthProvider } from "../testAuth.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -34,9 +34,9 @@ function renderDetails() {
 
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <TestAuthProvider>
+      <TestSessionProvider>
         <RouterProvider router={createPulseRouter(["/cycles/TP-24018"])} />
-      </TestAuthProvider>
+      </TestSessionProvider>
     </QueryClientProvider>,
   );
 }

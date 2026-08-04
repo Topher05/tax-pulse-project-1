@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { useParams, useSearch } from "@tanstack/react-router";
 
 import styles from "./Details.module.css";
 import {
@@ -68,18 +68,19 @@ function priorityTone(priority: string): "danger" | "warning" | "info" {
 }
 
 export function DetailsPage() {
-  const { id: caseId = "" } = useParams({ from: "/cycles/$id" });
-  const search = useSearch({ from: "/cycles/$id" });
-  const navigate = useNavigate({ from: "/cycles/$id" });
+  const { id: caseId = "" } = useParams({ from: "/_workspace/cycles/$id" });
+  const search = useSearch({ from: "/_workspace/cycles/$id" });
   const detailSearch = normalizeDetailsSearch(search);
   const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
   const [commentDraft, setCommentDraft] = useState("");
+  const [selectedStageOverride, setSelectedStageOverride] = useState<DetailStage | null>(null);
   const stageLabelId = useId();
   const authenticatedFetch = useAuthenticatedFetch();
 
   useEffect(() => {
     setActiveTab("Overview");
     setCommentDraft("");
+    setSelectedStageOverride(null);
   }, [caseId]);
 
   const detailsQuery = useQuery({
@@ -118,7 +119,7 @@ export function DetailsPage() {
     return null;
   }
 
-  const selectedStage = detailSearch.stage ?? details.stage;
+  const selectedStage = selectedStageOverride ?? detailSearch.stage ?? details.stage;
   const activeStageIndex = caseStages.indexOf(selectedStage as DetailStage);
 
   const renderActiveTab = () => {
@@ -270,12 +271,7 @@ export function DetailsPage() {
                     type="button"
                     aria-current={isActive ? "step" : undefined}
                     onClick={() => {
-                      void navigate({
-                        search: {
-                          stage,
-                        },
-                        replace: true,
-                      });
+                      setSelectedStageOverride(stage);
                     }}
                   >
                     <span className={styles.stageStepNumber}>{index + 1}</span>

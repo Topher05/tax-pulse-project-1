@@ -85,6 +85,173 @@ body::before {
   min-height: 100vh;
 }
 
+/* Public authentication screens */
+.authPage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 8%, rgb(99 102 241 / 22%), transparent 32%),
+    radial-gradient(circle at 88% 92%, rgb(56 189 248 / 10%), transparent 30%),
+    #0f1117;
+}
+
+.authPage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(148 163 184 / 4%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(148 163 184 / 4%) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+
+.authCard {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.1rem;
+  width: min(100%, 460px);
+  padding: 2.25rem;
+  background: linear-gradient(145deg, rgb(24 29 40 / 98%), rgb(17 21 29 / 98%));
+  border: 1px solid var(--pulse-border);
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 46%);
+}
+
+.authCard::before {
+  content: "TP";
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 0.15rem;
+  color: #fff;
+  background: linear-gradient(135deg, var(--pulse-accent), #a78bfa);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgb(99 102 241 / 24%);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.authEyebrow {
+  color: var(--pulse-accent-light);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.authCard h1 {
+  color: var(--pulse-ink);
+  font-size: 1.8rem;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.authLead {
+  color: var(--pulse-muted);
+  line-height: 1.6;
+}
+
+.authForm {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.35rem;
+}
+
+.authForm label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--pulse-nav-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.authForm input {
+  min-height: 46px;
+  padding: 0 0.85rem;
+  color: var(--pulse-ink);
+  background: rgb(15 17 23 / 82%);
+  border: 1px solid var(--pulse-border-strong);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 20%);
+  font: inherit;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.authForm input:hover {
+  border-color: var(--pulse-muted);
+}
+
+.authForm input:focus-visible,
+.authPrimaryButton:focus-visible,
+.authTextLink:focus-visible {
+  outline: 3px solid var(--pulse-accent-light);
+  outline-offset: 2px;
+}
+
+.authForm input:focus-visible {
+  background: var(--pulse-nav);
+  border-color: var(--pulse-accent-light);
+  box-shadow: 0 0 0 4px var(--pulse-accent-bg);
+}
+
+.authPrimaryButton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 1rem;
+  color: #fff;
+  background: var(--pulse-accent);
+  border: 1px solid rgb(129 140 248 / 58%);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(99 102 241 / 22%);
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--transition), box-shadow 140ms ease;
+}
+
+.authPrimaryButton:hover:not(:disabled) {
+  background: #4f46e5;
+  box-shadow: 0 10px 28px rgb(99 102 241 / 32%);
+  transform: translateY(-1px);
+}
+
+.authPrimaryButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.authTextLink {
+  justify-self: start;
+  color: var(--pulse-accent-light);
+  font-weight: 700;
+  text-underline-offset: 3px;
+  transition: color 140ms ease;
+}
+
+.authTextLink:hover {
+  color: #a5b4fc;
+}
+
+.authError {
+  padding: 0.75rem 0.85rem;
+  color: #fca5a5;
+  background: var(--pulse-danger-bg);
+  border: 1px solid var(--pulse-danger-border);
+  border-radius: 10px;
+  font-size: 0.88rem;
+}
+
 /* Keep the shared modal shell easy to tune if sizing or card treatment changes later. */
 .modalOverlay {
   position: fixed;
@@ -1071,6 +1238,21 @@ body::-webkit-scrollbar-thumb {
 }
 
 @media (max-width: 640px) {
+  .authPage {
+    align-items: start;
+    padding: 1rem;
+  }
+
+  .authCard {
+    margin-top: max(1rem, 8vh);
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+
+  .authCard h1 {
+    font-size: 1.6rem;
+  }
+
   .queueHero {
     padding: 1.25rem;
   }

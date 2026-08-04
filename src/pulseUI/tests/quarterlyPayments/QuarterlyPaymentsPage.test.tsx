@@ -8,12 +8,12 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
-import { TestAuthProvider } from "../testAuth.tsx";
 import {
   QuarterlyPaymentsScreen,
   type QuarterlyEstimateRecord,
 } from "../../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -87,9 +87,9 @@ describe("QuarterlyPaymentsPage", () => {
 
     render(
       <QueryClientProvider client={createPulseQueryClient()}>
-        <TestAuthProvider>
+        <TestSessionProvider>
           <RouterProvider router={createPulseRouter(["/quarterly-payments"])} />
-        </TestAuthProvider>
+        </TestSessionProvider>
       </QueryClientProvider>,
     );
 
