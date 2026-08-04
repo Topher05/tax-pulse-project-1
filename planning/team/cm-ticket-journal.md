@@ -818,6 +818,45 @@ role-landing behavior.
   runtime tests and the existing Tax Plan Cycle JWT response assertion that expects a
   `scenarios` field.
 
+## christopher-martus-jira193 - SCRUM-193 negative-path test follow-up
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Add negative-path coverage for the SPA sign-in and MFA flow
+
+**Description:** Extend the end-to-end component test for this branch's authentication
+screens beyond the successful sign-in, MFA, dashboard, and logout path.
+
+**Acceptance Criteria:**
+
+- Rejected credentials display the generic sign-in error and do not advance to MFA.
+- Rejected MFA verification displays an error and does not establish a workspace session.
+- Direct access to the MFA route without ephemeral challenge state returns the user to a
+  safe sign-in recovery path and never submits an MFA request.
+
+**Code Connection:** The route-level component coverage supplies rejecting auth-client
+test doubles and verifies both visible feedback and the absence of downstream authentication
+calls or protected dashboard content.
+
+**Project Scope Connection:** These cases protect SCRUM-193's public authentication screens
+and ephemeral MFA-state boundary without changing production authentication behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/auth/SignInPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused sign-in coverage passed: 4 tests in 1 file.
+- Full Pulse UI coverage passed: 107 tests in 29 files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `git diff --check` passed.
+
 
 
 
