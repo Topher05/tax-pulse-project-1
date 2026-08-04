@@ -857,6 +857,49 @@ and ephemeral MFA-state boundary without changing production authentication beha
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `git diff --check` passed.
 
+## christopher-martus-jira193 - SCRUM-193 authentication styling follow-up
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Align public authentication screens with the current Pulse UI theme
+
+**Description:** Replace the legacy light navy, teal, and gold authentication treatment
+with the dark indigo visual system used by the authenticated TaxPulse workspace.
+
+**Acceptance Criteria:**
+
+- Sign-in, MFA challenge, and password-reset screens use the shared workspace typography,
+  color tokens, surfaces, borders, controls, and focus treatment.
+- Authentication cards retain readable error states and responsive mobile sizing.
+- Existing authentication behavior and accessible form semantics remain unchanged.
+
+**Code Connection:** The shared authentication selectors now consume the current Pulse UI
+design tokens, add the same gradient brand mark used by the workspace shell, and provide
+consistent interactive states for inputs, buttons, and links. Because the public routes
+share this style layer, the sign-in, MFA, reset request, and reset confirmation screens stay
+visually consistent without duplicating page-level styles.
+
+**Project Scope Connection:** This closes the visual-system gap in SCRUM-193's public SPA
+authentication flow without changing tenant resolution, credentials, MFA state, or session
+behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/shared/styles.css`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Full Pulse UI coverage passed: 107 tests in 29 files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- A production Vite build passed using an isolated temporary output directory. The normal
+  `dist/pulseUI` directory was locked by an existing Node process during validation.
+- `git diff --check` passed.
+
 
 
 
