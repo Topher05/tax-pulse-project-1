@@ -111,9 +111,13 @@
   text-align: left;
 }
 
-.table th {
+.table th,
+.table td {
   padding: 0.6rem 0.75rem;
   border-bottom: 1px solid #2a2d3e;
+}
+
+.table th {
   color: #64748b;
   font-size: 0.75rem;
   font-weight: 600;
@@ -122,8 +126,20 @@
   white-space: nowrap;
 }
 
-.table th:last-child {
-  width: 1%;
+.table td {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.table td:nth-child(4),
+.table td:nth-child(5) {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .emptyState {

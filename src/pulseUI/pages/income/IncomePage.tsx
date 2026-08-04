@@ -38,10 +38,38 @@ const incomeKpis = [
   "Other",
 ] as const;
 
+const incomeTypeLabels: Record<IncomeSourceCategory, string> = {
+  w2: "W-2",
+  "1099": "1099",
+  "capital-gains": "Capital Gains",
+  rental: "Rental",
+  other: "Other",
+};
+
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+function formatDate(value: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
 /**
- * A presentation-only Income screen. Data loading and data-driven states are added later.
+ * A presentation-only Income screen. Query loading and error states are added later.
  */
-export function IncomePage({ onCreateIncome }: IncomePageProps) {
+export function IncomePage({ incomeEvents, onCreateIncome }: IncomePageProps) {
   const [isAddIncomeFormOpen, setIsAddIncomeFormOpen] = useState(false);
 
   return (
@@ -78,7 +106,7 @@ export function IncomePage({ onCreateIncome }: IncomePageProps) {
 
       <section className={styles.tableCard} aria-labelledby="income-table-title">
         <h3 className={styles.srOnly} id="income-table-title">
-          Income event placeholder table
+          Income events
         </h3>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
@@ -89,27 +117,36 @@ export function IncomePage({ onCreateIncome }: IncomePageProps) {
                 <th>Type</th>
                 <th>Amount</th>
                 <th>Withholding</th>
-                <th>
-                  <span className={styles.srOnly}>Actions</span>
-                </th>
               </tr>
             </thead>
-            <tbody />
+            <tbody>
+              {incomeEvents.map((incomeEvent) => (
+                <tr key={incomeEvent.id}>
+                  <td>{formatDate(incomeEvent.date)}</td>
+                  <td>{incomeEvent.source}</td>
+                  <td>{incomeTypeLabels[incomeEvent.category]}</td>
+                  <td>{currencyFormatter.format(incomeEvent.amount)}</td>
+                  <td>{currencyFormatter.format(incomeEvent.withholding)}</td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
 
-        <div className={styles.emptyState}>
-          <ReceiptText aria-hidden="true" />
-          <h3>No income events yet</h3>
-          <p>Add your first income event to start tracking your tax liability.</p>
-          <button
-            className={styles.emptyStateButton}
-            type="button"
-            onClick={() => setIsAddIncomeFormOpen(true)}
-          >
-            Add Income Event
-          </button>
-        </div>
+        {incomeEvents.length === 0 ? (
+          <div className={styles.emptyState}>
+            <ReceiptText aria-hidden="true" />
+            <h3>No income events yet</h3>
+            <p>Add your first income event to start tracking your tax liability.</p>
+            <button
+              className={styles.emptyStateButton}
+              type="button"
+              onClick={() => setIsAddIncomeFormOpen(true)}
+            >
+              Add Income Event
+            </button>
+          </div>
+        ) : null}
       </section>
 
       {isAddIncomeFormOpen ? (
