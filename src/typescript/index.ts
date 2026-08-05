@@ -410,9 +410,6 @@ import {
   createQuarterlyPaymentsRouter,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
-  createSnsStageChangedEventPublisher,
-  createStageChangedSnsClient,
-  getStageChangedTopicArnFromEnv,
   createScenarioModelingController,
   createScenarioRepository,
   createTaxEngineClient,
@@ -547,11 +544,6 @@ export async function main(): Promise<Server> {
     taxPlanCycleRepository,
     {
       queueCacheInvalidator,
-      stageChangedEventPublisher: createSnsStageChangedEventPublisher(
-        createStageChangedSnsClient(),
-        getStageChangedTopicArnFromEnv(),
-      ),
-      stageChangedEventLogger: logger,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>

@@ -60,8 +60,11 @@ outbox, so that an event is never lost when the case commits.
 - The second slice moves CloudEvent construction and its input types into the domain event
   module so both database persistence and SNS delivery can reuse the same validated
   payload without coupling the repository to AWS infrastructure.
-- Transactional stage-transition writes and acceptance coverage remain for the later
-  implementation slices of this ticket.
+- The third slice builds the CloudEvent from the tenant-scoped database row and writes its
+  serialized payload alongside the cycle stage and transition history in the existing
+  Drizzle transaction. Production composition no longer directly publishes during the
+  request, leaving the SNS publisher available for the SCRUM-134 relay.
+- Acceptance coverage remains for the final implementation slice of this ticket.
 
 **Project Scope Connection:**
 
@@ -75,6 +78,7 @@ stage-change events from being lost before asynchronous delivery.
 - `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
 - `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
 - `src/typescript/index.ts`
 - `planning/team/cm-ticket-journal.md`
 
@@ -85,6 +89,9 @@ stage-change events from being lost before asynchronous delivery.
 - A focused `tsx` check built and schema-validated a deterministic stage-changed
   CloudEvent through the relocated domain helper.
 - `npm run db:check` and `git diff --check` continue to pass after the second slice.
+- A scoped strict TypeScript compile of the updated repository passed after the third
+  slice.
+- `npm run db:check` and `git diff --check` continue to pass with the transactional write.
 - `npm run typecheck` is blocked because the existing declared
   `@aws-sdk/client-sns` dependency is absent from the local `node_modules` installation.
 - The first slice added 70 lines across four files; the cumulative ticket diff remains
