@@ -1,0 +1,114 @@
+import {
+  PublishCommand,
+  SNSClient,
+  type SNSClientConfig,
+} from "@aws-sdk/client-sns";
+import { randomUUID } from "node:crypto";
+
+import {
+  stageChangedCloudEventSchemaV1,
+  stageChangedEventDataSchema,
+  stageChangedEventSource,
+  stageChangedEventType,
+  type StageChangedCloudEventV1,
+} from "../stageChangedEvent.js";
+import type { TaxPlanCycleStage } from "../taxPlanCycle.js";
+
+export interface StageChangedEventPublishInput {
+  tenantId: string;
+  caseId: string;
+  fromStage: TaxPlanCycleStage;
+  toStage: TaxPlanCycleStage;
+  actor: string;
+}
+
+export interface StageChangedEventPublisher {
+  publishStageChanged(
+    input: StageChangedEventPublishInput,
+  ): Promise<void> | void;
+}
+
+export interface StageChangedSnsClient {
+  send(command: PublishCommand): Promise<unknown>;
+}
+
+export interface CreateStageChangedCloudEventOptions {
+  idFactory?: () => string;
+  now?: () => Date;
+}
+
+export function createStageChangedCloudEventV1(
+  input: StageChangedEventPublishInput,
+  options: CreateStageChangedCloudEventOptions = {},
+): StageChangedCloudEventV1 {
+  const idFactory = options.idFactory ?? randomUUID;
+  const now = options.now ?? (() => new Date());
+
+  return stageChangedCloudEventSchemaV1.parse({
+    specversion: "1.0",
+    id: `stage-transition-${idFactory()}`,
+    source: stageChangedEventSource,
+    type: stageChangedEventType,
+    time: now().toISOString(),
+    datacontenttype: "application/json",
+    dataschema: stageChangedEventDataSchema,
+    data: {
+      case_id: input.caseId,
+      tenant_id: input.tenantId,
+      from_stage: input.fromStage,
+      to_stage: input.toStage,
+      actor: input.actor,
+    },
+  });
+}
+
+export function createStageChangedSnsClient(
+  env: NodeJS.ProcessEnv = process.env,
+): SNSClient {
+  const regionName = env.AWS_REGION?.trim() || "us-east-1";
+  const endpointUrl = env.TAXPULSE_SNS_ENDPOINT_URL?.trim();
+  const clientConfig: SNSClientConfig = {
+    region: regionName,
+  };
+
+  if (endpointUrl) {
+    clientConfig.endpoint = endpointUrl;
+    clientConfig.credentials = {
+      accessKeyId: env.AWS_ACCESS_KEY_ID?.trim() || "test",
+      secretAccessKey: env.AWS_SECRET_ACCESS_KEY?.trim() || "test",
+    };
+  }
+
+  return new SNSClient(clientConfig);
+}
+
+export function getStageChangedTopicArnFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const topicArn = env.TAXPULSE_STAGE_CHANGED_TOPIC_ARN?.trim();
+
+  if (!topicArn) {
+    throw new Error("TAXPULSE_STAGE_CHANGED_TOPIC_ARN is required to publish stage-changed events.");
+  }
+
+  return topicArn;
+}
+
+export function createSnsStageChangedEventPublisher(
+  snsClient: StageChangedSnsClient,
+  topicArn: string,
+  options: CreateStageChangedCloudEventOptions = {},
+): StageChangedEventPublisher {
+  return {
+    async publishStageChanged(input) {
+      const event = createStageChangedCloudEventV1(input, options);
+
+      await snsClient.send(
+        new PublishCommand({
+          TopicArn: topicArn,
+          Message: JSON.stringify(event),
+        }),
+      );
+    },
+  };
+}

@@ -49,7 +49,9 @@ describe("AuthBoundary", () => {
     );
     render(
       <AuthProvider client={client}>
-        <AuthBoundary><p>Protected workspace</p></AuthBoundary>
+        <AuthBoundary unauthenticatedFallback={<p>Sign in fallback</p>}>
+          <p>Protected workspace</p>
+        </AuthBoundary>
       </AuthProvider>,
     );
 
@@ -63,11 +65,13 @@ describe("AuthBoundary", () => {
     vi.mocked(client.refreshSession).mockRejectedValueOnce(new Error("expired"));
     render(
       <AuthProvider client={client}>
-        <AuthBoundary><p>Protected workspace</p></AuthBoundary>
+        <AuthBoundary unauthenticatedFallback={<p>Sign in fallback</p>}>
+          <p>Protected workspace</p>
+        </AuthBoundary>
       </AuthProvider>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Sign in required" })).toBeInTheDocument();
+    expect(await screen.findByText("Sign in fallback")).toBeInTheDocument();
     expect(screen.queryByText("Protected workspace")).not.toBeInTheDocument();
   });
 

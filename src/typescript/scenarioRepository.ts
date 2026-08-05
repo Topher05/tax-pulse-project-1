@@ -100,7 +100,7 @@ export function createScenarioRepository(client: Client): ScenarioRepository {
           name: row.name,
           typed_figures: row.typedFigures,
           computed_result: row.computedResult,
-          created_at: row.createdAt,
+          created_at: row.createdAt.toISOString(),
         });
       });
     },

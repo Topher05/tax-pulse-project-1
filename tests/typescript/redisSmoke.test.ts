@@ -14,7 +14,7 @@ import {
   buildRedisSmokeQueuePayload,
   runRedisSmokeCommand,
   verifyRedisIsUp,
-} from "../../src/typescript/redisSmoke.js";
+} from "../../src/typescript/shared/scripts/redisSmoke.js";
 import { buildTaxPlanCycleQueueReadCacheKey } from "../../src/typescript/features/taxPlanCycle/infrastructure/queueCache.js";
 
 describe("redis smoke helpers", () => {

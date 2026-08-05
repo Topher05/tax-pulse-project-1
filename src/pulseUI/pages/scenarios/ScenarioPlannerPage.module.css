@@ -1,0 +1,84 @@
+.page {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.launchCard {
+  padding: 1.5rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgb(96 165 250 / 12%), transparent 38%),
+    linear-gradient(180deg, rgb(18 21 29 / 96%), rgb(14 17 23 / 96%));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+}
+
+.launchCopy {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.launchKicker {
+  margin: 0;
+  color: var(--pulse-sidebar-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.launchDescription {
+  margin: 0;
+  color: var(--pulse-muted);
+  line-height: 1.55;
+}
+
+.launchButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  color: #f8fafc;
+  background: var(--pulse-accent);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgb(99 102 241 / 24%);
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.launchButton:hover {
+  transform: translateY(-1px);
+}
+
+.launchButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
+.launchButton:focus-visible {
+  outline: 3px solid var(--pulse-accent-light);
+  outline-offset: 2px;
+}
+
+.tableShell {
+  min-height: 160px;
+  border: 1px dashed rgb(148 163 184 / 30%);
+  border-radius: 24px;
+}
+
+@media (max-width: 720px) {
+  .launchCard {
+    padding-inline: 1rem;
+  }
+}
