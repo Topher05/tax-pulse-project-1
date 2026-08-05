@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { CaseApiError, caseApiGetJson } from "../shared/caseApi.ts";
+import { CaseApiError, caseApiGetJson, caseApiPostJson } from "../shared/caseApi.ts";
 
 const apiBaseUrl = "http://localhost:3000";
 
@@ -63,5 +63,41 @@ describe("caseApiGetJson", () => {
       status: 401,
       body: "unauthorized",
     } satisfies Partial<CaseApiError>);
+  });
+});
+
+describe("caseApiPostJson", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  test("posts JSON through the supplied authenticated fetcher", async () => {
+    vi.stubEnv("CASE_SERVICE_BASE_URL", apiBaseUrl);
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(jsonResponse({ ok: true }));
+
+    await expect(
+      caseApiPostJson("/v1/tax-plan-cycles/case-1/scenarios", { scenarios: [] }, fetcher),
+    ).resolves.toEqual({ ok: true });
+
+    expect(fetcher).toHaveBeenCalledWith(`${apiBaseUrl}/v1/tax-plan-cycles/case-1/scenarios`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ scenarios: [] }),
+    });
+  });
+
+  test("throws a CaseApiError with the response body when the post fails", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      textResponse("modeling unavailable", { status: 409 }),
+    );
+
+    await expect(caseApiPostJson("/v1/tax-plan-cycles/case-1/scenarios", {}, fetcher)).rejects
+      .toMatchObject({
+        status: 409,
+        body: "modeling unavailable",
+      } satisfies Partial<CaseApiError>);
   });
 });

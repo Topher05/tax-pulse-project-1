@@ -38,3 +38,24 @@ export async function caseApiGetJson<T>(
 
   return (await response.json()) as T;
 }
+
+export async function caseApiPostJson<T>(
+  path: string,
+  body: unknown,
+  fetcher: typeof fetch = fetch,
+): Promise<T> {
+  const response = await fetcher(toCaseApiUrl(path), {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new CaseApiError(response.status, await response.text());
+  }
+
+  return (await response.json()) as T;
+}
