@@ -152,7 +152,6 @@ describe("AuthProvider", () => {
     function LoginProbe() {
       const session = useSession();
       return <button onClick={() => void session.login({
-        tenantId: challenge.tenantId,
         email: challenge.email,
         password: "synthetic-password",
       })}>Login</button>;
@@ -167,7 +166,6 @@ describe("AuthProvider", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Login" }));
 
     await vi.waitFor(() => expect(client.login).toHaveBeenCalledWith({
-      tenantId: challenge.tenantId,
       email: challenge.email,
       password: "synthetic-password",
     }));
@@ -203,6 +201,56 @@ describe("AuthProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "Read token" }));
 
     expect(await screen.findByText(`${createAccessToken()}-refreshed`)).toBeInTheDocument();
+    expect(client.refreshSession).toHaveBeenCalledTimes(2);
+  });
+
+  test("coalesces concurrent refresh requests into one token rotation", async () => {
+    const client = createClient();
+    let resolveRefresh: (value: SessionTokenResponse) => void = () => undefined;
+    const refreshedResponse = { ...tokenResponse, access_token: `${createAccessToken()}-coalesced` };
+    vi.mocked(client.refreshSession)
+      .mockResolvedValueOnce(tokenResponse)
+      .mockImplementationOnce(
+        () => new Promise((resolve) => {
+          resolveRefresh = resolve;
+        }),
+      );
+
+    function ConcurrentRefreshProbe() {
+      const session = useSession();
+      const [statuses, setStatuses] = useState<string>("pending");
+      return (
+        <>
+          <output>{session.status}</output>
+          <button
+            onClick={() => {
+              void Promise.all([session.refreshSession(), session.refreshSession()]).then(
+                (results) => {
+                  setStatuses(results.map((result) => result.status).join(","));
+                },
+              );
+            }}
+          >
+            Refresh twice
+          </button>
+          <span>{statuses}</span>
+        </>
+      );
+    }
+
+    render(
+      <AuthProvider client={client}>
+        <ConcurrentRefreshProbe />
+      </AuthProvider>,
+    );
+
+    await screen.findByText("authenticated");
+    fireEvent.click(screen.getByRole("button", { name: "Refresh twice" }));
+
+    await vi.waitFor(() => expect(client.refreshSession).toHaveBeenCalledTimes(2));
+    resolveRefresh(refreshedResponse);
+
+    expect(await screen.findByText("authenticated,authenticated")).toBeInTheDocument();
     expect(client.refreshSession).toHaveBeenCalledTimes(2);
   });
 

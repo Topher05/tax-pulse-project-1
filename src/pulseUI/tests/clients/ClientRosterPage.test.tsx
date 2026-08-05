@@ -5,28 +5,27 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
 import * as pageReload from "../../shared/pageReload.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
 });
 
 afterEach(() => {
-  localStorage.clear();
   cleanup();
   vi.restoreAllMocks();
 });
 
 function renderClientRosterPage() {
-  localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
-
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <RouterProvider router={createPulseRouter(["/clients"])} />
+      <TestSessionProvider>
+        <RouterProvider router={createPulseRouter(["/clients"])} />
+      </TestSessionProvider>
     </QueryClientProvider>,
   );
 }
@@ -87,7 +86,9 @@ describe("ClientRosterPage", () => {
   });
 
   test("renders an error state with a refresh retry affordance", async () => {
-    vi.spyOn(caseApi, "caseApiGetJson").mockRejectedValueOnce(new Error("Roster service unavailable."));
+    vi.spyOn(caseApi, "caseApiGetJson").mockRejectedValueOnce(
+      new Error("Roster service unavailable."),
+    );
 
     renderClientRosterPage();
 
@@ -96,7 +97,9 @@ describe("ClientRosterPage", () => {
   });
 
   test("retry triggers a page refresh", async () => {
-    vi.spyOn(caseApi, "caseApiGetJson").mockRejectedValueOnce(new Error("Temporary roster failure."));
+    vi.spyOn(caseApi, "caseApiGetJson").mockRejectedValueOnce(
+      new Error("Temporary roster failure."),
+    );
     const reloadSpy = vi.spyOn(pageReload, "reloadPage").mockImplementation(() => undefined);
 
     renderClientRosterPage();

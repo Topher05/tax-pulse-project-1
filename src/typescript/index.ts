@@ -2,20 +2,27 @@ import { fileURLToPath } from "node:url";
 import type { Server } from "node:http";
 
 export {
-  clientIncomeDeductionAggregationPayloadSchema,
+  clientDeductionAggregationPayloadSchema,
+  deductionReadParamsSchema,
+  deductionCategorySchema,
+  deductionCategoryValues,
   deductionSchema,
+  deductionTableRowSchema,
+  deductionTableRowsSchema,
   incomeEventSchema,
-  type ClientIncomeDeductionAggregationPayload,
+  type DeductionCategory,
+  type ClientDeductionAggregationPayload,
   type Deduction,
+  type DeductionTableRow,
+  type DeductionTableRows,
   type IncomeEvent,
-} from "./aggregationPayload.js";
+} from "./features/deductions/repositories/deduction.js";
 export {
   AggregationTimeoutError,
   TaxPulseAggregationClient,
   type AggregationDataSource,
   type TaxPulseAggregationClientOptions,
-} from "./aggregationClient.js";
-export { InMemoryMockAggregationDataSource } from "./mockAggregationDataSource.js";
+} from "./features/deductions/infrastructure/aggregationClient.js";
 export { createApp, type CreateAppOptions } from "./app.js";
 export {
   ProblemHttpError,
@@ -79,6 +86,13 @@ export {
   type AuditEntryWriter,
 } from "./auditEntryRepository.js";
 export {
+  createDeductionRepository,
+  createDeductionsRouter,
+  type CreateDeductionsRouterOptions,
+  type DeductionListInput,
+  type DeductionRepository,
+} from "./features/deductions/index.js";
+export {
   authMfaLoginRequestSchema,
   authMfaLoginResultSchema,
   createAuthMfaLoginController,
@@ -139,6 +153,7 @@ export {
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
   auditEntry,
+  deduction,
   credential,
   federalTaxBracket,
   mfaEnrollment,
@@ -278,6 +293,12 @@ export { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
+  stageChangedCloudEventSchemaV1,
+  stageChangedEventDataSchema,
+  stageChangedEventDataSchemaV1,
+  stageChangedEventSchemaVersion,
+  stageChangedEventSource,
+  stageChangedEventType,
   taxPlanCycleCreateSchema,
   taxPlanCyclePrioritySchema,
   taxPlanCycleReadParamsSchema,
@@ -293,6 +314,8 @@ export {
   type TaxPlanCycleTransitionInput,
   type TaxPlanCycleTransitionParams,
   type TaxPlanCycleStage,
+  type StageChangedCloudEventV1,
+  type StageChangedEventDataV1,
 } from "./features/taxPlanCycle/index.js";
 export {
   createTaxPlanCycleRepository,
@@ -321,6 +344,10 @@ export {
   createTaxPlanCycleQueueDynamoDocumentClient,
   createTaxPlanCycleQueueProjectionStore,
   createTaxPlanCycleQueueReadService,
+  createSnsStageChangedEventPublisher,
+  createStageChangedCloudEventV1,
+  createStageChangedSnsClient,
+  getStageChangedTopicArnFromEnv,
   createTaxPlanCycleCreateController,
   taxPlanCycleCreateController,
   taxPlanCycleCreateResultSchema,
@@ -346,7 +373,13 @@ export {
   type TaxPlanCycleQueueProjectionReader,
   type TaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadServiceOptions,
+  type CreateStageChangedCloudEventOptions,
+  type StageChangedEventPublisher,
+  type StageChangedEventPublishInput,
+  type StageChangedSnsClient,
   type TaxPlanCycleTransitionControllerOptions,
+  type TaxPlanCycleTransitionControllerInput,
+  type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
   type ValidationErrorIssue,
   type ValidationErrorResponse,
@@ -371,8 +404,12 @@ import {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleRepository,
+  createQuarterlyPaymentsRouter,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
+  createSnsStageChangedEventPublisher,
+  createStageChangedSnsClient,
+  getStageChangedTopicArnFromEnv,
   createScenarioModelingController,
   createScenarioRepository,
   createTaxEngineClient,
@@ -386,6 +423,10 @@ import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createAuthSessionRouter } from "./authSessionRoutes.js";
 import { createPasswordCredentialStore } from "./authCredentials.js";
 import { createTenantLoginResolver } from "./tenantLoginResolver.js";
+import {
+  createDeductionRepository,
+  createDeductionsRouter,
+} from "./features/deductions/index.js";
 import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
 import { createRegistrationService } from "./authRegistrationService.js";
 import {
@@ -404,7 +445,6 @@ import { createTokenService } from "./tokenService.js";
 loadEnv();
 const { Client } = pg;
 const taxPlanCycleApiPrefix = "/v1";
-const taxPlanCycleApiBasePath = `${taxPlanCycleApiPrefix}/tax-plan-cycles`;
 
 export {
   createMfaEnrollmentRouter,
@@ -455,6 +495,7 @@ export async function main(): Promise<Server> {
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
   const scenarioRepository = createScenarioRepository(client);
+  const deductionRepository = createDeductionRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   const liabilityEngineBase = process.env.LIABILITY_ENGINE_BASE?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
@@ -503,6 +544,11 @@ export async function main(): Promise<Server> {
     taxPlanCycleRepository,
     {
       queueCacheInvalidator,
+      stageChangedEventPublisher: createSnsStageChangedEventPublisher(
+        createStageChangedSnsClient(),
+        getStageChangedTopicArnFromEnv(),
+      ),
+      stageChangedEventLogger: logger,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
@@ -529,9 +575,9 @@ export async function main(): Promise<Server> {
       app.use(createMfaEnrollmentRouter({
         controller: mfaEnrollmentController,
       }));
-      // CL Version-scoped auth middleware for Tax Plan Cycle routes; review before removing or widening this guard.
+      // CL Version-scoped auth middleware for v1 routes; review before removing or widening this guard.
       app.use(
-        taxPlanCycleApiBasePath,
+        taxPlanCycleApiPrefix,
         createJwtAuthenticationMiddleware({ config: jwtConfig }),
         hydrateUserClaims(),
         createCostAccountingMiddleware(),
@@ -550,6 +596,18 @@ export async function main(): Promise<Server> {
         }),
       );
       app.use(
+        taxPlanCycleApiPrefix,
+        createDeductionsRouter({
+          repository: deductionRepository,
+        }),
+      );
+      app.use(
+        taxPlanCycleApiPrefix,
+        createQuarterlyPaymentsRouter({
+          taxPlanCycleRepository,
+        }),
+      );
+      app.use(
         createAuthRouter({
           authenticatePassword,
           registrationService,
@@ -559,8 +617,12 @@ export async function main(): Promise<Server> {
       );
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
+        secureCookies: process.env.NODE_ENV === "production",
       }));
-      app.use(createAuthSessionRouter({ tokenService }));
+      app.use(createAuthSessionRouter({
+        tokenService,
+        secureCookies: process.env.NODE_ENV === "production",
+      }));
     },
   });
   const port = getPortFromEnv();

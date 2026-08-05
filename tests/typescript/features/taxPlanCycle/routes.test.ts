@@ -912,6 +912,7 @@ describe("transitionTaxPlanCycleRouter", () => {
         expect(transition).toHaveBeenCalledWith({
           tenantId: "tenant-001",
           caseId: reviewCycle.id,
+          fromStage: "Review",
           toStage: "Client Approval",
           actor: "firm-admin-001",
         });
@@ -977,6 +978,7 @@ describe("transitionTaxPlanCycleRouter", () => {
         expect(transition).toHaveBeenCalledWith({
           tenantId: "tenant-001",
           caseId: dataAggregationCycle.id,
+          fromStage: "Data Aggregation",
           toStage: "Modeling",
           actor: "advisor-edit-001",
         });

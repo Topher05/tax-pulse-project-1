@@ -2,40 +2,21 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { LogOut, Settings2 } from "lucide-react";
 import { useState } from "react";
 
+import { useSession } from "../auth/AuthProvider.tsx";
 import styles from "./AppShell.module.css";
 import { pulseNavGroups } from "../shared/navigation.ts";
 import { getViewTitle } from "../shared/viewTitle.ts";
 
-const viewAsGroups = [
-  {
-    label: "Internal firm staff",
-    options: ["Firm Admin", "Advisor"] as const,
-  },
-  {
-    label: "External client",
-    options: ["Client"] as const,
-  },
-  {
-    label: "Platform",
-    options: ["Platform Admin"] as const,
-  },
-] as const;
-
 export function AppShell() {
-  const [selectedRole, setSelectedRole] = useState("Firm Admin");
+  const { logout, user } = useSession();
   const [liveCalculationEnabled, setLiveCalculationEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-
-  if (pathname === "/login") {
-    return (
-      <main className={styles.login} aria-label="Authentication">
-        <Outlet />
-      </main>
-    );
-  }
-
   const viewTitle = getViewTitle(pathname);
+
+  const handleLogout = () => {
+    void logout().catch(() => undefined);
+  };
 
   return (
     <div className={styles.shell}>
@@ -88,7 +69,7 @@ export function AppShell() {
             </div>
           </div>
 
-          <button className={styles.logoutButton} type="button">
+          <button className={styles.logoutButton} type="button" onClick={handleLogout}>
             <LogOut className={styles.logoutIcon} aria-hidden="true" />
             <span>Logout</span>
           </button>
@@ -102,26 +83,7 @@ export function AppShell() {
           </div>
 
           <div className={styles.topbarControls}>
-            <label className={styles.roleField}>
-              <span>View as</span>
-              <select
-                className={styles.select}
-                value={selectedRole}
-                onChange={(event) => {
-                  setSelectedRole(event.target.value);
-                }}
-              >
-                {viewAsGroups.map((group) => (
-                  <optgroup key={group.label} label={group.label}>
-                    {group.options.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
+            <p className={styles.roleField}>Signed in as {user?.role}</p>
 
             <div className={styles.actionCluster}>
               <button
@@ -155,6 +117,13 @@ export function AppShell() {
               >
                 <Settings2 className={styles.actionButtonIcon} aria-hidden="true" />
                 <span>Settings</span>
+              </button>
+              <button
+                className={styles.actionButton}
+                type="button"
+                onClick={handleLogout}
+              >
+                Sign out
               </button>
             </div>
           </div>

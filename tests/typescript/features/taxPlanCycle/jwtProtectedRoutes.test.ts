@@ -14,7 +14,6 @@ import {
   createLogger,
   createTenantRateLimitMiddleware,
   createTaxPlanCycleRouter,
-  redactedAuditAmount,
   type AuditEntryReader,
   type JwtConfig,
   type TaxPlanCycle,
@@ -138,17 +137,18 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
       case_id: cycle.id,
     }));
     const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
+    const auditEntries = [
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e71",
+        case_id: cycle.id,
+        actor: "advisor-001",
+        action: "income amount redacted recorded",
+        outcome: "succeeded",
+        occurred_at: "2026-07-20T14:00:00.000Z",
+      },
+    ];
     const listByCase = vi.fn<AuditEntryReader["listByCase"]>(() =>
-      Promise.resolve([
-        {
-          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
-          case_id: cycle.id,
-          actor: "advisor-001",
-          action: `income amount ${redactedAuditAmount} recorded`,
-          outcome: "succeeded",
-          occurred_at: "2026-07-20T14:00:00.000Z",
-        },
-      ]),
+      Promise.resolve(auditEntries),
     );
     const token = await createAccessToken();
 
@@ -174,6 +174,9 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
       expect(readResponse.status).toBe(200);
       expect(auditResponse.status).toBe(200);
       await expect(readResponse.json()).resolves.toEqual(cycle);
+      await expect(auditResponse.json()).resolves.toEqual({
+        audit_entries: auditEntries,
+      });
       expect(create).toHaveBeenCalledWith({
         ...validCreateBody,
         tenantId: "tenant-from-jwt",

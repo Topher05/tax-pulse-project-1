@@ -98,6 +98,8 @@ describe("main Tax Plan Cycle composition", () => {
       JWT_REFRESH_TOKEN_TTL_SECONDS: "1200",
       LIABILITY_ENGINE_BASE: "http://127.0.0.1:8000",
       TAXPULSE_REDIS_URL: "redis://localhost:6379",
+      TAXPULSE_STAGE_CHANGED_TOPIC_ARN:
+        "arn:aws:sns:us-east-1:123456789012:taxpulse-stage-changed",
       LOG_LEVEL: "silent",
       PORT: "0",
     };
