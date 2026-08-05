@@ -90,19 +90,17 @@ function buildTaxPlanCycleQueuePayload() {
 }
 
 function buildQuarterlyEstimatePayload(caseId: string) {
-  return [
-    {
+  return buildFixtureEstimates().map((estimate) => ({
       case_id: caseId,
-      tax_year: "2026",
-      quarter: "Q1",
-      due_date: "2026-04-15",
-      estimated_payment: "3620.00",
-      withholding_applied: "3620.00",
-      covered_amount: "3620.00",
-      remaining_due: "0.00",
-      status: "Paid",
-    },
-  ] as const;
+      tax_year: estimate.taxYear,
+      quarter: estimate.quarter,
+      due_date: estimate.dueDate,
+      estimated_payment: estimate.estimatedPayment.toFixed(2),
+      withholding_applied: estimate.withholdingApplied.toFixed(2),
+      covered_amount: estimate.coveredAmount.toFixed(2),
+      remaining_due: estimate.remainingDue.toFixed(2),
+      status: estimate.status,
+    }));
 }
 
 describe("QuarterlyPaymentsPage", () => {
@@ -157,6 +155,20 @@ describe("QuarterlyPaymentsPage", () => {
         expect.any(Function),
       );
     });
+
+    await waitFor(() => {
+      const timeline = screen.getByRole("list", { name: "Quarter timeline" });
+      expect(within(timeline).getAllByRole("listitem")).toHaveLength(4);
+    });
+
+    const timelineItems = within(screen.getByRole("list", { name: "Quarter timeline" }))
+      .getAllByRole("listitem");
+    expect(within(timelineItems[0]!).getByText("Q1 2026 Estimation")).toBeInTheDocument();
+    expect(within(timelineItems[0]!).getByText("$3,620")).toBeInTheDocument();
+    expect(within(timelineItems[3]!).getByText("Q4 2026 Estimation")).toBeInTheDocument();
+    expect(within(timelineItems[3]!).getByText("Jan")).toBeInTheDocument();
+    expect(within(timelineItems[3]!).getByText("15")).toBeInTheDocument();
+    expect(within(timelineItems[3]!).getByText("$3,960")).toBeInTheDocument();
   });
 
   test("renders the read-only timeline and withholding placeholder", () => {
@@ -178,6 +190,8 @@ describe("QuarterlyPaymentsPage", () => {
     expect(screen.getByText("$7,240")).toBeInTheDocument();
     expect(screen.getByText("$7,360")).toBeInTheDocument();
     expect(screen.getByText("49.6%")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Estimated tax covered by withholding" }))
+      .toHaveAttribute("aria-valuenow", "49.6");
     expect(screen.getByText(/\$7,240.*\$14,600.*withholdings\./)).toBeInTheDocument();
   });
 

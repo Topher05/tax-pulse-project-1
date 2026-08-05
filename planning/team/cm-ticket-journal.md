@@ -967,3 +967,63 @@ table refresh remain outside this ticket.
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `npm --prefix src/pulseUI test -- --run tests/components/IncomeEntryForm.test.tsx`
   passed: 3 tests.
+
+## christopher-martus-jira120 - SCRUM-120
+
+**Branch:** `christopher-martus-jira120`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-120
+
+**Summary:** Render the KPI cards and read-only quarter timeline
+
+**Description:** As a Frontend Developer, I want the KPI cards and quarter timeline
+rendered read-only, so that estimated amounts and deadlines are visible without any
+recording action.
+
+**Acceptance Criteria:**
+
+- The four 1040-ES quarter items render with date and estimated amount from the hook data.
+- KPI cards render total estimated, paid so far, and remaining; a withholding-progress
+  bar renders coverage.
+- No mark-paid or payment-recording control is present; recording remains outside MVP.
+
+**Code Connection:**
+
+- The quarterly-estimate view model retains the endpoint's covered and remaining values,
+  allowing the KPI cards to sum the API contract directly while withholding remains the
+  separate input to the coverage calculation.
+- The withholding bar clamps coverage to the 0-100 range and exposes its value through a
+  progress indicator.
+- The page removes synthetic fallback quarters and maps successful hook data into a
+  canonical Q1-Q4 timeline with each deadline and estimated amount visible.
+- The focused route/component coverage verifies four hook-backed quarter items, KPI
+  totals, withholding coverage, and the absence of payment-recording controls.
+
+**Project Scope Connection:**
+
+This completes the read-only Quarterly Payments presentation slice for the React SPA. It
+consumes the tenant-scoped query boundary without introducing payment mutations, forms,
+or recording behavior. Loading, empty, and error-state presentation remains owned by
+SCRUM-119, while broader accessibility coverage remains owned by SCRUM-121.
+
+**Changed Files:**
+
+- `src/pulseUI/components/QuarterlyTimelineItem.tsx`
+- `src/pulseUI/components/WithholdingProgressChart.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+  passed: 4 tests.
+- `npm --prefix src/pulseUI run build` passed; Vite reported only its existing bundle-size
+  advisory.
+- The full Pulse UI run passed 121 of 123 tests. Two unrelated Deductions tests fail
+  because their `caseApiGetJson` expectations omit the authenticated fetcher argument;
+  the SCRUM-120 test file passed within the same run.
+- `git diff --check` passed.
