@@ -637,6 +637,41 @@ export const stageTransitionRows = [
   },
 ] as const satisfies readonly SeedStageTransitionRow[];
 
+export const auditEntryRows = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d41",
+    caseId: taxPlanCycleRows[0].id,
+    actor: "advisor-001",
+    action: "stage_transition:Intake->Data Aggregation",
+    outcome: "succeeded",
+    occurredAt: new Date("2026-07-01T14:00:00Z"),
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d42",
+    caseId: taxPlanCycleRows[0].id,
+    actor: "advisor-001",
+    action: "Collected synthetic wage, self-employment, and withholding inputs for client 018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21.",
+    outcome: "gross income 185000 and withholding 42000 recorded for modeling.",
+    occurredAt: new Date("2026-07-02T15:30:00Z"),
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d43",
+    caseId: taxPlanCycleRows[0].id,
+    actor: "advisor-001",
+    action: "Scenario modeling requested for Roth conversion and charitable giving strategy.",
+    outcome: "estimated tax impact $8420 queued for review.",
+    occurredAt: new Date("2026-07-03T16:45:00Z"),
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d44",
+    caseId: taxPlanCycleRows[0].id,
+    actor: "firm-admin-001",
+    action: "Review packet opened for synthetic case TP-Seed-001.",
+    outcome: "deductions 27500 and quarterly payment 6250 approved for advisor follow-up.",
+    occurredAt: new Date("2026-07-04T17:00:00Z"),
+  },
+] as const satisfies readonly SeedAuditEntryRow[];
+
 export function buildTaxPlanCycleInsertRows(): SeedTaxPlanCycleInsertRow[] {
   return taxPlanCycleRows.map((row) => ({
     ...row,

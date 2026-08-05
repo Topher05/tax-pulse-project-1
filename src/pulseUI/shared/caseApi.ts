@@ -10,17 +10,18 @@ export class CaseApiError extends Error {
 }
 
 function getCaseApiBaseUrl(): string {
-  const baseUrl = import.meta.env.CASE_SERVICE_BASE_URL?.trim();
-
-  if (!baseUrl) {
-    throw new Error("CASE_SERVICE_BASE_URL is required for Pulse UI case API requests.");
-  }
-
-  return baseUrl.replace(/\/+$/, "");
+  return import.meta.env.CASE_SERVICE_BASE_URL?.trim().replace(/\/+$/, "") ?? "";
 }
 
 function toCaseApiUrl(path: string): string {
-  return new URL(path, `${getCaseApiBaseUrl()}/`).toString();
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const baseUrl = getCaseApiBaseUrl();
+
+  if (!baseUrl) {
+    return normalizedPath;
+  }
+
+  return new URL(normalizedPath, `${baseUrl}/`).toString();
 }
 
 export async function caseApiGetJson<T>(

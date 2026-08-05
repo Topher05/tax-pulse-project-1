@@ -19,7 +19,22 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function renderDetails() {
+type CommentRows = Awaited<ReturnType<typeof detailQueries.fetchTaxPlanCycleComments>>;
+type AuditRows = Awaited<ReturnType<typeof detailQueries.fetchTaxPlanCycleAuditEntries>>;
+
+interface RenderDetailsOptions {
+  readonly comments?: CommentRows;
+  readonly commentsPromise?: Promise<CommentRows>;
+  readonly auditEntries?: AuditRows;
+  readonly auditEntriesPromise?: Promise<AuditRows>;
+}
+
+function renderDetails({
+  comments,
+  commentsPromise,
+  auditEntries,
+  auditEntriesPromise,
+}: RenderDetailsOptions = {}) {
   vi.spyOn(detailQueries, "fetchTaxPlanCycleDetails").mockResolvedValue({
     caseId: "TP-24018",
     client: "North Shore Family Office",
@@ -31,6 +46,28 @@ function renderDetails() {
     onHold: false,
     overdue: true,
   });
+  vi.spyOn(detailQueries, "fetchTaxPlanCycleComments").mockReturnValue(
+    commentsPromise ?? Promise.resolve(comments ?? [
+      {
+        id: "comment-001",
+        initials: "DC",
+        author: "Dana Cohen, CPA",
+        when: "Today - 11:08",
+        text: "I've narrowed it down to the combined Roth + DAF strategy.",
+      },
+    ]),
+  );
+  vi.spyOn(detailQueries, "fetchTaxPlanCycleAuditEntries").mockReturnValue(
+    auditEntriesPromise ?? Promise.resolve(auditEntries ?? [
+      {
+        id: "audit-entry-001",
+        actor: "Maya Reed",
+        action: "Updated estimated tax to [REDACTED_AMOUNT]",
+        outcome: "Audit entry stored with redacted financial figures.",
+        occurredAt: "May 12, 2026, 2:30 PM",
+      },
+    ]),
+  );
 
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
@@ -79,6 +116,7 @@ describe("Tax Plan Cycle details page", () => {
 
     fireEvent.click(await screen.findByRole("tab", { name: "Comments" }));
 
+    expect(await screen.findByText("Dana Cohen, CPA")).toBeInTheDocument();
     const commentBox = await screen.findByRole("textbox", { name: "Comment draft" });
     fireEvent.change(commentBox, { target: { value: "Review quarterly estimate assumptions." } });
 
@@ -88,6 +126,57 @@ describe("Tax Plan Cycle details page", () => {
     expect(await screen.findByRole("textbox", { name: "Comment draft" })).toHaveValue(
       "Review quarterly estimate assumptions.",
     );
+  });
+
+  test("renders the comments loading state", async () => {
+    renderDetails({ commentsPromise: new Promise(() => undefined) });
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Comments" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Loading comments...");
+  });
+
+  test("renders the comments empty state with the add-comment input", async () => {
+    renderDetails({ comments: [] });
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Comments" }));
+
+    expect(await screen.findByText("No comments have been added for this case.")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Comment draft" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Post" })).toBeInTheDocument();
+  });
+
+  test("loads redacted audit entries when the Audit Trail tab is opened", async () => {
+    renderDetails();
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Audit Trail" }));
+
+    expect(await screen.findByText("Updated estimated tax to [REDACTED_AMOUNT]")).toBeInTheDocument();
+    expect(screen.getByText("Audit entry stored with redacted financial figures.")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Comment draft" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Post" })).not.toBeInTheDocument();
+    expect(detailQueries.fetchTaxPlanCycleAuditEntries).toHaveBeenCalledWith(
+      "TP-24018",
+      expect.any(Function),
+    );
+  });
+
+  test("renders the audit trail loading state", async () => {
+    renderDetails({ auditEntriesPromise: new Promise(() => undefined) });
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Audit Trail" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Loading audit trail...");
+  });
+
+  test("renders the audit trail empty state", async () => {
+    renderDetails({ auditEntries: [] });
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Audit Trail" }));
+
+    expect(
+      await screen.findByText("No audit entries have been recorded for this case."),
+    ).toBeInTheDocument();
   });
 
   test("updates the active stage when a step is clicked", async () => {
