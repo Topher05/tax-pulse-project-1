@@ -83,6 +83,20 @@ npm run build:web
 npm start
 ```
 
+To run the Core Case Service in Docker, build the image and start a container from the
+repository root:
+
+```bash
+docker build -t taxpulse/case-service .
+docker run --name case-service -p 3000:3000 --env-file .env taxpulse/case-service
+```
+
+The container exposes the Core Case Service on `http://localhost:3000`. Make sure `.env`
+includes the runtime values the service needs, including `DATABASE_URL`, `JWT_ISSUER`,
+and `JWT_SIGNING_SECRET`.
+When the API container connects to a database on your host machine, `DATABASE_URL` must
+use `host.docker.internal` instead of `localhost` as in the example.
+
 ```bash
 python -m tax_liability_engine.main
 python -m ruff format --check src tests

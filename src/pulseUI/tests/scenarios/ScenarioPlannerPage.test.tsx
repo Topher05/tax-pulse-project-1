@@ -22,6 +22,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+
 function renderScenarioPlannerRoute(pathname: string) {
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
