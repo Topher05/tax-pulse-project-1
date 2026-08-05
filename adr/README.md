@@ -28,4 +28,8 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0023: Use TanStack Query for Pulse UI server state](./0023-tanstack-query-for-pulse-ui-server-state.md)
 - [ADR-0024: Delegate Pulse UI form state to react-hook-form and validation to Zod](./0024-pulse-ui-form-library-delegation.md)
 - [ADR-0025: Scaffold the Pulse UI Client Roster as a typed inert screen](./0025-client-roster-screen-scaffold.md)
+- [ADR-0026: Route-Driven Case Context for Plan Tools](./0026-route-driven-case-context.md)
+- [ADR-0027: Use vitest-axe for Pulse UI accessibility checks](./0027-vitest-axe-accessibility-testing.md)
+- [ADR-0028: Define the stage-changed CloudEvents schema](./0028-stage-changed-cloudevents-schema.md)
+- [ADR-0029: Use Playwright for headless Pulse UI end-to-end regression coverage](./0029-playwright-pulse-ui-e2e-integration.md)
 - [ADR-0031: Add a reproducible Lighthouse performance gate for the Pulse UI dashboard](./0031-lighthouse-integration.md)

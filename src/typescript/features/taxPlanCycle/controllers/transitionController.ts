@@ -5,29 +5,72 @@ import type {
   TaxPlanCycleTransitionInput,
 } from "../repositories/repository.js";
 import type { TaxPlanCycleQueueCacheInvalidator } from "../infrastructure/queueCache.js";
+import type { StageChangedEventPublisher } from "../infrastructure/stageChangedSnsPublisher.js";
+
+export interface TaxPlanCycleTransitionControllerInput
+  extends TaxPlanCycleTransitionInput {
+  fromStage: TaxPlanCycle["stage"];
+}
 
 export interface TaxPlanCycleTransitionController {
   transition(
-    input: TaxPlanCycleTransitionInput,
+    input: TaxPlanCycleTransitionControllerInput,
   ): Promise<TaxPlanCycle | null> | TaxPlanCycle | null;
   findByCaseId(
     input: TaxPlanCycleReadInput,
   ): Promise<TaxPlanCycle | null> | TaxPlanCycle | null;
 }
 
+export interface TaxPlanCycleTransitionEventLogger {
+  warn(...args: unknown[]): void;
+}
+
 export interface TaxPlanCycleTransitionControllerOptions {
   queueCacheInvalidator?: TaxPlanCycleQueueCacheInvalidator;
+  stageChangedEventPublisher?: StageChangedEventPublisher;
+  stageChangedEventLogger?: TaxPlanCycleTransitionEventLogger;
 }
 
 export function createTaxPlanCycleTransitionController(
   repository: TaxPlanCycleRepository,
   options: TaxPlanCycleTransitionControllerOptions = {},
 ): TaxPlanCycleTransitionController {
+  const eventLogger = options.stageChangedEventLogger ?? console;
+
   return {
     transition: async (input) => {
       const transitioned = await repository.transition(input);
 
-      if (transitioned && options.queueCacheInvalidator) {
+      if (!transitioned) {
+        return null;
+      }
+
+      if (options.stageChangedEventPublisher) {
+        // Event publishing is best-effort because the database transition already committed.
+        try {
+          await options.stageChangedEventPublisher.publishStageChanged({
+            tenantId: input.tenantId,
+            caseId: input.caseId,
+            fromStage: input.fromStage,
+            toStage: input.toStage,
+            actor: input.actor,
+          });
+        } catch (error) {
+          eventLogger.warn(
+            {
+              err: error,
+              tenant_id: input.tenantId,
+              case_id: input.caseId,
+              from_stage: input.fromStage,
+              to_stage: input.toStage,
+              actor: input.actor,
+            },
+            "Stage-changed event publish failed after transition commit",
+          );
+        }
+      }
+
+      if (options.queueCacheInvalidator) {
         // Cache invalidation is best-effort because Redis is disposable state.
         try {
           await options.queueCacheInvalidator.invalidateAfterStageChange({

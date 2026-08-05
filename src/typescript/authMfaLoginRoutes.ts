@@ -11,6 +11,7 @@ import { setRefreshTokenCookie } from "./authSessionCookies.js";
 
 export interface CreateAuthMfaLoginRouterOptions {
   controller: AuthMfaLoginController;
+  secureCookies?: boolean;
 }
 
 export interface AuthMfaValidationErrorIssue {
@@ -52,6 +53,7 @@ function validationError(input: {
 
 export function createAuthMfaLoginRouter({
   controller,
+  secureCookies = true,
 }: CreateAuthMfaLoginRouterOptions): Router {
   const router = Router();
 
@@ -73,7 +75,9 @@ export function createAuthMfaLoginRouter({
       try {
         const result = await controller.verify(parsedBody.data);
 
-        setRefreshTokenCookie(res, result.refresh_token, result.refresh_expires_in);
+        setRefreshTokenCookie(res, result.refresh_token, result.refresh_expires_in, {
+          secure: secureCookies,
+        });
         res.status(200).json({
           access_token: result.access_token,
           token_type: result.token_type,

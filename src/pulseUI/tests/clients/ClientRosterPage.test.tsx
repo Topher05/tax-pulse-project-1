@@ -5,9 +5,9 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 import * as caseApi from "../../shared/caseApi.ts";
 
 beforeAll(() => {
@@ -15,14 +15,12 @@ beforeAll(() => {
 });
 
 afterEach(() => {
-  localStorage.clear();
   cleanup();
   vi.restoreAllMocks();
 });
 
 describe("ClientRosterPage", () => {
   test("renders the client roster from the query hook", async () => {
-    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
     vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
       {
         id: "client-avery-chen",
@@ -57,11 +55,12 @@ describe("ClientRosterPage", () => {
         quarterlyStatus: null,
       },
     ]);
-
     render(
-      <QueryClientProvider client={createPulseQueryClient()}>
-        <RouterProvider router={createPulseRouter(["/clients"])} />
-      </QueryClientProvider>,
+      <TestSessionProvider>
+        <QueryClientProvider client={createPulseQueryClient()}>
+          <RouterProvider router={createPulseRouter(["/clients"])} />
+        </QueryClientProvider>
+      </TestSessionProvider>,
     );
 
     expect(await screen.findByRole("heading", { name: "Client Roster", level: 1 }))

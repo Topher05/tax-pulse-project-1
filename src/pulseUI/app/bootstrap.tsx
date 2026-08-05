@@ -5,7 +5,6 @@ import { RouterProvider } from "@tanstack/react-router";
 
 import { createPulseRouter } from "./createPulseRouter.ts";
 import { AuthProvider } from "../auth/AuthProvider.tsx";
-import { AuthBoundary } from "../auth/AuthBoundary.tsx";
 import { createPulseQueryClient } from "./queryClient.ts";
 import "../shared/styles.css";
 
@@ -21,9 +20,7 @@ createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider clearCachedData={() => queryClient.clear()}>
-        <AuthBoundary>
-          <RouterProvider router={createPulseRouter()} />
-        </AuthBoundary>
+        <RouterProvider router={createPulseRouter()} />
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,
