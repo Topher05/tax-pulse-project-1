@@ -1027,3 +1027,51 @@ SCRUM-119, while broader accessibility coverage remains owned by SCRUM-121.
   because their `caseApiGetJson` expectations omit the authenticated fetcher argument;
   the SCRUM-120 test file passed within the same run.
 - `git diff --check` passed.
+
+## christopher-martus-jira121 - SCRUM-121
+
+**Branch:** `christopher-martus-jira121`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-121
+
+**Summary:** Add accessibility and a component test for the Quarterly Payments screen
+
+**Description:** As a Frontend Developer, I want the Quarterly Payments screen to pass
+an axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the four quarter items and KPI cards render from sample data.
+- The test asserts no payment-recording control is present in the rendered screen.
+
+**Code Connection:**
+
+- The existing Quarterly Payments component test now runs `vitest-axe` against the
+  production screen rendered with its reusable sample-data fixture.
+- The regression assertions explicitly cover Q1 through Q4 and scope the three expected
+  totals to the labeled KPI region.
+- The read-only assertion continues to guard against payment and mark-paid controls.
+
+**Project Scope Connection:**
+
+This adds focused accessibility and regression coverage to the read-only Quarterly
+Payments presentation without changing its production behavior or the loading, empty,
+error, and retry states owned by SCRUM-119.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+  passed: 5 tests, including the axe check.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- The full Pulse UI run passed 122 of 124 tests. The same two unrelated Deductions
+  tests documented by SCRUM-120 fail because their `caseApiGetJson` expectations omit
+  the authenticated fetcher argument; all Quarterly Payments tests passed.
+- `git diff --check` passed.
