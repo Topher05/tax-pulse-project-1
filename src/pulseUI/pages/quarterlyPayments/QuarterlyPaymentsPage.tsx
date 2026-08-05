@@ -21,61 +21,19 @@ export interface QuarterlyPaymentsScreenProps {
   quarterlyEstimates: readonly QuarterlyEstimateRecord[];
 }
 
+const quarterOrder: Record<QuarterlyEstimateQuarter, number> = {
+  Q1: 1,
+  Q2: 2,
+  Q3: 3,
+  Q4: 4,
+};
+
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[] {
-  return [
-    {
-      id: "QP-001",
-      taxYear: "2026",
-      quarter: "Q1",
-      dueDate: "2026-04-15",
-      estimatedPayment: 3620,
-      withholdingApplied: 3620,
-      coveredAmount: 3620,
-      remainingDue: 0,
-      status: "Paid",
-    },
-    {
-      id: "QP-002",
-      taxYear: "2026",
-      quarter: "Q2",
-      dueDate: "2026-06-15",
-      estimatedPayment: 3620,
-      withholdingApplied: 3620,
-      coveredAmount: 3620,
-      remainingDue: 0,
-      status: "Paid",
-    },
-    {
-      id: "QP-003",
-      taxYear: "2026",
-      quarter: "Q3",
-      dueDate: "2026-09-15",
-      estimatedPayment: 3400,
-      withholdingApplied: 0,
-      coveredAmount: 0,
-      remainingDue: 3400,
-      status: "Due",
-    },
-    {
-      id: "QP-004",
-      taxYear: "2026",
-      quarter: "Q4",
-      dueDate: "2027-01-15",
-      estimatedPayment: 3960,
-      withholdingApplied: 0,
-      coveredAmount: 0,
-      remainingDue: 3960,
-      status: "Due",
-    },
-  ] as const;
 }
 
 function toQuarterlyEstimateRecord(
@@ -209,7 +167,9 @@ export function QuarterlyPaymentsPage() {
     );
   }
 
-  const quarterlyEstimates = quarterlyEstimatesQuery.data?.map(toQuarterlyEstimateRecord) ?? buildPlaceholderQuarterlyEstimates();
+  const quarterlyEstimates = quarterlyEstimatesQuery.data
+    ?.map(toQuarterlyEstimateRecord)
+    .sort((left, right) => quarterOrder[left.quarter] - quarterOrder[right.quarter]) ?? [];
 
   return (
     <div className={styles.page} data-quarterly-query-state={quarterlyEstimatesQueryState}>
