@@ -17,15 +17,12 @@ function textResponse(body: string, init: ResponseInit): Response {
 }
 
 describe("caseApiGetJson", () => {
-  beforeEach(() => {
-    vi.stubEnv("CASE_SERVICE_BASE_URL", apiBaseUrl);
-  });
-
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
   test("fetches the case API path through the supplied authenticated fetcher", async () => {
+    vi.stubEnv("CASE_SERVICE_BASE_URL", apiBaseUrl);
     const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(jsonResponse({ ok: true }));
 
     await expect(caseApiGetJson("/v1/tax-plan-cycles", fetcher)).resolves.toEqual({ ok: true });
@@ -36,6 +33,7 @@ describe("caseApiGetJson", () => {
   });
 
   test("normalizes extra slashes against the case API base URL", async () => {
+    vi.stubEnv("CASE_SERVICE_BASE_URL", apiBaseUrl);
     const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(jsonResponse({ ok: true }));
 
     await caseApiGetJson("v1/tax-plan-cycles", fetcher);
@@ -45,7 +43,18 @@ describe("caseApiGetJson", () => {
     });
   });
 
+  test("uses a same-origin API path when no case API base URL is configured", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(jsonResponse({ ok: true }));
+
+    await caseApiGetJson("v1/tax-plan-cycles", fetcher);
+
+    expect(fetcher).toHaveBeenCalledWith("/v1/tax-plan-cycles", {
+      credentials: "include",
+    });
+  });
+
   test("throws a CaseApiError with the response body when the request fails", async () => {
+    vi.stubEnv("CASE_SERVICE_BASE_URL", apiBaseUrl);
     const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(
       textResponse("unauthorized", { status: 401 }),
     );

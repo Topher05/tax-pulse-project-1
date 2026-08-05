@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 
+import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
 import { caseApiGetJson } from "../shared/caseApi.ts";
 import type { Uuid } from "../shared/planToolCase.ts";
 
@@ -35,12 +36,20 @@ export function quarterlyEstimatesQueryKey(caseId: Uuid | "unselected") {
   return ["quarterly-estimates", caseId] as const;
 }
 
-export async function fetchQuarterlyEstimates(caseId: Uuid): Promise<readonly QuarterlyEstimateRecord[]> {
-  const payload = await caseApiGetJson<unknown>(`/v1/tax-plan-cycles/${caseId}/quarterly-estimates`);
+export async function fetchQuarterlyEstimates(
+  caseId: Uuid,
+  fetcher?: typeof fetch,
+): Promise<readonly QuarterlyEstimateRecord[]> {
+  const payload = await caseApiGetJson<unknown>(
+    `/v1/tax-plan-cycles/${caseId}/quarterly-estimates`,
+    fetcher,
+  );
   return quarterlyEstimateResponseSchema.parse(payload);
 }
 
 export function useQuarterlyEstimatesQuery(caseId: Uuid | null) {
+  const authenticatedFetch = useAuthenticatedFetch();
+
   return useQuery({
     queryKey: quarterlyEstimatesQueryKey(caseId ?? "unselected"),
     queryFn: () => {
@@ -48,7 +57,7 @@ export function useQuarterlyEstimatesQuery(caseId: Uuid | null) {
         throw new Error("A valid case ID is required before fetching quarterly estimates.");
       }
 
-      return fetchQuarterlyEstimates(caseId);
+      return fetchQuarterlyEstimates(caseId, authenticatedFetch);
     },
     enabled: caseId !== null,
   });

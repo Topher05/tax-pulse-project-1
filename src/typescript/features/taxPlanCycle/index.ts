@@ -115,6 +115,7 @@ export {
   taxPlanCycleTransitionController,
   type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionControllerInput,
+  type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
 export {

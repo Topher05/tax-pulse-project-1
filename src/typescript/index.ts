@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 
 export {
   clientDeductionAggregationPayloadSchema,
+  deductionCreateSchema,
   deductionReadParamsSchema,
   deductionCategorySchema,
   deductionCategoryValues,
@@ -11,6 +12,7 @@ export {
   deductionTableRowsSchema,
   incomeEventSchema,
   type DeductionCategory,
+  type DeductionCreate,
   type ClientDeductionAggregationPayload,
   type Deduction,
   type DeductionTableRow,
@@ -387,6 +389,7 @@ export {
   type StageChangedSqsConsumerOptions,
   type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionControllerInput,
+  type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
   type ValidationErrorIssue,
   type ValidationErrorResponse,
@@ -555,6 +558,7 @@ export async function main(): Promise<Server> {
         createStageChangedSnsClient(),
         getStageChangedTopicArnFromEnv(),
       ),
+      stageChangedEventLogger: logger,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
@@ -623,8 +627,12 @@ export async function main(): Promise<Server> {
       );
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
+        secureCookies: process.env.NODE_ENV === "production",
       }));
-      app.use(createAuthSessionRouter({ tokenService }));
+      app.use(createAuthSessionRouter({
+        tokenService,
+        secureCookies: process.env.NODE_ENV === "production",
+      }));
     },
   });
   const port = getPortFromEnv();

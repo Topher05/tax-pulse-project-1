@@ -10,6 +10,7 @@ import { CurrentCaseSelector } from "../../components/CurrentCaseSelector.tsx";
 import * as caseApi from "../../shared/caseApi.ts";
 import { isUuid, type Uuid } from "../../shared/planToolCase.ts";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 const seededCaseId = taxPlanCycleRows[1].id;
 
@@ -42,7 +43,9 @@ function renderSelector({
   vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValue(buildTaxPlanCycleQueuePayload() as never);
 
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={createPulseQueryClient()}>{children}</QueryClientProvider>
+    <QueryClientProvider client={createPulseQueryClient()}>
+      <TestSessionProvider>{children}</TestSessionProvider>
+    </QueryClientProvider>
   );
 
   render(
@@ -76,7 +79,10 @@ describe("CurrentCaseSelector", () => {
     renderSelector();
 
     await waitFor(() => {
-      expect(caseApi.caseApiGetJson).toHaveBeenCalledWith("/v1/tax-plan-cycles", undefined);
+      expect(caseApi.caseApiGetJson).toHaveBeenCalledWith(
+        "/v1/tax-plan-cycles",
+        expect.any(Function),
+      );
     });
 
     expect(await screen.findByRole("option", { name: seededCaseId })).toBeInTheDocument();

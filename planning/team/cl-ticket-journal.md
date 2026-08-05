@@ -35,6 +35,110 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira128 - SCRUM-128
+
+**Branch:** `caleb-latimer-jira128`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-128
+
+**Summary:** Add the axe accessibility gate
+
+**Description:** As a Frontend Developer, I want an axe scan in the test suite, so that the SPA stays accessible.
+
+**Acceptance Criteria:**
+
+- An axe scan of the dashboard and Plan Cycle Detail reports zero critical violations.
+- Form fields on the Scenario Planner carry accessible labels.
+- The check fails the build if a critical violation is introduced.
+
+**Code Connection:**
+
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/package.json`
+- `src/pulseUI/vitest.setup.ts`
+- `src/pulseUI/tests/components/ScenarioPlanningForm.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Accessibility gate coverage for the dashboard, Plan Cycle Detail, and Scenario Planner component seam
+- Pulls in the current branch dependencies from SCRUM-127 and SCRUM-116 without adding unrelated UI scope
+
+**Changed Files:**
+
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/package.json`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/accessibility/axeGate.test.tsx tests/dashboard/DashboardCharts.test.tsx tests/taxPlanCycle/Details.test.tsx tests/components/ScenarioPlanningForm.test.tsx"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run test"` ran the new axe gate successfully, then failed later in pre-existing branch tests for `tests/deductions/DeductionsPage.test.tsx` and `tests/scenarios/ScenarioPlannerPage.test.tsx` because those route states are not merged in this branch yet.
+
+## caleb-latimer-jira127 - SCRUM-127
+
+**Branch:** `caleb-latimer-jira127`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-127
+
+**Summary:** Write the advisor open-queue-to-scenario E2E test
+
+**Description:** As a Frontend Developer, I want a Playwright test of the core advisor flow, so that it is protected against regressions.
+
+**Acceptance Criteria:**
+
+- The test logs in as an Advisor, opens the Plan Cycle Queue, and opens a case.
+- It enters a scenario in the Scenario Planner and asserts a result row appears.
+- The test runs headless and fails the build on error.
+
+**Code Connection:**
+
+- `src/pulseUI/e2e/advisor-open-queue-to-scenario.spec.ts`
+- `src/pulseUI/playwright.config.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/ScenarioPlanningForm.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `src/pulseUI/tsconfig.pulseUI.json`
+- `.gitignore`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Advisor queue-to-scenario regression coverage
+
+**Changed Files:**
+
+- `src/pulseUI/e2e/advisor-open-queue-to-scenario.spec.ts`
+- `src/pulseUI/playwright.config.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/ScenarioPlanningForm.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `src/pulseUI/tsconfig.pulseUI.json`
+- `.gitignore`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI exec playwright install chromium"` downloaded the Chromium browser binaries needed for Playwright.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run test:e2e"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test -- tests/appShell.test.tsx tests/scenarios/ScenarioPlannerPage.test.tsx tests/taxPlanCycle/Queue.test.tsx tests/taxPlanCycle/Details.test.tsx"` passed.
+
 ## caleb-latimer-jira101 - SCRUM-101
 
 **Branch:** `caleb-latimer-jira101`
