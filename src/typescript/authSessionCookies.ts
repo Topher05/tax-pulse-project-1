@@ -2,26 +2,34 @@ import type { Response } from "express";
 
 export const refreshTokenCookieName = "taxpulse_refresh_token";
 
+export interface RefreshTokenCookieOptions {
+  secure?: boolean;
+}
+
 export function setRefreshTokenCookie(
   response: Response,
   refreshToken: string,
   lifetimeSeconds: number,
+  options: RefreshTokenCookieOptions = {},
 ): void {
   response.cookie(refreshTokenCookieName, refreshToken, {
     httpOnly: true,
     maxAge: lifetimeSeconds * 1_000,
     path: "/auth",
     sameSite: "strict",
-    secure: true,
+    secure: options.secure ?? true,
   });
 }
 
-export function clearRefreshTokenCookie(response: Response): void {
+export function clearRefreshTokenCookie(
+  response: Response,
+  options: RefreshTokenCookieOptions = {},
+): void {
   response.clearCookie(refreshTokenCookieName, {
     httpOnly: true,
     path: "/auth",
     sameSite: "strict",
-    secure: true,
+    secure: options.secure ?? true,
   });
 }
 

@@ -388,6 +388,17 @@ request can use `POST http://127.0.0.1:3000/auth/login` with the headers
 `Host: {tenant-slug}.localhost:3000` and `Content-Type: application/json`. The request
 body must include only `email` and `password`; the hostname selects the tenant.
 
+To sign in through the local SPA, start the API with `npm run dev` and the Pulse UI with
+`npm run dev:web` in separate terminals, then open
+`http://{tenant-login-slug}.localhost:5173/sign-in`. For example, the synthetic seed data
+includes `north-star-planning`, so its local sign-in URL is
+`http://north-star-planning.localhost:5173/sign-in`. The Vite auth proxy preserves this
+hostname when forwarding requests to the API.
+
+Do not use plain `http://localhost:5173` for password login. It contains no tenant slug,
+so the API intentionally responds with `Login Workspace Not Found`; this preserves the
+server-controlled, hostname-based tenant boundary described in ADR-0022.
+
 The defaults work out of the box. Override these values only when a deployment needs
 different capacity or latency tradeoffs:
 

@@ -12,6 +12,7 @@ import type { TokenService } from "./tokenService.js";
 
 export interface CreateAuthSessionRouterOptions {
   tokenService: TokenService;
+  secureCookies?: boolean;
 }
 
 /** Browser-visible fields; the refresh token is delivered only as an HttpOnly cookie. */
@@ -31,13 +32,16 @@ function refreshAuthenticationFailed(): ProblemHttpError {
   });
 }
 
-export function createAuthSessionRouter({ tokenService }: CreateAuthSessionRouterOptions): Router {
+export function createAuthSessionRouter({
+  tokenService,
+  secureCookies = true,
+}: CreateAuthSessionRouterOptions): Router {
   const router = Router();
 
   router.post("/auth/refresh", async (req: Request, res: Response, next: NextFunction) => {
     const refreshToken = getRefreshTokenFromCookie(req.headers.cookie);
     if (refreshToken === null) {
-      clearRefreshTokenCookie(res);
+      clearRefreshTokenCookie(res, { secure: secureCookies });
       next(refreshAuthenticationFailed());
       return;
     }
@@ -45,12 +49,14 @@ export function createAuthSessionRouter({ tokenService }: CreateAuthSessionRoute
     try {
       const pair = await tokenService.rotateRefreshToken(refreshToken);
       if (pair === null) {
-        clearRefreshTokenCookie(res);
+        clearRefreshTokenCookie(res, { secure: secureCookies });
         next(refreshAuthenticationFailed());
         return;
       }
 
-      setRefreshTokenCookie(res, pair.refreshToken, pair.refreshTokenExpiresInSeconds);
+      setRefreshTokenCookie(res, pair.refreshToken, pair.refreshTokenExpiresInSeconds, {
+        secure: secureCookies,
+      });
       res.status(200).json(authSessionTokenResponseSchema.parse({
         access_token: pair.accessToken,
         token_type: "Bearer",
@@ -64,7 +70,7 @@ export function createAuthSessionRouter({ tokenService }: CreateAuthSessionRoute
 
   router.post("/auth/logout", async (req: Request, res: Response, next: NextFunction) => {
     const refreshToken = getRefreshTokenFromCookie(req.headers.cookie);
-    clearRefreshTokenCookie(res);
+    clearRefreshTokenCookie(res, { secure: secureCookies });
 
     try {
       if (refreshToken !== null) {

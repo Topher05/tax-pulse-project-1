@@ -148,6 +148,118 @@ Add new ticket entries below using this template.
 - `npm.cmd --prefix src/pulseUI test -- tests/entities/deductionQueries.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
 - `npm.cmd --prefix src/pulseUI run typecheck` passed.
 
+## dylan-harle-jira131 - SCRUM-131
+
+**Branch:** `dylan-harle-jira131`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-131
+
+**Summary:** Publish stage-changed events to SNS.
+
+**Description:** As a Backend Developer, I want each stage transition to publish a stage-changed event, so that downstream consumers react without polling.
+
+**Acceptance Criteria:**
+
+- Advancing a case publishes a stage-changed event to an SNS topic.
+- The published event validates against the CloudEvents schema.
+- The publisher runs as a plain service method, not a cloud runtime, in this sprint.
+
+**Code Connection:**
+
+- Added an injected plain TypeScript stage-changed event publisher for successful Tax Plan Cycle transitions.
+- Built SNS message bodies from the SCRUM-130 CloudEvents v1 contract and validated them with `stageChangedCloudEventSchemaV1` before publishing.
+- Passed the route's known `fromStage` into the transition controller so the publisher can emit `from_stage` without an extra read.
+- Wired production composition to an SNS client and `TAXPULSE_STAGE_CHANGED_TOPIC_ARN`.
+- Wrapped SNS publishing as a best-effort post-transition side effect so a publish failure does not make a committed stage change appear failed to the client.
+- Added a structured warning log for best-effort SNS publish failures to preserve tracing context.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration.
+- Builds directly on SCRUM-130, `docs/stage-changed-event.md`, and ADR-0028.
+- Prepares SCRUM-132 consumers to receive validated stage-changed events without adding SQS consumption, Lambda runtime behavior, an outbox table, or a separate case status.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `.env.example`
+- `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts`
+- `tests/typescript/features/taxPlanCycle/transitionController.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `docs/stage-changed-event.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/transitions.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts` passed.
+- `npm run typecheck` passed.
+- `git diff --check` passed with line-ending warnings only.
+- Review follow-up: `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts` passed.
+- Review follow-up: `npm run typecheck` passed.
+- `npm test` passed typecheck and the SCRUM-131 tests, then failed in existing non-SCRUM-131 coverage: `scenario.test.ts` and `scenarioRepository.test.ts` still receive `Date` for `created_at` where the schema expects a string, `scenarioMigration.test.ts` timed out after 30000ms, `jwtProtectedRoutes.test.ts` still expects `scenarios: []` on a read response that omits it, and `tenantsMigration.test.ts` / `tenantLoginResolver.test.ts` hit PostgreSQL connection refusals on port 54318.
+
+## development-scrum130 - SCRUM-130
+
+**Branch:** `development`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-130
+
+**Summary:** Define the stage-changed CloudEvents schema.
+
+**Description:** As a Backend Developer, I want a CloudEvents schema for the stage-changed event, so that consumers have a stable event contract.
+
+**Acceptance Criteria:**
+
+- A CloudEvents-shaped schema defines case_id, from_stage, to_stage, tenant_id, and actor.
+- A zod validator parses and rejects malformed events.
+- The schema is versioned and documented.
+
+**Code Connection:**
+
+- Added a versioned CloudEvents 1.0 Zod schema for Tax Plan Cycle stage changes.
+- Reused the existing Tax Plan Cycle stage enum so event validation stays aligned with workflow state.
+- Exported the v1 event constants, schema, and inferred types through the Tax Plan Cycle feature boundary and package root.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration.
+- Establishes the stable event contract required before SCRUM-131 publishes stage-changed events and SCRUM-132 consumes them.
+- Does not add SNS publishing, SQS consumption, migrations, or a separate case status field.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts`
+- `docs/stage-changed-event.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `adr/README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts` passed.
+- `npm run typecheck` passed.
+- `git diff --check` passed with line-ending warnings only.
+- Local PostgreSQL 18.4 verified `uuidv7()` support with `uuidv7() IS NOT NULL`.
+- `npm test` passed typecheck and the new stage-changed event test, then failed in existing non-SCRUM-130 coverage:
+  `scenario.test.ts` and `scenarioRepository.test.ts` currently receive `Date` for `created_at` where the schema expects a string,
+  `scenarioMigration.test.ts` timed out after 30000ms, and
+  `jwtProtectedRoutes.test.ts` currently expects `scenarios: []` on a read response that omits it.
+
 ## dylan-harle-jira122 - SCRUM-122
 
 **Branch:** `dylan-harle-jira122`

@@ -4,6 +4,7 @@ import {
   fetchTaxPlanCycleQueue,
   taxPlanCycleQueueQueryKey,
 } from "../entities/taxPlanCycleQueries.ts";
+import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
 import { isUuid, type Uuid } from "../shared/planToolCase.ts";
 
 interface CurrentCaseSelectorProps {
@@ -15,9 +16,10 @@ export function CurrentCaseSelector({
   caseId,
   onCaseIdChange,
 }: CurrentCaseSelectorProps) {
+  const authenticatedFetch = useAuthenticatedFetch();
   const queueQuery = useQuery({
     queryKey: taxPlanCycleQueueQueryKey,
-    queryFn: fetchTaxPlanCycleQueue,
+    queryFn: () => fetchTaxPlanCycleQueue(authenticatedFetch),
   });
 
   const cases = queueQuery.data ?? [];

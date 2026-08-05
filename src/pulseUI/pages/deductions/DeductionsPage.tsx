@@ -129,6 +129,14 @@ function DeductionsErrorState({
   );
 }
 
+export interface DeductionRecord {
+  id: string;
+  date: string;
+  description: string;
+  category: string;
+  amount: number;
+}
+
 function DeductionsScreen({
   deductions,
   contextControl,

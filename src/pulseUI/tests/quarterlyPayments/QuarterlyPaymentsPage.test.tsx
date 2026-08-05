@@ -2,10 +2,9 @@ import "@testing-library/jest-dom/vitest";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
@@ -14,13 +13,13 @@ import {
   type QuarterlyEstimateRecord,
 } from "../../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
 });
 
 afterEach(() => {
-  localStorage.clear();
   cleanup();
 });
 
@@ -82,14 +81,31 @@ function buildTaxPlanCycleQueuePayload() {
   ];
 }
 
+function buildQuarterlyEstimatePayload(caseId: string) {
+  return [
+    {
+      case_id: caseId,
+      tax_year: "2026",
+      quarter: "Q1",
+      due_date: "2026-04-15",
+      estimated_payment: "3620.00",
+      withholding_applied: "3620.00",
+      covered_amount: "3620.00",
+      remaining_due: "0.00",
+      status: "Paid",
+    },
+  ] as const;
+}
+
 describe("QuarterlyPaymentsPage", () => {
   test("renders the quarterly payments route", async () => {
-    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
     vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(buildTaxPlanCycleQueuePayload() as never);
 
     render(
       <QueryClientProvider client={createPulseQueryClient()}>
-        <RouterProvider router={createPulseRouter(["/quarterly-payments"])} />
+        <TestSessionProvider>
+          <RouterProvider router={createPulseRouter(["/quarterly-payments"])} />
+        </TestSessionProvider>
       </QueryClientProvider>,
     );
 
@@ -98,6 +114,41 @@ describe("QuarterlyPaymentsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Select a case to load quarterly payments/i })).toBeInTheDocument();
+  });
+
+  test("loads selected quarterly estimates through the authenticated case API fetcher", async () => {
+    const caseId = taxPlanCycleRows[1].id;
+    const caseApiMock = vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
+      if (path === "/v1/tax-plan-cycles") {
+        return Promise.resolve(buildTaxPlanCycleQueuePayload() as never);
+      }
+
+      if (path === `/v1/tax-plan-cycles/${caseId}/quarterly-estimates`) {
+        return Promise.resolve(buildQuarterlyEstimatePayload(caseId) as never);
+      }
+
+      throw new Error(`Unexpected quarterly payments request: ${path}`);
+    });
+
+    render(
+      <QueryClientProvider client={createPulseQueryClient()}>
+        <TestSessionProvider>
+          <RouterProvider router={createPulseRouter(["/quarterly-payments"])} />
+        </TestSessionProvider>
+      </QueryClientProvider>,
+    );
+
+    const selector = await screen.findByRole("combobox", { name: "Case ID" });
+    await screen.findByRole("option", { name: caseId });
+
+    fireEvent.change(selector, { target: { value: caseId } });
+
+    await waitFor(() => {
+      expect(caseApiMock).toHaveBeenCalledWith(
+        `/v1/tax-plan-cycles/${caseId}/quarterly-estimates`,
+        expect.any(Function),
+      );
+    });
   });
 
   test("renders the read-only timeline and withholding placeholder", () => {

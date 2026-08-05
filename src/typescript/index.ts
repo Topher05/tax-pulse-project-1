@@ -295,6 +295,12 @@ export { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
+  stageChangedCloudEventSchemaV1,
+  stageChangedEventDataSchema,
+  stageChangedEventDataSchemaV1,
+  stageChangedEventSchemaVersion,
+  stageChangedEventSource,
+  stageChangedEventType,
   taxPlanCycleCreateSchema,
   taxPlanCyclePrioritySchema,
   taxPlanCycleReadParamsSchema,
@@ -310,6 +316,8 @@ export {
   type TaxPlanCycleTransitionInput,
   type TaxPlanCycleTransitionParams,
   type TaxPlanCycleStage,
+  type StageChangedCloudEventV1,
+  type StageChangedEventDataV1,
 } from "./features/taxPlanCycle/index.js";
 export {
   createTaxPlanCycleRepository,
@@ -338,6 +346,10 @@ export {
   createTaxPlanCycleQueueDynamoDocumentClient,
   createTaxPlanCycleQueueProjectionStore,
   createTaxPlanCycleQueueReadService,
+  createSnsStageChangedEventPublisher,
+  createStageChangedCloudEventV1,
+  createStageChangedSnsClient,
+  getStageChangedTopicArnFromEnv,
   createTaxPlanCycleCreateController,
   taxPlanCycleCreateController,
   taxPlanCycleCreateResultSchema,
@@ -363,7 +375,13 @@ export {
   type TaxPlanCycleQueueProjectionReader,
   type TaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadServiceOptions,
+  type CreateStageChangedCloudEventOptions,
+  type StageChangedEventPublisher,
+  type StageChangedEventPublishInput,
+  type StageChangedSnsClient,
   type TaxPlanCycleTransitionControllerOptions,
+  type TaxPlanCycleTransitionControllerInput,
+  type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
   type ValidationErrorIssue,
   type ValidationErrorResponse,
@@ -391,6 +409,9 @@ import {
   createQuarterlyPaymentsRouter,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
+  createSnsStageChangedEventPublisher,
+  createStageChangedSnsClient,
+  getStageChangedTopicArnFromEnv,
   createScenarioModelingController,
   createScenarioRepository,
   createTaxEngineClient,
@@ -525,6 +546,11 @@ export async function main(): Promise<Server> {
     taxPlanCycleRepository,
     {
       queueCacheInvalidator,
+      stageChangedEventPublisher: createSnsStageChangedEventPublisher(
+        createStageChangedSnsClient(),
+        getStageChangedTopicArnFromEnv(),
+      ),
+      stageChangedEventLogger: logger,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
@@ -593,8 +619,12 @@ export async function main(): Promise<Server> {
       );
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
+        secureCookies: process.env.NODE_ENV === "production",
       }));
-      app.use(createAuthSessionRouter({ tokenService }));
+      app.use(createAuthSessionRouter({
+        tokenService,
+        secureCookies: process.env.NODE_ENV === "production",
+      }));
     },
   });
   const port = getPortFromEnv();

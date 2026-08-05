@@ -19,13 +19,16 @@ describe("DeductionEntryForm", () => {
     expect(screen.getByRole("button", { name: "Create Deduction" })).toBeEnabled();
   });
 
-  test("shows inline validation errors and disables submit when required fields are missing", async () => {
+  test("shows inline validation errors, then re-enables submit after fields are corrected", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const onCreate = vi.fn();
+    const onClose = vi.fn();
 
-    render(<DeductionEntryForm onClose={vi.fn()} onCreate={onCreate} />);
+    render(<DeductionEntryForm onClose={onClose} onCreate={onCreate} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Create Deduction" }));
+    const submitButton = screen.getByRole("button", { name: "Create Deduction" });
+
+    fireEvent.click(submitButton);
 
     await waitFor(() => {
       expect(screen.getByText("Date is required")).toBeInTheDocument();
@@ -35,7 +38,33 @@ describe("DeductionEntryForm", () => {
     expect(screen.getByText("Description is required")).toBeInTheDocument();
     expect(screen.getByText("Amount is required")).toBeInTheDocument();
     expect(onCreate).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Create Deduction" })).toBeDisabled();
+    expect(submitButton).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Date"), {
+      target: { value: "2026-07-30" },
+    });
+    fireEvent.change(screen.getByLabelText("Description"), {
+      target: { value: "Home office desk and chair" },
+    });
+    fireEvent.change(screen.getByLabelText("Amount"), {
+      target: { value: "1850.55" },
+    });
+
+    await waitFor(() => {
+      expect(submitButton).toBeEnabled();
+    });
+
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(onCreate).toHaveBeenCalledWith({
+        date: "2026-07-30",
+        category: "Business Expense",
+        description: "Home office desk and chair",
+        amount: 1850.55,
+      });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 
   test("shows an inline validation error and blocks submit for a negative amount", async () => {

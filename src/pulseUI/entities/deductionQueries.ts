@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { caseApiGetJson, caseApiSendJson } from "../shared/caseApi.ts";
+import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
 import type { Uuid } from "../shared/planToolCase.ts";
 
 const deductionAmountSchema = z.coerce.number().finite().nonnegative();
@@ -35,8 +36,9 @@ export function deductionsQueryKey(caseId: Uuid | "unselected") {
 
 export async function fetchDeductions(
   caseId: Uuid,
+  fetcher?: typeof fetch,
 ): Promise<DeductionQueryPayload> {
-  const payload = await caseApiGetJson<unknown>(`/v1/cases/${caseId}/deductions`);
+  const payload = await caseApiGetJson<unknown>(`/v1/cases/${caseId}/deductions`, fetcher);
   return deductionQuerySchema.parse(payload);
 }
 
@@ -52,6 +54,8 @@ export async function createDeduction(
 }
 
 export function useDeductionsQuery(caseId: Uuid | null) {
+  const authenticatedFetch = useAuthenticatedFetch();
+
   return useQuery({
     queryKey: deductionsQueryKey(caseId ?? "unselected"),
     queryFn: () => {
@@ -59,7 +63,7 @@ export function useDeductionsQuery(caseId: Uuid | null) {
         throw new Error("A valid case ID is required before fetching deductions.");
       }
 
-      return fetchDeductions(caseId);
+      return fetchDeductions(caseId, authenticatedFetch);
     },
     enabled: caseId !== null,
   });
