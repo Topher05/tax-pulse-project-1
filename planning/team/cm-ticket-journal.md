@@ -34,6 +34,52 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira133 - SCRUM-133
+
+**Branch:** `christopher-martus-jira133`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-133
+
+**Summary:** Write stage transitions through a transactional outbox
+
+**Description:** As a Backend Developer, I want stage transitions written through an
+outbox, so that an event is never lost when the case commits.
+
+**Acceptance Criteria:**
+
+- The stage change and its outbox row commit in the same database transaction.
+- The outbox row carries the serialized CloudEvent payload.
+- A test asserts a rolled-back transition leaves no outbox row.
+
+**Code Connection:**
+
+- The first implementation slice adds the minimal `outbox_event` persistence contract
+  with a generated identifier, serialized text payload, and creation timestamp.
+- Transactional stage-transition writes and acceptance coverage remain for the later
+  implementation slices of this ticket.
+
+**Project Scope Connection:**
+
+The outbox table establishes the durable database boundary required to prevent committed
+stage-change events from being lost before asynchronous delivery.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0009_outbox_event.sql`
+- `src/typescript/index.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:check` passed and loaded the updated Drizzle schema successfully.
+- `git diff --check` passed.
+- `npm run typecheck` is blocked because the existing declared
+  `@aws-sdk/client-sns` dependency is absent from the local `node_modules` installation.
+- This slice adds 70 lines across four files, remaining well below the PR line budget.
+
 ## christopher-martus-jira192 - SCRUM-192
 
 **Branch:** `christopher-martus-jira192`

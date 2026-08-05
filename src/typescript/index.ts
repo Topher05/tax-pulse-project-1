@@ -159,6 +159,7 @@ export {
   credential,
   federalTaxBracket,
   mfaEnrollment,
+  outboxEvent,
   refreshToken,
   roles,
   stageTransition,
