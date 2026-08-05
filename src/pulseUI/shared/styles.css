@@ -1174,6 +1174,21 @@ body::-webkit-scrollbar-thumb {
 }
 
 @media (max-width: 640px) {
+  .authPage {
+    align-items: start;
+    padding: 1rem;
+  }
+
+  .authCard {
+    margin-top: max(1rem, 8vh);
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+
+  .authCard h1 {
+    font-size: 1.6rem;
+  }
+
   .queueHero {
     padding: 1.25rem;
   }

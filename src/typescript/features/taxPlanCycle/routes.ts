@@ -561,6 +561,7 @@ export function createTaxPlanCycleRouter(
         const transitioned = await transitionController.transition({
           tenantId,
           caseId: parsedParams.data.caseId,
+          fromStage: cycle.stage,
           toStage: requestedStage,
           actor,
         });
