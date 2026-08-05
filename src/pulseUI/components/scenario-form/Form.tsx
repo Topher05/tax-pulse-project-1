@@ -16,6 +16,7 @@ import {
 
 interface ScenarioFormProps {
   onClose: () => void;
+  onSubmit?: (values: ScenarioFormValues) => Promise<void> | void;
 }
 
 function getScenarioArrayErrorMessage(errors: FieldErrors<ScenarioFormInput>) {
@@ -36,7 +37,7 @@ function getScenarioArrayErrorMessage(errors: FieldErrors<ScenarioFormInput>) {
   return null;
 }
 
-export function ScenarioForm({ onClose }: ScenarioFormProps) {
+export function ScenarioForm({ onClose, onSubmit }: ScenarioFormProps) {
   const modalTitleId = useId();
   const form = useForm<ScenarioFormInput, unknown, ScenarioFormValues>({
     resolver: zodResolver(scenarioFormSchema),
@@ -83,9 +84,18 @@ export function ScenarioForm({ onClose }: ScenarioFormProps) {
   }, [closeModal]);
 
   const submitForm = handleSubmit(
-    (values) => {
+    async (values) => {
       // TODO: submission work is handled in Scrum-102.
-      console.info("Scenario Planner submit", values);
+      try {
+        if (onSubmit) {
+          await onSubmit(values);
+        } else {
+          console.info("Scenario Planner submit", values);
+        }
+      } catch (error) {
+        console.error("Scenario Planner submission failed", error);
+        return;
+      }
       closeModal();
     },
     (validationErrors) => {
