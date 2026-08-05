@@ -181,8 +181,13 @@ async function resolveChromeExecutablePath() {
     }
   }
 
+  const bundledChromiumPath = chromium.executablePath();
+  if (bundledChromiumPath.length > 0) {
+    return bundledChromiumPath;
+  }
+
   throw new Error(
-    "Unable to find a Chrome executable. Set CHROME_PATH to a local Chrome install before running the Lighthouse gate.",
+    "Unable to find a Chrome executable. Set CHROME_PATH or install the Playwright Chromium browser before running the Lighthouse gate.",
   );
 }
 

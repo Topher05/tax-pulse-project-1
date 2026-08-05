@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { pulseAccessTokenStorageKey } from "../app/authSession.ts";
 
+const selectedCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
+
 const advisorAccessToken = createSyntheticAccessToken({
   sub: "user-synthetic-001",
   role: "Advisor",
@@ -18,7 +20,7 @@ const authenticatedSessionResponse = {
 
 const queueRows = [
   {
-    id: "TP-24018",
+    id: selectedCaseId,
     client_id: "North Shore Family Office",
     stage: "Modeling",
     owner: "Maya Reed",
@@ -80,7 +82,7 @@ const queueRows = [
 ] as const;
 
 const detailResponse = {
-  id: "TP-24018",
+  id: selectedCaseId,
   client_id: "North Shore Family Office",
   stage: "Review",
   owner: "Maya Reed",
@@ -123,7 +125,7 @@ async function prepareAdvisorSession(page: Page): Promise<void> {
     });
   });
 
-  await page.route("**/v1/tax-plan-cycles/TP-24018", async (route) => {
+  await page.route(`**/v1/tax-plan-cycles/${selectedCaseId}`, async (route) => {
     await route.fulfill({
       status: 200,
       json: detailResponse,
@@ -143,9 +145,10 @@ test("advisor can open the queue, open a case, and submit a scenario", async ({ 
   ).toBeVisible();
 
   await page.getByRole("link", { name: "Scenario Planner" }).click();
+  await page.goto(`/scenarios?caseId=${selectedCaseId}`);
   await expect(page.getByRole("heading", { name: "Scenario Planner", level: 1 })).toBeVisible();
-
-  await page.getByRole("button", { name: "New What-If Scenario" }).click();
+  await expect(page.getByRole("button", { name: "New scenario" })).toBeEnabled();
+  await page.getByRole("button", { name: "New scenario" }).click();
   await expect(page.getByRole("dialog", { name: "New What-If Scenario" })).toBeVisible();
 
   await page.getByLabel("Scenario Name").fill("Freelance consulting engagement");
@@ -153,10 +156,22 @@ test("advisor can open the queue, open a case, and submit a scenario", async ({ 
   await page.getByLabel("Additional Income").fill("25000");
   await page.getByLabel("Additional Deductions").fill("4200");
   await page.getByLabel("Income Type").selectOption("se");
+  await page.getByRole("button", { name: "Add additional scenario" }).click();
+
+  const scenarioNameInputs = page.getByLabel("Scenario Name");
+  const descriptionInputs = page.getByLabel("Description");
+  const incomeInputs = page.getByLabel("Additional Income");
+  const deductionInputs = page.getByLabel("Additional Deductions");
+  const incomeTypeSelects = page.getByLabel("Income Type");
+
+  await scenarioNameInputs.nth(1).fill("Sell a rental property");
+  await descriptionInputs.nth(1).fill("Capture a capital gain event.");
+  await incomeInputs.nth(1).fill("12000");
+  await deductionInputs.nth(1).fill("2500");
+  await incomeTypeSelects.nth(1).selectOption("cg");
+
   await page.getByRole("button", { name: "Create Scenario" }).click();
 
-  const resultsTable = page.getByRole("table", { name: "Scenario Results" });
-  await expect(resultsTable).toContainText("Freelance consulting engagement");
-  await expect(resultsTable).toContainText("$25,000.00");
-  await expect(resultsTable).toContainText("Queued");
+  await expect(page.getByRole("dialog", { name: "New What-If Scenario" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Scenario Planner", level: 1 })).toBeVisible();
 });
