@@ -64,7 +64,9 @@ outbox, so that an event is never lost when the case commits.
   serialized payload alongside the cycle stage and transition history in the existing
   Drizzle transaction. Production composition no longer directly publishes during the
   request, leaving the SNS publisher available for the SCRUM-134 relay.
-- Acceptance coverage remains for the final implementation slice of this ticket.
+- The final slice extends the successful transition integration path to validate the
+  serialized outbox payload against the CloudEvent schema and forces an outbox insert
+  failure to prove the cycle, transition history, and outbox row roll back together.
 
 **Project Scope Connection:**
 
@@ -80,6 +82,7 @@ stage-change events from being lost before asynchronous delivery.
 - `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/features/taxPlanCycle/repositories/repository.ts`
 - `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
@@ -92,10 +95,15 @@ stage-change events from being lost before asynchronous delivery.
 - A scoped strict TypeScript compile of the updated repository passed after the third
   slice.
 - `npm run db:check` and `git diff --check` continue to pass with the transactional write.
-- `npm run typecheck` is blocked because the existing declared
-  `@aws-sdk/client-sns` dependency is absent from the local `node_modules` installation.
-- The first slice added 70 lines across four files; the cumulative ticket diff remains
-  well below the PR line budget after this refactor.
+- The application and TypeScript test typechecks passed. The combined `npm run typecheck`
+  then stopped in the unrelated Pulse UI because its local `@playwright/test` type
+  dependency is absent.
+- The focused CloudEvent schema and SNS publisher suites passed: 11 tests in two files.
+- The Tax Plan Cycle integration suite collected successfully, but its 22 database tests
+  could not start because no Docker-compatible container runtime is available locally.
+  This includes both new transactional-outbox acceptance paths.
+- The cumulative SCRUM-133 diff is 316 changed lines (255 additions and 61 deletions),
+  remaining below the 500-line PR limit.
 
 ## christopher-martus-jira192 - SCRUM-192
 
