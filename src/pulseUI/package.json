@@ -10,10 +10,11 @@
   "scripts": {
     "build": "vite build --config vite.config.ts",
     "dev": "vite --config vite.config.ts",
+    "test": "npm run test:vitest",
     "test:e2e": "playwright test --config playwright.config.ts",
-    "test": "npm run test:ax && npm run test:vitest",
     "test:ax": "vitest run --config vitest.config.ts tests/accessibility/axeGate.test.tsx",
     "test:ax:deductions": "vitest run --config vitest.config.ts tests/deductions/mockDeductionsPage.test.tsx",
+    "test:lighthouse": "node scripts/lighthouse-dashboard.mjs",
     "test:cov": "vitest run --config vitest.config.ts --coverage",
     "test:vitest": "vitest run --config vitest.config.ts",
     "typecheck": "tsc -p tsconfig.pulseUI.json --noEmit"
@@ -39,6 +40,8 @@
     "@vitejs/plugin-react": "4.3.4",
     "@vitest/coverage-v8": "^2.1.9",
     "jsdom": "24.1.3",
+    "lighthouse": "^12.8.2",
+    "playwright": "^1.62.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.8.0",
     "vite": "5.4.21",
