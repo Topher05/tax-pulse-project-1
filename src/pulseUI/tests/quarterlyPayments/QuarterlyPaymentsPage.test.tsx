@@ -32,6 +32,8 @@ function buildFixtureEstimates(): readonly QuarterlyEstimateRecord[] {
       dueDate: "2026-04-15",
       estimatedPayment: 3620,
       withholdingApplied: 3620,
+      coveredAmount: 3620,
+      remainingDue: 0,
       status: "Paid",
     },
     {
@@ -41,6 +43,8 @@ function buildFixtureEstimates(): readonly QuarterlyEstimateRecord[] {
       dueDate: "2026-06-15",
       estimatedPayment: 3620,
       withholdingApplied: 3620,
+      coveredAmount: 3620,
+      remainingDue: 0,
       status: "Paid",
     },
     {
@@ -50,6 +54,8 @@ function buildFixtureEstimates(): readonly QuarterlyEstimateRecord[] {
       dueDate: "2026-09-15",
       estimatedPayment: 3400,
       withholdingApplied: 0,
+      coveredAmount: 0,
+      remainingDue: 3400,
       status: "Due",
     },
     {
@@ -59,6 +65,8 @@ function buildFixtureEstimates(): readonly QuarterlyEstimateRecord[] {
       dueDate: "2027-01-15",
       estimatedPayment: 3960,
       withholdingApplied: 0,
+      coveredAmount: 0,
+      remainingDue: 3960,
       status: "Due",
     },
   ] as const;

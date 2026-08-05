@@ -38,6 +38,8 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
       dueDate: "2026-04-15",
       estimatedPayment: 3620,
       withholdingApplied: 3620,
+      coveredAmount: 3620,
+      remainingDue: 0,
       status: "Paid",
     },
     {
@@ -47,6 +49,8 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
       dueDate: "2026-06-15",
       estimatedPayment: 3620,
       withholdingApplied: 3620,
+      coveredAmount: 3620,
+      remainingDue: 0,
       status: "Paid",
     },
     {
@@ -56,6 +60,8 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
       dueDate: "2026-09-15",
       estimatedPayment: 3400,
       withholdingApplied: 0,
+      coveredAmount: 0,
+      remainingDue: 3400,
       status: "Due",
     },
     {
@@ -65,6 +71,8 @@ function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[
       dueDate: "2027-01-15",
       estimatedPayment: 3960,
       withholdingApplied: 0,
+      coveredAmount: 0,
+      remainingDue: 3960,
       status: "Due",
     },
   ] as const;
@@ -90,6 +98,8 @@ function toQuarterlyEstimateRecord(
     dueDate: record.due_date,
     estimatedPayment: record.estimated_payment,
     withholdingApplied: record.withholding_applied,
+    coveredAmount: record.covered_amount,
+    remainingDue: record.remaining_due,
     status: record.status,
   };
 }
@@ -106,8 +116,9 @@ export function QuarterlyPaymentsScreen({
   quarterlyEstimates,
 }: QuarterlyPaymentsScreenProps) {
   const totalEstimated = quarterlyEstimates.reduce((sum, payment) => sum + payment.estimatedPayment, 0);
+  const totalCovered = quarterlyEstimates.reduce((sum, payment) => sum + payment.coveredAmount, 0);
   const totalWithholding = quarterlyEstimates.reduce((sum, payment) => sum + payment.withholdingApplied, 0);
-  const totalRemaining = totalEstimated - totalWithholding;
+  const totalRemaining = quarterlyEstimates.reduce((sum, payment) => sum + payment.remainingDue, 0);
 
   return (
     <div className={styles.page}>
@@ -121,7 +132,7 @@ export function QuarterlyPaymentsScreen({
         />
         <MetricCard
           label="Paid So Far"
-          value={formatCurrency(totalWithholding)}
+          value={formatCurrency(totalCovered)}
           caption=""
           tone="green"
           icon={<CircleCheckBig aria-hidden="true" />}
