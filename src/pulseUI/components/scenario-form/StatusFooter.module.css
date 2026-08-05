@@ -1,0 +1,130 @@
+.footer {
+  display: grid;
+  gap: 1rem;
+  padding-top: 0.25rem;
+}
+
+.copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.statusText {
+  margin: 0;
+  color: var(--pulse-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.error {
+  margin: 0;
+  color: #d22b2b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  min-width: 11rem;
+  padding: 0 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.95rem;
+  font-weight: 800;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease,
+    opacity 140ms ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--pulse-accent-light);
+  outline-offset: 2px;
+}
+
+.secondaryButton {
+  color: var(--pulse-ink);
+  background: var(--pulse-surface-subtle);
+  border-color: var(--pulse-border);
+}
+
+.secondaryButton:hover {
+  background: var(--pulse-surface-muted);
+}
+
+.infoButton {
+  color: #dbf6ff;
+  background: rgb(14 165 233 / 12%);
+  border-color: rgb(56 189 248 / 35%);
+}
+
+.infoButton:hover {
+  background: rgb(14 165 233 / 18%);
+}
+
+.primaryButton {
+  color: #f8fafc;
+  background: var(--pulse-accent);
+  border-color: transparent;
+  box-shadow: 0 10px 25px rgb(99 102 241 / 24%);
+}
+
+.primaryButton:hover {
+  background: color-mix(in srgb, var(--pulse-accent) 86%, white);
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+
+.createIconStack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.saveIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.plusBadge {
+  width: 0.78rem;
+  height: 0.78rem;
+  margin-left: -0.2rem;
+  margin-top: 0.1rem;
+}
+
+@media (max-width: 720px) {
+  .button {
+    flex: 1 1 100%;
+  }
+}

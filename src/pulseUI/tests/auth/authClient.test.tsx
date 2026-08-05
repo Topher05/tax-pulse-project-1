@@ -6,10 +6,11 @@ import {
 } from "../../auth/authClient.ts";
 
 const credentials = {
-  tenantId: "tenant-synthetic-001",
   email: "advisor@example.test",
   password: "synthetic-password",
 };
+
+const tenantId = "tenant-synthetic-001";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -23,7 +24,7 @@ describe("browser auth client", () => {
     const fetcher = vi.fn<typeof fetch>(async () =>
       jsonResponse({
         status: "mfa_challenge_required",
-        tenant_id: credentials.tenantId,
+        tenant_id: tenantId,
         email: credentials.email,
         user_id: "user-synthetic-001",
       }, 202),
@@ -32,7 +33,7 @@ describe("browser auth client", () => {
     const challenge = await createBrowserAuthClient(fetcher).login(credentials);
 
     expect(challenge).toEqual({
-      tenantId: credentials.tenantId,
+      tenantId,
       email: credentials.email,
       userId: "user-synthetic-001",
     });
@@ -42,7 +43,6 @@ describe("browser auth client", () => {
         method: "POST",
         credentials: "include",
         body: JSON.stringify({
-          tenant_id: credentials.tenantId,
           email: credentials.email,
           password: credentials.password,
         }),
@@ -62,7 +62,7 @@ describe("browser auth client", () => {
     const client = createBrowserAuthClient(fetcher);
 
     const result = await client.completeMfaLogin(
-      { tenantId: credentials.tenantId, email: credentials.email, userId: "user-synthetic-001" },
+      { tenantId, email: credentials.email, userId: "user-synthetic-001" },
       "123456",
     );
 

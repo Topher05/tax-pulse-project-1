@@ -18,11 +18,12 @@ const userId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61";
 async function withRouteServer(
   controller: AuthMfaLoginController,
   run: (baseUrl: string) => Promise<void>,
+  secureCookies: boolean = true,
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (expressApp) => {
-      expressApp.use(createAuthMfaLoginRouter({ controller }));
+      expressApp.use(createAuthMfaLoginRouter({ controller, secureCookies }));
     },
   });
   const server = app.listen(0);
@@ -80,6 +81,27 @@ describe("createAuthMfaLoginRouter", () => {
       expect(response.status).toBe(400);
       expect(verify).not.toHaveBeenCalled();
     });
+  });
+
+  test("sets a non-secure refresh cookie for local HTTP MFA completion", async () => {
+    const verify = vi.fn<AuthMfaLoginController["verify"]>(async () => ({
+      access_token: "signed.access.jwt",
+      refresh_token: "opaque-refresh-token",
+      token_type: "Bearer",
+      expires_in: 900,
+      refresh_expires_in: 2_592_000,
+    }));
+
+    await withRouteServer({ verify }, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/auth/login/mfa`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenant_id: tenantId, user_id: userId, code: "123456" }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("set-cookie")).not.toContain("Secure");
+    }, false);
   });
 
   test("preserves the shared 401 response for rejected MFA authentication", async () => {

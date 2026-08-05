@@ -13,3 +13,5 @@ src/pulseUI/test-results/
 src/pulseUI/playwright-report/
 .DS_Store
 uv.lock
+codebase_guide/*
+.vscode/
