@@ -1,12 +1,10 @@
 import "@testing-library/jest-dom/vitest";
-
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
-
-import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
 import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
@@ -21,6 +19,7 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
+
 
 function renderScenarioPlannerRoute(pathname: string) {
   render(

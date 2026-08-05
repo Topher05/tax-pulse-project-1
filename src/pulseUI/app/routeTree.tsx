@@ -7,6 +7,7 @@ import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
 import { QuarterlyPaymentsPage } from "../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { IncomePage } from "../pages/income/IncomePage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
+
 import { AuthBoundary } from "../auth/AuthBoundary.tsx";
 import { MfaChallengePage } from "../pages/auth/MfaChallengePage.tsx";
 import { PasswordResetConfirmationPage } from "../pages/auth/PasswordResetConfirmationPage.tsx";
@@ -88,7 +89,14 @@ const scenarioPlannerRoute = createRoute({
 const incomeRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/income",
-  component: () => <IncomePage clientId="" taxYear={2026} incomeEvents={[]} />,
+  component: () => (
+    <IncomePage
+      clientId=""
+      taxYear={2026}
+      incomeEvents={[]}
+      onCreateIncome={() => undefined}
+    />
+  ),
 });
 
 const deductionsRoute = createRoute({

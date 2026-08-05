@@ -166,7 +166,10 @@ describe("DeductionsPage", () => {
     expect(
       screen.queryByText("Deduction table wiring is disabled pending scrum-115."),
     ).not.toBeInTheDocument();
-    expect(caseApiMock).toHaveBeenCalledWith(`/v1/cases/${seededCaseId}/deductions`);
+    expect(caseApiMock).toHaveBeenCalledWith(
+      `/v1/cases/${seededCaseId}/deductions`,
+      expect.any(Function),
+    );
   });
 
   test("renders the empty state when the selected case has no deductions", async () => {
