@@ -1,9 +1,12 @@
-/**
- * The income-source categories the screen will summarize once live data is wired.
- */
-export type IncomeSourceCategory = "w2" | "1099" | "capital-gains" | "rental" | "other";
 import { Plus, ReceiptText } from "lucide-react";
+import { useState } from "react";
+
+import { IncomeEntryForm } from "./IncomeEntryForm.tsx";
+import type { IncomeSourceCategory } from "./incomeEntrySchema.ts";
+import type { IncomeCreatePayload } from "./incomeEntrySchema.ts";
 import styles from "./IncomePage.module.css";
+
+export type { IncomeSourceCategory } from "./incomeEntrySchema.ts";
 
 /**
  * Presentation contract for an income entry returned by the future income boundary.
@@ -24,6 +27,7 @@ export interface IncomePageProps {
   clientId: string;
   taxYear: number;
   incomeEvents: readonly IncomeEvent[];
+  onCreateIncome: (payload: IncomeCreatePayload) => void | Promise<void>;
 }
 
 const incomeKpis = [
@@ -37,7 +41,9 @@ const incomeKpis = [
 /**
  * A presentation-only Income screen. Data loading and data-driven states are added later.
  */
-export function IncomePage(_: IncomePageProps) {
+export function IncomePage({ onCreateIncome }: IncomePageProps) {
+  const [isAddIncomeFormOpen, setIsAddIncomeFormOpen] = useState(false);
+
   return (
     <section className={styles.page} aria-labelledby="income-page-title">
       <header className={styles.header}>
@@ -49,7 +55,11 @@ export function IncomePage(_: IncomePageProps) {
             Track all income sources for accurate tax estimation
           </p>
         </div>
-        <button className={styles.addButton} type="button" disabled>
+        <button
+          className={styles.addButton}
+          type="button"
+          onClick={() => setIsAddIncomeFormOpen(true)}
+        >
           <Plus aria-hidden="true" />
           Add Income
         </button>
@@ -92,11 +102,22 @@ export function IncomePage(_: IncomePageProps) {
           <ReceiptText aria-hidden="true" />
           <h3>No income events yet</h3>
           <p>Add your first income event to start tracking your tax liability.</p>
-          <button className={styles.emptyStateButton} type="button" disabled>
+          <button
+            className={styles.emptyStateButton}
+            type="button"
+            onClick={() => setIsAddIncomeFormOpen(true)}
+          >
             Add Income Event
           </button>
         </div>
       </section>
+
+      {isAddIncomeFormOpen ? (
+        <IncomeEntryForm
+          onCreate={onCreateIncome}
+          onClose={() => setIsAddIncomeFormOpen(false)}
+        />
+      ) : null}
     </section>
   );
 }
