@@ -1,4 +1,5 @@
-import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
+import { createRootRoute, createRoute, Navigate, Outlet } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
@@ -16,6 +17,8 @@ import { SignInPage } from "../pages/auth/SignInPage.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
+import { useSession } from "../auth/AuthProvider.tsx";
+import type { SessionRole } from "../auth/session.ts";
 import { validatePlanToolSearch } from "../shared/planToolCase.ts";
 
 const rootRoute = createRootRoute({
@@ -28,6 +31,18 @@ function AuthenticatedWorkspace() {
       <AppShell />
     </AuthBoundary>
   );
+}
+
+const adminRoles: readonly SessionRole[] = ["Firm Admin", "TaxPulse Platform Admin"];
+
+function AdminOnlyRoute({ children }: { readonly children: ReactNode }) {
+  const { user } = useSession();
+
+  if (user === null || !adminRoles.includes(user.role)) {
+    return <Navigate replace to="/" />;
+  }
+
+  return <>{children}</>;
 }
 
 const workspaceRoute = createRoute({
@@ -115,8 +130,11 @@ const clientsRoute = createRoute({
 const firmUsersRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/firm/users",
-  // TODO: add an admin/platform-admin guard here once the session exposes role claims.
-  component: TeamUsersPage,
+  component: () => (
+    <AdminOnlyRoute>
+      <TeamUsersPage />
+    </AdminOnlyRoute>
+  ),
 });
 
 const firmSettingsRoute = createRoute({
@@ -128,19 +146,31 @@ const firmSettingsRoute = createRoute({
 const administrationTenantsUsersRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/administration/tenants-users",
-  component: EmptyPage,
+  component: () => (
+    <AdminOnlyRoute>
+      <EmptyPage />
+    </AdminOnlyRoute>
+  ),
 });
 
 const administrationRolesPermissionsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/administration/roles-permissions",
-  component: EmptyPage,
+  component: () => (
+    <AdminOnlyRoute>
+      <EmptyPage />
+    </AdminOnlyRoute>
+  ),
 });
 
 const administrationAuditLogRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/administration/audit-log",
-  component: EmptyPage,
+  component: () => (
+    <AdminOnlyRoute>
+      <EmptyPage />
+    </AdminOnlyRoute>
+  ),
 });
 
 export const routeTree = rootRoute.addChildren([

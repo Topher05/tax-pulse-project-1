@@ -22,11 +22,13 @@ const renderShell = (
   initialPath: string = "/",
   authenticated = true,
   clientOverrides?: Partial<AuthClient>,
+  role: "Advisor" | "Firm Admin" | "Client" | "TaxPulse Platform Admin" = "Advisor",
 ) => {
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
       <TestSessionProvider
         authenticated={authenticated}
+        role={role}
         clientOverrides={clientOverrides}
       >
         <RouterProvider router={createPulseRouter([initialPath])} />
@@ -99,7 +101,7 @@ describe("Pulse UI app shell", () => {
   });
 
   test("renders the administration view title", async () => {
-    renderShell("/administration/tenants-users");
+    renderShell("/administration/tenants-users", true, undefined, "Firm Admin");
 
     expect(
       await screen.findByRole("heading", { name: "All Tenants & Users", level: 1 }),

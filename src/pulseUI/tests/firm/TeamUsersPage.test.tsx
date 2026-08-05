@@ -8,6 +8,7 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -24,7 +25,9 @@ describe("TeamUsersPage", () => {
 
     render(
       <QueryClientProvider client={createPulseQueryClient()}>
-        <RouterProvider router={createPulseRouter(["/firm/users"])} />
+        <TestSessionProvider role="Firm Admin">
+          <RouterProvider router={createPulseRouter(["/firm/users"])} />
+        </TestSessionProvider>
       </QueryClientProvider>,
     );
 
