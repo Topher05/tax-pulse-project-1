@@ -3,24 +3,12 @@ import {
   SNSClient,
   type SNSClientConfig,
 } from "@aws-sdk/client-sns";
-import { randomUUID } from "node:crypto";
 
 import {
-  stageChangedCloudEventSchemaV1,
-  stageChangedEventDataSchema,
-  stageChangedEventSource,
-  stageChangedEventType,
-  type StageChangedCloudEventV1,
+  createStageChangedCloudEventV1,
+  type CreateStageChangedCloudEventOptions,
+  type StageChangedEventPublishInput,
 } from "../stageChangedEvent.js";
-import type { TaxPlanCycleStage } from "../taxPlanCycle.js";
-
-export interface StageChangedEventPublishInput {
-  tenantId: string;
-  caseId: string;
-  fromStage: TaxPlanCycleStage;
-  toStage: TaxPlanCycleStage;
-  actor: string;
-}
 
 export interface StageChangedEventPublisher {
   publishStageChanged(
@@ -30,36 +18,6 @@ export interface StageChangedEventPublisher {
 
 export interface StageChangedSnsClient {
   send(command: PublishCommand): Promise<unknown>;
-}
-
-export interface CreateStageChangedCloudEventOptions {
-  idFactory?: () => string;
-  now?: () => Date;
-}
-
-export function createStageChangedCloudEventV1(
-  input: StageChangedEventPublishInput,
-  options: CreateStageChangedCloudEventOptions = {},
-): StageChangedCloudEventV1 {
-  const idFactory = options.idFactory ?? randomUUID;
-  const now = options.now ?? (() => new Date());
-
-  return stageChangedCloudEventSchemaV1.parse({
-    specversion: "1.0",
-    id: `stage-transition-${idFactory()}`,
-    source: stageChangedEventSource,
-    type: stageChangedEventType,
-    time: now().toISOString(),
-    datacontenttype: "application/json",
-    dataschema: stageChangedEventDataSchema,
-    data: {
-      case_id: input.caseId,
-      tenant_id: input.tenantId,
-      from_stage: input.fromStage,
-      to_stage: input.toStage,
-      actor: input.actor,
-    },
-  });
 }
 
 export function createStageChangedSnsClient(

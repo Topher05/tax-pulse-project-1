@@ -57,6 +57,9 @@ outbox, so that an event is never lost when the case commits.
 
 - The first implementation slice adds the minimal `outbox_event` persistence contract
   with a generated identifier, serialized text payload, and creation timestamp.
+- The second slice moves CloudEvent construction and its input types into the domain event
+  module so both database persistence and SNS delivery can reuse the same validated
+  payload without coupling the repository to AWS infrastructure.
 - Transactional stage-transition writes and acceptance coverage remain for the later
   implementation slices of this ticket.
 
@@ -69,6 +72,9 @@ stage-change events from being lost before asynchronous delivery.
 
 - `src/typescript/shared/database/schema.ts`
 - `src/typescript/shared/database/drizzle-migrations/0009_outbox_event.sql`
+- `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/index.ts`
 - `planning/team/cm-ticket-journal.md`
 
@@ -76,9 +82,13 @@ stage-change events from being lost before asynchronous delivery.
 
 - `npm run db:check` passed and loaded the updated Drizzle schema successfully.
 - `git diff --check` passed.
+- A focused `tsx` check built and schema-validated a deterministic stage-changed
+  CloudEvent through the relocated domain helper.
+- `npm run db:check` and `git diff --check` continue to pass after the second slice.
 - `npm run typecheck` is blocked because the existing declared
   `@aws-sdk/client-sns` dependency is absent from the local `node_modules` installation.
-- This slice adds 70 lines across four files, remaining well below the PR line budget.
+- The first slice added 70 lines across four files; the cumulative ticket diff remains
+  well below the PR line budget after this refactor.
 
 ## christopher-martus-jira192 - SCRUM-192
 

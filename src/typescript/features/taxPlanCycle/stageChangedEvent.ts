@@ -1,6 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
-import { taxPlanCycleStageSchema } from "./taxPlanCycle.js";
+import {
+  taxPlanCycleStageSchema,
+  type TaxPlanCycleStage,
+} from "./taxPlanCycle.js";
 
 export const stageChangedEventType =
   "com.taxpulse.tax_plan_cycle.stage_changed.v1";
@@ -34,3 +38,41 @@ export type StageChangedEventDataV1 = z.infer<
 export type StageChangedCloudEventV1 = z.infer<
   typeof stageChangedCloudEventSchemaV1
 >;
+
+export interface StageChangedEventPublishInput {
+  tenantId: string;
+  caseId: string;
+  fromStage: TaxPlanCycleStage;
+  toStage: TaxPlanCycleStage;
+  actor: string;
+}
+
+export interface CreateStageChangedCloudEventOptions {
+  idFactory?: () => string;
+  now?: () => Date;
+}
+
+export function createStageChangedCloudEventV1(
+  input: StageChangedEventPublishInput,
+  options: CreateStageChangedCloudEventOptions = {},
+): StageChangedCloudEventV1 {
+  const idFactory = options.idFactory ?? randomUUID;
+  const now = options.now ?? (() => new Date());
+
+  return stageChangedCloudEventSchemaV1.parse({
+    specversion: "1.0",
+    id: `stage-transition-${idFactory()}`,
+    source: stageChangedEventSource,
+    type: stageChangedEventType,
+    time: now().toISOString(),
+    datacontenttype: "application/json",
+    dataschema: stageChangedEventDataSchema,
+    data: {
+      case_id: input.caseId,
+      tenant_id: input.tenantId,
+      from_stage: input.fromStage,
+      to_stage: input.toStage,
+      actor: input.actor,
+    },
+  });
+}
