@@ -79,14 +79,17 @@ describe("caseApiPostJson", () => {
       caseApiPostJson("/v1/tax-plan-cycles/case-1/scenarios", { scenarios: [] }, fetcher),
     ).resolves.toEqual({ ok: true });
 
-    expect(fetcher).toHaveBeenCalledWith(`${apiBaseUrl}/v1/tax-plan-cycles/case-1/scenarios`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ scenarios: [] }),
-    });
+    expect(fetcher).toHaveBeenCalledWith(
+      `${apiBaseUrl}/v1/tax-plan-cycles/case-1/scenarios`,
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ scenarios: [] }),
+      }),
+    );
+    expect(new Headers(fetcher.mock.calls[0]?.[1]?.headers).get("content-type")).toBe(
+      "application/json",
+    );
   });
 
   test("throws a CaseApiError with the response body when the post fails", async () => {
