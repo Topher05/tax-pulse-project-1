@@ -20,7 +20,7 @@
     "dev:web": "npm --prefix src/pulseUI run dev",
     "redis:up": "docker compose -f docker-compose.redis.yml up -d",
     "redis:down": "docker compose -f docker-compose.redis.yml down",
-    "redis:smoke": "tsx src/typescript/redisSmoke.ts",
+    "redis:smoke": "tsx src/typescript/shared/scripts/redisSmoke.ts",
     "seed": "tsx src/typescript/shared/database/seed.ts",
     "start": "node dist/typescript/index.js",
     "test": "npm run typecheck && npm run test:vitest",
@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/client-sns": "^3.1101.0",
     "@aws-sdk/lib-dynamodb": "^3.0.0",
     "argon2": "^0.44.0",
     "drizzle-orm": "^0.45.2",

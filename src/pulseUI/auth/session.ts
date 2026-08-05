@@ -33,7 +33,6 @@ export interface SessionTokenResponse {
 }
 
 export interface LoginCredentials {
-  readonly tenantId: string;
   readonly email: string;
   readonly password: string;
 }
@@ -58,7 +57,7 @@ export type AuthSessionState =
 
 export interface SessionActions {
   login(credentials: LoginCredentials): Promise<MfaChallenge>;
-  completeMfaLogin(challenge: MfaChallenge, code: string): Promise<void>;
+  completeMfaLogin(challenge: MfaChallenge, code: string): Promise<SessionUser | null>;
   logout(): Promise<void>;
   refreshSession(): Promise<AuthSessionState>;
   getAccessToken(): Promise<string | null>;

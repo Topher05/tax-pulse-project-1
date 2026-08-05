@@ -85,6 +85,132 @@ body::before {
   min-height: 100vh;
 }
 
+/* Public authentication screens */
+.authPage {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 16% 14%, rgb(84 182 177 / 20%), transparent 36%),
+    linear-gradient(135deg, #17324d 0%, #10263c 100%);
+}
+
+.authCard {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 440px);
+  padding: 32px;
+  background: #ffffff;
+  border: 1px solid #cdd6df;
+  border-radius: 12px;
+  box-shadow: 0 20px 48px rgb(15 37 58 / 30%);
+}
+
+.authEyebrow {
+  color: #1f7a76;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.authCard h1 {
+  color: #17324d;
+  font-size: 1.75rem;
+  line-height: 1.15;
+}
+
+.authLead {
+  color: #526173;
+}
+
+.authForm {
+  display: grid;
+  gap: 14px;
+}
+
+.authForm label {
+  display: grid;
+  gap: 6px;
+  color: #344153;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.authForm input {
+  min-height: 44px;
+  padding: 0 12px;
+  color: #17202a;
+  background: #ffffff;
+  border: 1px solid #aebac6;
+  border-radius: 8px;
+}
+
+.authForm input:focus-visible,
+.authPrimaryButton:focus-visible,
+.authTextLink:focus-visible {
+  outline: 3px solid #54b6b1;
+  outline-offset: 2px;
+}
+
+.authPrimaryButton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  color: #112235;
+  background: #f3c969;
+  border: 1px solid #d6a72f;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.authPrimaryButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.authTextLink {
+  justify-self: start;
+  color: #1f7a76;
+  font-weight: 750;
+}
+
+.authError {
+  padding: 10px 12px;
+  color: #8c2933;
+  background: #fff0f1;
+  border: 1px solid #e9a5aa;
+  border-radius: 8px;
+}
+
+/* Keep the shared modal shell easy to tune if sizing or card treatment changes later. */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(15, 17, 23, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
 button,
 a,
 select {
@@ -1048,6 +1174,21 @@ body::-webkit-scrollbar-thumb {
 }
 
 @media (max-width: 640px) {
+  .authPage {
+    align-items: start;
+    padding: 1rem;
+  }
+
+  .authCard {
+    margin-top: max(1rem, 8vh);
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+
+  .authCard h1 {
+    font-size: 1.6rem;
+  }
+
   .queueHero {
     padding: 1.25rem;
   }

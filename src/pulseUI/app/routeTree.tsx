@@ -1,138 +1,166 @@
-import { createRootRoute, createRoute, redirect } from "@tanstack/react-router";
-
-import { hasPulseAccessToken } from "./authSession.ts";
+import { createRootRoute, createRoute, Outlet } from "@tanstack/react-router";
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { ClientRosterPage } from "../pages/clients/ClientRosterPage.tsx";
 import { TeamUsersPage } from "../pages/firm/TeamUsersPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
+import { QuarterlyPaymentsPage } from "../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { IncomePage } from "../pages/income/IncomePage.tsx";
-import { LoginPage } from "../pages/LoginPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
+import { AuthBoundary } from "../auth/AuthBoundary.tsx";
+import { MfaChallengePage } from "../pages/auth/MfaChallengePage.tsx";
+import { PasswordResetConfirmationPage } from "../pages/auth/PasswordResetConfirmationPage.tsx";
+import { PasswordResetPage } from "../pages/auth/PasswordResetPage.tsx";
+import { SignInPage } from "../pages/auth/SignInPage.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
+import { validatePlanToolSearch } from "../shared/planToolCase.ts";
 
 const rootRoute = createRootRoute({
-  component: AppShell,
+  component: Outlet,
+});
+
+function AuthenticatedWorkspace() {
+  return (
+    <AuthBoundary>
+      <AppShell />
+    </AuthBoundary>
+  );
+}
+
+const workspaceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "_workspace",
+  component: AuthenticatedWorkspace,
+});
+
+const signInRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sign-in",
+  component: SignInPage,
+});
+
+const mfaChallengeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sign-in/mfa",
+  component: MfaChallengePage,
+});
+
+const passwordResetRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/password-reset",
+  component: PasswordResetPage,
+});
+
+const passwordResetConfirmationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/password-reset/confirmation",
+  component: PasswordResetConfirmationPage,
 });
 
 const dashboardRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/",
-  beforeLoad: requirePulseAuthentication,
   component: DashboardPage,
 });
 
-const loginRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/login",
-  component: LoginPage,
-});
-
 const cyclesQueueRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/cycles/queue",
-  beforeLoad: requirePulseAuthentication,
   component: PlanCycle,
 });
 
 const cycleDetailsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/cycles/$id",
-  beforeLoad: requirePulseAuthentication,
   component: DetailsPage,
   validateSearch: (search) => validateDetailsSearch(search),
 });
 
 const scenarioPlannerRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/scenarios",
-  beforeLoad: requirePulseAuthentication,
-  component: EmptyPage,
+  component: ScenarioPlannerPage,
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const incomeRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/income",
-  beforeLoad: requirePulseAuthentication,
   component: () => <IncomePage clientId="" taxYear={2026} incomeEvents={[]} />,
 });
 
 const deductionsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/deductions",
-  beforeLoad: requirePulseAuthentication,
   component: DeductionsPage,
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const quarterlyPaymentsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/quarterly-payments",
-  beforeLoad: requirePulseAuthentication,
-  component: EmptyPage,
+  component: QuarterlyPaymentsPage,
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const clientsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/clients",
-  beforeLoad: requirePulseAuthentication,
   component: ClientRosterPage,
 });
 
 const firmUsersRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/firm/users",
-  beforeLoad: requirePulseAuthentication,
   // TODO: add an admin/platform-admin guard here once the session exposes role claims.
   component: TeamUsersPage,
 });
 
 const firmSettingsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/firm/settings",
-  beforeLoad: requirePulseAuthentication,
   component: EmptyPage,
 });
 
 const administrationTenantsUsersRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/administration/tenants-users",
   component: EmptyPage,
 });
 
 const administrationRolesPermissionsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/administration/roles-permissions",
   component: EmptyPage,
 });
 
 const administrationAuditLogRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/administration/audit-log",
   component: EmptyPage,
 });
 
-function requirePulseAuthentication() {
-  if (!hasPulseAccessToken()) {
-    throw redirect({ to: "/login" });
-  }
-}
-
 export const routeTree = rootRoute.addChildren([
-  dashboardRoute,
-  loginRoute,
-  cyclesQueueRoute,
-  cycleDetailsRoute,
-  scenarioPlannerRoute,
-  incomeRoute,
-  deductionsRoute,
-  quarterlyPaymentsRoute,
-  clientsRoute,
-  firmUsersRoute,
-  firmSettingsRoute,
-  administrationTenantsUsersRoute,
-  administrationRolesPermissionsRoute,
-  administrationAuditLogRoute,
+  signInRoute,
+  mfaChallengeRoute,
+  passwordResetRoute,
+  passwordResetConfirmationRoute,
+  workspaceRoute.addChildren([
+    dashboardRoute,
+    cyclesQueueRoute,
+    cycleDetailsRoute,
+    scenarioPlannerRoute,
+    incomeRoute,
+    deductionsRoute,
+    quarterlyPaymentsRoute,
+    clientsRoute,
+    firmUsersRoute,
+    firmSettingsRoute,
+    administrationTenantsUsersRoute,
+    administrationRolesPermissionsRoute,
+    administrationAuditLogRoute,
+  ]),
 ]);

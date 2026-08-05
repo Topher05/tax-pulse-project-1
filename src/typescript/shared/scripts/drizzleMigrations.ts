@@ -7,14 +7,12 @@ loadEnv();
 
 const repoRoot = process.cwd();
 
-export const migrationsDirectory = resolve(repoRoot, "migrations");
 export const drizzleMigrationsDirectory = resolve(
   repoRoot,
   "src/typescript/shared/database/drizzle-migrations",
 );
-const migrationNamePattern = /^\d{14}_[a-z0-9][a-z0-9_-]*\.sql$/;
-export const appliedMigrationsTableName = "schema_migrations";
 export const drizzleAppliedMigrationsTableName = "drizzle_schema_migrations";
+const migrationNamePattern = /^\d{14}_[a-z0-9][a-z0-9_-]*\.sql$/;
 
 export function getDatabaseUrlFromEnv(): string {
   const databaseUrl = process.env.DATABASE_URL?.trim();
@@ -29,7 +27,7 @@ export function getDatabaseUrlFromEnv(): string {
 }
 
 export function listMigrationFiles(
-  migrationsDir: string = migrationsDirectory,
+  migrationsDir: string = drizzleMigrationsDirectory,
   options: { validateNames?: boolean } = {},
 ): string[] {
   const validateNames = options.validateNames ?? true;
@@ -63,18 +61,6 @@ export async function withDatabaseClient<T>(
   } finally {
     await client.end();
   }
-}
-
-// Deprecated: this legacy SQL migration path exists for compatibility with
-// older hand-written migrations. Prefer `applyDrizzleMigrations` for new work.
-export async function applyMigrations(client: Client): Promise<void> {
-  const migrationFiles = listMigrationFiles(migrationsDirectory);
-
-  if (migrationFiles.length === 0) {
-    throw new Error(`No SQL migrations found in ${migrationsDirectory}`);
-  }
-
-  await applySqlMigrations(client, migrationFiles, appliedMigrationsTableName);
 }
 
 export async function applyDrizzleMigrations(client: Client): Promise<void> {
