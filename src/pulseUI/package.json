@@ -11,9 +11,11 @@
     "build": "vite build --config vite.config.ts",
     "dev": "vite --config vite.config.ts",
     "test:e2e": "playwright test --config playwright.config.ts",
-    "test": "vitest run --config vitest.config.ts",
-    "test:ax": "vitest run --config vitest.config.ts tests/deductions/mockDeductionsPage.test.tsx",
+    "test": "npm run test:ax && npm run test:vitest",
+    "test:ax": "vitest run --config vitest.config.ts tests/accessibility/axeGate.test.tsx",
+    "test:ax:deductions": "vitest run --config vitest.config.ts tests/deductions/mockDeductionsPage.test.tsx",
     "test:cov": "vitest run --config vitest.config.ts --coverage",
+    "test:vitest": "vitest run --config vitest.config.ts",
     "typecheck": "tsc -p tsconfig.pulseUI.json --noEmit"
   },
   "dependencies": {
