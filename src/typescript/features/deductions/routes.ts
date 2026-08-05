@@ -4,6 +4,8 @@ import type { ZodIssue } from "zod";
 
 import { ProblemHttpError } from "../../errors.js";
 import {
+  deductionCreateSchema,
+  deductionTableRowSchema,
   deductionTableRowsSchema,
   deductionReadParamsSchema,
 } from "./repositories/deduction.js";
@@ -35,6 +37,31 @@ function toValidationIssue(issue: Pick<ZodIssue, "path" | "message" | "code">) {
   };
 }
 
+function validationError(
+  detail: string,
+  issues: Pick<ZodIssue, "path" | "message" | "code">[],
+) {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/validation-error",
+    title: "Validation Error",
+    status: 400,
+    detail,
+    extensions: {
+      code: "VALIDATION_ERROR",
+      issues: issues.map(toValidationIssue),
+    },
+  });
+}
+
+function taxPlanCycleNotFound(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+    title: "Tax Plan Cycle Not Found",
+    status: 404,
+    detail: "No tax plan cycle was found for the requested case ID.",
+  });
+}
+
 export interface CreateDeductionsRouterOptions {
   repository: DeductionRepository;
 }
@@ -52,16 +79,10 @@ export function createDeductionsRouter(
 
       if (!parsedParams.success) {
         next(
-          new ProblemHttpError({
-            type: "https://taxpulse.example/problems/validation-error",
-            title: "Validation Error",
-            status: 400,
-            detail: "Request path parameters failed validation.",
-            extensions: {
-              code: "VALIDATION_ERROR",
-              issues: parsedParams.error.issues.map(toValidationIssue),
-            },
-          }),
+          validationError(
+            "Request path parameters failed validation.",
+            parsedParams.error.issues,
+          ),
         );
         return;
       }
@@ -81,6 +102,55 @@ export function createDeductionsRouter(
         });
 
         res.status(200).json(deductionTableRowsSchema.parse(deductions));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.post(
+    "/cases/:caseId/deductions",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedParams = deductionReadParamsSchema.safeParse(req.params);
+
+      if (!parsedParams.success) {
+        next(
+          validationError(
+            "Request path parameters failed validation.",
+            parsedParams.error.issues,
+          ),
+        );
+        return;
+      }
+
+      const parsedBody = deductionCreateSchema.safeParse(req.body);
+
+      if (!parsedBody.success) {
+        next(validationError("Request body failed validation.", parsedBody.error.issues));
+        return;
+      }
+
+      const tenant = (req as TenantScopedRequest).tenant;
+      const user = (req as TenantScopedRequest).user;
+
+      if (!tenant?.id || !user?.id) {
+        next(authenticationRequired());
+        return;
+      }
+
+      try {
+        const deduction = await repository.create({
+          tenantId: tenant.id,
+          caseId: parsedParams.data.caseId,
+          ...parsedBody.data,
+        });
+
+        if (!deduction) {
+          next(taxPlanCycleNotFound());
+          return;
+        }
+
+        res.status(201).json(deductionTableRowSchema.parse(deduction));
       } catch (error) {
         next(error);
       }
