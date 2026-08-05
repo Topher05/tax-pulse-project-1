@@ -903,3 +903,67 @@ behavior.
 
 
 
+## christopher-martus-jira108 - SCRUM-108
+
+**Branch:** `christopher-martus-jira108`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-108
+
+**Summary:** Build the Add Income form with react-hook-form and zod
+
+**Description:** As a Frontend Developer, I want an Add Income form validated with
+react-hook-form and zod, so that malformed income entries are rejected at the boundary.
+
+**Acceptance Criteria:**
+
+- The form captures source, type, amount, and withholding and validates with
+  react-hook-form and zod.
+- A negative amount or missing required field surfaces an inline validation message and
+  blocks submit.
+- A valid submit invokes the create handler with the typed payload.
+
+**Code Connection:**
+
+- The first implementation slice defines the route-local Zod schema for source, type,
+  amount, and withholding. It separates raw form input from the parsed create payload,
+  trims the source, restricts type to the existing income categories, and converts
+  monetary input strings to finite, non-negative numbers.
+- `IncomePage` consumes and re-exports the shared category type so the screen and future
+  form use one income-type contract.
+- The second slice adds `IncomeEntryForm`, which delegates form state to react-hook-form
+  and validation to the Zod resolver. Required and invalid values render associated
+  inline alerts, while valid parsed payloads invoke the typed create handler before the
+  modal closes.
+- The third slice adds a typed create-handler prop to `IncomePage`, enables both existing
+  Add Income controls, and uses page-local state to open and close the form. The route
+  supplies the composition seam that SCRUM-109 can replace with live creation and table
+  refresh behavior.
+- The fourth slice styles the form with the Income screen's established Segoe UI stack,
+  dark surfaces, slate text, indigo actions, responsive layout, and visible validation
+  and focus states while reusing the shared modal shell.
+- The final slice covers missing fields, negative amounts, and successful submission of
+  parsed numeric values through the typed create handler.
+
+**Project Scope Connection:**
+
+This completes the typed validation boundary, functional Add Income form, Income page
+launch flow, visual treatment, and focused acceptance coverage. API persistence and
+table refresh remain outside this ticket.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/incomeEntrySchema.ts`
+- `src/pulseUI/pages/income/IncomeEntryForm.tsx`
+- `src/pulseUI/pages/income/IncomeEntryForm.module.css`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/components/IncomeEntryForm.test.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test -- --run tests/components/IncomeEntryForm.test.tsx`
+  passed: 3 tests.

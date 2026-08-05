@@ -4,7 +4,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test } from "vitest";
-
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
@@ -19,6 +18,7 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
 });
+
 
 function renderScenarioPlannerRoute(pathname: string) {
   render(
