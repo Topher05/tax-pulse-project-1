@@ -10,9 +10,10 @@ import { axe } from "vitest-axe";
 import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
-import { ScenarioPlanningForm } from "../../components/ScenarioPlanningForm.tsx";
+import { ScenarioForm } from "../../components/ScenarioForm.tsx";
 import { DashboardPage } from "../../pages/dashboard/DashboardPage.tsx";
 import * as detailQueries from "../../entities/taxPlanCycleQueries.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 vi.mock("@tanstack/react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-router")>();
@@ -49,7 +50,7 @@ async function expectNoCriticalViolations(container: HTMLElement): Promise<void>
   const results = await axe(container, {
     rules: {
       "color-contrast": {
-        enabled: false,
+        enabled: true,
       },
     },
   });
@@ -83,7 +84,9 @@ describe("Pulse UI accessibility gate", () => {
 
     const { container } = render(
       <QueryClientProvider client={createPulseQueryClient()}>
-        <RouterProvider router={createPulseRouter(["/cycles/TP-24018"])} />
+        <TestSessionProvider>
+          <RouterProvider router={createPulseRouter(["/cycles/TP-24018"])} />
+        </TestSessionProvider>
       </QueryClientProvider>,
     );
 
@@ -97,7 +100,7 @@ describe("Pulse UI accessibility gate", () => {
   });
 
   test("scenario planner fields remain labeled and accessible", () => {
-    const { container } = render(<ScenarioPlanningForm onClose={vi.fn()} />);
+    const { container } = render(<ScenarioForm onClose={vi.fn()} />);
 
     expect(screen.getByRole("dialog", { name: "New What-If Scenario" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Scenario Name" })).toBeInTheDocument();
