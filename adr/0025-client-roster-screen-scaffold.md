@@ -7,8 +7,9 @@ tenant, so the frontend must not pass a tenant identifier when fetching rows. Te
 scope belongs to the authenticated API context.
 
 SCRUM-122 created the typed inert screen from the prototype before data wiring was
-available. SCRUM-123 adds the dedicated TanStack Query boundary so the route can read
-sample or live roster data without changing the presentational screen contract.
+available. SCRUM-123 adds the dedicated TanStack Query boundary and the persistent
+backend endpoint so the route can read live roster data without changing the
+presentational screen contract.
 
 ## Decision
 Keep the Client Roster as a typed presentational screen and wire the route through a
@@ -22,12 +23,13 @@ income, estimated tax, quarterly status, and a stable row identifier.
 Move the row type into the Pulse UI entity layer and expose a `useClientRosterQuery`
 hook that calls the tenant-scoped `/v1/clients` endpoint through the shared Case API
 client. The hook does not accept a tenant ID; the backend derives advisor or tenant
-scope from authentication.
+scope from authentication and reads from a tenant-keyed `client_roster` table.
 
-Use camelCase names in the frontend roster API boundary and map rows into
-`ClientRosterRow` before they reach the screen. The route passes `data ?? []` into the
-existing screen so SCRUM-124 can add explicit loading, empty, and error states without
-reworking the data boundary.
+Use camelCase names in the endpoint and frontend roster API boundary, with fields
+aligned to the future TanStack Table columns: `clientName`, `filingStatus`,
+`ytdIncome`, `estimatedTax`, and `quarterlyStatus`. The route passes `data ?? []`
+into the existing screen so SCRUM-124 can add explicit loading, empty, and error
+states without reworking the data boundary.
 
 Keep the `Open Books` affordance inactive until the read-only client-books workflow is
 implemented by a dedicated ticket. TanStack Table behavior remains reserved for the
@@ -39,6 +41,7 @@ flowchart LR
     Page --> Hook[useClientRosterQuery]
     Hook --> API[GET /v1/clients]
     API --> Scope[Authenticated advisor/tenant scope]
+    Scope --> Store[(client_roster table)]
     Hook --> Rows[readonly ClientRosterRow data]
     Page --> Screen[ClientRosterScreen]
     Screen --> Props[readonly ClientRosterRow props]
@@ -54,6 +57,10 @@ other Pulse UI screens.
 The typed props remain a narrow display contract, while the query hook becomes the
 single frontend data boundary for the tenant-scoped roster endpoint.
 
+The roster endpoint now has a persistent backend source for the fields SCRUM-125 will
+render and sort. SCRUM-125 remains responsible only for TanStack Table behavior, not
+for defining or persisting roster data.
+
 The table action is visible but intentionally inactive, so the UI communicates the
 future workflow without implying read-only client-book access exists yet.
 
@@ -67,3 +74,5 @@ SCRUM-124 owns those request-state treatments.
   dedicated roster table ticket.
 - Pass a tenant ID from the frontend to the roster hook, which was rejected to preserve
   tenant isolation and keep scoping in the authenticated backend context.
+- Derive roster rows from Tax Plan Cycle records, which was rejected because those
+  records only carry `client_id` and do not store the roster display fields.

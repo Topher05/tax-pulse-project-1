@@ -7,7 +7,7 @@ import type { ClientRosterRow } from "./clientRoster.ts";
 export interface ClientRosterApiRow {
   id: string;
   clientName: string;
-  filingSummary: string;
+  filingStatus: string;
   ytdIncome: number;
   estimatedTax: number;
   quarterlyStatus: string | null;
@@ -19,7 +19,7 @@ function toClientRosterRow(row: ClientRosterApiRow): ClientRosterRow {
   return {
     id: row.id,
     clientName: row.clientName,
-    filingSummary: row.filingSummary,
+    filingStatus: row.filingStatus,
     ytdIncome: row.ytdIncome,
     estimatedTax: row.estimatedTax,
     quarterlyStatus: row.quarterlyStatus,

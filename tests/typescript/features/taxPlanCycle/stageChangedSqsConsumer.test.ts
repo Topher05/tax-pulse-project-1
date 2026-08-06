@@ -1,5 +1,4 @@
 import { DeleteMessageCommand, ReceiveMessageCommand } from "@aws-sdk/client-sqs";
-import { PublishCommand } from "@aws-sdk/client-sns";
 import { describe, expect, test, vi } from "vitest";
 
 import {
@@ -7,6 +6,7 @@ import {
   createSqsStageChangedEventConsumer,
   getStageChangedQueueUrlFromEnv,
   parseStageChangedSqsMessage,
+  PublishCommand,
   stageChangedCloudEventSchemaV1,
 } from "../../../../src/typescript/index.js";
 
