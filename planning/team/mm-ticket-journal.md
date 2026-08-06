@@ -540,9 +540,9 @@ SCRUM-109.
   (`22.0.0` required, `24.17.0` used), 23 audit findings, and pending install-script
   approvals.
 
-## martins-okorie-jira106 - SCRUM-107
+## martins-okorie-jira107 - SCRUM-107
 
-**Branch:** `martins-okorie-jira106`
+**Branch:** `martins-okorie-jira107`
 
 **Assignee:** Dylan Harle
 
@@ -584,6 +584,54 @@ persistence remains out of scope until the backend income endpoint and table exi
 - `npm --prefix src/pulseUI run test -- IncomePage.test.tsx incomeQueries.test.tsx appShell.test.tsx`
   passed with 3 files and 27 tests.
 - `npm --prefix src/pulseUI run test` passed with 33 files and 141 tests. The run
+  printed existing stderr from intentional scenario error-path coverage and jsdom's
+  missing canvas implementation during axe checks, but all tests passed.
+
+## martins-okorie-jira119 - SCRUM-119
+
+**Branch:** `martins-okorie-jira119`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-119
+
+**Summary:** Add loading, empty, and error states to the Quarterly Payments screen
+
+**Description:** As a Frontend Developer, I want the Quarterly Payments screen to render
+loading, empty, and error states, so that the screen behaves predictably while data
+resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the quarterly estimates request is in flight.
+- An empty state renders when no quarterly estimates exist for the period.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:** Reused the SCRUM-107 Income screen pattern for Quarterly Payments:
+the route container derives a query state from `useQuarterlyEstimatesQuery`, renders an
+accessible skeleton while the request is pending, shows a no-estimates empty state for
+successful empty responses, and exposes a retryable error state that calls the query's
+`refetch`. The prior placeholder-estimates fallback no longer renders while live data
+is loading or unavailable.
+
+**Project Scope Connection:** Keeps Quarterly Payments aligned with the shared
+plan-tool case selection flow and preserves the read-only KPI/timeline screen for
+successful data responses. Payment recording and mark-paid controls remain explicitly
+out of MVP scope.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- QuarterlyPaymentsPage.test.tsx` passed with 1
+  file and 7 tests.
+- `npm --prefix src/pulseUI run test` passed with 31 files and 137 tests. The run
   printed existing stderr from intentional scenario error-path coverage and jsdom's
   missing canvas implementation during axe checks, but all tests passed.
 <!--
