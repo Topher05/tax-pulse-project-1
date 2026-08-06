@@ -79,6 +79,7 @@ export {
 export {
   createSnsStageChangedEventPublisher,
   createStageChangedCloudEventV1,
+  PublishCommand,
   createStageChangedSnsClient,
   getStageChangedTopicArnFromEnv,
   type CreateStageChangedCloudEventOptions,

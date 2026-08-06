@@ -348,6 +348,7 @@ export {
   createTaxPlanCycleQueueReadService,
   createSnsStageChangedEventPublisher,
   createStageChangedCloudEventV1,
+  PublishCommand,
   createStageChangedSnsClient,
   getStageChangedTopicArnFromEnv,
   createSqsStageChangedEventConsumer,

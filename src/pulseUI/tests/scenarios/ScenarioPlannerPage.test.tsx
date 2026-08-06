@@ -1,10 +1,8 @@
 import "@testing-library/jest-dom/vitest";
-
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
-
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
@@ -14,10 +12,11 @@ import * as caseApi from "../../shared/caseApi.ts";
 const seededCaseId = taxPlanCycleRows[1].id;
 
 beforeAll(() => {
-  window.scrollTo = () => undefined;
+  window.scrollTo = vi.fn();
 });
 
 afterEach(() => {
+  localStorage.clear();
   cleanup();
   vi.restoreAllMocks();
 });
@@ -117,6 +116,7 @@ describe("ScenarioPlannerPage", () => {
   test("renders the case gate when caseId is missing", async () => {
     renderScenarioPlannerRoute("/scenarios");
 
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
     expect(await screen.findByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
     expect(
       await screen.findByRole("heading", { name: "Select a case to load Scenario Planner" }),
@@ -133,6 +133,7 @@ describe("ScenarioPlannerPage", () => {
   test("opens and closes the scenario modal when a caseId is present", async () => {
     renderScenarioPlannerRoute(`/scenarios?caseId=${seededCaseId}`);
 
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
     expect(await screen.findByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "New scenario" })).toBeEnabled();
     expect(await screen.findByText("Scenario workspace")).toBeInTheDocument();
