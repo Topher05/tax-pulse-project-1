@@ -4,9 +4,11 @@ import type { Client } from "pg";
 
 import {
   auditEntry as auditEntryTable,
+  outboxEvent as outboxEventTable,
   stageTransition as stageTransitionTable,
   taxPlanCycle as taxPlanCycleTable,
 } from "../../../shared/database/schema.js";
+import { createStageChangedCloudEventV1 } from "../stageChangedEvent.js";
 import { taxPlanCycleSchema, type TaxPlanCycle } from "../taxPlanCycle.js";
 
 export interface TaxPlanCycleReadInput {
@@ -245,6 +247,19 @@ export function createTaxPlanCycleRepository(
           return null;
         }
 
+        const currentCycle = toTaxPlanCycle(currentRow);
+        const occurredAt = new Date();
+        const stageChangedEvent = createStageChangedCloudEventV1(
+          {
+            tenantId,
+            caseId,
+            fromStage: currentCycle.stage,
+            toStage,
+            actor,
+          },
+          { now: () => occurredAt },
+        );
+
         await tx
           .update(taxPlanCycleTable)
           .set({
@@ -259,14 +274,19 @@ export function createTaxPlanCycleRepository(
 
         await tx.insert(stageTransitionTable).values({
           caseId,
-          fromStage: currentRow.stage,
+          fromStage: currentCycle.stage,
           toStage,
           actor,
-          occurredAt: new Date(),
+          occurredAt,
         });
 
-        return toTaxPlanCycle({
-          ...currentRow,
+        await tx.insert(outboxEventTable).values({
+          payload: JSON.stringify(stageChangedEvent),
+          createdAt: occurredAt,
+        });
+
+        return taxPlanCycleSchema.parse({
+          ...currentCycle,
           stage: toStage,
         });
       });

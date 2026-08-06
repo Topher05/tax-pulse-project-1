@@ -34,6 +34,105 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira133 - SCRUM-133
+
+**Branch:** `christopher-martus-jira133`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-133
+
+**Summary:** Write stage transitions through a transactional outbox
+
+**Description:** As a Backend Developer, I want stage transitions written through an
+outbox, so that an event is never lost when the case commits.
+
+**Acceptance Criteria:**
+
+- The stage change and its outbox row commit in the same database transaction.
+- The outbox row carries the serialized CloudEvent payload.
+- A test asserts a rolled-back transition leaves no outbox row.
+
+**Code Connection:**
+
+- The first implementation slice adds the minimal `outbox_event` persistence contract
+  with a generated identifier, serialized text payload, and creation timestamp.
+- The second slice moves CloudEvent construction and its input types into the domain event
+  module so both database persistence and SNS delivery can reuse the same validated
+  payload without coupling the repository to AWS infrastructure.
+- The third slice builds the CloudEvent from the tenant-scoped database row and writes its
+  serialized payload alongside the cycle stage and transition history in the existing
+  Drizzle transaction. Production composition no longer directly publishes during the
+  request, leaving the SNS publisher available for the SCRUM-134 relay.
+- The final slice extends the successful transition integration path to validate the
+  serialized outbox payload against the CloudEvent schema and forces an outbox insert
+  failure to prove the cycle, transition history, and outbox row roll back together.
+
+**Project Scope Connection:**
+
+The outbox table establishes the durable database boundary required to prevent committed
+stage-change events from being lost before asynchronous delivery.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0010_outbox_event.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0007_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0008_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0009_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0010_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/migrate.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/shared/scripts/drizzleMigrations.ts` (removed)
+- `src/typescript/shared/scripts/runMigrations.ts` (removed)
+- `tests/typescript/bootstrap/migrationTestUtils.ts`
+- `drizzle.config.ts`
+- `README.md`
+- `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:check` passed and loaded the updated Drizzle schema successfully.
+- `git diff --check` passed.
+- A focused `tsx` check built and schema-validated a deterministic stage-changed
+  CloudEvent through the relocated domain helper.
+- `npm run db:check` and `git diff --check` continue to pass after the second slice.
+- A scoped strict TypeScript compile of the updated repository passed after the third
+  slice.
+- `npm run db:check` and `git diff --check` continue to pass with the transactional write.
+- The application and TypeScript test typechecks passed. The combined `npm run typecheck`
+  then stopped in the unrelated Pulse UI because its local `@playwright/test` type
+  dependency is absent.
+- The focused CloudEvent schema and SNS publisher suites passed: 11 tests in two files.
+- Rebuilt the inherited Drizzle metadata chain so tenant login, deductions, client roster,
+  and the outbox are registered sequentially as migrations `0007` through `0010` with
+  matching snapshots. A no-op `drizzle-kit generate` confirmed there is no schema drift.
+- `npm run db:check`, `npm run typecheck`, and `git diff --check` passed after rebuilding
+  the migration metadata.
+- Standardized runtime, seed, and test migration execution on Drizzle. Drizzle Kit remains
+  the operator CLI, while the programmatic paths use Drizzle ORM's PostgreSQL migrator
+  and the shared `drizzle.__drizzle_migrations` ledger.
+- Removed the custom filename scanner and `drizzle_schema_migrations` ledger. Destructive
+  seed and shared-schema test setup now remove both `public` and `drizzle` before replaying
+  the generated journal from `0000`.
+- `npm run db:gen -- --name verify_no_schema_drift` reported no schema changes and created
+  no migration files. `npm run db:check`, `npm run typecheck`, and `git diff --check` passed.
+- `npm test` and `npm run test:integration` reached their database-backed suites but could
+  not start Testcontainers because no Docker-compatible runtime is available. The explicit
+  integration run still passed its six non-container authentication tests.
+- The Tax Plan Cycle integration suite collected successfully, but its 22 database tests
+  could not start because no Docker-compatible container runtime is available locally.
+  This includes both new transactional-outbox acceptance paths.
+- The cumulative SCRUM-133 diff is 316 changed lines (255 additions and 61 deletions),
+  remaining below the 500-line PR limit.
+
 ## christopher-martus-jira192 - SCRUM-192
 
 **Branch:** `christopher-martus-jira192`

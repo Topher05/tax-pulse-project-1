@@ -367,6 +367,23 @@ export const auditEntry = pgTable(
   ],
 );
 
+export const outboxEvent = pgTable(
+  "outbox_event",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    payload: text("payload").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "outbox_event_id_pk",
+      columns: [table.id],
+    }),
+  ],
+);
+
 export const stageTransition = pgTable(
   "stage_transition",
   {

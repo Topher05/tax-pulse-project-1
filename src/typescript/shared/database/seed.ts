@@ -1,12 +1,9 @@
+import { config as loadEnv } from "dotenv";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { fileURLToPath } from "node:url";
-import type { Client } from "pg";
+import { Client } from "pg";
 
-import {
-  applyDrizzleMigrations,
-  getDatabaseUrlFromEnv,
-  withDatabaseClient,
-} from "../scripts/drizzleMigrations.js";
+import { migrateDatabase } from "./migrate.js";
 
 import {
   clientRoster,
@@ -40,6 +37,8 @@ import {
   userRows,
   userStatusRows,
 } from "./seed.model.js";
+
+loadEnv();
 
 export async function applySeed(client: Client): Promise<void> {
   const db = drizzle(client);
@@ -88,14 +87,27 @@ export async function applySeed(client: Client): Promise<void> {
 }
 
 export async function main(): Promise<void> {
-  const databaseUrl = getDatabaseUrlFromEnv();
+  const databaseUrl = process.env.DATABASE_URL?.trim();
 
-  await withDatabaseClient(databaseUrl, async (client) => {
+  if (!databaseUrl) {
+    throw new Error(
+      "DATABASE_URL is required. Copy .env.example to .env and set DATABASE_URL.",
+    );
+  }
+
+  const client = new Client({ connectionString: databaseUrl });
+  await client.connect();
+
+  try {
+    await client.query(`DROP SCHEMA IF EXISTS drizzle CASCADE`);
     await client.query(`DROP SCHEMA IF EXISTS public CASCADE`);
     await client.query(`CREATE SCHEMA public`);
-    await applyDrizzleMigrations(client);
+    await migrateDatabase(client);
     await applySeed(client);
-  });
+  } finally {
+    await client.end();
+  }
+
   console.log("Applied linear seed data");
 }
 
