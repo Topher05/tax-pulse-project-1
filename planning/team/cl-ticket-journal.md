@@ -182,6 +182,7 @@ Add new ticket entries below using this template.
 - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run test:lighthouse"` passed and reported a Lighthouse performance score of `100/100`.
 - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run test"` runs the Lighthouse gate successfully, then fails later in pre-existing branch tests for `tests/deductions/DeductionsPage.test.tsx` and `tests/scenarios/ScenarioPlannerPage.test.tsx` because those route states are not merged in this branch yet.
 
+
 ## caleb-latimer-jira146 - SCRUM-146
 
 **Branch:** `caleb-latimer-jira146`
@@ -206,10 +207,43 @@ Add new ticket entries below using this template.
 - `src/pulseUI/pages/firm/TeamUsersPage.tsx`
 - `src/pulseUI/pages/firm/TeamUsersPage.module.css`
 - `src/pulseUI/app/routeTree.tsx`
+## caleb-latimer-jira124 - SCRUM-124
+
+**Branch:** `caleb-latimer-jira124`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-124
+
+**Summary:** Add loading, empty, and error states to the Client Roster screen
+
+**Description:** As a Frontend Developer, I want the Client Roster screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the roster request is in flight.
+- An empty state renders when the firm has no clients.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:**
+
+- `src/pulseUI/components/ClientRosterSkeletonLoader.tsx`
+- `src/pulseUI/components/RetryToolbar.tsx`
+- `src/pulseUI/entities/clientRosterQueries.ts`
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/pages/EmptyPage.tsx`
+- `src/pulseUI/shared/loaderTimeoutTestingConfig.ts`
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/shared/loaderTimeoutUtility.ts`
+- `src/pulseUI/shared/mockedClientListings.model.ts`
+- `src/pulseUI/shared/pageReload.ts`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
 
 **Project Scope Connection:**
 
 - React SPA - Operator & Portal Experience
+
 - Firm administration UI completion
 
 **Changed Files:**
@@ -220,12 +254,32 @@ Add new ticket entries below using this template.
 - `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
 - `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
 - `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx` (deleted)
+
+- Client Roster request-state coverage for the advisor and firm-admin workspace
+- Keeps the temporary loader harness available in shared Pulse UI code, but decoupled from the normal client roster data flow
+- Completes the live roster boundary introduced by SCRUM-123 before TanStack Table rendering work in SCRUM-125
+
+**Changed Files:**
+
+- `src/pulseUI/components/ClientRosterSkeletonLoader.tsx`
+- `src/pulseUI/components/RetryToolbar.tsx`
+- `src/pulseUI/entities/clientRosterQueries.ts`
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/pages/EmptyPage.tsx`
+- `src/pulseUI/shared/loaderTimeoutTestingConfig.ts`
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/shared/loaderTimeoutUtility.ts`
+- `src/pulseUI/shared/mockedClientListings.model.ts`
+- `src/pulseUI/shared/pageReload.ts`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test"` passed with `21` test files and `73` tests green.
+- `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx` was previously blocked by a Windows `EPERM: operation not permitted, lstat 'C:\Users\Exia'` environment issue before Vitest could start; the roster test file has since been rewritten to use the real API path again.
 
 ## caleb-latimer-jira101 - SCRUM-101
 

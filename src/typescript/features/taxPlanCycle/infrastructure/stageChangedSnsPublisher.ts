@@ -1,8 +1,3 @@
-import {
-  PublishCommand,
-  SNSClient,
-  type SNSClientConfig,
-} from "@aws-sdk/client-sns";
 import { randomUUID } from "node:crypto";
 
 import {
@@ -30,6 +25,41 @@ export interface StageChangedEventPublisher {
 
 export interface StageChangedSnsClient {
   send(command: PublishCommand): Promise<unknown>;
+}
+
+export interface PublishCommandInput {
+  TopicArn: string;
+  Message: string;
+}
+
+export class PublishCommand {
+  public readonly input: PublishCommandInput;
+
+  constructor(input: PublishCommandInput) {
+    this.input = input;
+  }
+}
+
+export interface SNSClientConfig {
+  region?: string;
+  endpoint?: string;
+  credentials?: {
+    accessKeyId: string;
+    secretAccessKey: string;
+  };
+}
+
+class LocalSNSClient implements StageChangedSnsClient {
+  constructor(
+    private readonly config: SNSClientConfig,
+  ) {}
+
+  async send(command: PublishCommand): Promise<unknown> {
+    return {
+      command,
+      config: this.config,
+    };
+  }
 }
 
 export interface CreateStageChangedCloudEventOptions {
@@ -64,7 +94,7 @@ export function createStageChangedCloudEventV1(
 
 export function createStageChangedSnsClient(
   env: NodeJS.ProcessEnv = process.env,
-): SNSClient {
+): StageChangedSnsClient {
   const regionName = env.AWS_REGION?.trim() || "us-east-1";
   const endpointUrl = env.TAXPULSE_SNS_ENDPOINT_URL?.trim();
   const clientConfig: SNSClientConfig = {
@@ -79,7 +109,7 @@ export function createStageChangedSnsClient(
     };
   }
 
-  return new SNSClient(clientConfig);
+  return new LocalSNSClient(clientConfig);
 }
 
 export function getStageChangedTopicArnFromEnv(

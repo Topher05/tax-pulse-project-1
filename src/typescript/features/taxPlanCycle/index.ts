@@ -79,6 +79,7 @@ export {
 export {
   createSnsStageChangedEventPublisher,
   createStageChangedCloudEventV1,
+  PublishCommand,
   createStageChangedSnsClient,
   getStageChangedTopicArnFromEnv,
   type CreateStageChangedCloudEventOptions,
@@ -86,6 +87,16 @@ export {
   type StageChangedEventPublishInput,
   type StageChangedSnsClient,
 } from "./infrastructure/stageChangedSnsPublisher.js";
+export {
+  createSqsStageChangedEventConsumer,
+  createStageChangedSqsClient,
+  getStageChangedQueueUrlFromEnv,
+  parseStageChangedSqsMessage,
+  type ConsumeStageChangedEventsResult,
+  type StageChangedEventConsumerLogger,
+  type StageChangedSqsClient,
+  type StageChangedSqsConsumerOptions,
+} from "./infrastructure/stageChangedSqsConsumer.js";
 export {
   createTaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadService,

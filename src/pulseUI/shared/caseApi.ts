@@ -82,3 +82,11 @@ export async function caseApiSendJson<T>(
 
   return await parseCaseApiJson<T>(response);
 }
+
+export async function caseApiPostJson<T>(
+  path: string,
+  body: unknown,
+  fetcher: CaseApiFetcher = fetch,
+): Promise<T> {
+  return await caseApiSendJson<T>(path, { method: "POST", body }, fetcher);
+}
