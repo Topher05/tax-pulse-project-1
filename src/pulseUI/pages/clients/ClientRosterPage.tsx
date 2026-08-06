@@ -1,9 +1,13 @@
 import styles from "./ClientRosterPage.module.css";
+import { ClientRosterSkeletonLoader } from "../../components/ClientRosterSkeletonLoader.tsx";
 import { DataTable } from "../../components/DataTable.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
+import { RetryToolbar } from "../../components/RetryToolbar.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
+import { EmptyPage } from "../EmptyPage.tsx";
 import type { ClientRosterRow } from "../../entities/clientRoster.ts";
 import { useClientRosterQuery } from "../../entities/clientRosterQueries.ts";
+import { reloadPage } from "../../shared/pageReload.ts";
 
 export type { ClientRosterRow } from "../../entities/clientRoster.ts";
 
@@ -30,7 +34,7 @@ export function ClientRosterScreen({ clients }: ClientRosterScreenProps) {
     {
       header: "Filing",
       render: (row: ClientRosterRow) => (
-        <span className={styles.filingCell}>{row.filingSummary}</span>
+        <span className={styles.filingCell}>{row.filingStatus}</span>
       ),
     },
     {
@@ -86,5 +90,31 @@ export function ClientRosterScreen({ clients }: ClientRosterScreenProps) {
 export function ClientRosterPage() {
   const clientRosterQuery = useClientRosterQuery();
 
-  return <ClientRosterScreen clients={clientRosterQuery.data ?? []} />;
+  if (clientRosterQuery.isPending) {
+    return <ClientRosterSkeletonLoader />;
+  }
+
+  if (clientRosterQuery.isError) {
+    return (
+      <div role="alert">
+        <RetryToolbar
+          title="Client roster could not load"
+          description={
+            clientRosterQuery.error instanceof Error
+              ? clientRosterQuery.error.message
+              : "Client roster request failed."
+          }
+          onRetry={reloadPage}
+        />
+      </div>
+    );
+  }
+
+  const clients = clientRosterQuery.data ?? [];
+
+  if (clients.length === 0) {
+    return <EmptyPage />;
+  }
+
+  return <ClientRosterScreen clients={clients} />;
 }

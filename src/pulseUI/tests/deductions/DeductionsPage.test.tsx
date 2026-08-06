@@ -4,7 +4,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
-
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
@@ -84,6 +83,7 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  localStorage.clear();
   cleanup();
   vi.restoreAllMocks();
 });
@@ -100,15 +100,20 @@ describe("DeductionsPage", () => {
 
     renderDeductionsPage("/deductions");
 
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
     expect(await screen.findByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Select a case to load deductions" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Select a case to load deductions" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         "Choose an accessible Tax Plan Cycle from the selector above before this tool fetches or changes case data.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add Deduction" })).not.toBeInTheDocument();
-    expect(caseApiMock.mock.calls.some(([path]) => String(path).startsWith("/v1/cases/"))).toBe(false);
+    expect(caseApiMock.mock.calls.some(([path]) => String(path).startsWith("/v1/cases/"))).toBe(
+      false,
+    );
   });
 
   test("fetches deductions once a valid case ID is selected and renders loading then data state", async () => {
@@ -127,6 +132,7 @@ describe("DeductionsPage", () => {
 
     const { container } = renderDeductionsPage("/deductions");
 
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
     const selector = await screen.findByRole("combobox", { name: "Case ID" });
     await screen.findByRole("option", { name: seededCaseId });
 
@@ -180,6 +186,7 @@ describe("DeductionsPage", () => {
 
     const { container } = renderDeductionsPage("/deductions");
 
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
     const selector = await screen.findByRole("combobox", { name: "Case ID" });
     await screen.findByRole("option", { name: seededCaseId });
 
@@ -214,6 +221,7 @@ describe("DeductionsPage", () => {
 
     const { container } = renderDeductionsPage("/deductions");
 
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
     const selector = await screen.findByRole("combobox", { name: "Case ID" });
     await screen.findByRole("option", { name: seededCaseId });
 
@@ -261,6 +269,7 @@ describe("DeductionsPage", () => {
 
     const { container } = renderDeductionsPage("/deductions");
 
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
     const selector = await screen.findByRole("combobox", { name: "Case ID" });
     await screen.findByRole("option", { name: seededCaseId });
 

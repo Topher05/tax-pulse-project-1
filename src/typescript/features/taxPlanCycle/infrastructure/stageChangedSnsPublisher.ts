@@ -4,6 +4,8 @@ import {
   type SNSClientConfig,
 } from "@aws-sdk/client-sns";
 
+export { PublishCommand } from "@aws-sdk/client-sns";
+
 import {
   createStageChangedCloudEventV1,
   type CreateStageChangedCloudEventOptions,
@@ -22,7 +24,7 @@ export interface StageChangedSnsClient {
 
 export function createStageChangedSnsClient(
   env: NodeJS.ProcessEnv = process.env,
-): SNSClient {
+): StageChangedSnsClient {
   const regionName = env.AWS_REGION?.trim() || "us-east-1";
   const endpointUrl = env.TAXPULSE_SNS_ENDPOINT_URL?.trim();
   const clientConfig: SNSClientConfig = {

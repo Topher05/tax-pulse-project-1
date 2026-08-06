@@ -1,10 +1,10 @@
-import { PublishCommand } from "@aws-sdk/client-sns";
 import { describe, expect, test, vi } from "vitest";
 
 import {
   createSnsStageChangedEventPublisher,
   createStageChangedCloudEventV1,
   getStageChangedTopicArnFromEnv,
+  PublishCommand,
   stageChangedCloudEventSchemaV1,
 } from "../../../../src/typescript/index.js";
 

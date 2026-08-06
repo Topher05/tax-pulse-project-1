@@ -37,7 +37,7 @@ describe("Client roster query hook", () => {
       {
         id: "client-avery-chen",
         clientName: "Avery Chen",
-        filingSummary: "Single - 1099",
+        filingStatus: "Single - 1099",
         ytdIncome: 108_500,
         estimatedTax: 32_100,
         quarterlyStatus: "Q2 due Jun 15",
@@ -45,7 +45,7 @@ describe("Client roster query hook", () => {
       {
         id: "client-riley-khan",
         clientName: "Riley Khan",
-        filingSummary: "HoH - W-2",
+        filingStatus: "HoH - W-2",
         ytdIncome: 72_500,
         estimatedTax: 11_140,
         quarterlyStatus: null,
@@ -68,7 +68,7 @@ describe("Client roster query hook", () => {
       {
         id: "client-avery-chen",
         clientName: "Avery Chen",
-        filingSummary: "Single - 1099",
+        filingStatus: "Single - 1099",
         ytdIncome: 108_500,
         estimatedTax: 32_100,
         quarterlyStatus: "Q2 due Jun 15",
@@ -76,7 +76,7 @@ describe("Client roster query hook", () => {
       {
         id: "client-riley-khan",
         clientName: "Riley Khan",
-        filingSummary: "HoH - W-2",
+        filingStatus: "HoH - W-2",
         ytdIncome: 72_500,
         estimatedTax: 11_140,
         quarterlyStatus: null,
