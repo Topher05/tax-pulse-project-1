@@ -489,6 +489,56 @@ operator experience.
   existing `DeductionsPage.test.tsx` expectations that assert `caseApiGetJson` is called
   without the authenticated fetcher while the current deductions page and shared case
   selector call it with one.
+
+## martins-okorie-jira106 - SCRUM-106
+
+**Branch:** `martins-okorie-jira106`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-106
+
+**Summary:** Add the TanStack Query hook to the income endpoint
+
+**Description:** As a Frontend Developer, I want a TanStack Query hook fetching the
+client's income events, so that the Income screen reads live data through one typed
+boundary.
+
+**Acceptance Criteria:**
+
+- A TanStack Query hook calls the income endpoint and returns typed income events.
+- The hook exposes loading, error, and data states to callers.
+- A test asserts the hook returns parsed income events for a mocked response.
+
+**Code Connection:** Added a case-scoped Pulse UI income query boundary that follows
+the existing deductions and quarterly-estimates pattern. The hook calls
+`/v1/cases/:caseId/income-events` through the authenticated Case API helper, parses
+income event rows with Zod, coerces currency strings from the API into numbers, and
+exposes TanStack Query's loading, error, and data states to future Income screen
+callers.
+
+**Project Scope Connection:** This completes the frontend data-fetching contract for
+the Income screen without adding the backend persistence table or Express route, which
+are tracked separately by later income-backend work such as SCRUM-172. The mocked
+response test keeps SCRUM-106 usable as a typed handoff for SCRUM-107, SCRUM-108, and
+SCRUM-109.
+
+**Changed Files:**
+
+- `src/pulseUI/entities/incomeQueries.ts`
+- `src/pulseUI/tests/entities/incomeQueries.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- incomeQueries.test.tsx` passed with 1 file and
+  3 tests.
+- Refreshed `src/pulseUI` dependencies with `npm --prefix src/pulseUI install` because
+  the latest development branch references `@playwright/test` types and the local
+  dependency tree was missing them. npm reported the existing Node engine mismatch
+  (`22.0.0` required, `24.17.0` used), 23 audit findings, and pending install-script
+  approvals.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 
