@@ -4,128 +4,12 @@ import styles from "./TeamUsersPage.module.css";
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
-
-export type FirmUserRole = "Firm Admin" | "Advisor" | "Operations" | "Analyst";
-export type FirmUserStatus = "Active" | "Inactive";
-
-export type RelativeLastLogin =
-  | { kind: "minutes"; value: number }
-  | { kind: "hours"; value: number }
-  | { kind: "today" }
-  | { kind: "days"; value: number }
-  | { kind: "date"; value: string };
-
-export interface FirmUserRow {
-  id: string;
-  name: string;
-  email: string;
-  role: FirmUserRole;
-  status: FirmUserStatus;
-  lastLogin: RelativeLastLogin;
-}
+import type { FirmUserRow, FirmUserStatus, RelativeLastLogin } from "../../entities/firmUsers.ts";
+import { useFirmUsersQuery } from "../../entities/firmUserQueries.ts";
 
 export interface TeamUsersScreenProps {
   users: readonly FirmUserRow[];
 }
-
-const previewUsers: readonly FirmUserRow[] = [
-  {
-    id: "usr-jordan-lee",
-    name: "Jordan Lee",
-    email: "jordan.lee@cohenadvisory.com",
-    role: "Firm Admin",
-    status: "Active",
-    lastLogin: { kind: "today" },
-  },
-  {
-    id: "usr-maya-reed",
-    name: "Maya Reed",
-    email: "maya.reed@cohenadvisory.com",
-    role: "Advisor",
-    status: "Active",
-    lastLogin: { kind: "hours", value: 2 },
-  },
-  {
-    id: "usr-ava-patel",
-    name: "Ava Patel",
-    email: "ava.patel@cohenadvisory.com",
-    role: "Operations",
-    status: "Inactive",
-    lastLogin: { kind: "minutes", value: 5 },
-  },
-  {
-    id: "usr-noah-chen",
-    name: "Noah Chen",
-    email: "noah.chen@cohenadvisory.com",
-    role: "Analyst",
-    status: "Inactive",
-    lastLogin: { kind: "days", value: 1 },
-  },
-  {
-    id: "usr-zoe-martin",
-    name: "Zoe Martin",
-    email: "zoe.martin@cohenadvisory.com",
-    role: "Advisor",
-    status: "Active",
-    lastLogin: { kind: "minutes", value: 18 },
-  },
-  {
-    id: "usr-ethan-brooks",
-    name: "Ethan Brooks",
-    email: "ethan.brooks@cohenadvisory.com",
-    role: "Operations",
-    status: "Active",
-    lastLogin: { kind: "hours", value: 5 },
-  },
-  {
-    id: "usr-sophia-chen",
-    name: "Sophia Chen",
-    email: "sophia.chen@cohenadvisory.com",
-    role: "Analyst",
-    status: "Inactive",
-    lastLogin: { kind: "days", value: 3 },
-  },
-  {
-    id: "usr-liam-wright",
-    name: "Liam Wright",
-    email: "liam.wright@cohenadvisory.com",
-    role: "Advisor",
-    status: "Active",
-    lastLogin: { kind: "today" },
-  },
-  {
-    id: "usr-nora-patel",
-    name: "Nora Patel",
-    email: "nora.patel@cohenadvisory.com",
-    role: "Operations",
-    status: "Inactive",
-    lastLogin: { kind: "hours", value: 23 },
-  },
-  {
-    id: "usr-olivia-ross",
-    name: "Olivia Ross",
-    email: "olivia.ross@cohenadvisory.com",
-    role: "Firm Admin",
-    status: "Active",
-    lastLogin: { kind: "hours", value: 1 },
-  },
-  {
-    id: "usr-marcus-ford",
-    name: "Marcus Ford",
-    email: "marcus.ford@cohenadvisory.com",
-    role: "Analyst",
-    status: "Inactive",
-    lastLogin: { kind: "date", value: "Jun 28, 2026" },
-  },
-  {
-    id: "usr-emma-cole",
-    name: "Emma Cole",
-    email: "emma.cole@cohenadvisory.com",
-    role: "Advisor",
-    status: "Active",
-    lastLogin: { kind: "minutes", value: 42 },
-  },
-] as const;
 
 function formatCountLabel(value: number, singular: string, plural: string): string {
   return `${value} ${value === 1 ? singular : plural}`;
@@ -254,5 +138,7 @@ export function TeamUsersScreen({ users }: TeamUsersScreenProps) {
 }
 
 export function TeamUsersPage() {
-  return <TeamUsersScreen users={previewUsers} />;
+  const firmUsersQuery = useFirmUsersQuery();
+
+  return <TeamUsersScreen users={firmUsersQuery.data ?? []} />;
 }
