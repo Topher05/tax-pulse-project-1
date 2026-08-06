@@ -998,9 +998,9 @@ data, so that recorded income events and their amounts are visible.
 - A compact component-flow test supplies the same prop contract that the SCRUM-106 hook
   will use. It verifies table and KPI rendering, then exercises a successful form callback
   and confirms the updated collection renders the new row and KPI value.
-- Live query and cache-invalidation wiring remains intentionally deferred until the
-  SCRUM-106 income hook is available; no temporary API client or duplicate production
-  state was introduced.
+- The live read query is connected, but production create persistence and cache invalidation
+  remain blocked until a create endpoint is available. The route therefore retains a
+  placeholder create handler and does not claim end-to-end persistence coverage.
 
 **Project Scope Connection:**
 
@@ -1019,8 +1019,9 @@ rewriting the table or KPI logic.
 **Validation Notes:**
 
 - `npm --prefix src/pulseUI run typecheck` passed.
-- The focused Income page test passed: 1 test.
-- Full Pulse UI coverage passed: 111 tests in 31 files.
+- The focused Income page tests passed: 5 tests, including a presentation-level successful
+  create callback that rerenders the new table row and its 1099 KPI total.
+- Full Pulse UI coverage passed: 146 tests in 34 files.
 - `npm --prefix src/pulseUI run build` passed; Vite reported its existing large-chunk
   advisory warning.
 - `git diff --check` passed.
