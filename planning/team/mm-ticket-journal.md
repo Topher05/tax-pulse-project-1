@@ -436,6 +436,59 @@ weakening tenant-scoped audit reads.
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `npm --prefix src/pulseUI run test -- caseApi.test.tsx queries.test.ts Details.test.tsx`
   passed with 4 files and 17 tests.
+
+## martins-okorie-jira102 - SCRUM-102
+
+**Branch:** `martins-okorie-jira102`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-102
+
+**Summary:** Render scenario results in a TanStack Table
+
+**Description:** As an Advisor, I want scenario results in a TanStack Table, so that I
+can compare each scenario's tax impact.
+
+**Acceptance Criteria:**
+
+- Submitting calls the calculation endpoint and renders each scenario's total tax and delta.
+- The baseline row shows the current taxable and tax figures.
+- The table renders loading and error states around the request.
+
+**Code Connection:** Wired the SCRUM-101 Scenario Planner modal submission into an
+authenticated scenario modeling POST through the shared Case API helper. Added a typed
+scenario result boundary that maps the form's 2-5 scenarios onto the Core service
+payload, derives the baseline tax from returned deltas, and renders the baseline plus
+scenario rows through TanStack Table v9.
+
+**Project Scope Connection:** Completes the Scenario Planner handoff from local
+validated input capture to a live tax-impact comparison surface inside the React SPA
+operator experience.
+
+**Changed Files:**
+
+- `src/pulseUI/components/scenario-form/Form.tsx`
+- `src/pulseUI/entities/scenarioResults.ts`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
+- `src/pulseUI/shared/caseApi.ts`
+- `src/pulseUI/tests/caseApi.test.tsx`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- caseApi.test.tsx ScenarioForm.test.tsx ScenarioPlannerPage.test.tsx`
+  passed with 3 files and 16 tests.
+- `git diff --check` passed.
+- Full `npm --prefix src/pulseUI run test` was attempted and remains blocked by two
+  existing `DeductionsPage.test.tsx` expectations that assert `caseApiGetJson` is called
+  without the authenticated fetcher while the current deductions page and shared case
+  selector call it with one.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 
