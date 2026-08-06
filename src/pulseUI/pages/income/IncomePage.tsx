@@ -49,7 +49,13 @@ const incomeTypeLabels = {
   other: "Other",
 } satisfies Record<IncomeSourceCategory, string>;
 
-const incomeTypes = Object.keys(incomeTypeLabels) as IncomeSourceCategory[];
+const incomeTypes: readonly IncomeSourceCategory[] = [
+  "w2",
+  "1099",
+  "capital-gains",
+  "rental",
+  "other",
+];
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
