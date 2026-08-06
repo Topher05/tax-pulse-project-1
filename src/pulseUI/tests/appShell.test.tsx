@@ -167,10 +167,10 @@ describe("Pulse UI app shell", () => {
     ).toBeInTheDocument();
   });
 
-  test("still renders placeholder routes that have not been built yet", async () => {
+  test("renders the Income route shell", async () => {
     renderShell("/income");
 
-    expect(await screen.findByRole("heading", { name: "Income" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Income Events" })).toBeInTheDocument();
   });
 
   test("renders plan tool nav links without search state while routing is disabled", async () => {

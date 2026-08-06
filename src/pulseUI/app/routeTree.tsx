@@ -105,14 +105,8 @@ const scenarioPlannerRoute = createRoute({
 const incomeRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/income",
-  component: () => (
-    <IncomePage
-      clientId=""
-      taxYear={2026}
-      incomeEvents={[]}
-      onCreateIncome={() => undefined}
-    />
-  ),
+  component: IncomePage,
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const deductionsRoute = createRoute({
