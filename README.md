@@ -409,6 +409,10 @@ includes `north-star-planning`, so its local sign-in URL is
 `http://north-star-planning.localhost:5173/sign-in`. The Vite auth proxy preserves this
 hostname when forwarding requests to the API.
 
+Leave `CASE_SERVICE_BASE_URL` unset for local Vite development. When it is set to a
+different origin such as `http://localhost:3000`, the browser bypasses Vite's same-origin
+proxy and can surface CORS failures during API calls.
+
 Do not use plain `http://localhost:5173` for password login. It contains no tenant slug,
 so the API intentionally responds with `Login Workspace Not Found`; this preserves the
 server-controlled, hostname-based tenant boundary described in ADR-0022.
