@@ -76,7 +76,12 @@ stage-change events from being lost before asynchronous delivery.
 **Changed Files:**
 
 - `src/typescript/shared/database/schema.ts`
-- `src/typescript/shared/database/drizzle-migrations/0009_outbox_event.sql`
+- `src/typescript/shared/database/drizzle-migrations/0010_outbox_event.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0007_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0008_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0009_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0010_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
 - `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
 - `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
@@ -99,6 +104,11 @@ stage-change events from being lost before asynchronous delivery.
   then stopped in the unrelated Pulse UI because its local `@playwright/test` type
   dependency is absent.
 - The focused CloudEvent schema and SNS publisher suites passed: 11 tests in two files.
+- Rebuilt the inherited Drizzle metadata chain so tenant login, deductions, client roster,
+  and the outbox are registered sequentially as migrations `0007` through `0010` with
+  matching snapshots. A no-op `drizzle-kit generate` confirmed there is no schema drift.
+- `npm run db:check`, `npm run typecheck`, and `git diff --check` passed after rebuilding
+  the migration metadata.
 - The Tax Plan Cycle integration suite collected successfully, but its 22 database tests
   could not start because no Docker-compatible container runtime is available locally.
   This includes both new transactional-outbox acceptance paths.
