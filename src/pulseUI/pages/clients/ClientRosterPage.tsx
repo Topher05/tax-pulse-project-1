@@ -1,6 +1,14 @@
+import {
+  createColumnHelper,
+  createSortedRowModel,
+  rowSortingFeature,
+  sortFns,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table";
+
 import styles from "./ClientRosterPage.module.css";
 import { ClientRosterSkeletonLoader } from "../../components/ClientRosterSkeletonLoader.tsx";
-import { DataTable } from "../../components/DataTable.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { RetryToolbar } from "../../components/RetryToolbar.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
@@ -23,49 +31,76 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+const clientRosterTableFeatures = tableFeatures({
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+  sortFns,
+});
+const clientRosterColumnHelper = createColumnHelper<
+  typeof clientRosterTableFeatures,
+  ClientRosterRow
+>();
+const clientRosterColumns = clientRosterColumnHelper.columns([
+  clientRosterColumnHelper.accessor("clientName", {
+    header: "Client",
+    cell: ({ row }) => <span className={styles.clientName}>{row.original.clientName}</span>,
+    sortFn: "text",
+  }),
+  clientRosterColumnHelper.accessor("filingStatus", {
+    header: "Filing",
+    cell: ({ row }) => <span className={styles.filingCell}>{row.original.filingStatus}</span>,
+    sortFn: "text",
+  }),
+  clientRosterColumnHelper.accessor("ytdIncome", {
+    header: "YTD Income",
+    cell: ({ row }) => formatCurrency(row.original.ytdIncome),
+    sortFn: "basic",
+  }),
+  clientRosterColumnHelper.accessor("estimatedTax", {
+    header: "Est. Tax",
+    cell: ({ row }) => formatCurrency(row.original.estimatedTax),
+    sortFn: "basic",
+  }),
+  clientRosterColumnHelper.accessor("quarterlyStatus", {
+    header: "Quarterly",
+    cell: ({ row }) =>
+      row.original.quarterlyStatus ? (
+        <span className={styles.quarterlyBadge}>{row.original.quarterlyStatus}</span>
+      ) : (
+        <span className={styles.quietQuarterly}>-</span>
+      ),
+    sortFn: "text",
+  }),
+  clientRosterColumnHelper.accessor("id", {
+    id: "openBooks",
+    header: "",
+    cell: () => (
+      <button className={styles.openBooksButton} type="button" disabled>
+        Open Books
+      </button>
+    ),
+    enableSorting: false,
+  }),
+]);
+
+function sortIndicator(isSorted: false | "asc" | "desc"): string {
+  if (isSorted === "asc") {
+    return "Asc";
+  }
+
+  if (isSorted === "desc") {
+    return "Desc";
+  }
+
+  return "Sort";
+}
+
 export function ClientRosterScreen({ clients }: ClientRosterScreenProps) {
-  const columns = [
-    {
-      header: "Client",
-      render: (row: ClientRosterRow) => (
-        <span className={styles.clientName}>{row.clientName}</span>
-      ),
-    },
-    {
-      header: "Filing",
-      render: (row: ClientRosterRow) => (
-        <span className={styles.filingCell}>{row.filingStatus}</span>
-      ),
-    },
-    {
-      header: "YTD Income",
-      render: (row: ClientRosterRow) => formatCurrency(row.ytdIncome),
-      cellClassName: styles.moneyCell,
-    },
-    {
-      header: "Est. Tax",
-      render: (row: ClientRosterRow) => formatCurrency(row.estimatedTax),
-      cellClassName: styles.moneyCell,
-    },
-    {
-      header: "Quarterly",
-      render: (row: ClientRosterRow) =>
-        row.quarterlyStatus ? (
-          <span className={styles.quarterlyBadge}>{row.quarterlyStatus}</span>
-        ) : (
-          <span className={styles.quietQuarterly}>-</span>
-        ),
-    },
-    {
-      header: "",
-      render: () => (
-        <button className={styles.openBooksButton} type="button" disabled>
-          Open Books
-        </button>
-      ),
-      cellClassName: styles.actionCell,
-    },
-  ] as const;
+  const table = useTable({
+    columns: clientRosterColumns,
+    data: clients,
+    features: clientRosterTableFeatures,
+  });
 
   return (
     <div className={styles.page}>
@@ -75,13 +110,65 @@ export function ClientRosterScreen({ clients }: ClientRosterScreenProps) {
       />
 
       <PanelCard title={null} description={null}>
-        <DataTable
-          ariaLabel="Client roster"
-          columns={columns}
-          rows={clients}
-          rowKey={(row) => row.id}
-          emptyMessage="Client roster data will appear here once it is connected."
-        />
+        <div className={styles.tableWrap}>
+          <table className={styles.table} aria-label="Client roster">
+            <thead>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    const canSort = header.column.getCanSort();
+                    const isSorted = header.column.getIsSorted();
+                    const headerText = String(header.column.columnDef.header ?? "");
+
+                    return (
+                      <th key={header.id}>
+                        {header.isPlaceholder ? null : canSort ? (
+                          <button
+                            className={styles.sortHeaderButton}
+                            type="button"
+                            aria-label={`Toggle ${headerText} sorting`}
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            <span>
+                              <table.FlexRender header={header} />
+                            </span>
+                            <span className={styles.sortIndicator} aria-hidden="true">
+                              {sortIndicator(isSorted)}
+                            </span>
+                          </button>
+                        ) : (
+                          <table.FlexRender header={header} />
+                        )}
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.map((row) => (
+                <tr key={row.original.id}>
+                  {row.getAllCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      className={[
+                        styles.cell,
+                        cell.column.id === "ytdIncome" || cell.column.id === "estimatedTax"
+                          ? styles.moneyCell
+                          : undefined,
+                        cell.column.id === "openBooks" ? styles.actionCell : undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      <table.FlexRender cell={cell} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </PanelCard>
     </div>
   );
