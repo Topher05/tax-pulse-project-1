@@ -25,8 +25,10 @@ export type SeedUserRow = {
   id: string;
   tenantId: string;
   email: string;
+  displayName: string;
   roleId: number;
   statusId: number;
+  lastLoginAt: Date | null;
 };
 
 export type SeedCredentialRow = {
@@ -309,36 +311,46 @@ export const userRows = [
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
     tenantId: tenantRows[0].id,
     email: "alex@example.com",
+    displayName: "Alex Rivera",
     roleId: roleRows[0].id,
     statusId: userStatusRows[0].id,
+    lastLoginAt: null,
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
     tenantId: tenantRows[1].id,
     email: "brianna@example.com",
+    displayName: "Brianna Cole",
     roleId: roleRows[1].id,
     statusId: userStatusRows[1].id,
+    lastLoginAt: new Date("2026-08-05T14:30:00Z"),
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d63",
     tenantId: tenantRows[2].id,
     email: "casey@example.com",
+    displayName: "Casey Morgan",
     roleId: roleRows[2].id,
     statusId: userStatusRows[0].id,
+    lastLoginAt: null,
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d64",
     tenantId: tenantRows[3].id,
     email: "devon@example.com",
+    displayName: "Devon Park",
     roleId: roleRows[3].id,
     statusId: userStatusRows[1].id,
+    lastLoginAt: new Date("2026-08-04T19:15:00Z"),
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d65",
     tenantId: tenantRows[4].id,
     email: "elliot@example.com",
+    displayName: "Elliot Shaw",
     roleId: roleRows[1].id,
     statusId: userStatusRows[2].id,
+    lastLoginAt: new Date("2026-07-29T16:00:00Z"),
   },
 ] as const satisfies readonly SeedUserRow[];
 

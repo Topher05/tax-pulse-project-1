@@ -54,6 +54,7 @@ describe("mfa enrollment integration tests", () => {
         id: insertedUserId,
         tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
         email: "mfa-default@example.com",
+        displayName: "MFA Default",
         roleId: 2,
         statusId: 2,
       });

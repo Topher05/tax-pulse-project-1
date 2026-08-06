@@ -60,6 +60,8 @@ describe("user module", () => {
           email: users.email,
           role_id: users.roleId,
           status_id: users.statusId,
+          display_name: users.displayName,
+          last_login_at: users.lastLoginAt,
         })
         .from(users)
         .orderBy(asc(users.id));
@@ -76,6 +78,7 @@ describe("user module", () => {
         db.insert(users).values({
           tenantId: userRows[0].tenantId,
           email: userRows[0].email,
+          displayName: userRows[0].displayName,
           roleId: userRows[0].roleId,
           statusId: userRows[0].statusId,
         }),
@@ -87,11 +90,12 @@ describe("user module", () => {
             INSERT INTO users (
               tenant_id,
               email,
+              display_name,
               role_id,
               status_id
-            ) VALUES ($1, $2, $3, $4)
+            ) VALUES ($1, $2, $3, $4, $5)
           `,
-          ["not-a-uuid", "type-bad@example.com", 1, 1],
+          ["not-a-uuid", "type-bad@example.com", "Type Bad", 1, 1],
         ),
         { code: "22P02", messageIncludes: "invalid input syntax for type uuid" },
       );
@@ -101,11 +105,18 @@ describe("user module", () => {
             INSERT INTO users (
               tenant_id,
               email,
+              display_name,
               role_id,
               status_id
-            ) VALUES ($1, $2, $3, $4)
+            ) VALUES ($1, $2, $3, $4, $5)
           `,
-          [userRows[0].tenantId, "type-bad-role@example.com", "bad-role", 1],
+          [
+            userRows[0].tenantId,
+            "type-bad-role@example.com",
+            "Type Bad Role",
+            "bad-role",
+            1,
+          ],
         ),
         {
           code: "22P02",
@@ -118,11 +129,18 @@ describe("user module", () => {
             INSERT INTO users (
               tenant_id,
               email,
+              display_name,
               role_id,
               status_id
-            ) VALUES ($1, $2, $3, $4)
+            ) VALUES ($1, $2, $3, $4, $5)
           `,
-          [userRows[0].tenantId, "type-bad-status@example.com", 1, "bad-status"],
+          [
+            userRows[0].tenantId,
+            "type-bad-status@example.com",
+            "Type Bad Status",
+            1,
+            "bad-status",
+          ],
         ),
         {
           code: "22P02",
