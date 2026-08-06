@@ -1,5 +1,6 @@
 export {
   clientDeductionAggregationPayloadSchema,
+  deductionCreateSchema,
   deductionReadParamsSchema,
   deductionCategorySchema,
   deductionCategoryValues,
@@ -8,6 +9,7 @@ export {
   deductionTableRowsSchema,
   incomeEventSchema,
   type DeductionCategory,
+  type DeductionCreate,
   type ClientDeductionAggregationPayload,
   type Deduction,
   type DeductionTableRow,
@@ -22,6 +24,7 @@ export {
 } from "./infrastructure/aggregationClient.js";
 export {
   createDeductionRepository,
+  type DeductionCreateInput,
   type DeductionListInput,
   type DeductionRepository,
 } from "./repositories/repository.js";

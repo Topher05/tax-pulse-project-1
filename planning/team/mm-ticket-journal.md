@@ -251,34 +251,27 @@ that only authenticated users reach the workspace.
 - An unauthenticated user is redirected to login.
 - A test asserts the guard redirects without a token.
 
-**Code Connection:** The Pulse route tree now uses a shared TanStack Router
-`beforeLoad` guard for internal workspace routes. The guard checks the existing
-Pulse UI shared JWT key in local storage and redirects unauthenticated users to an
-unguarded `/login` route. The app shell renders the login route without the protected
-workspace sidebar and topbar.
+**Code Connection:** The Pulse route tree nests all internal workspace routes under a
+shared `AuthenticatedWorkspace` wrapper. That wrapper renders `AuthBoundary`, waits for
+the cookie-backed session restore to finish, and redirects anonymous sessions to the
+unguarded `/sign-in` route before the app shell/sidebar can render.
 
 **Project Scope Connection:** This supports the TaxPulse multi-tenant advisory
-workspace by keeping internal advisor and firm screens behind a frontend
-authentication boundary. Token attachment, refresh-on-401, retry, and logout stay in
-the follow-on SCRUM-99/SCRUM-192 auth scope.
+workspace by keeping internal advisor and firm screens behind a frontend authentication
+boundary while allowing the separate sign-in, MFA, and password-reset routes to remain
+public.
 
 **Changed Files:**
 
-- `src/pulseUI/app/authSession.ts`
 - `src/pulseUI/app/routeTree.tsx`
-- `src/pulseUI/components/AppShell.tsx`
-- `src/pulseUI/components/AppShell.module.css`
-- `src/pulseUI/pages/LoginPage.tsx`
+- `src/pulseUI/auth/AuthBoundary.tsx`
+- `src/pulseUI/auth/AuthProvider.tsx`
 - `src/pulseUI/tests/appShell.test.tsx`
-- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
-- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
-- `src/pulseUI/tests/taxPlanCycle/QueueState.test.tsx`
+- `src/pulseUI/tests/auth/AuthBoundary.test.tsx`
+- `src/pulseUI/tests/auth/AuthProvider.test.tsx`
 
-**Validation Notes:**
-
-- `npm run typecheck` passed.
-- `npm --prefix src/pulseUI run test` passed with 7 files and 28 tests.
-- `npm --prefix src/pulseUI run build` passed.
+**Validation Notes:** See the `demo4` verification entry below for the current
+post-merge validation pass against SCRUM-98 and SCRUM-99.
 
 ## martins-okorie-jira99 - SCRUM-99
 
@@ -303,9 +296,9 @@ the follow-on SCRUM-99/SCRUM-192 auth scope.
 through the shared AuthProvider session instead of reading JWTs from localStorage. The
 authenticated fetch wrapper attaches the in-memory access token, performs one
 refresh-and-retry on a 401 through the BFF's cookie-backed `POST /auth/refresh`
-contract, and clears query/session state when refresh fails. The generic case API helper
-now only handles URL construction, credentials inclusion, JSON parsing, and HTTP error
-mapping.
+contract, coalesces concurrent refresh calls during route restore/request races, and
+clears query/session state when refresh fails. The generic case API helper now only
+handles URL construction, credentials inclusion, JSON parsing, and HTTP error mapping.
 
 **Project Scope Connection:** This connects SCRUM-98 route guarding with SCRUM-100 live
 queue/detail data loading so tenant-scoped case reads use the signed-in user's JWT
@@ -318,16 +311,24 @@ HttpOnly, SameSite=Strict cookies and are not exposed to browser JavaScript.
 - `src/pulseUI/app/bootstrap.tsx`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
 - `src/pulseUI/entities/clientRosterQueries.ts`
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/entities/quarterlyEstimateQueries.ts`
 - `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/auth/AuthProvider.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Details.tsx`
 - `src/pulseUI/pages/taxPlanCycle/PlanCycle.tsx`
 - `src/pulseUI/shared/caseApi.ts`
 - `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/auth/AuthProvider.test.tsx`
 - `src/pulseUI/tests/caseApi.test.tsx`
 - `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
 - `src/pulseUI/tests/clients/ClientRosterQueries.test.tsx`
+- `src/pulseUI/tests/components/CurrentCaseSelector.test.tsx`
+- `src/pulseUI/tests/entities/deductionQueries.test.tsx`
 - `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
 - `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
@@ -339,6 +340,155 @@ HttpOnly, SameSite=Strict cookies and are not exposed to browser JavaScript.
 
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `npm --prefix src/pulseUI run test` passed with 21 files and 72 tests.
+
+## demo4 - SCRUM-98/SCRUM-99 Verification
+
+**Branch:** `demo4`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Keys:** SCRUM-98, SCRUM-99
+
+**Summary:** Re-verify route guarding and authenticated query behavior.
+
+**Description:** Reviewed the current Pulse UI implementation against the SCRUM-98 and
+SCRUM-99 acceptance criteria after the MFA/login manual testing flow exposed a reload
+session issue.
+
+**Acceptance Criteria:**
+
+- SCRUM-98: internal workspace routes are guarded by TanStack Router composition.
+- SCRUM-98: anonymous users are redirected to `/sign-in`.
+- SCRUM-98: tests assert unauthenticated users cannot render the workspace.
+- SCRUM-99: TanStack Query-backed case API calls attach the access token.
+- SCRUM-99: a 401 triggers refresh and exactly one retry.
+- SCRUM-99: failed refresh logs the user out instead of looping.
+
+**Code Connection:** Confirmed that `routeTree.tsx` nests workspace routes under
+`AuthenticatedWorkspace` and `AuthBoundary`. Confirmed that `authenticatedFetch.ts`
+adds the bearer token, refreshes once on 401, retries once, and invalidates the session
+on failed refresh. Fixed the remaining unauthenticated TanStack Query call sites in the
+current case selector, deductions, and quarterly-estimates hooks. Added refresh request
+coalescing in `AuthProvider` so React StrictMode or overlapping initial requests do not
+double-rotate the same refresh token and force a sign-out on reload.
+
+**Project Scope Connection:** Keeps the authenticated Pulse UI workspace aligned with
+tenant-scoped case access while allowing authenticated refresh to happen silently when
+the server-side refresh cookie is still valid.
+
+**Changed Files:**
+
+- `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/entities/quarterlyEstimateQueries.ts`
+- `src/pulseUI/tests/auth/AuthProvider.test.tsx`
+- `src/pulseUI/tests/components/CurrentCaseSelector.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/entities/deductionQueries.test.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- AuthProvider.test.tsx AuthBoundary.test.tsx authenticatedFetch.test.tsx appShell.test.tsx CurrentCaseSelector.test.tsx deductionQueries.test.tsx DeductionsPage.test.tsx QuarterlyPaymentsPage.test.tsx` passed with 9 files and 53 tests.
+
+## demo4 - SCRUM-97
+
+**Branch:** `demo4`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-97
+
+**Summary:** Build the Comments and Audit Trail tabs.
+
+**Description:** As an Advisor, I want the Comments and Audit Trail tabs, so that I can
+discuss the case and review its history.
+
+**Acceptance Criteria:**
+
+- The Comments tab lists comments and offers an add-comment input.
+- The Audit Trail tab renders the case's audit entries read-only with redacted figures.
+- Both tabs render loading and empty states.
+
+**Code Connection:** Re-verified SCRUM-97 against the acceptance criteria and closed the
+remaining Comments tab state gap. The Comments tab now reads through a query surface so
+it can render populated, loading, and empty states while preserving the add-comment
+draft composer. The Audit Trail tab continues to lazy-load redacted audit entries from
+the case audit endpoint and render them read-only.
+
+**Project Scope Connection:** Keeps the detail page aligned with the Pulse UI operator
+experience for case discussion and audit review without adding comment persistence or
+weakening tenant-scoped audit reads.
+
+**Changed Files:**
+
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- caseApi.test.tsx queries.test.ts Details.test.tsx`
+  passed with 4 files and 17 tests.
+
+## martins-okorie-jira102 - SCRUM-102
+
+**Branch:** `martins-okorie-jira102`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-102
+
+**Summary:** Render scenario results in a TanStack Table
+
+**Description:** As an Advisor, I want scenario results in a TanStack Table, so that I
+can compare each scenario's tax impact.
+
+**Acceptance Criteria:**
+
+- Submitting calls the calculation endpoint and renders each scenario's total tax and delta.
+- The baseline row shows the current taxable and tax figures.
+- The table renders loading and error states around the request.
+
+**Code Connection:** Wired the SCRUM-101 Scenario Planner modal submission into an
+authenticated scenario modeling POST through the shared Case API helper. Added a typed
+scenario result boundary that maps the form's 2-5 scenarios onto the Core service
+payload, derives the baseline tax from returned deltas, and renders the baseline plus
+scenario rows through TanStack Table v9.
+
+**Project Scope Connection:** Completes the Scenario Planner handoff from local
+validated input capture to a live tax-impact comparison surface inside the React SPA
+operator experience.
+
+**Changed Files:**
+
+- `src/pulseUI/components/scenario-form/Form.tsx`
+- `src/pulseUI/entities/scenarioResults.ts`
+- `src/pulseUI/package.json`
+- `src/pulseUI/package-lock.json`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.tsx`
+- `src/pulseUI/pages/scenarios/ScenarioPlannerPage.module.css`
+- `src/pulseUI/shared/caseApi.ts`
+- `src/pulseUI/tests/caseApi.test.tsx`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- caseApi.test.tsx ScenarioForm.test.tsx ScenarioPlannerPage.test.tsx`
+  passed with 3 files and 16 tests.
+- `git diff --check` passed.
+- Full `npm --prefix src/pulseUI run test` was attempted and remains blocked by two
+  existing `DeductionsPage.test.tsx` expectations that assert `caseApiGetJson` is called
+  without the authenticated fetcher while the current deductions page and shared case
+  selector call it with one.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 

@@ -99,6 +99,27 @@ export {
   type TaxPlanCycleQueueProjectionReader,
 } from "./infrastructure/queueDynamoStore.js";
 export {
+  createSnsStageChangedEventPublisher,
+  createStageChangedCloudEventV1,
+  PublishCommand,
+  createStageChangedSnsClient,
+  getStageChangedTopicArnFromEnv,
+  type CreateStageChangedCloudEventOptions,
+  type StageChangedEventPublisher,
+  type StageChangedEventPublishInput,
+  type StageChangedSnsClient,
+} from "./infrastructure/stageChangedSnsPublisher.js";
+export {
+  createSqsStageChangedEventConsumer,
+  createStageChangedSqsClient,
+  getStageChangedQueueUrlFromEnv,
+  parseStageChangedSqsMessage,
+  type ConsumeStageChangedEventsResult,
+  type StageChangedEventConsumerLogger,
+  type StageChangedSqsClient,
+  type StageChangedSqsConsumerOptions,
+} from "./infrastructure/stageChangedSqsConsumer.js";
+export {
   createTaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadServiceOptions,
@@ -118,6 +139,8 @@ export {
   type StageChangedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionControllerOptions,
+  type TaxPlanCycleTransitionControllerInput,
+  type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
 export {

@@ -35,6 +35,18 @@ This decision does not introduce SNS publishing, SQS consumption, database chang
 a separate case status. Those behaviors remain owned by later event-driven workflow
 tickets.
 
+SCRUM-131 later implements the first publisher against this contract as a plain
+TypeScript service method that validates the CloudEvent with
+`stageChangedCloudEventSchemaV1` before publishing the JSON body to SNS. That follow-on
+work uses the same v1 event shape and does not revise this schema decision. Publish
+failures are treated as best-effort after the database transition commits.
+
+SCRUM-132 adds the first SQS subscriber as another plain TypeScript service method. It
+parses the default SNS notification envelope from SQS, validates the nested CloudEvent
+with the same `stageChangedCloudEventSchemaV1`, logs the transition, and deletes only
+successfully processed SQS messages. This keeps the consumer aligned to the v1 contract
+without introducing Lambda runtime behavior, database writes, or schema changes.
+
 ## Alternatives considered
 - Publish an unversioned custom JSON object, which would be smaller but weaker for
   consumer compatibility.

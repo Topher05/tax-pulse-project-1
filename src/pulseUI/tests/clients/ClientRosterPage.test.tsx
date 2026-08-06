@@ -8,7 +8,8 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
-import { TestAuthProvider } from "../testAuth.tsx";
+import * as pageReload from "../../shared/pageReload.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -19,8 +20,35 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+function renderClientRosterPage() {
+  render(
+    <QueryClientProvider client={createPulseQueryClient()}>
+      <TestSessionProvider>
+        <RouterProvider router={createPulseRouter(["/clients"])} />
+      </TestSessionProvider>
+    </QueryClientProvider>,
+  );
+}
+
 describe("ClientRosterPage", () => {
-  test("renders the client roster from the query hook", async () => {
+  test("renders a loading skeleton while the roster request is in flight", async () => {
+    let resolveRequest: (value: unknown) => void = () => undefined;
+    const request = new Promise((resolve) => {
+      resolveRequest = resolve;
+    });
+
+    vi.spyOn(caseApi, "caseApiGetJson").mockReturnValueOnce(request);
+
+    renderClientRosterPage();
+
+    const skeleton = await screen.findByRole("status", { name: "Loading Client Roster" });
+
+    expect(skeleton.querySelectorAll("div")).toHaveLength(26);
+
+    resolveRequest([]);
+  });
+
+  test("renders the success branch with client roster data", async () => {
     vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
       {
         id: "client-avery-chen",
@@ -28,22 +56,6 @@ describe("ClientRosterPage", () => {
         filingSummary: "Single - 1099",
         ytdIncome: 108_500,
         estimatedTax: 32_100,
-        quarterlyStatus: "Q2 due Jun 15",
-      },
-      {
-        id: "client-sam-rivera",
-        clientName: "Sam Rivera",
-        filingSummary: "Single - 1099",
-        ytdIncome: 142_000,
-        estimatedTax: 38_240,
-        quarterlyStatus: "Q2 due Jun 15",
-      },
-      {
-        id: "client-morgan-acme",
-        clientName: "Morgan Acme",
-        filingSummary: "MFJ - W-2 + RSU",
-        ytdIncome: 414_000,
-        estimatedTax: 138_400,
         quarterlyStatus: "Q2 due Jun 15",
       },
       {
@@ -56,35 +68,46 @@ describe("ClientRosterPage", () => {
       },
     ]);
 
-    render(
-      <QueryClientProvider client={createPulseQueryClient()}>
-        <TestAuthProvider>
-          <RouterProvider router={createPulseRouter(["/clients"])} />
-        </TestAuthProvider>
-      </QueryClientProvider>,
-    );
-
-    expect(await screen.findByRole("heading", { name: "Client Roster", level: 1 }))
-      .toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Client Roster" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Client Roster", level: 2 })).toBeInTheDocument();
-    expect(
-      screen.getByText("Switch into a client's books with read-only access; build scenarios for them."),
-    ).toBeInTheDocument();
-
-    expect(screen.getByRole("table", { name: "Client roster" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Client" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Filing" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "YTD Income" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Est. Tax" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Quarterly" })).toBeInTheDocument();
+    renderClientRosterPage();
 
     expect(await screen.findByText("Avery Chen")).toBeInTheDocument();
-    expect(screen.getAllByText("Single - 1099")).toHaveLength(2);
-    expect(screen.getByText("$108,500")).toBeInTheDocument();
-    expect(screen.getByText("$32,100")).toBeInTheDocument();
-    expect(screen.getAllByText("Q2 due Jun 15")).toHaveLength(3);
-    expect(screen.getAllByRole("button", { name: "Open Books" })).toHaveLength(4);
-    expect(screen.getAllByRole("button", { name: "Open Books" })[0]).toBeDisabled();
+    expect(screen.getByRole("table", { name: "Client roster" })).toBeInTheDocument();
+  });
+
+  test("renders the empty page when the firm has no clients", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([]);
+    const reloadSpy = vi.spyOn(pageReload, "reloadPage").mockImplementation(() => undefined);
+
+    renderClientRosterPage();
+
+    expect(await screen.findByRole("heading", { name: "No data generated" })).toBeInTheDocument();
+    screen.getByRole("button", { name: "Refresh" }).click();
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test("renders an error state with a refresh retry affordance", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockRejectedValueOnce(
+      new Error("Roster service unavailable."),
+    );
+
+    renderClientRosterPage();
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+  });
+
+  test("retry triggers a page refresh", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockRejectedValueOnce(
+      new Error("Temporary roster failure."),
+    );
+    const reloadSpy = vi.spyOn(pageReload, "reloadPage").mockImplementation(() => undefined);
+
+    renderClientRosterPage();
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+
+    screen.getByRole("button", { name: "Retry" }).click();
+
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
 });

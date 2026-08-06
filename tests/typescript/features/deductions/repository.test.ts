@@ -83,4 +83,62 @@ describeDatabase("createDeductionRepository", () => {
       });
     },
   );
+
+  test(
+    "creates a deduction for the owning tenant and returns it in list results",
+    { timeout: 60000 },
+    async () => {
+      await withDrizzleTestSchema(async (client) => {
+        await applySeed(client);
+        const repository = createDeductionRepository(client);
+        const created = await repository.create({
+          tenantId: tenantRows[1].id,
+          caseId: taxPlanCycleRows[1].id,
+          date: "2026-08-01",
+          description: "Advisor conference fee",
+          category: "Education",
+          amount: 900,
+        });
+
+        expect(created).toMatchObject({
+          case_id: taxPlanCycleRows[1].id,
+          date: "2026-08-01",
+          description: "Advisor conference fee",
+          category: "Education",
+          amount: "900.00",
+          tax_impact: "225.00",
+          deleted: false,
+        });
+
+        const rows = await repository.listByCase({
+          tenantId: tenantRows[1].id,
+          caseId: taxPlanCycleRows[1].id,
+        });
+
+        expect(rows).toContainEqual(created);
+      });
+    },
+  );
+
+  test(
+    "does not create a deduction when the tenant does not own the case",
+    { timeout: 60000 },
+    async () => {
+      await withDrizzleTestSchema(async (client) => {
+        await applySeed(client);
+        const repository = createDeductionRepository(client);
+
+        await expect(
+          repository.create({
+            tenantId: tenantRows[0].id,
+            caseId: taxPlanCycleRows[1].id,
+            date: "2026-08-01",
+            description: "Advisor conference fee",
+            category: "Education",
+            amount: 900,
+          }),
+        ).resolves.toBeNull();
+      });
+    },
+  );
 });

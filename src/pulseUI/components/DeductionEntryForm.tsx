@@ -43,7 +43,7 @@ const deductionEntrySchema = z.object({
 });
 
 type DeductionEntryFormInput = z.input<typeof deductionEntrySchema>;
-type DeductionEntryFormValues = z.output<typeof deductionEntrySchema>;
+export type DeductionEntryFormValues = z.output<typeof deductionEntrySchema>;
 
 const defaultValues: DefaultValues<DeductionEntryFormInput> = {
   date: "",
@@ -54,9 +54,10 @@ const defaultValues: DefaultValues<DeductionEntryFormInput> = {
 
 interface DeductionEntryFormProps {
   onClose: () => void;
+  onCreate: (payload: DeductionEntryFormValues) => void | Promise<void>;
 }
 
-export function DeductionEntryForm({ onClose }: DeductionEntryFormProps) {
+export function DeductionEntryForm({ onClose, onCreate }: DeductionEntryFormProps) {
   const modalTitleId = useId();
   const form = useForm<DeductionEntryFormInput, unknown, DeductionEntryFormValues>({
     resolver: zodResolver(deductionEntrySchema),
@@ -93,9 +94,8 @@ export function DeductionEntryForm({ onClose }: DeductionEntryFormProps) {
   };
 
   const submitForm = handleSubmit(
-    (values) => {
-      console.table(values);
-      // TODO Submission work is handled in Scrum-114.
+    async (values) => {
+      await onCreate(values);
       closeModal();
     },
     (validationErrors) => {

@@ -5,6 +5,260 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira132 - SCRUM-132
+
+**Branch:** `dylan-harle-jira132`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-132
+
+**Summary:** Consume stage-changed events from SQS.
+
+**Description:** As a Backend Developer, I want an SQS consumer for stage-changed events, so that a subscriber processes transitions out of band.
+
+**Acceptance Criteria:**
+
+- A consumer subscribed via SQS receives the event and logs it.
+- The consumer validates the event against the schema before processing.
+- A test asserts a published event is received and parsed by the consumer.
+
+**Code Connection:**
+
+- Added a plain TypeScript SQS stage-changed consumer that receives SQS messages, parses the default SNS notification envelope, validates the nested CloudEvents v1 payload with `stageChangedCloudEventSchemaV1`, logs transition details, and deletes only successfully processed messages.
+- Added SQS client and queue URL environment helpers that mirror the SCRUM-131 SNS publisher setup, including LocalStack endpoint support.
+- Added a test that publishes through the SCRUM-131 SNS publisher shape, wraps the published message in an SNS-to-SQS envelope, and asserts the SQS consumer receives, validates, logs, and deletes it.
+- Documented SCRUM-132 consumption behavior without changing the ADR-0028 CloudEvents contract.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration.
+- Builds directly on SCRUM-130, SCRUM-131, `docs/stage-changed-event.md`, and ADR-0028.
+- Keeps the consumer as a plain service method in this sprint; does not add Lambda runtime behavior, an outbox table, database writes, durable projection behavior, or a separate case status.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `.env.example`
+- `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSqsConsumer.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedSqsConsumer.test.ts`
+- `docs/stage-changed-event.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/stageChangedSqsConsumer.test.ts` passed.
+- `git diff --check` passed with line-ending warnings only.
+- `npm test` passed typecheck and the SCRUM-132 tests, then failed in existing unrelated coverage: `tenantsMigration.test.ts` reports no test suite, `scenarioMigration.test.ts` timed out after 30000ms, and `tenantLoginResolver.test.ts`, `features/deductions/repository.test.ts`, and `features/deductions/routes.test.ts` hit PostgreSQL connection refusals on port 54318.
+
+## dylan-harle-jira115 - SCRUM-115
+
+**Branch:** `dylan-harle-jira115`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-115
+
+**Summary:** Render the deductions table from live data.
+
+**Description:** As a Frontend Developer, I want the deductions table rendered from the hook data, so that recorded deductions and their tax impact are visible.
+
+**Acceptance Criteria:**
+
+- The table renders date, description, category, amount, and tax-impact columns from the hook data.
+- KPI cards render total deductions, estimated tax savings, and the deduction method.
+- A newly added deduction appears in the table after a successful create.
+
+**Code Connection:**
+
+- Replaced the SCRUM-113 non-empty placeholder with the shared typed data table while preserving loading, empty, error, retry, and case-gated request states.
+- Wired the SCRUM-114 typed Add Deduction form callback into a TanStack mutation and invalidates the selected case deductions query after successful create.
+- Added the minimal tenant-scoped deductions create endpoint and repository insert path needed for the frontend create flow to persist and refetch live rows.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Keeps deductions reads and creates scoped to the selected Tax Plan Cycle and authenticated tenant.
+- Leaves deduction-method calculation as the existing static KPI copy because no live method field exists in the current deductions hook or backend payload.
+
+**Changed Files:**
+
+- `src/pulseUI/shared/caseApi.ts`
+- `src/pulseUI/entities/deductionQueries.ts`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/typescript/features/deductions/repositories/deduction.ts`
+- `src/typescript/features/deductions/repositories/repository.ts`
+- `src/typescript/features/deductions/routes.ts`
+- `src/typescript/features/deductions/index.ts`
+- `src/typescript/index.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/pulseUI/tests/entities/deductionQueries.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `tests/typescript/features/deductions/repository.test.ts`
+- `tests/typescript/features/deductions/routes.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/entities/deductionQueries.test.tsx tests/deductions/DeductionsPage.test.tsx tests/components/DeductionEntryForm.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI test -- tests/caseApi.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/coreCaseOpenApi.test.ts` passed.
+- `npm run test:vitest -- tests/typescript/features/deductions/repository.test.ts tests/typescript/features/deductions/routes.test.ts` could not complete because the configured local Postgres port refused connections (`ECONNREFUSED 127.0.0.1:54318` / `::1:54318`) before assertions ran.
+
+## dylan-harle-jira114 - SCRUM-114
+
+**Branch:** `dylan-harle-jira114`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-114
+
+**Summary:** Build the Add Deduction form with zod validation.
+
+**Description:** As a Frontend Developer, I want an Add Deduction form validated with zod, so that malformed deduction entries are caught at the boundary.
+
+**Acceptance Criteria:**
+
+- The form captures description, category, and amount and validates with react-hook-form + zod.
+- A negative amount or missing required field surfaces an inline validation message and blocks submit.
+- A valid submit invokes the create handler with the typed payload.
+
+**Code Connection:**
+
+- Replaced the SCRUM-112 placeholder `console.table` submit path with a typed `onCreate` callback boundary.
+- Kept the existing date field from SCRUM-112 while validating description, category, and amount through the local zod schema.
+- Preserved SCRUM-113 request-state rendering and SCRUM-115's table handoff by limiting page wiring to a local typed create handler.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Adds client-side boundary validation for deduction entry without changing tenant-scoped deductions fetch behavior or backend mutation contracts.
+- Leaves live create persistence and newly-created-row table behavior to SCRUM-115.
+
+**Changed Files:**
+
+- `src/pulseUI/components/DeductionEntryForm.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/tests/components/DeductionEntryForm.test.tsx`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/components/DeductionEntryForm.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm.cmd --prefix src/pulseUI test` passed.
+
+## dylan-harle-jira113 - SCRUM-113
+
+**Branch:** `dylan-harle-jira113`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-113
+
+**Summary:** Add loading, empty, and error states to the Deductions screen.
+
+**Description:** As a Frontend Developer, I want the Deductions screen to render loading, empty, and error states, so that the screen behaves predictably while data resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the deductions request is in flight.
+- An empty state renders when the client has no deductions.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:**
+
+- Added visible Deductions request-state rendering on top of the SCRUM-112 TanStack Query hook boundary.
+- Kept ADR-0026 route-driven case gating intact so missing or invalid case IDs still block deductions fetches.
+- Preserved SCRUM-115's future table handoff by rendering the existing non-empty success placeholder only after data resolves with deduction rows.
+- Added retry behavior through `deductionsQuery.refetch()` without changing the shared query client's retry defaults.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Improves predictable selected-case Deductions behavior while preserving tenant-scoped backend reads through the existing case API.
+- Leaves Add Deduction submission behavior for SCRUM-114, live row/table rendering for SCRUM-115, and broader accessibility coverage for SCRUM-116.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/deductions/DeductionsPage.tsx`
+- `src/pulseUI/pages/deductions/DeductionsPage.module.css`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/entities/deductionQueries.test.tsx tests/deductions/DeductionsPage.test.tsx` passed.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+
+## dylan-harle-jira131 - SCRUM-131
+
+**Branch:** `dylan-harle-jira131`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-131
+
+**Summary:** Publish stage-changed events to SNS.
+
+**Description:** As a Backend Developer, I want each stage transition to publish a stage-changed event, so that downstream consumers react without polling.
+
+**Acceptance Criteria:**
+
+- Advancing a case publishes a stage-changed event to an SNS topic.
+- The published event validates against the CloudEvents schema.
+- The publisher runs as a plain service method, not a cloud runtime, in this sprint.
+
+**Code Connection:**
+
+- Added an injected plain TypeScript stage-changed event publisher for successful Tax Plan Cycle transitions.
+- Built SNS message bodies from the SCRUM-130 CloudEvents v1 contract and validated them with `stageChangedCloudEventSchemaV1` before publishing.
+- Passed the route's known `fromStage` into the transition controller so the publisher can emit `from_stage` without an extra read.
+- Wired production composition to an SNS client and `TAXPULSE_STAGE_CHANGED_TOPIC_ARN`.
+- Wrapped SNS publishing as a best-effort post-transition side effect so a publish failure does not make a committed stage change appear failed to the client.
+- Added a structured warning log for best-effort SNS publish failures to preserve tracing context.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration.
+- Builds directly on SCRUM-130, `docs/stage-changed-event.md`, and ADR-0028.
+- Prepares SCRUM-132 consumers to receive validated stage-changed events without adding SQS consumption, Lambda runtime behavior, an outbox table, or a separate case status.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `.env.example`
+- `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts`
+- `tests/typescript/features/taxPlanCycle/transitionController.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `docs/stage-changed-event.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/transitions.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts` passed.
+- `npm run typecheck` passed.
+- `git diff --check` passed with line-ending warnings only.
+- Review follow-up: `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts` passed.
+- Review follow-up: `npm run typecheck` passed.
+- `npm test` passed typecheck and the SCRUM-131 tests, then failed in existing non-SCRUM-131 coverage: `scenario.test.ts` and `scenarioRepository.test.ts` still receive `Date` for `created_at` where the schema expects a string, `scenarioMigration.test.ts` timed out after 30000ms, `jwtProtectedRoutes.test.ts` still expects `scenarios: []` on a read response that omits it, and `tenantsMigration.test.ts` / `tenantLoginResolver.test.ts` hit PostgreSQL connection refusals on port 54318.
+
 ## development-scrum130 - SCRUM-130
 
 **Branch:** `development`
