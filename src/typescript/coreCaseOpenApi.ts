@@ -18,7 +18,9 @@ import {
   scenarioTypedFiguresSchema,
 } from "./scenario.js";
 import {
+  deductionCreateSchema,
   deductionReadParamsSchema,
+  deductionTableRowSchema,
   deductionTableRowsSchema,
 } from "./features/deductions/repositories/deduction.js";
 import {
@@ -43,6 +45,10 @@ import {
   taxPlanCycleSchema,
 } from "./features/taxPlanCycle/index.js";
 import { taxPlanCycleReadResponseSchema } from "./features/taxPlanCycle/taxPlanCycle.js";
+import {
+  clientRosterListResponseSchema,
+  clientRosterRowSchema,
+} from "./features/clientRoster/index.js";
 
 type JsonValue =
   | string
@@ -89,12 +95,28 @@ export const coreCaseOpenApiSchemaRegistrations = [
     schema: taxPlanCycleCreateResultSchema,
   },
   {
+    name: "ClientRosterRow",
+    schema: clientRosterRowSchema,
+  },
+  {
+    name: "ClientRosterListResponse",
+    schema: clientRosterListResponseSchema,
+  },
+  {
     name: "DeductionReadParams",
     schema: deductionReadParamsSchema,
   },
   {
     name: "DeductionRows",
     schema: deductionTableRowsSchema,
+  },
+  {
+    name: "DeductionCreateRequest",
+    schema: deductionCreateSchema,
+  },
+  {
+    name: "DeductionRow",
+    schema: deductionTableRowSchema,
   },
   {
     name: "QuarterlyEstimateReadParams",
@@ -170,6 +192,17 @@ const fakeTaxPlanCycleQueueExample = [
     ...fakeTaxPlanCycleExample,
     is_overdue: false,
     updated_at: "2026-07-01T12:00:00.000Z",
+  },
+];
+
+const fakeClientRosterExample = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e81",
+    clientName: "Avery Chen",
+    filingStatus: "Single - 1099",
+    ytdIncome: 108500,
+    estimatedTax: 32100,
+    quarterlyStatus: "Q2 due Jun 15",
   },
 ];
 
@@ -341,11 +374,16 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const createRequestSchema = toOpenApiSchema(taxPlanCycleCreateSchema);
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
+  const clientRosterListOpenApiSchema = toOpenApiSchema(
+    clientRosterListResponseSchema,
+  );
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
   const deductionReadCaseIdSchema = requireObjectProperty(
     toOpenApiSchema(deductionReadParamsSchema),
     "caseId",
   );
+  const deductionCreateRequestSchema = toOpenApiSchema(deductionCreateSchema);
+  const deductionRowResponseSchema = toOpenApiSchema(deductionTableRowSchema);
   const deductionRowsResponseSchema = toOpenApiSchema(deductionTableRowsSchema);
   const quarterlyEstimateParamsSchema = requireObjectProperty(
     toOpenApiSchema(quarterlyEstimateReadParamsSchema),
@@ -857,6 +895,107 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
             },
           },
         },
+        post: {
+          operationId: "createCaseDeduction",
+          tags: ["Core Case Service"],
+          summary: "Create a case deduction row",
+          description:
+            "Creates a tenant-scoped deduction for the requested case and returns the created row. Tax impact is estimated from the recorded deduction amount.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Case identifier scoped by the authenticated request tenant.",
+              schema: deductionReadCaseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: deductionCreateRequestSchema,
+                example: {
+                  date: "2026-08-01",
+                  description: "Advisor conference fee",
+                  category: "Education",
+                  amount: 900,
+                },
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The deduction row was created.",
+              content: {
+                "application/json": {
+                  schema: deductionRowResponseSchema,
+                  example: {
+                    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e92",
+                    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+                    date: "2026-08-01",
+                    description: "Advisor conference fee",
+                    category: "Education",
+                    amount: "900.00",
+                    tax_impact: "225.00",
+                    deleted: false,
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "The request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    ...validationErrorExample,
+                    detail: "Request body failed validation.",
+                    issues: [
+                      {
+                        path: ["amount"],
+                        message: "Too small: expected number to be >=0",
+                        code: "too_small",
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "404": {
+              description:
+                "No tenant-scoped Tax Plan Cycle was found for the requested case.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+                    title: "Tax Plan Cycle Not Found",
+                    status: 404,
+                    detail: "No tax plan cycle was found for the requested case ID.",
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       "/v1/tax-plan-cycles": {
         get: {
@@ -982,6 +1121,36 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     status: 500,
                     detail: "An unexpected error occurred.",
                   },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/clients": {
+        get: {
+          operationId: "listClientRoster",
+          tags: ["Core Case Service"],
+          summary: "List the tenant-scoped Client Roster",
+          description:
+            "Returns the authenticated advisor or firm's client roster. " +
+            "Tenant scope is derived from the shared JWT; clients must not send tenant_id.",
+          responses: {
+            "200": {
+              description: "The tenant-scoped client roster.",
+              content: {
+                "application/json": {
+                  schema: clientRosterListOpenApiSchema,
+                  example: fakeClientRosterExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
                 },
               },
             },

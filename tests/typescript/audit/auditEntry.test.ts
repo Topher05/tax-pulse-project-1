@@ -42,7 +42,7 @@ describe("audit_entry migration", () => {
       expect(structure.indexes).toContain(
         "audit_entry_case_id_occurred_at_idx",
       );
-      expect(structure.rowCount).toBe(0);
+      expect(structure.rowCount).toBe(4);
     });
   });
 

@@ -204,6 +204,56 @@ describe("AuthProvider", () => {
     expect(client.refreshSession).toHaveBeenCalledTimes(2);
   });
 
+  test("coalesces concurrent refresh requests into one token rotation", async () => {
+    const client = createClient();
+    let resolveRefresh: (value: SessionTokenResponse) => void = () => undefined;
+    const refreshedResponse = { ...tokenResponse, access_token: `${createAccessToken()}-coalesced` };
+    vi.mocked(client.refreshSession)
+      .mockResolvedValueOnce(tokenResponse)
+      .mockImplementationOnce(
+        () => new Promise((resolve) => {
+          resolveRefresh = resolve;
+        }),
+      );
+
+    function ConcurrentRefreshProbe() {
+      const session = useSession();
+      const [statuses, setStatuses] = useState<string>("pending");
+      return (
+        <>
+          <output>{session.status}</output>
+          <button
+            onClick={() => {
+              void Promise.all([session.refreshSession(), session.refreshSession()]).then(
+                (results) => {
+                  setStatuses(results.map((result) => result.status).join(","));
+                },
+              );
+            }}
+          >
+            Refresh twice
+          </button>
+          <span>{statuses}</span>
+        </>
+      );
+    }
+
+    render(
+      <AuthProvider client={client}>
+        <ConcurrentRefreshProbe />
+      </AuthProvider>,
+    );
+
+    await screen.findByText("authenticated");
+    fireEvent.click(screen.getByRole("button", { name: "Refresh twice" }));
+
+    await vi.waitFor(() => expect(client.refreshSession).toHaveBeenCalledTimes(2));
+    resolveRefresh(refreshedResponse);
+
+    expect(await screen.findByText("authenticated,authenticated")).toBeInTheDocument();
+    expect(client.refreshSession).toHaveBeenCalledTimes(2);
+  });
+
   test("retries a rejected request with the token returned by refresh before React rerenders", async () => {
     const client = createClient();
     const refreshedResponse = { ...tokenResponse, access_token: `${createAccessToken()}-refreshed` };

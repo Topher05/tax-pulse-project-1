@@ -57,6 +57,51 @@
   line-height: 1.5;
 }
 
+.skeletonTable {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.skeletonHeader,
+.skeletonRow {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.skeletonHeader {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.skeletonRow {
+  grid-template-columns:
+    minmax(120px, 0.9fr)
+    minmax(180px, 1.6fr)
+    minmax(120px, 1fr)
+    repeat(2, minmax(100px, 0.8fr));
+}
+
+.skeletonBlock {
+  min-height: 18px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #1a1d2b 0%, #23283a 50%, #1a1d2b 100%);
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.skeletonHeader .skeletonBlock {
+  min-height: 72px;
+}
+
+@keyframes skeletonPulse {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .amountCell {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -123,6 +168,11 @@
 
 @media (max-width: 920px) {
   .metricGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeletonHeader,
+  .skeletonRow {
     grid-template-columns: 1fr;
   }
 }

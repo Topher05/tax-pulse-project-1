@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { PropsWithChildren } from "react";
 
 import { createBrowserAuthClient, type AuthClient } from "./authClient.ts";
@@ -31,6 +31,7 @@ export function AuthProvider({
 }: AuthProviderProps) {
   const client = useMemo(() => suppliedClient ?? createBrowserAuthClient(), [suppliedClient]);
   const [state, setState] = useState<AuthSessionState>({ status: "initializing" });
+  const refreshRequestRef = useRef<Promise<AuthSessionState> | null>(null);
 
   const invalidateSession = useCallback(async (): Promise<AuthSessionState> => {
     const nextState: AuthSessionState = { status: "anonymous" };
@@ -44,17 +45,31 @@ export function AuthProvider({
     return nextState;
   }, [clearCachedData]);
 
-  const requestRefresh = useCallback(async (): Promise<AuthSessionState> => {
-    try {
-      const nextState = toAuthenticatedState(await client.refreshSession());
-      if (nextState.status === "anonymous") {
+  const requestRefresh = useCallback((): Promise<AuthSessionState> => {
+    if (refreshRequestRef.current !== null) {
+      return refreshRequestRef.current;
+    }
+
+    let refreshRequest: Promise<AuthSessionState>;
+    refreshRequest = (async () => {
+      try {
+        const nextState = toAuthenticatedState(await client.refreshSession());
+        if (nextState.status === "anonymous") {
+          return await invalidateSession();
+        }
+        setState(nextState);
+        return nextState;
+      } catch {
         return await invalidateSession();
       }
-      setState(nextState);
-      return nextState;
-    } catch {
-      return await invalidateSession();
-    }
+    })().finally(() => {
+      if (refreshRequestRef.current === refreshRequest) {
+        refreshRequestRef.current = null;
+      }
+    });
+    refreshRequestRef.current = refreshRequest;
+
+    return refreshRequest;
   }, [client, invalidateSession]);
 
   const refreshSession = useCallback(

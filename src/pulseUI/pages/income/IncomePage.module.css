@@ -142,6 +142,40 @@
   border-bottom: 0;
 }
 
+.table td {
+  padding: 0.85rem 0.75rem;
+  border-bottom: 1px solid #2a2d3e;
+  color: #cbd5e1;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table tr:last-child td {
+  border-bottom: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 0.55rem;
+  border: 1px solid rgb(99 102 241 / 32%);
+  border-radius: 999px;
+  color: #c7d2fe;
+  background: rgb(99 102 241 / 14%);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.amountCell {
+  color: #e2e8f0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+}
+
 .emptyState {
   display: grid;
   justify-items: center;
@@ -178,6 +212,47 @@
   font-size: 0.8rem;
 }
 
+.skeletonTable {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.skeletonHeader,
+.skeletonRow {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.skeletonHeader {
+  padding-bottom: 0.25rem;
+}
+
+.skeletonBlock {
+  display: block;
+  min-width: 0;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #25293a, #34394f, #25293a);
+  background-size: 200% 100%;
+  animation: incomeSkeleton 1.25s ease-in-out infinite;
+}
+
+.skeletonRow .skeletonBlock {
+  height: 18px;
+}
+
+@keyframes incomeSkeleton {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .srOnly {
   position: absolute;
   width: 1px;
@@ -211,6 +286,11 @@
   }
 
   .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeletonHeader,
+  .skeletonRow {
     grid-template-columns: 1fr;
   }
 }
