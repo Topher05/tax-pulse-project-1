@@ -74,7 +74,7 @@ export {
   IdempotencyInProgressError,
   IdempotencyUnavailableError,
   STAGE_CHANGED_CONSUMER_NAME,
-} from "./infrastructure/CloudEvents/index.js";
+} from "./infrastructure/cloudEvents/index.js";
 export type {
   ConsumerHandleResult,
   ConsumerOptions,
@@ -83,7 +83,7 @@ export type {
   IdempotencyStore,
   Writer,
   WriterClient,
-} from "./infrastructure/CloudEvents/index.js";
+} from "./infrastructure/cloudEvents/index.js";
 export {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,

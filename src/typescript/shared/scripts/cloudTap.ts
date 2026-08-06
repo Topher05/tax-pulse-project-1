@@ -10,14 +10,14 @@ import { createClient } from "redis";
 import {
   STAGE_CHANGED_CONSUMER_NAME,
   buildIdempotencyKey,
-  createSqsStageChangedEventConsumer,
   createRedisIdempotencyStore,
+  createSqsConsumer,
   type ConsumeStageChangedEventsResult,
   type IdempotencyGuard,
-  type StageChangedEventConsumerLogger,
-  type StageChangedSqsClient,
-} from "../../features/taxPlanCycle/infrastructure/stageChangedSqsConsumer.js";
-import { createStageChangedCloudEventV1 } from "../../features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.js";
+  type ConsumerLogger as StageChangedEventConsumerLogger,
+  type SqsConsumerClient as StageChangedSqsClient,
+  createCloudEventV1,
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/index.js";
 import {
   stageChangedCloudEventSchemaV1,
   type StageChangedCloudEventV1,
@@ -133,7 +133,7 @@ function createInMemoryRedisClient(): IdempotencyGuard {
 
 export function buildCloudTapEvent(): StageChangedCloudEventV1 {
   return stageChangedCloudEventSchemaV1.parse(
-    createStageChangedCloudEventV1(
+    createCloudEventV1(
       {
         tenantId: cloudTapTenantId,
         caseId: cloudTapCaseId,
@@ -172,7 +172,7 @@ export async function runCloudTap(
   const redisConnection = redisUrl ? createClient({ url: redisUrl }) : undefined;
   const redisClient: IdempotencyGuard = redisConnection ?? memoryRedisClient;
   const idempotencyStore = createRedisIdempotencyStore(redisClient);
-  const consumer = createSqsStageChangedEventConsumer(
+  const consumer = createSqsConsumer(
     sqsClient,
     cloudTapQueueUrl,
     capture.logger,
