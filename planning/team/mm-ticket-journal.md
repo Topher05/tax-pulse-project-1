@@ -540,6 +540,53 @@ SCRUM-109.
   (`22.0.0` required, `24.17.0` used), 23 audit findings, and pending install-script
   approvals.
 
+## martins-okorie-jira107 - SCRUM-107
+
+**Branch:** `martins-okorie-jira107`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-107
+
+**Summary:** Add loading, empty, and error states to the Income screen
+
+**Description:** As a Frontend Developer, I want the Income screen to render loading,
+empty, and error states, so that the screen behaves predictably while data resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the income request is in flight.
+- An empty state renders when the client has no income events.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:** Wired the Income route into the shared plan-tool case search flow
+and connected the screen to the SCRUM-106 `useIncomeEventsQuery` hook. The Income
+screen now renders an accessible skeleton while the request is pending, shows the
+existing empty-state affordance only after a successful empty response, and displays a
+retryable error state when the request fails.
+
+**Project Scope Connection:** This moves the Income screen from an inert scaffold to a
+query-aware plan tool while preserving tenant-scoped case selection. Add-income
+persistence remains out of scope until the backend income endpoint and table exist.
+
+**Changed Files:**
+
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- IncomePage.test.tsx incomeQueries.test.tsx appShell.test.tsx`
+  passed with 3 files and 27 tests.
+- `npm --prefix src/pulseUI run test` passed with 33 files and 141 tests. The run
+  printed existing stderr from intentional scenario error-path coverage and jsdom's
+  missing canvas implementation during axe checks, but all tests passed.
+
 ## martins-okorie-jira119 - SCRUM-119
 
 **Branch:** `martins-okorie-jira119`
