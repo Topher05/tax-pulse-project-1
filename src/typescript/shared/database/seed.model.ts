@@ -54,6 +54,16 @@ export type SeedTaxPlanCycleRow = {
   holdReason: string | null;
 };
 
+export type SeedClientRosterRow = {
+  id: string;
+  tenantId: string;
+  clientName: string;
+  filingStatus: string;
+  ytdIncome: string;
+  estimatedTax: string;
+  quarterlyStatus: string | null;
+};
+
 export type SeedStageTransitionRow = {
   id: string;
   caseId: string;
@@ -455,6 +465,36 @@ export const taxPlanCycleRows = [
     holdReason: "Archived workpapers pending review",
   },
 ] as const satisfies readonly SeedTaxPlanCycleRow[];
+
+export const clientRosterRows = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e81",
+    tenantId: tenantRows[0].id,
+    clientName: "Avery Chen",
+    filingStatus: "Single - 1099",
+    ytdIncome: "108500.00",
+    estimatedTax: "32100.00",
+    quarterlyStatus: "Q2 due Jun 15",
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e82",
+    tenantId: tenantRows[0].id,
+    clientName: "Morgan Acme",
+    filingStatus: "MFJ - W-2 + RSU",
+    ytdIncome: "414000.00",
+    estimatedTax: "138400.00",
+    quarterlyStatus: "Q2 due Jun 15",
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e83",
+    tenantId: tenantRows[1].id,
+    clientName: "Riley Khan",
+    filingStatus: "HoH - W-2",
+    ytdIncome: "72500.00",
+    estimatedTax: "11140.00",
+    quarterlyStatus: null,
+  },
+] as const satisfies readonly SeedClientRosterRow[];
 
 export const deductionRows = [
   {

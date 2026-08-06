@@ -489,6 +489,151 @@ operator experience.
   existing `DeductionsPage.test.tsx` expectations that assert `caseApiGetJson` is called
   without the authenticated fetcher while the current deductions page and shared case
   selector call it with one.
+
+## martins-okorie-jira106 - SCRUM-106
+
+**Branch:** `martins-okorie-jira106`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-106
+
+**Summary:** Add the TanStack Query hook to the income endpoint
+
+**Description:** As a Frontend Developer, I want a TanStack Query hook fetching the
+client's income events, so that the Income screen reads live data through one typed
+boundary.
+
+**Acceptance Criteria:**
+
+- A TanStack Query hook calls the income endpoint and returns typed income events.
+- The hook exposes loading, error, and data states to callers.
+- A test asserts the hook returns parsed income events for a mocked response.
+
+**Code Connection:** Added a case-scoped Pulse UI income query boundary that follows
+the existing deductions and quarterly-estimates pattern. The hook calls
+`/v1/cases/:caseId/income-events` through the authenticated Case API helper, parses
+income event rows with Zod, coerces currency strings from the API into numbers, and
+exposes TanStack Query's loading, error, and data states to future Income screen
+callers.
+
+**Project Scope Connection:** This completes the frontend data-fetching contract for
+the Income screen without adding the backend persistence table or Express route, which
+are tracked separately by later income-backend work such as SCRUM-172. The mocked
+response test keeps SCRUM-106 usable as a typed handoff for SCRUM-107, SCRUM-108, and
+SCRUM-109.
+
+**Changed Files:**
+
+- `src/pulseUI/entities/incomeQueries.ts`
+- `src/pulseUI/tests/entities/incomeQueries.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- incomeQueries.test.tsx` passed with 1 file and
+  3 tests.
+- Refreshed `src/pulseUI` dependencies with `npm --prefix src/pulseUI install` because
+  the latest development branch references `@playwright/test` types and the local
+  dependency tree was missing them. npm reported the existing Node engine mismatch
+  (`22.0.0` required, `24.17.0` used), 23 audit findings, and pending install-script
+  approvals.
+
+## martins-okorie-jira107 - SCRUM-107
+
+**Branch:** `martins-okorie-jira107`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-107
+
+**Summary:** Add loading, empty, and error states to the Income screen
+
+**Description:** As a Frontend Developer, I want the Income screen to render loading,
+empty, and error states, so that the screen behaves predictably while data resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the income request is in flight.
+- An empty state renders when the client has no income events.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:** Wired the Income route into the shared plan-tool case search flow
+and connected the screen to the SCRUM-106 `useIncomeEventsQuery` hook. The Income
+screen now renders an accessible skeleton while the request is pending, shows the
+existing empty-state affordance only after a successful empty response, and displays a
+retryable error state when the request fails.
+
+**Project Scope Connection:** This moves the Income screen from an inert scaffold to a
+query-aware plan tool while preserving tenant-scoped case selection. Add-income
+persistence remains out of scope until the backend income endpoint and table exist.
+
+**Changed Files:**
+
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- IncomePage.test.tsx incomeQueries.test.tsx appShell.test.tsx`
+  passed with 3 files and 27 tests.
+- `npm --prefix src/pulseUI run test` passed with 33 files and 141 tests. The run
+  printed existing stderr from intentional scenario error-path coverage and jsdom's
+  missing canvas implementation during axe checks, but all tests passed.
+
+## martins-okorie-jira119 - SCRUM-119
+
+**Branch:** `martins-okorie-jira119`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-119
+
+**Summary:** Add loading, empty, and error states to the Quarterly Payments screen
+
+**Description:** As a Frontend Developer, I want the Quarterly Payments screen to render
+loading, empty, and error states, so that the screen behaves predictably while data
+resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the quarterly estimates request is in flight.
+- An empty state renders when no quarterly estimates exist for the period.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:** Reused the SCRUM-107 Income screen pattern for Quarterly Payments:
+the route container derives a query state from `useQuarterlyEstimatesQuery`, renders an
+accessible skeleton while the request is pending, shows a no-estimates empty state for
+successful empty responses, and exposes a retryable error state that calls the query's
+`refetch`. The prior placeholder-estimates fallback no longer renders while live data
+is loading or unavailable.
+
+**Project Scope Connection:** Keeps Quarterly Payments aligned with the shared
+plan-tool case selection flow and preserves the read-only KPI/timeline screen for
+successful data responses. Payment recording and mark-paid controls remain explicitly
+out of MVP scope.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.module.css`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- QuarterlyPaymentsPage.test.tsx` passed with 1
+  file and 7 tests.
+- `npm --prefix src/pulseUI run test` passed with 31 files and 137 tests. The run
+  printed existing stderr from intentional scenario error-path coverage and jsdom's
+  missing canvas implementation during axe checks, but all tests passed.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 

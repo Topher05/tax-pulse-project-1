@@ -1,3 +1,4 @@
+import { DeleteMessageCommand, ReceiveMessageCommand } from "@aws-sdk/client-sqs";
 import { describe, expect, test, vi } from "vitest";
 import {
   DeleteMessageCommand,
@@ -11,13 +12,7 @@ import {
   STAGE_CHANGED_CONSUMER_NAME,
   getStageChangedQueueUrlFromEnv,
   parseStageChangedSqsMessage,
-  type IdempotencyGuard,
-} from "../../../../src/typescript/features/taxPlanCycle/infrastructure/stageChangedSqsConsumer.js";
-import {
   PublishCommand,
-  createSnsStageChangedEventPublisher,
-} from "../../../../src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.js";
-import {
   stageChangedCloudEventSchemaV1,
 } from "../../../../src/typescript/features/taxPlanCycle/stageChangedEvent.js";
 
