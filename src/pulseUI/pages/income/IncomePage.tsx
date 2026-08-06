@@ -162,6 +162,7 @@ export function IncomeScreen({
     >
       <ToolHeader
         title="Income Events"
+        titleId="income-page-title"
         description="Track all income sources for accurate tax estimation"
         contextControl={contextControl}
         action={
@@ -279,6 +280,7 @@ export function IncomePage() {
       <section className={styles.page} aria-labelledby="income-page-title">
         <ToolHeader
           title="Income Events"
+          titleId="income-page-title"
           description="Track all income sources for accurate tax estimation"
           contextControl={contextControl}
         />
