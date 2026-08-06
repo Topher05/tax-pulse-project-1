@@ -9,6 +9,7 @@ import {
 } from "../scripts/drizzleMigrations.js";
 
 import {
+  clientRoster,
   auditEntry,
   credential,
   deduction,
@@ -27,6 +28,7 @@ import {
   auditEntryRows,
   buildTaxPlanCycleInsertRows,
   californiaTaxBracketRows,
+  clientRosterRows,
   credentialRows,
   deductionRows,
   federalTaxBracketRows,
@@ -51,6 +53,7 @@ export async function applySeed(client: Client): Promise<void> {
         "scenario",
         "deduction",
         "stage_transition",
+        "client_roster",
         "tax_plan_cycle",
         "state_tax_bracket",
         "federal_tax_bracket",
@@ -70,6 +73,7 @@ export async function applySeed(client: Client): Promise<void> {
     await db.insert(credential).values([...credentialRows]);
     await db.insert(mfaEnrollment).values([...mfaEnrollmentRows]);
     await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
+    await db.insert(clientRoster).values([...clientRosterRows]);
     await db.insert(deduction).values([...deductionRows]);
     await db.insert(stageTransition).values([...stageTransitionRows]);
     await db.insert(auditEntry).values([...auditEntryRows]);

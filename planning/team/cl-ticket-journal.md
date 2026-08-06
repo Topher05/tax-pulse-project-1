@@ -182,6 +182,31 @@ Add new ticket entries below using this template.
 - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run test:lighthouse"` passed and reported a Lighthouse performance score of `100/100`.
 - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run test"` runs the Lighthouse gate successfully, then fails later in pre-existing branch tests for `tests/deductions/DeductionsPage.test.tsx` and `tests/scenarios/ScenarioPlannerPage.test.tsx` because those route states are not merged in this branch yet.
 
+
+## caleb-latimer-jira146 - SCRUM-146
+
+**Branch:** `caleb-latimer-jira146`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-146
+
+**Summary:** Refine the Firm Team & Users screen component from the wireframe
+
+**Description:** As a Frontend Developer, I want a typed Team & Users screen scaffolded from the wireframe, so that the screen has a stable structure before data is wired.
+
+**Acceptance Criteria:**
+
+- A typed React component renders the Team & Users layout with a toolbar, KPI row, and roster table.
+- The visual treatment follows the prototype's dark slate shell, indigo accent, compact spacing, and rounded card language.
+- The screen exposes typed roster props so the rows can be data-driven in the next ticket.
+- The screen remains UI-only and keeps the future admin/platform-admin gate as a disabled placeholder comment.
+
+**Code Connection:**
+
+- `src/pulseUI/pages/firm/TeamUsersPage.tsx`
+- `src/pulseUI/pages/firm/TeamUsersPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
 ## caleb-latimer-jira124 - SCRUM-124
 
 **Branch:** `caleb-latimer-jira124`
@@ -218,6 +243,18 @@ Add new ticket entries below using this template.
 **Project Scope Connection:**
 
 - React SPA - Operator & Portal Experience
+
+- Firm administration UI completion
+
+**Changed Files:**
+
+- `src/pulseUI/pages/firm/TeamUsersPage.tsx`
+- `src/pulseUI/pages/firm/TeamUsersPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx` (deleted)
+
 - Client Roster request-state coverage for the advisor and firm-admin workspace
 - Keeps the temporary loader harness available in shared Pulse UI code, but decoupled from the normal client roster data flow
 - Completes the live roster boundary introduced by SCRUM-123 before TanStack Table rendering work in SCRUM-125
@@ -241,6 +278,7 @@ Add new ticket entries below using this template.
 **Validation Notes:**
 
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI run typecheck"` passed.
+- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test"` passed with `21` test files and `73` tests green.
 - `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx` was previously blocked by a Windows `EPERM: operation not permitted, lstat 'C:\Users\Exia'` environment issue before Vitest could start; the roster test file has since been rewritten to use the real API path again.
 
 ## caleb-latimer-jira101 - SCRUM-101
