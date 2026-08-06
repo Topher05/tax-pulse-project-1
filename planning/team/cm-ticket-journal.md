@@ -82,6 +82,13 @@ stage-change events from being lost before asynchronous delivery.
 - `src/typescript/shared/database/drizzle-migrations/meta/0009_snapshot.json`
 - `src/typescript/shared/database/drizzle-migrations/meta/0010_snapshot.json`
 - `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/migrate.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/shared/scripts/drizzleMigrations.ts` (removed)
+- `src/typescript/shared/scripts/runMigrations.ts` (removed)
+- `tests/typescript/bootstrap/migrationTestUtils.ts`
+- `drizzle.config.ts`
+- `README.md`
 - `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
 - `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
@@ -109,6 +116,17 @@ stage-change events from being lost before asynchronous delivery.
   matching snapshots. A no-op `drizzle-kit generate` confirmed there is no schema drift.
 - `npm run db:check`, `npm run typecheck`, and `git diff --check` passed after rebuilding
   the migration metadata.
+- Standardized runtime, seed, and test migration execution on Drizzle. Drizzle Kit remains
+  the operator CLI, while the programmatic paths use Drizzle ORM's PostgreSQL migrator
+  and the shared `drizzle.__drizzle_migrations` ledger.
+- Removed the custom filename scanner and `drizzle_schema_migrations` ledger. Destructive
+  seed and shared-schema test setup now remove both `public` and `drizzle` before replaying
+  the generated journal from `0000`.
+- `npm run db:gen -- --name verify_no_schema_drift` reported no schema changes and created
+  no migration files. `npm run db:check`, `npm run typecheck`, and `git diff --check` passed.
+- `npm test` and `npm run test:integration` reached their database-backed suites but could
+  not start Testcontainers because no Docker-compatible runtime is available. The explicit
+  integration run still passed its six non-container authentication tests.
 - The Tax Plan Cycle integration suite collected successfully, but its 22 database tests
   could not start because no Docker-compatible container runtime is available locally.
   This includes both new transactional-outbox acceptance paths.

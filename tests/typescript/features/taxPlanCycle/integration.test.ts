@@ -35,10 +35,9 @@ import {
 } from "../../../../src/typescript/index.js";
 import { applySeed } from "../../../../src/typescript/shared/database/seed.js";
 import {
-  applyDrizzleMigrations,
-  drizzleAppliedMigrationsTableName,
   drizzleMigrationsDirectory,
-} from "../../../../src/typescript/shared/scripts/drizzleMigrations.js";
+  migrateDatabase,
+} from "../../../../src/typescript/shared/database/migrate.js";
 import { startDockerPostgresContainer } from "../../bootstrap/dockerPostgres.js";
 import {
   hydrateUserClaims,
@@ -277,9 +276,10 @@ async function withTaxPlanCycleIntegrationDatabase<T>(
   await client.connect();
 
   try {
+    await client.query(`DROP SCHEMA IF EXISTS drizzle CASCADE`);
     await client.query(`DROP SCHEMA IF EXISTS public CASCADE`);
     await client.query(`CREATE SCHEMA public`);
-    await applyDrizzleMigrations(client);
+    await migrateDatabase(client);
     return await callback(client, container.connectionUri);
   } finally {
     await client.query("SET search_path TO public").catch(() => undefined);
@@ -297,22 +297,19 @@ async function seedSampleTenant(client: Client): Promise<void> {
 describe("taxPlanCycle integration", () => {
   test("records applied migrations and skips them on rerun", async () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {
-      await applyDrizzleMigrations(client);
+      await migrateDatabase(client);
 
       const migrationFiles = readdirSync(drizzleMigrationsDirectory)
         .filter((fileName) => fileName.endsWith(".sql"))
         .sort((left, right) => left.localeCompare(right));
       const appliedRows = await client.query(
         `
-          SELECT file_name
-          FROM ${drizzleAppliedMigrationsTableName}
-          ORDER BY file_name
+          SELECT COUNT(*)::integer AS migration_count
+          FROM drizzle.__drizzle_migrations
         `,
       );
 
-      expect(appliedRows.rows.map((row) => String(row.file_name))).toEqual(
-        migrationFiles,
-      );
+      expect(appliedRows.rows[0]?.migration_count).toBe(migrationFiles.length);
     });
   });
 
