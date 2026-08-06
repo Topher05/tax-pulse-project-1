@@ -1,9 +1,14 @@
-import type { PropsWithChildren } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
+import { Navigate } from "@tanstack/react-router";
 
 import { useSession } from "./AuthProvider.tsx";
 
 /** Blocks workspace routes until the session has been restored and is authenticated. */
-export function AuthBoundary({ children }: PropsWithChildren) {
+export interface AuthBoundaryProps extends PropsWithChildren {
+  readonly unauthenticatedFallback?: ReactNode;
+}
+
+export function AuthBoundary({ children, unauthenticatedFallback }: AuthBoundaryProps) {
   const { isAuthenticated, status } = useSession();
 
   if (status === "initializing") {
@@ -11,12 +16,7 @@ export function AuthBoundary({ children }: PropsWithChildren) {
   }
 
   if (!isAuthenticated) {
-    return (
-      <main>
-        <h1>Sign in required</h1>
-        <p>Your session has ended. Sign in to continue to TaxPulse Advisory.</p>
-      </main>
-    );
+    return unauthenticatedFallback ?? <Navigate replace to="/sign-in" />;
   }
 
   return <>{children}</>;

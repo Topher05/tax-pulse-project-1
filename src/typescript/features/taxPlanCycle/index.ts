@@ -20,6 +20,16 @@ export {
   type TaxPlanCycleStage,
 } from "./taxPlanCycle.js";
 export {
+  stageChangedCloudEventSchemaV1,
+  stageChangedEventDataSchema,
+  stageChangedEventDataSchemaV1,
+  stageChangedEventSchemaVersion,
+  stageChangedEventSource,
+  stageChangedEventType,
+  type StageChangedCloudEventV1,
+  type StageChangedEventDataV1,
+} from "./stageChangedEvent.js";
+export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
   type TaxPlanCycleInsertInput,
@@ -67,6 +77,27 @@ export {
   type TaxPlanCycleQueueProjectionReader,
 } from "./infrastructure/queueDynamoStore.js";
 export {
+  createSnsStageChangedEventPublisher,
+  createStageChangedCloudEventV1,
+  PublishCommand,
+  createStageChangedSnsClient,
+  getStageChangedTopicArnFromEnv,
+  type CreateStageChangedCloudEventOptions,
+  type StageChangedEventPublisher,
+  type StageChangedEventPublishInput,
+  type StageChangedSnsClient,
+} from "./infrastructure/stageChangedSnsPublisher.js";
+export {
+  createSqsStageChangedEventConsumer,
+  createStageChangedSqsClient,
+  getStageChangedQueueUrlFromEnv,
+  parseStageChangedSqsMessage,
+  type ConsumeStageChangedEventsResult,
+  type StageChangedEventConsumerLogger,
+  type StageChangedSqsClient,
+  type StageChangedSqsConsumerOptions,
+} from "./infrastructure/stageChangedSqsConsumer.js";
+export {
   createTaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadServiceOptions,
@@ -84,6 +115,8 @@ export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
   type TaxPlanCycleTransitionControllerOptions,
+  type TaxPlanCycleTransitionControllerInput,
+  type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
 export {
@@ -145,3 +178,16 @@ export {
   type TaxCalculationEngineResult,
   type ScenarioComparisonEngineRequest,
 } from "./infrastructure/engineClient.js";
+export {
+  quarterlyEstimateQuarterSchema,
+  quarterlyEstimateReadParamsSchema,
+  quarterlyEstimateRowsSchema,
+  quarterlyEstimateSchema,
+  type QuarterlyEstimateQuarter,
+  type QuarterlyEstimateRow,
+  type QuarterlyEstimateRows,
+} from "../quarterlyPayments/repositories/quarterlyPayments.js";
+export {
+  createQuarterlyPaymentsRouter,
+  type CreateQuarterlyPaymentsRouterOptions,
+} from "../quarterlyPayments/routes.js";

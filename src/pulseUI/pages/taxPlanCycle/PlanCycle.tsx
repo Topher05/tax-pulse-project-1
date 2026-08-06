@@ -3,6 +3,7 @@ import { RefreshCw } from "lucide-react";
 
 import styles from "./PlanCycle.module.css";
 import { Queue } from "./Queue.tsx";
+import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
 import { EmptyState } from "../../components/EmptyState.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import {
@@ -69,9 +70,10 @@ function PlanCycleQueueErrorState({
 }
 
 export function PlanCycle() {
+  const authenticatedFetch = useAuthenticatedFetch();
   const queueQuery = useQuery({
     queryKey: taxPlanCycleQueueQueryKey,
-    queryFn: fetchTaxPlanCycleQueue,
+    queryFn: () => fetchTaxPlanCycleQueue(authenticatedFetch),
   });
 
   if (queueQuery.isPending) {

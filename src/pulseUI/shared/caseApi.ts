@@ -9,42 +9,84 @@ export class CaseApiError extends Error {
   }
 }
 
+type CaseApiFetcher = typeof fetch;
+
+type CaseApiJsonRequestInit = Omit<RequestInit, "body"> & {
+  body?: unknown;
+};
+
 function getCaseApiBaseUrl(): string {
-  const baseUrl = import.meta.env.VITE_CASE_API_BASE_URL?.trim();
+  return import.meta.env.CASE_SERVICE_BASE_URL?.trim().replace(/\/+$/, "") ?? "";
+}
 
-  if (baseUrl && baseUrl.length > 0) {
-    return baseUrl.replace(/\/+$/, "");
+function toCaseApiUrl(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const baseUrl = getCaseApiBaseUrl();
+
+  if (!baseUrl) {
+    return normalizedPath;
   }
 
-  return "http://localhost:3000";
+  return new URL(normalizedPath, `${baseUrl}/`).toString();
 }
 
-function getSharedJwtAuthorizationHeader(): string | null {
-  // TODO: JWT check => Refresh on 401 gated by Scrum 99, this needs to be implementation reviewed then integrated post merge
-  const accessToken = window.localStorage.getItem("taxpulse_shared_jwt");
-  return accessToken ? `Bearer ${accessToken}` : null;
-}
-
-function getCaseApiHeaders(): HeadersInit {
-  // const authorizationHeader = getSharedJwtAuthorizationHeader();
-
-  /* if (!authorizationHeader) {
-    throw new CaseApiError(401, "", "A shared JWT is required before the Pulse UI can fetch live case data.");
-  }
-  */
-  return { // TODO: Above code is commented out for token auth, add the token to the below line for auth manually for local testing
-    authorization: `Bearer your-token-for-testing`,
-  };
-}
-
-export async function caseApiGetJson<T>(path: string): Promise<T> {
-  const response = await fetch(new URL(path, `${getCaseApiBaseUrl()}/`).toString(), {
-    headers: getCaseApiHeaders(),
+async function caseApiFetch(
+  path: string,
+  init: RequestInit = {},
+  fetcher: CaseApiFetcher = fetch,
+): Promise<Response> {
+  return await fetcher(toCaseApiUrl(path), {
+    ...init,
+    credentials: "include",
   });
+}
 
+async function parseCaseApiJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
     throw new CaseApiError(response.status, await response.text());
   }
 
   return (await response.json()) as T;
+}
+
+export async function caseApiGetJson<T>(
+  path: string,
+  fetcher: CaseApiFetcher = fetch,
+): Promise<T> {
+  const response = await caseApiFetch(path, {}, fetcher);
+
+  return await parseCaseApiJson<T>(response);
+}
+
+export async function caseApiSendJson<T>(
+  path: string,
+  init: CaseApiJsonRequestInit,
+  fetcher: CaseApiFetcher = fetch,
+): Promise<T> {
+  const { body, headers: initHeaders, ...requestInit } = init;
+  const headers = new Headers(initHeaders);
+
+  if (body !== undefined && !headers.has("content-type")) {
+    headers.set("content-type", "application/json");
+  }
+
+  const response = await caseApiFetch(
+    path,
+    {
+      ...requestInit,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    },
+    fetcher,
+  );
+
+  return await parseCaseApiJson<T>(response);
+}
+
+export async function caseApiPostJson<T>(
+  path: string,
+  body: unknown,
+  fetcher: CaseApiFetcher = fetch,
+): Promise<T> {
+  return await caseApiSendJson<T>(path, { method: "POST", body }, fetcher);
 }

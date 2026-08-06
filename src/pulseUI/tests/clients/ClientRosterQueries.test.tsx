@@ -9,6 +9,7 @@ import {
   useClientRosterQuery,
 } from "../../entities/clientRosterQueries.ts";
 import * as caseApi from "../../shared/caseApi.ts";
+import { TestAuthProvider } from "../testAuth.tsx";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -18,7 +19,11 @@ function createQueryWrapper() {
   const queryClient = createPulseQueryClient();
 
   return function QueryWrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TestAuthProvider>{children}</TestAuthProvider>
+      </QueryClientProvider>
+    );
   };
 }
 
@@ -57,7 +62,7 @@ describe("Client roster query hook", () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(caseApi.caseApiGetJson).toHaveBeenCalledWith("/v1/clients");
+    expect(caseApi.caseApiGetJson).toHaveBeenCalledWith("/v1/clients", expect.any(Function));
     expect(result.current.isError).toBe(false);
     expect(result.current.data).toEqual([
       {

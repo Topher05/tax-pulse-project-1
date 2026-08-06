@@ -18,6 +18,16 @@ import {
   scenarioTypedFiguresSchema,
 } from "./scenario.js";
 import {
+  deductionCreateSchema,
+  deductionReadParamsSchema,
+  deductionTableRowSchema,
+  deductionTableRowsSchema,
+} from "./features/deductions/repositories/deduction.js";
+import {
+  quarterlyEstimateReadParamsSchema,
+  quarterlyEstimateRowsSchema,
+} from "./features/quarterlyPayments/repositories/quarterlyPayments.js";
+import {
   scenarioModelingRequestSchema,
 } from "./features/taxPlanCycle/scenarioModeling.js";
 import { taxPlanCycleCreateResultSchema } from "./features/taxPlanCycle/index.js";
@@ -91,6 +101,30 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "ClientRosterListResponse",
     schema: clientRosterListResponseSchema,
+  },
+  {
+    name: "DeductionReadParams",
+    schema: deductionReadParamsSchema,
+  },
+  {
+    name: "DeductionRows",
+    schema: deductionTableRowsSchema,
+  },
+  {
+    name: "DeductionCreateRequest",
+    schema: deductionCreateSchema,
+  },
+  {
+    name: "DeductionRow",
+    schema: deductionTableRowSchema,
+  },
+  {
+    name: "QuarterlyEstimateReadParams",
+    schema: quarterlyEstimateReadParamsSchema,
+  },
+  {
+    name: "QuarterlyEstimateRows",
+    schema: quarterlyEstimateRowsSchema,
   },
   {
     name: "AuthMfaLoginRequest",
@@ -344,6 +378,18 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
     clientRosterListResponseSchema,
   );
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
+  const deductionReadCaseIdSchema = requireObjectProperty(
+    toOpenApiSchema(deductionReadParamsSchema),
+    "caseId",
+  );
+  const deductionCreateRequestSchema = toOpenApiSchema(deductionCreateSchema);
+  const deductionRowResponseSchema = toOpenApiSchema(deductionTableRowSchema);
+  const deductionRowsResponseSchema = toOpenApiSchema(deductionTableRowsSchema);
+  const quarterlyEstimateParamsSchema = requireObjectProperty(
+    toOpenApiSchema(quarterlyEstimateReadParamsSchema),
+    "caseId",
+  );
+  const quarterlyEstimateRowsResponseSchema = toOpenApiSchema(quarterlyEstimateRowsSchema);
   const authMfaLoginRequestOpenApiSchema = toOpenApiSchema(
     authMfaLoginRequestSchema,
   );
@@ -793,6 +839,164 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           },
         },
       },
+      "/v1/cases/{caseId}/deductions": {
+        get: {
+          operationId: "readCaseDeductions",
+          tags: ["Core Case Service"],
+          summary: "Read the case deduction rows",
+          description:
+            "Returns the deduction table rows for the requested case as a JSON array. Date and numeric fields are serialized as strings so clients can consume them without special parsing.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Case identifier scoped by the authenticated request tenant.",
+              schema: deductionReadCaseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+            },
+          ],
+          responses: {
+            "200": {
+              description: "The case deduction rows were returned.",
+              content: {
+                "application/json": {
+                  schema: deductionRowsResponseSchema,
+                  example: [
+                    {
+                      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+                      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+                      date: "2026-07-16",
+                      description: "State filing fee",
+                      category: "Other",
+                      amount: "135.00",
+                      tax_impact: "33.75",
+                      deleted: false,
+                    },
+                  ],
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+          },
+        },
+        post: {
+          operationId: "createCaseDeduction",
+          tags: ["Core Case Service"],
+          summary: "Create a case deduction row",
+          description:
+            "Creates a tenant-scoped deduction for the requested case and returns the created row. Tax impact is estimated from the recorded deduction amount.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Case identifier scoped by the authenticated request tenant.",
+              schema: deductionReadCaseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: deductionCreateRequestSchema,
+                example: {
+                  date: "2026-08-01",
+                  description: "Advisor conference fee",
+                  category: "Education",
+                  amount: 900,
+                },
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The deduction row was created.",
+              content: {
+                "application/json": {
+                  schema: deductionRowResponseSchema,
+                  example: {
+                    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e92",
+                    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+                    date: "2026-08-01",
+                    description: "Advisor conference fee",
+                    category: "Education",
+                    amount: "900.00",
+                    tax_impact: "225.00",
+                    deleted: false,
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "The request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    ...validationErrorExample,
+                    detail: "Request body failed validation.",
+                    issues: [
+                      {
+                        path: ["amount"],
+                        message: "Too small: expected number to be >=0",
+                        code: "too_small",
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "404": {
+              description:
+                "No tenant-scoped Tax Plan Cycle was found for the requested case.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+                    title: "Tax Plan Cycle Not Found",
+                    status: 404,
+                    detail: "No tax plan cycle was found for the requested case ID.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       "/v1/tax-plan-cycles": {
         get: {
           operationId: "listTaxPlanCycleQueue",
@@ -1042,6 +1246,62 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     title: "Tax Engine Unavailable",
                     status: 502,
                     detail: "The liability engine request failed after retries.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/tax-plan-cycles/{caseId}/quarterly-estimates": {
+        get: {
+          operationId: "readQuarterlyEstimates",
+          tags: ["Core Case Service"],
+          summary: "Read the quarterly estimates for a case",
+          description:
+            "Returns the read-only quarterly estimate schedule for the requested case as a JSON array.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Synthetic UUID case identifier scoped by the request tenant.",
+              schema: quarterlyEstimateParamsSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+            },
+          ],
+          responses: {
+            "200": {
+              description: "The quarterly estimates were returned.",
+              content: {
+                "application/json": {
+                  schema: quarterlyEstimateRowsResponseSchema,
+                  example: [
+                    {
+                      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+                      quarter: "Q1",
+                      due_date: "2026-04-15",
+                      estimated_payment: "3620.00",
+                      withholding_applied: "2140.00",
+                      covered_amount: "2140.00",
+                      remaining_due: "1480.00",
+                    },
+                  ],
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
                   },
                 },
               },

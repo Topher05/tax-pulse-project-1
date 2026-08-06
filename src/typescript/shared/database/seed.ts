@@ -6,11 +6,13 @@ import {
   applyDrizzleMigrations,
   getDatabaseUrlFromEnv,
   withDatabaseClient,
-} from "../../postgresMigrations.js";
+} from "../scripts/drizzleMigrations.js";
 
 import {
   clientRoster,
+  auditEntry,
   credential,
+  deduction,
   federalTaxBracket,
   mfaEnrollment,
   roles,
@@ -23,10 +25,12 @@ import {
 } from "./schema.js";
 
 import {
+  auditEntryRows,
   buildTaxPlanCycleInsertRows,
   californiaTaxBracketRows,
   clientRosterRows,
   credentialRows,
+  deductionRows,
   federalTaxBracketRows,
   mfaEnrollmentRows,
   roleRows,
@@ -46,6 +50,8 @@ export async function applySeed(client: Client): Promise<void> {
     await client.query(`
       TRUNCATE TABLE
         "audit_entry",
+        "scenario",
+        "deduction",
         "stage_transition",
         "client_roster",
         "tax_plan_cycle",
@@ -68,7 +74,9 @@ export async function applySeed(client: Client): Promise<void> {
     await db.insert(mfaEnrollment).values([...mfaEnrollmentRows]);
     await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
     await db.insert(clientRoster).values([...clientRosterRows]);
+    await db.insert(deduction).values([...deductionRows]);
     await db.insert(stageTransition).values([...stageTransitionRows]);
+    await db.insert(auditEntry).values([...auditEntryRows]);
     await db.insert(federalTaxBracket).values([...federalTaxBracketRows]);
     await db.insert(stateTaxBracket).values([...californiaTaxBracketRows]);
 
@@ -93,7 +101,7 @@ export async function main(): Promise<void> {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch((error: unknown) => {
-    console.info('Failed seed')
+    console.info("Failed seed");
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
   });

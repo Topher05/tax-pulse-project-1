@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
 import { caseApiGetJson } from "../shared/caseApi.ts";
 import type { ClientRosterRow } from "./clientRoster.ts";
 
@@ -25,15 +26,17 @@ function toClientRosterRow(row: ClientRosterApiRow): ClientRosterRow {
   };
 }
 
-export async function fetchClientRoster(): Promise<readonly ClientRosterRow[]> {
-  const payload = await caseApiGetJson<readonly ClientRosterApiRow[]>("/v1/clients");
+export async function fetchClientRoster(fetcher?: typeof fetch): Promise<readonly ClientRosterRow[]> {
+  const payload = await caseApiGetJson<readonly ClientRosterApiRow[]>("/v1/clients", fetcher);
 
   return payload.map(toClientRosterRow);
 }
 
 export function useClientRosterQuery() {
+  const authenticatedFetch = useAuthenticatedFetch();
+
   return useQuery({
     queryKey: clientRosterQueryKey,
-    queryFn: fetchClientRoster,
+    queryFn: () => fetchClientRoster(authenticatedFetch),
   });
 }

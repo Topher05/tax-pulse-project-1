@@ -436,3 +436,534 @@ add additional state datasets.
 - `npm run db:check` passed after generating the Drizzle migration.
 - Focused PostgreSQL tests and `npm run test:migration` require Testcontainers; they are
   blocked in this environment because no working container runtime is available.
+
+## christopher-martus-jira193 - SCRUM-193
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Ticket:** [SCRUM-193](../Tax_pulse.csv)
+
+**Related ADRs:** [ADR-0017: Pulse UI React/Vite shell](../../adr/0017-pulse-ui-react-vite-shell.md) and [ADR-0020: Pulse UI layered application structure](../../adr/0020-pulse-ui-layered-application-structure.md)
+
+**Summary:** Build the sign-in, MFA, and password-reset UI wired to the auth context
+
+**Description:** Provide SPA sign-in, MFA challenge, and mocked password-reset screens
+on the auth-context foundation supplied by SCRUM-192.
+
+**Acceptance Criteria:**
+
+- Anonymous users see sign-in as the protected-workspace entry view.
+- Sign-in, MFA, and password-reset routes are public screens.
+- Sign-in submits credentials through the shared auth context and passes its MFA challenge
+  only through browser navigation state to the MFA screen.
+- MFA completion establishes the session, routes using the authenticated role, and logout
+  returns the SPA to sign-in.
+- Reset request and confirmation are local-only UI routes; they call no live endpoint.
+- Component coverage exercises the successful sign-in/MFA/logout flow and the reset
+  flow's no-network guarantee.
+
+**Deferred Role-Landing Note:**
+
+The SPA preserves the authenticated role and invokes role-based landing selection after
+MFA. All roles currently land on the shared dashboard because distinct role-specific
+views have not yet been delivered. The client portal is planned in SCRUM-142 and
+SCRUM-144; Firm Admin screens in SCRUM-146 through SCRUM-150; and TaxPulse Platform
+Admin screens in SCRUM-151 and SCRUM-152. This ticket must be revisited when those
+destinations are available.
+
+**Code Connection:**
+
+- The router now separates public authentication routes from an `AuthBoundary`-guarded
+  workspace layout. The boundary uses the new sign-in screen for anonymous sessions.
+- The sign-in form calls `useSession().login`; the typed, ephemeral route state carries
+  the returned tenant, email, and user challenge to the MFA view without persisting it.
+- MFA verification returns the authenticated user to the UI for role-based landing
+  selection. The current MVP maps every role to the existing dashboard until the later
+  client and platform-admin landing screens are available.
+- Shared authentication-screen styles use the established TaxPulse navy, gold, teal, and
+  Inter design language. The reset request form navigates locally to confirmation only.
+- Vite proxies only the local BFF auth endpoints while preserving the tenant subdomain;
+  this leaves Vite's `/auth/*.tsx` source-module URLs available to the browser. Password
+  login sends only email and password; the BFF derives tenant identity from that hostname.
+
+**Project Scope Connection:**
+
+This is the first UI-routing slice for the React SPA authentication flow. It introduces
+no BFF endpoint, token, password-reset, or authorization-policy change.
+
+**Migration Impact:**
+
+None. This ticket changes browser routes and UI state only; it adds no schema, data, or
+service migration.
+
+**Risk Notes:**
+
+Until the deferred role-specific views ship, all authenticated users share the dashboard
+landing route. Server-side authorization and tenant-scoped BFF enforcement remain the
+source of truth for access control.
+
+**Changed Files:**
+
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/auth/AuthBoundary.tsx`
+- `src/pulseUI/auth/landingPath.ts`
+- `src/pulseUI/auth/mfaChallengeState.ts`
+- `src/pulseUI/auth/session.ts`
+- `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/auth/authClient.ts`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/shared/styles.css`
+- `src/pulseUI/vite.config.ts`
+- `src/pulseUI/pages/auth/SignInPage.tsx`
+- `src/pulseUI/pages/auth/MfaChallengePage.tsx`
+- `src/pulseUI/pages/auth/PasswordResetPage.tsx`
+- `src/pulseUI/pages/auth/PasswordResetConfirmationPage.tsx`
+- `src/pulseUI/tests/auth/AuthenticatedSessionProvider.tsx`
+- `src/pulseUI/tests/auth/SignInPage.test.tsx`
+- `src/pulseUI/tests/auth/PasswordResetPage.test.tsx`
+- `src/pulseUI/tests/auth/authClient.test.tsx`
+- Existing Pulse UI route/component tests
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI test` passed: 48 tests in 13 files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Root `npm run typecheck` passed after restoring the lockfile-pinned
+  `@pact-foundation/pact` development dependency.
+- `npm --prefix src/pulseUI run build` reaches production bundling but is blocked in this
+  checkout because Windows holds `dist/pulseUI/assets/index-BSegwS6H.css` open. Release
+  the external file lock or remove the stale generated output before rerunning the build.
+- Vitest result caching is disabled in the UI config so test runs do not depend on writing
+  to the local `node_modules/.vite` cache directory.
+
+## Follow-up: merged sign-in regression repair
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Restore the sign-in UI after the merged route and session changes.
+
+**Description:** Remove duplicated Pulse UI route registrations that prevent router construction.
+Retain hostname-derived tenant selection and allow refresh cookies over local HTTP while keeping
+production cookies secure.
+
+**Acceptance Criteria:**
+
+- The SPA router constructs without duplicate route identifiers.
+- Tenant identity continues to derive from the `{tenant-slug}.localhost` hostname.
+- Local HTTP sessions retain refresh cookies; production sessions retain the `Secure` cookie flag.
+
+**Code Connection:** Workspace routes are registered only beneath the authenticated workspace
+layout and rely on its `AuthBoundary`; the obsolete `localStorage` route guard no longer bypasses
+the auth context. The production composition passes cookie security based on `NODE_ENV`, while
+router defaults preserve secure cookies for non-local consumers and focused test servers.
+
+**Project Scope Connection:** This repairs SCRUM-193's sign-in and MFA session flow without
+changing tenancy resolution or authorization policy.
+
+**Changed Files:**
+
+- `src/pulseUI/app/routeTree.tsx`
+- `src/typescript/authSessionCookies.ts`
+- `src/typescript/authSessionRoutes.ts`
+- `src/typescript/authMfaLoginRoutes.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authSessionRoutes.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI test -- --run tests/auth` passed: 24 tests in 7 files.
+- `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts --config vitest.config.ts` passed.
+- `planning/team/cm-ticket-journal.md`
+
+## christopher-martus-jira103 - SCRUM-103
+
+**Branch:** `christopher-martus-jira103`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-103
+
+**Summary:** Render Estimated Tax by Quarter and Income Breakdown charts
+
+**Description:** As an Advisor, I want the quarterly and income charts, so that the
+client's tax picture is visible at a glance.
+
+**Acceptance Criteria:**
+
+- An Estimated Tax by Quarter bar chart renders the four quarterly estimates.
+- An Income Breakdown chart renders income by source.
+- Charts re-render when the underlying calculation data changes.
+
+**Code Connection:**
+
+- The initial implementation slice adds the typed read-model contract consumed by the
+  dashboard chart region. It carries one calculation identifier, exactly four labelled
+  quarterly estimates, and income totals grouped by source. `DashboardPage` now accepts
+  the latest snapshot at its component boundary. Responsive Estimated Tax by Quarter and
+  Income Breakdown components render the supplied quarter estimates and income sources.
+
+**Project Scope Connection:**
+
+This is the front-end contract for the Read-models/BFF data used by the two dashboard
+charts. It does not add a BFF endpoint, persistence, or a charting dependency. The
+dashboard shows clearly synthetic fallback chart values until the BFF supplies a current
+calculation snapshot.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/dashboard/dashboardChartData.ts`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.tsx`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.module.css`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.tsx`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.module.css`
+- `src/pulseUI/pages/dashboard/DashboardPage.tsx`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
+- - `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI test -- DashboardCharts.test.tsx` passed (1 test).
+- `DashboardCharts.test.tsx` covers initial chart values and re-rendering after a new
+  calculation snapshot is received.
+
+## christopher-martus-jira104 - SCRUM-104
+
+**Branch:** `christopher-martus-jira104`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-104
+
+**Summary:** Render Tax Breakdown and Year-over-Year charts
+
+**Description:** As an Advisor, I want the Tax Breakdown and Year-over-Year visuals, so
+that the dashboard is complete per the wireframe.
+
+**Acceptance Criteria:**
+
+- A Tax Breakdown panel renders federal, state, and effective-rate figures.
+- A Year-over-Year chart compares the current year against the prior year.
+- The four dashboard KPI cards (Estimated Total Tax, Effective Rate, YTD Gross Income,
+  Outstanding Payments) render.
+
+**Code Connection:**
+
+- The typed dashboard read-model now includes KPI, tax-breakdown, and current/prior-year
+  tax comparison fields, along with clearly synthetic fallback data.
+- `DashboardPage` renders the four required KPI cards and a data-driven federal, state,
+  and effective-rate breakdown. `YearOverYearTaxChart` presents the current and prior
+  tax years with accessible labels and proportional bars.
+- The dashboard visual test renders the page with two calculation snapshots and confirms
+  the required visual labels and updated values.
+
+**Project Scope Connection:**
+
+This completes the MVP dashboard presentation layer for the Read-models/BFF workstream.
+It consumes the existing typed component boundary and does not add a BFF endpoint,
+persistence, or a third-party chart dependency.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/dashboard/dashboardChartData.ts`
+- `src/pulseUI/pages/dashboard/DashboardPage.tsx`
+- `src/pulseUI/pages/dashboard/YearOverYearTaxChart.tsx`
+- `src/pulseUI/pages/dashboard/YearOverYearTaxChart.module.css`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- --run tests/dashboard/DashboardCharts.test.tsx`
+  passed (2 tests).
+- `git diff --check` passed.
+- The Estimated Total Tax KPI is derived from the displayed federal and state amounts,
+  preventing the summary from disagreeing with the Tax Breakdown panel.
+
+
+## christopher-martus-jira105 - SCRUM-105
+
+**Branch:** `christopher-martus-jira105`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-105
+
+**Summary:** Scaffold the Income screen component from the wireframe
+
+**Description:** As a Frontend Developer, I want a typed Income screen component
+scaffolded from the wireframe, so that the screen has a stable structure before data is
+wired.
+
+**Acceptance Criteria:**
+
+- A typed React component renders the Income screen layout (header, KPI region, table
+  region) matching the wireframe.
+- The component declares typed props for the income data it will receive.
+- The component renders inert placeholder regions with no data fetching yet.
+
+**Code Connection:**
+
+- `IncomePage` exports typed income-event and screen-prop contracts, then renders the
+  wireframe-aligned Income Events header, five source KPI placeholders, table shell, and
+  empty placeholder state without reading from an API or query hook.
+- The `/income` route preserves its authentication boundary and provides an empty typed
+  payload so the scaffold can be reached without introducing live data behavior.
+
+**Project Scope Connection:**
+
+This creates the stable presentation seam for the React SPA's Income workspace. It
+intentionally excludes the income query hook, loading/error states, add-income form,
+live table rendering, and component/accessibility tests, which are owned by subsequent
+Income tickets.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm run typecheck` is blocked by existing unresolved `react-hook-form` and
+  `@hookform/resolvers/zod` imports in `ScenarioPlanningForm.tsx`.
+- `npm run build` is blocked by the same existing unresolved dependencies.
+
+## christopher-martus-jira193 - SCRUM-193 authentication completion follow-up
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Complete the SPA authentication route and logout acceptance criteria
+
+**Description:** Remove the duplicate placeholder login experience, place all workspace
+routes behind the shared authentication boundary, wire every visible logout control, make
+anonymous route tests restore an actually anonymous session, and document tenant-aware
+local SPA login.
+
+**Acceptance Criteria:**
+
+- `/sign-in` is the only registered SPA sign-in route; the obsolete `/login` route and
+  placeholder page are removed.
+- Root, operator, and administration workspace routes redirect anonymous sessions to the
+  real sign-in screen.
+- Both the sidebar Logout and topbar Sign out controls call the auth-context logout path
+  and return the user to sign-in.
+- Component coverage exercises anonymous refresh failure, authenticated administration,
+  sign-in through MFA, and both visible logout controls.
+- Local development guidance uses `{tenant-login-slug}.localhost:5173` and explains why
+  plain localhost cannot resolve a login workspace.
+
+**Code Connection:**
+
+- Administration routes are children of the `AuthBoundary`-guarded workspace layout, and
+  the root route exposes only the public sign-in, MFA, and password-reset screens.
+- `AppShell` shares one logout handler between its sidebar and topbar controls, relying on
+  the auth provider's existing finally-path to clear the session before redirecting.
+- `TestSessionProvider` can return a valid refresh session or reject refresh for anonymous
+  coverage, while allowing focused client-method spies.
+- The README documents the tenant-subdomain URL already preserved by the Vite proxy; no
+  tenant ID is added to the login payload and no backend contract changes.
+
+**Project Scope Connection:**
+
+This closes the remaining SCRUM-193 SPA entry, route protection, logout, and local-login
+usability gaps while preserving server-controlled tenant resolution and existing
+role-landing behavior.
+
+**Changed Files:**
+
+- `README.md`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/AppShell.module.css`
+- `src/pulseUI/pages/LoginPage.tsx` (removed)
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/auth/AuthenticatedSessionProvider.tsx` (replaced)
+- `src/pulseUI/tests/auth/TestSessionProvider.tsx`
+- Authenticated workspace component tests updated to import `TestSessionProvider`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Focused Pulse UI auth/workspace validation passed: 38 tests in 7 files.
+- `npm run typecheck` passed for application, tests, and Pulse UI.
+- The full Pulse UI run passed 77 tests and retained four pre-existing failures: the
+  Deductions and Scenario Planner route tests render protected routes without an auth
+  provider. Supplying authentication also exposes that `/scenarios` currently renders
+  `EmptyPage`, outside SCRUM-193.
+- `npm --prefix src/pulseUI run build` transformed all modules but could not empty the
+  output directory because Windows holds `dist/pulseUI/assets/index-CkhYVya1.js` open.
+- Root `npm test` completed typechecking but remains blocked by unavailable Testcontainers
+  runtime tests and the existing Tax Plan Cycle JWT response assertion that expects a
+  `scenarios` field.
+
+## christopher-martus-jira193 - SCRUM-193 negative-path test follow-up
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Add negative-path coverage for the SPA sign-in and MFA flow
+
+**Description:** Extend the end-to-end component test for this branch's authentication
+screens beyond the successful sign-in, MFA, dashboard, and logout path.
+
+**Acceptance Criteria:**
+
+- Rejected credentials display the generic sign-in error and do not advance to MFA.
+- Rejected MFA verification displays an error and does not establish a workspace session.
+- Direct access to the MFA route without ephemeral challenge state returns the user to a
+  safe sign-in recovery path and never submits an MFA request.
+
+**Code Connection:** The route-level component coverage supplies rejecting auth-client
+test doubles and verifies both visible feedback and the absence of downstream authentication
+calls or protected dashboard content.
+
+**Project Scope Connection:** These cases protect SCRUM-193's public authentication screens
+and ephemeral MFA-state boundary without changing production authentication behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/auth/SignInPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused sign-in coverage passed: 4 tests in 1 file.
+- Full Pulse UI coverage passed: 107 tests in 29 files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `git diff --check` passed.
+
+## christopher-martus-jira193 - SCRUM-193 authentication styling follow-up
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Align public authentication screens with the current Pulse UI theme
+
+**Description:** Replace the legacy light navy, teal, and gold authentication treatment
+with the dark indigo visual system used by the authenticated TaxPulse workspace.
+
+**Acceptance Criteria:**
+
+- Sign-in, MFA challenge, and password-reset screens use the shared workspace typography,
+  color tokens, surfaces, borders, controls, and focus treatment.
+- Authentication cards retain readable error states and responsive mobile sizing.
+- Existing authentication behavior and accessible form semantics remain unchanged.
+
+**Code Connection:** The shared authentication selectors now consume the current Pulse UI
+design tokens, add the same gradient brand mark used by the workspace shell, and provide
+consistent interactive states for inputs, buttons, and links. Because the public routes
+share this style layer, the sign-in, MFA, reset request, and reset confirmation screens stay
+visually consistent without duplicating page-level styles.
+
+**Project Scope Connection:** This closes the visual-system gap in SCRUM-193's public SPA
+authentication flow without changing tenant resolution, credentials, MFA state, or session
+behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/shared/styles.css`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Full Pulse UI coverage passed: 107 tests in 29 files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- A production Vite build passed using an isolated temporary output directory. The normal
+  `dist/pulseUI` directory was locked by an existing Node process during validation.
+- `git diff --check` passed.
+
+
+
+
+## christopher-martus-jira108 - SCRUM-108
+
+**Branch:** `christopher-martus-jira108`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-108
+
+**Summary:** Build the Add Income form with react-hook-form and zod
+
+**Description:** As a Frontend Developer, I want an Add Income form validated with
+react-hook-form and zod, so that malformed income entries are rejected at the boundary.
+
+**Acceptance Criteria:**
+
+- The form captures source, type, amount, and withholding and validates with
+  react-hook-form and zod.
+- A negative amount or missing required field surfaces an inline validation message and
+  blocks submit.
+- A valid submit invokes the create handler with the typed payload.
+
+**Code Connection:**
+
+- The first implementation slice defines the route-local Zod schema for source, type,
+  amount, and withholding. It separates raw form input from the parsed create payload,
+  trims the source, restricts type to the existing income categories, and converts
+  monetary input strings to finite, non-negative numbers.
+- `IncomePage` consumes and re-exports the shared category type so the screen and future
+  form use one income-type contract.
+- The second slice adds `IncomeEntryForm`, which delegates form state to react-hook-form
+  and validation to the Zod resolver. Required and invalid values render associated
+  inline alerts, while valid parsed payloads invoke the typed create handler before the
+  modal closes.
+- The third slice adds a typed create-handler prop to `IncomePage`, enables both existing
+  Add Income controls, and uses page-local state to open and close the form. The route
+  supplies the composition seam that SCRUM-109 can replace with live creation and table
+  refresh behavior.
+- The fourth slice styles the form with the Income screen's established Segoe UI stack,
+  dark surfaces, slate text, indigo actions, responsive layout, and visible validation
+  and focus states while reusing the shared modal shell.
+- The final slice covers missing fields, negative amounts, and successful submission of
+  parsed numeric values through the typed create handler.
+
+**Project Scope Connection:**
+
+This completes the typed validation boundary, functional Add Income form, Income page
+launch flow, visual treatment, and focused acceptance coverage. API persistence and
+table refresh remain outside this ticket.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/incomeEntrySchema.ts`
+- `src/pulseUI/pages/income/IncomeEntryForm.tsx`
+- `src/pulseUI/pages/income/IncomeEntryForm.module.css`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/components/IncomeEntryForm.test.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test -- --run tests/components/IncomeEntryForm.test.tsx`
+  passed: 3 tests.

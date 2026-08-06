@@ -1,0 +1,18 @@
+.gate {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.title {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.05rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.copy {
+  margin: 0;
+  color: var(--pulse-muted);
+  line-height: 1.55;
+}
