@@ -5,6 +5,57 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira132 - SCRUM-132
+
+**Branch:** `dylan-harle-jira132`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-132
+
+**Summary:** Consume stage-changed events from SQS.
+
+**Description:** As a Backend Developer, I want an SQS consumer for stage-changed events, so that a subscriber processes transitions out of band.
+
+**Acceptance Criteria:**
+
+- A consumer subscribed via SQS receives the event and logs it.
+- The consumer validates the event against the schema before processing.
+- A test asserts a published event is received and parsed by the consumer.
+
+**Code Connection:**
+
+- Added a plain TypeScript SQS stage-changed consumer that receives SQS messages, parses the default SNS notification envelope, validates the nested CloudEvents v1 payload with `stageChangedCloudEventSchemaV1`, logs transition details, and deletes only successfully processed messages.
+- Added SQS client and queue URL environment helpers that mirror the SCRUM-131 SNS publisher setup, including LocalStack endpoint support.
+- Added a test that publishes through the SCRUM-131 SNS publisher shape, wraps the published message in an SNS-to-SQS envelope, and asserts the SQS consumer receives, validates, logs, and deletes it.
+- Documented SCRUM-132 consumption behavior without changing the ADR-0028 CloudEvents contract.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration.
+- Builds directly on SCRUM-130, SCRUM-131, `docs/stage-changed-event.md`, and ADR-0028.
+- Keeps the consumer as a plain service method in this sprint; does not add Lambda runtime behavior, an outbox table, database writes, durable projection behavior, or a separate case status.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `.env.example`
+- `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSqsConsumer.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedSqsConsumer.test.ts`
+- `docs/stage-changed-event.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/stageChangedSqsConsumer.test.ts` passed.
+- `git diff --check` passed with line-ending warnings only.
+- `npm test` passed typecheck and the SCRUM-132 tests, then failed in existing unrelated coverage: `tenantsMigration.test.ts` reports no test suite, `scenarioMigration.test.ts` timed out after 30000ms, and `tenantLoginResolver.test.ts`, `features/deductions/repository.test.ts`, and `features/deductions/routes.test.ts` hit PostgreSQL connection refusals on port 54318.
+
 ## dylan-harle-jira115 - SCRUM-115
 
 **Branch:** `dylan-harle-jira115`
