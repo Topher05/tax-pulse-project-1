@@ -1025,3 +1025,62 @@ rewriting the table or KPI logic.
 - `npm --prefix src/pulseUI run build` passed; Vite reported its existing large-chunk
   advisory warning.
 - `git diff --check` passed.
+
+
+## chirstopher-martus-jira110 - SCRUM-110
+
+**Branch:** `chirstopher-martus-jira110`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-110
+
+**Summary:** Add accessibility and a component test for the Income screen
+
+**Description:** As a Frontend Developer, I want the Income screen to pass an axe check
+and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the table renders rows and the empty state for no data.
+- The form's inputs carry accessible labels and the test asserts a validation error is
+  announced.
+
+**Code Connection:**
+
+- `ToolHeader` accepts an optional heading ID, allowing both Income page states to connect
+  their `aria-labelledby` attribute to the visible Income Events heading.
+- The shared accessibility gate renders a populated `IncomeScreen`, confirms its named
+  table is present, runs axe against the rendered DOM, and requires zero violations.
+- Existing Income page component coverage verifies populated table rows and the no-data
+  empty state without duplicating those scenarios.
+- The Income form component test locates all four controls by accessible name and verifies
+  that an invalid Source input is marked invalid, described by its error, and announced
+  through an alert role.
+
+**Project Scope Connection:**
+
+This adds the minimal accessibility and regression coverage required for the Income tool.
+It does not change income data fetching, tenant-scoped access, creation persistence, or
+workflow behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/components/ToolHeader.tsx`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/tests/components/IncomeEntryForm.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Focused Income coverage passed: 8 tests across the Income page and entry form suites.
+- The accessibility gate passed: 4 tests, including zero axe violations for the rendered
+  Income screen. JSDOM continues to emit its existing canvas/color-contrast warning.
+- Full Pulse UI coverage passed: 150 tests in 34 files.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run build` transformed all 2,108 modules but could not replace
+  the existing `dist/pulseUI/assets` directory because Windows returned `EPERM`; no source
+  compilation error was reported.
