@@ -255,7 +255,7 @@ export const taxPlanCycle = pgTable(
 export const actionItem = pgTable(
   "action_item",
   {
-    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    id: integer("id").generatedByDefaultAsIdentity().notNull(),
     caseId: uuid("case_id").notNull(),
     description: text("description").notNull(),
     deadline: date("deadline").notNull(),
@@ -272,6 +272,38 @@ export const actionItem = pgTable(
       foreignColumns: [taxPlanCycle.id],
     }),
     index("action_item_case_id_idx").on(table.caseId),
+  ],
+);
+
+export const clientRoster = pgTable(
+  "client_roster",
+  {
+    id: uuid("id").default(sql`uuidv7()`).primaryKey(),
+    tenantId: uuid("tenant_id").notNull(),
+    clientName: text("client_name").notNull(),
+    filingStatus: text("filing_status").notNull(),
+    ytdIncome: numeric("ytd_income", { precision: 14, scale: 2 }).notNull(),
+    estimatedTax: numeric("estimated_tax", { precision: 14, scale: 2 }).notNull(),
+    quarterlyStatus: text("quarterly_status"),
+  },
+  (table) => [
+    foreignKey({
+      name: "client_roster_tenant_id_fk",
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }),
+    check(
+      "client_roster_ytd_income_nonnegative_check",
+      sql`${table.ytdIncome} >= 0`,
+    ),
+    check(
+      "client_roster_estimated_tax_nonnegative_check",
+      sql`${table.estimatedTax} >= 0`,
+    ),
+    index("client_roster_tenant_id_client_name_idx").on(
+      table.tenantId,
+      table.clientName,
+    )
   ],
 );
 
@@ -355,6 +387,23 @@ export const auditEntry = pgTable(
       table.caseId,
       table.occurredAt,
     ),
+  ],
+);
+
+export const outboxEvent = pgTable(
+  "outbox_event",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    payload: text("payload").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "outbox_event_id_pk",
+      columns: [table.id],
+    }),
   ],
 );
 

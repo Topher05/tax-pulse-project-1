@@ -2,8 +2,6 @@ import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
 
-import { actionItemSchema } from "./actionItem.js";
-
 export const actionItemCreatedEventType =
   "com.taxpulse.tax_plan_cycle.action_item_created.v1";
 export const actionItemCreatedEventSource = "taxpulse.platform.tax-plan-cycle";
@@ -81,4 +79,3 @@ export function createActionItemCreatedCloudEvent(
     },
   });
 }
-

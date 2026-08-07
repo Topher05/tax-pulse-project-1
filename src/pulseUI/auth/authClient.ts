@@ -60,7 +60,6 @@ export function createBrowserAuthClient(fetcher: typeof fetch = fetch): AuthClie
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          tenant_id: credentials.tenantId,
           email: credentials.email,
           password: credentials.password,
         }),

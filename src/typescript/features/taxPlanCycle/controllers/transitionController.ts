@@ -5,18 +5,11 @@ import type {
   TaxPlanCycleTransitionInput,
 } from "../repositories/repository.js";
 import type { TaxPlanCycleQueueCacheInvalidator } from "../infrastructure/queueCache.js";
-import type { StageChangedEventPublishInput } from "../stageChangedEvent.js";
+import type { StageChangedEventPublisher } from "../infrastructure/cloudEvents/stageChanged/index.js";
 import type {
   ActionItemCreatedEventInput,
   ActionItemCreatedEventPublishInput,
-} from "../actionItemCreatedEvent.js";
-import { createPresentToClientSaga } from "../infrastructure/CloudEvents/PresentToClientSaga.js";
-
-export interface StageChangedEventPublisher {
-  publishStageChanged(
-    input: StageChangedEventPublishInput,
-  ): Promise<void> | void;
-}
+} from "../infrastructure/cloudEvents/actionItemCreated/index.js";
 
 export interface ActionItemCreatedEventPublisher {
   publishActionItemCreated(
@@ -39,48 +32,56 @@ export interface TaxPlanCycleTransitionController {
   ): Promise<TaxPlanCycle | null> | TaxPlanCycle | null;
 }
 
+export interface TaxPlanCycleTransitionEventLogger {
+  warn(...args: unknown[]): void;
+}
+
 export interface TaxPlanCycleTransitionControllerOptions {
   queueCacheInvalidator?: TaxPlanCycleQueueCacheInvalidator;
   stageChangedEventPublisher?: StageChangedEventPublisher;
   actionItemEventPublisher?: ActionItemCreatedEventPublisher;
+  stageChangedEventLogger?: TaxPlanCycleTransitionEventLogger;
 }
 
 export function createTaxPlanCycleTransitionController(
   repository: TaxPlanCycleRepository,
   options: TaxPlanCycleTransitionControllerOptions = {},
 ): TaxPlanCycleTransitionController {
+  const eventLogger = options.stageChangedEventLogger ?? console;
+
   return {
     transition: async (input) => {
       const transitioned = await repository.transition(input);
-
-      if (transitioned && options.stageChangedEventPublisher) {
-        await options.stageChangedEventPublisher.publishStageChanged({
-          tenantId: input.tenantId,
-          caseId: input.caseId,
-          fromStage: input.fromStage,
-          toStage: input.toStage,
-          actor: input.actor,
-        });
+      if (!transitioned) {
+        return null;
       }
 
-      if (transitioned && options.actionItemEventPublisher && input.actionItem) {
-        // TODO: Need sync with Jira 131
-        const presentToClientSaga = createPresentToClientSaga({
-          repository,
-          stageChangedEventPublisher: options.stageChangedEventPublisher,
-          actionItemEventPublisher: options.actionItemEventPublisher,
-        });
-
-        await presentToClientSaga.run({
-          transitionedCycle: transitioned,
-          tenantId: input.tenantId,
-          caseId: input.caseId,
-          actor: input.actor,
-          actionItem: input.actionItem,
-        });
+      if (options.stageChangedEventPublisher) {
+        // Event publishing is best-effort because the database transition already committed.
+        try {
+          await options.stageChangedEventPublisher.publishStageChanged({
+            tenantId: input.tenantId,
+            caseId: input.caseId,
+            fromStage: input.fromStage,
+            toStage: input.toStage,
+            actor: input.actor,
+          });
+        } catch (error) {
+          eventLogger.warn(
+            {
+              err: error,
+              tenant_id: input.tenantId,
+              case_id: input.caseId,
+              from_stage: input.fromStage,
+              to_stage: input.toStage,
+              actor: input.actor,
+            },
+            "Stage-changed event publish failed after transition commit",
+          );
+        }
       }
 
-      if (transitioned && options.queueCacheInvalidator) {
+      if (options.queueCacheInvalidator) {
         // Cache invalidation is best-effort because Redis is disposable state.
         try {
           await options.queueCacheInvalidator.invalidateAfterStageChange({

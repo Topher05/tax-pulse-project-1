@@ -348,7 +348,7 @@
 
 .auditItem {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.7rem;
   padding: 0.85rem 0.9rem;
   border: 1px solid var(--pulse-border);
@@ -369,9 +369,40 @@
   flex-shrink: 0;
 }
 
+.auditBody {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.auditHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+}
+
+.auditActor {
+  color: var(--pulse-ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.auditTime {
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .auditText {
   color: var(--pulse-nav-text);
   font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.auditOutcome {
+  color: var(--pulse-muted);
+  font-size: 0.8rem;
   line-height: 1.45;
 }
 

@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-
 import { z } from "zod";
 
 import {
@@ -52,8 +51,20 @@ export type StageChangedEventDataV1 = z.infer<
 export type StageChangedCloudEventV1 = z.infer<
   typeof stageChangedCloudEventSchemaV1
 >;
+export interface StageChangedEventPublishInput {
+  tenantId: string;
+  caseId: string;
+  fromStage: TaxPlanCycleStage;
+  toStage: TaxPlanCycleStage;
+  actor: string;
+}
 
-export function createStageChangedCloudEvent(
+export interface CreateStageChangedCloudEventOptions {
+  idFactory?: () => string;
+  now?: () => Date;
+}
+
+export function createStageChangedCloudEventV1(
   input: StageChangedEventPublishInput,
   options: CreateStageChangedCloudEventOptions = {},
 ): StageChangedCloudEventV1 {
@@ -62,7 +73,7 @@ export function createStageChangedCloudEvent(
 
   return stageChangedCloudEventSchemaV1.parse({
     specversion: "1.0",
-    id: idFactory(),
+    id: `stage-transition-${idFactory()}`,
     source: stageChangedEventSource,
     type: stageChangedEventType,
     time: now().toISOString(),
@@ -76,4 +87,11 @@ export function createStageChangedCloudEvent(
       actor: input.actor,
     },
   });
+}
+
+export function createStageChangedCloudEvent(
+  input: StageChangedEventPublishInput,
+  options: CreateStageChangedCloudEventOptions = {},
+): StageChangedCloudEventV1 {
+  return createStageChangedCloudEventV1(input, options);
 }

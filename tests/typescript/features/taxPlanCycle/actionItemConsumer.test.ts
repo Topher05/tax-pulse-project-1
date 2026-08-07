@@ -71,7 +71,7 @@ const actionItemEvent = actionItemCreatedCloudEventSchemaV1.parse(
 );
 
 const createdActionItem = {
-  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f24",
+  id: 1,
   case_id: caseId,
   description: "Send the client checklist",
   deadline: "2026-08-21",

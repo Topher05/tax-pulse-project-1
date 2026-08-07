@@ -54,6 +54,16 @@ export type SeedTaxPlanCycleRow = {
   holdReason: string | null;
 };
 
+export type SeedClientRosterRow = {
+  id: string;
+  tenantId: string;
+  clientName: string;
+  filingStatus: string;
+  ytdIncome: string;
+  estimatedTax: string;
+  quarterlyStatus: string | null;
+};
+
 export type SeedStageTransitionRow = {
   id: string;
   caseId: string;
@@ -106,7 +116,6 @@ export type SeedTaxPlanCycleInsertRow = Omit<SeedTaxPlanCycleRow, "dueDate"> & {
 };
 
 export type SeedActionItemRow = {
-  id: string;
   caseId: string;
   description: string;
   deadline: Date;
@@ -466,27 +475,96 @@ export const taxPlanCycleRows = [
 
 export const actionItemRows = [
   {
-    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e41",
     caseId: taxPlanCycleRows[1].id,
-    description: "Send the client checklist",
-    deadline: new Date("2026-08-18T00:00:00Z"),
+    description: "Collect signed planning authorization",
+    deadline: new Date("2026-08-01T00:00:00Z"),
     completed: false,
   },
   {
-    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e42",
     caseId: taxPlanCycleRows[1].id,
-    description: "Confirm client meeting availability",
-    deadline: new Date("2026-08-19T00:00:00Z"),
+    description: "Review current estimated payments",
+    deadline: new Date("2026-08-02T00:00:00Z"),
     completed: false,
   },
   {
-    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e43",
     caseId: taxPlanCycleRows[1].id,
-    description: "Upload signed recommendation packet",
-    deadline: new Date("2026-08-20T00:00:00Z"),
+    description: "Draft present-to-client talking points",
+    deadline: new Date("2026-08-03T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Confirm client document intake",
+    deadline: new Date("2026-08-04T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Prepare follow-up questions for advisor",
+    deadline: new Date("2026-08-05T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Send updated action-item summary",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Schedule client review call",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Upload client-facing planning notes",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Verify projected tax savings packet",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Finalize present-to-client checklist",
+    deadline: new Date("2026-10-07T00:00:00Z"),
     completed: false,
   },
 ] as const satisfies readonly SeedActionItemRow[];
+
+export const clientRosterRows = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e81",
+    tenantId: tenantRows[0].id,
+    clientName: "Avery Chen",
+    filingStatus: "Single - 1099",
+    ytdIncome: "108500.00",
+    estimatedTax: "32100.00",
+    quarterlyStatus: "Q2 due Jun 15",
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e82",
+    tenantId: tenantRows[0].id,
+    clientName: "Morgan Acme",
+    filingStatus: "MFJ - W-2 + RSU",
+    ytdIncome: "414000.00",
+    estimatedTax: "138400.00",
+    quarterlyStatus: "Q2 due Jun 15",
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e83",
+    tenantId: tenantRows[1].id,
+    clientName: "Riley Khan",
+    filingStatus: "HoH - W-2",
+    ytdIncome: "72500.00",
+    estimatedTax: "11140.00",
+    quarterlyStatus: null,
+  },
+] as const satisfies readonly SeedClientRosterRow[];
 
 export const deductionRows = [
   {
@@ -668,6 +746,41 @@ export const stageTransitionRows = [
     occurredAt: new Date("2026-07-05T14:00:00Z"),
   },
 ] as const satisfies readonly SeedStageTransitionRow[];
+
+export const auditEntryRows = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d41",
+    caseId: taxPlanCycleRows[0].id,
+    actor: "advisor-001",
+    action: "stage_transition:Intake->Data Aggregation",
+    outcome: "succeeded",
+    occurredAt: new Date("2026-07-01T14:00:00Z"),
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d42",
+    caseId: taxPlanCycleRows[0].id,
+    actor: "advisor-001",
+    action: "Collected synthetic wage, self-employment, and withholding inputs for client 018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21.",
+    outcome: "gross income 185000 and withholding 42000 recorded for modeling.",
+    occurredAt: new Date("2026-07-02T15:30:00Z"),
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d43",
+    caseId: taxPlanCycleRows[0].id,
+    actor: "advisor-001",
+    action: "Scenario modeling requested for Roth conversion and charitable giving strategy.",
+    outcome: "estimated tax impact $8420 queued for review.",
+    occurredAt: new Date("2026-07-03T16:45:00Z"),
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d44",
+    caseId: taxPlanCycleRows[0].id,
+    actor: "firm-admin-001",
+    action: "Review packet opened for synthetic case TP-Seed-001.",
+    outcome: "deductions 27500 and quarterly payment 6250 approved for advisor follow-up.",
+    occurredAt: new Date("2026-07-04T17:00:00Z"),
+  },
+] as const satisfies readonly SeedAuditEntryRow[];
 
 export function buildTaxPlanCycleInsertRows(): SeedTaxPlanCycleInsertRow[] {
   return taxPlanCycleRows.map((row) => ({

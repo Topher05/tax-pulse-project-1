@@ -18,7 +18,7 @@ export interface ActionItemRepository {
 }
 
 function toActionItem(row: {
-  id: string;
+  id: number;
   caseId: string;
   description: string;
   deadline: string | Date;

@@ -1,123 +1,198 @@
-import { createRootRoute, createRoute } from "@tanstack/react-router";
+import { createRootRoute, createRoute, Navigate, Outlet } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { AppShell } from "../components/AppShell.tsx";
 import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { ClientRosterPage } from "../pages/clients/ClientRosterPage.tsx";
+import { TeamUsersPage } from "../pages/firm/TeamUsersPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
 import { QuarterlyPaymentsPage } from "../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { IncomePage } from "../pages/income/IncomePage.tsx";
-import { LoginPage } from "../pages/LoginPage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
+
+import { AuthBoundary } from "../auth/AuthBoundary.tsx";
+import { MfaChallengePage } from "../pages/auth/MfaChallengePage.tsx";
+import { PasswordResetConfirmationPage } from "../pages/auth/PasswordResetConfirmationPage.tsx";
+import { PasswordResetPage } from "../pages/auth/PasswordResetPage.tsx";
+import { SignInPage } from "../pages/auth/SignInPage.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
 import { validateDetailsSearch } from "../pages/taxPlanCycle/detailViewState.ts";
+import { useSession } from "../auth/AuthProvider.tsx";
+import type { SessionRole } from "../auth/session.ts";
 import { validatePlanToolSearch } from "../shared/planToolCase.ts";
 
 const rootRoute = createRootRoute({
-  component: AppShell,
+  component: Outlet,
+});
+
+function AuthenticatedWorkspace() {
+  return (
+    <AuthBoundary>
+      <AppShell />
+    </AuthBoundary>
+  );
+}
+
+const adminRoles: readonly SessionRole[] = ["Firm Admin", "TaxPulse Platform Admin"];
+
+function AdminOnlyRoute({ children }: { readonly children: ReactNode }) {
+  const { user } = useSession();
+
+  if (user === null || !adminRoles.includes(user.role)) {
+    return <Navigate replace to="/" />;
+  }
+
+  return <>{children}</>;
+}
+
+const workspaceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "_workspace",
+  component: AuthenticatedWorkspace,
+});
+
+const signInRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sign-in",
+  component: SignInPage,
+});
+
+const mfaChallengeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sign-in/mfa",
+  component: MfaChallengePage,
+});
+
+const passwordResetRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/password-reset",
+  component: PasswordResetPage,
+});
+
+const passwordResetConfirmationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/password-reset/confirmation",
+  component: PasswordResetConfirmationPage,
 });
 
 const dashboardRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/",
   component: DashboardPage,
 });
 
-const loginRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/login",
-  component: LoginPage,
-});
-
 const cyclesQueueRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/cycles/queue",
   component: PlanCycle,
 });
 
 const cycleDetailsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/cycles/$id",
   component: DetailsPage,
   validateSearch: (search) => validateDetailsSearch(search),
 });
 
 const scenarioPlannerRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/scenarios",
   component: ScenarioPlannerPage,
   validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const incomeRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/income",
-  component: () => <IncomePage clientId="" taxYear={2026} incomeEvents={[]} />,
+  component: IncomePage,
+  validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const deductionsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/deductions",
   component: DeductionsPage,
   validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const quarterlyPaymentsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/quarterly-payments",
   component: QuarterlyPaymentsPage,
   validateSearch: (search) => validatePlanToolSearch(search),
 });
 
 const clientsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/clients",
   component: ClientRosterPage,
 });
 
 const firmUsersRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/firm/users",
-  component: EmptyPage,
+  component: () => (
+    <AdminOnlyRoute>
+      <TeamUsersPage />
+    </AdminOnlyRoute>
+  ),
 });
 
 const firmSettingsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/firm/settings",
   component: EmptyPage,
 });
 
 const administrationTenantsUsersRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/administration/tenants-users",
-  component: EmptyPage,
+  component: () => (
+    <AdminOnlyRoute>
+      <EmptyPage />
+    </AdminOnlyRoute>
+  ),
 });
 
 const administrationRolesPermissionsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/administration/roles-permissions",
-  component: EmptyPage,
+  component: () => (
+    <AdminOnlyRoute>
+      <EmptyPage />
+    </AdminOnlyRoute>
+  ),
 });
 
 const administrationAuditLogRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => workspaceRoute,
   path: "/administration/audit-log",
-  component: EmptyPage,
+  component: () => (
+    <AdminOnlyRoute>
+      <EmptyPage />
+    </AdminOnlyRoute>
+  ),
 });
 
 export const routeTree = rootRoute.addChildren([
-  dashboardRoute,
-  loginRoute,
-  cyclesQueueRoute,
-  cycleDetailsRoute,
-  scenarioPlannerRoute,
-  incomeRoute,
-  deductionsRoute,
-  quarterlyPaymentsRoute,
-  clientsRoute,
-  firmUsersRoute,
-  firmSettingsRoute,
-  administrationTenantsUsersRoute,
-  administrationRolesPermissionsRoute,
-  administrationAuditLogRoute,
+  signInRoute,
+  mfaChallengeRoute,
+  passwordResetRoute,
+  passwordResetConfirmationRoute,
+  workspaceRoute.addChildren([
+    dashboardRoute,
+    cyclesQueueRoute,
+    cycleDetailsRoute,
+    scenarioPlannerRoute,
+    incomeRoute,
+    deductionsRoute,
+    quarterlyPaymentsRoute,
+    clientsRoute,
+    firmUsersRoute,
+    firmSettingsRoute,
+    administrationTenantsUsersRoute,
+    administrationRolesPermissionsRoute,
+    administrationAuditLogRoute,
+  ]),
 ]);

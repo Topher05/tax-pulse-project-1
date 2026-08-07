@@ -15,7 +15,7 @@ export class IdempotencyInProgressError extends Error {
 
 export class IdempotencyUnavailableError extends Error {
   constructor() {
-    super("Redis idempotency storage is unavailable for the consumer.");
+    super("Redis idempotency storage is unavailable for the stage-changed consumer.");
     this.name = "IdempotencyUnavailableError";
   }
 }
@@ -53,14 +53,8 @@ function parseDeduplicationRecord(value: string): "pending" | "completed" | null
   return parsed.data.status;
 }
 
-export function buildIdempotencyKey(input: {
-  tenantId: string;
-  consumerName: string;
-  eventId: string;
-  namespace?: string;
-}): string {
-  const namespace = input.namespace ?? "queue-projection";
-  return `idem:${namespace}:${input.tenantId}:${input.consumerName}:${input.eventId}`;
+export function buildIdempotencyKey(input: IdempotencyInput): string {
+  return `idem:queue-projection:${input.tenantId}:${input.consumerName}:${input.eventId}`;
 }
 
 export function createRedisIdempotencyStore(
