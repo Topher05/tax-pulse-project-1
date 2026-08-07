@@ -1,0 +1,229 @@
+.page {
+  display: grid;
+  gap: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgb(20 184 166 / 12%), rgb(99 102 241 / 8%));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+}
+
+.toolbarCopy {
+  max-width: 46rem;
+}
+
+.title {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.95rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.lead {
+  margin: 0.7rem 0 0;
+  color: var(--pulse-muted);
+  font-size: 0.94rem;
+  line-height: 1.6;
+}
+
+.primaryAction,
+.secondaryAction,
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--pulse-border);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryAction {
+  gap: 0.45rem;
+  min-height: 40px;
+  padding: 0 14px;
+  color: #f8fafc;
+  background: var(--pulse-accent);
+  border-radius: 9999px;
+  font-size: 0.9rem;
+}
+
+.primaryAction:hover:not(:disabled) {
+  background: var(--pulse-accent-light);
+}
+
+.primaryAction:disabled,
+.secondaryAction:disabled {
+  cursor: default;
+  opacity: 0.68;
+}
+
+.secondaryAction {
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--pulse-ink);
+  background: var(--pulse-surface);
+  border-radius: 9999px;
+  font-size: 0.9rem;
+}
+
+.iconButton {
+  width: 36px;
+  height: 36px;
+  color: var(--pulse-ink);
+  background: var(--pulse-surface);
+  border-radius: 9999px;
+}
+
+.iconButton svg,
+.primaryAction svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.metricGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tenantStack {
+  display: grid;
+  gap: 1rem;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 0 0 0.85rem;
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.95rem 0;
+  border-top: 1px solid var(--pulse-border);
+  color: var(--pulse-nav-text);
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.nameCell {
+  color: var(--pulse-ink);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.emailCell,
+.lastLoginCell {
+  color: var(--pulse-muted);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(15 23 42 / 70%);
+}
+
+.modal {
+  width: min(100%, 520px);
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 16px;
+  background: var(--pulse-panel);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 36%);
+}
+
+.modalHeader,
+.modalActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.modalTitle {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--pulse-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.field input,
+.field select {
+  min-height: 40px;
+  padding: 0 0.75rem;
+  color: var(--pulse-ink);
+  background: var(--pulse-surface);
+  border: 1px solid var(--pulse-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 1100px) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .toolbar,
+  .modal {
+    padding: 1.15rem;
+  }
+
+  .title {
+    font-size: 1.7rem;
+  }
+
+  .metricGrid,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
