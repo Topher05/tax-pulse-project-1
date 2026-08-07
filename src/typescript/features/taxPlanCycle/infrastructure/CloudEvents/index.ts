@@ -9,5 +9,5 @@ export {
   createRedisIdempotencyStore,
   IdempotencyInProgressError,
   IdempotencyUnavailableError,
-} from "./EventDeduplicator.js";
+} from "./stageChanged/index.js";
 export * from "./stageChanged/index.js";

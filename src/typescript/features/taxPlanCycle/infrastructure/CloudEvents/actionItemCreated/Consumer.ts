@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import { createClient } from "redis";
 
-import { createRedisIdempotencyStore } from "../EventDeduplicator.js";
+import { createRedisIdempotencyStore } from "../stageChanged/index.js";
 import type {
   ActionItemCreatedCloudEventV1,
 } from "./model.js";
