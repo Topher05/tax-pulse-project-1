@@ -302,13 +302,14 @@ Add new ticket entries below using this template.
 **Code Connection:**
 
 - `src/typescript/shared/database/schema.ts` adds the `action_item` table definition and foreign key to `tax_plan_cycle`.
+- `src/typescript/shared/database/drizzle-migrations/0011_action_item.sql` materializes the `action_item` table and index in the migration chain.
 - `src/typescript/shared/database/seed.model.ts` adds the action-item seed model and three stubbed rows for case `018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12`.
 - `src/typescript/shared/database/seed.ts` truncates and seeds `action_item` rows through Drizzle.
 - `src/typescript/features/taxPlanCycle/actionItem.ts` defines the imposed action-item model.
-- `src/typescript/features/taxPlanCycle/actionItemCreatedEvent.ts` defines the CloudEvent contract and factory for action-item creation.
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/model.ts` defines the CloudEvent contract and factory for action-item creation.
 - `src/typescript/features/taxPlanCycle/controllers/transitionController.ts` adds the scaffolded action-item publish boundary with `TODO: Need sync with Jira 131`.
 - `src/typescript/features/taxPlanCycle/repositories/actionItems.ts` provides the action-item repository for the portal read model.
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/ActionItemConsumer.ts` consumes the action-item CloudEvent with Redis idempotency.
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/Consumer.ts` consumes the action-item CloudEvent with Redis idempotency.
 - `tests/typescript/features/taxPlanCycle/actionItem.test.ts`, `tests/typescript/features/taxPlanCycle/actionItemCreatedEvent.test.ts`, `tests/typescript/features/taxPlanCycle/actionItemConsumer.test.ts`, and `tests/typescript/features/taxPlanCycle/transitionController.test.ts` cover the schema, event, consumer, and transition wiring.
 - `src/pulseUI/vitest.setup.ts` and `src/pulseUI/tests/deductions/mockDeductionsPage.test.tsx` were adjusted so the repo-wide suite stays green.
 
@@ -326,24 +327,25 @@ TaxPlanCycle (existing)
 **Project Scope Connection:**
 
 - Keeps the work inside the Event-Driven Workflow & Legacy Integration epic.
-- Reuses the CloudEvents/idempotency patterns from SCRUM-136 instead of introducing a parallel event stack.
+- Reuses the cloudEvents/idempotency patterns from SCRUM-136 instead of introducing a parallel event stack.
 - Stages the present-to-client hook so it can be synced with SCRUM-131 before the end-to-end runtime wiring is finalized.
 
 **Changed Files:**
 
 - `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0011_action_item.sql`
 - `src/typescript/shared/database/seed.model.ts`
 - `src/typescript/shared/database/seed.ts`
 - `src/typescript/features/taxPlanCycle/actionItem.ts`
-- `src/typescript/features/taxPlanCycle/actionItemCreatedEvent.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/model.ts`
 - `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
 - `src/typescript/features/taxPlanCycle/repositories/actionItems.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/ActionItemConsumer.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/EventDeduplicator.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/index.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/model.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/ActionItemConsumer.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/EventDeduplicator.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/model.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
-- `src/typescript/index.ts`
 - `src/pulseUI/vitest.setup.ts`
 - `src/pulseUI/tests/deductions/mockDeductionsPage.test.tsx`
 - `tests/typescript/features/taxPlanCycle/actionItem.test.ts`
@@ -1692,9 +1694,9 @@ sequenceDiagram
 - `src/typescript/features/taxPlanCycle/stageChangedEvent.ts` now exports the canonical V1 stage-changed CloudEvent schema plus the event factory and publisher input types.
 - `src/typescript/features/taxPlanCycle/controllers/transitionController.ts` adds the stage-changed publisher port and forwards the prior stage into the boundary.
 - `src/typescript/features/taxPlanCycle/routes.ts` passes the pre-transition stage into the controller.
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/Consumer.ts` parses the canonical CloudEvent, claims idempotency in Redis, and writes the queue projection once.
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/EventDeduplicator.ts` owns the Redis claim/complete/release semantics for processed-event markers.
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/Writer.ts` keeps the DynamoDB upsert adapter separate from the consumer logic.
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/Consumer.ts` parses the canonical CloudEvent, claims idempotency in Redis, and writes the queue projection once.
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/EventDeduplicator.ts` owns the Redis claim/complete/release semantics for processed-event markers.
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/Writer.ts` keeps the DynamoDB upsert adapter separate from the consumer logic.
 - `src/typescript/shared/scripts/cloudTap.ts` provides a local synthetic-event tap for manual verification.
 - `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts` covers first delivery, duplicate delivery, and Redis-unavailable behavior.
 - `tests/typescript/features/taxPlanCycle/transitionController.test.ts` covers the publisher boundary.
@@ -1711,11 +1713,11 @@ This ticket keeps ADR-0014 cache-aside behavior separate from the idempotency le
 - `src/typescript/features/taxPlanCycle/routes.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/index.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/Consumer.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/EventDeduplicator.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/Writer.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/index.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/model.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/Consumer.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/EventDeduplicator.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/Writer.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/model.ts`
 - `src/typescript/shared/scripts/cloudTap.ts`
 - `package.json`
 - `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts`

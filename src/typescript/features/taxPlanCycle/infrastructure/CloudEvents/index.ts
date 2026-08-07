@@ -4,5 +4,10 @@ export {
   createActionItemConsumer,
   createRedisActionItemConsumer,
 } from "./ActionItemConsumer.js";
+export {
+  buildIdempotencyKey,
+  createRedisIdempotencyStore,
+  IdempotencyInProgressError,
+  IdempotencyUnavailableError,
+} from "./EventDeduplicator.js";
 export * from "./stageChanged/index.js";
-

@@ -6,6 +6,10 @@ import type {
 } from "../repositories/repository.js";
 import type { TaxPlanCycleQueueCacheInvalidator } from "../infrastructure/queueCache.js";
 import type { StageChangedEventPublisher } from "../infrastructure/cloudEvents/stageChanged/index.js";
+import type {
+  ActionItemCreatedEventInput,
+  ActionItemCreatedEventPublishInput,
+} from "../actionItemCreatedEvent.js";
 
 export interface ActionItemCreatedEventPublisher {
   publishActionItemCreated(

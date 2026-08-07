@@ -114,7 +114,7 @@ export {
   ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
   createActionItemConsumer,
   createRedisActionItemConsumer,
-} from "./infrastructure/CloudEvents/index.js";
+} from "./infrastructure/cloudEvents/index.js";
 export {
   parseSqsMessage,
   parseSqsMessage as parseStageChangedSqsMessage,
@@ -178,7 +178,6 @@ export {
 export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
-  type StageChangedEventPublisher,
   type ActionItemCreatedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionControllerOptions,

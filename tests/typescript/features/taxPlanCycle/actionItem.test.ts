@@ -7,7 +7,7 @@ import {
 } from "../../../../src/typescript/index.js";
 
 const wellFormedActionItem = {
-  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f01",
+  id: 1,
   case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f02",
   description: "Send the client checklist",
   deadline: "2026-08-21",
