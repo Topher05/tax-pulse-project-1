@@ -3,8 +3,10 @@
 ## Context
 
 SCRUM-146 established the Pulse UI Team & Users screen as a typed firm administration
-surface with KPI cards and a roster table. SCRUM-147 needs that screen to read live
-tenant data without taking over the later responsibilities in SCRUM-148 and SCRUM-149.
+surface with KPI cards and a roster table. SCRUM-147 made that screen read live tenant
+data without taking over the later responsibilities in SCRUM-148 and SCRUM-149.
+SCRUM-149 now fills the role-assignment gap left by SCRUM-147 while avoiding invite,
+impersonation, and loading or error-state behavior reserved for adjacent tickets.
 
 The existing authentication data model already stores tenant-scoped users, roles, and
 status values. It did not store the display name or last-login timestamp needed by the
@@ -28,6 +30,17 @@ response, and maps it into the `TeamUsersScreen` row model. SCRUM-147 intentiona
 does not add visible loading, empty, retry, or error UI, and it does not add role
 assignment mutations or invite behavior.
 
+SCRUM-149 adds a tenant-scoped role update command beside the read boundary:
+`PATCH /v1/firm/users/{userId}/role`. The request body accepts only a role from the
+existing tenant role set, and the server derives tenant scope from the authenticated
+request context before updating the matching user. The command is limited to Firm
+Admins; non-admin callers receive an authorization problem response.
+
+The Pulse UI renders the role column as the role-assignment control. The control calls
+the supplied screen handler with the selected user row and new role, then the page
+persists that change through the mutation hook and invalidates the existing firm users
+query. Non-admin screen contexts render the same control disabled.
+
 ## Consequences
 
 The screen now has one typed live-data boundary, and tenant isolation remains enforced
@@ -36,10 +49,10 @@ display fields give future administration work a real storage contract instead o
 deriving names from email addresses.
 
 SCRUM-148 should build on `useFirmUsersQuery()` for loading, empty, retry, and error
-states. SCRUM-149 should add role-assignment controls and the corresponding mutation
-boundary beside the read endpoint, preserving the same tenant-scoped repository
-pattern. Future invite or platform-wide user management work should add explicit
-commands rather than overloading `GET /v1/firm/users`.
+states. Role assignment now has its own command, preserving the same tenant-scoped
+repository pattern as the read endpoint. Future invite, impersonation, or platform-wide
+user management work should add explicit commands rather than overloading
+`GET /v1/firm/users` or the role-update command.
 
 ## Alternatives considered
 
