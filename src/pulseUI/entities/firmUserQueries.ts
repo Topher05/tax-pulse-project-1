@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
-import { caseApiGetJson } from "../shared/caseApi.ts";
+import { caseApiGetJson, caseApiSendJson } from "../shared/caseApi.ts";
 import type {
   FirmUserRole,
   FirmUserRow,
@@ -30,6 +30,10 @@ const firmUsersResponseSchema = z.array(firmUserApiRowSchema);
 type FirmUserApiRow = z.infer<typeof firmUserApiRowSchema>;
 
 export const firmUsersQueryKey = ["firmUsers"] as const;
+
+const firmUserRoleUpdateRequestSchema = z.object({
+  role: firmUserRoleSchema,
+});
 
 function formatLastLoginDate(value: string): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -64,11 +68,45 @@ export async function fetchFirmUsers(fetcher?: typeof fetch): Promise<readonly F
   return firmUsersResponseSchema.parse(payload).map(toFirmUserRow);
 }
 
+export interface FirmUserRoleUpdateInput {
+  userId: string;
+  role: FirmUserRole;
+}
+
+export async function updateFirmUserRole(
+  input: FirmUserRoleUpdateInput,
+  fetcher?: typeof fetch,
+): Promise<FirmUserRow> {
+  const body = firmUserRoleUpdateRequestSchema.parse({ role: input.role });
+  const payload = await caseApiSendJson<unknown>(
+    `/v1/firm/users/${input.userId}/role`,
+    {
+      method: "PATCH",
+      body,
+    },
+    fetcher,
+  );
+
+  return toFirmUserRow(firmUserApiRowSchema.parse(payload));
+}
+
 export function useFirmUsersQuery() {
   const authenticatedFetch = useAuthenticatedFetch();
 
   return useQuery({
     queryKey: firmUsersQueryKey,
     queryFn: () => fetchFirmUsers(authenticatedFetch),
+  });
+}
+
+export function useUpdateFirmUserRoleMutation() {
+  const authenticatedFetch = useAuthenticatedFetch();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: FirmUserRoleUpdateInput) => updateFirmUserRole(input, authenticatedFetch),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: firmUsersQueryKey });
+    },
   });
 }
