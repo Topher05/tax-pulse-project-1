@@ -4,6 +4,14 @@ export {
   createActionItemConsumer,
   createRedisActionItemConsumer,
 } from "./Consumer.js";
+export {
+  createActionItemCreatedCloudEvent,
+  createActionItemCreatedSnsClient,
+  createSnsActionItemCreatedEventPublisher,
+  getActionItemCreatedTopicArnFromEnv,
+  type ActionItemCreatedSnsClient,
+  type CreateActionItemCreatedCloudEventOptions,
+} from "./SnsPublisher.js";
 export type {
   ActionItemCreatedConsumerHandleResult,
 } from "./Consumer.js";
@@ -14,6 +22,7 @@ export {
   actionItemCreatedEventSchemaVersion,
   actionItemCreatedEventSource,
   actionItemCreatedEventType,
+  actionItemCreatedEventInputSchema,
   createActionItemCreatedCloudEvent,
 } from "./model.js";
 export type {

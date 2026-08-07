@@ -15,6 +15,12 @@ export interface ActionItemCreatedEventInput {
   completed?: boolean;
 }
 
+export const actionItemCreatedEventInputSchema = z.strictObject({
+  description: z.string().min(1),
+  deadline: z.iso.date(),
+  completed: z.boolean().optional(),
+});
+
 export interface ActionItemCreatedEventPublishInput
   extends ActionItemCreatedEventInput {
   tenantId: string;

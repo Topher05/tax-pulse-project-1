@@ -5,6 +5,14 @@ export {
   createRedisActionItemConsumer,
 } from "./actionItemCreated/index.js";
 export {
+  createActionItemCreatedCloudEvent,
+  createActionItemCreatedSnsClient,
+  createSnsActionItemCreatedEventPublisher,
+  getActionItemCreatedTopicArnFromEnv,
+  type ActionItemCreatedSnsClient,
+  type CreateActionItemCreatedCloudEventOptions,
+} from "./actionItemCreated/index.js";
+export {
   createPresentToClientSaga,
 } from "./presentToClientSaga/index.js";
 export type {
