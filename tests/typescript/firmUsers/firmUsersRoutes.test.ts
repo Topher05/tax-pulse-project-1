@@ -18,6 +18,7 @@ async function withFirmUsersRouteServer(
     repository?: FirmUsersRepository;
     tenantId?: string;
     userId?: string;
+    role?: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
   },
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
@@ -31,6 +32,7 @@ async function withFirmUsersRouteServer(
     if (options.userId) {
       (req as typeof req & { user: { id: string } }).user = {
         id: options.userId,
+        role: options.role,
       };
     }
 
@@ -91,6 +93,9 @@ describe("Firm users routes", () => {
           },
         ];
       },
+      async updateTenantUserRole() {
+        throw new Error("Role updates are not used by this test.");
+      },
     };
 
     await withFirmUsersRouteServer(
@@ -98,6 +103,7 @@ describe("Firm users routes", () => {
         repository,
         tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
         userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        role: "Firm Admin",
       },
       async (baseUrl) => {
         const response = await fetch(`${baseUrl}/v1/firm/users`);
@@ -114,6 +120,99 @@ describe("Firm users routes", () => {
             lastLoginAt: null,
           },
         ]);
+      },
+    );
+  });
+
+  test("requires Firm Admin role to update a tenant-scoped user role", async () => {
+    const repository: FirmUsersRepository = {
+      async listByTenant() {
+        return [];
+      },
+      async updateTenantUserRole() {
+        throw new Error("Non-admin role updates should not reach the repository.");
+      },
+    };
+
+    await withFirmUsersRouteServer(
+      {
+        repository,
+        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+        userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        role: "Advisor",
+      },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/v1/firm/users/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62/role`,
+          {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ role: "Firm Admin" }),
+          },
+        );
+
+        expect(response.status).toBe(403);
+        await expect(response.json()).resolves.toMatchObject({
+          title: "Authorization Required",
+          status: 403,
+        });
+      },
+    );
+  });
+
+  test("updates a user role within the authenticated tenant", async () => {
+    const calls: Array<{ tenantId: string; userId: string; role: string }> = [];
+    const repository: FirmUsersRepository = {
+      async listByTenant() {
+        return [];
+      },
+      async updateTenantUserRole(input) {
+        calls.push(input);
+
+        return {
+          id: input.userId,
+          name: "Brianna Cole",
+          email: "brianna@example.com",
+          role: input.role,
+          status: "Active",
+          lastLoginAt: "2026-08-05T14:30:00.000Z",
+        };
+      },
+    };
+
+    await withFirmUsersRouteServer(
+      {
+        repository,
+        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+        userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        role: "Firm Admin",
+      },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/v1/firm/users/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62/role`,
+          {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ role: "Firm Admin" }),
+          },
+        );
+
+        expect(response.status).toBe(200);
+        expect(calls).toEqual([
+          {
+            tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+            userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+            role: "Firm Admin",
+          },
+        ]);
+        await expect(response.json()).resolves.toEqual({
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+          name: "Brianna Cole",
+          email: "brianna@example.com",
+          role: "Firm Admin",
+          status: "Active",
+          lastLoginAt: "2026-08-05T14:30:00.000Z",
+        });
       },
     );
   });

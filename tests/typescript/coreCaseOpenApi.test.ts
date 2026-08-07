@@ -15,6 +15,8 @@ import {
   createLogger,
   deductionCreateSchema,
   deductionTableRowSchema,
+  firmUserRoleUpdateParamsSchema,
+  firmUserRoleUpdateRequestSchema,
   firmUsersListResponseSchema,
   firmUserRowSchema,
   mfaChallengeResponseSchema,
@@ -189,17 +191,23 @@ describe("Core Case Service OpenAPI document", () => {
       requiredRecord(paths, "/v1/firm/users"),
       "get",
     );
+    const updateFirmUserRoleOperation = requiredRecord(
+      requiredRecord(paths, "/v1/firm/users/{userId}/role"),
+      "patch",
+    );
 
     expect(queueOperation.operationId).toBe("listTaxPlanCycleQueue");
     expect(createOperation.operationId).toBe("createTaxPlanCycle");
     expect(readOperation.operationId).toBe("readTaxPlanCycle");
     expect(clientRosterOperation.operationId).toBe("listClientRoster");
     expect(firmUsersOperation.operationId).toBe("listFirmUsers");
+    expect(updateFirmUserRoleOperation.operationId).toBe("updateFirmUserRole");
     expect(queueOperation.tags).toEqual(["Core Case Service"]);
     expect(createOperation.tags).toEqual(["Core Case Service"]);
     expect(readOperation.tags).toEqual(["Core Case Service"]);
     expect(clientRosterOperation.tags).toEqual(["Core Case Service"]);
     expect(firmUsersOperation.tags).toEqual(["Core Case Service"]);
+    expect(updateFirmUserRoleOperation.tags).toEqual(["Core Case Service"]);
   });
 
   test("documents MFA enrollment operations using challenge identifiers", () => {
@@ -468,6 +476,44 @@ describe("Core Case Service OpenAPI document", () => {
     });
   });
 
+  test("documents tenant-scoped firm user role assignment", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const operation = requiredRecord(
+      requiredRecord(paths, "/v1/firm/users/{userId}/role"),
+      "patch",
+    );
+    const parameters = asRecordArray(operation.parameters, "parameters");
+    const requestBody = requiredRecord(operation, "requestBody");
+    const requestContent = requiredRecord(requestBody, "content");
+    const requestJson = requiredRecord(requestContent, "application/json");
+    const requestProperties = requiredRecord(requiredRecord(requestJson, "schema"), "properties");
+    const responses = requiredRecord(operation, "responses");
+    const okResponse = requiredRecord(responses, "200");
+    const okContent = requiredRecord(okResponse, "content");
+    const okJson = requiredRecord(okContent, "application/json");
+    const okExample = requiredRecord(okJson, "example");
+
+    expect(parameters).toEqual([
+      expect.objectContaining({
+        name: "userId",
+        in: "path",
+        required: true,
+      }),
+    ]);
+    expect(requestProperties).toMatchObject({
+      role: expect.any(Object),
+    });
+    expect(requestProperties.tenantId).toBeUndefined();
+    expect(requestJson.example).toEqual({ role: "Firm Admin" });
+    expect(okExample).toMatchObject({
+      role: "Firm Admin",
+    });
+    expect(Object.keys(responses)).toEqual(
+      expect.arrayContaining(["200", "400", "401", "403", "404"]),
+    );
+  });
+
   test("documents creating a deduction for a selected case", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
@@ -558,6 +604,14 @@ describe("Core Case Service OpenAPI document", () => {
         expect.objectContaining({
           name: "FirmUsersListResponse",
           schema: firmUsersListResponseSchema,
+        }),
+        expect.objectContaining({
+          name: "FirmUserRoleUpdateParams",
+          schema: firmUserRoleUpdateParamsSchema,
+        }),
+        expect.objectContaining({
+          name: "FirmUserRoleUpdateRequest",
+          schema: firmUserRoleUpdateRequestSchema,
         }),
         expect.objectContaining({
           name: "DeductionCreateRequest",
