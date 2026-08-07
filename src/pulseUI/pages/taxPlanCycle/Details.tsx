@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { useParams, useSearch } from "@tanstack/react-router";
 
 import styles from "./Details.module.css";
 import {
@@ -11,7 +11,11 @@ import {
   type DetailTab,
 } from "./detailViewState.ts";
 import {
+  fetchTaxPlanCycleAuditEntries,
+  fetchTaxPlanCycleComments,
   fetchTaxPlanCycleDetails,
+  taxPlanCycleAuditEntriesQueryKey,
+  taxPlanCycleCommentsQueryKey,
   taxPlanCycleDetailsQueryKey,
 } from "../../entities/taxPlanCycleQueries.ts";
 import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
@@ -32,27 +36,6 @@ const sampleScenarios = [
   },
 ] as const;
 
-const sampleComments = [
-  {
-    initials: "DC",
-    author: "Dana Cohen, CPA",
-    when: "Today · 11:08",
-    text: "I’ve narrowed it down to the combined Roth + DAF strategy. We can walk through it on the 12th.",
-  },
-  {
-    initials: "RP",
-    author: "Riley Park",
-    when: "Mar 30",
-    text: "All Q1 data is in. We’re starting the modeling now and should have a draft ready soon.",
-  },
-] as const;
-
-const sampleAuditEntries = [
-  "Case created and assigned to Dana Cohen",
-  "Scenario modeling request queued",
-  "Review stage entered by Firm Admin",
-] as const;
-
 function priorityTone(priority: string): "danger" | "warning" | "info" {
   const normalized = priority.toLowerCase();
 
@@ -68,24 +51,35 @@ function priorityTone(priority: string): "danger" | "warning" | "info" {
 }
 
 export function DetailsPage() {
-  const { id: caseId = "" } = useParams({ from: "/cycles/$id" });
-  const search = useSearch({ from: "/cycles/$id" });
-  const navigate = useNavigate({ from: "/cycles/$id" });
+  const { id: caseId = "" } = useParams({ from: "/_workspace/cycles/$id" });
+  const search = useSearch({ from: "/_workspace/cycles/$id" });
   const detailSearch = normalizeDetailsSearch(search);
   const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
   const [commentDraft, setCommentDraft] = useState("");
+  const [selectedStageOverride, setSelectedStageOverride] = useState<DetailStage | null>(null);
   const stageLabelId = useId();
   const authenticatedFetch = useAuthenticatedFetch();
 
   useEffect(() => {
     setActiveTab("Overview");
     setCommentDraft("");
+    setSelectedStageOverride(null);
   }, [caseId]);
 
   const detailsQuery = useQuery({
     queryKey: taxPlanCycleDetailsQueryKey(caseId),
     queryFn: () => fetchTaxPlanCycleDetails(caseId, authenticatedFetch),
     enabled: caseId.length > 0,
+  });
+  const auditEntriesQuery = useQuery({
+    queryKey: taxPlanCycleAuditEntriesQueryKey(caseId),
+    queryFn: () => fetchTaxPlanCycleAuditEntries(caseId, authenticatedFetch),
+    enabled: caseId.length > 0 && activeTab === "Audit Trail",
+  });
+  const commentsQuery = useQuery({
+    queryKey: taxPlanCycleCommentsQueryKey(caseId),
+    queryFn: () => fetchTaxPlanCycleComments(caseId),
+    enabled: caseId.length > 0 && activeTab === "Comments",
   });
 
   if (detailsQuery.isPending) {
@@ -118,7 +112,7 @@ export function DetailsPage() {
     return null;
   }
 
-  const selectedStage = detailSearch.stage ?? details.stage;
+  const selectedStage = selectedStageOverride ?? detailSearch.stage ?? details.stage;
   const activeStageIndex = caseStages.indexOf(selectedStage as DetailStage);
 
   const renderActiveTab = () => {
@@ -168,20 +162,30 @@ export function DetailsPage() {
         return (
           <PanelCard title="Comments">
             <div className={styles.commentList}>
-              {sampleComments.map((comment) => (
-                <article className={styles.comment} key={`${comment.author}-${comment.when}`}>
-                  <div className={styles.commentAvatar} aria-hidden="true">
-                    {comment.initials}
-                  </div>
-                  <div className={styles.commentBody}>
-                    <div className={styles.commentHead}>
-                      <span className={styles.commentAuthor}>{comment.author}</span>
-                      <span className={styles.commentTime}>{comment.when}</span>
+              {commentsQuery.isPending ? (
+                <p className={styles.stateCopy} role="status">Loading comments...</p>
+              ) : commentsQuery.isError ? (
+                <p className={styles.stateCopy} role="alert">
+                  Comments could not load.
+                </p>
+              ) : commentsQuery.data.length === 0 ? (
+                <p className={styles.stateCopy}>No comments have been added for this case.</p>
+              ) : (
+                commentsQuery.data.map((comment) => (
+                  <article className={styles.comment} key={comment.id}>
+                    <div className={styles.commentAvatar} aria-hidden="true">
+                      {comment.initials}
                     </div>
-                    <p className={styles.commentText}>{comment.text}</p>
-                  </div>
-                </article>
-              ))}
+                    <div className={styles.commentBody}>
+                      <div className={styles.commentHead}>
+                        <span className={styles.commentAuthor}>{comment.author}</span>
+                        <span className={styles.commentTime}>{comment.when}</span>
+                      </div>
+                      <p className={styles.commentText}>{comment.text}</p>
+                    </div>
+                  </article>
+                ))
+              )}
               <div className={styles.commentComposer}>
                 <label className={styles.commentComposerField}>
                   <span className={styles.fieldLabel}>Comment draft</span>
@@ -204,14 +208,31 @@ export function DetailsPage() {
       case "Audit Trail":
         return (
           <PanelCard title="Audit Trail">
-            <div className={styles.auditList}>
-              {sampleAuditEntries.map((entry, index) => (
-                <div className={styles.auditItem} key={entry}>
-                  <span className={styles.auditIndex}>{index + 1}</span>
-                  <span className={styles.auditText}>{entry}</span>
-                </div>
-              ))}
-            </div>
+            {auditEntriesQuery.isPending ? (
+              <p className={styles.stateCopy} role="status">Loading audit trail...</p>
+            ) : auditEntriesQuery.isError ? (
+              <p className={styles.stateCopy} role="alert">
+                Audit trail could not load.
+              </p>
+            ) : auditEntriesQuery.data.length === 0 ? (
+              <p className={styles.stateCopy}>No audit entries have been recorded for this case.</p>
+            ) : (
+              <div className={styles.auditList}>
+                {auditEntriesQuery.data.map((entry, index) => (
+                  <article className={styles.auditItem} key={entry.id}>
+                    <span className={styles.auditIndex}>{index + 1}</span>
+                    <div className={styles.auditBody}>
+                      <div className={styles.auditHead}>
+                        <span className={styles.auditActor}>{entry.actor}</span>
+                        <span className={styles.auditTime}>{entry.occurredAt}</span>
+                      </div>
+                      <p className={styles.auditText}>{entry.action}</p>
+                      <p className={styles.auditOutcome}>{entry.outcome}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </PanelCard>
         );
     }
@@ -270,12 +291,7 @@ export function DetailsPage() {
                     type="button"
                     aria-current={isActive ? "step" : undefined}
                     onClick={() => {
-                      void navigate({
-                        search: {
-                          stage,
-                        },
-                        replace: true,
-                      });
+                      setSelectedStageOverride(stage);
                     }}
                   >
                     <span className={styles.stageStepNumber}>{index + 1}</span>

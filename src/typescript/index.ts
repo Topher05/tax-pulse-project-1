@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 
 export {
   clientDeductionAggregationPayloadSchema,
+  deductionCreateSchema,
   deductionReadParamsSchema,
   deductionCategorySchema,
   deductionCategoryValues,
@@ -11,6 +12,7 @@ export {
   deductionTableRowsSchema,
   incomeEventSchema,
   type DeductionCategory,
+  type DeductionCreate,
   type ClientDeductionAggregationPayload,
   type Deduction,
   type DeductionTableRow,
@@ -152,12 +154,14 @@ export {
 } from "./coreCaseOpenApi.js";
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
+  clientRoster,
   auditEntry,
   actionItem,
   deduction,
   credential,
   federalTaxBracket,
   mfaEnrollment,
+  outboxEvent,
   refreshToken,
   roles,
   stageTransition,
@@ -167,6 +171,17 @@ export {
   users,
   userStatus,
 } from "./shared/database/schema.js";
+export {
+  clientRosterListResponseSchema,
+  clientRosterRowSchema,
+  createClientRosterRepository,
+  createClientRosterRouter,
+  type ClientRosterListInput,
+  type ClientRosterListResponse,
+  type ClientRosterRepository,
+  type ClientRosterRow,
+  type CreateClientRosterRouterOptions,
+} from "./features/clientRoster/index.js";
 export {
   createBracketReferenceRepository,
   type BracketReferenceLookupInput,
@@ -364,6 +379,7 @@ export {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createRedisTaxPlanCycleCreateIdempotencyStore,
+  createRedisIdempotencyStore,
   createRedisConsumer,
   TaxPlanCycleCreateIdempotencyInProgressError,
   TaxPlanCycleCreateIdempotencyUnavailableError,
@@ -371,6 +387,15 @@ export {
   createTaxPlanCycleQueueProjectionStore,
   createWriter,
   createTaxPlanCycleQueueReadService,
+  createSnsStageChangedEventPublisher,
+  createStageChangedCloudEventV1,
+  PublishCommand,
+  createStageChangedSnsClient,
+  getStageChangedTopicArnFromEnv,
+  createSqsStageChangedEventConsumer,
+  createStageChangedSqsClient,
+  getStageChangedQueueUrlFromEnv,
+  parseStageChangedSqsMessage,
   createTaxPlanCycleCreateController,
   taxPlanCycleCreateController,
   taxPlanCycleCreateResultSchema,
@@ -408,7 +433,15 @@ export {
   type TaxPlanCycleQueueReadServiceOptions,
   type StageChangedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
+  type CreateStageChangedCloudEventOptions,
+  type ConsumeStageChangedEventsResult,
+  type StageChangedEventConsumerLogger,
+  type StageChangedEventPublishInput,
+  type StageChangedSnsClient,
+  type StageChangedSqsClient,
+  type StageChangedSqsConsumerOptions,
   type TaxPlanCycleTransitionControllerOptions,
+  type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
   type ValidationErrorIssue,
   type ValidationErrorResponse,
@@ -467,6 +500,10 @@ import { createMfaEnrollmentController } from "./mfaEnrollment.js";
 import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
 import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
 import { createTokenService } from "./tokenService.js";
+import {
+  createClientRosterRepository,
+  createClientRosterRouter,
+} from "./features/clientRoster/index.js";
 
 loadEnv();
 const { Client } = pg;
@@ -520,6 +557,7 @@ export async function main(): Promise<Server> {
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const clientRosterRepository = createClientRosterRepository(client);
   const scenarioRepository = createScenarioRepository(client);
   const deductionRepository = createDeductionRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
@@ -618,6 +656,12 @@ export async function main(): Promise<Server> {
       );
       app.use(
         taxPlanCycleApiPrefix,
+        createClientRosterRouter({
+          repository: clientRosterRepository,
+        }),
+      );
+      app.use(
+        taxPlanCycleApiPrefix,
         createDeductionsRouter({
           repository: deductionRepository,
         }),
@@ -638,8 +682,12 @@ export async function main(): Promise<Server> {
       );
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
+        secureCookies: process.env.NODE_ENV === "production",
       }));
-      app.use(createAuthSessionRouter({ tokenService }));
+      app.use(createAuthSessionRouter({
+        tokenService,
+        secureCookies: process.env.NODE_ENV === "production",
+      }));
     },
   });
   const port = getPortFromEnv();

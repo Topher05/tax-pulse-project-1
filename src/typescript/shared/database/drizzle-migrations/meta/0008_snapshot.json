@@ -1,91 +1,9 @@
 {
-  "id": "fe86c7aa-9ef7-49ae-9276-9f8e90217ba6",
-  "prevId": "b5fbc377-5d9a-48f2-9739-9484dd875aeb",
+  "id": "05778c07-3a51-4f84-9b8c-9d4591f99a57",
+  "prevId": "d4608e82-d32c-4812-9474-f9ead8994c3a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.action_item": {
-      "name": "action_item",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "case_id": {
-          "name": "case_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "deadline": {
-          "name": "deadline",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "completed": {
-          "name": "completed",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        }
-      },
-      "indexes": {
-        "action_item_case_id_idx": {
-          "name": "action_item_case_id_idx",
-          "columns": [
-            {
-              "expression": "case_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "action_item_case_id_fk": {
-          "name": "action_item_case_id_fk",
-          "tableFrom": "action_item",
-          "tableTo": "tax_plan_cycle",
-          "columnsFrom": [
-            "case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "action_item_id_pk": {
-          "name": "action_item_id_pk",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.audit_entry": {
       "name": "audit_entry",
       "schema": "",

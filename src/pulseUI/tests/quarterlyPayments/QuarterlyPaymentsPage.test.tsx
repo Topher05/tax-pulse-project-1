@@ -2,18 +2,18 @@ import "@testing-library/jest-dom/vitest";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import * as caseApi from "../../shared/caseApi.ts";
-import { TestAuthProvider } from "../testAuth.tsx";
 import {
   QuarterlyPaymentsScreen,
   type QuarterlyEstimateRecord,
 } from "../../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -21,6 +21,7 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 function buildFixtureEstimates(): readonly QuarterlyEstimateRecord[] {
@@ -81,23 +82,195 @@ function buildTaxPlanCycleQueuePayload() {
   ];
 }
 
+function buildQuarterlyEstimatePayload(caseId: string) {
+  return [
+    {
+      case_id: caseId,
+      tax_year: "2026",
+      quarter: "Q1",
+      due_date: "2026-04-15",
+      estimated_payment: "3620.00",
+      withholding_applied: "3620.00",
+      covered_amount: "3620.00",
+      remaining_due: "0.00",
+      status: "Paid",
+    },
+  ] as const;
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return { promise, resolve, reject };
+}
+
+function renderQuarterlyPaymentsPage(initialPath = "/quarterly-payments") {
+  return render(
+    <QueryClientProvider client={createPulseQueryClient()}>
+      <TestSessionProvider>
+        <RouterProvider router={createPulseRouter([initialPath])} />
+      </TestSessionProvider>
+    </QueryClientProvider>,
+  );
+}
+
 describe("QuarterlyPaymentsPage", () => {
   test("renders the quarterly payments route", async () => {
     vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce(buildTaxPlanCycleQueuePayload() as never);
 
-    render(
-      <QueryClientProvider client={createPulseQueryClient()}>
-        <TestAuthProvider>
-          <RouterProvider router={createPulseRouter(["/quarterly-payments"])} />
-        </TestAuthProvider>
-      </QueryClientProvider>,
-    );
+    renderQuarterlyPaymentsPage();
 
     expect(
       await screen.findByRole("heading", { name: "Quarterly Payments", level: 2 }),
     ).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Select a case to load quarterly payments/i })).toBeInTheDocument();
+  });
+
+  test("loads selected quarterly estimates through the authenticated case API fetcher", async () => {
+    const caseId = taxPlanCycleRows[1].id;
+    const caseApiMock = vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
+      if (path === "/v1/tax-plan-cycles") {
+        return Promise.resolve(buildTaxPlanCycleQueuePayload() as never);
+      }
+
+      if (path === `/v1/tax-plan-cycles/${caseId}/quarterly-estimates`) {
+        return Promise.resolve(buildQuarterlyEstimatePayload(caseId) as never);
+      }
+
+      throw new Error(`Unexpected quarterly payments request: ${path}`);
+    });
+
+    renderQuarterlyPaymentsPage();
+
+    const selector = await screen.findByRole("combobox", { name: "Case ID" });
+    await screen.findByRole("option", { name: caseId });
+
+    fireEvent.change(selector, { target: { value: caseId } });
+
+    await waitFor(() => {
+      expect(caseApiMock).toHaveBeenCalledWith(
+        `/v1/tax-plan-cycles/${caseId}/quarterly-estimates`,
+        expect.any(Function),
+      );
+    });
+  });
+
+  test("renders loading skeleton while quarterly estimates are in flight and then renders data", async () => {
+    const caseId = taxPlanCycleRows[1].id;
+    const deferred = createDeferred<ReturnType<typeof buildQuarterlyEstimatePayload>>();
+    const caseApiMock = vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
+      if (path === "/v1/tax-plan-cycles") {
+        return Promise.resolve(buildTaxPlanCycleQueuePayload() as never);
+      }
+
+      if (path === `/v1/tax-plan-cycles/${caseId}/quarterly-estimates`) {
+        return deferred.promise as never;
+      }
+
+      throw new Error(`Unexpected quarterly payments request: ${path}`);
+    });
+
+    const { container } = renderQuarterlyPaymentsPage(`/quarterly-payments?caseId=${caseId}`);
+
+    expect(
+      await screen.findByRole("heading", { name: "Quarterly Payments", level: 2 }),
+    ).toBeInTheDocument();
+    expect(container.querySelector('[data-quarterly-query-state="loading"]')).not.toBeNull();
+    expect(
+      screen.getByRole("status", { name: "Loading quarterly estimates" }),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      deferred.resolve(buildQuarterlyEstimatePayload(caseId));
+    });
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-quarterly-query-state="data"]')).not.toBeNull();
+    });
+
+    expect(screen.getByRole("heading", { name: "Timeline", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Quarter timeline" })).toBeInTheDocument();
+    expect(screen.getByText("Q1 2026 Estimation")).toBeInTheDocument();
+    expect(screen.getAllByText("$3,620")).toHaveLength(3);
+    expect(caseApiMock).toHaveBeenCalledWith(
+      `/v1/tax-plan-cycles/${caseId}/quarterly-estimates`,
+      expect.any(Function),
+    );
+  });
+
+  test("renders the empty state when no quarterly estimates exist for the period", async () => {
+    const caseId = taxPlanCycleRows[1].id;
+    vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
+      if (path === "/v1/tax-plan-cycles") {
+        return Promise.resolve(buildTaxPlanCycleQueuePayload() as never);
+      }
+
+      if (path === `/v1/tax-plan-cycles/${caseId}/quarterly-estimates`) {
+        return Promise.resolve([] as never);
+      }
+
+      throw new Error(`Unexpected quarterly payments request: ${path}`);
+    });
+
+    const { container } = renderQuarterlyPaymentsPage(`/quarterly-payments?caseId=${caseId}`);
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-quarterly-query-state="empty"]')).not.toBeNull();
+    });
+
+    expect(screen.getByRole("heading", { name: "No quarterly estimates yet" })).toBeInTheDocument();
+    expect(
+      screen.getByText("This case has no quarterly estimates for the selected period."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Timeline", level: 2 })).not.toBeInTheDocument();
+  });
+
+  test("renders an error state with retry and recovers after a successful retry", async () => {
+    const caseId = taxPlanCycleRows[1].id;
+    let quarterlyRequestCount = 0;
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
+      if (path === "/v1/tax-plan-cycles") {
+        return Promise.resolve(buildTaxPlanCycleQueuePayload() as never);
+      }
+
+      if (path === `/v1/tax-plan-cycles/${caseId}/quarterly-estimates`) {
+        quarterlyRequestCount += 1;
+
+        if (quarterlyRequestCount === 1) {
+          return Promise.reject(new Error("quarterly estimates endpoint unavailable")) as never;
+        }
+
+        return Promise.resolve(buildQuarterlyEstimatePayload(caseId) as never);
+      }
+
+      throw new Error(`Unexpected quarterly payments request: ${path}`);
+    });
+
+    const { container } = renderQuarterlyPaymentsPage(`/quarterly-payments?caseId=${caseId}`);
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Quarterly estimates could not load" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("quarterly estimates endpoint unavailable")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-quarterly-query-state="data"]')).not.toBeNull();
+    });
+
+    expect(screen.getByRole("heading", { name: "Timeline", level: 2 })).toBeInTheDocument();
+    expect(screen.getByText("Q1 2026 Estimation")).toBeInTheDocument();
+    expect(quarterlyRequestCount).toBe(2);
   });
 
   test("renders the read-only timeline and withholding placeholder", () => {

@@ -7,7 +7,8 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../app/queryClient.ts";
 import { createPulseRouter } from "../app/createPulseRouter.ts";
-import { TestAuthProvider } from "./testAuth.tsx";
+import type { AuthClient } from "../auth/authClient.ts";
+import { TestSessionProvider } from "./auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -17,25 +18,41 @@ afterEach(() => {
   cleanup();
 });
 
-const renderShell = (initialPath: string = "/", authenticated = true) => {
+const renderShell = (
+  initialPath: string = "/",
+  authenticated = true,
+  clientOverrides?: Partial<AuthClient>,
+  role: "Advisor" | "Firm Admin" | "Client" | "TaxPulse Platform Admin" = "Advisor",
+) => {
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
-      <TestAuthProvider authenticated={authenticated}>
+      <TestSessionProvider
+        authenticated={authenticated}
+        role={role}
+        clientOverrides={clientOverrides}
+      >
         <RouterProvider router={createPulseRouter([initialPath])} />
-      </TestAuthProvider>
+      </TestSessionProvider>
     </QueryClientProvider>,
   );
 };
 
 describe("Pulse UI app shell", () => {
-  test("redirects unauthenticated internal routes to login", async () => {
-    renderShell("/cycles/queue", false);
-
-    expect(
-      await screen.findByRole("heading", { name: "Sign in required", level: 1 }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
+  test("does not register the obsolete login route", () => {
+    expect(Object.keys(createPulseRouter().routesByPath)).not.toContain("/login");
   });
+
+  test.each(["/", "/cycles/queue", "/administration/tenants-users"])(
+    "redirects unauthenticated route %s to sign-in",
+    async (initialPath) => {
+      renderShell(initialPath, false);
+
+      expect(
+        await screen.findByRole("heading", { name: "Sign in to your workspace", level: 1 }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
+    },
+  );
 
   test("renders the workspace sidebar heading", async () => {
     renderShell("/cycles/queue");
@@ -77,8 +94,14 @@ describe("Pulse UI app shell", () => {
     ).toBeInTheDocument();
   });
 
+  test("shows the authenticated user role", async () => {
+    renderShell("/cycles/queue");
+
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
+  });
+
   test("renders the administration view title", async () => {
-    renderShell("/administration/tenants-users");
+    renderShell("/administration/tenants-users", true, undefined, "Firm Admin");
 
     expect(
       await screen.findByRole("heading", { name: "All Tenants & Users", level: 1 }),
@@ -88,7 +111,7 @@ describe("Pulse UI app shell", () => {
   test("defaults view as to firm admin", async () => {
     renderShell("/cycles/queue");
 
-    expect(await screen.findByRole("combobox", { name: "View as" })).toHaveValue("Firm Admin");
+    expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
   });
 
   test("toggles live calculation off", async () => {
@@ -120,6 +143,22 @@ describe("Pulse UI app shell", () => {
     expect(within(sessionFooter).getByRole("button", { name: "Logout" })).toBeInTheDocument();
   });
 
+  test.each(["Logout", "Sign out"])(
+    "%s clears the session and returns to sign-in",
+    async (buttonName) => {
+      const logout = vi.fn(async () => undefined);
+      renderShell("/cycles/queue", true, { logout });
+
+      fireEvent.click(await screen.findByRole("button", { name: buttonName }));
+
+      await vi.waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
+      expect(
+        await screen.findByRole("heading", { name: "Sign in to your workspace", level: 1 }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("navigation", { name: "Primary" })).not.toBeInTheDocument();
+    },
+  );
+
   test("renders the dashboard hero on the root route", async () => {
     renderShell("/");
 
@@ -128,10 +167,10 @@ describe("Pulse UI app shell", () => {
     ).toBeInTheDocument();
   });
 
-  test("still renders placeholder routes that have not been built yet", async () => {
+  test("renders the Income route shell", async () => {
     renderShell("/income");
 
-    expect(await screen.findByRole("heading", { name: "Income" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Income Events" })).toBeInTheDocument();
   });
 
   test("renders plan tool nav links without search state while routing is disabled", async () => {

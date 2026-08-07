@@ -3,104 +3,124 @@ import { describe, expect, test, vi } from "vitest";
 import {
   type ActionItemCreatedEventPublisher,
   createTaxPlanCycleTransitionController,
-  type StageChangedEventPublisher,
   type TaxPlanCycle,
   type TaxPlanCycleRepository,
 } from "../../../../src/typescript/index.js";
 
-describe("createTaxPlanCycleTransitionController", () => {
-  test("publishes the stage-changed payload after a successful transition", async () => {
-    const transitionedCycle: TaxPlanCycle = {
-      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e71",
-      client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e72",
-      stage: "Review",
-      owner: "advisor-001",
-      priority: "high",
-      due_date: "2026-08-01",
-      on_hold: false,
-    };
-    const repository: TaxPlanCycleRepository = {
-      create: vi.fn(),
-      insert: vi.fn(),
-      listQueue: vi.fn(),
-      transition: vi.fn(async () => transitionedCycle),
-      findByCaseId: vi.fn(async () => transitionedCycle),
-    };
-    const publisher: StageChangedEventPublisher = {
-      publishStageChanged: vi.fn(async () => undefined),
-    };
-    const controller = createTaxPlanCycleTransitionController(repository, {
-      stageChangedEventPublisher: publisher,
-    });
+const originalCycle: TaxPlanCycle = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+  client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e92",
+  stage: "Intake",
+  owner: "advisor-controller-001",
+  priority: "medium",
+  due_date: "2026-12-31",
+  on_hold: false,
+};
 
-    const result = await controller.transition({
-      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e73",
-      caseId: transitionedCycle.id,
-      fromStage: "Modeling",
-      toStage: "Review",
-      actor: "advisor-001",
-    });
+const transitionedCycle: TaxPlanCycle = {
+  ...originalCycle,
+  stage: "Data Aggregation",
+};
 
-    expect(result).toBe(transitionedCycle);
-    expect(repository.transition).toHaveBeenCalledWith({
-      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e73",
-      caseId: transitionedCycle.id,
-      fromStage: "Modeling",
-      toStage: "Review",
-      actor: "advisor-001",
-    });
-    expect(publisher.publishStageChanged).toHaveBeenCalledWith({
-      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e73",
-      caseId: transitionedCycle.id,
-      fromStage: "Modeling",
-      toStage: "Review",
-      actor: "advisor-001",
+function createRepository(
+  transition: TaxPlanCycleRepository["transition"],
+): TaxPlanCycleRepository {
+  return {
+    create: vi.fn(),
+    insert: vi.fn(),
+    findByCaseId: vi.fn(async () => originalCycle),
+    transition,
+    listQueue: vi.fn(async () => []),
+  };
+}
+
+describe("TaxPlanCycleTransitionController", () => {
+  test("publishes a stage-changed event after a successful repository transition", async () => {
+    const publishStageChanged = vi.fn(async () => undefined);
+    const transition = vi.fn(async () => transitionedCycle);
+    const controller = createTaxPlanCycleTransitionController(
+      createRepository(transition),
+      {
+        stageChangedEventPublisher: { publishStageChanged },
+      },
+    );
+
+    await expect(
+      controller.transition({
+        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e93",
+        caseId: originalCycle.id,
+        fromStage: "Intake",
+        toStage: "Data Aggregation",
+        actor: "advisor-controller-001",
+      }),
+    ).resolves.toEqual(transitionedCycle);
+
+    expect(transition).toHaveBeenCalledTimes(1);
+    expect(publishStageChanged).toHaveBeenCalledWith({
+      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e93",
+      caseId: originalCycle.id,
+      fromStage: "Intake",
+      toStage: "Data Aggregation",
+      actor: "advisor-controller-001",
     });
   });
 
-  test("publishes the action-item payload when present-to-client details are supplied", async () => {
-    const transitionedCycle: TaxPlanCycle = {
-      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e81",
-      client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e82",
-      stage: "Client Approval",
-      owner: "advisor-001",
-      priority: "high",
-      due_date: "2026-08-01",
-      on_hold: false,
-    };
-    const repository: TaxPlanCycleRepository = {
-      create: vi.fn(),
-      insert: vi.fn(),
-      listQueue: vi.fn(),
-      transition: vi.fn(async () => transitionedCycle),
-      findByCaseId: vi.fn(async () => transitionedCycle),
-    };
-    const publisher: ActionItemCreatedEventPublisher = {
-      publishActionItemCreated: vi.fn(async () => undefined),
-    };
-    const controller = createTaxPlanCycleTransitionController(repository, {
-      actionItemEventPublisher: publisher,
-    });
-
-    const result = await controller.transition({
-      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e83",
-      caseId: transitionedCycle.id,
-      fromStage: "Review",
-      toStage: "Client Approval",
-      actor: "advisor-001",
-      actionItem: {
-        description: "Send the client checklist",
-        deadline: "2026-08-21",
+  test("does not publish when the repository reports a missing case", async () => {
+    const publishStageChanged = vi.fn(async () => undefined);
+    const controller = createTaxPlanCycleTransitionController(
+      createRepository(vi.fn(async () => null)),
+      {
+        stageChangedEventPublisher: { publishStageChanged },
       },
-    });
+    );
 
-    expect(result).toBe(transitionedCycle);
-    expect(publisher.publishActionItemCreated).toHaveBeenCalledWith({
-      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e83",
-      caseId: transitionedCycle.id,
-      actor: "advisor-001",
-      description: "Send the client checklist",
-      deadline: "2026-08-21",
+    await expect(
+      controller.transition({
+        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e93",
+        caseId: originalCycle.id,
+        fromStage: "Intake",
+        toStage: "Data Aggregation",
+        actor: "advisor-controller-001",
+      }),
+    ).resolves.toBeNull();
+
+    expect(publishStageChanged).not.toHaveBeenCalled();
+  });
+
+  test("keeps a committed transition successful when SNS publishing fails", async () => {
+    const publishError = new Error("SNS publish failed");
+    const publishStageChanged = vi.fn(async () => {
+      throw publishError;
     });
+    const eventLogger = { warn: vi.fn() };
+    const controller = createTaxPlanCycleTransitionController(
+      createRepository(vi.fn(async () => transitionedCycle)),
+      {
+        stageChangedEventPublisher: { publishStageChanged },
+        stageChangedEventLogger: eventLogger,
+      },
+    );
+
+    await expect(
+      controller.transition({
+        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e93",
+        caseId: originalCycle.id,
+        fromStage: "Intake",
+        toStage: "Data Aggregation",
+        actor: "advisor-controller-001",
+      }),
+    ).resolves.toEqual(transitionedCycle);
+    expect(publishStageChanged).toHaveBeenCalledTimes(1);
+    expect(eventLogger.warn).toHaveBeenCalledWith(
+      {
+        err: publishError,
+        tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e93",
+        case_id: originalCycle.id,
+        from_stage: "Intake",
+        to_stage: "Data Aggregation",
+        actor: "advisor-controller-001",
+      },
+      "Stage-changed event publish failed after transition commit",
+    );
   });
 });

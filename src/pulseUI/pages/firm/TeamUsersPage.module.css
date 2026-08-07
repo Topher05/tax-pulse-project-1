@@ -1,0 +1,161 @@
+.page {
+  display: grid;
+  gap: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgb(99 102 241 / 14%), rgb(167 139 250 / 6%));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+}
+
+.toolbarCopy {
+  max-width: 46rem;
+}
+
+.title {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.95rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.lead {
+  margin: 0.7rem 0 0;
+  color: var(--pulse-muted);
+  font-size: 0.94rem;
+  line-height: 1.6;
+}
+
+.primaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  padding: 0 14px;
+  color: #f8fafc;
+  background: var(--pulse-accent);
+  border: 1px solid var(--pulse-border);
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.primaryAction:hover {
+  background: var(--pulse-accent-light);
+}
+
+.primaryAction:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.metricGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 0 0 0.85rem;
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.95rem 0;
+  border-top: 1px solid var(--pulse-border);
+  color: var(--pulse-nav-text);
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.nameCell {
+  color: var(--pulse-ink);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.emailCell,
+.lastLoginCell {
+  color: var(--pulse-muted);
+}
+
+.actionCell {
+  text-align: center;
+}
+
+.rowAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 0.9rem;
+  color: var(--pulse-ink);
+  background: var(--pulse-surface);
+  border: 1px solid var(--pulse-border);
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+
+.rowAction:hover {
+  background: var(--pulse-surface-muted);
+}
+
+.rowAction:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+@media (max-width: 1100px) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    padding: 1.15rem;
+  }
+
+  .title {
+    font-size: 1.7rem;
+  }
+
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+}

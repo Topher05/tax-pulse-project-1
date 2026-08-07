@@ -112,7 +112,7 @@ describe("tax plan cycle queue projection consumer", () => {
     const redisKey = buildIdempotencyKey({
       tenantId,
       consumerName: STAGE_CHANGED_CONSUMER_NAME,
-      eventId,
+      eventId: stageChangedEvent.id,
     });
 
     expect(firstResult.status).toBe("processed");

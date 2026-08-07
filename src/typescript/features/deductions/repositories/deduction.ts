@@ -41,6 +41,13 @@ export const deductionTableRowSchema = z.object({
 
 export const deductionTableRowsSchema = z.array(deductionTableRowSchema);
 
+export const deductionCreateSchema = z.object({
+  date: z.iso.date(),
+  description: z.string().trim().min(1),
+  category: deductionCategorySchema,
+  amount: z.coerce.number().finite().nonnegative(),
+});
+
 export const clientDeductionAggregationPayloadSchema = z.object({
   caseId: z.string().min(1),
   incomeEvents: z.array(incomeEventSchema),
@@ -53,6 +60,7 @@ export const deductionReadParamsSchema = z.object({
 
 export type IncomeEvent = z.infer<typeof incomeEventSchema>;
 export type Deduction = z.infer<typeof deductionSchema>;
+export type DeductionCreate = z.infer<typeof deductionCreateSchema>;
 export type DeductionTableRow = z.infer<typeof deductionTableRowSchema>;
 export type DeductionCategory = z.infer<typeof deductionCategorySchema>;
 export type ClientDeductionAggregationPayload = z.infer<

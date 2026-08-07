@@ -2,24 +2,21 @@ import { defineConfig } from "drizzle-kit";
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env" });
 
-const connectionString = process.env.DATABASE_URL as string
+const connectionString = process.env.DATABASE_URL?.trim();
 
-// Quick sanity check to catch empty variables before the driver crashes
 if (!connectionString) {
-  console.log("DB failure")
+  throw new Error(
+    "DATABASE_URL is required. Copy .env.example to .env and set DATABASE_URL.",
+  );
 }
 
 export default defineConfig({
   dialect: "postgresql",
   schema: "./src/typescript/shared/database/schema.ts",
   out: "./src/typescript/shared/database/drizzle-migrations",
-  migrations: {
-    table: 'tax_pulse_drizzle_migration_log',
-  },
   dbCredentials: {
-    url: connectionString
+    url: connectionString,
   },
-  // Debugging support
-  verbose: true, // Logs all SQL queries
-  strict: true,  // Forces explicit confirmation
+  verbose: true,
+  strict: true,
 });
