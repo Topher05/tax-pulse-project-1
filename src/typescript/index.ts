@@ -354,6 +354,7 @@ export {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createRedisTaxPlanCycleCreateIdempotencyStore,
+  createRedisIdempotencyStore,
   createRedisConsumer,
   TaxPlanCycleCreateIdempotencyInProgressError,
   TaxPlanCycleCreateIdempotencyUnavailableError,

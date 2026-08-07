@@ -88,3 +88,10 @@ export function createStageChangedCloudEventV1(
     },
   });
 }
+
+export function createStageChangedCloudEvent(
+  input: StageChangedEventPublishInput,
+  options: CreateStageChangedCloudEventOptions = {},
+): StageChangedCloudEventV1 {
+  return createStageChangedCloudEventV1(input, options);
+}

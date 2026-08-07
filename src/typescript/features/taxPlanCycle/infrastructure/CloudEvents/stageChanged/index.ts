@@ -5,7 +5,6 @@ export {
   IdempotencyUnavailableError,
 } from "./EventDeduplicator.js";
 export {
-  createCloudEvent,
   createCloudEventV1,
   createSnsClient,
   createSnsPublisher,
@@ -15,11 +14,8 @@ export {
   getTopicArnFromEnv,
   getTopicArnFromEnv as getStageChangedTopicArnFromEnv,
   PublishCommand,
-  type CloudEventPublishInput,
-  type CreateCloudEventOptions,
   type SnsClient,
   type StageChangedEventPublisher,
-  type StageChangedEventPublishInput,
   type SnsPublisherOptions,
 } from "./SnsPublisher.js";
 export {
@@ -37,6 +33,7 @@ export {
 } from "./SqsConsumer.js";
 export {
   createWriter,
+  createCloudEvent,
   cloudEventSchemaV1,
   eventDataSchema,
   eventDataSchemaName,
@@ -57,6 +54,7 @@ export {
   type IdempotencyGuard,
   type IdempotencyInput,
   type IdempotencyStore,
+  type CloudEventPublishInput as StageChangedEventPublishInput,
   type SqsConsumerClient,
   type SqsConsumerClient as StageChangedSqsClient,
   type SqsConsumerOptions,

@@ -13,6 +13,31 @@ import {
 } from "../../../../src/typescript/features/taxPlanCycle/index.js";
 
 describe("cloud tap script", () => {
+  function createInMemoryRedisClient() {
+    const store = new Map<string, string>();
+
+    return {
+      async get(key: string): Promise<string | null> {
+        return store.get(key) ?? null;
+      },
+      async set(
+        key: string,
+        value: string,
+        options?: { EX?: number; NX?: boolean },
+      ): Promise<"OK" | null> {
+        if (options?.NX && store.has(key)) {
+          return null;
+        }
+
+        store.set(key, value);
+        return "OK";
+      },
+      async del(key: string): Promise<number> {
+        return store.delete(key) ? 1 : 0;
+      },
+    };
+  }
+
   test("builds a canonical stage-changed CloudEvent fixture", () => {
     const event = buildCloudTapEvent();
 
@@ -55,9 +80,11 @@ describe("cloud tap script", () => {
   });
 
   test("processes the synthetic event through the real SQS consumer path", async () => {
-    const result = await runCloudTap();
+    const result = await runCloudTap(undefined, {
+      redisClient: createInMemoryRedisClient(),
+    });
 
-    expect(result.mode).toBe("memory");
+    expect(result.mode).toBe("redis");
     expect(result.queueUrl).toBe(
       "https://sqs.us-east-1.amazonaws.com/123456789012/taxpulse-stage-changed",
     );

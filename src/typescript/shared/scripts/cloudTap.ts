@@ -59,6 +59,10 @@ export interface CloudTapLogger {
   warn(bindings: Record<string, unknown>, message: string): void;
 }
 
+export interface CloudTapOptions {
+  redisClient?: IdempotencyGuard;
+}
+
 function createCaptureLogger(): {
   logger: CloudTapLogger;
   infoLogs: CloudTapLogEntry[];
@@ -140,6 +144,7 @@ export function buildCloudTapSnsNotificationEnvelope(
 
 export async function runCloudTap(
   redisUrl: string = cloudTapRedisUrl,
+  options: CloudTapOptions = {},
 ): Promise<CloudTapResult> {
   const event = buildCloudTapEvent();
   const idempotencyKey = buildIdempotencyKey({
@@ -151,11 +156,14 @@ export async function runCloudTap(
   const sqsClient = createSyntheticSqsClient(messageBody);
   const capture = createCaptureLogger();
   const projectionWrites: StageChangedCloudEventV1[] = [];
-  const redisConnection = createClient({
-    url: redisUrl,
-    socket: { connectTimeout: 3_000 },
-  });
-  const redisClient: IdempotencyGuard = redisConnection;
+  const redisConnection = options.redisClient
+    ? undefined
+    : createClient({
+        url: redisUrl,
+        socket: { connectTimeout: 3_000 },
+      });
+  const redisClient: IdempotencyGuard =
+    options.redisClient ?? redisConnection ?? createClient({ url: redisUrl });
   const idempotencyStore = createRedisIdempotencyStore(redisClient);
   const consumer = createSqsConsumer(
     sqsClient,
@@ -171,7 +179,9 @@ export async function runCloudTap(
     },
   );
 
-  await redisConnection.connect();
+  if (redisConnection) {
+    await redisConnection.connect();
+  }
 
   try {
     const firstResult = await consumer.consumeStageChangedEventsOnce();
@@ -193,7 +203,9 @@ export async function runCloudTap(
       warnLogs: capture.warnLogs,
     };
   } finally {
-    await redisConnection.quit().catch(() => undefined);
+    if (redisConnection) {
+      await redisConnection.quit().catch(() => undefined);
+    }
   }
 }
 

@@ -31,7 +31,6 @@ export {
   type CreateStageChangedCloudEventOptions,
   type StageChangedCloudEventV1,
   type StageChangedEventDataV1,
-  type StageChangedEventPublishInput,
 } from "./stageChangedEvent.js";
 export {
   createTaxPlanCycleRepository,
@@ -156,10 +155,8 @@ export {
 export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
-  type StageChangedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionControllerOptions,
-  type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
