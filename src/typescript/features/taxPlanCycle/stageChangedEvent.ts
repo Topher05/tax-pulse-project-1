@@ -13,6 +13,19 @@ export const stageChangedEventDataSchema =
   "taxpulse://schemas/platform/stage-changed/v1";
 export const stageChangedEventSchemaVersion = "1";
 
+export interface StageChangedEventPublishInput {
+  tenantId: string;
+  caseId: string;
+  fromStage: TaxPlanCycleStage;
+  toStage: TaxPlanCycleStage;
+  actor: string;
+}
+
+export interface CreateStageChangedCloudEventOptions {
+  idFactory?: () => string;
+  now?: () => Date;
+}
+
 export const stageChangedEventDataSchemaV1 = z.strictObject({
   case_id: z.uuid(),
   tenant_id: z.uuid(),
@@ -39,19 +52,6 @@ export type StageChangedCloudEventV1 = z.infer<
   typeof stageChangedCloudEventSchemaV1
 >;
 
-export interface StageChangedEventPublishInput {
-  tenantId: string;
-  caseId: string;
-  fromStage: TaxPlanCycleStage;
-  toStage: TaxPlanCycleStage;
-  actor: string;
-}
-
-export interface CreateStageChangedCloudEventOptions {
-  idFactory?: () => string;
-  now?: () => Date;
-}
-
 export function createStageChangedCloudEventV1(
   input: StageChangedEventPublishInput,
   options: CreateStageChangedCloudEventOptions = {},
@@ -75,4 +75,11 @@ export function createStageChangedCloudEventV1(
       actor: input.actor,
     },
   });
+}
+
+export function createStageChangedCloudEvent(
+  input: StageChangedEventPublishInput,
+  options: CreateStageChangedCloudEventOptions = {},
+): StageChangedCloudEventV1 {
+  return createStageChangedCloudEventV1(input, options);
 }

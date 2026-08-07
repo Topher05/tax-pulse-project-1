@@ -47,9 +47,16 @@ async function createAccessToken(): Promise<string> {
 }
 
 function tamperToken(token: string): string {
-  const replacement = token.endsWith("a") ? "b" : "a";
+  const parts = token.split(".");
 
-  return `${token.slice(0, -1)}${replacement}`;
+  if (parts.length !== 3) {
+    return `${token}x`;
+  }
+
+  const signature = parts[2] ?? "";
+  const replacement = signature.endsWith("a") ? "b" : "a";
+
+  return `${parts[0]}.${parts[1]}.${signature.slice(0, -1)}${replacement}`;
 }
 
 async function withAuthNegativePathServer(

@@ -382,10 +382,13 @@ export {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createRedisTaxPlanCycleCreateIdempotencyStore,
+  createRedisIdempotencyStore,
+  createRedisConsumer,
   TaxPlanCycleCreateIdempotencyInProgressError,
   TaxPlanCycleCreateIdempotencyUnavailableError,
   createTaxPlanCycleQueueDynamoDocumentClient,
   createTaxPlanCycleQueueProjectionStore,
+  createWriter,
   createTaxPlanCycleQueueReadService,
   createSnsStageChangedEventPublisher,
   createStageChangedCloudEventV1,
@@ -402,8 +405,11 @@ export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
   createTaxPlanCycleRouter,
+  STAGE_CHANGED_CONSUMER_NAME,
+  buildIdempotencyKey,
   taxPlanCycleQueueProjectionItemSchema,
   taxPlanCycleQueueProjectionItemsSchema,
+  createStageChangedCloudEvent,
   type CreateTaxPlanCycleCreateControllerOptions,
   type CreateTaxPlanCycleRouterOptions,
   type TaxPlanCycleCreateControllerInput,
@@ -416,21 +422,28 @@ export {
   type TaxPlanCycleCreateIdempotencyClient,
   type TaxPlanCycleCreateIdempotencyInput,
   type TaxPlanCycleCreateIdempotencyStore,
+  type ConsumerHandleResult,
+  type ConsumerOptions,
   type TaxPlanCycleQueueProjectionDynamoClient,
   type TaxPlanCycleQueueProjectionItem,
   type TaxPlanCycleQueueProjectionReader,
+  type IdempotencyGuard,
+  type IdempotencyInput,
+  type IdempotencyStore,
+  type Writer,
+  type WriterClient,
   type TaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadServiceOptions,
+  type StageChangedEventPublisher,
+  type TaxPlanCycleTransitionControllerInput,
   type CreateStageChangedCloudEventOptions,
   type ConsumeStageChangedEventsResult,
   type StageChangedEventConsumerLogger,
-  type StageChangedEventPublisher,
   type StageChangedEventPublishInput,
   type StageChangedSnsClient,
   type StageChangedSqsClient,
   type StageChangedSqsConsumerOptions,
   type TaxPlanCycleTransitionControllerOptions,
-  type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
   type ValidationErrorIssue,
@@ -456,6 +469,8 @@ import {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleRepository,
+  createSnsStageChangedEventPublisher,
+  createStageChangedSnsClient,
   createQuarterlyPaymentsRouter,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
@@ -558,11 +573,15 @@ export async function main(): Promise<Server> {
   const deductionRepository = createDeductionRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   const liabilityEngineBase = process.env.LIABILITY_ENGINE_BASE?.trim();
+  const stageChangedTopicArn = process.env.TAXPULSE_STAGE_CHANGED_TOPIC_ARN?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
   let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
   let createIdempotencyStore: ReturnType<
     typeof createRedisTaxPlanCycleCreateIdempotencyStore
   > | undefined;
+  let stageChangedEventPublisher:
+    | ReturnType<typeof createSnsStageChangedEventPublisher>
+    | undefined;
   let scenarioModelingController:
     | ReturnType<typeof createScenarioModelingController>
     | undefined;
@@ -578,6 +597,15 @@ export async function main(): Promise<Server> {
       queueCache,
     );
     logger.info("Connected to Redis for queue cache invalidation and create idempotency");
+  }
+
+  if (stageChangedTopicArn) {
+    const stageChangedSnsClient = createStageChangedSnsClient(process.env);
+    stageChangedEventPublisher = createSnsStageChangedEventPublisher(
+      stageChangedSnsClient,
+      stageChangedTopicArn,
+    );
+    logger.info("Connected to SNS for stage-changed publishing");
   }
 
   if (liabilityEngineBase) {
@@ -604,6 +632,7 @@ export async function main(): Promise<Server> {
     taxPlanCycleRepository,
     {
       queueCacheInvalidator,
+      stageChangedEventPublisher,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>

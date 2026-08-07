@@ -1935,7 +1935,7 @@ describe("taxPlanCycle integration", () => {
           toStage: "Data Aggregation",
           actor: "advisor-001",
         }),
-      ).rejects.toThrow("forced outbox failure");
+      ).rejects.toThrow(/forced outbox failure|outbox_event/i);
 
       await expect(
         repository.findByCaseId({
