@@ -441,6 +441,8 @@ import {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleRepository,
+  createSnsStageChangedEventPublisher,
+  createStageChangedSnsClient,
   createQuarterlyPaymentsRouter,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
@@ -537,11 +539,15 @@ export async function main(): Promise<Server> {
   const deductionRepository = createDeductionRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   const liabilityEngineBase = process.env.LIABILITY_ENGINE_BASE?.trim();
+  const stageChangedTopicArn = process.env.TAXPULSE_STAGE_CHANGED_TOPIC_ARN?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
   let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
   let createIdempotencyStore: ReturnType<
     typeof createRedisTaxPlanCycleCreateIdempotencyStore
   > | undefined;
+  let stageChangedEventPublisher:
+    | ReturnType<typeof createSnsStageChangedEventPublisher>
+    | undefined;
   let scenarioModelingController:
     | ReturnType<typeof createScenarioModelingController>
     | undefined;
@@ -557,6 +563,15 @@ export async function main(): Promise<Server> {
       queueCache,
     );
     logger.info("Connected to Redis for queue cache invalidation and create idempotency");
+  }
+
+  if (stageChangedTopicArn) {
+    const stageChangedSnsClient = createStageChangedSnsClient(process.env);
+    stageChangedEventPublisher = createSnsStageChangedEventPublisher(
+      stageChangedSnsClient,
+      stageChangedTopicArn,
+    );
+    logger.info("Connected to SNS for stage-changed publishing");
   }
 
   if (liabilityEngineBase) {
@@ -583,6 +598,7 @@ export async function main(): Promise<Server> {
     taxPlanCycleRepository,
     {
       queueCacheInvalidator,
+      stageChangedEventPublisher,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
