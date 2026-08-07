@@ -1596,41 +1596,56 @@ sequenceDiagram
 
 **Jira Key:** SCRUM-136
 
-**Summary:** Make the queue-projection consumer idempotent
+**Summary:** Build the CloudEvents delta-only queue projection consumer with Redis idempotency
 
-**Description:** As a Backend Developer, I want the queue-projection consumer idempotent, so that a redelivered event does not double-apply.
+**Description:** Reuse the merged stage-changed CloudEvent contract from SCRUM-130, add the transition publisher boundary needed by SCRUM-131, and add Redis-backed idempotency around the SCRUM-132 queue-projection consumer without introducing a second event model.
 
 **Acceptance Criteria:**
 
-- The consumer records processed event IDs and skips duplicates.
-- Re-processing the same stage-changed event yields the same projection.
-- A test asserts an at-least-once redelivery is handled idempotently.
+- The consumer reuses `stageChangedEvent.ts` as the canonical CloudEvent contract.
+- The transition flow exposes a stage-changed publisher port and passes the prior stage into the boundary.
+- Duplicate CloudEvent deliveries are skipped through Redis-backed idempotency.
+- Redis failures fail closed so the event is retried rather than processed without protection.
+- A local cloud-tap script verifies the consumer against a synthetic stage-changed event without AWS.
 
 **Code Connection:**
 
-- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionIdempotency.ts` adds the Redis-backed processed-event ledger with explicit `SET` semantics and tenant/consumer scoping.
-- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionConsumer.ts` validates stage-changed CloudEvents, short-circuits duplicate deliveries, and writes the queue projection from the source repository state.
-- `src/typescript/features/taxPlanCycle/infrastructure/queueDynamoWriter.ts` provides the DynamoDB `PutCommand` upsert adapter for the queue projection row.
-- `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts` covers the first-delivery, duplicate-delivery, and Redis-unavailable paths.
-- `tests/typescript/features/taxPlanCycle/queueDynamoWriter.test.ts` pins the DynamoDB writer command shape.
+- `src/typescript/features/taxPlanCycle/stageChangedEvent.ts` now exports the canonical V1 stage-changed CloudEvent schema plus the event factory and publisher input types.
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts` adds the stage-changed publisher port and forwards the prior stage into the boundary.
+- `src/typescript/features/taxPlanCycle/routes.ts` passes the pre-transition stage into the controller.
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/Consumer.ts` parses the canonical CloudEvent, claims idempotency in Redis, and writes the queue projection once.
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/EventDeduplicator.ts` owns the Redis claim/complete/release semantics for processed-event markers.
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/Writer.ts` keeps the DynamoDB upsert adapter separate from the consumer logic.
+- `src/typescript/shared/scripts/cloudTap.ts` provides a local synthetic-event tap for manual verification.
+- `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts` covers first delivery, duplicate delivery, and Redis-unavailable behavior.
+- `tests/typescript/features/taxPlanCycle/transitionController.test.ts` covers the publisher boundary.
+- `tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts` and `tests/typescript/shared/scripts/cloudTap.test.ts` pin the canonical CloudEvent schema and fixture.
 
 **Project Scope Connection:**
 
-This ticket keeps Redis in the disposable operational-state role described by ADR-0010 and ADR-0014. The queue-read cache-aside path is unchanged; this work adds a separate idempotency ledger for the stage-changed queue consumer so redeliveries do not double-apply the projection.
+This ticket keeps ADR-0014 cache-aside behavior separate from the idempotency ledger. Redis remains disposable operational state, not the source of truth, and the queue projection itself stays a DynamoDB read model upsert.
 
 **Changed Files:**
 
+- `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionIdempotency.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/queueDynamoWriter.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/queueProjectionConsumer.ts`
 - `src/typescript/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/Consumer.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/EventDeduplicator.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/Writer.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/model.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `package.json`
 - `tests/typescript/features/taxPlanCycle/queueProjectionConsumer.test.ts`
-- `tests/typescript/features/taxPlanCycle/queueDynamoWriter.test.ts`
+- `tests/typescript/features/taxPlanCycle/transitionController.test.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts`
+- `tests/typescript/shared/scripts/cloudTap.test.ts`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
-- `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd run typecheck"` passed.
-- `npm.cmd test` at the repository root timed out before completion.
-- Direct Vitest launches in this Windows sandbox hit the known `EPERM: operation not permitted, lstat 'C:\Users\Exia'` path-resolution issue before tests started.
+- Validation has not been run yet after the final cleanup.
+- The new `cloud-tap` script is intended to run locally with synthetic events and can optionally use `TAXPULSE_REDIS_URL` if Redis is available.
