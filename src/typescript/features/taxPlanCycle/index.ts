@@ -178,6 +178,7 @@ export {
 export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
+  type StageChangedEventPublisher,
   type ActionItemCreatedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionControllerOptions,

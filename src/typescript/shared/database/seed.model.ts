@@ -116,7 +116,6 @@ export type SeedTaxPlanCycleInsertRow = Omit<SeedTaxPlanCycleRow, "dueDate"> & {
 };
 
 export type SeedActionItemRow = {
-  id: string;
   caseId: string;
   description: string;
   deadline: Date;
@@ -476,24 +475,63 @@ export const taxPlanCycleRows = [
 
 export const actionItemRows = [
   {
-    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e41",
     caseId: taxPlanCycleRows[1].id,
-    description: "Send the client checklist",
-    deadline: new Date("2026-08-18T00:00:00Z"),
+    description: "Collect signed planning authorization",
+    deadline: new Date("2026-08-01T00:00:00Z"),
     completed: false,
   },
   {
-    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e42",
     caseId: taxPlanCycleRows[1].id,
-    description: "Confirm client meeting availability",
-    deadline: new Date("2026-08-19T00:00:00Z"),
+    description: "Review current estimated payments",
+    deadline: new Date("2026-08-02T00:00:00Z"),
     completed: false,
   },
   {
-    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e43",
     caseId: taxPlanCycleRows[1].id,
-    description: "Upload signed recommendation packet",
-    deadline: new Date("2026-08-20T00:00:00Z"),
+    description: "Draft present-to-client talking points",
+    deadline: new Date("2026-08-03T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Confirm client document intake",
+    deadline: new Date("2026-08-04T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Prepare follow-up questions for advisor",
+    deadline: new Date("2026-08-05T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Send updated action-item summary",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Schedule client review call",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Upload client-facing planning notes",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Verify projected tax savings packet",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Finalize present-to-client checklist",
+    deadline: new Date("2026-10-07T00:00:00Z"),
     completed: false,
   },
 ] as const satisfies readonly SeedActionItemRow[];

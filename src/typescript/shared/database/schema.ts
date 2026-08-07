@@ -255,7 +255,7 @@ export const taxPlanCycle = pgTable(
 export const actionItem = pgTable(
   "action_item",
   {
-    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    id: integer("id").generatedByDefaultAsIdentity().notNull(),
     caseId: uuid("case_id").notNull(),
     description: text("description").notNull(),
     deadline: date("deadline").notNull(),

@@ -295,13 +295,13 @@ Add new ticket entries below using this template.
 
 **Acceptance Criteria:**
 
-- A schema-backed `action_item` table exists with `case_id`, `description`, `deadline`, and `completed`.
+- A schema-backed `action_item` table exists with integer `id`, `case_id`, `description`, `deadline`, and `completed`.
 - The present-to-client boundary can publish a CloudEvent for action-item creation.
 - A consumer can materialize action items into the portal read model from that event.
 
 **Code Connection:**
 
-- `src/typescript/shared/database/schema.ts` adds the `action_item` table definition and foreign key to `tax_plan_cycle`.
+- `src/typescript/shared/database/schema.ts` adds the `action_item` table definition, integer primary key, and foreign key to `tax_plan_cycle`.
 - `src/typescript/shared/database/drizzle-migrations/0011_action_item.sql` materializes the `action_item` table and index in the migration chain.
 - `src/typescript/shared/database/seed.model.ts` adds the action-item seed model and three stubbed rows for case `018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12`.
 - `src/typescript/shared/database/seed.ts` truncates and seeds `action_item` rows through Drizzle.
