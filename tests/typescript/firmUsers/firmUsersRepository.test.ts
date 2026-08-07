@@ -44,6 +44,14 @@ describe("Firm users repository", () => {
           status: "Inactive",
           lastLoginAt: null,
         },
+        {
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d66",
+          name: "Avery Chen",
+          email: "avery.client@example.com",
+          role: "Client",
+          status: "Active",
+          lastLoginAt: "2026-08-02T13:00:00.000Z",
+        },
       ]);
 
       await expect(
@@ -56,6 +64,14 @@ describe("Firm users repository", () => {
           role: "Advisor",
           status: "Active",
           lastLoginAt: "2026-08-05T14:30:00.000Z",
+        },
+        {
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d67",
+          name: "Riley Khan",
+          email: "riley.client@example.com",
+          role: "Client",
+          status: "Inactive",
+          lastLoginAt: null,
         },
       ]);
     });
@@ -94,6 +110,14 @@ describe("Firm users repository", () => {
           role: "Firm Admin",
           status: "Active",
           lastLoginAt: "2026-08-05T14:30:00.000Z",
+        },
+        {
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d67",
+          name: "Riley Khan",
+          email: "riley.client@example.com",
+          role: "Client",
+          status: "Inactive",
+          lastLoginAt: null,
         },
       ]);
     });
