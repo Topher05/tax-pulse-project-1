@@ -182,6 +182,19 @@ export {
   type CreateClientRosterRouterOptions,
 } from "./features/clientRoster/index.js";
 export {
+  buildIncomeEventMockRows,
+  createIncomeEventsRouter,
+  incomeEventReadParamsSchema,
+  incomeEventRowsSchema,
+  incomeEventRowSchema,
+  incomeEventTypeSchema,
+  type CreateIncomeEventsRouterOptions,
+  type IncomeEventsMockCase,
+  type IncomeEventRow,
+  type IncomeEventRows,
+  type IncomeEventType,
+} from "./features/incomeEvents/index.js";
+export {
   createBracketReferenceRepository,
   type BracketReferenceLookupInput,
   type BracketReferenceLookupResult,
@@ -466,6 +479,7 @@ import {
   createClientRosterRepository,
   createClientRosterRouter,
 } from "./features/clientRoster/index.js";
+import { createIncomeEventsRouter } from "./features/incomeEvents/index.js";
 
 loadEnv();
 const { Client } = pg;
@@ -626,6 +640,12 @@ export async function main(): Promise<Server> {
         taxPlanCycleApiPrefix,
         createDeductionsRouter({
           repository: deductionRepository,
+        }),
+      );
+      app.use(
+        taxPlanCycleApiPrefix,
+        createIncomeEventsRouter({
+          taxPlanCycleRepository,
         }),
       );
       app.use(
