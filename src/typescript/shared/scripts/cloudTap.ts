@@ -8,8 +8,18 @@ import {
 } from "@aws-sdk/client-sqs";
 import { createClient } from "redis";
 import {
+  ACTION_ITEM_CREATED_CONSUMER_NAME,
+  ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
   STAGE_CHANGED_CONSUMER_NAME,
   buildIdempotencyKey,
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/index.js";
+import {
+  createActionItemCreatedCloudEvent,
+  createRedisActionItemConsumer,
+  type ActionItemCreatedCloudEventV1,
+  type ActionItemCreatedConsumerHandleResult,
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.js";
+import {
   createRedisIdempotencyStore,
   createSqsConsumer,
   type ConsumeStageChangedEventsResult,
@@ -17,7 +27,7 @@ import {
   type ConsumerLogger as StageChangedEventConsumerLogger,
   type SqsConsumerClient as StageChangedSqsClient,
   createCloudEventV1,
-} from "../../features/taxPlanCycle/infrastructure/cloudEvents/index.js";
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
 import {
   stageChangedCloudEventSchemaV1,
   type StageChangedCloudEventV1,
@@ -29,6 +39,7 @@ const cloudTapTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91";
 const cloudTapCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e92";
 const cloudTapClientId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e93";
 const cloudTapEventId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e94";
+const cloudTapActionItemEventId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e95";
 const cloudTapMockIdempotencyValue = JSON.stringify({ status: "completed" });
 const cloudTapRedisUrl =
   process.env.TAXPULSE_REDIS_URL?.trim() ?? "redis://localhost:6379";
@@ -52,6 +63,11 @@ export interface CloudTapResult {
   sentCommands: Array<"receive" | "delete">;
   infoLogs: CloudTapLogEntry[];
   warnLogs: CloudTapLogEntry[];
+  actionItemEvent: ActionItemCreatedCloudEventV1;
+  actionItemIdempotencyKey: string;
+  actionItemFirstResult: ActionItemCreatedConsumerHandleResult;
+  actionItemSecondResult: ActionItemCreatedConsumerHandleResult;
+  actionItemProjectionWrites: number;
 }
 
 export interface CloudTapLogger {
@@ -61,6 +77,68 @@ export interface CloudTapLogger {
 
 export interface CloudTapOptions {
   redisClient?: IdempotencyGuard;
+}
+
+function buildCloudTapActionItemEvent(): ActionItemCreatedCloudEventV1 {
+  return createActionItemCreatedCloudEvent(
+    {
+      tenantId: cloudTapTenantId,
+      caseId: cloudTapCaseId,
+      description: "Send the client action-item checklist",
+      deadline: "2026-08-21",
+      actor: "cloud-tap-advisor",
+    },
+    {
+      idFactory: () => cloudTapActionItemEventId,
+      now: () => new Date("2026-08-04T15:00:00.000Z"),
+    },
+  );
+}
+
+function createInMemoryActionItemRepository(): {
+  insert(input: {
+    caseId: string;
+    description: string;
+    deadline: string;
+    completed: boolean;
+  }): Promise<{
+    id: number;
+    case_id: string;
+    description: string;
+    deadline: string;
+    completed: boolean;
+  }>;
+  rows: Array<{
+    id: number;
+    case_id: string;
+    description: string;
+    deadline: string;
+    completed: boolean;
+  }>;
+} {
+  const rows: Array<{
+    id: number;
+    case_id: string;
+    description: string;
+    deadline: string;
+    completed: boolean;
+  }> = [];
+
+  return {
+    rows,
+    async insert(input) {
+      const row = {
+        id: rows.length + 1,
+        case_id: input.caseId,
+        description: input.description,
+        deadline: input.deadline,
+        completed: input.completed,
+      };
+
+      rows.push(row);
+      return row;
+    },
+  };
 }
 
 function createCaptureLogger(): {
@@ -147,15 +225,23 @@ export async function runCloudTap(
   options: CloudTapOptions = {},
 ): Promise<CloudTapResult> {
   const event = buildCloudTapEvent();
+  const actionItemEvent = buildCloudTapActionItemEvent();
   const idempotencyKey = buildIdempotencyKey({
     tenantId: event.data.tenant_id,
     consumerName: STAGE_CHANGED_CONSUMER_NAME,
     eventId: event.id,
   });
+  const actionItemIdempotencyKey = buildIdempotencyKey({
+    tenantId: actionItemEvent.data.tenant_id,
+    consumerName: ACTION_ITEM_CREATED_CONSUMER_NAME,
+    eventId: actionItemEvent.id,
+    namespace: ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
+  });
   const messageBody = buildCloudTapSnsNotificationEnvelope(event);
   const sqsClient = createSyntheticSqsClient(messageBody);
   const capture = createCaptureLogger();
   const projectionWrites: StageChangedCloudEventV1[] = [];
+  const actionItemProjection = createInMemoryActionItemRepository();
   const redisConnection = options.redisClient
     ? undefined
     : createClient({
@@ -164,6 +250,10 @@ export async function runCloudTap(
       });
   const redisClient: IdempotencyGuard =
     options.redisClient ?? redisConnection ?? createClient({ url: redisUrl });
+  const actionItemConsumer = createRedisActionItemConsumer(
+    redisClient,
+    actionItemProjection,
+  );
   const idempotencyStore = createRedisIdempotencyStore(redisClient);
   const consumer = createSqsConsumer(
     sqsClient,
@@ -189,6 +279,10 @@ export async function runCloudTap(
       EX: 24 * 60 * 60,
     });
     const secondResult = await consumer.consumeStageChangedEventsOnce();
+    const actionItemFirstResult =
+      await actionItemConsumer.handleActionItemCreatedEvent(actionItemEvent);
+    const actionItemSecondResult =
+      await actionItemConsumer.handleActionItemCreatedEvent(actionItemEvent);
 
     return {
       mode: "redis",
@@ -201,6 +295,11 @@ export async function runCloudTap(
       sentCommands: sqsClient.sentCommands,
       infoLogs: capture.infoLogs,
       warnLogs: capture.warnLogs,
+      actionItemEvent,
+      actionItemIdempotencyKey,
+      actionItemFirstResult,
+      actionItemSecondResult,
+      actionItemProjectionWrites: actionItemProjection.rows.length,
     };
   } finally {
     if (redisConnection) {
@@ -222,6 +321,11 @@ export async function main(): Promise<void> {
   console.log(`SQS commands: ${result.sentCommands.join(", ")}`);
   console.log(`Info logs: ${result.infoLogs.length}`);
   console.log(`Warn logs: ${result.warnLogs.length}`);
+  console.log(`Action item event id: ${result.actionItemEvent.id}`);
+  console.log(
+    `Action item delivery: ${result.actionItemFirstResult.status}/${result.actionItemSecondResult.status}`,
+  );
+  console.log(`Action item projection writes: ${result.actionItemProjectionWrites}`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

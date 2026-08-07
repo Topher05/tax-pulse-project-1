@@ -4,6 +4,9 @@ export {
   createActionItemConsumer,
   createRedisActionItemConsumer,
 } from "./Consumer.js";
+export type {
+  ActionItemCreatedConsumerHandleResult,
+} from "./Consumer.js";
 export {
   actionItemCreatedCloudEventSchemaV1,
   actionItemCreatedEventDataSchema,

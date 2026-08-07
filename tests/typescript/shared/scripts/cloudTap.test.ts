@@ -6,6 +6,10 @@ import {
   runCloudTap,
 } from "../../../../src/typescript/shared/scripts/cloudTap.js";
 import {
+  actionItemCreatedCloudEventSchemaV1,
+  actionItemCreatedEventDataSchema,
+  actionItemCreatedEventSource,
+  actionItemCreatedEventType,
   stageChangedCloudEventSchemaV1,
   stageChangedEventDataSchema,
   stageChangedEventSource,
@@ -129,5 +133,41 @@ describe("cloud tap script", () => {
       message: "Skipped duplicate stage-changed event from SQS",
     });
     expect(result.warnLogs).toEqual([]);
+    expect(result.actionItemEvent).toEqual(
+      actionItemCreatedCloudEventSchemaV1.parse({
+        specversion: "1.0",
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e95",
+        source: actionItemCreatedEventSource,
+        type: actionItemCreatedEventType,
+        time: "2026-08-04T15:00:00.000Z",
+        datacontenttype: "application/json",
+        dataschema: actionItemCreatedEventDataSchema,
+        data: {
+          tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+          case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e92",
+          description: "Send the client action-item checklist",
+          deadline: "2026-08-21",
+          completed: false,
+          actor: "cloud-tap-advisor",
+        },
+      }),
+    );
+    expect(result.actionItemIdempotencyKey).toBe(
+      "idem:queue-projection:018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91:tax-plan-cycle-action-item-created:018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e95",
+    );
+    expect(result.actionItemFirstResult).toEqual({
+      status: "processed",
+      item: {
+        id: 1,
+        case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e92",
+        description: "Send the client action-item checklist",
+        deadline: "2026-08-21",
+        completed: false,
+      },
+    });
+    expect(result.actionItemSecondResult).toEqual({
+      status: "duplicate",
+    });
+    expect(result.actionItemProjectionWrites).toBe(1);
   });
 });
