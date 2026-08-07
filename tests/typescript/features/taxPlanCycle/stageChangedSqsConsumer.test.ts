@@ -320,7 +320,7 @@ describe("stage-changed SQS consumer", () => {
     expect(sqsSend).toHaveBeenCalledTimes(1);
   });
 
-  test("rejects invalid CloudEvents without deleting the SQS message", async () => {
+  test("rejects invalid cloud events without deleting the SQS message", async () => {
     const sqsSend = vi.fn(async (command: ReceiveMessageCommand | DeleteMessageCommand) => {
       if (command instanceof ReceiveMessageCommand) {
         return {
