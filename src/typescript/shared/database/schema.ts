@@ -146,8 +146,10 @@ export const users = pgTable(
     id: uuid("id").default(sql`uuidv7()`).primaryKey(),
     tenantId: uuid("tenant_id").notNull(),
     email: text("email").notNull(),
+    displayName: text("display_name").notNull(),
     roleId: integer("role_id").notNull(),
     statusId: integer("status_id").notNull(),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   },
   (table) => [
     foreignKey({

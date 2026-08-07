@@ -182,6 +182,21 @@ export {
   type CreateClientRosterRouterOptions,
 } from "./features/clientRoster/index.js";
 export {
+  createFirmUsersRepository,
+  createFirmUsersRouter,
+  firmUserRoleSchema,
+  firmUsersListResponseSchema,
+  firmUserRowSchema,
+  firmUserStatusSchema,
+  type CreateFirmUsersRouterOptions,
+  type FirmUserRole,
+  type FirmUsersListInput,
+  type FirmUsersListResponse,
+  type FirmUserRow,
+  type FirmUsersRepository,
+  type FirmUserStatus,
+} from "./features/firmUsers/index.js";
+export {
   buildIncomeEventMockRows,
   createIncomeEventsRouter,
   incomeEventReadParamsSchema,
@@ -479,6 +494,10 @@ import {
   createClientRosterRepository,
   createClientRosterRouter,
 } from "./features/clientRoster/index.js";
+import {
+  createFirmUsersRepository,
+  createFirmUsersRouter,
+} from "./features/firmUsers/index.js";
 import { createIncomeEventsRouter } from "./features/incomeEvents/index.js";
 
 loadEnv();
@@ -534,6 +553,7 @@ export async function main(): Promise<Server> {
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
   const clientRosterRepository = createClientRosterRepository(client);
+  const firmUsersRepository = createFirmUsersRepository(client);
   const scenarioRepository = createScenarioRepository(client);
   const deductionRepository = createDeductionRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
@@ -634,6 +654,12 @@ export async function main(): Promise<Server> {
         taxPlanCycleApiPrefix,
         createClientRosterRouter({
           repository: clientRosterRepository,
+        }),
+      );
+      app.use(
+        taxPlanCycleApiPrefix,
+        createFirmUsersRouter({
+          repository: firmUsersRepository,
         }),
       );
       app.use(

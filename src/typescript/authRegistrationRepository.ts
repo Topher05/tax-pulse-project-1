@@ -47,6 +47,10 @@ function isTenantEmailConflict(error: unknown): boolean {
   return false;
 }
 
+function displayNameFromEmail(email: string): string {
+  return email.split("@")[0]?.trim() || email;
+}
+
 export function createRegistrationAccountRepository(
   client: Client,
 ): RegistrationAccountStore {
@@ -83,6 +87,7 @@ export function createRegistrationAccountRepository(
               id: input.id,
               tenantId: input.tenantId,
               email: input.email,
+              displayName: displayNameFromEmail(input.email),
               roleId: role.id,
               statusId: status.id,
             })
