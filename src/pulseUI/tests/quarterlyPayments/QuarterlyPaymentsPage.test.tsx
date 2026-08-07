@@ -235,7 +235,7 @@ describe("QuarterlyPaymentsPage", () => {
     expect(screen.getByRole("heading", { name: "Timeline", level: 2 })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Quarter timeline" })).toBeInTheDocument();
     expect(screen.getByText("Q1 2026 Estimation")).toBeInTheDocument();
-    expect(screen.getAllByText("$3,620")).toHaveLength(3);
+    expect(screen.getAllByText("$3,620")).toHaveLength(2);
     expect(caseApiMock).toHaveBeenCalledWith(
       `/v1/tax-plan-cycles/${caseId}/quarterly-estimates`,
       expect.any(Function),

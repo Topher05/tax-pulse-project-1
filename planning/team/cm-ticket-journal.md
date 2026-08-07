@@ -1140,6 +1140,9 @@ SCRUM-119, while broader accessibility coverage remains owned by SCRUM-121.
 **Description:** As a Frontend Developer, I want the Quarterly Payments screen to pass
 an axe check and a component test, so that it is accessible and regression-guarded.
 
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
 - A component test asserts the four quarter items and KPI cards render from sample data.
 - The test asserts no payment-recording control is present in the rendered screen.
 
@@ -1163,8 +1166,10 @@ error, and retry states owned by SCRUM-119.
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
+- Corrected the loading-state regression assertion to expect the two rendered occurrences
+  of `$3,620`: the Q1 estimated amount and its withholding-applied value.
 - `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
-  passed: 5 tests, including the axe check.
+  passed: 8 tests, including the axe check.
 - `npm --prefix src/pulseUI run typecheck` passed.
 - The full Pulse UI run passed 122 of 124 tests. The same two unrelated Deductions
   tests documented by SCRUM-120 fail because their `caseApiGetJson` expectations omit
