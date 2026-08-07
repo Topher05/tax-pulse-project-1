@@ -201,6 +201,24 @@ export {
   type FirmUserStatus,
 } from "./features/firmUsers/index.js";
 export {
+  createPlatformAdministrationRepository,
+  createPlatformAdministrationRouter,
+  platformTenantUserCreateParamsSchema,
+  platformTenantUserCreateRequestSchema,
+  platformTenantUserRowSchema,
+  platformTenantUsersListResponseSchema,
+  platformTenantUsersTenantSchema,
+  PlatformTenantUserEmailConflictError,
+  type CreatePlatformAdministrationRouterOptions,
+  type PlatformAdministrationRepository,
+  type PlatformTenantUserCreateInput,
+  type PlatformTenantUserCreateParams,
+  type PlatformTenantUserCreateRequest,
+  type PlatformTenantUserRow,
+  type PlatformTenantUsersListResponse,
+  type PlatformTenantUsersTenant,
+} from "./features/platformAdministration/index.js";
+export {
   createBracketReferenceRepository,
   type BracketReferenceLookupInput,
   type BracketReferenceLookupResult,
@@ -492,6 +510,10 @@ import {
   createFirmUsersRepository,
   createFirmUsersRouter,
 } from "./features/firmUsers/index.js";
+import {
+  createPlatformAdministrationRepository,
+  createPlatformAdministrationRouter,
+} from "./features/platformAdministration/index.js";
 
 loadEnv();
 const { Client } = pg;
@@ -547,6 +569,7 @@ export async function main(): Promise<Server> {
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
   const clientRosterRepository = createClientRosterRepository(client);
   const firmUsersRepository = createFirmUsersRepository(client);
+  const platformAdministrationRepository = createPlatformAdministrationRepository(client);
   const scenarioRepository = createScenarioRepository(client);
   const deductionRepository = createDeductionRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
@@ -658,6 +681,12 @@ export async function main(): Promise<Server> {
         taxPlanCycleApiPrefix,
         createFirmUsersRouter({
           repository: firmUsersRepository,
+        }),
+      );
+      app.use(
+        taxPlanCycleApiPrefix,
+        createPlatformAdministrationRouter({
+          repository: platformAdministrationRepository,
         }),
       );
       app.use(
