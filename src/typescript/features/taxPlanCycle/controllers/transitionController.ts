@@ -5,7 +5,7 @@ import type {
   TaxPlanCycleTransitionInput,
 } from "../repositories/repository.js";
 import type { TaxPlanCycleQueueCacheInvalidator } from "../infrastructure/queueCache.js";
-import type { StageChangedEventPublisher } from "../infrastructure/stageChangedSnsPublisher.js";
+import type { StageChangedEventPublisher } from "../infrastructure/cloudEvents/stageChanged/index.js";
 
 export interface TaxPlanCycleTransitionControllerInput
   extends TaxPlanCycleTransitionInput {

@@ -17,7 +17,7 @@ import {
   type ConsumerLogger as StageChangedEventConsumerLogger,
   type SqsConsumerClient as StageChangedSqsClient,
   createCloudEventV1,
-} from "../../features/taxPlanCycle/infrastructure/cloudEvents/index.js";
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
 import {
   stageChangedCloudEventSchemaV1,
   type StageChangedCloudEventV1,
