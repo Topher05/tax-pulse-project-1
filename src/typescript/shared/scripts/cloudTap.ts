@@ -29,6 +29,9 @@ const cloudTapTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91";
 const cloudTapCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e92";
 const cloudTapClientId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e93";
 const cloudTapEventId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e94";
+const cloudTapMockIdempotencyValue = JSON.stringify({ status: "completed" });
+const cloudTapRedisUrl =
+  process.env.TAXPULSE_REDIS_URL?.trim() ?? "redis://localhost:6379";
 const cloudTapQueueUrl =
   process.env.TAXPULSE_STAGE_CHANGED_QUEUE_URL?.trim() ||
   "https://sqs.us-east-1.amazonaws.com/123456789012/taxpulse-stage-changed";
@@ -39,7 +42,7 @@ export interface CloudTapLogEntry {
 }
 
 export interface CloudTapResult {
-  mode: "memory" | "redis";
+  mode: "redis";
   queueUrl: string;
   event: StageChangedCloudEventV1;
   idempotencyKey: string;
@@ -106,31 +109,6 @@ function createSyntheticSqsClient(messageBody: string): StageChangedSqsClient & 
   };
 }
 
-function createInMemoryRedisClient(): IdempotencyGuard {
-  const store = new Map<string, string>();
-
-  return {
-    async get(key: string): Promise<string | null> {
-      return store.get(key) ?? null;
-    },
-    async set(
-      key: string,
-      value: string,
-      options?: { EX?: number; NX?: boolean },
-    ): Promise<"OK" | null> {
-      if (options?.NX && store.has(key)) {
-        return null;
-      }
-
-      store.set(key, value);
-      return "OK";
-    },
-    async del(key: string): Promise<number> {
-      return store.delete(key) ? 1 : 0;
-    },
-  };
-}
-
 export function buildCloudTapEvent(): StageChangedCloudEventV1 {
   return stageChangedCloudEventSchemaV1.parse(
     createCloudEventV1(
@@ -161,16 +139,23 @@ export function buildCloudTapSnsNotificationEnvelope(
 }
 
 export async function runCloudTap(
-  redisUrl: string | undefined = process.env.TAXPULSE_REDIS_URL?.trim(),
+  redisUrl: string = cloudTapRedisUrl,
 ): Promise<CloudTapResult> {
   const event = buildCloudTapEvent();
+  const idempotencyKey = buildIdempotencyKey({
+    tenantId: event.data.tenant_id,
+    consumerName: STAGE_CHANGED_CONSUMER_NAME,
+    eventId: event.id,
+  });
   const messageBody = buildCloudTapSnsNotificationEnvelope(event);
   const sqsClient = createSyntheticSqsClient(messageBody);
   const capture = createCaptureLogger();
   const projectionWrites: StageChangedCloudEventV1[] = [];
-  const memoryRedisClient = createInMemoryRedisClient();
-  const redisConnection = redisUrl ? createClient({ url: redisUrl }) : undefined;
-  const redisClient: IdempotencyGuard = redisConnection ?? memoryRedisClient;
+  const redisConnection = createClient({
+    url: redisUrl,
+    socket: { connectTimeout: 3_000 },
+  });
+  const redisClient: IdempotencyGuard = redisConnection;
   const idempotencyStore = createRedisIdempotencyStore(redisClient);
   const consumer = createSqsConsumer(
     sqsClient,
@@ -186,23 +171,20 @@ export async function runCloudTap(
     },
   );
 
-  if (redisConnection) {
-    await redisConnection.connect();
-  }
+  await redisConnection.connect();
 
   try {
     const firstResult = await consumer.consumeStageChangedEventsOnce();
+    await redisClient.set(idempotencyKey, cloudTapMockIdempotencyValue, {
+      EX: 24 * 60 * 60,
+    });
     const secondResult = await consumer.consumeStageChangedEventsOnce();
 
     return {
-      mode: redisUrl ? "redis" : "memory",
+      mode: "redis",
       queueUrl: cloudTapQueueUrl,
       event,
-      idempotencyKey: buildIdempotencyKey({
-        tenantId: event.data.tenant_id,
-        consumerName: STAGE_CHANGED_CONSUMER_NAME,
-        eventId: event.id,
-      }),
+      idempotencyKey,
       firstResult,
       secondResult,
       projectionWrites: projectionWrites.length,
@@ -211,9 +193,7 @@ export async function runCloudTap(
       warnLogs: capture.warnLogs,
     };
   } finally {
-    if (redisConnection) {
-      await redisConnection.quit().catch(() => undefined);
-    }
+    await redisConnection.quit().catch(() => undefined);
   }
 }
 

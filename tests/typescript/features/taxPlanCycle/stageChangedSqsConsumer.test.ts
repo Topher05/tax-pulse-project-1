@@ -1,4 +1,3 @@
-import { DeleteMessageCommand, ReceiveMessageCommand } from "@aws-sdk/client-sqs";
 import { describe, expect, test, vi } from "vitest";
 import {
   DeleteMessageCommand,
@@ -6,15 +5,17 @@ import {
 } from "@aws-sdk/client-sqs";
 
 import {
-  createSqsStageChangedEventConsumer,
   createRedisIdempotencyStore,
+  createSnsStageChangedEventPublisher,
+  createSqsStageChangedEventConsumer,
   buildIdempotencyKey,
   STAGE_CHANGED_CONSUMER_NAME,
   getStageChangedQueueUrlFromEnv,
   parseStageChangedSqsMessage,
   PublishCommand,
   stageChangedCloudEventSchemaV1,
-} from "../../../../src/typescript/features/taxPlanCycle/stageChangedEvent.js";
+  type IdempotencyGuard,
+} from "../../../../src/typescript/index.js";
 
 const transitionInput = {
   tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e81",

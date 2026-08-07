@@ -5,7 +5,7 @@ import type { TaxPlanCycleRepository } from "../../../repositories/repository.js
 import type { TaxPlanCycleQueueProjectionItem as QueueProjectionItem } from "../../queueProjection.js";
 import { TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME } from "../../queueProjection.js";
 import {
-  createStageChangedCloudEvent,
+  createStageChangedCloudEventV1,
   stageChangedCloudEventSchemaV1,
   stageChangedEventDataSchema,
   stageChangedEventDataSchemaV1,
@@ -30,13 +30,8 @@ export type CloudEventV1 = StageChangedCloudEventV1;
 export const cloudEventSchemaV1 = stageChangedCloudEventSchemaV1;
 export const eventDataSchemaV1 = stageChangedEventDataSchemaV1;
 export const eventDataSchema = stageChangedEventDataSchema;
-export const createCloudEvent = createStageChangedCloudEvent;
+export const createCloudEvent = createStageChangedCloudEventV1;
 
-// TODO
-// Placeholding for code reviews
-// Review structure on branch to old jira-136 ensure deduplicator works the way you designed
-// Remove redundant naming convention but keep things specific (SnsPublisher, SqsConsumer etc)
-// Do I need to move index.ts? Should each event have it's own? Ask codex and gema
 export interface IdempotencyGuard {
   get(key: string): Promise<string | null>;
   set(
