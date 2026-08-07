@@ -83,6 +83,7 @@ export interface CloudTapResult {
   actionItemFirstResult: ActionItemCreatedConsumerHandleResult;
   actionItemSecondResult: ActionItemCreatedConsumerHandleResult;
   actionItemProjectionWrites: number;
+  presentToClient: PresentToClientCloudTapResult;
 }
 
 export interface PresentToClientCloudTapSequenceResult {
@@ -535,6 +536,7 @@ export async function runCloudTap(
       await actionItemConsumer.handleActionItemCreatedEvent(actionItemEvent);
     const actionItemSecondResult =
       await actionItemConsumer.handleActionItemCreatedEvent(actionItemEvent);
+    const presentToClient = await runPresentToClientCloudTap(redisClient);
 
     return {
       mode: "redis",
@@ -552,6 +554,7 @@ export async function runCloudTap(
       actionItemFirstResult,
       actionItemSecondResult,
       actionItemProjectionWrites: actionItemProjection.rows.length,
+      presentToClient,
     };
   } finally {
     if (redisConnection) {
@@ -578,6 +581,12 @@ export async function main(): Promise<void> {
     `Action item delivery: ${result.actionItemFirstResult.status}/${result.actionItemSecondResult.status}`,
   );
   console.log(`Action item projection writes: ${result.actionItemProjectionWrites}`);
+  console.log(
+    `Present-to-client saga: success=${result.presentToClient.success.finalStage}, compensation=${result.presentToClient.compensation.finalStage}`,
+  );
+  console.log(
+    `Saga rollback count: ${result.presentToClient.compensation.rollbackCount}`,
+  );
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

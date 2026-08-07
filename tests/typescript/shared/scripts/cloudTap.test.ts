@@ -22,6 +22,7 @@ describe("cloud tap script", () => {
     const store = new Map<string, string>();
 
     return {
+      store,
       async get(key: string): Promise<string | null> {
         return store.get(key) ?? null;
       },
@@ -85,8 +86,9 @@ describe("cloud tap script", () => {
   });
 
   test("processes the synthetic event through the real SQS consumer path", async () => {
+    const redisClient = createInMemoryRedisClient();
     const result = await runCloudTap(undefined, {
-      redisClient: createInMemoryRedisClient(),
+      redisClient,
     });
 
     expect(result.mode).toBe("redis");
@@ -170,6 +172,25 @@ describe("cloud tap script", () => {
       status: "duplicate",
     });
     expect(result.actionItemProjectionWrites).toBe(1);
+    expect(result.presentToClient.success.finalStage).toBe("Client Approval");
+    expect(result.presentToClient.success.rollbackCount).toBe(0);
+    expect(result.presentToClient.compensation.finalStage).toBe("Review");
+    expect(result.presentToClient.compensation.rollbackCount).toBe(1);
+
+    expect(Array.from(redisClient.store.keys())).toEqual(
+      expect.arrayContaining([
+        "cloudtap:present-to-client:success:forward-stage-changed",
+        "cloudtap:present-to-client:success:action-item-created",
+        "cloudtap:present-to-client:success:result",
+        "cloudtap:present-to-client:compensation:forward-stage-changed",
+        "cloudtap:present-to-client:compensation:action-item-created",
+        "cloudtap:present-to-client:compensation:compensating-stage-changed",
+        "cloudtap:present-to-client:compensation:result",
+      ]),
+    );
+    expect(
+      redisClient.store.get("cloudtap:present-to-client:compensation:result"),
+    ).toContain('"finalStage": "Review"');
   });
 
   test("proves the present-to-client success and compensation paths in memory", async () => {
