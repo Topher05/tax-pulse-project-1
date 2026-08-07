@@ -13,6 +13,7 @@ import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import { ScenarioForm } from "../../components/ScenarioForm.tsx";
 import { DashboardPage } from "../../pages/dashboard/DashboardPage.tsx";
 import * as detailQueries from "../../entities/taxPlanCycleQueries.ts";
+import { IncomeScreen } from "../../pages/income/IncomePage.tsx";
 import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 vi.mock("@tanstack/react-router", async (importOriginal) => {
@@ -110,5 +111,31 @@ describe("Pulse UI accessibility gate", () => {
     expect(screen.getByRole("combobox", { name: "Income Type" })).toBeInTheDocument();
 
     return expectNoCriticalViolations(container);
+  });
+
+  test("income screen reports no axe violations", async () => {
+    const { container } = render(
+      <IncomeScreen
+        incomeEvents={[
+          {
+            id: "income-event-1",
+            date: "2026-08-01",
+            source: "Example Corporation",
+            type: "w2",
+            amount: 125_000,
+            withholding: 21_500,
+          },
+        ]}
+        queryState="data"
+        onCreateIncome={vi.fn()}
+        onRetry={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("table", { name: "Income events" })).toBeInTheDocument();
+
+    const results = await axe(container);
+
+    expect(results.violations).toHaveLength(0);
   });
 });

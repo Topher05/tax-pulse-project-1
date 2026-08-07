@@ -1066,3 +1066,120 @@ table refresh remain outside this ticket.
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `npm --prefix src/pulseUI test -- --run tests/components/IncomeEntryForm.test.tsx`
   passed: 3 tests.
+
+
+## christopher-martus-jira109 - SCRUM-109
+
+**Branch:** `christopher-martus-jira109`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-109
+
+**Summary:** Render the income table from live data
+
+**Description:** As a Frontend Developer, I want the income table rendered from the hook
+data, so that recorded income events and their amounts are visible.
+
+**Acceptance Criteria:**
+
+- The table renders date, source, type, amount, and withholding columns from the hook data.
+- Per-source KPI cards (W-2, 1099, Capital Gains, Rental, Other) render above the table.
+- A newly added income event appears in the table after a successful create.
+
+**Code Connection:**
+
+- `IncomePage` now renders its typed `incomeEvents` input as table rows with readable
+  income-type labels, UTC-safe display dates, and USD-formatted amount and withholding
+  values. The empty state only renders when that collection is empty.
+- The five existing KPI cards now aggregate event amounts by W-2, 1099, Capital Gains,
+  Rental, and Other, including zero-dollar values for categories without events.
+- A compact component-flow test supplies the same prop contract that the SCRUM-106 hook
+  will use. It verifies table and KPI rendering, then exercises a successful form callback
+  and confirms the updated collection renders the new row and KPI value.
+- The live read query is connected, but production create persistence and cache invalidation
+  remain blocked until a create endpoint is available. The route therefore retains a
+  placeholder create handler and does not claim end-to-end persistence coverage.
+
+**Project Scope Connection:**
+
+This supplies the minimal presentation and aggregation behavior required for recorded
+income events while preserving the typed composition seam for the tenant-scoped income
+query. The remaining hook integration will make this presentation contract live without
+rewriting the table or KPI logic.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- The focused Income page tests passed: 5 tests, including a presentation-level successful
+  create callback that rerenders the new table row and its 1099 KPI total.
+- Full Pulse UI coverage passed: 146 tests in 34 files.
+- `npm --prefix src/pulseUI run build` passed; Vite reported its existing large-chunk
+  advisory warning.
+- `git diff --check` passed.
+
+
+## chirstopher-martus-jira110 - SCRUM-110
+
+**Branch:** `chirstopher-martus-jira110`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-110
+
+**Summary:** Add accessibility and a component test for the Income screen
+
+**Description:** As a Frontend Developer, I want the Income screen to pass an axe check
+and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the table renders rows and the empty state for no data.
+- The form's inputs carry accessible labels and the test asserts a validation error is
+  announced.
+
+**Code Connection:**
+
+- `ToolHeader` accepts an optional heading ID, allowing both Income page states to connect
+  their `aria-labelledby` attribute to the visible Income Events heading.
+- The shared accessibility gate renders a populated `IncomeScreen`, confirms its named
+  table is present, runs axe against the rendered DOM, and requires zero violations.
+- Existing Income page component coverage verifies populated table rows and the no-data
+  empty state without duplicating those scenarios.
+- The Income form component test locates all four controls by accessible name and verifies
+  that an invalid Source input is marked invalid, described by its error, and announced
+  through an alert role.
+
+**Project Scope Connection:**
+
+This adds the minimal accessibility and regression coverage required for the Income tool.
+It does not change income data fetching, tenant-scoped access, creation persistence, or
+workflow behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/components/ToolHeader.tsx`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/tests/components/IncomeEntryForm.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Focused Income coverage passed: 8 tests across the Income page and entry form suites.
+- The accessibility gate passed: 4 tests, including zero axe violations for the rendered
+  Income screen. JSDOM continues to emit its existing canvas/color-contrast warning.
+- Full Pulse UI coverage passed: 150 tests in 34 files.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run build` transformed all 2,108 modules but could not replace
+  the existing `dist/pulseUI/assets` directory because Windows returned `EPERM`; no source
+  compilation error was reported.
