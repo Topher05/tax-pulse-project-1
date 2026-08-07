@@ -47,7 +47,7 @@ export {
   type ActionItemCreatedEventInput,
   type ActionItemCreatedEventPublishInput,
   type CreateActionItemCreatedCloudEventOptions,
-} from "./actionItemCreatedEvent.js";
+} from "./infrastructure/cloudEvents/actionItemCreated/index.js";
 export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
@@ -178,7 +178,6 @@ export {
 export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
-  type StageChangedEventPublisher,
   type ActionItemCreatedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionControllerOptions,

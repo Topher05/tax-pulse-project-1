@@ -303,7 +303,7 @@ Add new ticket entries below using this template.
 
 - `src/typescript/shared/database/schema.ts` adds the `action_item` table definition, integer primary key, and foreign key to `tax_plan_cycle`.
 - `src/typescript/shared/database/drizzle-migrations/0011_action_item.sql` materializes the `action_item` table and index in the migration chain.
-- `src/typescript/shared/database/seed.model.ts` adds the action-item seed model and three stubbed rows for case `018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12`.
+- `src/typescript/shared/database/seed.model.ts` adds the action-item seed model and ten stubbed rows for case `018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12`.
 - `src/typescript/shared/database/seed.ts` truncates and seeds `action_item` rows through Drizzle.
 - `src/typescript/features/taxPlanCycle/actionItem.ts` defines the imposed action-item model.
 - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/model.ts` defines the CloudEvent contract and factory for action-item creation.
@@ -340,7 +340,7 @@ TaxPlanCycle (existing)
 - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/model.ts`
 - `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
 - `src/typescript/features/taxPlanCycle/repositories/actionItems.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/ActionItemConsumer.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/Consumer.ts`
 - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/EventDeduplicator.ts`
 - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/index.ts`
 - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/model.ts`

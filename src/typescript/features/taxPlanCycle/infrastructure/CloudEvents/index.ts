@@ -3,7 +3,7 @@ export {
   ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
   createActionItemConsumer,
   createRedisActionItemConsumer,
-} from "./ActionItemConsumer.js";
+} from "./actionItemCreated/index.js";
 export {
   buildIdempotencyKey,
   createRedisIdempotencyStore,

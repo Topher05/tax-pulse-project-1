@@ -9,7 +9,7 @@ import type { StageChangedEventPublisher } from "../infrastructure/cloudEvents/s
 import type {
   ActionItemCreatedEventInput,
   ActionItemCreatedEventPublishInput,
-} from "../actionItemCreatedEvent.js";
+} from "../infrastructure/cloudEvents/actionItemCreated/index.js";
 
 export interface ActionItemCreatedEventPublisher {
   publishActionItemCreated(
