@@ -18,9 +18,19 @@ export const firmUserRowSchema = z.object({
   lastLoginAt: z.string().datetime().nullable(),
 });
 
+export const firmUserRoleUpdateParamsSchema = z.object({
+  userId: z.uuid(),
+});
+
+export const firmUserRoleUpdateRequestSchema = z.object({
+  role: firmUserRoleSchema,
+});
+
 export const firmUsersListResponseSchema = z.array(firmUserRowSchema);
 
 export type FirmUserRole = z.infer<typeof firmUserRoleSchema>;
 export type FirmUserStatus = z.infer<typeof firmUserStatusSchema>;
 export type FirmUserRow = z.infer<typeof firmUserRowSchema>;
+export type FirmUserRoleUpdateParams = z.infer<typeof firmUserRoleUpdateParamsSchema>;
+export type FirmUserRoleUpdateRequest = z.infer<typeof firmUserRoleUpdateRequestSchema>;
 export type FirmUsersListResponse = z.infer<typeof firmUsersListResponseSchema>;

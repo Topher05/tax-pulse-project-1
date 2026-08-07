@@ -50,6 +50,8 @@ import {
   clientRosterRowSchema,
 } from "./features/clientRoster/index.js";
 import {
+  firmUserRoleUpdateParamsSchema,
+  firmUserRoleUpdateRequestSchema,
   firmUsersListResponseSchema,
   firmUserRowSchema,
 } from "./features/firmUsers/index.js";
@@ -113,6 +115,14 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "FirmUsersListResponse",
     schema: firmUsersListResponseSchema,
+  },
+  {
+    name: "FirmUserRoleUpdateParams",
+    schema: firmUserRoleUpdateParamsSchema,
+  },
+  {
+    name: "FirmUserRoleUpdateRequest",
+    schema: firmUserRoleUpdateRequestSchema,
   },
   {
     name: "DeductionReadParams",
@@ -236,6 +246,10 @@ const fakeFirmUsersExample = [
     lastLoginAt: "2026-08-05T14:30:00.000Z",
   },
 ];
+
+const fakeFirmUserRoleUpdateRequestExample = {
+  role: "Firm Admin",
+};
 
 const scenarioOpenApiSchema = z.strictObject({
   id: z.uuid(),
@@ -409,6 +423,16 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
     clientRosterListResponseSchema,
   );
   const firmUsersListOpenApiSchema = toOpenApiSchema(firmUsersListResponseSchema);
+  const firmUserRoleUpdateParamsOpenApiSchema = toOpenApiSchema(
+    firmUserRoleUpdateParamsSchema,
+  );
+  const firmUserRoleUpdateUserIdSchema = requireObjectProperty(
+    firmUserRoleUpdateParamsOpenApiSchema,
+    "userId",
+  );
+  const firmUserRoleUpdateRequestOpenApiSchema = toOpenApiSchema(
+    firmUserRoleUpdateRequestSchema,
+  );
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
   const deductionReadCaseIdSchema = requireObjectProperty(
     toOpenApiSchema(deductionReadParamsSchema),
@@ -1210,6 +1234,86 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
             "401": {
               description:
                 "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/firm/users/{userId}/role": {
+        patch: {
+          operationId: "updateFirmUserRole",
+          tags: ["Core Case Service"],
+          summary: "Update a tenant-scoped firm user role",
+          description:
+            "Lets a Firm Admin change a user's role within the authenticated firm tenant. " +
+            "Tenant scope is derived from the shared JWT; clients must not send tenant_id.",
+          parameters: [
+            {
+              name: "userId",
+              in: "path",
+              required: true,
+              description:
+                "User identifier scoped by the authenticated request tenant.",
+              schema: firmUserRoleUpdateUserIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d66",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: firmUserRoleUpdateRequestOpenApiSchema,
+                example: fakeFirmUserRoleUpdateRequestExample,
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "The firm user's tenant-scoped role was updated.",
+              content: {
+                "application/json": {
+                  schema: toOpenApiSchema(firmUserRowSchema),
+                  example: {
+                    ...fakeFirmUsersExample[1],
+                    role: fakeFirmUserRoleUpdateRequestExample.role,
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "The role update request failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: validationErrorExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description:
+                "The authenticated user is not a Firm Admin.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "404": {
+              description:
+                "No tenant-scoped firm user was found for the requested user ID.",
               content: {
                 "application/problem+json": {
                   schema: problemDetailsSchema,
