@@ -19,6 +19,17 @@ const repository = vi.hoisted(() => ({
   listQueue: vi.fn(),
 }));
 const createTaxPlanCycleRepository = vi.hoisted(() => vi.fn(() => repository));
+const stageChangedPublisher = vi.hoisted(() => ({
+  publishStageChanged: vi.fn(async () => undefined),
+}));
+const transitionControllerOptions = vi.hoisted(() => ({
+  value: undefined as
+    | {
+        queueCacheInvalidator?: unknown;
+        stageChangedEventPublisher?: unknown;
+      }
+    | undefined,
+}));
 
 vi.mock("pg", () => ({
   default: {
@@ -67,6 +78,28 @@ vi.mock("../../../../src/typescript/features/taxPlanCycle/repositories/repositor
   ...(await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/repositories/repository.js")>()),
   createTaxPlanCycleRepository,
 }));
+
+vi.mock("../../../../src/typescript/features/taxPlanCycle/index.js", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("../../../../src/typescript/features/taxPlanCycle/index.js")
+  >();
+
+  return {
+    ...actual,
+    createStageChangedSnsClient: vi.fn(() => ({
+      send: vi.fn(),
+    })),
+    createSnsStageChangedEventPublisher: vi.fn(() => stageChangedPublisher),
+    createTaxPlanCycleTransitionController: vi.fn((repository, options) => {
+      transitionControllerOptions.value = options;
+
+      return {
+        transition: vi.fn(async () => null),
+        findByCaseId: vi.fn(async () => null),
+      };
+    }),
+  };
+});
 
 const originalEnvironment = { ...process.env };
 
@@ -173,6 +206,34 @@ describe("main Tax Plan Cycle composition", () => {
       });
       expect(repository.listQueue).toHaveBeenCalledWith({
         tenantId: "tenant-from-jwt",
+      });
+    } finally {
+      server.close();
+      await once(server, "close");
+    }
+  });
+
+  test("wires the stage-changed publisher into the transition controller when configured", async () => {
+    process.env = {
+      ...originalEnvironment,
+      DATABASE_URL: "postgresql://test:test@localhost:5432/taxpulse",
+      JWT_ISSUER: "https://auth.taxpulse.example",
+      JWT_SIGNING_SECRET: "a-unique-test-secret-that-is-more-than-32-bytes",
+      JWT_ACCESS_TOKEN_TTL_SECONDS: "900",
+      JWT_REFRESH_TOKEN_TTL_SECONDS: "1200",
+      TAXPULSE_REDIS_URL: "redis://localhost:6379",
+      TAXPULSE_STAGE_CHANGED_TOPIC_ARN:
+        "arn:aws:sns:us-east-1:123456789012:taxpulse-stage-changed",
+      LOG_LEVEL: "silent",
+      PORT: "0",
+    };
+
+    const { main } = await import("../../../../src/typescript/index.js");
+    const server = await main();
+
+    try {
+      expect(transitionControllerOptions.value).toMatchObject({
+        stageChangedEventPublisher: stageChangedPublisher,
       });
     } finally {
       server.close();

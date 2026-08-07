@@ -17,7 +17,7 @@ const transitionInput = {
 };
 
 describe("stage-changed SNS publisher", () => {
-  test("builds a CloudEvents v1 stage-changed event from the SCRUM-130 contract", () => {
+  test("builds a cloud events v1 stage-changed event from the SCRUM-130 contract", () => {
     const event = createStageChangedCloudEventV1(transitionInput, {
       idFactory: () => "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e83",
       now: () => new Date("2026-07-01T14:00:00.000Z"),

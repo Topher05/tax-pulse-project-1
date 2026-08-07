@@ -51,18 +51,6 @@ export type StageChangedEventDataV1 = z.infer<
 export type StageChangedCloudEventV1 = z.infer<
   typeof stageChangedCloudEventSchemaV1
 >;
-export interface StageChangedEventPublishInput {
-  tenantId: string;
-  caseId: string;
-  fromStage: TaxPlanCycleStage;
-  toStage: TaxPlanCycleStage;
-  actor: string;
-}
-
-export interface CreateStageChangedCloudEventOptions {
-  idFactory?: () => string;
-  now?: () => Date;
-}
 
 export function createStageChangedCloudEventV1(
   input: StageChangedEventPublishInput,
