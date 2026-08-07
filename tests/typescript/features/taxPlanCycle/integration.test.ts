@@ -23,7 +23,9 @@ import {
   createTaxPlanCycleTransitionController,
   type JwtConfig,
   auditEntry,
+  outboxEvent,
   redactedAuditAmount,
+  stageChangedCloudEventSchemaV1,
   stageTransition,
   taxPlanCycle,
   taxPlanCycleSchema,
@@ -33,10 +35,9 @@ import {
 } from "../../../../src/typescript/index.js";
 import { applySeed } from "../../../../src/typescript/shared/database/seed.js";
 import {
-  applyDrizzleMigrations,
-  drizzleAppliedMigrationsTableName,
   drizzleMigrationsDirectory,
-} from "../../../../src/typescript/shared/scripts/drizzleMigrations.js";
+  migrateDatabase,
+} from "../../../../src/typescript/shared/database/migrate.js";
 import { startDockerPostgresContainer } from "../../bootstrap/dockerPostgres.js";
 import {
   hydrateUserClaims,
@@ -275,9 +276,10 @@ async function withTaxPlanCycleIntegrationDatabase<T>(
   await client.connect();
 
   try {
+    await client.query(`DROP SCHEMA IF EXISTS drizzle CASCADE`);
     await client.query(`DROP SCHEMA IF EXISTS public CASCADE`);
     await client.query(`CREATE SCHEMA public`);
-    await applyDrizzleMigrations(client);
+    await migrateDatabase(client);
     return await callback(client, container.connectionUri);
   } finally {
     await client.query("SET search_path TO public").catch(() => undefined);
@@ -295,22 +297,19 @@ async function seedSampleTenant(client: Client): Promise<void> {
 describe("taxPlanCycle integration", () => {
   test("records applied migrations and skips them on rerun", async () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {
-      await applyDrizzleMigrations(client);
+      await migrateDatabase(client);
 
       const migrationFiles = readdirSync(drizzleMigrationsDirectory)
         .filter((fileName) => fileName.endsWith(".sql"))
         .sort((left, right) => left.localeCompare(right));
       const appliedRows = await client.query(
         `
-          SELECT file_name
-          FROM ${drizzleAppliedMigrationsTableName}
-          ORDER BY file_name
+          SELECT COUNT(*)::integer AS migration_count
+          FROM drizzle.__drizzle_migrations
         `,
       );
 
-      expect(appliedRows.rows.map((row) => String(row.file_name))).toEqual(
-        migrationFiles,
-      );
+      expect(appliedRows.rows[0]?.migration_count).toBe(migrationFiles.length);
     });
   });
 
@@ -1270,6 +1269,32 @@ describe("taxPlanCycle integration", () => {
             actor: "advisor-transition-001",
           });
 
+          const outboxRows = await db
+            .select({
+              payload: outboxEvent.payload,
+              created_at: outboxEvent.createdAt,
+            })
+            .from(outboxEvent);
+
+          expect(outboxRows).toHaveLength(1);
+          const outboxPayload = stageChangedCloudEventSchemaV1.parse(
+            JSON.parse(outboxRows[0]!.payload),
+          );
+
+          expect(outboxPayload.data).toEqual({
+            case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+            tenant_id: sampleTenant.id,
+            from_stage: "Data Aggregation",
+            to_stage: "Modeling",
+            actor: "advisor-transition-001",
+          });
+          expect(outboxPayload.time).toBe(
+            transitionRows[0]?.occurred_at.toISOString(),
+          );
+          expect(outboxRows[0]?.created_at).toEqual(
+            transitionRows[0]?.occurred_at,
+          );
+
           const auditRows = await db
             .select({
               id: auditEntry.id,
@@ -1873,6 +1898,65 @@ describe("taxPlanCycle integration", () => {
       );
     });
   });
+
+  test("rolls back the stage transition when its outbox write fails", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+
+      await seedSampleTenant(client);
+      await db.insert(taxPlanCycle).values({
+        id: sampleStageTransitionCaseId,
+        clientId: sampleClientIds[0],
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q3",
+        stage: "Intake",
+        owner: "advisor-001",
+        priority: "high",
+        dueDate: "2026-07-15",
+        onHold: false,
+      });
+      await client.query(`
+        CREATE FUNCTION reject_outbox_insert() RETURNS trigger AS $$
+        BEGIN
+          RAISE EXCEPTION 'forced outbox failure';
+        END;
+        $$ LANGUAGE plpgsql;
+
+        CREATE TRIGGER reject_outbox_insert
+        BEFORE INSERT ON outbox_event
+        FOR EACH ROW EXECUTE FUNCTION reject_outbox_insert();
+      `);
+
+      await expect(
+        repository.transition({
+          tenantId: sampleTenant.id,
+          caseId: sampleStageTransitionCaseId,
+          toStage: "Data Aggregation",
+          actor: "advisor-001",
+        }),
+      ).rejects.toThrow("forced outbox failure");
+
+      await expect(
+        repository.findByCaseId({
+          tenantId: sampleTenant.id,
+          caseId: sampleStageTransitionCaseId,
+        }),
+      ).resolves.toMatchObject({ stage: "Intake" });
+
+      const transitionRows = await db
+        .select({ id: stageTransition.id })
+        .from(stageTransition)
+        .where(eq(stageTransition.caseId, sampleStageTransitionCaseId));
+      const outboxRows = await db
+        .select({ id: outboxEvent.id })
+        .from(outboxEvent);
+
+      expect(transitionRows).toEqual([]);
+      expect(outboxRows).toEqual([]);
+    });
+  });
+
   test("rolls back a transition when its audit entry fails in the same transaction", async () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {
       const db = drizzle(client);

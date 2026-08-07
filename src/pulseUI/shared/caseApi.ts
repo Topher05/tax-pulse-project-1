@@ -37,7 +37,7 @@ async function caseApiFetch(
 ): Promise<Response> {
   return await fetcher(toCaseApiUrl(path), {
     ...init,
-    credentials: "include",
+    credentials: "same-origin",
   });
 }
 

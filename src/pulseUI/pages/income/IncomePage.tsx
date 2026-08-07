@@ -41,13 +41,13 @@ export interface IncomePageProps {
   onRetry: () => void;
 }
 
-const incomeTypeLabels = {
-  w2: "W-2 Employment",
-  "1099": "1099 Freelance",
+const incomeTypeLabels: Record<IncomeSourceCategory, string> = {
+  w2: "W-2",
+  "1099": "1099",
   "capital-gains": "Capital Gains",
-  rental: "Rental Income",
+  rental: "Rental",
   other: "Other",
-} satisfies Record<IncomeSourceCategory, string>;
+};
 
 const incomeTypes: readonly IncomeSourceCategory[] = [
   "w2",
@@ -57,12 +57,13 @@ const incomeTypes: readonly IncomeSourceCategory[] = [
   "other",
 ];
 
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
+  return currencyFormatter.format(value);
 }
 
 function formatDate(value: string): string {
@@ -161,6 +162,7 @@ export function IncomeScreen({
     >
       <ToolHeader
         title="Income Events"
+        titleId="income-page-title"
         description="Track all income sources for accurate tax estimation"
         contextControl={contextControl}
         action={
@@ -278,6 +280,7 @@ export function IncomePage() {
       <section className={styles.page} aria-labelledby="income-page-title">
         <ToolHeader
           title="Income Events"
+          titleId="income-page-title"
           description="Track all income sources for accurate tax estimation"
           contextControl={contextControl}
         />

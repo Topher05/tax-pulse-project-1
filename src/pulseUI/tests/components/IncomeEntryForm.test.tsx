@@ -12,9 +12,20 @@ describe("IncomeEntryForm", () => {
     const onCreate = vi.fn();
     render(<IncomeEntryForm onClose={vi.fn()} onCreate={onCreate} />);
 
+    const sourceInput = screen.getByRole("textbox", { name: "Source" });
+
+    expect(sourceInput).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Type" })).toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "Amount" })).toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "Withholding" })).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: "Add Income" }));
 
-    expect(await screen.findByText("Source is required")).toBeInTheDocument();
+    const sourceError = await screen.findByText("Source is required");
+
+    expect(sourceError).toHaveAttribute("role", "alert");
+    expect(sourceInput).toHaveAttribute("aria-invalid", "true");
+    expect(sourceInput).toHaveAccessibleDescription("Source is required");
     expect(screen.getByText("Amount is required")).toBeInTheDocument();
     expect(screen.getByText("Withholding is required")).toBeInTheDocument();
     expect(onCreate).not.toHaveBeenCalled();

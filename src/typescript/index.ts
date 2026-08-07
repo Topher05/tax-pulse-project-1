@@ -160,6 +160,7 @@ export {
   credential,
   federalTaxBracket,
   mfaEnrollment,
+  outboxEvent,
   refreshToken,
   roles,
   stageTransition,
@@ -195,6 +196,19 @@ export {
   type FirmUsersRepository,
   type FirmUserStatus,
 } from "./features/firmUsers/index.js";
+export {
+  buildIncomeEventMockRows,
+  createIncomeEventsRouter,
+  incomeEventReadParamsSchema,
+  incomeEventRowsSchema,
+  incomeEventRowSchema,
+  incomeEventTypeSchema,
+  type CreateIncomeEventsRouterOptions,
+  type IncomeEventsMockCase,
+  type IncomeEventRow,
+  type IncomeEventRows,
+  type IncomeEventType,
+} from "./features/incomeEvents/index.js";
 export {
   createBracketReferenceRepository,
   type BracketReferenceLookupInput,
@@ -445,9 +459,6 @@ import {
   createQuarterlyPaymentsRouter,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
-  createSnsStageChangedEventPublisher,
-  createStageChangedSnsClient,
-  getStageChangedTopicArnFromEnv,
   createScenarioModelingController,
   createScenarioRepository,
   createTaxEngineClient,
@@ -487,6 +498,7 @@ import {
   createFirmUsersRepository,
   createFirmUsersRouter,
 } from "./features/firmUsers/index.js";
+import { createIncomeEventsRouter } from "./features/incomeEvents/index.js";
 
 loadEnv();
 const { Client } = pg;
@@ -592,11 +604,6 @@ export async function main(): Promise<Server> {
     taxPlanCycleRepository,
     {
       queueCacheInvalidator,
-      stageChangedEventPublisher: createSnsStageChangedEventPublisher(
-        createStageChangedSnsClient(),
-        getStageChangedTopicArnFromEnv(),
-      ),
-      stageChangedEventLogger: logger,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
@@ -659,6 +666,12 @@ export async function main(): Promise<Server> {
         taxPlanCycleApiPrefix,
         createDeductionsRouter({
           repository: deductionRepository,
+        }),
+      );
+      app.use(
+        taxPlanCycleApiPrefix,
+        createIncomeEventsRouter({
+          taxPlanCycleRepository,
         }),
       );
       app.use(
