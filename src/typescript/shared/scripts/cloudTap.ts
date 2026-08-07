@@ -15,11 +15,8 @@ import {
   createRedisConsumer,
   createPresentToClientSaga,
   createStageChangedCloudEvent,
-  stageChangedCloudEventSchemaV1,
   type ActionItemCreatedEventInput,
-  type IdempotencyGuard,
   type PresentToClientSaga,
-  type StageChangedCloudEventV1,
   type StageChangedEventPublishInput,
   type TaxPlanCycle,
 } from "../../features/taxPlanCycle/infrastructure/cloudEvents/index.js";
@@ -42,6 +39,14 @@ import {
   stageChangedCloudEventSchemaV1,
   type StageChangedCloudEventV1,
 } from "../../features/taxPlanCycle/stageChangedEvent.js";
+
+export interface CloudTapTraceWriter {
+  set(
+    key: string,
+    value: string,
+    options?: { EX?: number; NX?: boolean },
+  ): Promise<unknown>;
+}
 
 loadEnv();
 
