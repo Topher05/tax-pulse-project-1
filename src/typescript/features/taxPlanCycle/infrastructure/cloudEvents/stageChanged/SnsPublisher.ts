@@ -1,45 +1,42 @@
+import { randomUUID } from "node:crypto";
+
 import {
   PublishCommand,
   SNSClient,
   type SNSClientConfig,
 } from "@aws-sdk/client-sns";
-import { randomUUID } from "node:crypto";
 
 import {
   stageChangedCloudEventSchemaV1,
   stageChangedEventDataSchema,
   stageChangedEventSource,
   stageChangedEventType,
+  type CreateStageChangedCloudEventOptions,
   type StageChangedCloudEventV1,
-} from "../stageChangedEvent.js";
-import type { TaxPlanCycleStage } from "../taxPlanCycle.js";
+} from "../../../stageChangedEvent.js";
+import type { CloudEventPublishInput } from "./model.js";
 
-export interface StageChangedEventPublishInput {
-  tenantId: string;
-  caseId: string;
-  fromStage: TaxPlanCycleStage;
-  toStage: TaxPlanCycleStage;
-  actor: string;
+export { PublishCommand } from "@aws-sdk/client-sns";
+export type StageChangedEventPublishInput = CloudEventPublishInput;
+
+export interface SnsClient {
+  send(command: PublishCommand): Promise<unknown>;
 }
 
 export interface StageChangedEventPublisher {
   publishStageChanged(
-    input: StageChangedEventPublishInput,
+    input: CloudEventPublishInput,
   ): Promise<void> | void;
 }
 
-export interface StageChangedSnsClient {
-  send(command: PublishCommand): Promise<unknown>;
-}
-
-export interface CreateStageChangedCloudEventOptions {
+export interface SnsPublisherOptions {
   idFactory?: () => string;
   now?: () => Date;
 }
 
-export function createStageChangedCloudEventV1(
-  input: StageChangedEventPublishInput,
-  options: CreateStageChangedCloudEventOptions = {},
+function buildCloudEvent(
+  input: CloudEventPublishInput,
+  options: SnsPublisherOptions = {},
 ): StageChangedCloudEventV1 {
   const idFactory = options.idFactory ?? randomUUID;
   const now = options.now ?? (() => new Date());
@@ -62,7 +59,7 @@ export function createStageChangedCloudEventV1(
   });
 }
 
-export function createStageChangedSnsClient(
+export function createSnsClient(
   env: NodeJS.ProcessEnv = process.env,
 ): SNSClient {
   const regionName = env.AWS_REGION?.trim() || "us-east-1";
@@ -82,7 +79,7 @@ export function createStageChangedSnsClient(
   return new SNSClient(clientConfig);
 }
 
-export function getStageChangedTopicArnFromEnv(
+export function getTopicArnFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): string {
   const topicArn = env.TAXPULSE_STAGE_CHANGED_TOPIC_ARN?.trim();
@@ -94,14 +91,14 @@ export function getStageChangedTopicArnFromEnv(
   return topicArn;
 }
 
-export function createSnsStageChangedEventPublisher(
-  snsClient: StageChangedSnsClient,
+export function createSnsPublisher(
+  snsClient: SnsClient,
   topicArn: string,
-  options: CreateStageChangedCloudEventOptions = {},
+  options: SnsPublisherOptions = {},
 ): StageChangedEventPublisher {
   return {
     async publishStageChanged(input) {
-      const event = createStageChangedCloudEventV1(input, options);
+      const event = buildCloudEvent(input, options);
 
       await snsClient.send(
         new PublishCommand({
@@ -111,4 +108,18 @@ export function createSnsStageChangedEventPublisher(
       );
     },
   };
+}
+
+export function createCloudEvent(
+  input: CloudEventPublishInput,
+  options: SnsPublisherOptions = {},
+): StageChangedCloudEventV1 {
+  return buildCloudEvent(input, options);
+}
+
+export function createCloudEventV1(
+  input: CloudEventPublishInput,
+  options: CreateStageChangedCloudEventOptions = {},
+): StageChangedCloudEventV1 {
+  return buildCloudEvent(input, options);
 }

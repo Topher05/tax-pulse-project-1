@@ -45,6 +45,14 @@ import {
   taxPlanCycleSchema,
 } from "./features/taxPlanCycle/index.js";
 import { taxPlanCycleReadResponseSchema } from "./features/taxPlanCycle/taxPlanCycle.js";
+import {
+  clientRosterListResponseSchema,
+  clientRosterRowSchema,
+} from "./features/clientRoster/index.js";
+import {
+  firmUsersListResponseSchema,
+  firmUserRowSchema,
+} from "./features/firmUsers/index.js";
 
 type JsonValue =
   | string
@@ -89,6 +97,22 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "TaxPlanCycleCreateAccepted",
     schema: taxPlanCycleCreateResultSchema,
+  },
+  {
+    name: "ClientRosterRow",
+    schema: clientRosterRowSchema,
+  },
+  {
+    name: "ClientRosterListResponse",
+    schema: clientRosterListResponseSchema,
+  },
+  {
+    name: "FirmUserRow",
+    schema: firmUserRowSchema,
+  },
+  {
+    name: "FirmUsersListResponse",
+    schema: firmUsersListResponseSchema,
   },
   {
     name: "DeductionReadParams",
@@ -180,6 +204,36 @@ const fakeTaxPlanCycleQueueExample = [
     ...fakeTaxPlanCycleExample,
     is_overdue: false,
     updated_at: "2026-07-01T12:00:00.000Z",
+  },
+];
+
+const fakeClientRosterExample = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e81",
+    clientName: "Avery Chen",
+    filingStatus: "Single - 1099",
+    ytdIncome: 108500,
+    estimatedTax: 32100,
+    quarterlyStatus: "Q2 due Jun 15",
+  },
+];
+
+const fakeFirmUsersExample = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+    name: "Alex Rivera",
+    email: "alex@example.com",
+    role: "Firm Admin",
+    status: "Inactive",
+    lastLoginAt: null,
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d66",
+    name: "Jordan Lee",
+    email: "jordan.lee@example.com",
+    role: "Advisor",
+    status: "Active",
+    lastLoginAt: "2026-08-05T14:30:00.000Z",
   },
 ];
 
@@ -351,6 +405,10 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const createRequestSchema = toOpenApiSchema(taxPlanCycleCreateSchema);
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
+  const clientRosterListOpenApiSchema = toOpenApiSchema(
+    clientRosterListResponseSchema,
+  );
+  const firmUsersListOpenApiSchema = toOpenApiSchema(firmUsersListResponseSchema);
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
   const deductionReadCaseIdSchema = requireObjectProperty(
     toOpenApiSchema(deductionReadParamsSchema),
@@ -1095,6 +1153,66 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     status: 500,
                     detail: "An unexpected error occurred.",
                   },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/clients": {
+        get: {
+          operationId: "listClientRoster",
+          tags: ["Core Case Service"],
+          summary: "List the tenant-scoped Client Roster",
+          description:
+            "Returns the authenticated advisor or firm's client roster. " +
+            "Tenant scope is derived from the shared JWT; clients must not send tenant_id.",
+          responses: {
+            "200": {
+              description: "The tenant-scoped client roster.",
+              content: {
+                "application/json": {
+                  schema: clientRosterListOpenApiSchema,
+                  example: fakeClientRosterExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/firm/users": {
+        get: {
+          operationId: "listFirmUsers",
+          tags: ["Core Case Service"],
+          summary: "List the tenant-scoped firm users",
+          description:
+            "Returns users for the authenticated firm tenant. Tenant scope is derived " +
+            "from the shared JWT; clients must not send tenant_id.",
+          responses: {
+            "200": {
+              description: "The authenticated tenant's firm user roster.",
+              content: {
+                "application/json": {
+                  schema: firmUsersListOpenApiSchema,
+                  example: fakeFirmUsersExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
                 },
               },
             },

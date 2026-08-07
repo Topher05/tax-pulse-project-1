@@ -1,0 +1,95 @@
+import "@testing-library/jest-dom/vitest";
+
+import { QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider } from "@tanstack/react-router";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
+
+import { pulseAccessTokenStorageKey } from "../../app/authSession.ts";
+import { createPulseQueryClient } from "../../app/queryClient.ts";
+import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
+import * as caseApi from "../../shared/caseApi.ts";
+
+beforeAll(() => {
+  window.scrollTo = vi.fn();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  localStorage.clear();
+  cleanup();
+});
+
+describe("TeamUsersPage", () => {
+  test("renders the team roster scaffold with live firm users", async () => {
+    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        name: "Alex Rivera",
+        email: "alex@example.com",
+        role: "Firm Admin",
+        status: "Inactive",
+        lastLoginAt: null,
+      },
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+        name: "Brianna Cole",
+        email: "brianna@example.com",
+        role: "Advisor",
+        status: "Active",
+        lastLoginAt: "2026-08-05T14:30:00.000Z",
+      },
+    ] as never);
+
+    render(
+      <QueryClientProvider client={createPulseQueryClient()}>
+        <TestSessionProvider role="Firm Admin">
+          <RouterProvider router={createPulseRouter(["/firm/users"])} />
+        </TestSessionProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Team & Users", level: 1 }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Team & Users", level: 2 })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Manage your firm's staff and client portal accounts & invite users and assign their role within your tenant.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: "Invite User" })).toBeDisabled();
+
+    const metricCards = screen.getAllByRole("article");
+    expect(metricCards).toHaveLength(4);
+    expect(screen.getByText("Total users")).toBeInTheDocument();
+    expect(screen.getByText("Active users")).toBeInTheDocument();
+    expect(screen.getByText("Pending invites")).toBeInTheDocument();
+    expect(screen.getByText("Roles in use")).toBeInTheDocument();
+    expect(await within(metricCards[0]!).findByText("2 users")).toBeInTheDocument();
+    expect(within(metricCards[1]!).getByText("1 active user")).toBeInTheDocument();
+    expect(within(metricCards[2]!).getByText("1 pending invite")).toBeInTheDocument();
+    expect(within(metricCards[3]!).getByText("2")).toBeInTheDocument();
+
+    const roster = screen.getByRole("table", { name: "Firm team and users roster" });
+    expect(roster).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Name" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Email" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Role" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Status" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Last Login" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Action" })).toBeInTheDocument();
+
+    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(2);
+    expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
+    expect(screen.getByText("Brianna Cole")).toBeInTheDocument();
+    expect(screen.getByText("Never")).toBeInTheDocument();
+    expect(screen.getByText("Aug 5, 2026")).toBeInTheDocument();
+    expect(caseApi.caseApiGetJson).toHaveBeenCalledWith(
+      "/v1/firm/users",
+      expect.any(Function),
+    );
+  });
+});

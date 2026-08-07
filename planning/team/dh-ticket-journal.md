@@ -5,6 +5,136 @@
 
 Add new ticket entries below using this template.
 
+## development-scrum147 - SCRUM-147
+
+**Branch:** `development`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-147
+
+**Summary:** Add the TanStack Query hook to the firm users endpoint.
+
+**Description:** As a Frontend Developer, I want a TanStack Query hook fetching the
+firm's users, so that the screen reads live data through one typed boundary.
+
+**Acceptance Criteria:**
+
+- A TanStack Query hook calls the firm users endpoint and returns typed user rows.
+- The hook exposes loading, error, and data states to callers.
+- A test asserts the hook returns parsed user rows for a mocked response.
+
+**Code Connection:**
+
+- Added a full `/v1/firm/users` read boundary modeled after SCRUM-123, with a backend
+  firm users feature slice, tenant-scoped repository, authenticated route, OpenAPI
+  schema/example coverage, and deterministic synthetic user profile seed data.
+- Added `display_name` and nullable `last_login_at` to the `users` table so the
+  SCRUM-146 Team & Users screen reads real row fields instead of deriving profile
+  display data from email addresses.
+- Added a Pulse UI `useFirmUsersQuery` hook and wired `TeamUsersPage` through it while
+  leaving visible loading/empty/error states for SCRUM-148 and role assignment or invite
+  mutations for SCRUM-149.
+- Documented the Team & Users screen boundary and follow-on work in ADR-0032.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Firm administration UI completion.
+- Preserves tenant isolation by deriving firm scope from authenticated request context
+  and excluding `tenantId` from API responses.
+
+**Changed Files:**
+
+- `src/typescript/features/firmUsers/*`
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/typescript/shared/database/drizzle-migrations/0010_firm_user_profile.sql`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/authRegistrationRepository.ts`
+- `src/pulseUI/entities/firmUsers.ts`
+- `src/pulseUI/entities/firmUserQueries.ts`
+- `src/pulseUI/pages/firm/TeamUsersPage.tsx`
+- `src/pulseUI/tests/firm/FirmUserQueries.test.tsx`
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `tests/typescript/firmUsers/firmUsersRoutes.test.ts`
+- `tests/typescript/firmUsers/firmUsersRepository.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/user/user.test.model.ts`
+- `tests/typescript/user/user.test.ts`
+- `tests/typescript/user/user.integration.test.ts`
+- `tests/typescript/mfa_enrollement/mfa_enrollement.integration.test.ts`
+- `adr/0032-team-users-screen.md`
+- `adr/README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- FirmUserQueries.test.tsx TeamUsersPage.test.tsx`
+  passed with 2 files and 3 tests.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 2 files and 14 tests.
+- `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRepository.test.ts`
+  passed with 1 file and 2 tests.
+- `npm run test:vitest -- tests/typescript/user/user.test.ts tests/typescript/user/user.integration.test.ts tests/typescript/mfa_enrollement/mfa_enrollement.integration.test.ts`
+  only collected `user.test.ts` because the root Vitest config excludes
+  `**/*.integration.test.ts`; the collected file passed with 3 tests, and the integration
+  fixtures are covered by `npm run typecheck`.
+
+## dylan-harle-jira132 - SCRUM-132
+
+**Branch:** `dylan-harle-jira132`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-132
+
+**Summary:** Consume stage-changed events from SQS.
+
+**Description:** As a Backend Developer, I want an SQS consumer for stage-changed events, so that a subscriber processes transitions out of band.
+
+**Acceptance Criteria:**
+
+- A consumer subscribed via SQS receives the event and logs it.
+- The consumer validates the event against the schema before processing.
+- A test asserts a published event is received and parsed by the consumer.
+
+**Code Connection:**
+
+- Added a plain TypeScript SQS stage-changed consumer that receives SQS messages, parses the default SNS notification envelope, validates the nested CloudEvents v1 payload with `stageChangedCloudEventSchemaV1`, logs transition details, and deletes only successfully processed messages.
+- Added SQS client and queue URL environment helpers that mirror the SCRUM-131 SNS publisher setup, including LocalStack endpoint support.
+- Added a test that publishes through the SCRUM-131 SNS publisher shape, wraps the published message in an SNS-to-SQS envelope, and asserts the SQS consumer receives, validates, logs, and deletes it.
+- Documented SCRUM-132 consumption behavior without changing the ADR-0028 CloudEvents contract.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration.
+- Builds directly on SCRUM-130, SCRUM-131, `docs/stage-changed-event.md`, and ADR-0028.
+- Keeps the consumer as a plain service method in this sprint; does not add Lambda runtime behavior, an outbox table, database writes, durable projection behavior, or a separate case status.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `.env.example`
+- `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSqsConsumer.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedSqsConsumer.test.ts`
+- `docs/stage-changed-event.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedEvent.test.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/stageChangedSqsConsumer.test.ts` passed.
+- `git diff --check` passed with line-ending warnings only.
+- `npm test` passed typecheck and the SCRUM-132 tests, then failed in existing unrelated coverage: `tenantsMigration.test.ts` reports no test suite, `scenarioMigration.test.ts` timed out after 30000ms, and `tenantLoginResolver.test.ts`, `features/deductions/repository.test.ts`, and `features/deductions/routes.test.ts` hit PostgreSQL connection refusals on port 54318.
+
 ## dylan-harle-jira115 - SCRUM-115
 
 **Branch:** `dylan-harle-jira115`
@@ -517,11 +647,14 @@ Add new ticket entries below using this template.
 - Added a tenant-scoped Client Roster query hook that calls `/v1/clients` without accepting a tenant ID, leaving firm/advisor scoping to the authenticated API context.
 - Moved the roster row type into the Pulse UI entity layer and kept the Client Roster screen wired through the same typed row boundary established by SCRUM-122.
 - Updated the Client Roster route to read rows through TanStack Query instead of prototype data.
+- Added the persistent `client_roster` table, seeded fake roster rows, and a tenant-scoped Core Case `GET /v1/clients` endpoint for the hook to fetch.
+- Documented the endpoint in the Core Case OpenAPI document and kept TanStack Table rendering/sorting out of scope for SCRUM-125.
 
 **Project Scope Connection:**
 
 - React SPA - Operator & Portal Experience.
 - Builds directly on SCRUM-122's typed inert Client Roster screen and prepares SCRUM-124 request states plus SCRUM-125 TanStack Table rendering.
+- Establishes the persistent roster source that SCRUM-125 can render without defining backend storage.
 
 **Changed Files:**
 
@@ -530,12 +663,75 @@ Add new ticket entries below using this template.
 - `src/pulseUI/pages/clients/ClientRosterPage.tsx`
 - `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
 - `src/pulseUI/tests/clients/ClientRosterQueries.test.tsx`
+- `src/typescript/features/clientRoster/clientRoster.ts`
+- `src/typescript/features/clientRoster/repository.ts`
+- `src/typescript/features/clientRoster/routes.ts`
+- `src/typescript/features/clientRoster/index.ts`
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/shared/database/drizzle-migrations/0009_client_roster.sql`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/clientRoster/clientRosterRepository.test.ts`
+- `tests/typescript/clientRoster/clientRosterRoutes.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `adr/0025-client-roster-screen-scaffold.md`
+- `adr/README.md`
 - `planning/team/dh-ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterQueries.test.tsx tests/clients/ClientRosterPage.test.tsx` passed.
 - `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/clientRoster/clientRosterRoutes.test.ts tests/typescript/clientRoster/clientRosterRepository.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed.
+
+## dylan-harle-jira125 - SCRUM-125
+
+**Branch:** `dylan-harle-jira125`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-125
+
+**Summary:** Render the roster as a TanStack Table
+
+**Description:** As a Frontend Developer, I want the client roster rendered with TanStack Table, so that advisors can scan and sort their clients.
+
+**Acceptance Criteria:**
+
+- A TanStack Table renders client, filing status, YTD income, estimated tax, and quarterly status columns.
+- Columns are sortable through TanStack Table's column model.
+- The rendered rows reflect the hook data.
+
+**Code Connection:**
+
+- Replaced the Client Roster success table rendering with a TanStack Table v9 instance over the SCRUM-123 `ClientRosterRow` hook data boundary.
+- Added sortable accessor columns for client, filing status, YTD income, estimated tax, and quarterly status while keeping `Open Books` as an inactive non-sortable action column.
+- Added focused roster page coverage for required columns, hook-backed rows, numeric sorting, nullable quarterly-status sorting, and the non-sortable inactive action column.
+- Aligned the SCRUM-124 synthetic roster fixture with the SCRUM-123 `filingStatus` row contract so Pulse UI typecheck remains green.
+- Updated ADR-0025 to document the SCRUM-125 TanStack Table sorting decision.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Builds directly on SCRUM-123's tenant-scoped roster query and endpoint contract without changing backend storage, endpoint scope, or TanStack Query behavior.
+- Keeps SCRUM-124 loading, empty, error, and retry states intact and only changes the non-empty success branch.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/shared/mockedClientListings.model.ts`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
+- `adr/0025-client-roster-screen-scaffold.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx` passed after rerunning outside the sandbox because Windows denied access while Vitest loaded its config in the sandbox.
 
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX

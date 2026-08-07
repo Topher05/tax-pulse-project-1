@@ -39,6 +39,8 @@ describe("user integration tests", () => {
           email: users.email,
           role_id: users.roleId,
           status_id: users.statusId,
+          display_name: users.displayName,
+          last_login_at: users.lastLoginAt,
         })
         .from(users)
         .orderBy(asc(users.id));
@@ -55,6 +57,7 @@ describe("user integration tests", () => {
         db.insert(users).values({
           tenantId: "00000000-0000-0000-0000-000000000001",
           email: "new@example.com",
+          displayName: "New Example",
           roleId: 1,
           statusId: 1,
         }),
@@ -64,6 +67,7 @@ describe("user integration tests", () => {
         db.insert(users).values({
           tenantId: userRows[0].tenantId,
           email: "role-missing@example.com",
+          displayName: "Role Missing",
           roleId: 999,
           statusId: 1,
         }),
@@ -73,6 +77,7 @@ describe("user integration tests", () => {
         db.insert(users).values({
           tenantId: userRows[0].tenantId,
           email: "status-missing@example.com",
+          displayName: "Status Missing",
           roleId: 1,
           statusId: 999,
         }),

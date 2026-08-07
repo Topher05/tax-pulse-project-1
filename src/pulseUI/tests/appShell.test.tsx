@@ -22,11 +22,13 @@ const renderShell = (
   initialPath: string = "/",
   authenticated = true,
   clientOverrides?: Partial<AuthClient>,
+  role: "Advisor" | "Firm Admin" | "Client" | "TaxPulse Platform Admin" = "Advisor",
 ) => {
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
       <TestSessionProvider
         authenticated={authenticated}
+        role={role}
         clientOverrides={clientOverrides}
       >
         <RouterProvider router={createPulseRouter([initialPath])} />
@@ -99,7 +101,7 @@ describe("Pulse UI app shell", () => {
   });
 
   test("renders the administration view title", async () => {
-    renderShell("/administration/tenants-users");
+    renderShell("/administration/tenants-users", true, undefined, "Firm Admin");
 
     expect(
       await screen.findByRole("heading", { name: "All Tenants & Users", level: 1 }),
@@ -165,10 +167,10 @@ describe("Pulse UI app shell", () => {
     ).toBeInTheDocument();
   });
 
-  test("still renders placeholder routes that have not been built yet", async () => {
+  test("renders the Income route shell", async () => {
     renderShell("/income");
 
-    expect(await screen.findByRole("heading", { name: "Income" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Income Events" })).toBeInTheDocument();
   });
 
   test("renders plan tool nav links without search state while routing is disabled", async () => {

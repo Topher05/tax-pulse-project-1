@@ -1,6 +1,7 @@
-import { CircleCheckBig, HandCoins, ShieldAlert } from "lucide-react";
+import { CalendarClock, CircleCheckBig, HandCoins, RefreshCw, ShieldAlert } from "lucide-react";
 
 import styles from "./QuarterlyPaymentsPage.module.css";
+import { EmptyState } from "../../components/EmptyState.tsx";
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { WithholdingProgressChart } from "../../components/WithholdingProgressChart.tsx";
@@ -62,11 +63,62 @@ function toQuarterlyEstimateRecord(
   };
 }
 
-function QuarterlyPaymentsDetachedState() {
+function QuarterlyPaymentsLoadingState() {
+  const skeletonRows = Array.from({ length: 4 }, (_, index) => index);
+
   return (
-    <PanelCard title="Select a Case">
-      <p>Choose a case from the plan-tool selector to load quarterly estimates.</p>
+    <PanelCard
+      title="Loading quarterly estimates"
+      description="Fetching the selected case's quarterly estimate schedule."
+    >
+      <div
+        className={styles.skeletonTimeline}
+        role="status"
+        aria-label="Loading quarterly estimates"
+      >
+        <span className="srOnly">Loading quarterly estimates</span>
+        {skeletonRows.map((row) => (
+          <div className={styles.skeletonRow} key={row}>
+            <span className={styles.skeletonDate} />
+            <span className={styles.skeletonContent}>
+              <span className={styles.skeletonBlock} />
+              <span className={styles.skeletonBlock} />
+            </span>
+            <span className={styles.skeletonAmount} />
+          </div>
+        ))}
+      </div>
     </PanelCard>
+  );
+}
+
+function QuarterlyPaymentsEmptyState() {
+  return (
+    <EmptyState
+      title="No quarterly estimates yet"
+      description="This case has no quarterly estimates for the selected period."
+      icon={<CalendarClock />}
+    />
+  );
+}
+
+function QuarterlyPaymentsErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div role="alert">
+      <EmptyState
+        title="Quarterly estimates could not load"
+        description={message}
+        actionLabel="Retry"
+        onAction={onRetry}
+        icon={<RefreshCw />}
+      />
+    </div>
   );
 }
 
@@ -134,12 +186,13 @@ export function QuarterlyPaymentsPage() {
   const setCaseId = useSetPlanToolCaseId();
   const quarterlyEstimatesQuery = useQuarterlyEstimatesQuery(caseId);
   const contextControl = <CurrentCaseSelector caseId={caseId} onCaseIdChange={setCaseId} />;
-  // Jira-119 owns the visible loading/error/data UI wiring; this ticket only tracks the states.
   const quarterlyEstimatesQueryState = quarterlyEstimatesQuery.isLoading
     ? "loading"
     : quarterlyEstimatesQuery.isError
       ? "error"
-      : "data";
+      : quarterlyEstimatesQuery.data?.length === 0
+        ? "empty"
+        : "data";
 
   const header = (
     <ToolHeader
@@ -174,7 +227,23 @@ export function QuarterlyPaymentsPage() {
   return (
     <div className={styles.page} data-quarterly-query-state={quarterlyEstimatesQueryState}>
       {header}
-      <QuarterlyPaymentsScreen quarterlyEstimates={quarterlyEstimates} />
+      {quarterlyEstimatesQueryState === "loading" ? <QuarterlyPaymentsLoadingState /> : null}
+      {quarterlyEstimatesQueryState === "empty" ? <QuarterlyPaymentsEmptyState /> : null}
+      {quarterlyEstimatesQueryState === "error" ? (
+        <QuarterlyPaymentsErrorState
+          message={
+            quarterlyEstimatesQuery.error instanceof Error
+              ? quarterlyEstimatesQuery.error.message
+              : "Quarterly estimates request failed."
+          }
+          onRetry={() => {
+            void quarterlyEstimatesQuery.refetch();
+          }}
+        />
+      ) : null}
+      {quarterlyEstimatesQueryState === "data" ? (
+        <QuarterlyPaymentsScreen quarterlyEstimates={quarterlyEstimates} />
+      ) : null}
     </div>
   );
 }

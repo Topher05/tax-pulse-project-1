@@ -1,5 +1,5 @@
 {
-  "id": "b5fbc377-5d9a-48f2-9739-9484dd875aeb",
+  "id": "d4608e82-d32c-4812-9474-f9ead8994c3a",
   "prevId": "df79f009-46fb-4fbd-b204-fef087b68b80",
   "version": "7",
   "dialect": "postgresql",
@@ -154,134 +154,6 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.deduction": {
-      "name": "deduction",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "case_id": {
-          "name": "case_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "date": {
-          "name": "date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "category": {
-          "name": "category",
-          "type": "deduction_category",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "amount": {
-          "name": "amount",
-          "type": "numeric(14, 2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tax_impact": {
-          "name": "tax_impact",
-          "type": "numeric(14, 2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "deleted": {
-          "name": "deleted",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        }
-      },
-      "indexes": {
-        "deduction_case_id_deleted_idx": {
-          "name": "deduction_case_id_deleted_idx",
-          "columns": [
-            {
-              "expression": "case_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "deleted",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "deduction_case_id_date_idx": {
-          "name": "deduction_case_id_date_idx",
-          "columns": [
-            {
-              "expression": "case_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "date",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "deduction_case_id_fk": {
-          "name": "deduction_case_id_fk",
-          "tableFrom": "deduction",
-          "tableTo": "tax_plan_cycle",
-          "columnsFrom": [
-            "case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "deduction_id_pk": {
-          "name": "deduction_id_pk",
-          "columns": [
-            "id"
-          ]
-        }
-      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -1291,19 +1163,6 @@
     }
   },
   "enums": {
-    "public.deduction_category": {
-      "name": "deduction_category",
-      "schema": "public",
-      "values": [
-        "Business Expense",
-        "Home Office",
-        "Charitable Giving",
-        "Health & Medical",
-        "Education",
-        "Retirement Contribution",
-        "Other"
-      ]
-    },
     "public.user_role_name": {
       "name": "user_role_name",
       "schema": "public",
