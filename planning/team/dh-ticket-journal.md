@@ -152,6 +152,60 @@ control, so that I can manage my firm's staff and their roles.
 - `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRepository.test.ts`
   passed with 1 file and 3 tests.
 
+## dylan-harle-jira150 - SCRUM-150
+
+**Branch:** `dylan-harle-jira150`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-150
+
+**Summary:** Add accessibility and a component test for the Team & Users screen.
+
+**Description:** As a Frontend Developer, I want the Team & Users screen to pass an
+axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the roster renders rows and the empty state for no extra
+  users.
+- The test asserts the role-assignment control is disabled for a non-admin role.
+
+**Code Connection:**
+
+- Added direct Team & Users component coverage for populated roster rows, including
+  name, email, role select value, status, and last-login cells.
+- Added routed Team & Users axe coverage for the populated `/firm/users` screen using
+  the existing TanStack Query and session test providers.
+- Preserved SCRUM-148 ownership of loading, empty, retry, and error states; the
+  SCRUM-150 tests intentionally do not add or assert those states until the UI exists.
+- Documented the SCRUM-150 testing boundary in ADR-0032.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Firm administration UI regression coverage.
+- Keeps tenant-scoped Team & Users behavior on the existing SCRUM-147 read boundary
+  and SCRUM-149 role-assignment control without adding new UI state behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `adr/0032-team-users-screen.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm.cmd --prefix src/pulseUI test -- tests/firm/TeamUsersPage.test.tsx tests/accessibility/axeGate.test.tsx`
+  passed with 2 files and 8 tests after rerunning outside the sandbox because Windows
+  denied access while Vitest loaded its config in the sandbox.
+- The Team & Users axe assertion checks for zero supported-rule violations; the
+  jsdom-based run disables `color-contrast` because axe-core requires canvas APIs that
+  are unavailable in this test environment.
+
 ## dylan-harle-jira132 - SCRUM-132
 
 **Branch:** `dylan-harle-jira132`

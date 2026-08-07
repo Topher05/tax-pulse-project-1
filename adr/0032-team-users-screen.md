@@ -7,6 +7,8 @@ surface with KPI cards and a roster table. SCRUM-147 made that screen read live 
 data without taking over the later responsibilities in SCRUM-148 and SCRUM-149.
 SCRUM-149 now fills the role-assignment gap left by SCRUM-147 while avoiding invite,
 impersonation, and loading or error-state behavior reserved for adjacent tickets.
+SCRUM-150 adds regression coverage for the populated roster and accessibility checks
+without introducing the loading, empty, retry, or error states owned by SCRUM-148.
 
 The existing authentication data model already stores tenant-scoped users, roles, and
 status values. It did not store the display name or last-login timestamp needed by the
@@ -41,6 +43,13 @@ the supplied screen handler with the selected user row and new role, then the pa
 persists that change through the mutation hook and invalidates the existing firm users
 query. Non-admin screen contexts render the same control disabled.
 
+SCRUM-150 keeps the Team & Users screen on the existing populated roster behavior and
+adds component coverage for rendered user rows, role values, statuses, last-login text,
+and the disabled role-assignment control for non-admin viewers. It also adds a routed
+axe accessibility check for the populated screen and asserts no supported axe rule
+violations. The jsdom-based axe run disables the `color-contrast` rule because that
+rule depends on canvas APIs unavailable in this test environment.
+
 ## Consequences
 
 The screen now has one typed live-data boundary, and tenant isolation remains enforced
@@ -53,6 +62,10 @@ states. Role assignment now has its own command, preserving the same tenant-scop
 repository pattern as the read endpoint. Future invite, impersonation, or platform-wide
 user management work should add explicit commands rather than overloading
 `GET /v1/firm/users` or the role-update command.
+
+Testing coverage now guards the screen's successful roster branch and non-admin
+assignment boundary, while empty, loading, retry, and error-state tests remain deferred
+until SCRUM-148 implements those UI states.
 
 ## Alternatives considered
 
