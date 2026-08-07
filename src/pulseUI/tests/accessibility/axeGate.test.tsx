@@ -12,6 +12,7 @@ import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import { ScenarioForm } from "../../components/ScenarioForm.tsx";
 import { DashboardPage } from "../../pages/dashboard/DashboardPage.tsx";
+import * as caseApi from "../../shared/caseApi.ts";
 import * as detailQueries from "../../entities/taxPlanCycleQueries.ts";
 import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
@@ -56,6 +57,18 @@ async function expectNoCriticalViolations(container: HTMLElement): Promise<void>
   });
 
   expect(results.violations.filter((violation) => violation.impact === "critical")).toHaveLength(0);
+}
+
+async function expectNoViolations(container: HTMLElement): Promise<void> {
+  const results = await axe(container, {
+    rules: {
+      "color-contrast": {
+        enabled: false,
+      },
+    },
+  });
+
+  expect(results.violations).toHaveLength(0);
 }
 
 describe("Pulse UI accessibility gate", () => {
@@ -110,5 +123,41 @@ describe("Pulse UI accessibility gate", () => {
     expect(screen.getByRole("combobox", { name: "Income Type" })).toBeInTheDocument();
 
     return expectNoCriticalViolations(container);
+  });
+
+  test("team and users screen reports no axe violations", async () => {
+    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        name: "Alex Rivera",
+        email: "alex@example.com",
+        role: "Firm Admin",
+        status: "Inactive",
+        lastLoginAt: null,
+      },
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+        name: "Brianna Cole",
+        email: "brianna@example.com",
+        role: "Advisor",
+        status: "Active",
+        lastLoginAt: "2026-08-05T14:30:00.000Z",
+      },
+    ] as never);
+
+    const { container } = render(
+      <QueryClientProvider client={createPulseQueryClient()}>
+        <TestSessionProvider role="Firm Admin">
+          <RouterProvider router={createPulseRouter(["/firm/users"])} />
+        </TestSessionProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("table", { name: "Firm team and users roster" }),
+    ).toBeInTheDocument();
+
+    await expectNoViolations(container);
   });
 });
