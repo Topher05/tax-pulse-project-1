@@ -160,6 +160,7 @@ export {
   credential,
   federalTaxBracket,
   mfaEnrollment,
+  outboxEvent,
   refreshToken,
   roles,
   stageTransition,
@@ -200,6 +201,19 @@ export {
   type FirmUsersRepository,
   type FirmUserStatus,
 } from "./features/firmUsers/index.js";
+export {
+  buildIncomeEventMockRows,
+  createIncomeEventsRouter,
+  incomeEventReadParamsSchema,
+  incomeEventRowsSchema,
+  incomeEventRowSchema,
+  incomeEventTypeSchema,
+  type CreateIncomeEventsRouterOptions,
+  type IncomeEventsMockCase,
+  type IncomeEventRow,
+  type IncomeEventRows,
+  type IncomeEventType,
+} from "./features/incomeEvents/index.js";
 export {
   createBracketReferenceRepository,
   type BracketReferenceLookupInput,
@@ -373,10 +387,13 @@ export {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createRedisTaxPlanCycleCreateIdempotencyStore,
+  createRedisIdempotencyStore,
+  createRedisConsumer,
   TaxPlanCycleCreateIdempotencyInProgressError,
   TaxPlanCycleCreateIdempotencyUnavailableError,
   createTaxPlanCycleQueueDynamoDocumentClient,
   createTaxPlanCycleQueueProjectionStore,
+  createWriter,
   createTaxPlanCycleQueueReadService,
   createSnsStageChangedEventPublisher,
   createStageChangedCloudEventV1,
@@ -393,8 +410,11 @@ export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
   createTaxPlanCycleRouter,
+  STAGE_CHANGED_CONSUMER_NAME,
+  buildIdempotencyKey,
   taxPlanCycleQueueProjectionItemSchema,
   taxPlanCycleQueueProjectionItemsSchema,
+  createStageChangedCloudEvent,
   type CreateTaxPlanCycleCreateControllerOptions,
   type CreateTaxPlanCycleRouterOptions,
   type TaxPlanCycleCreateControllerInput,
@@ -407,21 +427,28 @@ export {
   type TaxPlanCycleCreateIdempotencyClient,
   type TaxPlanCycleCreateIdempotencyInput,
   type TaxPlanCycleCreateIdempotencyStore,
+  type ConsumerHandleResult,
+  type ConsumerOptions,
   type TaxPlanCycleQueueProjectionDynamoClient,
   type TaxPlanCycleQueueProjectionItem,
   type TaxPlanCycleQueueProjectionReader,
+  type IdempotencyGuard,
+  type IdempotencyInput,
+  type IdempotencyStore,
+  type Writer,
+  type WriterClient,
   type TaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadServiceOptions,
+  type StageChangedEventPublisher,
+  type TaxPlanCycleTransitionControllerInput,
   type CreateStageChangedCloudEventOptions,
   type ConsumeStageChangedEventsResult,
   type StageChangedEventConsumerLogger,
-  type StageChangedEventPublisher,
   type StageChangedEventPublishInput,
   type StageChangedSnsClient,
   type StageChangedSqsClient,
   type StageChangedSqsConsumerOptions,
   type TaxPlanCycleTransitionControllerOptions,
-  type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
   type ValidationErrorIssue,
@@ -447,12 +474,11 @@ import {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleRepository,
+  createSnsStageChangedEventPublisher,
+  createStageChangedSnsClient,
   createQuarterlyPaymentsRouter,
   createTaxPlanCycleRouter,
   createTaxPlanCycleTransitionController,
-  createSnsStageChangedEventPublisher,
-  createStageChangedSnsClient,
-  getStageChangedTopicArnFromEnv,
   createScenarioModelingController,
   createScenarioRepository,
   createTaxEngineClient,
@@ -492,6 +518,7 @@ import {
   createFirmUsersRepository,
   createFirmUsersRouter,
 } from "./features/firmUsers/index.js";
+import { createIncomeEventsRouter } from "./features/incomeEvents/index.js";
 
 loadEnv();
 const { Client } = pg;
@@ -551,11 +578,15 @@ export async function main(): Promise<Server> {
   const deductionRepository = createDeductionRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   const liabilityEngineBase = process.env.LIABILITY_ENGINE_BASE?.trim();
+  const stageChangedTopicArn = process.env.TAXPULSE_STAGE_CHANGED_TOPIC_ARN?.trim();
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
   let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
   let createIdempotencyStore: ReturnType<
     typeof createRedisTaxPlanCycleCreateIdempotencyStore
   > | undefined;
+  let stageChangedEventPublisher:
+    | ReturnType<typeof createSnsStageChangedEventPublisher>
+    | undefined;
   let scenarioModelingController:
     | ReturnType<typeof createScenarioModelingController>
     | undefined;
@@ -571,6 +602,15 @@ export async function main(): Promise<Server> {
       queueCache,
     );
     logger.info("Connected to Redis for queue cache invalidation and create idempotency");
+  }
+
+  if (stageChangedTopicArn) {
+    const stageChangedSnsClient = createStageChangedSnsClient(process.env);
+    stageChangedEventPublisher = createSnsStageChangedEventPublisher(
+      stageChangedSnsClient,
+      stageChangedTopicArn,
+    );
+    logger.info("Connected to SNS for stage-changed publishing");
   }
 
   if (liabilityEngineBase) {
@@ -597,11 +637,7 @@ export async function main(): Promise<Server> {
     taxPlanCycleRepository,
     {
       queueCacheInvalidator,
-      stageChangedEventPublisher: createSnsStageChangedEventPublisher(
-        createStageChangedSnsClient(),
-        getStageChangedTopicArnFromEnv(),
-      ),
-      stageChangedEventLogger: logger,
+      stageChangedEventPublisher,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
@@ -664,6 +700,12 @@ export async function main(): Promise<Server> {
         taxPlanCycleApiPrefix,
         createDeductionsRouter({
           repository: deductionRepository,
+        }),
+      );
+      app.use(
+        taxPlanCycleApiPrefix,
+        createIncomeEventsRouter({
+          taxPlanCycleRepository,
         }),
       );
       app.use(
