@@ -54,8 +54,36 @@
     {
       "idx": 7,
       "version": "7",
-      "when": 1785515169663,
-      "tag": "0007_lush_archangel",
+      "when": 1786045503712,
+      "tag": "0007_tenant_login_slugs",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786045533797,
+      "tag": "0008_deduction",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786045549629,
+      "tag": "0009_client_roster",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786045564729,
+      "tag": "0010_outbox_event",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786111739383,
+      "tag": "0011_orange_puff_adder",
       "breakpoints": true
     }
   ]

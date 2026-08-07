@@ -6,11 +6,15 @@ import { describe, expect, test } from "vitest";
 import {
   authMfaLoginRequestSchema,
   authSessionTokenResponseSchema,
+  clientRosterListResponseSchema,
+  clientRosterRowSchema,
   coreCaseOpenApiSchemaRegistrations,
   createApp,
   createCoreCaseOpenApiDocument,
   createCoreCaseOpenApiRouter,
   createLogger,
+  deductionCreateSchema,
+  deductionTableRowSchema,
   mfaChallengeResponseSchema,
   mfaEnrollConfirmRequestSchema,
   mfaEnrollConfirmResultSchema,
@@ -175,13 +179,19 @@ describe("Core Case Service OpenAPI document", () => {
       requiredRecord(paths, "/v1/tax-plan-cycles/{caseId}"),
       "get",
     );
+    const clientRosterOperation = requiredRecord(
+      requiredRecord(paths, "/v1/clients"),
+      "get",
+    );
 
     expect(queueOperation.operationId).toBe("listTaxPlanCycleQueue");
     expect(createOperation.operationId).toBe("createTaxPlanCycle");
     expect(readOperation.operationId).toBe("readTaxPlanCycle");
+    expect(clientRosterOperation.operationId).toBe("listClientRoster");
     expect(queueOperation.tags).toEqual(["Core Case Service"]);
     expect(createOperation.tags).toEqual(["Core Case Service"]);
     expect(readOperation.tags).toEqual(["Core Case Service"]);
+    expect(clientRosterOperation.tags).toEqual(["Core Case Service"]);
   });
 
   test("documents MFA enrollment operations using challenge identifiers", () => {
@@ -384,6 +394,71 @@ describe("Core Case Service OpenAPI document", () => {
     expect(example.status).toBeUndefined();
   });
 
+  test("documents client roster rows for the future TanStack Table", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const operation = requiredRecord(requiredRecord(paths, "/v1/clients"), "get");
+    const responses = requiredRecord(operation, "responses");
+    const okResponse = requiredRecord(responses, "200");
+    const content = requiredRecord(okResponse, "content");
+    const jsonContent = requiredRecord(content, "application/json");
+    const schema = requiredRecord(jsonContent, "schema");
+    const items = requiredRecord(schema, "items");
+    const properties = requiredRecord(items, "properties");
+    const example = asRecordArray(jsonContent.example, "example");
+
+    expect(Object.keys(properties)).toEqual(
+      expect.arrayContaining([
+        "id",
+        "clientName",
+        "filingStatus",
+        "ytdIncome",
+        "estimatedTax",
+        "quarterlyStatus",
+      ]),
+    );
+    expect(properties.tenantId).toBeUndefined();
+    expect(example[0]).toMatchObject({
+      clientName: "Avery Chen",
+      filingStatus: "Single - 1099",
+      ytdIncome: 108500,
+      estimatedTax: 32100,
+      quarterlyStatus: "Q2 due Jun 15",
+    });
+  });
+
+  test("documents creating a deduction for a selected case", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const deductionPath = requiredRecord(paths, "/v1/cases/{caseId}/deductions");
+    const createOperation = requiredRecord(deductionPath, "post");
+    const requestBody = requiredRecord(createOperation, "requestBody");
+    const requestContent = requiredRecord(requestBody, "content");
+    const requestJson = requiredRecord(requestContent, "application/json");
+    const requestExample = requiredRecord(requestJson, "example");
+    const responses = requiredRecord(createOperation, "responses");
+    const createdResponse = requiredRecord(responses, "201");
+    const createdContent = requiredRecord(createdResponse, "content");
+    const createdJson = requiredRecord(createdContent, "application/json");
+    const createdExample = requiredRecord(createdJson, "example");
+
+    expect(createOperation.operationId).toBe("createCaseDeduction");
+    expect(createOperation.tags).toEqual(["Core Case Service"]);
+    expect(requestExample).toMatchObject({
+      date: "2026-08-01",
+      description: "Advisor conference fee",
+      category: "Education",
+      amount: 900,
+    });
+    expect(createdExample).toMatchObject({
+      date: requestExample.date,
+      description: requestExample.description,
+      category: requestExample.category,
+      amount: "900.00",
+      tax_impact: "225.00",
+    });
+  });
+
   test("registers the same zod schema objects used by routes and domain exports", () => {
     expect(coreCaseOpenApiSchemaRegistrations).toEqual(
       expect.arrayContaining([
@@ -426,6 +501,22 @@ describe("Core Case Service OpenAPI document", () => {
         expect.objectContaining({
           name: "TaxPlanCycleCreateAccepted",
           schema: taxPlanCycleCreateResultSchema,
+        }),
+        expect.objectContaining({
+          name: "ClientRosterRow",
+          schema: clientRosterRowSchema,
+        }),
+        expect.objectContaining({
+          name: "ClientRosterListResponse",
+          schema: clientRosterListResponseSchema,
+        }),
+        expect.objectContaining({
+          name: "DeductionCreateRequest",
+          schema: deductionCreateSchema,
+        }),
+        expect.objectContaining({
+          name: "DeductionRow",
+          schema: deductionTableRowSchema,
         }),
         expect.objectContaining({
           name: "MfaEnrollRequest",

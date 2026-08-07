@@ -72,13 +72,129 @@
 }
 
 .tableShell {
+  display: grid;
+  gap: 1rem;
   min-height: 160px;
-  border: 1px dashed rgb(148 163 184 / 30%);
+  padding: 1rem;
+  border: 1px solid var(--pulse-border);
   border-radius: 24px;
+  background: var(--pulse-surface);
+}
+
+.tableHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tableTitle {
+  margin: 0.25rem 0 0;
+  color: var(--pulse-ink);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.tableMeta {
+  margin: 0;
+  color: var(--pulse-muted);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.baselineName {
+  color: var(--pulse-ink);
+  font-weight: 900;
+}
+
+.moneyCell {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.resultsTable {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.resultsTable thead th {
+  padding: 0.9rem 1rem;
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--pulse-border);
+}
+
+.resultsTable thead th:not(:first-child) {
+  text-align: right;
+}
+
+.resultsTable tbody tr {
+  border-bottom: 1px solid rgb(42 49 62 / 82%);
+}
+
+.resultsTable tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.resultsTable tbody tr:hover td {
+  background: rgb(255 255 255 / 2%);
+}
+
+.resultsTable td {
+  padding: 0.95rem 1rem;
+  color: var(--pulse-ink);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  vertical-align: middle;
+  transition: background-color 140ms ease;
+}
+
+.deltaGood,
+.deltaWarn,
+.deltaNeutral {
+  font-weight: 900;
+}
+
+.deltaGood {
+  color: #86efac;
+}
+
+.deltaWarn {
+  color: #fbbf24;
+}
+
+.deltaNeutral {
+  color: var(--pulse-muted);
+}
+
+.statePanel {
+  display: grid;
+  place-items: center;
+  min-height: 8rem;
+  padding: 1.5rem;
+  color: var(--pulse-muted);
+  border: 1px dashed rgb(148 163 184 / 30%);
+  border-radius: 16px;
+  background: var(--pulse-surface-subtle);
+  text-align: center;
 }
 
 @media (max-width: 720px) {
   .launchCard {
     padding-inline: 1rem;
+  }
+
+  .tableHeader {
+    display: grid;
   }
 }

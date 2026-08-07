@@ -132,13 +132,24 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
     });
   });
 
-  // TODO: Resolve test failure, reason undetermined at the time of disabling for progression
-  test.skip("uses verified JWT context for Tax Plan Cycle creates and reads", async () => {
+  test("uses verified JWT context for Tax Plan Cycle creates and reads", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
       case_id: cycle.id,
     }));
     const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
-    const listByCase = vi.fn<AuditEntryReader["listByCase"]>(() => Promise.resolve([]));
+    const auditEntries = [
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e71",
+        case_id: cycle.id,
+        actor: "advisor-001",
+        action: "income amount redacted recorded",
+        outcome: "succeeded",
+        occurred_at: "2026-07-20T14:00:00.000Z",
+      },
+    ];
+    const listByCase = vi.fn<AuditEntryReader["listByCase"]>(() =>
+      Promise.resolve(auditEntries),
+    );
     const token = await createAccessToken();
 
     await withProtectedTaxPlanCycleServer({ create, findByCaseId }, async (baseUrl) => {
@@ -162,11 +173,10 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
       expect(createResponse.status).toBe(202);
       expect(readResponse.status).toBe(200);
       expect(auditResponse.status).toBe(200);
-      await expect(readResponse.json()).resolves.toEqual({
-        ...cycle,
-        scenarios: [],
+      await expect(readResponse.json()).resolves.toEqual(cycle);
+      await expect(auditResponse.json()).resolves.toEqual({
+        audit_entries: auditEntries,
       });
-      await expect(auditResponse.json()).resolves.toEqual([]);
       expect(create).toHaveBeenCalledWith({
         ...validCreateBody,
         tenantId: "tenant-from-jwt",

@@ -54,6 +54,16 @@ export type SeedTaxPlanCycleRow = {
   holdReason: string | null;
 };
 
+export type SeedClientRosterRow = {
+  id: string;
+  tenantId: string;
+  clientName: string;
+  filingStatus: string;
+  ytdIncome: string;
+  estimatedTax: string;
+  quarterlyStatus: string | null;
+};
+
 export type SeedStageTransitionRow = {
   id: string;
   caseId: string;
@@ -103,6 +113,13 @@ export type SeedRefreshTokenRow = {
 export type SeedTaxPlanCycleInsertRow = Omit<SeedTaxPlanCycleRow, "dueDate"> & {
   dueDate: string;
   holdReason: string | null;
+};
+
+export type SeedActionItemRow = {
+  caseId: string;
+  description: string;
+  deadline: Date;
+  completed: boolean;
 };
 
 export type SeedDeductionRow = {
@@ -456,6 +473,99 @@ export const taxPlanCycleRows = [
   },
 ] as const satisfies readonly SeedTaxPlanCycleRow[];
 
+export const actionItemRows = [
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Collect signed planning authorization",
+    deadline: new Date("2026-08-01T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Review current estimated payments",
+    deadline: new Date("2026-08-02T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Draft present-to-client talking points",
+    deadline: new Date("2026-08-03T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Confirm client document intake",
+    deadline: new Date("2026-08-04T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Prepare follow-up questions for advisor",
+    deadline: new Date("2026-08-05T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Send updated action-item summary",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Schedule client review call",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Upload client-facing planning notes",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Verify projected tax savings packet",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    description: "Finalize present-to-client checklist",
+    deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+] as const satisfies readonly SeedActionItemRow[];
+
+export const clientRosterRows = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e81",
+    tenantId: tenantRows[0].id,
+    clientName: "Avery Chen",
+    filingStatus: "Single - 1099",
+    ytdIncome: "108500.00",
+    estimatedTax: "32100.00",
+    quarterlyStatus: "Q2 due Jun 15",
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e82",
+    tenantId: tenantRows[0].id,
+    clientName: "Morgan Acme",
+    filingStatus: "MFJ - W-2 + RSU",
+    ytdIncome: "414000.00",
+    estimatedTax: "138400.00",
+    quarterlyStatus: "Q2 due Jun 15",
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e83",
+    tenantId: tenantRows[1].id,
+    clientName: "Riley Khan",
+    filingStatus: "HoH - W-2",
+    ytdIncome: "72500.00",
+    estimatedTax: "11140.00",
+    quarterlyStatus: null,
+  },
+] as const satisfies readonly SeedClientRosterRow[];
+
 export const deductionRows = [
   {
     caseId: taxPlanCycleRows[1].id,
@@ -676,5 +786,14 @@ export function buildTaxPlanCycleInsertRows(): SeedTaxPlanCycleInsertRow[] {
   return taxPlanCycleRows.map((row) => ({
     ...row,
     dueDate: row.dueDate.toISOString().replace(/T.+/, ""),
+  }));
+}
+
+export function buildActionItemInsertRows(): Array<
+  Omit<SeedActionItemRow, "deadline"> & { deadline: string }
+> {
+  return actionItemRows.map((row) => ({
+    ...row,
+    deadline: row.deadline.toISOString().replace(/T.+/, ""),
   }));
 }
