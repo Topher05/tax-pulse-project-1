@@ -515,18 +515,28 @@ the existing deductions and quarterly-estimates pattern. The hook calls
 `/v1/cases/:caseId/income-events` through the authenticated Case API helper, parses
 income event rows with Zod, coerces currency strings from the API into numbers, and
 exposes TanStack Query's loading, error, and data states to future Income screen
-callers.
+callers. Added the matching tenant-scoped Express endpoint with deterministic synthetic
+income rows so local runtime behavior matches the hook contract until persisted income
+events land.
 
 **Project Scope Connection:** This completes the frontend data-fetching contract for
-the Income screen without adding the backend persistence table or Express route, which
-are tracked separately by later income-backend work such as SCRUM-172. The mocked
-response test keeps SCRUM-106 usable as a typed handoff for SCRUM-107, SCRUM-108, and
-SCRUM-109.
+the Income screen and adds a read-only Core Case service endpoint for the queried income
+events. The endpoint validates auth context and tenant-scoped case ownership through
+the Tax Plan Cycle repository; durable income-event persistence remains tracked
+separately by later income-backend work such as SCRUM-172. The mocked response test
+keeps SCRUM-106 usable as a typed handoff for SCRUM-107, SCRUM-108, and SCRUM-109.
 
 **Changed Files:**
 
 - `src/pulseUI/entities/incomeQueries.ts`
 - `src/pulseUI/tests/entities/incomeQueries.test.tsx`
+- `src/typescript/features/incomeEvents/incomeEvents.ts`
+- `src/typescript/features/incomeEvents/index.ts`
+- `src/typescript/features/incomeEvents/mockIncomeEvents.model.ts`
+- `src/typescript/features/incomeEvents/routes.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/incomeEvents/mockIncomeEvents.model.test.ts`
+- `tests/typescript/features/incomeEvents/routes.test.ts`
 - `planning/team/mm-ticket-journal.md`
 
 **Validation Notes:**
@@ -534,6 +544,9 @@ SCRUM-109.
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `npm --prefix src/pulseUI run test -- incomeQueries.test.tsx` passed with 1 file and
   3 tests.
+- `npm run test:vitest -- tests/typescript/features/incomeEvents/mockIncomeEvents.model.test.ts tests/typescript/features/incomeEvents/routes.test.ts`
+  passed with 2 files and 4 tests.
+- `npm run typecheck` passed.
 - Refreshed `src/pulseUI` dependencies with `npm --prefix src/pulseUI install` because
   the latest development branch references `@playwright/test` types and the local
   dependency tree was missing them. npm reported the existing Node engine mismatch

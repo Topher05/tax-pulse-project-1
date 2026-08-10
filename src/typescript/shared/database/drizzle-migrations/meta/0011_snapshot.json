@@ -1,101 +1,9 @@
 {
-  "id": "630a27bb-56db-4a98-840e-c5c9d142d540",
+  "id": "47da80bd-7d96-416d-b88b-86777c121817",
   "prevId": "f96ad202-bba2-4228-a9f0-6f2b64d96a3a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.action_item": {
-      "name": "action_item",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "identity": {
-            "type": "byDefault",
-            "name": "action_item_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "2147483647",
-            "cache": "1",
-            "cycle": false
-          }
-        },
-        "case_id": {
-          "name": "case_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "deadline": {
-          "name": "deadline",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "completed": {
-          "name": "completed",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        }
-      },
-      "indexes": {
-        "action_item_case_id_idx": {
-          "name": "action_item_case_id_idx",
-          "columns": [
-            {
-              "expression": "case_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "action_item_case_id_fk": {
-          "name": "action_item_case_id_fk",
-          "tableFrom": "action_item",
-          "tableTo": "tax_plan_cycle",
-          "columnsFrom": [
-            "case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "action_item_id_pk": {
-          "name": "action_item_id_pk",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.audit_entry": {
       "name": "audit_entry",
       "schema": "",
@@ -1439,6 +1347,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "role_id": {
           "name": "role_id",
           "type": "integer",
@@ -1450,6 +1364,12 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
+        },
+        "last_login_at": {
+          "name": "last_login_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
