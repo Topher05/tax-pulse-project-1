@@ -8,6 +8,10 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import {
   createPlatformTenantUser,
+  fetchPlatformAuditLog,
+  fetchPlatformRolesPermissions,
+  platformAuditLogQueryKey,
+  platformRolesPermissionsQueryKey,
   fetchPlatformTenantUsers,
   platformTenantUsersQueryKey,
   useCreatePlatformTenantUserMutation,
@@ -34,6 +38,14 @@ function createQueryHarness() {
 describe("platform administration queries", () => {
   test("uses an exact tenants users cache key", () => {
     expect(platformTenantUsersQueryKey).toEqual(["platformAdministration", "tenantsUsers"]);
+  });
+
+  test("uses exact roles and audit administration cache keys", () => {
+    expect(platformRolesPermissionsQueryKey).toEqual([
+      "platformAdministration",
+      "rolesPermissions",
+    ]);
+    expect(platformAuditLogQueryKey).toEqual(["platformAdministration", "auditLog"]);
   });
 
   test("returns parsed tenants with sectioned users for a mocked response", async () => {
@@ -116,6 +128,66 @@ describe("platform administration queries", () => {
           status: "Inactive",
         },
       },
+      undefined,
+    );
+  });
+
+  test("returns parsed roles and permissions for a mocked response", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      {
+        id: "internal-firm-staff",
+        title: "Internal - Firm Staff",
+        roles: ["Firm Admin", "Advisor"],
+        rows: [
+          {
+            feature: "Plan Cycle Queue",
+            access: {
+              "TaxPulse Platform Admin": "Full",
+              "Firm Admin": "Full",
+              Advisor: "Scoped",
+              Client: null,
+            },
+          },
+        ],
+      },
+    ] as never);
+
+    await expect(fetchPlatformRolesPermissions()).resolves.toEqual([
+      expect.objectContaining({
+        title: "Internal - Firm Staff",
+        rows: [
+          expect.objectContaining({
+            feature: "Plan Cycle Queue",
+          }),
+        ],
+      }),
+    ]);
+    expect(caseApi.caseApiGetJson).toHaveBeenCalledWith(
+      "/v1/administration/roles-permissions",
+      undefined,
+    );
+  });
+
+  test("returns parsed audit log entries for a mocked response", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d41",
+        occurredAt: "2026-07-01T14:00:00.000Z",
+        user: "advisor-001",
+        role: "Advisor",
+        action: "income amount [REDACTED_AMOUNT] recorded",
+        resource: "North Shore Advisors - 2026-Q3 - Case 018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11",
+      },
+    ] as never);
+
+    await expect(fetchPlatformAuditLog()).resolves.toEqual([
+      expect.objectContaining({
+        role: "Advisor",
+        action: "income amount [REDACTED_AMOUNT] recorded",
+      }),
+    ]);
+    expect(caseApi.caseApiGetJson).toHaveBeenCalledWith(
+      "/v1/administration/audit-log",
       undefined,
     );
   });

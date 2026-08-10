@@ -6,6 +6,8 @@ import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { ClientRosterPage } from "../pages/clients/ClientRosterPage.tsx";
 import { TeamUsersPage } from "../pages/firm/TeamUsersPage.tsx";
 import { AllTenantsUsersPage } from "../pages/administration/AllTenantsUsersPage.tsx";
+import { AuditLogPage } from "../pages/administration/AuditLogPage.tsx";
+import { RolesPermissionsPage } from "../pages/administration/RolesPermissionsPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
 import { QuarterlyPaymentsPage } from "../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { IncomePage } from "../pages/income/IncomePage.tsx";
@@ -170,9 +172,9 @@ const administrationRolesPermissionsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/administration/roles-permissions",
   component: () => (
-    <AdminOnlyRoute>
-      <EmptyPage />
-    </AdminOnlyRoute>
+    <PlatformAdminOnlyRoute>
+      <RolesPermissionsPage />
+    </PlatformAdminOnlyRoute>
   ),
 });
 
@@ -180,9 +182,9 @@ const administrationAuditLogRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/administration/audit-log",
   component: () => (
-    <AdminOnlyRoute>
-      <EmptyPage />
-    </AdminOnlyRoute>
+    <PlatformAdminOnlyRoute>
+      <AuditLogPage />
+    </PlatformAdminOnlyRoute>
   ),
 });
 

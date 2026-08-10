@@ -9,6 +9,8 @@ import type {
   RelativeLastLogin,
 } from "./firmUsers.ts";
 import type {
+  PlatformAuditLogEntry,
+  PlatformPermissionMatrixSection,
   PlatformTenantUserCreateInput,
   PlatformTenantUserRow,
   PlatformTenantUsersTenant,
@@ -37,6 +39,28 @@ const platformTenantUsersTenantApiSchema = z.object({
   users: z.array(platformTenantUserApiRowSchema),
 });
 const platformTenantUsersResponseSchema = z.array(platformTenantUsersTenantApiSchema);
+const platformPermissionAccessSchema = z.enum(["Full", "Scoped", "Edit"]);
+const platformPermissionMatrixRowSchema = z.object({
+  feature: z.string().min(1),
+  access: z.record(platformUserRoleSchema, platformPermissionAccessSchema.nullable()),
+});
+const platformPermissionMatrixSectionSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1).optional(),
+  roles: z.array(platformUserRoleSchema),
+  rows: z.array(platformPermissionMatrixRowSchema),
+});
+const platformPermissionMatrixResponseSchema = z.array(platformPermissionMatrixSectionSchema);
+const platformAuditLogEntrySchema = z.object({
+  id: z.string().min(1),
+  occurredAt: z.string().datetime(),
+  user: z.string().min(1),
+  role: platformUserRoleSchema.nullable(),
+  action: z.string().min(1),
+  resource: z.string().min(1),
+});
+const platformAuditLogResponseSchema = z.array(platformAuditLogEntrySchema);
 const platformTenantUserCreateRequestSchema = z.object({
   displayName: z.string().trim().min(1),
   email: z.string().email(),
@@ -48,6 +72,11 @@ type PlatformTenantUserApiRow = z.infer<typeof platformTenantUserApiRowSchema>;
 type PlatformTenantUsersTenantApi = z.infer<typeof platformTenantUsersTenantApiSchema>;
 
 export const platformTenantUsersQueryKey = ["platformAdministration", "tenantsUsers"] as const;
+export const platformRolesPermissionsQueryKey = [
+  "platformAdministration",
+  "rolesPermissions",
+] as const;
+export const platformAuditLogQueryKey = ["platformAdministration", "auditLog"] as const;
 
 function formatLastLoginDate(value: string): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -96,6 +125,20 @@ export async function fetchPlatformTenantUsers(
   return platformTenantUsersResponseSchema.parse(payload).map(toPlatformTenantUsersTenant);
 }
 
+export async function fetchPlatformRolesPermissions(
+  fetcher?: typeof fetch,
+): Promise<readonly PlatformPermissionMatrixSection[]> {
+  const payload = await caseApiGetJson<unknown>("/v1/administration/roles-permissions", fetcher);
+  return platformPermissionMatrixResponseSchema.parse(payload);
+}
+
+export async function fetchPlatformAuditLog(
+  fetcher?: typeof fetch,
+): Promise<readonly PlatformAuditLogEntry[]> {
+  const payload = await caseApiGetJson<unknown>("/v1/administration/audit-log", fetcher);
+  return platformAuditLogResponseSchema.parse(payload);
+}
+
 export async function createPlatformTenantUser(
   input: PlatformTenantUserCreateInput,
   fetcher?: typeof fetch,
@@ -124,6 +167,24 @@ export function usePlatformTenantUsersQuery() {
   return useQuery({
     queryKey: platformTenantUsersQueryKey,
     queryFn: () => fetchPlatformTenantUsers(authenticatedFetch),
+  });
+}
+
+export function usePlatformRolesPermissionsQuery() {
+  const authenticatedFetch = useAuthenticatedFetch();
+
+  return useQuery({
+    queryKey: platformRolesPermissionsQueryKey,
+    queryFn: () => fetchPlatformRolesPermissions(authenticatedFetch),
+  });
+}
+
+export function usePlatformAuditLogQuery() {
+  const authenticatedFetch = useAuthenticatedFetch();
+
+  return useQuery({
+    queryKey: platformAuditLogQueryKey,
+    queryFn: () => fetchPlatformAuditLog(authenticatedFetch),
   });
 }
 
