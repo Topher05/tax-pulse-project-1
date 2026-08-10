@@ -2,11 +2,21 @@ import "@testing-library/jest-dom/vitest";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { IncomeScreen, type IncomeEvent } from "../../pages/income/IncomePage.tsx";
 import * as caseApi from "../../shared/caseApi.ts";
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
 import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
@@ -52,6 +62,40 @@ const sampleIncomePayload: readonly IncomeApiRow[] = [
   },
 ] as const;
 
+const existingIncome: IncomeEvent = {
+  id: "income-event-1",
+  date: "2026-08-01",
+  source: "Acme Corporation",
+  type: "w2",
+  amount: 1_500,
+  withholding: 300,
+};
+
+function IncomeScreenHarness() {
+  const [incomeEvents, setIncomeEvents] = useState<IncomeEvent[]>([existingIncome]);
+
+  return (
+    <IncomeScreen
+      incomeEvents={incomeEvents}
+      queryState="data"
+      onRetry={() => undefined}
+      onCreateIncome={(payload) => {
+        setIncomeEvents((current) => [
+          ...current,
+          {
+            id: "income-event-2",
+            date: "2026-08-04",
+            source: payload.source,
+            type: payload.type,
+            amount: payload.amount,
+            withholding: payload.withholding,
+          },
+        ]);
+      }}
+    />
+  );
+}
+
 function createDeferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: unknown) => void;
@@ -84,6 +128,43 @@ afterEach(() => {
 });
 
 describe("IncomePage", () => {
+  test("reflects parent data updates after a successful create callback", async () => {
+    render(<IncomeScreenHarness />);
+
+    const table = screen.getByRole("table", { name: "Income events" });
+    const summaries = screen.getByLabelText("Income source summaries");
+
+    for (const heading of ["Date", "Source", "Type", "Amount", "Withholding"]) {
+      expect(within(table).getByRole("columnheader", { name: heading })).toBeInTheDocument();
+    }
+    expect(within(table).getByText("Acme Corporation")).toBeInTheDocument();
+    expect(screen.getByLabelText("W-2 total")).toHaveTextContent("$1,500.00");
+    expect(screen.getByLabelText("1099 total")).toHaveTextContent("$0.00");
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Income" }));
+    const dialog = screen.getByRole("dialog", { name: "Add Income" });
+    fireEvent.change(within(dialog).getByLabelText("Source"), {
+      target: { value: "Consulting" },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Type"), {
+      target: { value: "1099" },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Amount"), {
+      target: { value: "250.25" },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Withholding"), {
+      target: { value: "25" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add Income" }));
+
+    await waitFor(() => {
+      expect(within(table).getByText("Consulting")).toBeInTheDocument();
+    });
+    expect(within(summaries).getByText("1099")).toBeInTheDocument();
+    expect(screen.getByLabelText("1099 total")).toHaveTextContent("$250.25");
+    expect(within(table).getByText("$25.00")).toBeInTheDocument();
+  });
+
   test("renders the case gate when the case ID is missing", async () => {
     vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
       if (path === "/v1/tax-plan-cycles") {
@@ -138,9 +219,9 @@ describe("IncomePage", () => {
     expect(screen.getByRole("table", { name: "Income events" })).toBeInTheDocument();
     expect(screen.getByText("Acme W-2")).toBeInTheDocument();
     expect(screen.getByText("Aug 1, 2026")).toBeInTheDocument();
-    expect(screen.getAllByText("W-2 Employment")).toHaveLength(2);
-    expect(screen.getAllByText("$125,001")).toHaveLength(2);
-    expect(screen.getByText("$21,500")).toBeInTheDocument();
+    expect(screen.getAllByText("W-2")).toHaveLength(2);
+    expect(screen.getAllByText("$125,000.50")).toHaveLength(2);
+    expect(screen.getByText("$21,500.25")).toBeInTheDocument();
     expect(caseApiMock).toHaveBeenCalledWith(
       `/v1/cases/${seededCaseId}/income-events`,
       expect.any(Function),

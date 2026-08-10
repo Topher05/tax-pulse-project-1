@@ -5,6 +5,7 @@ import styles from "./ToolHeader.module.css";
 interface ToolHeaderProps {
   eyebrow?: string;
   title: string;
+  titleId?: string;
   description?: string;
   contextControl?: ReactNode;
   action?: ReactNode;
@@ -13,6 +14,7 @@ interface ToolHeaderProps {
 export function ToolHeader({
   eyebrow,
   title,
+  titleId,
   description,
   contextControl,
   action,
@@ -21,7 +23,9 @@ export function ToolHeader({
     <section className={styles.header}>
       <div className={styles.copy}>
         {eyebrow ? <p className={styles.eyebrow}>{eyebrow}</p> : null}
-        <h2 className={styles.title}>{title}</h2>
+        <h2 className={styles.title} id={titleId}>
+          {title}
+        </h2>
         {description ? <p className={styles.description}>{description}</p> : null}
       </div>
 

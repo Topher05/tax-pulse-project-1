@@ -5,6 +5,85 @@
 
 Add new ticket entries below using this template.
 
+## development-scrum147 - SCRUM-147
+
+**Branch:** `development`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-147
+
+**Summary:** Add the TanStack Query hook to the firm users endpoint.
+
+**Description:** As a Frontend Developer, I want a TanStack Query hook fetching the
+firm's users, so that the screen reads live data through one typed boundary.
+
+**Acceptance Criteria:**
+
+- A TanStack Query hook calls the firm users endpoint and returns typed user rows.
+- The hook exposes loading, error, and data states to callers.
+- A test asserts the hook returns parsed user rows for a mocked response.
+
+**Code Connection:**
+
+- Added a full `/v1/firm/users` read boundary modeled after SCRUM-123, with a backend
+  firm users feature slice, tenant-scoped repository, authenticated route, OpenAPI
+  schema/example coverage, and deterministic synthetic user profile seed data.
+- Added `display_name` and nullable `last_login_at` to the `users` table so the
+  SCRUM-146 Team & Users screen reads real row fields instead of deriving profile
+  display data from email addresses.
+- Added a Pulse UI `useFirmUsersQuery` hook and wired `TeamUsersPage` through it while
+  leaving visible loading/empty/error states for SCRUM-148 and role assignment or invite
+  mutations for SCRUM-149.
+- Documented the Team & Users screen boundary and follow-on work in ADR-0032.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Firm administration UI completion.
+- Preserves tenant isolation by deriving firm scope from authenticated request context
+  and excluding `tenantId` from API responses.
+
+**Changed Files:**
+
+- `src/typescript/features/firmUsers/*`
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/typescript/shared/database/drizzle-migrations/0010_firm_user_profile.sql`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/authRegistrationRepository.ts`
+- `src/pulseUI/entities/firmUsers.ts`
+- `src/pulseUI/entities/firmUserQueries.ts`
+- `src/pulseUI/pages/firm/TeamUsersPage.tsx`
+- `src/pulseUI/tests/firm/FirmUserQueries.test.tsx`
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `tests/typescript/firmUsers/firmUsersRoutes.test.ts`
+- `tests/typescript/firmUsers/firmUsersRepository.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/user/user.test.model.ts`
+- `tests/typescript/user/user.test.ts`
+- `tests/typescript/user/user.integration.test.ts`
+- `tests/typescript/mfa_enrollement/mfa_enrollement.integration.test.ts`
+- `adr/0032-team-users-screen.md`
+- `adr/README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- FirmUserQueries.test.tsx TeamUsersPage.test.tsx`
+  passed with 2 files and 3 tests.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 2 files and 14 tests.
+- `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRepository.test.ts`
+  passed with 1 file and 2 tests.
+- `npm run test:vitest -- tests/typescript/user/user.test.ts tests/typescript/user/user.integration.test.ts tests/typescript/mfa_enrollement/mfa_enrollement.integration.test.ts`
+  only collected `user.test.ts` because the root Vitest config excludes
+  `**/*.integration.test.ts`; the collected file passed with 3 tests, and the integration
+  fixtures are covered by `npm run typecheck`.
+
 ## dylan-harle-jira132 - SCRUM-132
 
 **Branch:** `dylan-harle-jira132`
