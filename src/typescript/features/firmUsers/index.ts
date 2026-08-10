@@ -1,10 +1,12 @@
 export {
+  firmUserAssignableRoleSchema,
   firmUserRoleSchema,
   firmUserRoleUpdateParamsSchema,
   firmUserRoleUpdateRequestSchema,
   firmUsersListResponseSchema,
   firmUserRowSchema,
   firmUserStatusSchema,
+  type FirmUserAssignableRole,
   type FirmUserRole,
   type FirmUserRoleUpdateParams,
   type FirmUserRoleUpdateRequest,

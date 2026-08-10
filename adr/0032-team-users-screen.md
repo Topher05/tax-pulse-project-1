@@ -31,15 +31,18 @@ does not add visible loading, empty, retry, or error UI, and it does not add rol
 assignment mutations or invite behavior.
 
 SCRUM-149 adds a tenant-scoped role update command beside the read boundary:
-`PATCH /v1/firm/users/{userId}/role`. The request body accepts only a role from the
-existing tenant role set, and the server derives tenant scope from the authenticated
-request context before updating the matching user. The command is limited to Firm
-Admins; non-admin callers receive an authorization problem response.
+`PATCH /v1/firm/users/{userId}/role`. The request body accepts only tenant-assignable
+roles: `Firm Admin`, `Advisor`, and `Client`. `TaxPulse Platform Admin` remains a
+platform-level role that can be read in roster data when present, but it cannot be
+assigned through the firm roster command. The server derives tenant scope from the
+authenticated request context before updating the matching user. The command is limited
+to Firm Admins; non-admin callers receive an authorization problem response.
 
 The Pulse UI renders the role column as the role-assignment control. The control calls
 the supplied screen handler with the selected user row and new role, then the page
 persists that change through the mutation hook and invalidates the existing firm users
-query. Non-admin screen contexts render the same control disabled.
+query. Non-admin screen contexts render the same control disabled, and platform-admin
+rows are not editable through this tenant administration surface.
 
 ## Consequences
 
@@ -50,9 +53,9 @@ deriving names from email addresses.
 
 SCRUM-148 should build on `useFirmUsersQuery()` for loading, empty, retry, and error
 states. Role assignment now has its own command, preserving the same tenant-scoped
-repository pattern as the read endpoint. Future invite, impersonation, or platform-wide
-user management work should add explicit commands rather than overloading
-`GET /v1/firm/users` or the role-update command.
+repository pattern as the read endpoint. Future invite, impersonation, platform-admin
+promotion, or platform-wide user management work should add explicit commands rather
+than overloading `GET /v1/firm/users` or the role-update command.
 
 ## Alternatives considered
 

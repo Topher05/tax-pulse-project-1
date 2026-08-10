@@ -138,6 +138,18 @@ describe("firm user queries", () => {
     );
   });
 
+  test("rejects platform administrator role update requests before sending", async () => {
+    const caseApiMock = vi.spyOn(caseApi, "caseApiSendJson");
+    const platformAdminPromotion = {
+      userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+      role: "TaxPulse Platform Admin",
+    } as unknown as Parameters<typeof updateFirmUserRole>[0];
+
+    await expect(updateFirmUserRole(platformAdminPromotion)).rejects.toThrow();
+
+    expect(caseApiMock).not.toHaveBeenCalled();
+  });
+
   test("invalidates the firm users query after a role update succeeds", async () => {
     vi.spyOn(caseApi, "caseApiSendJson").mockResolvedValueOnce({
       id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",

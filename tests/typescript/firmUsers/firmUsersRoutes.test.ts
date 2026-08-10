@@ -160,6 +160,42 @@ describe("Firm users routes", () => {
     );
   });
 
+  test("rejects platform administrator promotion requests", async () => {
+    const repository: FirmUsersRepository = {
+      async listByTenant() {
+        return [];
+      },
+      async updateTenantUserRole() {
+        throw new Error("Invalid role updates should not reach the repository.");
+      },
+    };
+
+    await withFirmUsersRouteServer(
+      {
+        repository,
+        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+        userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        role: "Firm Admin",
+      },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/v1/firm/users/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62/role`,
+          {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ role: "TaxPulse Platform Admin" }),
+          },
+        );
+
+        expect(response.status).toBe(400);
+        await expect(response.json()).resolves.toMatchObject({
+          title: "Validation Error",
+          status: 400,
+        });
+      },
+    );
+  });
+
   test("updates a user role within the authenticated tenant", async () => {
     const calls: Array<{ tenantId: string; userId: string; role: string }> = [];
     const repository: FirmUsersRepository = {

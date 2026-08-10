@@ -184,6 +184,7 @@ export {
 export {
   createFirmUsersRepository,
   createFirmUsersRouter,
+  firmUserAssignableRoleSchema,
   firmUserRoleSchema,
   firmUserRoleUpdateParamsSchema,
   firmUserRoleUpdateRequestSchema,
@@ -191,6 +192,7 @@ export {
   firmUserRowSchema,
   firmUserStatusSchema,
   type CreateFirmUsersRouterOptions,
+  type FirmUserAssignableRole,
   type FirmUserRole,
   type FirmUserRoleUpdateInput,
   type FirmUserRoleUpdateParams,

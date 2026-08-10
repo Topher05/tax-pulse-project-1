@@ -110,10 +110,12 @@ control, so that I can manage my firm's staff and their roles.
   model, replacing the placeholder row action with a role select in the roster's role
   column.
 - Added a tenant-scoped `PATCH /v1/firm/users/{userId}/role` command that validates the
-  role payload, requires Firm Admin access, updates only the authenticated tenant's user,
-  and returns the updated row.
+  role payload, rejects `TaxPulse Platform Admin` promotion, requires Firm Admin access,
+  updates only the authenticated tenant's user, and returns the updated row.
 - Added a Pulse UI role update helper and mutation hook that invalidates the existing
   firm users query after a successful role change.
+- Limited the role-assignment control to tenant-assignable roles (`Firm Admin`,
+  `Advisor`, and `Client`) and disabled platform-admin rows in the tenant roster.
 - Updated ADR-0032 to capture the role-assignment command/control decision while leaving
   loading, empty, retry, error, invite, and impersonation work to adjacent tickets.
 
@@ -145,10 +147,10 @@ control, so that I can manage my firm's staff and their roles.
 
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `npm --prefix src/pulseUI run test -- FirmUserQueries.test.tsx TeamUsersPage.test.tsx`
-  passed with 2 files and 7 tests.
+  passed with 2 files and 10 tests.
 - `npm run typecheck` passed.
 - `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
-  passed with 2 files and 17 tests.
+  passed with 2 files and 18 tests.
 - `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRepository.test.ts`
   passed with 1 file and 3 tests.
 

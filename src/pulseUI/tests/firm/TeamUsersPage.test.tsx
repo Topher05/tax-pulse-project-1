@@ -136,6 +136,56 @@ describe("TeamUsersPage", () => {
     expect(onRoleChange).toHaveBeenCalledWith(fixtureUsers[1], "Firm Admin");
   });
 
+  test("omits platform administrator from tenant role assignment options", () => {
+    render(
+      <TeamUsersScreen
+        users={fixtureUsers}
+        viewerRole="Firm Admin"
+        onRoleChange={vi.fn()}
+      />,
+    );
+
+    const briannaRoleControl = screen.getByRole("combobox", { name: "Role for Brianna Cole" });
+    const roleOptions = within(briannaRoleControl).getAllByRole("option");
+
+    expect(roleOptions.map((option) => option.textContent)).toEqual([
+      "Firm Admin",
+      "Advisor",
+      "Client",
+    ]);
+    expect(
+      within(briannaRoleControl).queryByRole("option", { name: "TaxPulse Platform Admin" }),
+    ).not.toBeInTheDocument();
+  });
+
+  test("prevents Firm Admins from editing platform administrator rows", () => {
+    const onRoleChange = vi.fn();
+    const platformUsers = [
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d69",
+        name: "Platform Operator",
+        email: "platform@example.com",
+        role: "TaxPulse Platform Admin",
+        status: "Active",
+        lastLogin: { kind: "date", value: "Aug 6, 2026" },
+      },
+    ] as const satisfies readonly FirmUserRow[];
+
+    render(
+      <TeamUsersScreen
+        users={platformUsers}
+        viewerRole="Firm Admin"
+        onRoleChange={onRoleChange}
+      />,
+    );
+
+    const roleControl = screen.getByRole("combobox", { name: "Role for Platform Operator" });
+
+    expect(roleControl).toBeDisabled();
+    expect(roleControl).toHaveValue("TaxPulse Platform Admin");
+    expect(onRoleChange).not.toHaveBeenCalled();
+  });
+
   test("disables role assignment controls for non-admin viewers", () => {
     const onRoleChange = vi.fn();
 

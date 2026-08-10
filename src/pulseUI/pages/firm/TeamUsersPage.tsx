@@ -7,8 +7,8 @@ import { StatusPill } from "../../components/StatusPill.tsx";
 import { useSession } from "../../auth/AuthProvider.tsx";
 import type { SessionRole } from "../../auth/session.ts";
 import {
-  firmUserRoles,
-  type FirmUserRole,
+  firmUserAssignableRoles,
+  type FirmUserAssignableRole,
   type FirmUserRow,
   type FirmUserStatus,
   type RelativeLastLogin,
@@ -21,7 +21,7 @@ import {
 export interface TeamUsersScreenProps {
   users: readonly FirmUserRow[];
   viewerRole: SessionRole;
-  onRoleChange(user: FirmUserRow, role: FirmUserRole): void;
+  onRoleChange(user: FirmUserRow, role: FirmUserAssignableRole): void;
 }
 
 function formatCountLabel(value: number, singular: string, plural: string): string {
@@ -130,13 +130,16 @@ export function TeamUsersScreen({ users, viewerRole, onRoleChange }: TeamUsersSc
                       <select
                         aria-label={`Role for ${user.name}`}
                         className={styles.roleSelect}
-                        disabled={!canAssignRoles}
+                        disabled={!canAssignRoles || user.role === "TaxPulse Platform Admin"}
                         value={user.role}
                         onChange={(event) => {
-                          onRoleChange(user, event.currentTarget.value as FirmUserRole);
+                          onRoleChange(user, event.currentTarget.value as FirmUserAssignableRole);
                         }}
                       >
-                        {firmUserRoles.map((role) => (
+                        {user.role === "TaxPulse Platform Admin" ? (
+                          <option value="TaxPulse Platform Admin">TaxPulse Platform Admin</option>
+                        ) : null}
+                        {firmUserAssignableRoles.map((role) => (
                           <option key={role} value={role}>
                             {role}
                           </option>
