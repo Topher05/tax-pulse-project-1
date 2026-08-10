@@ -5,12 +5,10 @@ export {
   createRedisActionItemConsumer,
 } from "./Consumer.js";
 export {
-  createActionItemCreatedCloudEvent,
   createActionItemCreatedSnsClient,
   createSnsActionItemCreatedEventPublisher,
   getActionItemCreatedTopicArnFromEnv,
   type ActionItemCreatedSnsClient,
-  type CreateActionItemCreatedCloudEventOptions,
 } from "./SnsPublisher.js";
 export type {
   ActionItemCreatedConsumerHandleResult,

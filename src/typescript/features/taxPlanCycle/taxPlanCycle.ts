@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { scenarioSchema } from "../../scenario.js";
+import { DatabaseSync } from "node:sqlite";
 
 export const taxPlanCycleStages = [
   "Intake",
