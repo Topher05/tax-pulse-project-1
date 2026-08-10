@@ -84,6 +84,76 @@ firm's users, so that the screen reads live data through one typed boundary.
   `**/*.integration.test.ts`; the collected file passed with 3 tests, and the integration
   fixtures are covered by `npm run typecheck`.
 
+## dylan-harle-jira149 - SCRUM-149
+
+**Branch:** `dylan-harle-jira149`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-149
+
+**Summary:** Render the user roster table with a role-assignment control.
+
+**Description:** As a Firm Admin, I want the user roster table with a role-assignment
+control, so that I can manage my firm's staff and their roles.
+
+**Acceptance Criteria:**
+
+- The table renders name, email, role, status, and last login for the tenant's users.
+- A role-assignment control lets a Firm Admin change a user's tenant-scoped role; it is
+  disabled for non-admins.
+- Changing a role invokes the update handler with the user and new role.
+
+**Code Connection:**
+
+- Built directly on SCRUM-147's `/v1/firm/users` read boundary and `FirmUserRow` screen
+  model, replacing the placeholder row action with a role select in the roster's role
+  column.
+- Added a tenant-scoped `PATCH /v1/firm/users/{userId}/role` command that validates the
+  role payload, rejects `TaxPulse Platform Admin` promotion, requires Firm Admin access,
+  updates only the authenticated tenant's user, and returns the updated row.
+- Added a Pulse UI role update helper and mutation hook that invalidates the existing
+  firm users query after a successful role change.
+- Limited the role-assignment control to tenant-assignable roles (`Firm Admin`,
+  `Advisor`, and `Client`) and disabled platform-admin rows in the tenant roster.
+- Updated ADR-0032 to capture the role-assignment command/control decision while leaving
+  loading, empty, retry, error, invite, and impersonation work to adjacent tickets.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Firm administration UI completion.
+- Preserves tenant isolation by deriving update scope from authenticated request context
+  and never accepting tenant IDs from the browser.
+
+**Changed Files:**
+
+- `src/typescript/features/firmUsers/*`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/entities/firmUsers.ts`
+- `src/pulseUI/entities/firmUserQueries.ts`
+- `src/pulseUI/pages/firm/TeamUsersPage.tsx`
+- `src/pulseUI/pages/firm/TeamUsersPage.module.css`
+- `src/pulseUI/tests/firm/FirmUserQueries.test.tsx`
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `tests/typescript/firmUsers/firmUsersRoutes.test.ts`
+- `tests/typescript/firmUsers/firmUsersRepository.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `adr/0032-team-users-screen.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- FirmUserQueries.test.tsx TeamUsersPage.test.tsx`
+  passed with 2 files and 10 tests.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 2 files and 18 tests.
+- `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRepository.test.ts`
+  passed with 1 file and 3 tests.
+
 ## dylan-harle-jira132 - SCRUM-132
 
 **Branch:** `dylan-harle-jira132`
