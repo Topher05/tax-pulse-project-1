@@ -1183,3 +1183,44 @@ workflow behavior.
 - `npm --prefix src/pulseUI run build` transformed all 2,108 modules but could not replace
   the existing `dist/pulseUI/assets` directory because Windows returned `EPERM`; no source
   compilation error was reported.
+
+
+## christopher-martus-jira134 - SCRUM-134
+
+**Branch:** `christopher-martus-jira134`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-134
+
+**Summary:** Relay outbox rows with retry
+
+**Description:** As a Backend Developer, I want a relay that publishes outbox rows and
+retries on failure, so that committed events are reliably delivered.
+
+**Acceptance Criteria:**
+
+- A relay publishes unsent outbox rows and marks them sent.
+- A transient publish failure is retried with backoff.
+- A test asserts a row is marked sent only after a successful publish.
+
+**Code Connection:**
+
+- Adds the nullable `outbox_event.sent_at` delivery marker. The relay will select rows
+  without this value and set it only after a successful publisher call.
+
+**Project Scope Connection:**
+
+This is the persistence foundation for reliable delivery of the transactional outbox
+introduced in SCRUM-133. Relay execution, retry behavior, and focused verification remain
+in scope for the following implementation steps.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0013_outbox_event_sent_at.sql`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Pending focused TypeScript type check after the schema and migration change.
