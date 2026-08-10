@@ -450,6 +450,15 @@ Local setup:
 6. Edit `.env`, set `DATABASE_URL` to your local PostgreSQL connection string, and keep
    `TAXPULSE_LOGIN_BASE_DOMAIN=localhost` for local tenant-host login requests.
 
+The AWS Lambda deployment path for SCRUM-160 also expects both SNS topic ARNs to be
+present in the runtime environment:
+
+- `TAXPULSE_STAGE_CHANGED_TOPIC_ARN`
+- `TAXPULSE_ACTION_ITEM_CREATED_TOPIC_ARN`
+
+The reference deployment template for that cutover lives in
+[`deployment/scrum160.template.yaml`](./deployment/scrum160.template.yaml).
+
 Apply all migrations:
 
 ```powershell

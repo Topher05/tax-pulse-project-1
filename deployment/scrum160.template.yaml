@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: TaxPulse SCRUM-160 Lambda + API Gateway integration.
+
+Parameters:
+  DatabaseUrl:
+    Type: String
+    NoEcho: true
+    Description: Postgres connection string for the Core Case Service.
+  JwtIssuer:
+    Type: String
+    Description: Issuer expected by the Lambda JWT verifier.
+  JwtSigningSecret:
+    Type: String
+    NoEcho: true
+    Description: HS256 signing secret used by the Lambda JWT verifier.
+  StageChangedTopicArn:
+    Type: String
+    Description: SNS topic ARN for stage-changed events.
+  ActionItemCreatedTopicArn:
+    Type: String
+    Description: SNS topic ARN for action-item-created events.
+  RedisUrl:
+    Type: String
+    Default: ""
+    Description: Optional Redis URL for queue cache invalidation.
+  VpcSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Private subnets for the Lambda functions.
+  VpcSecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: Security groups that can reach the database.
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 30
+    MemorySize: 512
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        DATABASE_URL: !Ref DatabaseUrl
+        JWT_ISSUER: !Ref JwtIssuer
+        JWT_SIGNING_SECRET: !Ref JwtSigningSecret
+        TAXPULSE_STAGE_CHANGED_TOPIC_ARN: !Ref StageChangedTopicArn
+        TAXPULSE_ACTION_ITEM_CREATED_TOPIC_ARN: !Ref ActionItemCreatedTopicArn
+        TAXPULSE_REDIS_URL: !Ref RedisUrl
+        AWS_REGION: !Ref AWS::Region
+    VpcConfig:
+      SecurityGroupIds: !Ref VpcSecurityGroupIds
+      SubnetIds: !Ref VpcSubnetIds
+
+Resources:
+  PresentToClientFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist
+      Handler: typescript/features/taxPlanCycle/lambdaRuntime.presentToClientHandler
+      Description: Transition a Tax Plan Cycle from Review to Client Approval.
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource:
+                - !Ref StageChangedTopicArn
+                - !Ref ActionItemCreatedTopicArn
+      Events:
+        PresentToClientApi:
+          Type: Api
+          Properties:
+            Path: /v1/tax-plan-cycles/{caseId}/present-to-client
+            Method: post
+
+  ExecuteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist
+      Handler: typescript/features/taxPlanCycle/lambdaRuntime.executeHandler
+      Description: Transition a Tax Plan Cycle from Client Approval to Executed.
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource:
+                - !Ref StageChangedTopicArn
+      Events:
+        ExecuteApi:
+          Type: Api
+          Properties:
+            Path: /v1/tax-plan-cycles/{caseId}/execute
+            Method: post
+
+Outputs:
+  PresentToClientFunctionArn:
+    Value: !GetAtt PresentToClientFunction.Arn
+  ExecuteFunctionArn:
+    Value: !GetAtt ExecuteFunction.Arn
