@@ -1208,19 +1208,29 @@ retries on failure, so that committed events are reliably delivered.
 
 - Adds the nullable `outbox_event.sent_at` delivery marker. The relay will select rows
   without this value and set it only after a successful publisher call.
+- `createOutboxRelay` reads unsent rows in creation order, publishes the serialized
+  CloudEvent payload, and records `sent_at` only after publication succeeds.
+- `createSnsOutboxEventPublisher` sends that stored payload to the configured SNS topic
+  without rebuilding the event.
 
 **Project Scope Connection:**
 
-This is the persistence foundation for reliable delivery of the transactional outbox
-introduced in SCRUM-133. Relay execution, retry behavior, and focused verification remain
-in scope for the following implementation steps.
+This provides the minimal relay path for reliable delivery of the transactional outbox
+introduced in SCRUM-133. Retry behavior and focused verification remain in scope for the
+following implementation steps.
 
 **Changed Files:**
 
 - `src/typescript/shared/database/schema.ts`
-- `src/typescript/shared/database/drizzle-migrations/0013_outbox_event_sent_at.sql`
+- `src/typescript/shared/database/drizzle-migrations/0013_low_callisto.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0013_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/features/taxPlanCycle/infrastructure/outboxRelay.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
-- Pending focused TypeScript type check after the schema and migration change.
+- `npm run typecheck` passed after the schema and migration change.
+- Pending focused type check after adding relay behavior.
