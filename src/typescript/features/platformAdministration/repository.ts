@@ -1,11 +1,23 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
-import { roles, tenants, users, userStatus } from "../../shared/database/schema.js";
+import { serializeAuditEntryForOutput } from "../../auditEntryOutput.js";
 import {
+  auditEntry as auditEntryTable,
+  roles,
+  taxPlanCycle,
+  tenants,
+  users,
+  userStatus,
+} from "../../shared/database/schema.js";
+import {
+  platformAuditLogEntrySchema,
+  platformPermissionMatrixResponseSchema,
   platformTenantUserRowSchema,
   platformTenantUsersTenantSchema,
+  type PlatformAuditLogEntry,
+  type PlatformPermissionMatrixResponse,
   type PlatformTenantUserCreateRequest,
   type PlatformTenantUserRow,
   type PlatformTenantUsersTenant,
@@ -34,7 +46,199 @@ export interface PlatformTenantUserCreateInput extends PlatformTenantUserCreateR
 export interface PlatformAdministrationRepository {
   listTenantsWithUsers(): Promise<PlatformTenantUsersTenant[]>;
   createTenantUser(input: PlatformTenantUserCreateInput): Promise<PlatformTenantUserRow | null>;
+  listPermissionMatrix(): Promise<PlatformPermissionMatrixResponse>;
+  listPlatformAuditLog(): Promise<PlatformAuditLogEntry[]>;
 }
+
+const platformPermissionMatrix = platformPermissionMatrixResponseSchema.parse([
+  {
+    id: "internal-firm-staff",
+    title: "Internal - Firm Staff",
+    description:
+      "An Advisor cannot sign off their own work; Firm Admin review is required before a plan is presented or sealed.",
+    roles: ["TaxPulse Platform Admin", "Firm Admin", "Advisor", "Client"],
+    rows: [
+      {
+        feature: "Plan Cycle Queue",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: "Scoped",
+          Client: null,
+        },
+      },
+      {
+        feature: "Plan Cycle Detail",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: "Edit",
+          Client: null,
+        },
+      },
+      {
+        feature: "Data Aggregation Run",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: "Edit",
+          Client: null,
+        },
+      },
+      {
+        feature: "Scenario Modeling",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: "Edit",
+          Client: null,
+        },
+      },
+      {
+        feature: "Submit for Review",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: "Edit",
+          Client: null,
+        },
+      },
+      {
+        feature: "Review Sign-Off / Send Back",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: null,
+          Client: null,
+        },
+      },
+      {
+        feature: "Present / Client Approval",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: "Edit",
+          Client: null,
+        },
+      },
+      {
+        feature: "Action Item Tracking",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: "Edit",
+          Client: null,
+        },
+      },
+      {
+        feature: "Client Comms / Scheduling",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: "Edit",
+          Client: null,
+        },
+      },
+      {
+        feature: "Place / Release Hold",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: null,
+          Client: null,
+        },
+      },
+      {
+        feature: "Close & Seal (Archived)",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: null,
+          Client: null,
+        },
+      },
+      {
+        feature: "User Management",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: null,
+          Client: null,
+        },
+      },
+      {
+        feature: "Audit Trail",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: null,
+          Client: null,
+        },
+      },
+    ],
+  },
+  {
+    id: "external-clients",
+    title: "External - Clients",
+    roles: ["TaxPulse Platform Admin", "Firm Admin", "Advisor", "Client"],
+    rows: [
+      {
+        feature: "Client Portal Dashboard",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": null,
+          Advisor: null,
+          Client: "Full",
+        },
+      },
+      {
+        feature: "View Plan Cycle Stage",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": null,
+          Advisor: null,
+          Client: "Full",
+        },
+      },
+      {
+        feature: "View Scenarios",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": null,
+          Advisor: null,
+          Client: "Full",
+        },
+      },
+      {
+        feature: "Approve Recommendation",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": null,
+          Advisor: null,
+          Client: "Edit",
+        },
+      },
+      {
+        feature: "Mark Action Item Complete",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": null,
+          Advisor: null,
+          Client: "Edit",
+        },
+      },
+      {
+        feature: "Message Advisor",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": null,
+          Advisor: null,
+          Client: "Edit",
+        },
+      },
+    ],
+  },
+]);
 
 function isTenantEmailConflict(error: unknown): boolean {
   return hasPostgresError(error, "23505", tenantEmailUniqueConstraint);
@@ -94,12 +298,88 @@ function toPlatformTenantUserRow(row: {
   });
 }
 
+function inferAuditRole(actor: string): PlatformAuditLogEntry["role"] {
+  const normalizedActor = actor.toLowerCase();
+
+  if (normalizedActor.includes("firm-admin")) {
+    return "Firm Admin";
+  }
+
+  if (normalizedActor.includes("advisor")) {
+    return "Advisor";
+  }
+
+  if (normalizedActor.includes("client")) {
+    return "Client";
+  }
+
+  if (normalizedActor.includes("platform")) {
+    return "TaxPulse Platform Admin";
+  }
+
+  return null;
+}
+
+function toPlatformAuditLogEntry(row: {
+  id: string;
+  caseId: string;
+  actor: string;
+  action: string;
+  outcome: string;
+  occurredAt: Date;
+  tenantName: string | null;
+  planningPeriod: string | null;
+}): PlatformAuditLogEntry {
+  const serialized = serializeAuditEntryForOutput(row);
+  const resourceParts = [
+    row.tenantName,
+    row.planningPeriod,
+    `Case ${row.caseId}`,
+  ].filter((part): part is string => part !== null && part !== "");
+
+  return platformAuditLogEntrySchema.parse({
+    id: serialized.id,
+    occurredAt: serialized.occurred_at,
+    user: serialized.actor,
+    role: inferAuditRole(serialized.actor),
+    action:
+      serialized.outcome === "succeeded"
+        ? serialized.action
+        : `${serialized.action} - ${serialized.outcome}`,
+    resource: resourceParts.join(" - "),
+  });
+}
+
 export function createPlatformAdministrationRepository(
   client: Client,
 ): PlatformAdministrationRepository {
   const db = drizzle(client);
 
   return {
+    async listPermissionMatrix() {
+      return platformPermissionMatrix;
+    },
+
+    async listPlatformAuditLog() {
+      const rows = await db
+        .select({
+          id: auditEntryTable.id,
+          caseId: auditEntryTable.caseId,
+          actor: auditEntryTable.actor,
+          action: auditEntryTable.action,
+          outcome: auditEntryTable.outcome,
+          occurredAt: auditEntryTable.occurredAt,
+          tenantName: tenants.name,
+          planningPeriod: taxPlanCycle.planningPeriod,
+        })
+        .from(auditEntryTable)
+        .innerJoin(taxPlanCycle, eq(taxPlanCycle.id, auditEntryTable.caseId))
+        .leftJoin(tenants, eq(tenants.id, taxPlanCycle.tenantId))
+        .orderBy(desc(auditEntryTable.occurredAt));
+
+      return rows.map(toPlatformAuditLogEntry);
+    },
+
     async listTenantsWithUsers() {
       const rows = await db
         .select({

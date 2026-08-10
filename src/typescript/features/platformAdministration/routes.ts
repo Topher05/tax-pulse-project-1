@@ -5,6 +5,8 @@ import { ZodError } from "zod";
 import { ProblemHttpError } from "../../errors.js";
 import type { UserRole } from "../../authTypes.js";
 import {
+  platformAuditLogResponseSchema,
+  platformPermissionMatrixResponseSchema,
   platformTenantUserCreateParamsSchema,
   platformTenantUserCreateRequestSchema,
   platformTenantUserRowSchema,
@@ -94,10 +96,52 @@ export function createPlatformAdministrationRouter(
     async listTenantsWithUsers() {
       return [];
     },
+    async listPermissionMatrix() {
+      return [];
+    },
+    async listPlatformAuditLog() {
+      return [];
+    },
     async createTenantUser() {
       return null;
     },
   };
+
+  router.get(
+    "/administration/roles-permissions",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        if (!requirePlatformAdmin(req, next)) {
+          return;
+        }
+
+        const rows = await repository.listPermissionMatrix();
+        const response = platformPermissionMatrixResponseSchema.parse(rows);
+
+        res.status(200).json(response);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/administration/audit-log",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        if (!requirePlatformAdmin(req, next)) {
+          return;
+        }
+
+        const rows = await repository.listPlatformAuditLog();
+        const response = platformAuditLogResponseSchema.parse(rows);
+
+        res.status(200).json(response);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
   router.get(
     "/administration/tenants-users",
