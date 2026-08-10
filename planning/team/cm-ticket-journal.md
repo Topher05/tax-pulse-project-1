@@ -1215,12 +1215,14 @@ retries on failure, so that committed events are reliably delivered.
 - The relay retries transient publisher failures up to three total attempts, using 100 ms,
   then 200 ms exponential backoff by default. Retry count and timing are injectable for
   deterministic tests.
+- A focused relay test simulates one transient publisher failure and verifies the row remains
+  unsent until the second publish attempt succeeds.
 
 **Project Scope Connection:**
 
 This provides the minimal relay path and transient-failure retry behavior for reliable
-delivery of the transactional outbox introduced in SCRUM-133. Focused verification remains
-in scope for the following implementation step.
+delivery of the transactional outbox introduced in SCRUM-133, without introducing a worker
+runtime, scheduler, retries for database writes, or SCRUM-135 dead-letter behavior.
 
 **Changed Files:**
 
@@ -1231,10 +1233,13 @@ in scope for the following implementation step.
 - `src/typescript/features/taxPlanCycle/infrastructure/outboxRelay.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
 - `npm run typecheck` passed after the schema and migration change.
-- `npm run typecheck` passed after adding relay behavior.
-- Pending focused relay verification.
+- `npm run typecheck` passed after adding relay behavior and its test seam.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+  passed: 1 test verifies retry backoff and marks the row sent only after success.
+- `git diff --check` passed.

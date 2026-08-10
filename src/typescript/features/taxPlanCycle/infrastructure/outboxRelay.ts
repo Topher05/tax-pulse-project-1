@@ -9,6 +9,16 @@ export interface OutboxEventPublisher {
   publish(payload: string): Promise<void> | void;
 }
 
+export interface UnsentOutboxEvent {
+  id: string;
+  payload: string;
+}
+
+export interface OutboxRelayStore {
+  listUnsent(): Promise<UnsentOutboxEvent[]>;
+  markSent(id: string, sentAt: Date): Promise<void>;
+}
+
 export interface OutboxRelay {
   relayUnsentEvents(): Promise<number>;
 }
@@ -42,12 +52,34 @@ export function createSnsOutboxEventPublisher(
   };
 }
 
+export function createPostgresOutboxRelayStore(client: Client): OutboxRelayStore {
+  const db = drizzle(client);
+
+  return {
+    async listUnsent() {
+      return await db
+        .select({
+          id: outboxEvent.id,
+          payload: outboxEvent.payload,
+        })
+        .from(outboxEvent)
+        .where(isNull(outboxEvent.sentAt))
+        .orderBy(asc(outboxEvent.createdAt));
+    },
+    async markSent(id, sentAt) {
+      await db
+        .update(outboxEvent)
+        .set({ sentAt })
+        .where(eq(outboxEvent.id, id));
+    },
+  };
+}
+
 export function createOutboxRelay(
-  client: Client,
+  store: OutboxRelayStore,
   publisher: OutboxEventPublisher,
   options: OutboxRelayOptions = {},
 ): OutboxRelay {
-  const db = drizzle(client);
   const now = options.now ?? (() => new Date());
   const maxPublishAttempts = options.maxPublishAttempts ?? defaultMaxPublishAttempts;
   const retryDelayMs =
@@ -75,22 +107,12 @@ export function createOutboxRelay(
 
   return {
     async relayUnsentEvents() {
-      const rows = await db
-        .select({
-          id: outboxEvent.id,
-          payload: outboxEvent.payload,
-        })
-        .from(outboxEvent)
-        .where(isNull(outboxEvent.sentAt))
-        .orderBy(asc(outboxEvent.createdAt));
+      const rows = await store.listUnsent();
 
       for (const row of rows) {
         await publishWithRetry(row.payload);
 
-        await db
-          .update(outboxEvent)
-          .set({ sentAt: now() })
-          .where(eq(outboxEvent.id, row.id));
+        await store.markSent(row.id, now());
       }
 
       return rows.length;
