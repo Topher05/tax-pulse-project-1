@@ -56,6 +56,10 @@ import {
   firmUserRowSchema,
 } from "./features/firmUsers/index.js";
 import {
+  platformAuditLogEntrySchema,
+  platformAuditLogResponseSchema,
+  platformPermissionMatrixResponseSchema,
+  platformPermissionMatrixSectionSchema,
   platformTenantUserCreateParamsSchema,
   platformTenantUserCreateRequestSchema,
   platformTenantUserRowSchema,
@@ -142,6 +146,22 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "PlatformTenantUsersListResponse",
     schema: platformTenantUsersListResponseSchema,
+  },
+  {
+    name: "PlatformPermissionMatrixSection",
+    schema: platformPermissionMatrixSectionSchema,
+  },
+  {
+    name: "PlatformPermissionMatrixResponse",
+    schema: platformPermissionMatrixResponseSchema,
+  },
+  {
+    name: "PlatformAuditLogEntry",
+    schema: platformAuditLogEntrySchema,
+  },
+  {
+    name: "PlatformAuditLogResponse",
+    schema: platformAuditLogResponseSchema,
   },
   {
     name: "PlatformTenantUserCreateParams",
@@ -328,6 +348,56 @@ const fakePlatformTenantUserCreateRequestExample = {
   status: "Inactive",
 };
 
+const fakePlatformPermissionMatrixExample = [
+  {
+    id: "internal-firm-staff",
+    title: "Internal - Firm Staff",
+    description:
+      "An Advisor cannot sign off their own work; Firm Admin review is required before a plan is presented or sealed.",
+    roles: ["TaxPulse Platform Admin", "Firm Admin", "Advisor", "Client"],
+    rows: [
+      {
+        feature: "Plan Cycle Queue",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: "Scoped",
+          Client: null,
+        },
+      },
+    ],
+  },
+  {
+    id: "external-clients",
+    title: "External - Clients",
+    description: "Client portal capabilities available outside the firm workspace.",
+    roles: ["TaxPulse Platform Admin", "Firm Admin", "Advisor", "Client"],
+    rows: [
+      {
+        feature: "Client Portal Dashboard",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": null,
+          Advisor: null,
+          Client: "Full",
+        },
+      },
+    ],
+  },
+];
+
+const fakePlatformAuditLogExample = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d42",
+    occurredAt: "2026-07-02T15:30:00.000Z",
+    user: "advisor-001",
+    role: "Advisor",
+    action: "income amount [REDACTED_AMOUNT] recorded",
+    resource:
+      "North Shore Advisors - 2026-Q3 - Case 018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11",
+  },
+];
+
 const scenarioOpenApiSchema = z.strictObject({
   id: z.uuid(),
   case_id: z.uuid(),
@@ -512,6 +582,12 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   );
   const platformTenantUsersListOpenApiSchema = toOpenApiSchema(
     platformTenantUsersListResponseSchema,
+  );
+  const platformPermissionMatrixOpenApiSchema = toOpenApiSchema(
+    platformPermissionMatrixResponseSchema,
+  );
+  const platformAuditLogOpenApiSchema = toOpenApiSchema(
+    platformAuditLogResponseSchema,
   );
   const platformTenantUserCreateParamsOpenApiSchema = toOpenApiSchema(
     platformTenantUserCreateParamsSchema,
@@ -1428,6 +1504,83 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                 "application/json": {
                   schema: platformTenantUsersListOpenApiSchema,
                   example: fakePlatformTenantUsersExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description:
+                "The authenticated user is not a TaxPulse Platform Admin.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/administration/roles-permissions": {
+        get: {
+          operationId: "listPlatformRolesPermissions",
+          tags: ["Core Case Service"],
+          summary: "List platform role permissions",
+          description:
+            "Returns the read-only permission matrix for TaxPulse Platform Admins.",
+          responses: {
+            "200": {
+              description: "The platform role permission matrix.",
+              content: {
+                "application/json": {
+                  schema: platformPermissionMatrixOpenApiSchema,
+                  example: fakePlatformPermissionMatrixExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description:
+                "The authenticated user is not a TaxPulse Platform Admin.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/administration/audit-log": {
+        get: {
+          operationId: "listPlatformAuditLog",
+          tags: ["Core Case Service"],
+          summary: "List platform-wide audit events",
+          description:
+            "Returns append-only audit entries across tenants for TaxPulse Platform Admins, " +
+            "with financial figures redacted before output.",
+          responses: {
+            "200": {
+              description: "The platform-wide audit log.",
+              content: {
+                "application/json": {
+                  schema: platformAuditLogOpenApiSchema,
+                  example: fakePlatformAuditLogExample,
                 },
               },
             },

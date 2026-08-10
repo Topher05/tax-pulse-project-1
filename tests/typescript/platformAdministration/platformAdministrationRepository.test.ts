@@ -81,4 +81,53 @@ describe("Platform administration repository", () => {
       );
     });
   });
+
+  test("lists the read-only permission matrix for all platform roles", { timeout: 60000 }, async () => {
+    await withDockerDrizzleSeededDatabase(async (client) => {
+      const repository = createPlatformAdministrationRepository(client);
+
+      await expect(repository.listPermissionMatrix()).resolves.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: "Internal - Firm Staff",
+            roles: expect.arrayContaining([
+              "TaxPulse Platform Admin",
+              "Firm Admin",
+              "Advisor",
+            ]),
+            rows: expect.arrayContaining([
+              expect.objectContaining({
+                feature: "Plan Cycle Queue",
+              }),
+            ]),
+          }),
+          expect.objectContaining({
+            title: "External - Clients",
+            roles: expect.arrayContaining(["TaxPulse Platform Admin", "Client"]),
+          }),
+        ]),
+      );
+    });
+  });
+
+  test("lists platform audit entries with redacted financial figures", { timeout: 60000 }, async () => {
+    await withDockerDrizzleSeededDatabase(async (client) => {
+      const repository = createPlatformAdministrationRepository(client);
+      const auditEntries = await repository.listPlatformAuditLog();
+      const serializedEntries = JSON.stringify(auditEntries);
+
+      expect(auditEntries).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            user: "advisor-001",
+            role: "Advisor",
+            resource: expect.stringContaining("North Shore Advisors"),
+          }),
+        ]),
+      );
+      expect(serializedEntries).toContain("[REDACTED_AMOUNT]");
+      expect(serializedEntries).not.toContain("185000");
+      expect(serializedEntries).not.toContain("$8420");
+    });
+  });
 });
