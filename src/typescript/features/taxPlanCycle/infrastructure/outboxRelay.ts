@@ -15,6 +15,15 @@ export interface OutboxRelay {
 
 export interface OutboxRelayOptions {
   now?: () => Date;
+  maxPublishAttempts?: number;
+  retryDelayMs?: (failedAttempt: number) => number;
+  wait?: (milliseconds: number) => Promise<void>;
+}
+
+const defaultMaxPublishAttempts = 3;
+
+function waitFor(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 export function createSnsOutboxEventPublisher(
@@ -40,6 +49,29 @@ export function createOutboxRelay(
 ): OutboxRelay {
   const db = drizzle(client);
   const now = options.now ?? (() => new Date());
+  const maxPublishAttempts = options.maxPublishAttempts ?? defaultMaxPublishAttempts;
+  const retryDelayMs =
+    options.retryDelayMs ?? ((failedAttempt) => 100 * 2 ** (failedAttempt - 1));
+  const wait = options.wait ?? waitFor;
+
+  if (!Number.isInteger(maxPublishAttempts) || maxPublishAttempts < 1) {
+    throw new Error("maxPublishAttempts must be a positive integer.");
+  }
+
+  async function publishWithRetry(payload: string): Promise<void> {
+    for (let attempt = 1; attempt <= maxPublishAttempts; attempt += 1) {
+      try {
+        await publisher.publish(payload);
+        return;
+      } catch (error) {
+        if (attempt === maxPublishAttempts) {
+          throw error;
+        }
+
+        await wait(retryDelayMs(attempt));
+      }
+    }
+  }
 
   return {
     async relayUnsentEvents() {
@@ -53,7 +85,7 @@ export function createOutboxRelay(
         .orderBy(asc(outboxEvent.createdAt));
 
       for (const row of rows) {
-        await publisher.publish(row.payload);
+        await publishWithRetry(row.payload);
 
         await db
           .update(outboxEvent)

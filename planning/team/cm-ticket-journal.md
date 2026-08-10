@@ -1212,12 +1212,15 @@ retries on failure, so that committed events are reliably delivered.
   CloudEvent payload, and records `sent_at` only after publication succeeds.
 - `createSnsOutboxEventPublisher` sends that stored payload to the configured SNS topic
   without rebuilding the event.
+- The relay retries transient publisher failures up to three total attempts, using 100 ms,
+  then 200 ms exponential backoff by default. Retry count and timing are injectable for
+  deterministic tests.
 
 **Project Scope Connection:**
 
-This provides the minimal relay path for reliable delivery of the transactional outbox
-introduced in SCRUM-133. Retry behavior and focused verification remain in scope for the
-following implementation steps.
+This provides the minimal relay path and transient-failure retry behavior for reliable
+delivery of the transactional outbox introduced in SCRUM-133. Focused verification remains
+in scope for the following implementation step.
 
 **Changed Files:**
 
@@ -1233,4 +1236,5 @@ following implementation steps.
 **Validation Notes:**
 
 - `npm run typecheck` passed after the schema and migration change.
-- Pending focused type check after adding relay behavior.
+- `npm run typecheck` passed after adding relay behavior.
+- Pending focused relay verification.
