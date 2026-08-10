@@ -32,6 +32,22 @@ export {
   type StageChangedCloudEventV1,
   type StageChangedEventDataV1,
 } from "./stageChangedEvent.js";
+export { actionItemSchema } from "./actionItem.js";
+export type { ActionItem } from "./actionItem.js";
+export {
+  actionItemCreatedCloudEventSchemaV1,
+  actionItemCreatedEventDataSchema,
+  actionItemCreatedEventDataSchemaV1,
+  actionItemCreatedEventSchemaVersion,
+  actionItemCreatedEventSource,
+  actionItemCreatedEventType,
+  createActionItemCreatedCloudEvent,
+  type ActionItemCreatedCloudEventV1,
+  type ActionItemCreatedEventDataV1,
+  type ActionItemCreatedEventInput,
+  type ActionItemCreatedEventPublishInput,
+  type CreateActionItemCreatedCloudEventOptions,
+} from "./infrastructure/cloudEvents/actionItemCreated/index.js";
 export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
@@ -94,10 +110,17 @@ export {
   getTopicArnFromEnv,
   getTopicArnFromEnv as getStageChangedTopicArnFromEnv,
   STAGE_CHANGED_CONSUMER_NAME,
+  ACTION_ITEM_CREATED_CONSUMER_NAME,
+  ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
+  createActionItemConsumer,
+  createRedisActionItemConsumer,
+} from "./infrastructure/cloudEvents/index.js";
+export {
   parseSqsMessage,
   parseSqsMessage as parseStageChangedSqsMessage,
   PublishCommand,
 } from "./infrastructure/cloudEvents/stageChanged/index.js";
+
 export type {
   CloudEventDataV1,
   CloudEventPublishInput,
@@ -155,11 +178,17 @@ export {
 export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
+  type ActionItemCreatedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
+export {
+  createActionItemRepository,
+  type ActionItemCreateInput,
+  type ActionItemRepository,
+} from "./repositories/actionItems.js";
 export {
   createTaxPlanCycleRouter,
   type CreateTaxPlanCycleRouterOptions,
