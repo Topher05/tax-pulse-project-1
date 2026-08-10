@@ -48,10 +48,6 @@ function getStatusTone(status: FirmUserStatus): "success" | "warning" {
   return status === "Active" ? "success" : "warning";
 }
 
-function hasUsersBeyondAdmin(users: readonly FirmUserRow[]): boolean {
-  return users.some((user) => user.role !== "Firm Admin");
-}
-
 function TeamUsersLoadingState() {
   const skeletonRows = Array.from({ length: 5 }, (_, index) => index);
 
@@ -226,7 +222,7 @@ export function TeamUsersPage() {
     ? "loading"
     : firmUsersQuery.isError
       ? "error"
-      : hasUsersBeyondAdmin(users)
+      : users.length > 0
         ? "data"
         : "empty";
 

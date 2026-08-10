@@ -39,6 +39,15 @@ const advisorUser = {
   lastLoginAt: "2026-08-05T14:30:00.000Z",
 } as const;
 
+const secondFirmAdminUser = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d63",
+  name: "Casey Morgan",
+  email: "casey@example.com",
+  role: "Firm Admin",
+  status: "Active",
+  lastLoginAt: "2026-08-07T12:00:00.000Z",
+} as const;
+
 function renderTeamUsersPage() {
   localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
 
@@ -112,13 +121,27 @@ describe("TeamUsersPage", () => {
     expect(screen.queryByRole("table", { name: "Firm team and users roster" })).not.toBeInTheDocument();
   });
 
-  test("renders the empty state when there are no users beyond the admin", async () => {
-    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([firmAdminUser] as never);
+  test("renders the firm admin roster when only admins exist", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      firmAdminUser,
+      secondFirmAdminUser,
+    ] as never);
+
+    renderTeamUsersPage();
+
+    expect(await screen.findByRole("table", { name: "Firm team and users roster" })).toBeInTheDocument();
+    expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
+    expect(screen.getByText("Casey Morgan")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "No team users yet" })).not.toBeInTheDocument();
+  });
+
+  test("renders the empty state when the tenant has no users", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([] as never);
 
     renderTeamUsersPage();
 
     expect(await screen.findByRole("heading", { name: "No team users yet" })).toBeInTheDocument();
-    expect(screen.getByText("1 user")).toBeInTheDocument();
+    expect(screen.getByText("0 users")).toBeInTheDocument();
     expect(screen.queryByRole("table", { name: "Firm team and users roster" })).not.toBeInTheDocument();
   });
 

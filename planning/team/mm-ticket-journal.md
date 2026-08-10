@@ -22,13 +22,16 @@ resolves.
 **Acceptance Criteria:**
 
 - A loading skeleton renders while the users request is in flight.
-- An empty state renders when the firm has no users beyond the admin.
+- An empty state renders when the firm users endpoint returns no tenant users;
+  admin-only rosters remain visible so Firm Admins can see one another.
 - An error state renders with a retry affordance on request failure.
 
 **Code Connection:** The Team & Users page now consumes the SCRUM-147
 `useFirmUsersQuery` request state directly, keeps the existing Team & Users shell
 mounted, and switches the roster region between a table skeleton, an empty state for
-admin-only tenants, a retryable error state, and the existing data table.
+tenants with zero returned users, a retryable error state, and the existing data
+table. A review follow-up removed the `hasUsersBeyondAdmin` guard so multiple Firm
+Admins render in the roster instead of producing an empty table area.
 
 **Project Scope Connection:** This completes the Team & Users request-state behavior
 for the firm administration workspace while preserving tenant-scoped user data access
@@ -45,6 +48,8 @@ through the existing TanStack Query hook boundary.
 
 - `npm test -- TeamUsersPage FirmUserQueries` passed.
 - `npm run typecheck` passed from `src/pulseUI`.
+- `npm --prefix src/pulseUI run test:vitest -- tests/firm/TeamUsersPage.test.tsx`
+  passed after adding the admin-only roster regression case.
 
 ## martins-okorie-jira82 - SCRUM-82
 
