@@ -25,3 +25,15 @@ export interface IssuedTokenPair {
   accessTokenExpiresAt: Date;
   refreshTokenExpiresAt: Date;
 }
+
+
+/**
+ * Plan/Placeholder
+ * Review plan from codex ask follow ups to codex + gemini and configure it step by step document progress in the ticket
+ * Review code + impl and verify changeset
+ * Review previous branches for feedback/merge conflicts
+ * Review deliverables for feedback
+ * Start googling about all pending items as its new territory
+ * Follow new steps drafted in plan
+ * 
+ */
