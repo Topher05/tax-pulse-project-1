@@ -1,14 +1,20 @@
-import { Building2, Clock3, Mail, UserPlus, Users } from "lucide-react";
+import { Building2, Clock3, Mail, RefreshCw, UserPlus, Users } from "lucide-react";
 
 import styles from "./TeamUsersPage.module.css";
+import { EmptyState } from "../../components/EmptyState.tsx";
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
 import type { FirmUserRow, FirmUserStatus, RelativeLastLogin } from "../../entities/firmUsers.ts";
 import { useFirmUsersQuery } from "../../entities/firmUserQueries.ts";
 
+type TeamUsersQueryState = "loading" | "error" | "empty" | "data";
+
 export interface TeamUsersScreenProps {
   users: readonly FirmUserRow[];
+  errorMessage?: string;
+  onRetry?: () => void;
+  queryState: TeamUsersQueryState;
 }
 
 function formatCountLabel(value: number, singular: string, plural: string): string {
@@ -42,7 +48,73 @@ function getStatusTone(status: FirmUserStatus): "success" | "warning" {
   return status === "Active" ? "success" : "warning";
 }
 
-export function TeamUsersScreen({ users }: TeamUsersScreenProps) {
+function hasUsersBeyondAdmin(users: readonly FirmUserRow[]): boolean {
+  return users.some((user) => user.role !== "Firm Admin");
+}
+
+function TeamUsersLoadingState() {
+  const skeletonRows = Array.from({ length: 5 }, (_, index) => index);
+
+  return (
+    <PanelCard title="Loading user roster" description="Fetching tenant-scoped user access.">
+      <div className={styles.skeletonTable} role="status" aria-label="Loading Team & Users">
+        <span className="srOnly">Loading Team & Users</span>
+        <div className={styles.skeletonHeader}>
+          <span className={styles.skeletonBlock} />
+          <span className={styles.skeletonBlock} />
+          <span className={styles.skeletonBlock} />
+        </div>
+        {skeletonRows.map((row) => (
+          <div className={styles.skeletonRow} key={row}>
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+            <span className={styles.skeletonBlock} />
+          </div>
+        ))}
+      </div>
+    </PanelCard>
+  );
+}
+
+function TeamUsersEmptyState() {
+  return (
+    <EmptyState
+      title="No team users yet"
+      description="Only the tenant admin is active. Invite advisors or client portal users to build out this workspace."
+      icon={<Users />}
+    />
+  );
+}
+
+function TeamUsersErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div role="alert">
+      <EmptyState
+        title="Team users could not load"
+        description={message}
+        actionLabel="Retry"
+        onAction={onRetry}
+        icon={<RefreshCw />}
+      />
+    </div>
+  );
+}
+
+export function TeamUsersScreen({
+  users,
+  errorMessage,
+  onRetry,
+  queryState,
+}: TeamUsersScreenProps) {
   const totalUsers = users.length;
   const activeUsers = users.filter((user) => user.status === "Active").length;
   const pendingInvites = users.filter((user) => user.status === "Inactive").length;
@@ -96,49 +168,78 @@ export function TeamUsersScreen({ users }: TeamUsersScreenProps) {
         />
       </section>
 
-      <PanelCard title="User roster" description="The table remains the main content area for this scaffold.">
-        <div className={styles.tableWrap}>
-          {/* TODO: restrict this screen to Firm Admin and TaxPulse Platform Admin roles once role claims are available. */}
-          <table className={styles.table} aria-label="Firm team and users roster">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Last Login</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td className={styles.nameCell}>{user.name}</td>
-                  <td className={styles.emailCell}>{user.email}</td>
-                  <td>
-                    <StatusPill tone={getRoleTone()}>{user.role}</StatusPill>
-                  </td>
-                  <td>
-                    <StatusPill tone={getStatusTone(user.status)}>{user.status}</StatusPill>
-                  </td>
-                  <td className={styles.lastLoginCell}>{formatRelativeLastLogin(user.lastLogin)}</td>
-                  <td className={styles.actionCell}>
-                    <button className={styles.rowAction} type="button" disabled>
-                      Edit
-                    </button>
-                  </td>
+      {queryState === "loading" ? <TeamUsersLoadingState /> : null}
+      {queryState === "empty" ? <TeamUsersEmptyState /> : null}
+      {queryState === "error" ? (
+        <TeamUsersErrorState
+          message={errorMessage ?? "Team users request failed."}
+          onRetry={onRetry ?? (() => undefined)}
+        />
+      ) : null}
+      {queryState === "data" ? (
+        <PanelCard title="User roster" description="The table remains the main content area for this scaffold.">
+          <div className={styles.tableWrap}>
+            {/* TODO: restrict this screen to Firm Admin and TaxPulse Platform Admin roles once role claims are available. */}
+            <table className={styles.table} aria-label="Firm team and users roster">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Last Login</th>
+                  <th>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </PanelCard>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id}>
+                    <td className={styles.nameCell}>{user.name}</td>
+                    <td className={styles.emailCell}>{user.email}</td>
+                    <td>
+                      <StatusPill tone={getRoleTone()}>{user.role}</StatusPill>
+                    </td>
+                    <td>
+                      <StatusPill tone={getStatusTone(user.status)}>{user.status}</StatusPill>
+                    </td>
+                    <td className={styles.lastLoginCell}>{formatRelativeLastLogin(user.lastLogin)}</td>
+                    <td className={styles.actionCell}>
+                      <button className={styles.rowAction} type="button" disabled>
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </PanelCard>
+      ) : null}
     </div>
   );
 }
 
 export function TeamUsersPage() {
   const firmUsersQuery = useFirmUsersQuery();
+  const users = firmUsersQuery.data ?? [];
+  const queryState = firmUsersQuery.isLoading
+    ? "loading"
+    : firmUsersQuery.isError
+      ? "error"
+      : hasUsersBeyondAdmin(users)
+        ? "data"
+        : "empty";
 
-  return <TeamUsersScreen users={firmUsersQuery.data ?? []} />;
+  return (
+    <TeamUsersScreen
+      users={users}
+      queryState={queryState}
+      errorMessage={
+        firmUsersQuery.error instanceof Error ? firmUsersQuery.error.message : "Team users request failed."
+      }
+      onRetry={() => {
+        void firmUsersQuery.refetch();
+      }}
+    />
+  );
 }

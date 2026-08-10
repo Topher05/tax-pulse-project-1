@@ -5,6 +5,47 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira148 - SCRUM-148
+
+**Branch:** `martins-okorie-jira148`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-148
+
+**Summary:** Add loading, empty, and error states to the Team & Users screen
+
+**Description:** As a Frontend Developer, I want the Team & Users screen to render
+loading, empty, and error states, so that the screen behaves predictably while data
+resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the users request is in flight.
+- An empty state renders when the firm has no users beyond the admin.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:** The Team & Users page now consumes the SCRUM-147
+`useFirmUsersQuery` request state directly, keeps the existing Team & Users shell
+mounted, and switches the roster region between a table skeleton, an empty state for
+admin-only tenants, a retryable error state, and the existing data table.
+
+**Project Scope Connection:** This completes the Team & Users request-state behavior
+for the firm administration workspace while preserving tenant-scoped user data access
+through the existing TanStack Query hook boundary.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/firm/TeamUsersPage.tsx`
+- `src/pulseUI/pages/firm/TeamUsersPage.module.css`
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm test -- TeamUsersPage FirmUserQueries` passed.
+- `npm run typecheck` passed from `src/pulseUI`.
+
 ## martins-okorie-jira82 - SCRUM-82
 
 **Branch:** `martins-okorie-jira82`
