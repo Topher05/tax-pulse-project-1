@@ -33,7 +33,7 @@ export function createActionItemCreatedCloudEvent(
 
   return actionItemCreatedCloudEventSchemaV1.parse({
     specversion: "1.0",
-    id: `action-item-${idFactory()}`,
+    id: idFactory(),
     source: actionItemCreatedEventSource,
     type: actionItemCreatedEventType,
     time: now().toISOString(),
