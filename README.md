@@ -111,6 +111,67 @@ healthcheck calls `GET /health`. Make sure `.env` includes `JWT_ISSUER` and
 `JWT_SIGNING_SECRET`; the FastAPI app loads those values during startup so calculation
 routes can validate the shared JWTs issued by the Core Case Service.
 
+## Local Docker Compose Stack
+
+SCRUM-155 adds a local Compose stack for the Core Case Service, Tax Engine,
+PostgreSQL, and Redis. It reuses the existing service Dockerfiles and the existing
+[`docker-compose.redis.yml`](./docker-compose.redis.yml) Redis definition. Start Docker
+Desktop first, then run:
+
+```powershell
+npm run stack:up
+```
+
+That command runs:
+
+- Core Case Service on `http://localhost:3000`
+- Tax Engine on `http://localhost:8000`
+- PostgreSQL on `localhost:54318`
+- Redis on `localhost:6379`
+- RedisInsight on `http://localhost:5540`
+
+`stack:up` first stops the Redis-only compose project from `npm run redis:up`, then
+starts Redis again inside the full local stack so the shared container name and port do
+not conflict.
+
+The Core Case Service still uses the SCRUM-153 standalone Docker convention when it is
+started with `docker run --env-file .env`: `DATABASE_URL` should point at
+`host.docker.internal`. Inside the SCRUM-155 Compose stack, the Core Case Service and
+the one-shot seed service override that value to
+`postgresql://postgres:postgres@postgres:5432/taxpulse`, because containers reach
+PostgreSQL over Compose DNS. Core also uses `redis://taxpulse-redis:6379` and
+`http://tax-engine:8000` on the Compose network.
+
+The `core-case-seed` service runs the existing Drizzle migration and synthetic seed
+path before Core starts. It is destructive to the local Compose database, matching the
+documented behavior of `npm run seed`.
+
+Run the stack smoke check after startup:
+
+```powershell
+npm run stack:smoke
+```
+
+The smoke check verifies both service health endpoints, Redis reachability, and a
+synthetic `POST /auth/register` against the Core Case Service's PostgreSQL-backed auth
+tables.
+
+If a standalone Core or Tax Engine container is already using the default host ports,
+override the host port before startup:
+
+```powershell
+$env:TAXPULSE_CORE_HOST_PORT = "3001"
+$env:TAXPULSE_STACK_CORE_URL = "http://127.0.0.1:3001"
+npm run stack:up
+npm run stack:smoke
+```
+
+Stop the stack with:
+
+```powershell
+npm run stack:down
+```
+
 ```bash
 python -m tax_liability_engine.main
 python -m ruff format --check src tests
