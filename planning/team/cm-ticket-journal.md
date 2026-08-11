@@ -1318,16 +1318,17 @@ progress in the portal.
 - Task 1 adds a parameter-free `GET /portal/my-tax-plan` BFF read. It takes the verified JWT
   subject as `client_id`, combines it with the verified tenant ID, and never accepts a client or
   case identifier from the browser.
-- The repository selects the latest unarchived cycle for that tenant-client pair. The remaining
-  portal summary fields are intentionally left for the next task chunk.
+- The repository selects the latest unarchived cycle for that tenant-client pair. The BFF maps
+  the owned cycle to a typed portal read model, with the advisor sourced from the cycle owner and
+  nullable fields for summary values that have no authoritative record yet.
 - Client sign-in now lands on `/my-tax-plan`; the app shell redirects Client users away from
   operator routes, shows only the portal navigation item, and reads the scoped endpoint through
   one authenticated TanStack Query boundary.
-- The read-only My Tax Plan view renders the live cycle stage and advisor with the portal hero,
-  responsive stage stepper, next meeting, projected savings, and top recommendation. The three
-  unavailable summary values use clearly fake MVP data until a portal read model owns them.
-- Client direct-cycle and audit reads return the existing 404 response when the verified JWT
-  client ID does not match the cycle's `client_id`.
+- The read-only My Tax Plan view renders the BFF-backed stage, advisor, next meeting, projected
+  savings, and top recommendation. Missing BFF values render explicit in-progress states rather
+  than fabricated meeting, savings, or recommendation data.
+- Client users are denied access to tenant-wide queue, direct-cycle, audit, creation, scenario,
+  and transition routes; their only Tax Plan read is the JWT-scoped portal endpoint.
 
 **Project Scope Connection:**
 
@@ -1339,6 +1340,7 @@ or live stage updates.
 
 - `src/typescript/features/taxPlanCycle/repositories/repository.ts`
 - `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
 - `src/typescript/index.ts`
 - `src/pulseUI/app/routeTree.tsx`
 - `src/pulseUI/auth/landingPath.ts`
@@ -1361,10 +1363,10 @@ or live stage updates.
   directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
   changed files.
 - `npm --prefix src/pulseUI run typecheck` passed.
-- `npm --prefix src/pulseUI test` passed: 162 tests in 36 files. The existing jsdom canvas
-  and scroll-restoration warnings remain non-failing.
+- `npm --prefix src/pulseUI test` passed: 163 tests in 36 files. The existing jsdom canvas and
+  scroll-restoration warnings remain non-failing.
 - `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
-  passed: 6 tests.
+  passed: 7 tests, including Client queue denial.
 
 ## christopher-martus-jira134 - SCRUM-134
 

@@ -359,17 +359,43 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
         );
 
         expect(portalResponse.status).toBe(200);
-        await expect(portalResponse.json()).resolves.toEqual(cycle);
+        await expect(portalResponse.json()).resolves.toEqual({
+          ...cycle,
+          advisor: cycle.owner,
+          next_meeting: null,
+          projected_savings: null,
+          top_recommendation: null,
+        });
         expect(findCurrentByClientId).toHaveBeenCalledWith({
           tenantId: "tenant-from-jwt",
           clientId,
         });
-        expect(directResponse.status).toBe(404);
+        expect(directResponse.status).toBe(403);
         await expect(directResponse.json()).resolves.toMatchObject({
-          title: "Tax Plan Cycle Not Found",
+          title: "Operator Access Required",
         });
       },
       { clientPortalReadRepository: { findCurrentByClientId } },
     );
+  });
+
+  test("does not expose the tenant-wide cycle queue to a Client user", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({ case_id: cycle.id }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
+    const token = await createAccessToken({
+      role: "Client",
+      userId: validCreateBody.client_id,
+    });
+
+    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.status).toBe(403);
+      await expect(response.json()).resolves.toMatchObject({
+        title: "Operator Access Required",
+      });
+    });
   });
 });

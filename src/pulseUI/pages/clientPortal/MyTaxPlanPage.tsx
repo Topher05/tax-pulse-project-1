@@ -7,11 +7,22 @@ import { WorkflowStepper } from "../../components/WorkflowStepper.tsx";
 import { useClientTaxPlanQuery } from "../../entities/clientTaxPlanQueries.ts";
 import { caseStages } from "../taxPlanCycle/detailViewState.ts";
 
-const portalSummary = {
-  nextMeeting: "May 12, 2026 at 10:00 AM",
-  projectedSavings: "$8,420",
-  topRecommendation: "Convert $40k from a traditional IRA to a Roth IRA.",
-} as const;
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+function formatMeeting(nextMeeting: string | null): string {
+  if (nextMeeting === null) {
+    return "Not yet scheduled";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "long",
+    timeStyle: "short",
+  }).format(new Date(nextMeeting));
+}
 
 export function MyTaxPlanPage() {
   const taxPlanQuery = useClientTaxPlanQuery();
@@ -75,7 +86,7 @@ export function MyTaxPlanPage() {
               <UserRound />
             </span>
             <p className={styles.summaryLabel}>Your advisor</p>
-            <p className={styles.summaryValue}>{taxPlan.owner}</p>
+            <p className={styles.summaryValue}>{taxPlan.advisor}</p>
             <p className={styles.summaryCopy}>Your primary planning contact.</p>
           </article>
 
@@ -84,7 +95,7 @@ export function MyTaxPlanPage() {
               <CalendarDays />
             </span>
             <p className={styles.summaryLabel}>Next meeting</p>
-            <p className={styles.summaryValue}>{portalSummary.nextMeeting}</p>
+            <p className={styles.summaryValue}>{formatMeeting(taxPlan.next_meeting)}</p>
             <p className={styles.summaryCopy}>Scheduled time with your advisor.</p>
           </article>
 
@@ -93,7 +104,11 @@ export function MyTaxPlanPage() {
               <PiggyBank />
             </span>
             <p className={styles.summaryLabel}>Projected savings</p>
-            <p className={styles.savingsValue}>{portalSummary.projectedSavings}</p>
+            <p className={styles.savingsValue}>
+              {taxPlan.projected_savings === null
+                ? "In progress"
+                : currencyFormatter.format(taxPlan.projected_savings)}
+            </p>
             <p className={styles.summaryCopy}>Estimated lifetime tax savings.</p>
           </article>
         </div>
@@ -106,7 +121,9 @@ export function MyTaxPlanPage() {
           </span>
           <div>
             <p className={styles.eyebrow}>Top recommendation</p>
-            <h2 className={styles.recommendationTitle}>{portalSummary.topRecommendation}</h2>
+            <h2 className={styles.recommendationTitle}>
+              {taxPlan.top_recommendation ?? "Your recommendation is being prepared."}
+            </h2>
             <p className={styles.recommendationCopy}>
               Your advisor will review the timing, projected impact, and next steps with you.
             </p>

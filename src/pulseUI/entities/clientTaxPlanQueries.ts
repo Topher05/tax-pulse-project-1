@@ -12,6 +12,10 @@ export interface ClientTaxPlanCycle {
   due_date: string;
   on_hold: boolean;
   hold_reason?: string;
+  advisor: string;
+  next_meeting: string | null;
+  projected_savings: number | null;
+  top_recommendation: string | null;
 }
 
 export const clientTaxPlanQueryKey = ["clientPortal", "myTaxPlan"] as const;

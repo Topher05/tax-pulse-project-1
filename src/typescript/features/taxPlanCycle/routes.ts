@@ -16,6 +16,7 @@ import {
   taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleReadParamsSchema,
   taxPlanCycleSchema,
+  clientTaxPlanReadModelSchema,
   taxPlanCycleTransitionParamsSchema,
   taxPlanCycleTransitionSchema,
   isLegalTaxPlanCycleStageTransition,
@@ -160,6 +161,29 @@ function canReadCycle(user: TenantScopedRequest["user"], cycle: { client_id: str
   return user?.role !== "Client" || user.id === cycle.client_id;
 }
 
+function operatorAccessRequired(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/operator-access-required",
+    title: "Operator Access Required",
+    status: 403,
+    detail: "Client users can access plan progress only through the My Tax Plan view.",
+  });
+}
+
+function isClientUser(user: TenantScopedRequest["user"]): boolean {
+  return user?.role === "Client";
+}
+
+function toClientTaxPlanReadModel(cycle: ReturnType<typeof taxPlanCycleSchema.parse>) {
+  return clientTaxPlanReadModelSchema.parse({
+    ...cycle,
+    advisor: cycle.owner,
+    next_meeting: null,
+    projected_savings: null,
+    top_recommendation: null,
+  });
+}
+
 function isTransitionAuthorized(
   currentStage: TaxPlanCycleStage,
   user: TenantScopedRequest["user"],
@@ -274,6 +298,11 @@ export function createTaxPlanCycleRouter(
           return;
         }
 
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
+
         const queue = await taxPlanCycleRepository.listQueue({ tenantId });
         const response = taxPlanCycleQueueGetResponseSchema.parse(queue);
 
@@ -325,7 +354,7 @@ export function createTaxPlanCycleRouter(
           return;
         }
 
-        res.status(200).json(taxPlanCycleSchema.parse(cycle));
+        res.status(200).json(toClientTaxPlanReadModel(cycle));
       } catch (error) {
         next(error);
       }
@@ -355,6 +384,12 @@ export function createTaxPlanCycleRouter(
 
       try {
         const tenantId = (req as TenantScopedRequest).tenant.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
         const cycle = await controller.findByCaseId({
           tenantId,
           caseId: parsedParams.data.caseId,
@@ -406,6 +441,12 @@ export function createTaxPlanCycleRouter(
 
       try {
         const tenantId = (req as TenantScopedRequest).tenant.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
         const cycle = await controller.findByCaseId({
           tenantId,
           caseId: parsedParams.data.caseId,
@@ -453,6 +494,12 @@ export function createTaxPlanCycleRouter(
 
       try {
         const tenantId = (req as TenantScopedRequest).tenant.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
         const idempotencyKey = getIdempotencyKey(req);
         const result = await controller.create({
           ...parsedBody.data,
@@ -503,6 +550,11 @@ export function createTaxPlanCycleRouter(
 
           if (!tenantId || !user?.id || req.headers.authorization === undefined) {
             next(authenticationRequired());
+            return;
+          }
+
+          if (isClientUser(user)) {
+            next(operatorAccessRequired());
             return;
           }
 
@@ -558,6 +610,11 @@ export function createTaxPlanCycleRouter(
 
         if (!tenantId || !user?.role || !user.id) {
           next(authenticationRequired());
+          return;
+        }
+
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
           return;
         }
 
