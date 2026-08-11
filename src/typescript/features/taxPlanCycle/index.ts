@@ -49,6 +49,9 @@ export {
   type CreateActionItemCreatedCloudEventOptions,
 } from "./infrastructure/cloudEvents/actionItemCreated/index.js";
 export {
+  createPresentToClientSaga,
+} from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
+export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
   type TaxPlanCycleInsertInput,
@@ -130,7 +133,6 @@ export {
   parseSqsMessage as parseStageChangedSqsMessage,
   PublishCommand,
 } from "./infrastructure/cloudEvents/stageChanged/index.js";
-
 export type {
   CloudEventDataV1,
   CloudEventPublishInput,
@@ -157,6 +159,13 @@ export type {
   Writer,
   WriterClient,
 } from "./infrastructure/cloudEvents/stageChanged/index.js";
+export type {
+  PresentToClientActionItemCreatedEventPublisher,
+  PresentToClientSaga,
+  PresentToClientSagaInput,
+  PresentToClientSagaOptions,
+  PresentToClientStageChangedEventPublisher,
+} from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
 export {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,

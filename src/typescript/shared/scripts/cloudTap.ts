@@ -12,6 +12,13 @@ import {
   ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
   STAGE_CHANGED_CONSUMER_NAME,
   buildIdempotencyKey,
+  createRedisConsumer,
+  createPresentToClientSaga,
+  createStageChangedCloudEvent,
+  type ActionItemCreatedEventInput,
+  type PresentToClientSaga,
+  type StageChangedEventPublishInput,
+  type TaxPlanCycle,
 } from "../../features/taxPlanCycle/infrastructure/cloudEvents/index.js";
 import {
   createActionItemCreatedCloudEvent,
@@ -32,6 +39,14 @@ import {
   stageChangedCloudEventSchemaV1,
   type StageChangedCloudEventV1,
 } from "../../features/taxPlanCycle/stageChangedEvent.js";
+
+export interface CloudTapTraceWriter {
+  set(
+    key: string,
+    value: string,
+    options?: { EX?: number; NX?: boolean },
+  ): Promise<unknown>;
+}
 
 loadEnv();
 
@@ -68,13 +83,25 @@ export interface CloudTapResult {
   actionItemFirstResult: ActionItemCreatedConsumerHandleResult;
   actionItemSecondResult: ActionItemCreatedConsumerHandleResult;
   actionItemProjectionWrites: number;
+  presentToClient: PresentToClientCloudTapResult;
+}
+
+export interface PresentToClientCloudTapSequenceResult {
+  finalStage: TaxPlanCycle["stage"];
+  actionItemStatus: "processed" | "failed";
+  rollbackCount: number;
+  stageChangedEvents: number;
+}
+
+export interface PresentToClientCloudTapResult {
+  success: PresentToClientCloudTapSequenceResult;
+  compensation: PresentToClientCloudTapSequenceResult;
 }
 
 export interface CloudTapLogger {
   info(bindings: Record<string, unknown>, message: string): void;
   warn(bindings: Record<string, unknown>, message: string): void;
 }
-
 export interface CloudTapOptions {
   redisClient?: IdempotencyGuard;
 }
@@ -220,6 +247,232 @@ export function buildCloudTapSnsNotificationEnvelope(
   });
 }
 
+function createInMemoryTraceWriter(): {
+  traceWriter: CloudTapTraceWriter;
+  entries: Array<{ key: string; value: string }>;
+} {
+  const entries: Array<{ key: string; value: string }> = [];
+
+  return {
+    traceWriter: {
+      async set(key: string, value: string): Promise<unknown> {
+        entries.push({ key, value });
+        return "OK";
+      },
+    },
+    entries,
+  };
+}
+
+function buildPresentToClientCloudTapCycle(stage: TaxPlanCycle["stage"]): TaxPlanCycle {
+  return {
+    id: cloudTapCaseId,
+    client_id: cloudTapClientId,
+    stage,
+    owner: "Cloud Tap Advisor",
+    priority: "high",
+    due_date: "2026-08-02",
+    on_hold: false,
+  };
+}
+
+function createInMemoryTransitionRepository(
+  initialCycle: TaxPlanCycle,
+): {
+  transition: (input: {
+    tenantId: string;
+    caseId: string;
+    toStage: TaxPlanCycle["stage"];
+    actor: string;
+  }) => Promise<TaxPlanCycle | null>;
+  getCurrentCycle: () => TaxPlanCycle;
+  transitions: Array<{
+    fromStage: TaxPlanCycle["stage"];
+    toStage: TaxPlanCycle["stage"];
+  }>;
+} {
+  let currentCycle = initialCycle;
+  const transitions: Array<{
+    fromStage: TaxPlanCycle["stage"];
+    toStage: TaxPlanCycle["stage"];
+  }> = [];
+
+  return {
+    async transition(input) {
+      void input.tenantId;
+      void input.caseId;
+      void input.actor;
+      transitions.push({
+        fromStage: currentCycle.stage,
+        toStage: input.toStage,
+      });
+      currentCycle = {
+        ...currentCycle,
+        stage: input.toStage,
+      };
+
+      return currentCycle;
+    },
+    getCurrentCycle: () => currentCycle,
+    transitions,
+  };
+}
+
+function serializeCloudTapTrace(value: unknown): string {
+  return JSON.stringify(value, null, 2);
+}
+
+async function writePresentToClientCloudTapTrace(
+  traceWriter: CloudTapTraceWriter | undefined,
+  sequence: "success" | "compensation",
+  input: {
+    tenantId: string;
+    caseId: string;
+    actor: string;
+    actionItem: ActionItemCreatedEventInput;
+  },
+  result: PresentToClientCloudTapSequenceResult,
+  stageChangedEvents: StageChangedEventPublishInput[],
+): Promise<void> {
+  if (!traceWriter) {
+    return;
+  }
+
+  const prefix = `cloudtap:present-to-client:${sequence}`;
+  const [forwardStageChangedEvent, compensatingStageChangedEvent] =
+    stageChangedEvents;
+
+  await traceWriter.set(
+    `${prefix}:forward-stage-changed`,
+    serializeCloudTapTrace(forwardStageChangedEvent ?? null),
+  );
+  await traceWriter.set(
+    `${prefix}:action-item-created`,
+    serializeCloudTapTrace({
+      tenantId: input.tenantId,
+      caseId: input.caseId,
+      actor: input.actor,
+      actionItem: input.actionItem,
+    }),
+  );
+
+  if (compensatingStageChangedEvent) {
+    await traceWriter.set(
+      `${prefix}:compensating-stage-changed`,
+      serializeCloudTapTrace(compensatingStageChangedEvent),
+    );
+  }
+
+  await traceWriter.set(
+    `${prefix}:result`,
+    serializeCloudTapTrace(result),
+  );
+}
+
+async function runPresentToClientCloudTapSequence(
+  sequence: "success" | "compensation",
+  shouldFailActionItemPublish: boolean,
+  traceWriter?: CloudTapTraceWriter,
+): Promise<PresentToClientCloudTapSequenceResult> {
+  const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e95";
+  const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e96";
+  const actor = "cloud-tap-advisor";
+  const actionItem: ActionItemCreatedEventInput = {
+    description: "Send the client presentation packet",
+    deadline: "2026-08-14",
+  };
+  const repository = createInMemoryTransitionRepository(
+    buildPresentToClientCloudTapCycle("Review"),
+  );
+  const stageChangedEvents: StageChangedEventPublishInput[] = [];
+  let actionItemStatus: "processed" | "failed" = "processed";
+
+  const stageChangedEventPublisher = {
+    publishStageChanged: async (input: StageChangedEventPublishInput): Promise<void> => {
+      stageChangedEvents.push(input);
+    },
+  };
+  const actionItemEventPublisher = {
+    publishActionItemCreated: async (): Promise<void> => {
+      if (shouldFailActionItemPublish) {
+        actionItemStatus = "failed";
+        throw new Error("action-item publish failed");
+      }
+    },
+  };
+
+  const transition = await repository.transition({
+    tenantId,
+    caseId,
+    toStage: "Client Approval",
+    actor,
+  });
+
+  if (!transition) {
+    throw new Error("Expected the present-to-client transition to succeed.");
+  }
+
+  await stageChangedEventPublisher.publishStageChanged({
+    tenantId,
+    caseId,
+    fromStage: "Review",
+    toStage: "Client Approval",
+    actor,
+  });
+
+  const saga: PresentToClientSaga = createPresentToClientSaga({
+    repository,
+    stageChangedEventPublisher,
+    actionItemEventPublisher,
+  });
+
+  await saga.run({
+    transitionedCycle: transition,
+    tenantId,
+    caseId,
+    actor,
+    actionItem,
+  }).catch(() => undefined);
+
+  const result = {
+    finalStage: repository.getCurrentCycle().stage,
+    actionItemStatus,
+    rollbackCount: repository.transitions.filter((entry) => entry.toStage === "Review").length,
+    stageChangedEvents: stageChangedEvents.length,
+  };
+
+  await writePresentToClientCloudTapTrace(
+    traceWriter,
+    sequence,
+    {
+      tenantId,
+      caseId,
+      actor,
+      actionItem,
+    },
+    result,
+    stageChangedEvents,
+  );
+
+  return result;
+}
+
+export async function runPresentToClientCloudTap(
+  traceWriter?: CloudTapTraceWriter,
+): Promise<PresentToClientCloudTapResult> {
+  const success = await runPresentToClientCloudTapSequence("success", false, traceWriter);
+  const compensation = await runPresentToClientCloudTapSequence(
+    "compensation",
+    true,
+    traceWriter,
+  );
+
+  return {
+    success,
+    compensation,
+  };
+}
+
 export async function runCloudTap(
   redisUrl: string = cloudTapRedisUrl,
   options: CloudTapOptions = {},
@@ -283,6 +536,7 @@ export async function runCloudTap(
       await actionItemConsumer.handleActionItemCreatedEvent(actionItemEvent);
     const actionItemSecondResult =
       await actionItemConsumer.handleActionItemCreatedEvent(actionItemEvent);
+    const presentToClient = await runPresentToClientCloudTap(redisClient);
 
     return {
       mode: "redis",
@@ -300,6 +554,7 @@ export async function runCloudTap(
       actionItemFirstResult,
       actionItemSecondResult,
       actionItemProjectionWrites: actionItemProjection.rows.length,
+      presentToClient,
     };
   } finally {
     if (redisConnection) {
@@ -326,6 +581,12 @@ export async function main(): Promise<void> {
     `Action item delivery: ${result.actionItemFirstResult.status}/${result.actionItemSecondResult.status}`,
   );
   console.log(`Action item projection writes: ${result.actionItemProjectionWrites}`);
+  console.log(
+    `Present-to-client saga: success=${result.presentToClient.success.finalStage}, compensation=${result.presentToClient.compensation.finalStage}`,
+  );
+  console.log(
+    `Saga rollback count: ${result.presentToClient.compensation.rollbackCount}`,
+  );
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

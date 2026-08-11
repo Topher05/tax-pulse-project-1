@@ -10,6 +10,7 @@ import type {
   ActionItemCreatedEventInput,
   ActionItemCreatedEventPublishInput,
 } from "../infrastructure/cloudEvents/actionItemCreated/index.js";
+import { createPresentToClientSaga } from "../infrastructure/cloudEvents/presentToClientSaga/index.js";
 
 export interface ActionItemCreatedEventPublisher {
   publishActionItemCreated(
@@ -79,6 +80,22 @@ export function createTaxPlanCycleTransitionController(
             "Stage-changed event publish failed after transition commit",
           );
         }
+      }
+
+      if (transitioned && options.actionItemEventPublisher && input.actionItem) {
+        const presentToClientSaga = createPresentToClientSaga({
+          repository,
+          stageChangedEventPublisher: options.stageChangedEventPublisher,
+          actionItemEventPublisher: options.actionItemEventPublisher,
+        });
+
+        await presentToClientSaga.run({
+          transitionedCycle: transitioned,
+          tenantId: input.tenantId,
+          caseId: input.caseId,
+          actor: input.actor,
+          actionItem: input.actionItem,
+        });
       }
 
       if (options.queueCacheInvalidator) {

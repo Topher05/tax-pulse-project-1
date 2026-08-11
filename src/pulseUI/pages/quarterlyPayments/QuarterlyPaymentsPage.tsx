@@ -22,6 +22,13 @@ export interface QuarterlyPaymentsScreenProps {
   quarterlyEstimates: readonly QuarterlyEstimateRecord[];
 }
 
+const quarterOrder: Record<QuarterlyEstimateQuarter, number> = {
+  Q1: 1,
+  Q2: 2,
+  Q3: 3,
+  Q4: 4,
+};
+
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -50,6 +57,8 @@ function toQuarterlyEstimateRecord(
     dueDate: record.due_date,
     estimatedPayment: record.estimated_payment,
     withholdingApplied: record.withholding_applied,
+    coveredAmount: record.covered_amount,
+    remainingDue: record.remaining_due,
     status: record.status,
   };
 }
@@ -117,8 +126,9 @@ export function QuarterlyPaymentsScreen({
   quarterlyEstimates,
 }: QuarterlyPaymentsScreenProps) {
   const totalEstimated = quarterlyEstimates.reduce((sum, payment) => sum + payment.estimatedPayment, 0);
+  const totalCovered = quarterlyEstimates.reduce((sum, payment) => sum + payment.coveredAmount, 0);
   const totalWithholding = quarterlyEstimates.reduce((sum, payment) => sum + payment.withholdingApplied, 0);
-  const totalRemaining = totalEstimated - totalWithholding;
+  const totalRemaining = quarterlyEstimates.reduce((sum, payment) => sum + payment.remainingDue, 0);
 
   return (
     <div className={styles.page}>
@@ -132,7 +142,7 @@ export function QuarterlyPaymentsScreen({
         />
         <MetricCard
           label="Paid So Far"
-          value={formatCurrency(totalWithholding)}
+          value={formatCurrency(totalCovered)}
           caption=""
           tone="green"
           icon={<CircleCheckBig aria-hidden="true" />}
@@ -210,7 +220,9 @@ export function QuarterlyPaymentsPage() {
     );
   }
 
-  const quarterlyEstimates = quarterlyEstimatesQuery.data?.map(toQuarterlyEstimateRecord) ?? [];
+  const quarterlyEstimates = quarterlyEstimatesQuery.data
+    ?.map(toQuarterlyEstimateRecord)
+    .sort((left, right) => quarterOrder[left.quarter] - quarterOrder[right.quarter]) ?? [];
 
   return (
     <div className={styles.page} data-quarterly-query-state={quarterlyEstimatesQueryState}>
