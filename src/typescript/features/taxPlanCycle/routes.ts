@@ -156,6 +156,10 @@ function isAdvisorWithEditPermission(
   );
 }
 
+function canReadCycle(user: TenantScopedRequest["user"], cycle: { client_id: string }): boolean {
+  return user?.role !== "Client" || user.id === cycle.client_id;
+}
+
 function isTransitionAuthorized(
   currentStage: TaxPlanCycleStage,
   user: TenantScopedRequest["user"],
@@ -309,7 +313,7 @@ export function createTaxPlanCycleRouter(
           clientId: user.id,
         });
 
-        if (cycle === null) {
+        if (cycle === null || !canReadCycle((req as TenantScopedRequest).user, cycle)) {
           next(
             new ProblemHttpError({
               type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
@@ -356,7 +360,7 @@ export function createTaxPlanCycleRouter(
           caseId: parsedParams.data.caseId,
         });
 
-        if (cycle === null) {
+        if (cycle === null || !canReadCycle((req as TenantScopedRequest).user, cycle)) {
           next(
             new ProblemHttpError({
               type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
@@ -407,7 +411,7 @@ export function createTaxPlanCycleRouter(
           caseId: parsedParams.data.caseId,
         });
 
-        if (cycle === null) {
+        if (cycle === null || !canReadCycle((req as TenantScopedRequest).user, cycle)) {
           next(
             new ProblemHttpError({
               type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",

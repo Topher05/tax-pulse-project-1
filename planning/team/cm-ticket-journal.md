@@ -1323,6 +1323,11 @@ progress in the portal.
 - Client sign-in now lands on `/my-tax-plan`; the app shell redirects Client users away from
   operator routes, shows only the portal navigation item, and reads the scoped endpoint through
   one authenticated TanStack Query boundary.
+- The read-only My Tax Plan view renders the live cycle stage and advisor with the portal hero,
+  responsive stage stepper, next meeting, projected savings, and top recommendation. The three
+  unavailable summary values use clearly fake MVP data until a portal read model owns them.
+- Client direct-cycle and audit reads return the existing 404 response when the verified JWT
+  client ID does not match the cycle's `client_id`.
 
 **Project Scope Connection:**
 
@@ -1340,8 +1345,13 @@ or live stage updates.
 - `src/pulseUI/components/AppShell.tsx`
 - `src/pulseUI/entities/clientTaxPlanQueries.ts`
 - `src/pulseUI/pages/clientPortal/MyTaxPlanPage.tsx`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.module.css`
 - `src/pulseUI/shared/navigation.ts`
 - `src/pulseUI/shared/viewTitle.ts`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`
+- `src/typescript/jwtAuthentication.ts`
+- `tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
@@ -1351,6 +1361,10 @@ or live stage updates.
   directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
   changed files.
 - `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test` passed: 162 tests in 36 files. The existing jsdom canvas
+  and scroll-restoration warnings remain non-failing.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+  passed: 6 tests.
 
 ## christopher-martus-jira134 - SCRUM-134
 
