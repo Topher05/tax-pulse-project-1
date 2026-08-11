@@ -1299,4 +1299,8 @@ It intentionally excludes DLQ replay tooling, alerting, and an external DLQ mana
 - `npm run typecheck` passed.
 - `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
   passed: 2 tests, including persistent failure routing and continued processing.
+- The focused relay suite now includes a PostgreSQL-backed persistence test that asserts the
+  stored DLQ payload and failure reason, poison-event removal, and delivery of the following
+  event. Local execution could not start it because this workspace has no container runtime;
+  it requires the existing Docker-backed integration-test environment in CI.
 - `git diff --check` passed.
