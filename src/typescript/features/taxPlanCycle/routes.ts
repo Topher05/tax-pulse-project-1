@@ -15,6 +15,7 @@ import {
   taxPlanCycleCreateSchema,
   taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleReadParamsSchema,
+  taxPlanCycleSchema,
   taxPlanCycleTransitionParamsSchema,
   taxPlanCycleTransitionSchema,
   isLegalTaxPlanCycleStageTransition,
@@ -44,6 +45,7 @@ export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
   transitionController?: TaxPlanCycleTransitionController;
   taxPlanCycleRepository?: Pick<TaxPlanCycleRepository, "findByCaseId" | "listQueue">;
+  clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
   scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
   scenarioModelingController?: ScenarioModelingController;
   auditEntryReader?: AuditEntryReader;
@@ -238,6 +240,12 @@ export function createTaxPlanCycleRouter(
         return [];
       },
     };
+  const clientPortalReadRepository =
+    options.clientPortalReadRepository ?? {
+      async findCurrentByClientId() {
+        return null;
+      },
+    };
   const scenarioRepository = options.scenarioRepository ?? {
     async listByCaseId() {
       return [];
@@ -266,6 +274,54 @@ export function createTaxPlanCycleRouter(
         const response = taxPlanCycleQueueGetResponseSchema.parse(queue);
 
         res.status(200).json(response);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/portal/my-tax-plan",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+
+        if (user.role !== "Client") {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/client-portal-access-required",
+              title: "Client Portal Access Required",
+              status: 403,
+              detail: "Only Client users can access the My Tax Plan view.",
+            }),
+          );
+          return;
+        }
+
+        const cycle = await clientPortalReadRepository.findCurrentByClientId({
+          tenantId,
+          clientId: user.id,
+        });
+
+        if (cycle === null) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Cycle Not Found",
+              status: 404,
+              detail: "No current tax plan cycle was found for this client.",
+            }),
+          );
+          return;
+        }
+
+        res.status(200).json(taxPlanCycleSchema.parse(cycle));
       } catch (error) {
         next(error);
       }

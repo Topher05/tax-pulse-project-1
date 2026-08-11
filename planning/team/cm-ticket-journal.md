@@ -1293,3 +1293,51 @@ workflow behavior.
   the existing `dist/pulseUI/assets` directory because Windows returned `EPERM`; no source
   compilation error was reported.
 
+
+## christopher-martus-jira142 - SCRUM-142
+
+**Branch:** `christopher-martus-jira142`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-142
+
+**Summary:** Build the client My Tax Plan view scoped to the client
+
+**Description:** As a Client, I want the My Tax Plan view, so that I can follow my plan's
+progress in the portal.
+
+**Acceptance Criteria:**
+
+- The portal shows the client's current Plan Cycle stage stepper scoped to only their own cycle.
+- The hero and plan summary (advisor, next meeting, projected savings, top recommendation) render.
+- The view is unreachable for another client's cycle.
+
+**Code Connection:**
+
+- Task 1 adds a parameter-free `GET /portal/my-tax-plan` BFF read. It takes the verified JWT
+  subject as `client_id`, combines it with the verified tenant ID, and never accepts a client or
+  case identifier from the browser.
+- The repository selects the latest unarchived cycle for that tenant-client pair. The remaining
+  portal page and summary fields are intentionally left for subsequent task chunks.
+
+**Project Scope Connection:**
+
+This establishes the least-privilege server boundary for the client portal. It does not add a
+separate cycle status, a client-account mapping, portal writes, scenarios, action items, approval,
+or live stage updates.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/index.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm run typecheck` is blocked by pre-existing duplicate `CloudEvents`/`cloudEvents`
+  directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
+  changed files.
+
