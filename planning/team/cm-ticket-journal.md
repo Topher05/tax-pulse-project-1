@@ -1319,7 +1319,10 @@ progress in the portal.
   subject as `client_id`, combines it with the verified tenant ID, and never accepts a client or
   case identifier from the browser.
 - The repository selects the latest unarchived cycle for that tenant-client pair. The remaining
-  portal page and summary fields are intentionally left for subsequent task chunks.
+  portal summary fields are intentionally left for the next task chunk.
+- Client sign-in now lands on `/my-tax-plan`; the app shell redirects Client users away from
+  operator routes, shows only the portal navigation item, and reads the scoped endpoint through
+  one authenticated TanStack Query boundary.
 
 **Project Scope Connection:**
 
@@ -1332,6 +1335,13 @@ or live stage updates.
 - `src/typescript/features/taxPlanCycle/repositories/repository.ts`
 - `src/typescript/features/taxPlanCycle/routes.ts`
 - `src/typescript/index.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/auth/landingPath.ts`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/entities/clientTaxPlanQueries.ts`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.tsx`
+- `src/pulseUI/shared/navigation.ts`
+- `src/pulseUI/shared/viewTitle.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
@@ -1340,4 +1350,5 @@ or live stage updates.
 - `npm run typecheck` is blocked by pre-existing duplicate `CloudEvents`/`cloudEvents`
   directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
   changed files.
+- `npm --prefix src/pulseUI run typecheck` passed.
 

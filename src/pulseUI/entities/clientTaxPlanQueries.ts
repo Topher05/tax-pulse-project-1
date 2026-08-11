@@ -1,0 +1,32 @@
+import { useQuery } from "@tanstack/react-query";
+
+import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
+import { caseApiGetJson } from "../shared/caseApi.ts";
+
+export interface ClientTaxPlanCycle {
+  id: string;
+  client_id: string;
+  stage: string;
+  owner: string;
+  priority: "low" | "medium" | "high";
+  due_date: string;
+  on_hold: boolean;
+  hold_reason?: string;
+}
+
+export const clientTaxPlanQueryKey = ["clientPortal", "myTaxPlan"] as const;
+
+export async function fetchClientTaxPlan(
+  fetcher?: typeof fetch,
+): Promise<ClientTaxPlanCycle> {
+  return await caseApiGetJson<ClientTaxPlanCycle>("/v1/portal/my-tax-plan", fetcher);
+}
+
+export function useClientTaxPlanQuery() {
+  const authenticatedFetch = useAuthenticatedFetch();
+
+  return useQuery({
+    queryKey: clientTaxPlanQueryKey,
+    queryFn: () => fetchClientTaxPlan(authenticatedFetch),
+  });
+}
