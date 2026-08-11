@@ -85,6 +85,16 @@ export {
   type TaxPlanCycleQueueCacheReadInput,
 } from "./infrastructure/queueCache.js";
 export {
+  createOutboxRelay,
+  createPostgresOutboxRelayStore,
+  createSnsOutboxEventPublisher,
+  type OutboxEventPublisher,
+  type OutboxRelay,
+  type OutboxRelayOptions,
+  type OutboxRelayStore,
+  type UnsentOutboxEvent,
+} from "./infrastructure/outboxRelay.js";
+export {
   buildIdempotencyKey,
   cloudEventSchemaV1,
   createCloudEvent,

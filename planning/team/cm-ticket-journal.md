@@ -1293,3 +1293,62 @@ workflow behavior.
   the existing `dist/pulseUI/assets` directory because Windows returned `EPERM`; no source
   compilation error was reported.
 
+
+## christopher-martus-jira134 - SCRUM-134
+
+**Branch:** `christopher-martus-jira134`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-134
+
+**Summary:** Relay outbox rows with retry
+
+**Description:** As a Backend Developer, I want a relay that publishes outbox rows and
+retries on failure, so that committed events are reliably delivered.
+
+**Acceptance Criteria:**
+
+- A relay publishes unsent outbox rows and marks them sent.
+- A transient publish failure is retried with backoff.
+- A test asserts a row is marked sent only after a successful publish.
+
+**Code Connection:**
+
+- Adds the nullable `outbox_event.sent_at` delivery marker. The relay will select rows
+  without this value and set it only after a successful publisher call.
+- `createOutboxRelay` reads unsent rows in creation order, publishes the serialized
+  CloudEvent payload, and records `sent_at` only after publication succeeds.
+- `createSnsOutboxEventPublisher` sends that stored payload to the configured SNS topic
+  without rebuilding the event.
+- The relay retries transient publisher failures up to three total attempts, using 100 ms,
+  then 200 ms exponential backoff by default. Retry count and timing are injectable for
+  deterministic tests.
+- A focused relay test simulates one transient publisher failure and verifies the row remains
+  unsent until the second publish attempt succeeds.
+
+**Project Scope Connection:**
+
+This provides the minimal relay path and transient-failure retry behavior for reliable
+delivery of the transactional outbox introduced in SCRUM-133, without introducing a worker
+runtime, scheduler, retries for database writes, or SCRUM-135 dead-letter behavior.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0013_low_callisto.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0013_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/features/taxPlanCycle/infrastructure/outboxRelay.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed after the schema and migration change.
+- `npm run typecheck` passed after adding relay behavior and its test seam.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+  passed: 1 test verifies retry backoff and marks the row sent only after success.
+- `git diff --check` passed.

@@ -400,6 +400,7 @@ export const outboxEvent = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
   },
   (table) => [
     primaryKey({
