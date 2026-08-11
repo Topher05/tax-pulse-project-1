@@ -81,6 +81,56 @@
   border-collapse: collapse;
 }
 
+.skeletonTable {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.skeletonHeader,
+.skeletonRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1.6fr 1fr 0.8fr 1fr 0.7fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.skeletonHeader {
+  padding-bottom: 0.3rem;
+}
+
+.skeletonRow {
+  min-height: 3.25rem;
+  border-top: 1px solid var(--pulse-border);
+}
+
+.skeletonBlock {
+  display: block;
+  height: 0.8rem;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    rgb(148 163 184 / 16%),
+    rgb(148 163 184 / 30%),
+    rgb(148 163 184 / 16%)
+  );
+  background-size: 220% 100%;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.skeletonHeader .skeletonBlock {
+  height: 0.65rem;
+}
+
+@keyframes skeletonPulse {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
 .table th {
   padding: 0 0 0.85rem;
   color: var(--pulse-muted);
@@ -175,5 +225,10 @@
 
   .metricGrid {
     grid-template-columns: 1fr;
+  }
+
+  .skeletonHeader,
+  .skeletonRow {
+    grid-template-columns: 1fr 1fr;
   }
 }
