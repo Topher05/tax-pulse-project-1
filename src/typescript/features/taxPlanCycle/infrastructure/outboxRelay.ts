@@ -106,14 +106,14 @@ export function createOutboxRelay(
     throw new Error("maxPublishAttempts must be a positive integer.");
   }
 
-  async function publishWithRetry(payload: string): Promise<void> {
+  async function publishWithRetry(payload: string): Promise<string | undefined> {
     for (let attempt = 1; attempt <= maxPublishAttempts; attempt += 1) {
       try {
         await publisher.publish(payload);
         return;
       } catch (error) {
         if (attempt === maxPublishAttempts) {
-          throw error;
+          return error instanceof Error ? error.message : String(error);
         }
 
         await wait(retryDelayMs(attempt));
@@ -126,7 +126,18 @@ export function createOutboxRelay(
       const rows = await store.listUnsent();
 
       for (const row of rows) {
-        await publishWithRetry(row.payload);
+        const failureReason = await publishWithRetry(row.payload);
+
+        if (failureReason !== undefined) {
+          await store.moveToDeadLetter(
+            {
+              ...row,
+              failureReason,
+            },
+            now(),
+          );
+          continue;
+        }
 
         await store.markSent(row.id, now());
       }
