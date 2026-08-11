@@ -73,7 +73,7 @@ const clientRosterColumns = clientRosterColumnHelper.columns([
   }),
   clientRosterColumnHelper.accessor("id", {
     id: "openBooks",
-    header: "",
+    header: () => <span className={styles.srOnly}>Actions</span>,
     cell: () => (
       <button className={styles.openBooksButton} type="button" disabled>
         Open Books
