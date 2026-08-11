@@ -13,6 +13,8 @@ export interface QuarterlyEstimateRecord {
   dueDate: string;
   estimatedPayment: number;
   withholdingApplied: number;
+  coveredAmount: number;
+  remainingDue: number;
   status: QuarterlyEstimateStatus;
 }
 

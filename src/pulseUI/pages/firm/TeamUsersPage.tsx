@@ -5,8 +5,19 @@ import { EmptyState } from "../../components/EmptyState.tsx";
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
-import type { FirmUserRow, FirmUserStatus, RelativeLastLogin } from "../../entities/firmUsers.ts";
-import { useFirmUsersQuery } from "../../entities/firmUserQueries.ts";
+import { useSession } from "../../auth/AuthProvider.tsx";
+import type { SessionRole } from "../../auth/session.ts";
+import {
+  firmUserAssignableRoles,
+  type FirmUserAssignableRole,
+  type FirmUserRow,
+  type FirmUserStatus,
+  type RelativeLastLogin,
+} from "../../entities/firmUsers.ts";
+import {
+  useFirmUsersQuery,
+  useUpdateFirmUserRoleMutation,
+} from "../../entities/firmUserQueries.ts";
 
 type TeamUsersQueryState = "loading" | "error" | "empty" | "data";
 
@@ -38,10 +49,6 @@ function formatRelativeLastLogin(lastLogin: RelativeLastLogin): string {
       return exhaustiveCheck;
     }
   }
-}
-
-function getRoleTone(): "info" {
-  return "info";
 }
 
 function getStatusTone(status: FirmUserStatus): "success" | "warning" {
@@ -115,6 +122,7 @@ export function TeamUsersScreen({
   const activeUsers = users.filter((user) => user.status === "Active").length;
   const pendingInvites = users.filter((user) => user.status === "Inactive").length;
   const rolesInUse = new Set(users.map((user) => user.role)).size;
+  const canAssignRoles = viewerRole === "Firm Admin";
 
   return (
     <div className={styles.page}>

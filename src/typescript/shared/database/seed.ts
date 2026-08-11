@@ -6,6 +6,7 @@ import { Client } from "pg";
 import { migrateDatabase } from "./migrate.js";
 
 import {
+  actionItem,
   clientRoster,
   auditEntry,
   credential,
@@ -22,6 +23,7 @@ import {
 } from "./schema.js";
 
 import {
+  buildActionItemInsertRows,
   auditEntryRows,
   buildTaxPlanCycleInsertRows,
   californiaTaxBracketRows,
@@ -49,6 +51,7 @@ export async function applySeed(client: Client): Promise<void> {
     await client.query(`
       TRUNCATE TABLE
         "audit_entry",
+        "action_item",
         "scenario",
         "deduction",
         "stage_transition",
@@ -72,6 +75,7 @@ export async function applySeed(client: Client): Promise<void> {
     await db.insert(credential).values([...credentialRows]);
     await db.insert(mfaEnrollment).values([...mfaEnrollmentRows]);
     await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
+    await db.insert(actionItem).values(buildActionItemInsertRows());
     await db.insert(clientRoster).values([...clientRosterRows]);
     await db.insert(deduction).values([...deductionRows]);
     await db.insert(stageTransition).values([...stageTransitionRows]);
