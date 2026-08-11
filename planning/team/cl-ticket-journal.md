@@ -281,6 +281,94 @@ Add new ticket entries below using this template.
 - `cmd /c "set PATH=C:\nvm4w\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test"` passed with `21` test files and `73` tests green.
 - `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx` was previously blocked by a Windows `EPERM: operation not permitted, lstat 'C:\Users\Exia'` environment issue before Vitest could start; the roster test file has since been rewritten to use the real API path again.
 
+## caleb-latimer-jira138 - SCRUM-138
+
+**Branch:** `caleb-latimer-jira138`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-138
+
+**Summary:** Compensate present-to-client on action-item failure
+
+**Description:** As an Advisor, I want present-to-client modeled as a compensating saga, so that a partial failure leaves the case consistent.
+
+**Acceptance Criteria:**
+
+- A present-to-client saga helper lives in the Tax Plan Cycle CloudEvents module and the transition controller delegates the action-item branch to it.
+- A failed action-item publish rolls the cycle back to `Review` and emits the compensating stage-changed event.
+- The rollback is recorded through the existing repository transition path so audit history stays intact.
+- The local cloud-tap script exposes both a successful present-to-client run and a compensated failure run.
+- Tests cover the saga success path, the compensation path, and the cloud-tap sequence output.
+
+**Sequence Diagram:**
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant Controller
+    participant Repo
+    participant StageEvent as StageChangedPublisher
+    participant Saga
+    participant ActionItemEvent as ActionItemPublisher
+    participant Audit as Audit Trail
+
+    Advisor->>Controller: Transition Review -> Client Approval
+    Controller->>Repo: Persist forward transition
+    Repo-->>Controller: Client Approval
+    Controller->>StageEvent: Publish forward stage-changed event
+    Controller->>Saga: Run present-to-client saga
+    Saga->>ActionItemEvent: Publish action-item event
+    ActionItemEvent-->>Saga: Success
+    Saga-->>Controller: Complete
+    Note over Repo,Audit: Forward transition is recorded in audit history
+
+    Advisor->>Controller: Transition Review -> Client Approval
+    Controller->>Repo: Persist forward transition
+    Repo-->>Controller: Client Approval
+    Controller->>StageEvent: Publish forward stage-changed event
+    Controller->>Saga: Run present-to-client saga
+    Saga->>ActionItemEvent: Publish action-item event
+    ActionItemEvent-->>Saga: Failure
+    Saga->>Repo: Persist compensating transition to Review
+    Repo-->>Saga: Review
+    Saga->>StageEvent: Publish compensating stage-changed event
+    Saga-->>Controller: Rethrow original failure
+    Note over Repo,Audit: Compensation transition is also recorded in audit history
+```
+
+**Code Connection:**
+
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/PresentToClientSaga.ts` owns the compensating saga orchestration.
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts` delegates the present-to-client branch to the saga helper.
+- `src/typescript/shared/scripts/cloudTap.ts` adds the in-memory present-to-client success and compensation sequences.
+- `tests/typescript/features/taxPlanCycle/presentToClientSaga.test.ts` covers the saga success and rollback behavior.
+- `tests/typescript/shared/scripts/cloudTap.test.ts` covers the local cloud-tap compensation proof.
+
+**Project Scope Connection:**
+
+- Keeps the present-to-client work inside the Event-Driven Workflow & Legacy Integration epic.
+- Reuses the action-item CloudEvent contract and repository transition path instead of adding a new audit writer or persistence branch.
+- Preserves the controller boundary while moving the compensation logic into the CloudEvents submodule.
+- Provides a deterministic local verification path without requiring Redis or AWS.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/PresentToClientSaga.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/index.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `tests/typescript/features/taxPlanCycle/presentToClientSaga.test.ts`
+- `tests/typescript/shared/scripts/cloudTap.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/presentToClientSaga.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/shared/scripts/cloudTap.test.ts` passed.
+- `npm.cmd run typecheck` was blocked by an existing Pulse UI `vitest-axe` module resolution issue in `tests/deductions/mockDeductionsPage.test.tsx`.
+
 ## caleb-latimer-jira137 - SCRUM-137
 
 **Branch:** `caleb-latimer-jira137`

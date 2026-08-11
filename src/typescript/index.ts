@@ -281,6 +281,7 @@ export {
   ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
   createActionItemConsumer,
   createRedisActionItemConsumer,
+  createPresentToClientSaga,
 } from "./features/taxPlanCycle/index.js";
 export {
   scenarioComputedResultSchema,
@@ -467,6 +468,11 @@ export {
   type TaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadServiceOptions,
   type StageChangedEventPublisher,
+  type PresentToClientActionItemCreatedEventPublisher,
+  type PresentToClientSaga,
+  type PresentToClientSagaInput,
+  type PresentToClientSagaOptions,
+  type PresentToClientStageChangedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
   type CreateStageChangedCloudEventOptions,
   type ConsumeStageChangedEventsResult,
