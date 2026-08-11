@@ -400,10 +400,30 @@ export const outboxEvent = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
   },
   (table) => [
     primaryKey({
       name: "outbox_event_id_pk",
+      columns: [table.id],
+    }),
+  ],
+);
+
+export const outboxDeadLetter = pgTable(
+  "outbox_dead_letter",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    outboxEventId: uuid("outbox_event_id").notNull(),
+    payload: text("payload").notNull(),
+    failureReason: text("failure_reason").notNull(),
+    failedAt: timestamp("failed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "outbox_dead_letter_id_pk",
       columns: [table.id],
     }),
   ],

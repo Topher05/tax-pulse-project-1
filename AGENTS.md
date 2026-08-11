@@ -19,6 +19,7 @@ state, role-gated transitions, scoped internal/external access, and immutable au
 - Do not add a separate case `status`; workflow condition lives in the case stage.
 - Preserve tenant isolation, least privilege, scoped portal access, and audit-trail behavior.
 - Use clearly fake synthetic data only; do not commit secrets, tokens, real taxpayer data, or `.env` files.
+- When adding, udpating, or generating Drizzle migrations ALWAYS use `drizzle-kit generate`
 
 ## Validation Commands
 Run relevant checks from the repository root:
