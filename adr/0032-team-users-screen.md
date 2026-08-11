@@ -5,10 +5,11 @@
 SCRUM-146 established the Pulse UI Team & Users screen as a typed firm administration
 surface with KPI cards and a roster table. SCRUM-147 made that screen read live tenant
 data without taking over the later responsibilities in SCRUM-148 and SCRUM-149.
-SCRUM-149 now fills the role-assignment gap left by SCRUM-147 while avoiding invite,
-impersonation, and loading or error-state behavior reserved for adjacent tickets.
-SCRUM-150 adds regression coverage for the populated roster and accessibility checks
-without introducing the loading, empty, retry, or error states owned by SCRUM-148.
+SCRUM-148 adds the visible loading, empty, retry, and error-state behavior on top of
+that hook boundary. SCRUM-149 fills the role-assignment gap left by SCRUM-147 while
+avoiding invite and impersonation behavior reserved for adjacent tickets. SCRUM-150
+adds regression coverage for the populated roster, zero-user empty state, non-admin
+role controls, and accessibility checks without introducing new production behavior.
 
 The existing authentication data model already stores tenant-scoped users, roles, and
 status values. It did not store the display name or last-login timestamp needed by the
@@ -28,9 +29,11 @@ an Express router. The repository joins the existing `users`, `roles`, and
 `Firm Admin`, `Advisor`, `Client`, and `TaxPulse Platform Admin`.
 
 The Pulse UI owns a TanStack Query hook that fetches `/v1/firm/users`, parses the
-response, and maps it into the `TeamUsersScreen` row model. SCRUM-147 intentionally
-does not add visible loading, empty, retry, or error UI, and it does not add role
-assignment mutations or invite behavior.
+response, and maps it into the `TeamUsersScreen` row model. SCRUM-148 consumes the
+hook's request state inside `TeamUsersPage`, keeps the Team & Users shell mounted, and
+switches the roster region between an accessible loading skeleton, an empty state when
+the endpoint returns zero tenant users, a retryable error state, and the populated
+table. Admin-only rosters remain visible so Firm Admins can see one another.
 
 SCRUM-149 adds a tenant-scoped role update command beside the read boundary:
 `PATCH /v1/firm/users/{userId}/role`. The request body accepts only tenant-assignable
@@ -46,12 +49,12 @@ persists that change through the mutation hook and invalidates the existing firm
 query. Non-admin screen contexts render the same control disabled, and platform-admin
 rows are not editable through this tenant administration surface.
 
-SCRUM-150 keeps the Team & Users screen on the existing populated roster behavior and
-adds component coverage for rendered user rows, role values, statuses, last-login text,
-and the disabled role-assignment control for non-admin viewers. It also adds a routed
-axe accessibility check for the populated screen and asserts no supported axe rule
-violations. The jsdom-based axe run disables the `color-contrast` rule because that
-rule depends on canvas APIs unavailable in this test environment.
+SCRUM-150 adds component coverage for rendered user rows, role values, statuses,
+last-login text, the zero-user empty state, and the disabled role-assignment control
+for non-admin viewers. It also adds a routed axe accessibility check for the populated
+screen and asserts no supported axe rule violations. The jsdom-based Team & Users axe
+run disables the `color-contrast` rule because that rule depends on canvas APIs
+unavailable in this test environment.
 
 ## Consequences
 
@@ -60,15 +63,14 @@ by the backend rather than by route parameters or client-provided tenant IDs. Th
 display fields give future administration work a real storage contract instead of
 deriving names from email addresses.
 
-SCRUM-148 should build on `useFirmUsersQuery()` for loading, empty, retry, and error
-states. Role assignment now has its own command, preserving the same tenant-scoped
-repository pattern as the read endpoint. Future invite, impersonation, platform-admin
-promotion, or platform-wide user management work should add explicit commands rather
-than overloading `GET /v1/firm/users` or the role-update command.
+Role assignment now has its own command, preserving the same tenant-scoped repository
+pattern as the read endpoint. Future invite, impersonation, platform-admin promotion,
+or platform-wide user management work should add explicit commands rather than
+overloading `GET /v1/firm/users` or the role-update command.
 
-Testing coverage now guards the screen's successful roster branch and non-admin
-assignment boundary, while empty, loading, retry, and error-state tests remain deferred
-until SCRUM-148 implements those UI states.
+Testing coverage now guards the screen's successful roster branch, zero-user empty
+state, admin-only roster regression, retryable error state, loading skeleton,
+non-admin assignment boundary, and populated-screen axe check.
 
 ## Alternatives considered
 
