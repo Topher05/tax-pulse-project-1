@@ -23,6 +23,8 @@ type TeamUsersQueryState = "loading" | "error" | "empty" | "data";
 
 export interface TeamUsersScreenProps {
   users: readonly FirmUserRow[];
+  viewerRole: SessionRole;
+  onRoleChange(user: FirmUserRow, role: FirmUserAssignableRole): void;
   errorMessage?: string;
   onRetry?: () => void;
   queryState: TeamUsersQueryState;
@@ -114,6 +116,8 @@ function TeamUsersErrorState({
 
 export function TeamUsersScreen({
   users,
+  viewerRole,
+  onRoleChange,
   errorMessage,
   onRetry,
   queryState,
@@ -192,7 +196,6 @@ export function TeamUsersScreen({
                   <th>Role</th>
                   <th>Status</th>
                   <th>Last Login</th>
-                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -201,17 +204,32 @@ export function TeamUsersScreen({
                     <td className={styles.nameCell}>{user.name}</td>
                     <td className={styles.emailCell}>{user.email}</td>
                     <td>
-                      <StatusPill tone={getRoleTone()}>{user.role}</StatusPill>
+                      <label className={styles.roleControlLabel}>
+                        <span className={styles.srOnly}>Role for {user.name}</span>
+                        <select
+                          aria-label={`Role for ${user.name}`}
+                          className={styles.roleSelect}
+                          disabled={!canAssignRoles || user.role === "TaxPulse Platform Admin"}
+                          value={user.role}
+                          onChange={(event) => {
+                            onRoleChange(user, event.currentTarget.value as FirmUserAssignableRole);
+                          }}
+                        >
+                          {user.role === "TaxPulse Platform Admin" ? (
+                            <option value="TaxPulse Platform Admin">TaxPulse Platform Admin</option>
+                          ) : null}
+                          {firmUserAssignableRoles.map((role) => (
+                            <option key={role} value={role}>
+                              {role}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                     </td>
                     <td>
                       <StatusPill tone={getStatusTone(user.status)}>{user.status}</StatusPill>
                     </td>
                     <td className={styles.lastLoginCell}>{formatRelativeLastLogin(user.lastLogin)}</td>
-                    <td className={styles.actionCell}>
-                      <button className={styles.rowAction} type="button" disabled>
-                        Edit
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -225,6 +243,8 @@ export function TeamUsersScreen({
 
 export function TeamUsersPage() {
   const firmUsersQuery = useFirmUsersQuery();
+  const updateRoleMutation = useUpdateFirmUserRoleMutation();
+  const { user } = useSession();
   const users = firmUsersQuery.data ?? [];
   const queryState = firmUsersQuery.isLoading
     ? "loading"
@@ -237,6 +257,10 @@ export function TeamUsersPage() {
   return (
     <TeamUsersScreen
       users={users}
+      viewerRole={user?.role ?? "Advisor"}
+      onRoleChange={(firmUser, role) => {
+        updateRoleMutation.mutate({ userId: firmUser.id, role });
+      }}
       queryState={queryState}
       errorMessage={
         firmUsersQuery.error instanceof Error ? firmUsersQuery.error.message : "Team users request failed."
