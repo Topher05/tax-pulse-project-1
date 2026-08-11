@@ -17,8 +17,9 @@ export function WithholdingProgressChart({
   totalEstimated,
   totalWithholding,
 }: WithholdingProgressChartProps) {
-  const coverage = totalEstimated > 0 ? Math.min((totalWithholding / totalEstimated) * 100, 100) : 0;
-  const totalRemaining = Math.max(totalEstimated - totalWithholding, 0);
+  const coverage = totalEstimated > 0
+    ? Math.min(Math.max((totalWithholding / totalEstimated) * 100, 0), 100)
+    : 0;
 
   return (
     <div className={`${styles.chart} grid gap-3`} aria-label="Withholding coverage summary">
@@ -28,7 +29,11 @@ export function WithholdingProgressChart({
         </p>
         <div
           className={`${styles.barShell} h-2 min-w-0 flex-1 overflow-hidden rounded-[8px] border border-[var(--pulse-border-strong)] bg-white/5`}
-          aria-hidden="true"
+          role="progressbar"
+          aria-label="Estimated tax covered by withholding"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Number(coverage.toFixed(1))}
         >
           <div
             className={`${styles.barFill} h-full rounded-[6px] bg-gradient-to-r from-emerald-500 to-sky-400`}
