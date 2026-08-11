@@ -85,6 +85,7 @@ export {
   createOutboxRelay,
   createPostgresOutboxRelayStore,
   createSnsOutboxEventPublisher,
+  type DeadLetterOutboxEvent,
   type OutboxEventPublisher,
   type OutboxRelay,
   type OutboxRelayOptions,

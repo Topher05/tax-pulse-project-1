@@ -2,7 +2,7 @@ import { asc, eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
-import { outboxEvent } from "../../../shared/database/schema.js";
+import { outboxDeadLetter, outboxEvent } from "../../../shared/database/schema.js";
 import { PublishCommand, type SnsClient } from "./cloudEvents/stageChanged/index.js";
 
 export interface OutboxEventPublisher {
@@ -14,9 +14,14 @@ export interface UnsentOutboxEvent {
   payload: string;
 }
 
+export interface DeadLetterOutboxEvent extends UnsentOutboxEvent {
+  failureReason: string;
+}
+
 export interface OutboxRelayStore {
   listUnsent(): Promise<UnsentOutboxEvent[]>;
   markSent(id: string, sentAt: Date): Promise<void>;
+  moveToDeadLetter(event: DeadLetterOutboxEvent, failedAt: Date): Promise<void>;
 }
 
 export interface OutboxRelay {
@@ -71,6 +76,17 @@ export function createPostgresOutboxRelayStore(client: Client): OutboxRelayStore
         .update(outboxEvent)
         .set({ sentAt })
         .where(eq(outboxEvent.id, id));
+    },
+    async moveToDeadLetter(event, failedAt) {
+      await db.transaction(async (transaction) => {
+        await transaction.insert(outboxDeadLetter).values({
+          outboxEventId: event.id,
+          payload: event.payload,
+          failureReason: event.failureReason,
+          failedAt,
+        });
+        await transaction.delete(outboxEvent).where(eq(outboxEvent.id, event.id));
+      });
     },
   };
 }

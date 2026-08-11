@@ -18,6 +18,7 @@ describe("outbox relay", () => {
     const store: OutboxRelayStore = {
       listUnsent: async () => (row.sentAt === null ? [row] : []),
       markSent,
+      moveToDeadLetter: async () => undefined,
     };
     let publishAttempts = 0;
     const publish = vi.fn(async () => {

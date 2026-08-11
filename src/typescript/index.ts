@@ -454,6 +454,7 @@ export {
   type TaxPlanCycleQueueCacheClient,
   type TaxPlanCycleQueueCacheInvalidator,
   type TaxPlanCycleQueueCacheReadInput,
+  type DeadLetterOutboxEvent,
   type OutboxEventPublisher,
   type OutboxRelay,
   type OutboxRelayOptions,
