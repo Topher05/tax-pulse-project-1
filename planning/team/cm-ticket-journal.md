@@ -1352,3 +1352,64 @@ runtime, scheduler, retries for database writes, or SCRUM-135 dead-letter behavi
 - `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
   passed: 1 test verifies retry backoff and marks the row sent only after success.
 - `git diff --check` passed.
+
+
+## christopher-martus-jira135 - SCRUM-135
+
+**Branch:** `christopher-martus-jira135`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-135
+
+**Summary:** Route repeatedly failing messages to a DLQ
+
+**Description:** As a Backend Developer, I want a dead-letter queue, so that a poison
+message never blocks the queue.
+
+**Acceptance Criteria:**
+
+- A message that fails repeatedly past a max-retry count lands in a DLQ.
+- The DLQ entry preserves the original payload and the failure reason.
+- A test asserts a persistently failing message reaches the DLQ and the queue continues.
+
+**Code Connection:**
+
+- `outbox_dead_letter` stores the source outbox ID, original serialized payload, failure
+  reason, and failure timestamp.
+- The PostgreSQL relay store atomically inserts that record and removes the poison event
+  from the active outbox queue.
+- After the final configured publish attempt fails, the relay records the final error
+  message in the DLQ and continues processing later outbox events.
+- The focused relay test forces one event to fail twice, verifies the preserved payload and
+  failure reason, then verifies a later event is sent and no active messages remain.
+
+**Project Scope Connection:**
+
+This adds the minimal terminal-failure path to SCRUM-134's transactional outbox relay.
+It intentionally excludes DLQ replay tooling, alerting, and an external DLQ management API.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0014_zippy_luke_cage.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0014_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/features/taxPlanCycle/infrastructure/outboxRelay.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen` generated the SCRUM-135 migration.
+- `npm run db:check` passed.
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+  passed: 2 tests, including persistent failure routing and continued processing.
+- The focused relay suite now includes a PostgreSQL-backed persistence test that asserts the
+  stored DLQ payload and failure reason, poison-event removal, and delivery of the following
+  event. Local execution could not start it because this workspace has no container runtime;
+  it requires the existing Docker-backed integration-test environment in CI.
+- `git diff --check` passed.

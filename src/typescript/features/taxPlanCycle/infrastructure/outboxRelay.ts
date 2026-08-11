@@ -2,7 +2,7 @@ import { asc, eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
-import { outboxEvent } from "../../../shared/database/schema.js";
+import { outboxDeadLetter, outboxEvent } from "../../../shared/database/schema.js";
 import { PublishCommand, type SnsClient } from "./cloudEvents/stageChanged/index.js";
 
 export interface OutboxEventPublisher {
@@ -14,9 +14,14 @@ export interface UnsentOutboxEvent {
   payload: string;
 }
 
+export interface DeadLetterOutboxEvent extends UnsentOutboxEvent {
+  failureReason: string;
+}
+
 export interface OutboxRelayStore {
   listUnsent(): Promise<UnsentOutboxEvent[]>;
   markSent(id: string, sentAt: Date): Promise<void>;
+  moveToDeadLetter(event: DeadLetterOutboxEvent, failedAt: Date): Promise<void>;
 }
 
 export interface OutboxRelay {
@@ -72,6 +77,17 @@ export function createPostgresOutboxRelayStore(client: Client): OutboxRelayStore
         .set({ sentAt })
         .where(eq(outboxEvent.id, id));
     },
+    async moveToDeadLetter(event, failedAt) {
+      await db.transaction(async (transaction) => {
+        await transaction.insert(outboxDeadLetter).values({
+          outboxEventId: event.id,
+          payload: event.payload,
+          failureReason: event.failureReason,
+          failedAt,
+        });
+        await transaction.delete(outboxEvent).where(eq(outboxEvent.id, event.id));
+      });
+    },
   };
 }
 
@@ -90,14 +106,14 @@ export function createOutboxRelay(
     throw new Error("maxPublishAttempts must be a positive integer.");
   }
 
-  async function publishWithRetry(payload: string): Promise<void> {
+  async function publishWithRetry(payload: string): Promise<string | undefined> {
     for (let attempt = 1; attempt <= maxPublishAttempts; attempt += 1) {
       try {
         await publisher.publish(payload);
         return;
       } catch (error) {
         if (attempt === maxPublishAttempts) {
-          throw error;
+          return error instanceof Error ? error.message : String(error);
         }
 
         await wait(retryDelayMs(attempt));
@@ -110,7 +126,18 @@ export function createOutboxRelay(
       const rows = await store.listUnsent();
 
       for (const row of rows) {
-        await publishWithRetry(row.payload);
+        const failureReason = await publishWithRetry(row.payload);
+
+        if (failureReason !== undefined) {
+          await store.moveToDeadLetter(
+            {
+              ...row,
+              failureReason,
+            },
+            now(),
+          );
+          continue;
+        }
 
         await store.markSent(row.id, now());
       }
