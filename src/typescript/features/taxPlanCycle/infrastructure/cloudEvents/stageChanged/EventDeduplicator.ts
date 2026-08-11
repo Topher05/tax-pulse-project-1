@@ -8,7 +8,7 @@ import type {
 
 export class IdempotencyInProgressError extends Error {
   constructor() {
-    super("A queue projection event with the same id is still being processed.");
+    super("A consumer event with the same id is still being processed.");
     this.name = "IdempotencyInProgressError";
   }
 }

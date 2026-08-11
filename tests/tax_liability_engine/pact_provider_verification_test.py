@@ -8,10 +8,13 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import httpx
+import pytest
 import uvicorn
-from pact import Verifier
 from tax_liability_engine.api import create_app
 from tax_liability_engine.jwt_authentication import JwtValidationConfig
+
+pytest.importorskip("pact")
+from pact import Verifier
 
 CONFIG = JwtValidationConfig(
     issuer="https://auth.taxpulse.example",

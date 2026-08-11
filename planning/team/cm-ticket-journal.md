@@ -1067,6 +1067,114 @@ table refresh remain outside this ticket.
 - `npm --prefix src/pulseUI test -- --run tests/components/IncomeEntryForm.test.tsx`
   passed: 3 tests.
 
+## christopher-martus-jira120 - SCRUM-120
+
+**Branch:** `christopher-martus-jira120`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-120
+
+**Summary:** Render the KPI cards and read-only quarter timeline
+
+**Description:** As a Frontend Developer, I want the KPI cards and quarter timeline
+rendered read-only, so that estimated amounts and deadlines are visible without any
+recording action.
+
+**Acceptance Criteria:**
+
+- The four 1040-ES quarter items render with date and estimated amount from the hook data.
+- KPI cards render total estimated, paid so far, and remaining; a withholding-progress
+  bar renders coverage.
+- No mark-paid or payment-recording control is present; recording remains outside MVP.
+
+**Code Connection:**
+
+- The quarterly-estimate view model retains the endpoint's covered and remaining values,
+  allowing the KPI cards to sum the API contract directly while withholding remains the
+  separate input to the coverage calculation.
+- The withholding bar clamps coverage to the 0-100 range and exposes its value through a
+  progress indicator.
+- The page removes synthetic fallback quarters and maps successful hook data into a
+  canonical Q1-Q4 timeline with each deadline and estimated amount visible.
+- The focused route/component coverage verifies four hook-backed quarter items, KPI
+  totals, withholding coverage, and the absence of payment-recording controls.
+
+**Project Scope Connection:**
+
+This completes the read-only Quarterly Payments presentation slice for the React SPA. It
+consumes the tenant-scoped query boundary without introducing payment mutations, forms,
+or recording behavior. Loading, empty, and error-state presentation remains owned by
+SCRUM-119, while broader accessibility coverage remains owned by SCRUM-121.
+
+**Changed Files:**
+
+- `src/pulseUI/components/QuarterlyTimelineItem.tsx`
+- `src/pulseUI/components/WithholdingProgressChart.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+  passed: 4 tests.
+- `npm --prefix src/pulseUI run build` passed; Vite reported only its existing bundle-size
+  advisory.
+- The full Pulse UI run passed 121 of 123 tests. Two unrelated Deductions tests fail
+  because their `caseApiGetJson` expectations omit the authenticated fetcher argument;
+  the SCRUM-120 test file passed within the same run.
+- `git diff --check` passed.
+
+## christopher-martus-jira121 - SCRUM-121
+
+**Branch:** `christopher-martus-jira121`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-121
+
+**Summary:** Add accessibility and a component test for the Quarterly Payments screen
+
+**Description:** As a Frontend Developer, I want the Quarterly Payments screen to pass
+an axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the four quarter items and KPI cards render from sample data.
+- The test asserts no payment-recording control is present in the rendered screen.
+
+**Code Connection:**
+
+- The existing Quarterly Payments component test now runs `vitest-axe` against the
+  production screen rendered with its reusable sample-data fixture.
+- The regression assertions explicitly cover Q1 through Q4 and scope the three expected
+  totals to the labeled KPI region.
+- The read-only assertion continues to guard against payment and mark-paid controls.
+
+**Project Scope Connection:**
+
+This adds focused accessibility and regression coverage to the read-only Quarterly
+Payments presentation without changing its production behavior or the loading, empty,
+error, and retry states owned by SCRUM-119.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+- Corrected the loading-state regression assertion to expect the two rendered occurrences
+  of `$3,620`: the Q1 estimated amount and its withholding-applied value.
+- `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+  passed: 8 tests, including the axe check.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- The full Pulse UI run passed 122 of 124 tests. The same two unrelated Deductions
+  tests documented by SCRUM-120 fail because their `caseApiGetJson` expectations omit
+  the authenticated fetcher argument; all Quarterly Payments tests passed.
+- `git diff --check` passed.
 
 ## christopher-martus-jira109 - SCRUM-109
 
@@ -1139,6 +1247,7 @@ rewriting the table or KPI logic.
 **Description:** As a Frontend Developer, I want the Income screen to pass an axe check
 and a component test, so that it is accessible and regression-guarded.
 
+
 **Acceptance Criteria:**
 
 - An axe accessibility check on the rendered screen reports no violations.
@@ -1183,3 +1292,4 @@ workflow behavior.
 - `npm --prefix src/pulseUI run build` transformed all 2,108 modules but could not replace
   the existing `dist/pulseUI/assets` directory because Windows returned `EPERM`; no source
   compilation error was reported.
+

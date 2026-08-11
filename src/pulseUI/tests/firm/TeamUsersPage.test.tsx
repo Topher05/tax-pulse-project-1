@@ -23,6 +23,45 @@ afterEach(() => {
   cleanup();
 });
 
+const firmAdminUser = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+  name: "Alex Rivera",
+  email: "alex@example.com",
+  role: "Firm Admin",
+  status: "Inactive",
+  lastLoginAt: null,
+} as const;
+
+const advisorUser = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+  name: "Brianna Cole",
+  email: "brianna@example.com",
+  role: "Advisor",
+  status: "Active",
+  lastLoginAt: "2026-08-05T14:30:00.000Z",
+} as const;
+
+const secondFirmAdminUser = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d63",
+  name: "Casey Morgan",
+  email: "casey@example.com",
+  role: "Firm Admin",
+  status: "Active",
+  lastLoginAt: "2026-08-07T12:00:00.000Z",
+} as const;
+
+function renderTeamUsersPage() {
+  localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
+
+  render(
+    <QueryClientProvider client={createPulseQueryClient()}>
+      <TestSessionProvider role="Firm Admin">
+        <RouterProvider router={createPulseRouter(["/firm/users"])} />
+      </TestSessionProvider>
+    </QueryClientProvider>,
+  );
+}
+
 describe("TeamUsersPage", () => {
   const fixtureUsers = [
     {
@@ -71,33 +110,9 @@ describe("TeamUsersPage", () => {
   });
 
   test("renders the team roster scaffold with live firm users", async () => {
-    localStorage.setItem(pulseAccessTokenStorageKey, "test-access-token");
-    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
-      {
-        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
-        name: "Alex Rivera",
-        email: "alex@example.com",
-        role: "Firm Admin",
-        status: "Inactive",
-        lastLoginAt: null,
-      },
-      {
-        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
-        name: "Brianna Cole",
-        email: "brianna@example.com",
-        role: "Advisor",
-        status: "Active",
-        lastLoginAt: "2026-08-05T14:30:00.000Z",
-      },
-    ] as never);
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([firmAdminUser, advisorUser] as never);
 
-    render(
-      <QueryClientProvider client={createPulseQueryClient()}>
-        <TestSessionProvider role="Firm Admin">
-          <RouterProvider router={createPulseRouter(["/firm/users"])} />
-        </TestSessionProvider>
-      </QueryClientProvider>,
-    );
+    renderTeamUsersPage();
 
     expect(await screen.findByRole("heading", { name: "Team & Users", level: 1 }))
       .toBeInTheDocument();
@@ -145,36 +160,56 @@ describe("TeamUsersPage", () => {
     );
   });
 
-  test("invokes the role update handler with the selected user and role for Firm Admins", () => {
-    const onRoleChange = vi.fn();
-
-    render(
-      <TeamUsersScreen
-        users={fixtureUsers}
-        viewerRole="Firm Admin"
-        onRoleChange={onRoleChange}
-      />,
+  test("renders a loading skeleton while firm users are in flight", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockImplementationOnce(
+      () => new Promise(() => undefined) as never,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Role for Brianna Cole" }), {
-      target: { value: "Firm Admin" },
-    });
+    renderTeamUsersPage();
 
-    expect(onRoleChange).toHaveBeenCalledWith(fixtureUsers[1], "Firm Admin");
+    const skeleton = await screen.findByRole("status", { name: "Loading Team & Users" });
+
+    expect(skeleton).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Firm team and users roster" })).not.toBeInTheDocument();
   });
 
-  test("disables role assignment controls for non-admin viewers", () => {
-    const onRoleChange = vi.fn();
+  test("renders the firm admin roster when only admins exist", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      firmAdminUser,
+      secondFirmAdminUser,
+    ] as never);
 
-    render(
-      <TeamUsersScreen
-        users={fixtureUsers}
-        viewerRole="Advisor"
-        onRoleChange={onRoleChange}
-      />,
-    );
+    renderTeamUsersPage();
 
-    expect(screen.getByRole("combobox", { name: "Role for Alex Rivera" })).toBeDisabled();
-    expect(screen.getByRole("combobox", { name: "Role for Brianna Cole" })).toBeDisabled();
+    expect(await screen.findByRole("table", { name: "Firm team and users roster" })).toBeInTheDocument();
+    expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
+    expect(screen.getByText("Casey Morgan")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "No team users yet" })).not.toBeInTheDocument();
+  });
+
+  test("renders the empty state when the tenant has no users", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([] as never);
+
+    renderTeamUsersPage();
+
+    expect(await screen.findByRole("heading", { name: "No team users yet" })).toBeInTheDocument();
+    expect(screen.getByText("0 users")).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Firm team and users roster" })).not.toBeInTheDocument();
+  });
+
+  test("renders an error state with retry and recovers after retry", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson")
+      .mockRejectedValueOnce(new Error("Firm users request failed."))
+      .mockResolvedValueOnce([firmAdminUser, advisorUser] as never);
+
+    renderTeamUsersPage();
+
+    expect(await screen.findByRole("heading", { name: "Team users could not load" })).toBeInTheDocument();
+    expect(screen.getByText("Firm users request failed.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    expect(await screen.findByRole("table", { name: "Firm team and users roster" })).toBeInTheDocument();
+    expect(screen.getByText("Brianna Cole")).toBeInTheDocument();
   });
 });

@@ -6,10 +6,22 @@ import type {
 } from "../repositories/repository.js";
 import type { TaxPlanCycleQueueCacheInvalidator } from "../infrastructure/queueCache.js";
 import type { StageChangedEventPublisher } from "../infrastructure/cloudEvents/stageChanged/index.js";
+import type {
+  ActionItemCreatedEventInput,
+  ActionItemCreatedEventPublishInput,
+} from "../infrastructure/cloudEvents/actionItemCreated/index.js";
+import { createPresentToClientSaga } from "../infrastructure/cloudEvents/presentToClientSaga/index.js";
+
+export interface ActionItemCreatedEventPublisher {
+  publishActionItemCreated(
+    input: ActionItemCreatedEventPublishInput,
+  ): Promise<void> | void;
+}
 
 export interface TaxPlanCycleTransitionControllerInput
   extends TaxPlanCycleTransitionInput {
   fromStage: TaxPlanCycle["stage"];
+  actionItem?: ActionItemCreatedEventInput;
 }
 
 export interface TaxPlanCycleTransitionController {
@@ -28,6 +40,7 @@ export interface TaxPlanCycleTransitionEventLogger {
 export interface TaxPlanCycleTransitionControllerOptions {
   queueCacheInvalidator?: TaxPlanCycleQueueCacheInvalidator;
   stageChangedEventPublisher?: StageChangedEventPublisher;
+  actionItemEventPublisher?: ActionItemCreatedEventPublisher;
   stageChangedEventLogger?: TaxPlanCycleTransitionEventLogger;
 }
 
@@ -67,6 +80,22 @@ export function createTaxPlanCycleTransitionController(
             "Stage-changed event publish failed after transition commit",
           );
         }
+      }
+
+      if (transitioned && options.actionItemEventPublisher && input.actionItem) {
+        const presentToClientSaga = createPresentToClientSaga({
+          repository,
+          stageChangedEventPublisher: options.stageChangedEventPublisher,
+          actionItemEventPublisher: options.actionItemEventPublisher,
+        });
+
+        await presentToClientSaga.run({
+          transitionedCycle: transitioned,
+          tenantId: input.tenantId,
+          caseId: input.caseId,
+          actor: input.actor,
+          actionItem: input.actionItem,
+        });
       }
 
       if (options.queueCacheInvalidator) {

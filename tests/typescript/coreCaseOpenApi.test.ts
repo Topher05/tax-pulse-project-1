@@ -639,6 +639,12 @@ describe("Core Case Service OpenAPI document", () => {
         }),
       ]),
     );
+
+    expect(
+      firmUserRoleUpdateRequestSchema.safeParse({
+        role: "TaxPulse Platform Admin",
+      }).success,
+    ).toBe(false);
   });
 
   test("validates the generated document structure required by OpenAPI 3.0", () => {

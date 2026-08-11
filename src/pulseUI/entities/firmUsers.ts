@@ -1,12 +1,12 @@
 export type FirmUserRole = "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
+export type FirmUserAssignableRole = Exclude<FirmUserRole, "TaxPulse Platform Admin">;
 export type FirmUserStatus = "Active" | "Inactive";
 
-export const firmUserRoles = [
+export const firmUserAssignableRoles = [
   "Firm Admin",
   "Advisor",
   "Client",
-  "TaxPulse Platform Admin",
-] as const satisfies readonly FirmUserRole[];
+] as const satisfies readonly FirmUserAssignableRole[];
 
 export type RelativeLastLogin =
   | { kind: "minutes"; value: number }

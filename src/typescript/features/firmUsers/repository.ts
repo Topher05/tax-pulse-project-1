@@ -5,6 +5,7 @@ import type { Client } from "pg";
 import { roles, users, userStatus } from "../../shared/database/schema.js";
 import {
   firmUserRowSchema,
+  type FirmUserAssignableRole,
   type FirmUserRole,
   type FirmUserRow,
   type FirmUserStatus,
@@ -17,7 +18,7 @@ export interface FirmUsersListInput {
 export interface FirmUserRoleUpdateInput {
   tenantId: string;
   userId: string;
-  role: FirmUserRole;
+  role: FirmUserAssignableRole;
 }
 
 export interface FirmUsersRepository {

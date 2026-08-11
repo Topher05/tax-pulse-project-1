@@ -254,6 +254,29 @@ export const taxPlanCycle = pgTable(
   ],
 );
 
+export const actionItem = pgTable(
+  "action_item",
+  {
+    id: integer("id").generatedByDefaultAsIdentity().notNull(),
+    caseId: uuid("case_id").notNull(),
+    description: text("description").notNull(),
+    deadline: date("deadline").notNull(),
+    completed: boolean("completed").default(false).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "action_item_id_pk",
+      columns: [table.id],
+    }),
+    foreignKey({
+      name: "action_item_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    index("action_item_case_id_idx").on(table.caseId),
+  ],
+);
+
 export const clientRoster = pgTable(
   "client_roster",
   {
@@ -282,7 +305,7 @@ export const clientRoster = pgTable(
     index("client_roster_tenant_id_client_name_idx").on(
       table.tenantId,
       table.clientName,
-    ),
+    )
   ],
 );
 

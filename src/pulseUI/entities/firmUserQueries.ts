@@ -4,6 +4,7 @@ import { z } from "zod";
 import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
 import { caseApiGetJson, caseApiSendJson } from "../shared/caseApi.ts";
 import type {
+  FirmUserAssignableRole,
   FirmUserRole,
   FirmUserRow,
   FirmUserStatus,
@@ -15,6 +16,11 @@ const firmUserRoleSchema = z.enum([
   "Advisor",
   "Client",
   "TaxPulse Platform Admin",
+]);
+const firmUserAssignableRoleSchema = z.enum([
+  "Firm Admin",
+  "Advisor",
+  "Client",
 ]);
 const firmUserStatusSchema = z.enum(["Active", "Inactive"]);
 const firmUserApiRowSchema = z.object({
@@ -32,7 +38,7 @@ type FirmUserApiRow = z.infer<typeof firmUserApiRowSchema>;
 export const firmUsersQueryKey = ["firmUsers"] as const;
 
 const firmUserRoleUpdateRequestSchema = z.object({
-  role: firmUserRoleSchema,
+  role: firmUserAssignableRoleSchema,
 });
 
 function formatLastLoginDate(value: string): string {
@@ -70,7 +76,7 @@ export async function fetchFirmUsers(fetcher?: typeof fetch): Promise<readonly F
 
 export interface FirmUserRoleUpdateInput {
   userId: string;
-  role: FirmUserRole;
+  role: FirmUserAssignableRole;
 }
 
 export async function updateFirmUserRole(
