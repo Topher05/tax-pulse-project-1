@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
@@ -20,13 +20,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function renderPortal(role: "Advisor" | "Client" = "Client") {
+function renderPortal(role: "Advisor" | "Client" = "Client", path = "/my-tax-plan") {
   const queryClient = createPulseQueryClient();
 
   render(
     <QueryClientProvider client={queryClient}>
       <TestSessionProvider role={role}>
-        <RouterProvider router={createPulseRouter(["/my-tax-plan"])} />
+        <RouterProvider router={createPulseRouter([path])} />
       </TestSessionProvider>
     </QueryClientProvider>,
   );
@@ -175,5 +175,44 @@ describe("My Tax Plan page", () => {
     ).toBeInTheDocument();
     expect(fetchStub).toHaveBeenCalledTimes(2);
     expect(clientTaxPlanRefreshIntervalMs).toBe(15_000);
+  });
+
+  test("marks an action item complete immediately after the portal completion response", async () => {
+    const actionItem = {
+      id: 42,
+      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+      description: "Make the estimated tax payment",
+      deadline: "2026-09-15",
+      completed: false,
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/complete") && init?.method === "POST") {
+        return new Response(JSON.stringify({ ...actionItem, completed: true }));
+      }
+      if (String(input).endsWith("/action-items")) {
+        return new Response(JSON.stringify([actionItem]));
+      }
+      return new Response(JSON.stringify({
+        id: actionItem.case_id,
+        client_id: "user-synthetic-001",
+        stage: "Review",
+        owner: "Maya Reed",
+        advisor: "Maya Reed",
+        next_meeting: null,
+        projected_savings: null,
+        top_recommendation: null,
+        priority: "high",
+        due_date: "2026-05-12",
+        on_hold: false,
+        scenarios: [],
+      }));
+    }));
+
+    renderPortal("Client", "/action-items");
+
+    expect(await screen.findByText("Due September 15, 2026")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Mark complete" }));
+    expect(await screen.findByText("Completed")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mark complete" })).not.toBeInTheDocument();
   });
 });

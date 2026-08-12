@@ -1441,6 +1441,22 @@ remain separate follow-up chunks to keep the PR small.
   `src/typescript/features/taxPlanCycle/index.ts`, and `src/typescript/index.ts`.
 - Validation: `npm run typecheck` and `git diff --check` passed; focused event and UI tests
   remain intentionally deferred to the final ticket chunk.
+
+**Final Acceptance-Test Chunk:**
+
+- Adds an authenticated BFF test that lists the current client's action items, completes one,
+  and asserts the emitted completion-event payload.
+- Adds a portal UI test that verifies the completed state replaces the action immediately after
+  the mutation response, without a manual refresh.
+- Updates the client shell guard to permit the Action Items route instead of redirecting it to
+  My Tax Plan.
+- Changed files: `tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`,
+  `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`, and `src/pulseUI/components/AppShell.tsx`.
+- Validation: `npm run typecheck`, `npx vitest run --config vitest.config.ts
+  tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`,
+  `npm --prefix src/pulseUI run test:vitest -- tests/clientPortal/MyTaxPlanPage.test.tsx`,
+  and `git diff --check` passed. The UI suite retains pre-existing jsdom `window.scrollTo`
+  warnings, but all five tests passed.
 - `npm run typecheck` is blocked by pre-existing duplicate `CloudEvents`/`cloudEvents`
   directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
   changed files.

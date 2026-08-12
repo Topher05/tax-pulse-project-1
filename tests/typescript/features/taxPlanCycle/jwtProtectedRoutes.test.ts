@@ -15,6 +15,7 @@ import {
   createTenantRateLimitMiddleware,
   createTaxPlanCycleRouter,
   type AuditEntryReader,
+  type ActionItemRepository,
   type JwtConfig,
   type ScenarioRepository,
   type TaxPlanCycle,
@@ -74,6 +75,15 @@ async function withProtectedTaxPlanCycleServer(
     auditEntryReader?: AuditEntryReader;
     clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
     scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
+    actionItemRepository?: Pick<ActionItemRepository, "listByCaseId" | "complete">;
+    actionItemCompletedEventPublisher?: {
+      publishActionItemCompleted(input: {
+        tenantId: string;
+        caseId: string;
+        actionItemId: number;
+        actor: string;
+      }): Promise<void> | void;
+    };
     costAccountingMiddleware?: RequestHandler;
     rateLimitMiddleware?: RequestHandler;
   } = {},
@@ -101,6 +111,8 @@ async function withProtectedTaxPlanCycleServer(
           auditEntryReader: options.auditEntryReader,
           clientPortalReadRepository: options.clientPortalReadRepository,
           scenarioRepository: options.scenarioRepository,
+          actionItemRepository: options.actionItemRepository,
+          actionItemCompletedEventPublisher: options.actionItemCompletedEventPublisher,
           controller,
         }),
       );
@@ -433,5 +445,53 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
         title: "Operator Access Required",
       });
     });
+  });
+
+  test("lists and completes only the authenticated client's action items, then emits an event", async () => {
+    const clientId = validCreateBody.client_id;
+    const token = await createAccessToken({ role: "Client", userId: clientId });
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({ case_id: cycle.id }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
+    const item = {
+      id: 42,
+      case_id: cycle.id,
+      description: "Make the estimated tax payment",
+      deadline: "2026-09-15",
+      completed: false,
+    };
+    const listByCaseId = vi.fn(async () => [item]);
+    const complete = vi.fn(async () => ({ ...item, completed: true }));
+    const publishActionItemCompleted = vi.fn();
+
+    await withProtectedTaxPlanCycleServer(
+      { create, findByCaseId },
+      async (baseUrl) => {
+        const listResponse = await fetch(`${baseUrl}/v1/portal/action-items`, {
+          headers: { authorization: `Bearer ${token}` },
+        });
+        const completeResponse = await fetch(`${baseUrl}/v1/portal/action-items/42/complete`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${token}` },
+        });
+
+        expect(listResponse.status).toBe(200);
+        await expect(listResponse.json()).resolves.toEqual([item]);
+        expect(completeResponse.status).toBe(200);
+        await expect(completeResponse.json()).resolves.toEqual({ ...item, completed: true });
+        expect(listByCaseId).toHaveBeenCalledWith(cycle.id);
+        expect(complete).toHaveBeenCalledWith({ caseId: cycle.id, actionItemId: 42 });
+        expect(publishActionItemCompleted).toHaveBeenCalledWith({
+          tenantId: "tenant-from-jwt",
+          caseId: cycle.id,
+          actionItemId: 42,
+          actor: clientId,
+        });
+      },
+      {
+        clientPortalReadRepository: { findCurrentByClientId: async () => cycle },
+        actionItemRepository: { listByCaseId, complete },
+        actionItemCompletedEventPublisher: { publishActionItemCompleted },
+      },
+    );
   });
 });
