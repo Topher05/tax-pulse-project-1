@@ -1412,6 +1412,20 @@ remain separate follow-up chunks to keep the PR small.
 - `npm run typecheck` passed.
 - `git diff --check` passed.
 - Focused acceptance tests are deliberately deferred to the final SCRUM-144 chunk.
+
+**Follow-up UI Chunk:**
+
+- Adds the Client-only `/action-items` route and portal navigation entry.
+- Adds a TanStack Query read/mutation pair for the portal action-items BFF. A successful
+  completion replaces the matching cached item, so the screen reflects completion immediately.
+- Adds the Action Items screen with descriptions, deadlines, completed state, completion
+  controls, and loading/error/empty states.
+- Changed files: `src/pulseUI/entities/clientActionItemQueries.ts`,
+  `src/pulseUI/pages/clientPortal/ActionItemsPage.tsx`,
+  `src/pulseUI/pages/clientPortal/ActionItemsPage.module.css`,
+  `src/pulseUI/app/routeTree.tsx`, and `src/pulseUI/shared/navigation.ts`.
+- Validation: `npm run typecheck` and `git diff --check` passed; focused UI tests remain
+  intentionally deferred to the final ticket chunk.
 - `npm run typecheck` is blocked by pre-existing duplicate `CloudEvents`/`cloudEvents`
   directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
   changed files.
