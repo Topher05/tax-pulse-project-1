@@ -1,6 +1,7 @@
-import { CircleCheckBig, HandCoins, ShieldAlert } from "lucide-react";
+import { CalendarClock, CircleCheckBig, HandCoins, RefreshCw, ShieldAlert } from "lucide-react";
 
 import styles from "./QuarterlyPaymentsPage.module.css";
+import { EmptyState } from "../../components/EmptyState.tsx";
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { WithholdingProgressChart } from "../../components/WithholdingProgressChart.tsx";
@@ -21,53 +22,19 @@ export interface QuarterlyPaymentsScreenProps {
   quarterlyEstimates: readonly QuarterlyEstimateRecord[];
 }
 
+const quarterOrder: Record<QuarterlyEstimateQuarter, number> = {
+  Q1: 1,
+  Q2: 2,
+  Q3: 3,
+  Q4: 4,
+};
+
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function buildPlaceholderQuarterlyEstimates(): readonly QuarterlyEstimateRecord[] {
-  return [
-    {
-      id: "QP-001",
-      taxYear: "2026",
-      quarter: "Q1",
-      dueDate: "2026-04-15",
-      estimatedPayment: 3620,
-      withholdingApplied: 3620,
-      status: "Paid",
-    },
-    {
-      id: "QP-002",
-      taxYear: "2026",
-      quarter: "Q2",
-      dueDate: "2026-06-15",
-      estimatedPayment: 3620,
-      withholdingApplied: 3620,
-      status: "Paid",
-    },
-    {
-      id: "QP-003",
-      taxYear: "2026",
-      quarter: "Q3",
-      dueDate: "2026-09-15",
-      estimatedPayment: 3400,
-      withholdingApplied: 0,
-      status: "Due",
-    },
-    {
-      id: "QP-004",
-      taxYear: "2026",
-      quarter: "Q4",
-      dueDate: "2027-01-15",
-      estimatedPayment: 3960,
-      withholdingApplied: 0,
-      status: "Due",
-    },
-  ] as const;
 }
 
 function toQuarterlyEstimateRecord(
@@ -90,15 +57,68 @@ function toQuarterlyEstimateRecord(
     dueDate: record.due_date,
     estimatedPayment: record.estimated_payment,
     withholdingApplied: record.withholding_applied,
+    coveredAmount: record.covered_amount,
+    remainingDue: record.remaining_due,
     status: record.status,
   };
 }
 
-function QuarterlyPaymentsDetachedState() {
+function QuarterlyPaymentsLoadingState() {
+  const skeletonRows = Array.from({ length: 4 }, (_, index) => index);
+
   return (
-    <PanelCard title="Select a Case">
-      <p>Choose a case from the plan-tool selector to load quarterly estimates.</p>
+    <PanelCard
+      title="Loading quarterly estimates"
+      description="Fetching the selected case's quarterly estimate schedule."
+    >
+      <div
+        className={styles.skeletonTimeline}
+        role="status"
+        aria-label="Loading quarterly estimates"
+      >
+        <span className="srOnly">Loading quarterly estimates</span>
+        {skeletonRows.map((row) => (
+          <div className={styles.skeletonRow} key={row}>
+            <span className={styles.skeletonDate} />
+            <span className={styles.skeletonContent}>
+              <span className={styles.skeletonBlock} />
+              <span className={styles.skeletonBlock} />
+            </span>
+            <span className={styles.skeletonAmount} />
+          </div>
+        ))}
+      </div>
     </PanelCard>
+  );
+}
+
+function QuarterlyPaymentsEmptyState() {
+  return (
+    <EmptyState
+      title="No quarterly estimates yet"
+      description="This case has no quarterly estimates for the selected period."
+      icon={<CalendarClock />}
+    />
+  );
+}
+
+function QuarterlyPaymentsErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div role="alert">
+      <EmptyState
+        title="Quarterly estimates could not load"
+        description={message}
+        actionLabel="Retry"
+        onAction={onRetry}
+        icon={<RefreshCw />}
+      />
+    </div>
   );
 }
 
@@ -106,8 +126,9 @@ export function QuarterlyPaymentsScreen({
   quarterlyEstimates,
 }: QuarterlyPaymentsScreenProps) {
   const totalEstimated = quarterlyEstimates.reduce((sum, payment) => sum + payment.estimatedPayment, 0);
+  const totalCovered = quarterlyEstimates.reduce((sum, payment) => sum + payment.coveredAmount, 0);
   const totalWithholding = quarterlyEstimates.reduce((sum, payment) => sum + payment.withholdingApplied, 0);
-  const totalRemaining = totalEstimated - totalWithholding;
+  const totalRemaining = quarterlyEstimates.reduce((sum, payment) => sum + payment.remainingDue, 0);
 
   return (
     <div className={styles.page}>
@@ -121,7 +142,7 @@ export function QuarterlyPaymentsScreen({
         />
         <MetricCard
           label="Paid So Far"
-          value={formatCurrency(totalWithholding)}
+          value={formatCurrency(totalCovered)}
           caption=""
           tone="green"
           icon={<CircleCheckBig aria-hidden="true" />}
@@ -165,12 +186,13 @@ export function QuarterlyPaymentsPage() {
   const setCaseId = useSetPlanToolCaseId();
   const quarterlyEstimatesQuery = useQuarterlyEstimatesQuery(caseId);
   const contextControl = <CurrentCaseSelector caseId={caseId} onCaseIdChange={setCaseId} />;
-  // Jira-119 owns the visible loading/error/data UI wiring; this ticket only tracks the states.
   const quarterlyEstimatesQueryState = quarterlyEstimatesQuery.isLoading
     ? "loading"
     : quarterlyEstimatesQuery.isError
       ? "error"
-      : "data";
+      : quarterlyEstimatesQuery.data?.length === 0
+        ? "empty"
+        : "data";
 
   const header = (
     <ToolHeader
@@ -198,12 +220,30 @@ export function QuarterlyPaymentsPage() {
     );
   }
 
-  const quarterlyEstimates = quarterlyEstimatesQuery.data?.map(toQuarterlyEstimateRecord) ?? buildPlaceholderQuarterlyEstimates();
+  const quarterlyEstimates = quarterlyEstimatesQuery.data
+    ?.map(toQuarterlyEstimateRecord)
+    .sort((left, right) => quarterOrder[left.quarter] - quarterOrder[right.quarter]) ?? [];
 
   return (
     <div className={styles.page} data-quarterly-query-state={quarterlyEstimatesQueryState}>
       {header}
-      <QuarterlyPaymentsScreen quarterlyEstimates={quarterlyEstimates} />
+      {quarterlyEstimatesQueryState === "loading" ? <QuarterlyPaymentsLoadingState /> : null}
+      {quarterlyEstimatesQueryState === "empty" ? <QuarterlyPaymentsEmptyState /> : null}
+      {quarterlyEstimatesQueryState === "error" ? (
+        <QuarterlyPaymentsErrorState
+          message={
+            quarterlyEstimatesQuery.error instanceof Error
+              ? quarterlyEstimatesQuery.error.message
+              : "Quarterly estimates request failed."
+          }
+          onRetry={() => {
+            void quarterlyEstimatesQuery.refetch();
+          }}
+        />
+      ) : null}
+      {quarterlyEstimatesQueryState === "data" ? (
+        <QuarterlyPaymentsScreen quarterlyEstimates={quarterlyEstimates} />
+      ) : null}
     </div>
   );
 }

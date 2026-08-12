@@ -34,6 +34,105 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira133 - SCRUM-133
+
+**Branch:** `christopher-martus-jira133`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-133
+
+**Summary:** Write stage transitions through a transactional outbox
+
+**Description:** As a Backend Developer, I want stage transitions written through an
+outbox, so that an event is never lost when the case commits.
+
+**Acceptance Criteria:**
+
+- The stage change and its outbox row commit in the same database transaction.
+- The outbox row carries the serialized CloudEvent payload.
+- A test asserts a rolled-back transition leaves no outbox row.
+
+**Code Connection:**
+
+- The first implementation slice adds the minimal `outbox_event` persistence contract
+  with a generated identifier, serialized text payload, and creation timestamp.
+- The second slice moves CloudEvent construction and its input types into the domain event
+  module so both database persistence and SNS delivery can reuse the same validated
+  payload without coupling the repository to AWS infrastructure.
+- The third slice builds the CloudEvent from the tenant-scoped database row and writes its
+  serialized payload alongside the cycle stage and transition history in the existing
+  Drizzle transaction. Production composition no longer directly publishes during the
+  request, leaving the SNS publisher available for the SCRUM-134 relay.
+- The final slice extends the successful transition integration path to validate the
+  serialized outbox payload against the CloudEvent schema and forces an outbox insert
+  failure to prove the cycle, transition history, and outbox row roll back together.
+
+**Project Scope Connection:**
+
+The outbox table establishes the durable database boundary required to prevent committed
+stage-change events from being lost before asynchronous delivery.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0010_outbox_event.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0007_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0008_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0009_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0010_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/migrate.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/shared/scripts/drizzleMigrations.ts` (removed)
+- `src/typescript/shared/scripts/runMigrations.ts` (removed)
+- `tests/typescript/bootstrap/migrationTestUtils.ts`
+- `drizzle.config.ts`
+- `README.md`
+- `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:check` passed and loaded the updated Drizzle schema successfully.
+- `git diff --check` passed.
+- A focused `tsx` check built and schema-validated a deterministic stage-changed
+  CloudEvent through the relocated domain helper.
+- `npm run db:check` and `git diff --check` continue to pass after the second slice.
+- A scoped strict TypeScript compile of the updated repository passed after the third
+  slice.
+- `npm run db:check` and `git diff --check` continue to pass with the transactional write.
+- The application and TypeScript test typechecks passed. The combined `npm run typecheck`
+  then stopped in the unrelated Pulse UI because its local `@playwright/test` type
+  dependency is absent.
+- The focused CloudEvent schema and SNS publisher suites passed: 11 tests in two files.
+- Rebuilt the inherited Drizzle metadata chain so tenant login, deductions, client roster,
+  and the outbox are registered sequentially as migrations `0007` through `0010` with
+  matching snapshots. A no-op `drizzle-kit generate` confirmed there is no schema drift.
+- `npm run db:check`, `npm run typecheck`, and `git diff --check` passed after rebuilding
+  the migration metadata.
+- Standardized runtime, seed, and test migration execution on Drizzle. Drizzle Kit remains
+  the operator CLI, while the programmatic paths use Drizzle ORM's PostgreSQL migrator
+  and the shared `drizzle.__drizzle_migrations` ledger.
+- Removed the custom filename scanner and `drizzle_schema_migrations` ledger. Destructive
+  seed and shared-schema test setup now remove both `public` and `drizzle` before replaying
+  the generated journal from `0000`.
+- `npm run db:gen -- --name verify_no_schema_drift` reported no schema changes and created
+  no migration files. `npm run db:check`, `npm run typecheck`, and `git diff --check` passed.
+- `npm test` and `npm run test:integration` reached their database-backed suites but could
+  not start Testcontainers because no Docker-compatible runtime is available. The explicit
+  integration run still passed its six non-container authentication tests.
+- The Tax Plan Cycle integration suite collected successfully, but its 22 database tests
+  could not start because no Docker-compatible container runtime is available locally.
+  This includes both new transactional-outbox acceptance paths.
+- The cumulative SCRUM-133 diff is 316 changed lines (255 additions and 61 deletions),
+  remaining below the 500-line PR limit.
+
 ## christopher-martus-jira192 - SCRUM-192
 
 **Branch:** `christopher-martus-jira192`
@@ -967,3 +1066,350 @@ table refresh remain outside this ticket.
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `npm --prefix src/pulseUI test -- --run tests/components/IncomeEntryForm.test.tsx`
   passed: 3 tests.
+
+## christopher-martus-jira120 - SCRUM-120
+
+**Branch:** `christopher-martus-jira120`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-120
+
+**Summary:** Render the KPI cards and read-only quarter timeline
+
+**Description:** As a Frontend Developer, I want the KPI cards and quarter timeline
+rendered read-only, so that estimated amounts and deadlines are visible without any
+recording action.
+
+**Acceptance Criteria:**
+
+- The four 1040-ES quarter items render with date and estimated amount from the hook data.
+- KPI cards render total estimated, paid so far, and remaining; a withholding-progress
+  bar renders coverage.
+- No mark-paid or payment-recording control is present; recording remains outside MVP.
+
+**Code Connection:**
+
+- The quarterly-estimate view model retains the endpoint's covered and remaining values,
+  allowing the KPI cards to sum the API contract directly while withholding remains the
+  separate input to the coverage calculation.
+- The withholding bar clamps coverage to the 0-100 range and exposes its value through a
+  progress indicator.
+- The page removes synthetic fallback quarters and maps successful hook data into a
+  canonical Q1-Q4 timeline with each deadline and estimated amount visible.
+- The focused route/component coverage verifies four hook-backed quarter items, KPI
+  totals, withholding coverage, and the absence of payment-recording controls.
+
+**Project Scope Connection:**
+
+This completes the read-only Quarterly Payments presentation slice for the React SPA. It
+consumes the tenant-scoped query boundary without introducing payment mutations, forms,
+or recording behavior. Loading, empty, and error-state presentation remains owned by
+SCRUM-119, while broader accessibility coverage remains owned by SCRUM-121.
+
+**Changed Files:**
+
+- `src/pulseUI/components/QuarterlyTimelineItem.tsx`
+- `src/pulseUI/components/WithholdingProgressChart.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+  passed: 4 tests.
+- `npm --prefix src/pulseUI run build` passed; Vite reported only its existing bundle-size
+  advisory.
+- The full Pulse UI run passed 121 of 123 tests. Two unrelated Deductions tests fail
+  because their `caseApiGetJson` expectations omit the authenticated fetcher argument;
+  the SCRUM-120 test file passed within the same run.
+- `git diff --check` passed.
+
+## christopher-martus-jira121 - SCRUM-121
+
+**Branch:** `christopher-martus-jira121`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-121
+
+**Summary:** Add accessibility and a component test for the Quarterly Payments screen
+
+**Description:** As a Frontend Developer, I want the Quarterly Payments screen to pass
+an axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the four quarter items and KPI cards render from sample data.
+- The test asserts no payment-recording control is present in the rendered screen.
+
+**Code Connection:**
+
+- The existing Quarterly Payments component test now runs `vitest-axe` against the
+  production screen rendered with its reusable sample-data fixture.
+- The regression assertions explicitly cover Q1 through Q4 and scope the three expected
+  totals to the labeled KPI region.
+- The read-only assertion continues to guard against payment and mark-paid controls.
+
+**Project Scope Connection:**
+
+This adds focused accessibility and regression coverage to the read-only Quarterly
+Payments presentation without changing its production behavior or the loading, empty,
+error, and retry states owned by SCRUM-119.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+- Corrected the loading-state regression assertion to expect the two rendered occurrences
+  of `$3,620`: the Q1 estimated amount and its withholding-applied value.
+- `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+  passed: 8 tests, including the axe check.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- The full Pulse UI run passed 122 of 124 tests. The same two unrelated Deductions
+  tests documented by SCRUM-120 fail because their `caseApiGetJson` expectations omit
+  the authenticated fetcher argument; all Quarterly Payments tests passed.
+- `git diff --check` passed.
+
+## christopher-martus-jira109 - SCRUM-109
+
+**Branch:** `christopher-martus-jira109`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-109
+
+**Summary:** Render the income table from live data
+
+**Description:** As a Frontend Developer, I want the income table rendered from the hook
+data, so that recorded income events and their amounts are visible.
+
+**Acceptance Criteria:**
+
+- The table renders date, source, type, amount, and withholding columns from the hook data.
+- Per-source KPI cards (W-2, 1099, Capital Gains, Rental, Other) render above the table.
+- A newly added income event appears in the table after a successful create.
+
+**Code Connection:**
+
+- `IncomePage` now renders its typed `incomeEvents` input as table rows with readable
+  income-type labels, UTC-safe display dates, and USD-formatted amount and withholding
+  values. The empty state only renders when that collection is empty.
+- The five existing KPI cards now aggregate event amounts by W-2, 1099, Capital Gains,
+  Rental, and Other, including zero-dollar values for categories without events.
+- A compact component-flow test supplies the same prop contract that the SCRUM-106 hook
+  will use. It verifies table and KPI rendering, then exercises a successful form callback
+  and confirms the updated collection renders the new row and KPI value.
+- The live read query is connected, but production create persistence and cache invalidation
+  remain blocked until a create endpoint is available. The route therefore retains a
+  placeholder create handler and does not claim end-to-end persistence coverage.
+
+**Project Scope Connection:**
+
+This supplies the minimal presentation and aggregation behavior required for recorded
+income events while preserving the typed composition seam for the tenant-scoped income
+query. The remaining hook integration will make this presentation contract live without
+rewriting the table or KPI logic.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- The focused Income page tests passed: 5 tests, including a presentation-level successful
+  create callback that rerenders the new table row and its 1099 KPI total.
+- Full Pulse UI coverage passed: 146 tests in 34 files.
+- `npm --prefix src/pulseUI run build` passed; Vite reported its existing large-chunk
+  advisory warning.
+- `git diff --check` passed.
+
+
+## chirstopher-martus-jira110 - SCRUM-110
+
+**Branch:** `chirstopher-martus-jira110`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-110
+
+**Summary:** Add accessibility and a component test for the Income screen
+
+**Description:** As a Frontend Developer, I want the Income screen to pass an axe check
+and a component test, so that it is accessible and regression-guarded.
+
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the table renders rows and the empty state for no data.
+- The form's inputs carry accessible labels and the test asserts a validation error is
+  announced.
+
+**Code Connection:**
+
+- `ToolHeader` accepts an optional heading ID, allowing both Income page states to connect
+  their `aria-labelledby` attribute to the visible Income Events heading.
+- The shared accessibility gate renders a populated `IncomeScreen`, confirms its named
+  table is present, runs axe against the rendered DOM, and requires zero violations.
+- Existing Income page component coverage verifies populated table rows and the no-data
+  empty state without duplicating those scenarios.
+- The Income form component test locates all four controls by accessible name and verifies
+  that an invalid Source input is marked invalid, described by its error, and announced
+  through an alert role.
+
+**Project Scope Connection:**
+
+This adds the minimal accessibility and regression coverage required for the Income tool.
+It does not change income data fetching, tenant-scoped access, creation persistence, or
+workflow behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/components/ToolHeader.tsx`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/tests/components/IncomeEntryForm.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Focused Income coverage passed: 8 tests across the Income page and entry form suites.
+- The accessibility gate passed: 4 tests, including zero axe violations for the rendered
+  Income screen. JSDOM continues to emit its existing canvas/color-contrast warning.
+- Full Pulse UI coverage passed: 150 tests in 34 files.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run build` transformed all 2,108 modules but could not replace
+  the existing `dist/pulseUI/assets` directory because Windows returned `EPERM`; no source
+  compilation error was reported.
+
+
+## christopher-martus-jira134 - SCRUM-134
+
+**Branch:** `christopher-martus-jira134`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-134
+
+**Summary:** Relay outbox rows with retry
+
+**Description:** As a Backend Developer, I want a relay that publishes outbox rows and
+retries on failure, so that committed events are reliably delivered.
+
+**Acceptance Criteria:**
+
+- A relay publishes unsent outbox rows and marks them sent.
+- A transient publish failure is retried with backoff.
+- A test asserts a row is marked sent only after a successful publish.
+
+**Code Connection:**
+
+- Adds the nullable `outbox_event.sent_at` delivery marker. The relay will select rows
+  without this value and set it only after a successful publisher call.
+- `createOutboxRelay` reads unsent rows in creation order, publishes the serialized
+  CloudEvent payload, and records `sent_at` only after publication succeeds.
+- `createSnsOutboxEventPublisher` sends that stored payload to the configured SNS topic
+  without rebuilding the event.
+- The relay retries transient publisher failures up to three total attempts, using 100 ms,
+  then 200 ms exponential backoff by default. Retry count and timing are injectable for
+  deterministic tests.
+- A focused relay test simulates one transient publisher failure and verifies the row remains
+  unsent until the second publish attempt succeeds.
+
+**Project Scope Connection:**
+
+This provides the minimal relay path and transient-failure retry behavior for reliable
+delivery of the transactional outbox introduced in SCRUM-133, without introducing a worker
+runtime, scheduler, retries for database writes, or SCRUM-135 dead-letter behavior.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0013_low_callisto.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0013_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/features/taxPlanCycle/infrastructure/outboxRelay.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed after the schema and migration change.
+- `npm run typecheck` passed after adding relay behavior and its test seam.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+  passed: 1 test verifies retry backoff and marks the row sent only after success.
+- `git diff --check` passed.
+
+
+## christopher-martus-jira135 - SCRUM-135
+
+**Branch:** `christopher-martus-jira135`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-135
+
+**Summary:** Route repeatedly failing messages to a DLQ
+
+**Description:** As a Backend Developer, I want a dead-letter queue, so that a poison
+message never blocks the queue.
+
+**Acceptance Criteria:**
+
+- A message that fails repeatedly past a max-retry count lands in a DLQ.
+- The DLQ entry preserves the original payload and the failure reason.
+- A test asserts a persistently failing message reaches the DLQ and the queue continues.
+
+**Code Connection:**
+
+- `outbox_dead_letter` stores the source outbox ID, original serialized payload, failure
+  reason, and failure timestamp.
+- The PostgreSQL relay store atomically inserts that record and removes the poison event
+  from the active outbox queue.
+- After the final configured publish attempt fails, the relay records the final error
+  message in the DLQ and continues processing later outbox events.
+- The focused relay test forces one event to fail twice, verifies the preserved payload and
+  failure reason, then verifies a later event is sent and no active messages remain.
+
+**Project Scope Connection:**
+
+This adds the minimal terminal-failure path to SCRUM-134's transactional outbox relay.
+It intentionally excludes DLQ replay tooling, alerting, and an external DLQ management API.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0014_zippy_luke_cage.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0014_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/features/taxPlanCycle/infrastructure/outboxRelay.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen` generated the SCRUM-135 migration.
+- `npm run db:check` passed.
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+  passed: 2 tests, including persistent failure routing and continued processing.
+- The focused relay suite now includes a PostgreSQL-backed persistence test that asserts the
+  stored DLQ payload and failure reason, poison-event removal, and delivery of the following
+  event. Local execution could not start it because this workspace has no container runtime;
+  it requires the existing Docker-backed integration-test environment in CI.
+- `git diff --check` passed.

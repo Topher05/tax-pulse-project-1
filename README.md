@@ -409,6 +409,10 @@ includes `north-star-planning`, so its local sign-in URL is
 `http://north-star-planning.localhost:5173/sign-in`. The Vite auth proxy preserves this
 hostname when forwarding requests to the API.
 
+Leave `CASE_SERVICE_BASE_URL` unset for local Vite development. When it is set to a
+different origin such as `http://localhost:3000`, the browser bypasses Vite's same-origin
+proxy and can surface CORS failures during API calls.
+
 Do not use plain `http://localhost:5173` for password login. It contains no tenant slug,
 so the API intentionally responds with `Login Workspace Not Found`; this preserves the
 server-controlled, hostname-based tenant boundary described in ADR-0022.
@@ -425,9 +429,11 @@ different capacity or latency tradeoffs:
 ## Migration Commands
 
 The PostgreSQL migration workflow keeps typed Drizzle schema definitions in
-[`src/typescript/shared/database/schema.ts`](./src/typescript/shared/database/schema.ts), generated Drizzle
-migration evidence in [`drizzle/`](./drizzle), and the executable SQL migration files
-in the top-level [`migrations/`](./migrations) directory.
+[`src/typescript/shared/database/schema.ts`](./src/typescript/shared/database/schema.ts)
+and generated SQL, snapshots, and journal metadata in
+[`src/typescript/shared/database/drizzle-migrations/`](./src/typescript/shared/database/drizzle-migrations/).
+Drizzle is the only PostgreSQL migration runner; it records applied migrations in
+`drizzle.__drizzle_migrations`.
 
 Docker is required for the repository integration tests because they use a
 Testcontainers-managed PostgreSQL instance.
@@ -447,13 +453,13 @@ Local setup:
 Apply all migrations:
 
 ```powershell
-npm run migrate
+npm run db:migrate
 ```
 
-Generate Drizzle migration evidence from the TypeScript schema:
+Generate a named Drizzle migration after changing the TypeScript schema:
 
 ```powershell
-npm run db:generate
+npm run db:gen -- --name migration_name
 ```
 
 Check Drizzle migration metadata:
@@ -462,10 +468,16 @@ Check Drizzle migration metadata:
 npm run db:check
 ```
 
-Run the migration integration test:
+Rebuild the disposable local database through Drizzle and load synthetic seed data:
 
 ```powershell
-npm run test:migration
+npm run seed
+```
+
+Run the database-backed integration tests:
+
+```powershell
+npm run test:integration
 ```
 
 Run the Python liability engine API locally:
@@ -476,9 +488,12 @@ python src/tax_liability_engine/scripts/liability_engine_on.py
 
 Notes:
 
-- The Node scripts read `.env` automatically through `dotenv`.
-- Drizzle definitions are the typed schema contract; the SQL migration runner applies
-  the top-level `migrations/` files and records applied files in `schema_migrations`.
+- Drizzle Kit reads `.env` through `drizzle.config.ts`; the seed command reads the same
+  `DATABASE_URL` through `dotenv`.
+- `npm run seed` is destructive: it drops both `public` and Drizzle's migration-ledger
+  schema before replaying every migration and loading synthetic data.
+- Drizzle definitions are the typed schema contract. Commit the generated SQL, matching
+  snapshot, and `_journal.json` update together.
 - Keep any local seed data synthetic and clearly fake.
 - A shared seed data lives in `src/typescript/shared/database/seed.ts` and is executed with `npm run seed`; keep any generated sample data synthetic and clearly fake.
 - Start Docker before running `npm run test:integration` or any command that depends on Testcontainers.

@@ -28,7 +28,7 @@ describe("caseApiGetJson", () => {
     await expect(caseApiGetJson("/v1/tax-plan-cycles", fetcher)).resolves.toEqual({ ok: true });
 
     expect(fetcher).toHaveBeenCalledWith(`${apiBaseUrl}/v1/tax-plan-cycles`, {
-      credentials: "include",
+      credentials: "same-origin",
     });
   });
 
@@ -39,7 +39,7 @@ describe("caseApiGetJson", () => {
     await caseApiGetJson("v1/tax-plan-cycles", fetcher);
 
     expect(fetcher).toHaveBeenCalledWith(`${apiBaseUrl}/v1/tax-plan-cycles`, {
-      credentials: "include",
+      credentials: "same-origin",
     });
   });
 
@@ -49,7 +49,7 @@ describe("caseApiGetJson", () => {
     await caseApiGetJson("v1/tax-plan-cycles", fetcher);
 
     expect(fetcher).toHaveBeenCalledWith("/v1/tax-plan-cycles", {
-      credentials: "include",
+      credentials: "same-origin",
     });
   });
 
@@ -83,7 +83,7 @@ describe("caseApiPostJson", () => {
       `${apiBaseUrl}/v1/tax-plan-cycles/case-1/scenarios`,
       expect.objectContaining({
         method: "POST",
-        credentials: "include",
+        credentials: "same-origin",
         body: JSON.stringify({ scenarios: [] }),
       }),
     );

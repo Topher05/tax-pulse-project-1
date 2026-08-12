@@ -254,6 +254,29 @@ export const taxPlanCycle = pgTable(
   ],
 );
 
+export const actionItem = pgTable(
+  "action_item",
+  {
+    id: integer("id").generatedByDefaultAsIdentity().notNull(),
+    caseId: uuid("case_id").notNull(),
+    description: text("description").notNull(),
+    deadline: date("deadline").notNull(),
+    completed: boolean("completed").default(false).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "action_item_id_pk",
+      columns: [table.id],
+    }),
+    foreignKey({
+      name: "action_item_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    index("action_item_case_id_idx").on(table.caseId),
+  ],
+);
+
 export const clientRoster = pgTable(
   "client_roster",
   {
@@ -282,7 +305,7 @@ export const clientRoster = pgTable(
     index("client_roster_tenant_id_client_name_idx").on(
       table.tenantId,
       table.clientName,
-    ),
+    )
   ],
 );
 
@@ -366,6 +389,43 @@ export const auditEntry = pgTable(
       table.caseId,
       table.occurredAt,
     ),
+  ],
+);
+
+export const outboxEvent = pgTable(
+  "outbox_event",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    payload: text("payload").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({
+      name: "outbox_event_id_pk",
+      columns: [table.id],
+    }),
+  ],
+);
+
+export const outboxDeadLetter = pgTable(
+  "outbox_dead_letter",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    outboxEventId: uuid("outbox_event_id").notNull(),
+    payload: text("payload").notNull(),
+    failureReason: text("failure_reason").notNull(),
+    failedAt: timestamp("failed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "outbox_dead_letter_id_pk",
+      columns: [table.id],
+    }),
   ],
 );
 

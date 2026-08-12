@@ -20,15 +20,37 @@ export {
   type TaxPlanCycleStage,
 } from "./taxPlanCycle.js";
 export {
+  createStageChangedCloudEventV1,
   stageChangedCloudEventSchemaV1,
   stageChangedEventDataSchema,
   stageChangedEventDataSchemaV1,
+  createStageChangedCloudEvent,
   stageChangedEventSchemaVersion,
   stageChangedEventSource,
   stageChangedEventType,
+  type CreateStageChangedCloudEventOptions,
   type StageChangedCloudEventV1,
   type StageChangedEventDataV1,
 } from "./stageChangedEvent.js";
+export { actionItemSchema } from "./actionItem.js";
+export type { ActionItem } from "./actionItem.js";
+export {
+  actionItemCreatedCloudEventSchemaV1,
+  actionItemCreatedEventDataSchema,
+  actionItemCreatedEventDataSchemaV1,
+  actionItemCreatedEventSchemaVersion,
+  actionItemCreatedEventSource,
+  actionItemCreatedEventType,
+  createActionItemCreatedCloudEvent,
+  type ActionItemCreatedCloudEventV1,
+  type ActionItemCreatedEventDataV1,
+  type ActionItemCreatedEventInput,
+  type ActionItemCreatedEventPublishInput,
+  type CreateActionItemCreatedCloudEventOptions,
+} from "./infrastructure/cloudEvents/actionItemCreated/index.js";
+export {
+  createPresentToClientSaga,
+} from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
 export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
@@ -63,6 +85,89 @@ export {
   type TaxPlanCycleQueueCacheReadInput,
 } from "./infrastructure/queueCache.js";
 export {
+  createOutboxRelay,
+  createPostgresOutboxRelayStore,
+  createSnsOutboxEventPublisher,
+  type DeadLetterOutboxEvent,
+  type OutboxEventPublisher,
+  type OutboxRelay,
+  type OutboxRelayOptions,
+  type OutboxRelayStore,
+  type UnsentOutboxEvent,
+} from "./infrastructure/outboxRelay.js";
+export {
+  buildIdempotencyKey,
+  cloudEventSchemaV1,
+  createCloudEvent,
+  createCloudEventV1,
+  createRedisConsumer,
+  createRedisIdempotencyStore,
+  createSnsClient,
+  createSnsPublisher,
+  createSnsPublisher as createSnsStageChangedEventPublisher,
+  createSnsClient as createStageChangedSnsClient,
+  createSqsClient,
+  createSqsConsumer,
+  createSqsConsumer as createSqsStageChangedEventConsumer,
+  createSqsClient as createStageChangedSqsClient,
+  createWriter,
+  IdempotencyInProgressError,
+  IdempotencyUnavailableError,
+  eventDataSchema,
+  eventDataSchemaName,
+  eventDataSchemaV1,
+  eventSchemaVersion,
+  eventSource,
+  eventType,
+  getQueueUrlFromEnv,
+  getQueueUrlFromEnv as getStageChangedQueueUrlFromEnv,
+  getTopicArnFromEnv,
+  getTopicArnFromEnv as getStageChangedTopicArnFromEnv,
+  STAGE_CHANGED_CONSUMER_NAME,
+  ACTION_ITEM_CREATED_CONSUMER_NAME,
+  ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
+  createActionItemConsumer,
+  createRedisActionItemConsumer,
+} from "./infrastructure/cloudEvents/index.js";
+export {
+  parseSqsMessage,
+  parseSqsMessage as parseStageChangedSqsMessage,
+  PublishCommand,
+} from "./infrastructure/cloudEvents/stageChanged/index.js";
+export type {
+  CloudEventDataV1,
+  CloudEventPublishInput,
+  CloudEventV1,
+  ConsumeResult,
+  ConsumeResult as ConsumeStageChangedEventsResult,
+  ConsumerHandleResult,
+  ConsumerLogger,
+  ConsumerLogger as StageChangedEventConsumerLogger,
+  ConsumerOptions,
+  CreateCloudEventOptions,
+  IdempotencyGuard,
+  IdempotencyInput,
+  IdempotencyStore,
+  SnsClient,
+  SnsClient as StageChangedSnsClient,
+  SnsPublisherOptions,
+  StageChangedEventPublisher,
+  StageChangedEventPublishInput,
+  SqsConsumerClient,
+  SqsConsumerClient as StageChangedSqsClient,
+  SqsConsumerOptions,
+  SqsConsumerOptions as StageChangedSqsConsumerOptions,
+  Writer,
+  WriterClient,
+} from "./infrastructure/cloudEvents/stageChanged/index.js";
+export type {
+  PresentToClientActionItemCreatedEventPublisher,
+  PresentToClientSaga,
+  PresentToClientSagaInput,
+  PresentToClientSagaOptions,
+  PresentToClientStageChangedEventPublisher,
+} from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
+export {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
@@ -76,27 +181,6 @@ export {
   type TaxPlanCycleQueueProjectionDynamoClient,
   type TaxPlanCycleQueueProjectionReader,
 } from "./infrastructure/queueDynamoStore.js";
-export {
-  createSnsStageChangedEventPublisher,
-  createStageChangedCloudEventV1,
-  PublishCommand,
-  createStageChangedSnsClient,
-  getStageChangedTopicArnFromEnv,
-  type CreateStageChangedCloudEventOptions,
-  type StageChangedEventPublisher,
-  type StageChangedEventPublishInput,
-  type StageChangedSnsClient,
-} from "./infrastructure/stageChangedSnsPublisher.js";
-export {
-  createSqsStageChangedEventConsumer,
-  createStageChangedSqsClient,
-  getStageChangedQueueUrlFromEnv,
-  parseStageChangedSqsMessage,
-  type ConsumeStageChangedEventsResult,
-  type StageChangedEventConsumerLogger,
-  type StageChangedSqsClient,
-  type StageChangedSqsConsumerOptions,
-} from "./infrastructure/stageChangedSqsConsumer.js";
 export {
   createTaxPlanCycleQueueReadService,
   type TaxPlanCycleQueueReadService,
@@ -114,11 +198,17 @@ export {
 export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
-  type TaxPlanCycleTransitionControllerOptions,
+  type ActionItemCreatedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
+  type TaxPlanCycleTransitionControllerOptions,
   type TaxPlanCycleTransitionEventLogger,
   type TaxPlanCycleTransitionController,
 } from "./controllers/transitionController.js";
+export {
+  createActionItemRepository,
+  type ActionItemCreateInput,
+  type ActionItemRepository,
+} from "./repositories/actionItems.js";
 export {
   createTaxPlanCycleRouter,
   type CreateTaxPlanCycleRouterOptions,

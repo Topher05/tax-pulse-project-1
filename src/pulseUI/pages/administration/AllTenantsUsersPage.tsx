@@ -5,7 +5,6 @@ import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
 import {
-  firmUserRoles,
   type FirmUserRole,
   type FirmUserStatus,
   type RelativeLastLogin,
@@ -21,6 +20,12 @@ import {
 import styles from "./AllTenantsUsersPage.module.css";
 
 const userStatuses = ["Active", "Inactive"] as const satisfies readonly FirmUserStatus[];
+const platformUserRoles = [
+  "Firm Admin",
+  "Advisor",
+  "Client",
+  "TaxPulse Platform Admin",
+] as const satisfies readonly FirmUserRole[];
 
 export interface AllTenantsUsersScreenProps {
   tenants: readonly PlatformTenantUsersTenant[];
@@ -283,16 +288,16 @@ export function AllTenantsUsersScreen({
               <label className={styles.field}>
                 <span>Role</span>
                 <select
-                value={invite.role}
-                onChange={(event) => {
-                  const role = event.currentTarget.value as FirmUserRole;
-                  setInvite((current) => ({
-                    ...current,
-                    role,
-                  }));
-                }}
-              >
-                  {firmUserRoles.map((role) => (
+                  value={invite.role}
+                  onChange={(event) => {
+                    const role = event.currentTarget.value as FirmUserRole;
+                    setInvite((current) => ({
+                      ...current,
+                      role,
+                    }));
+                  }}
+                >
+                  {platformUserRoles.map((role) => (
                     <option key={role} value={role}>
                       {role}
                     </option>
@@ -303,15 +308,15 @@ export function AllTenantsUsersScreen({
               <label className={styles.field}>
                 <span>Status</span>
                 <select
-                value={invite.status}
-                onChange={(event) => {
-                  const status = event.currentTarget.value as FirmUserStatus;
-                  setInvite((current) => ({
-                    ...current,
-                    status,
-                  }));
-                }}
-              >
+                  value={invite.status}
+                  onChange={(event) => {
+                    const status = event.currentTarget.value as FirmUserStatus;
+                    setInvite((current) => ({
+                      ...current,
+                      status,
+                    }));
+                  }}
+                >
                   {userStatuses.map((status) => (
                     <option key={status} value={status}>
                       {status}

@@ -38,6 +38,71 @@
   list-style: none;
 }
 
+.skeletonTimeline {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.skeletonRow {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 96px;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 72px;
+  padding: 0.9rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.skeletonContent {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.skeletonDate,
+.skeletonAmount,
+.skeletonBlock {
+  display: block;
+  min-width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #25293a, #34394f, #25293a);
+  background-size: 200% 100%;
+  animation: quarterlySkeleton 1.25s ease-in-out infinite;
+}
+
+.skeletonDate {
+  height: 44px;
+  border-radius: 14px;
+}
+
+.skeletonAmount {
+  height: 18px;
+}
+
+.skeletonBlock {
+  height: 14px;
+}
+
+.skeletonBlock:first-child {
+  width: min(100%, 220px);
+}
+
+.skeletonBlock:last-child {
+  width: min(100%, 320px);
+}
+
+@keyframes quarterlySkeleton {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .tbdCard {
   display: grid;
   gap: 0.45rem;
@@ -75,5 +140,9 @@
 @media (max-width: 720px) {
   .timelineList {
     gap: 0.7rem;
+  }
+
+  .skeletonRow {
+    grid-template-columns: 1fr;
   }
 }
