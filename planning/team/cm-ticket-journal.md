@@ -1415,11 +1415,15 @@ transition without requiring a client-side page refresh.
 
 **Validation Notes:**
 
-- Focused tests are intentionally deferred to the final SCRUM-143 chunk.
+- Focused tests cover the client-safe scenario BFF projection and automatic portal stage refresh.
 - `git diff --check` passed.
 - `npm --prefix src/pulseUI run typecheck` passed.
 - `npm run typecheck` remains blocked by the pre-existing duplicate `CloudEvents`/`cloudEvents`
   directories whose paths differ only by casing (TS1261).
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+  passed (7 tests).
+- `npx vitest run --config vitest.config.ts tests/clientPortal/MyTaxPlanPage.test.tsx` passed
+  (4 tests); the suite emits pre-existing jsdom `window.scrollTo` warnings from TanStack Router.
 - `npm --prefix src/pulseUI test` passed: 163 tests in 36 files. The existing jsdom canvas and
   scroll-restoration warnings remain non-failing.
 - `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
