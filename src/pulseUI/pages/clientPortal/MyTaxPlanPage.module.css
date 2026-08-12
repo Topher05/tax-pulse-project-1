@@ -76,6 +76,11 @@
   gap: 1rem;
 }
 
+.scenariosSection {
+  display: grid;
+  gap: 1rem;
+}
+
 .summaryHeading h2 {
   font-size: 1.35rem;
   line-height: 1.2;
@@ -158,6 +163,49 @@
   line-height: 1.5;
 }
 
+.scenarioGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.scenarioCard {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 20px;
+  background: var(--pulse-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+}
+
+.scenarioHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.scenarioHeading h3 {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.scenarioTax {
+  margin: 0.45rem 0 0;
+  color: var(--pulse-ink);
+  font-size: 1.45rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+.emptyState {
+  margin: 0;
+  color: var(--pulse-muted);
+  line-height: 1.5;
+}
+
 .recommendationLayout {
   display: flex;
   align-items: flex-start;
@@ -172,6 +220,10 @@
 
 @media (max-width: 760px) {
   .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .scenarioGrid {
     grid-template-columns: 1fr;
   }
 }

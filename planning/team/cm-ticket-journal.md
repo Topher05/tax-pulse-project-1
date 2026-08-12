@@ -1401,6 +1401,9 @@ adding portal writes, a separate status field, or new event transport.
 - `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
 - `src/typescript/features/taxPlanCycle/routes.ts`
 - `src/pulseUI/entities/clientTaxPlanQueries.ts`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.tsx`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.module.css`
+- `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
