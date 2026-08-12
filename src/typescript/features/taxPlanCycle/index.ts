@@ -56,10 +56,15 @@ export {
   actionItemCompletedEventSource,
   actionItemCompletedEventType,
   createActionItemCompletedCloudEvent,
+  createActionItemCompletedSnsPublisher,
+  ACTION_ITEM_COMPLETED_CONSUMER_NAME,
+  ACTION_ITEM_COMPLETED_IDEMPOTENCY_NAMESPACE,
+  createActionItemCompletedConsumer,
 } from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
 export type {
   ActionItemCompletedCloudEventV1,
   ActionItemCompletedEventPublishInput,
+  ActionItemCompletedEventPublisher,
 } from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
 export {
   createPresentToClientSaga,

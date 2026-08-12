@@ -526,6 +526,7 @@ import {
   createTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleRepository,
   createActionItemRepository,
+  createActionItemCompletedSnsPublisher,
   createSnsStageChangedEventPublisher,
   createStageChangedSnsClient,
   createQuarterlyPaymentsRouter,
@@ -640,6 +641,9 @@ export async function main(): Promise<Server> {
   let stageChangedEventPublisher:
     | ReturnType<typeof createSnsStageChangedEventPublisher>
     | undefined;
+  let actionItemCompletedEventPublisher:
+    | ReturnType<typeof createActionItemCompletedSnsPublisher>
+    | undefined;
   let scenarioModelingController:
     | ReturnType<typeof createScenarioModelingController>
     | undefined;
@@ -663,7 +667,11 @@ export async function main(): Promise<Server> {
       stageChangedSnsClient,
       stageChangedTopicArn,
     );
-    logger.info("Connected to SNS for stage-changed publishing");
+    actionItemCompletedEventPublisher = createActionItemCompletedSnsPublisher(
+      stageChangedSnsClient,
+      stageChangedTopicArn,
+    );
+    logger.info("Connected to SNS for tax plan cycle event publishing");
   }
 
   if (liabilityEngineBase) {
@@ -732,6 +740,7 @@ export async function main(): Promise<Server> {
           auditEntryWriter,
           clientPortalReadRepository: taxPlanCycleRepository,
           actionItemRepository,
+          actionItemCompletedEventPublisher,
           controller: taxPlanCycleController,
           taxPlanCycleRepository,
           scenarioRepository,

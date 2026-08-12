@@ -1426,6 +1426,21 @@ remain separate follow-up chunks to keep the PR small.
   `src/pulseUI/app/routeTree.tsx`, and `src/pulseUI/shared/navigation.ts`.
 - Validation: `npm run typecheck` and `git diff --check` passed; focused UI tests remain
   intentionally deferred to the final ticket chunk.
+
+**Follow-up Event/Projection Chunk:**
+
+- Publishes the versioned `action_item_completed` CloudEvent through the configured Tax Plan
+  Cycle SNS topic after portal completion succeeds.
+- Adds an idempotent completion-event consumer that applies the completed state to the action
+  item tracking read model. Its idempotent persistence operation is safe when the portal write
+  has already updated the same projection.
+- Changed files: `src/typescript/features/taxPlanCycle/repositories/actionItems.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/Consumer.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/SnsPublisher.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/index.ts`,
+  `src/typescript/features/taxPlanCycle/index.ts`, and `src/typescript/index.ts`.
+- Validation: `npm run typecheck` and `git diff --check` passed; focused event and UI tests
+  remain intentionally deferred to the final ticket chunk.
 - `npm run typecheck` is blocked by pre-existing duplicate `CloudEvents`/`cloudEvents`
   directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
   changed files.
