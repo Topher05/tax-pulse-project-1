@@ -152,6 +152,13 @@ export function MyTaxPlanPage() {
         )}
       </section>
 
+      <PanelCard className={styles.messagesPanel} title="Advisor messages">
+        <p className={styles.messageCopy}>
+          Updates from your advisor will appear here.
+        </p>
+        <p className={styles.emptyState}>No advisor messages yet.</p>
+      </PanelCard>
+
       <PanelCard className={styles.recommendation}>
         <div className={styles.recommendationLayout}>
           <span className={[styles.summaryIcon, styles.iconIndigo].join(" ")} aria-hidden="true">

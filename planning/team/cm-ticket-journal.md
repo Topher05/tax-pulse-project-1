@@ -1390,6 +1390,9 @@ always see the current plan state.
 - The JWT-scoped `GET /portal/my-tax-plan` BFF now reads persisted scenarios for the already
   authorized client cycle and projects only each scenario's ID, name, total tax, and delta versus
   baseline. Advisor-entered figures are intentionally excluded from the external response.
+- The portal includes a display-only Advisor Messages panel with an explicit empty state; no
+  message-composer or portal write path is introduced before an authoritative message read model
+  exists.
 
 **Project Scope Connection:**
 

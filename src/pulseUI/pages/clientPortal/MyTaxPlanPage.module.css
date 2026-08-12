@@ -206,6 +206,18 @@
   line-height: 1.5;
 }
 
+.messagesPanel {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.messageCopy {
+  margin: 0;
+  color: var(--pulse-subtle);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .recommendationLayout {
   display: flex;
   align-items: flex-start;
