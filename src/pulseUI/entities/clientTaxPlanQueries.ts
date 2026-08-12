@@ -27,6 +27,7 @@ export interface ClientTaxPlanScenario {
 }
 
 export const clientTaxPlanQueryKey = ["clientPortal", "myTaxPlan"] as const;
+export const clientTaxPlanRefreshIntervalMs = 15_000;
 
 export async function fetchClientTaxPlan(
   fetcher?: typeof fetch,
@@ -40,5 +41,7 @@ export function useClientTaxPlanQuery() {
   return useQuery({
     queryKey: clientTaxPlanQueryKey,
     queryFn: () => fetchClientTaxPlan(authenticatedFetch),
+    refetchInterval: clientTaxPlanRefreshIntervalMs,
+    refetchOnWindowFocus: true,
   });
 }

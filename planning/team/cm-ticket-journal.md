@@ -1399,6 +1399,10 @@ always see the current plan state.
 This is the first MVP chunk for SCRUM-143, extending SCRUM-142's scoped client portal without
 adding portal writes, a separate status field, or new event transport.
 
+The portal automatically refetches its scoped read model every 15 seconds and on window focus,
+so the stage label and stepper reconcile after the existing stage-changed workflow persists a
+transition without requiring a client-side page refresh.
+
 **Changed Files:**
 
 - `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
