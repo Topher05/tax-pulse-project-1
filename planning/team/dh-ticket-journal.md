@@ -5,6 +5,78 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira151 - SCRUM-151
+
+**Branch:** `dylan-harle-jira151`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-151
+
+**Summary:** Build the All Tenants & Users admin screen.
+
+**Description:** As a TaxPulse Platform Admin, I want the All Tenants & Users screen,
+so that I can manage accounts across tenants without impersonating.
+
+**Acceptance Criteria:**
+
+- The screen lists tenants and their users with role and status.
+- An Invite User control creates a user under a chosen tenant.
+- No impersonation control is present, per MVP scope.
+
+**Code Connection:**
+
+- Added a separate platform administration BFF boundary instead of widening the
+  SCRUM-147/SCRUM-149 `/v1/firm/users` tenant-scoped contract documented in ADR-0032.
+- Added `GET /v1/administration/tenants-users` for TaxPulse Platform Admins to read all
+  tenants with users sectioned under each tenant, using the same visible user row fields
+  as the existing Team & Users roster.
+- Added `POST /v1/administration/tenants/{tenantId}/users` so a platform admin can
+  create a user in a selected tenant with admin-entered display name, email, role, and
+  visible status.
+- Added the Pulse UI All Tenants & Users route at `/administration/tenants-users`,
+  platform-admin-only routing, grouped tenant user tables, and an enabled Invite User
+  modal/form.
+- Expanded deterministic synthetic tenant/user/client fixture data so tenant-scoped
+  rosters include client-role users and the platform screen displays multiple populated
+  tenant sections.
+- Updated OpenAPI documentation and ADR-0032 to capture the platform administration
+  boundary and the explicit no-impersonation MVP scope.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Read-models/BFF platform administration surface.
+- Preserves tenant isolation by leaving firm users tenant-scoped while making
+  cross-tenant access explicit and role-gated to `TaxPulse Platform Admin`.
+
+**Changed Files:**
+
+- `src/typescript/features/platformAdministration/*`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/pulseUI/entities/platformAdministration.ts`
+- `src/pulseUI/entities/platformAdministrationQueries.ts`
+- `src/pulseUI/pages/administration/AllTenantsUsersPage.tsx`
+- `src/pulseUI/pages/administration/AllTenantsUsersPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/administration/*`
+- `tests/typescript/platformAdministration/*`
+- `tests/typescript/clientRoster/clientRosterRepository.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/firmUsers/firmUsersRepository.test.ts`
+- `adr/0032-team-users-screen.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- tests/administration/AllTenantsUsersPage.test.tsx tests/administration/AllTenantsUsersQueries.test.tsx tests/firm/TeamUsersPage.test.tsx tests/firm/FirmUserQueries.test.tsx` passed with 4 files and 15 tests after rerunning outside the sandbox because Windows denied access while Vitest loaded its config in the sandbox.
+- `npm run test:vitest -- tests/typescript/platformAdministration/platformAdministrationRoutes.test.ts tests/typescript/firmUsers/firmUsersRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed with 3 files and 24 tests after rerunning outside the sandbox for the same Vitest config access issue.
+- `npm run test:vitest -- tests/typescript/platformAdministration/platformAdministrationRepository.test.ts tests/typescript/firmUsers/firmUsersRepository.test.ts tests/typescript/clientRoster/clientRosterRepository.test.ts` passed with 3 files and 7 tests after rerunning outside the sandbox for the same Vitest config access issue.
+
 ## development-scrum147 - SCRUM-147
 
 **Branch:** `development`
@@ -153,6 +225,60 @@ control, so that I can manage my firm's staff and their roles.
   passed with 2 files and 18 tests.
 - `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRepository.test.ts`
   passed with 1 file and 3 tests.
+
+## dylan-harle-jira150 - SCRUM-150
+
+**Branch:** `dylan-harle-jira150`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-150
+
+**Summary:** Add accessibility and a component test for the Team & Users screen.
+
+**Description:** As a Frontend Developer, I want the Team & Users screen to pass an
+axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the roster renders rows and the empty state for no extra
+  users.
+- The test asserts the role-assignment control is disabled for a non-admin role.
+
+**Code Connection:**
+
+- Added direct Team & Users component coverage for populated roster rows, including
+  name, email, role select value, status, and last-login cells.
+- Added routed Team & Users axe coverage for the populated `/firm/users` screen using
+  the existing TanStack Query and session test providers.
+- Preserved SCRUM-148 ownership of loading, empty, retry, and error states; the
+  SCRUM-150 tests intentionally do not add or assert those states until the UI exists.
+- Documented the SCRUM-150 testing boundary in ADR-0032.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Firm administration UI regression coverage.
+- Keeps tenant-scoped Team & Users behavior on the existing SCRUM-147 read boundary
+  and SCRUM-149 role-assignment control without adding new UI state behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `adr/0032-team-users-screen.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm.cmd --prefix src/pulseUI test -- tests/firm/TeamUsersPage.test.tsx tests/accessibility/axeGate.test.tsx`
+  passed with 2 files and 8 tests after rerunning outside the sandbox because Windows
+  denied access while Vitest loaded its config in the sandbox.
+- The Team & Users axe assertion checks for zero supported-rule violations; the
+  jsdom-based run disables `color-contrast` because axe-core requires canvas APIs that
+  are unavailable in this test environment.
 
 ## dylan-harle-jira132 - SCRUM-132
 
