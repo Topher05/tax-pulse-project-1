@@ -16,6 +16,14 @@ export interface ClientTaxPlanCycle {
   next_meeting: string | null;
   projected_savings: number | null;
   top_recommendation: string | null;
+  scenarios: readonly ClientTaxPlanScenario[];
+}
+
+export interface ClientTaxPlanScenario {
+  id: string;
+  name: string;
+  total_tax: number;
+  delta_vs_baseline: number;
 }
 
 export const clientTaxPlanQueryKey = ["clientPortal", "myTaxPlan"] as const;

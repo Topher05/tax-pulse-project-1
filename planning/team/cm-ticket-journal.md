@@ -1363,6 +1363,53 @@ or live stage updates.
   directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
   changed files.
 - `npm --prefix src/pulseUI run typecheck` passed.
+
+---
+
+## christopher-martus-jira143
+
+**Branch:** christopher-martus-jira143
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-143
+
+**Summary:** Show read-only scenarios and live stage updates in the portal
+
+**Description:** As a Client, I want read-only scenarios and live stage updates, so that I
+always see the current plan state.
+
+**Acceptance Criteria:**
+
+- Scenarios appear read-only to the client, matching the external permission matrix.
+- A stage-changed event updates the displayed stage without a manual refresh.
+- The advisor-messages panel renders read-only.
+
+**Code Connection:**
+
+- The JWT-scoped `GET /portal/my-tax-plan` BFF now reads persisted scenarios for the already
+  authorized client cycle and projects only each scenario's ID, name, total tax, and delta versus
+  baseline. Advisor-entered figures are intentionally excluded from the external response.
+
+**Project Scope Connection:**
+
+This is the first MVP chunk for SCRUM-143, extending SCRUM-142's scoped client portal without
+adding portal writes, a separate status field, or new event transport.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/pulseUI/entities/clientTaxPlanQueries.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused tests are intentionally deferred to the final SCRUM-143 chunk.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` remains blocked by the pre-existing duplicate `CloudEvents`/`cloudEvents`
+  directories whose paths differ only by casing (TS1261).
 - `npm --prefix src/pulseUI test` passed: 163 tests in 36 files. The existing jsdom canvas and
   scroll-restoration warnings remain non-failing.
 - `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
