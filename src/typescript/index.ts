@@ -273,6 +273,15 @@ export {
   type ActionItemCreatedEventInput,
   type ActionItemCreatedEventPublishInput,
   type CreateActionItemCreatedCloudEventOptions,
+  actionItemCompletedCloudEventSchemaV1,
+  actionItemCompletedEventDataSchema,
+  actionItemCompletedEventDataSchemaV1,
+  actionItemCompletedEventSchemaVersion,
+  actionItemCompletedEventSource,
+  actionItemCompletedEventType,
+  createActionItemCompletedCloudEvent,
+  type ActionItemCompletedCloudEventV1,
+  type ActionItemCompletedEventPublishInput,
   createActionItemRepository,
   type ActionItemCreateInput,
   type ActionItemRepository,
@@ -516,6 +525,7 @@ import {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleRepository,
+  createActionItemRepository,
   createSnsStageChangedEventPublisher,
   createStageChangedSnsClient,
   createQuarterlyPaymentsRouter,
@@ -614,6 +624,7 @@ export async function main(): Promise<Server> {
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const actionItemRepository = createActionItemRepository(client);
   const clientRosterRepository = createClientRosterRepository(client);
   const firmUsersRepository = createFirmUsersRepository(client);
   const scenarioRepository = createScenarioRepository(client);
@@ -720,6 +731,7 @@ export async function main(): Promise<Server> {
           auditEntryReader: auditEntryRepository,
           auditEntryWriter,
           clientPortalReadRepository: taxPlanCycleRepository,
+          actionItemRepository,
           controller: taxPlanCycleController,
           taxPlanCycleRepository,
           scenarioRepository,

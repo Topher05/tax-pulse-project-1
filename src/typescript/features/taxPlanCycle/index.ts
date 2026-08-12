@@ -49,6 +49,19 @@ export {
   type CreateActionItemCreatedCloudEventOptions,
 } from "./infrastructure/CloudEvents/actionItemCreated/index.js";
 export {
+  actionItemCompletedCloudEventSchemaV1,
+  actionItemCompletedEventDataSchema,
+  actionItemCompletedEventDataSchemaV1,
+  actionItemCompletedEventSchemaVersion,
+  actionItemCompletedEventSource,
+  actionItemCompletedEventType,
+  createActionItemCompletedCloudEvent,
+} from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
+export type {
+  ActionItemCompletedCloudEventV1,
+  ActionItemCompletedEventPublishInput,
+} from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
+export {
   createPresentToClientSaga,
 } from "./infrastructure/CloudEvents/presentToClientSaga/index.js";
 export {

@@ -1359,6 +1359,59 @@ or live stage updates.
 **Validation Notes:**
 
 - `git diff --check` passed.
+
+
+## christopher-martus-jira144 - SCRUM-144
+
+**Branch:** `christopher-martus-jira144`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-144
+
+**Summary:** Build the portal Action Items screen with completion
+
+**Description:** As a Client, I want to mark action items complete, so that my advisor can
+track execution.
+
+**Acceptance Criteria:**
+
+- The Action Items screen lists items with their deadline and lets the client mark each complete.
+- Completing an action item emits an event that updates the internal Action Item Tracking view.
+- A completed item reflects its new state without a manual refresh.
+
+**Code Connection:**
+
+- Adds a client-scoped BFF contract for listing the current plan's action items and completing
+  one by ID.
+- Extends the action-item repository with a case-scoped, incomplete-only completion update,
+  preventing a portal user from changing an item outside their current case.
+- Defines and exports the versioned `action_item_completed` CloudEvent contract so the later
+  publisher and tracking projection share a stable payload.
+- Instantiates the action-item repository in application startup and injects it into the
+  Tax Plan Cycle router.
+
+**Project Scope Connection:**
+
+This is the first MVP chunk for SCRUM-144. It establishes the portal BFF and event boundary;
+the Action Items UI, concrete event publisher/tracking consumer, and focused acceptance tests
+remain separate follow-up chunks to keep the PR small.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/repositories/actionItems.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/model.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/index.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/index.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- Focused acceptance tests are deliberately deferred to the final SCRUM-144 chunk.
 - `npm run typecheck` is blocked by pre-existing duplicate `CloudEvents`/`cloudEvents`
   directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
   changed files.
