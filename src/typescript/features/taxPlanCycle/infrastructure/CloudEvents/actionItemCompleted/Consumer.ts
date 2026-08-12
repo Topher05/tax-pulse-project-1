@@ -45,3 +45,15 @@ export function createActionItemCompletedConsumer(options: ActionItemCompletedCo
     },
   };
 }
+
+export function createRedisActionItemCompletedConsumer(
+  redisClient: Pick<IdempotencyGuard, "get" | "set" | "del">,
+  repository: Pick<ActionItemRepository, "markCompleted">,
+  ttlSeconds = 86_400,
+): ReturnType<typeof createActionItemCompletedConsumer> {
+  return createActionItemCompletedConsumer({
+    repository,
+    idempotency: redisClient,
+    ttlSeconds,
+  });
+}

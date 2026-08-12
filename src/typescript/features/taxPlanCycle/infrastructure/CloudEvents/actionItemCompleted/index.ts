@@ -17,4 +17,10 @@ export {
   ACTION_ITEM_COMPLETED_CONSUMER_NAME,
   ACTION_ITEM_COMPLETED_IDEMPOTENCY_NAMESPACE,
   createActionItemCompletedConsumer,
+  createRedisActionItemCompletedConsumer,
 } from "./Consumer.js";
+export {
+  createActionItemCompletedSqsConsumer,
+  getActionItemCompletedQueueUrlFromEnv,
+  parseActionItemCompletedSqsMessage,
+} from "./SqsConsumer.js";

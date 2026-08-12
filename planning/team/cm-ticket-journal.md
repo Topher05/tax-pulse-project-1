@@ -1462,6 +1462,25 @@ remain separate follow-up chunks to keep the PR small.
   changed files.
 - `npm --prefix src/pulseUI run typecheck` passed.
 
+**Completion Projection Follow-up:**
+
+- Adds a dedicated SNS-to-SQS adapter for the versioned `action_item_completed` event. The
+  adapter validates the message envelope and CloudEvent, uses Redis idempotency, applies the
+  case-scoped completion to the Action Item Tracking projection, and only deletes the SQS
+  message after successful handling.
+- Documents the dedicated `TAXPULSE_ACTION_ITEM_COMPLETED_QUEUE_URL` subscription required by
+  the tracking projection. This completes the event-handling contract without defining how
+  advisors generate action items, which remains outside SCRUM-144.
+- Changed files: `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/SqsConsumer.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/Consumer.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/index.ts`,
+  `src/typescript/features/taxPlanCycle/index.ts`, `src/typescript/index.ts`,
+  `tests/typescript/features/taxPlanCycle/actionItemCompletedSqsConsumer.test.ts`, and
+  `docs/stage-changed-event.md`.
+- Validation: `npm run typecheck` and `npx vitest run --config vitest.config.ts
+  tests/typescript/features/taxPlanCycle/actionItemCompletedSqsConsumer.test.ts
+  tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts` passed.
+
 ---
 
 ## christopher-martus-jira143

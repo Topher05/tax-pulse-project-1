@@ -60,6 +60,10 @@ export {
   ACTION_ITEM_COMPLETED_CONSUMER_NAME,
   ACTION_ITEM_COMPLETED_IDEMPOTENCY_NAMESPACE,
   createActionItemCompletedConsumer,
+  createRedisActionItemCompletedConsumer,
+  createActionItemCompletedSqsConsumer,
+  getActionItemCompletedQueueUrlFromEnv,
+  parseActionItemCompletedSqsMessage,
 } from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
 export type {
   ActionItemCompletedCloudEventV1,
