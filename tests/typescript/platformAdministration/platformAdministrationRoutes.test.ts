@@ -13,6 +13,14 @@ import {
 } from "../../../src/typescript/index.js";
 
 const silentLogger = createLogger({ level: "silent" });
+const platformAdministrationReadStubs = {
+  async listPermissionMatrix() {
+    return [];
+  },
+  async listPlatformAuditLog() {
+    return [];
+  },
+};
 
 async function withPlatformAdministrationRouteServer(
   options: {
@@ -72,6 +80,7 @@ describe("Platform administration routes", () => {
 
   test("rejects non-platform-admin callers", async () => {
     const repository: PlatformAdministrationRepository = {
+      ...platformAdministrationReadStubs,
       async listTenantsWithUsers() {
         throw new Error("Non-platform admins should not reach the repository.");
       },
@@ -100,6 +109,7 @@ describe("Platform administration routes", () => {
 
   test("returns tenants with sectioned users for platform admins", async () => {
     const repository: PlatformAdministrationRepository = {
+      ...platformAdministrationReadStubs,
       async listTenantsWithUsers() {
         return [
           {
@@ -157,6 +167,101 @@ describe("Platform administration routes", () => {
     );
   });
 
+  test("returns the permission matrix for platform admins", async () => {
+    const repository: PlatformAdministrationRepository = {
+      ...platformAdministrationReadStubs,
+      async listPermissionMatrix() {
+        return [
+          {
+            id: "internal-firm-staff",
+            title: "Internal - Firm Staff",
+            roles: ["Firm Admin", "Advisor"],
+            rows: [
+              {
+                feature: "Plan Cycle Queue",
+                access: {
+                  "TaxPulse Platform Admin": "Full",
+                  "Firm Admin": "Full",
+                  Advisor: "Scoped",
+                  Client: null,
+                },
+              },
+            ],
+          },
+        ];
+      },
+      async listTenantsWithUsers() {
+        return [];
+      },
+      async createTenantUser() {
+        throw new Error("User creation is not used by this test.");
+      },
+    };
+
+    await withPlatformAdministrationRouteServer(
+      {
+        repository,
+        userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d64",
+        role: "TaxPulse Platform Admin",
+      },
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/v1/administration/roles-permissions`);
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toEqual([
+          expect.objectContaining({
+            title: "Internal - Firm Staff",
+            rows: [
+              expect.objectContaining({
+                feature: "Plan Cycle Queue",
+              }),
+            ],
+          }),
+        ]);
+      },
+    );
+  });
+
+  test("returns redacted platform audit entries for platform admins", async () => {
+    const repository: PlatformAdministrationRepository = {
+      ...platformAdministrationReadStubs,
+      async listPlatformAuditLog() {
+        return [
+          {
+            id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d41",
+            occurredAt: "2026-07-01T14:00:00.000Z",
+            user: "advisor-001",
+            role: "Advisor",
+            action: "income amount [REDACTED_AMOUNT] recorded",
+            resource: "North Shore Advisors - 2026-Q3 - Case 018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11",
+          },
+        ];
+      },
+      async listTenantsWithUsers() {
+        return [];
+      },
+      async createTenantUser() {
+        throw new Error("User creation is not used by this test.");
+      },
+    };
+
+    await withPlatformAdministrationRouteServer(
+      {
+        repository,
+        userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d64",
+        role: "TaxPulse Platform Admin",
+      },
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/v1/administration/audit-log`);
+        const body = JSON.stringify(await response.json());
+
+        expect(response.status).toBe(200);
+        expect(body).toContain("[REDACTED_AMOUNT]");
+        expect(body).not.toContain("125000");
+      },
+    );
+  });
+
   test("creates a user under the chosen tenant", async () => {
     const calls: Array<{
       tenantId: string;
@@ -166,6 +271,7 @@ describe("Platform administration routes", () => {
       status: string;
     }> = [];
     const repository: PlatformAdministrationRepository = {
+      ...platformAdministrationReadStubs,
       async listTenantsWithUsers() {
         return [];
       },
@@ -227,6 +333,7 @@ describe("Platform administration routes", () => {
 
   test("returns duplicate-email conflicts from the create command", async () => {
     const repository: PlatformAdministrationRepository = {
+      ...platformAdministrationReadStubs,
       async listTenantsWithUsers() {
         return [];
       },
@@ -268,6 +375,7 @@ describe("Platform administration routes", () => {
 
   test("returns not found when the chosen tenant does not exist", async () => {
     const repository: PlatformAdministrationRepository = {
+      ...platformAdministrationReadStubs,
       async listTenantsWithUsers() {
         return [];
       },

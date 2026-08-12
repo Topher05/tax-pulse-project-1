@@ -204,6 +204,14 @@ describe("Core Case Service OpenAPI document", () => {
       requiredRecord(paths, "/v1/administration/tenants-users"),
       "get",
     );
+    const platformRolesPermissionsOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/roles-permissions"),
+      "get",
+    );
+    const platformAuditLogOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/audit-log"),
+      "get",
+    );
     const createPlatformTenantUserOperation = requiredRecord(
       requiredRecord(paths, "/v1/administration/tenants/{tenantId}/users"),
       "post",
@@ -216,6 +224,10 @@ describe("Core Case Service OpenAPI document", () => {
     expect(firmUsersOperation.operationId).toBe("listFirmUsers");
     expect(updateFirmUserRoleOperation.operationId).toBe("updateFirmUserRole");
     expect(platformTenantsUsersOperation.operationId).toBe("listPlatformTenantsUsers");
+    expect(platformRolesPermissionsOperation.operationId).toBe(
+      "listPlatformRolesPermissions",
+    );
+    expect(platformAuditLogOperation.operationId).toBe("listPlatformAuditLog");
     expect(createPlatformTenantUserOperation.operationId).toBe("createPlatformTenantUser");
     expect(queueOperation.tags).toEqual(["Core Case Service"]);
     expect(createOperation.tags).toEqual(["Core Case Service"]);
@@ -224,6 +236,8 @@ describe("Core Case Service OpenAPI document", () => {
     expect(firmUsersOperation.tags).toEqual(["Core Case Service"]);
     expect(updateFirmUserRoleOperation.tags).toEqual(["Core Case Service"]);
     expect(platformTenantsUsersOperation.tags).toEqual(["Core Case Service"]);
+    expect(platformRolesPermissionsOperation.tags).toEqual(["Core Case Service"]);
+    expect(platformAuditLogOperation.tags).toEqual(["Core Case Service"]);
     expect(createPlatformTenantUserOperation.tags).toEqual(["Core Case Service"]);
   });
 
@@ -591,6 +605,50 @@ describe("Core Case Service OpenAPI document", () => {
     });
     expect(Object.keys(createResponses)).toEqual(
       expect.arrayContaining(["201", "400", "401", "403", "404", "409"]),
+    );
+  });
+
+  test("documents platform roles and audit administration", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const permissionsOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/roles-permissions"),
+      "get",
+    );
+    const permissionsResponses = requiredRecord(permissionsOperation, "responses");
+    const permissionsOkResponse = requiredRecord(permissionsResponses, "200");
+    const permissionsOkContent = requiredRecord(permissionsOkResponse, "content");
+    const permissionsOkJson = requiredRecord(permissionsOkContent, "application/json");
+    const permissionsExample = asRecordArray(permissionsOkJson.example, "example");
+    const auditOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/audit-log"),
+      "get",
+    );
+    const auditResponses = requiredRecord(auditOperation, "responses");
+    const auditOkResponse = requiredRecord(auditResponses, "200");
+    const auditOkContent = requiredRecord(auditOkResponse, "content");
+    const auditOkJson = requiredRecord(auditOkContent, "application/json");
+    const auditExample = asRecordArray(auditOkJson.example, "example");
+
+    expect(permissionsExample[0]).toMatchObject({
+      title: "Internal - Firm Staff",
+      roles: expect.arrayContaining(["TaxPulse Platform Admin", "Firm Admin", "Advisor"]),
+    });
+    expect(permissionsExample[1]).toMatchObject({
+      title: "External - Clients",
+      roles: expect.arrayContaining(["TaxPulse Platform Admin", "Client"]),
+    });
+    expect(Object.keys(permissionsResponses)).toEqual(
+      expect.arrayContaining(["200", "401", "403"]),
+    );
+    expect(auditOperation.description).toMatch(/redacted/i);
+    expect(auditExample[0]).toMatchObject({
+      role: "Advisor",
+      action: expect.stringContaining("[REDACTED_AMOUNT]"),
+    });
+    expect(JSON.stringify(auditExample)).not.toContain("125000");
+    expect(Object.keys(auditResponses)).toEqual(
+      expect.arrayContaining(["200", "401", "403"]),
     );
   });
 

@@ -5,6 +5,73 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira152 - SCRUM-152
+
+**Branch:** `dylan-harle-jira152`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-152
+
+**Summary:** Build the Roles & Permissions and Audit Log admin screens.
+
+**Description:** As a TaxPulse Platform Admin, I want the Roles & Permissions and
+Audit Log screens, so that I can review the permission matrix and platform-wide audit
+events.
+
+**Acceptance Criteria:**
+
+- The Roles & Permissions screen renders the read-only permission matrix for the four
+  roles.
+- The Audit Log screen lists platform-wide audit entries with redacted figures.
+- Both screens render loading and empty states.
+
+**Code Connection:**
+
+- Built on SCRUM-151's platform administration BFF boundary and ADR-0032's guidance that
+  TaxPulse Platform Admin screens should use explicit platform-admin-only endpoints
+  rather than widening tenant-scoped firm user routes.
+- Added platform administration read models for `GET /v1/administration/roles-permissions`
+  and `GET /v1/administration/audit-log`, both guarded to `TaxPulse Platform Admin`.
+- Added a read-only permission matrix for `TaxPulse Platform Admin`, `Firm Admin`,
+  `Advisor`, and `Client`, grouped into internal firm-staff and external client
+  capabilities.
+- Added a platform-wide audit log repository read over the append-only `audit_entry`
+  table, joining case and tenant context and reusing the existing audit output serializer
+  so financial figures are redacted before response output.
+- Replaced the Pulse UI placeholder administration routes with the Roles & Permissions
+  and Audit Log pages, tightened both routes to platform-admin-only access, and added
+  TanStack Query hooks, loading states, empty states, populated tables, and an audit role
+  filter.
+- Updated OpenAPI documentation for the new platform administration reads.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Read-models/BFF platform administration surface.
+- Fills the SCRUM-152 follow-on gap called out after SCRUM-151 while preserving tenant
+  isolation, least privilege, and append-only audit redaction behavior from the project
+  ADRs.
+
+**Changed Files:**
+
+- `src/typescript/features/platformAdministration/*`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/entities/platformAdministration.ts`
+- `src/pulseUI/entities/platformAdministrationQueries.ts`
+- `src/pulseUI/pages/administration/*`
+- `src/pulseUI/tests/administration/*`
+- `tests/typescript/platformAdministration/*`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/platformAdministration/platformAdministrationRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/platformAdministration/platformAdministrationRepository.test.ts` passed with 3 files and 27 tests after rerunning outside the sandbox because Windows denied Vitest config access in the sandbox.
+- `npm --prefix src/pulseUI run test:vitest -- tests/administration/AllTenantsUsersQueries.test.tsx tests/administration/PlatformAdminScreens.test.tsx` passed with 2 files and 12 tests after rerunning outside the sandbox for the same Vitest config access issue.
+
 ## dylan-harle-jira151 - SCRUM-151
 
 **Branch:** `dylan-harle-jira151`
