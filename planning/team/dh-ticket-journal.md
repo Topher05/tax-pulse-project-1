@@ -317,18 +317,24 @@ axe check and a component test, so that it is accessible and regression-guarded.
 
 - Added direct Team & Users component coverage for populated roster rows, including
   name, email, role select value, status, and last-login cells.
+- Added direct component coverage for the SCRUM-148 zero-user empty state now that the
+  real empty-state UI exists.
+- Restored direct component coverage for the SCRUM-149 role-assignment callback and
+  disabled non-admin role controls against the current `queryState` screen contract.
 - Added routed Team & Users axe coverage for the populated `/firm/users` screen using
   the existing TanStack Query and session test providers.
-- Preserved SCRUM-148 ownership of loading, empty, retry, and error states; the
-  SCRUM-150 tests intentionally do not add or assert those states until the UI exists.
-- Documented the SCRUM-150 testing boundary in ADR-0032.
+- Kept the SCRUM-148 loading, route-level empty, admin-only roster, and retryable error
+  tests aligned with the current implementation.
+- Updated ADR-0032 to reflect SCRUM-148's completed request-state behavior and
+  SCRUM-150's completed testing coverage.
 
 **Project Scope Connection:**
 
 - React SPA - Operator & Portal Experience.
 - Firm administration UI regression coverage.
 - Keeps tenant-scoped Team & Users behavior on the existing SCRUM-147 read boundary
-  and SCRUM-149 role-assignment control without adding new UI state behavior.
+  and SCRUM-149 role-assignment control while covering the SCRUM-148 request-state
+  surface.
 
 **Changed Files:**
 
@@ -341,7 +347,7 @@ axe check and a component test, so that it is accessible and regression-guarded.
 
 - `npm.cmd --prefix src/pulseUI run typecheck` passed.
 - `npm.cmd --prefix src/pulseUI test -- tests/firm/TeamUsersPage.test.tsx tests/accessibility/axeGate.test.tsx`
-  passed with 2 files and 8 tests after rerunning outside the sandbox because Windows
+  passed with 2 files and 14 tests after rerunning outside the sandbox because Windows
   denied access while Vitest loaded its config in the sandbox.
 - The Team & Users axe assertion checks for zero supported-rule violations; the
   jsdom-based run disables `color-contrast` because axe-core requires canvas APIs that

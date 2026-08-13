@@ -110,8 +110,65 @@ describe("TeamUsersPage", () => {
     expect(within(rows[2]!).getByText("Aug 5, 2026")).toBeInTheDocument();
   });
 
+  test("renders the empty state when supplied no firm users", () => {
+    render(
+      <TeamUsersScreen
+        users={[]}
+        viewerRole="Firm Admin"
+        onRoleChange={vi.fn()}
+        queryState="empty"
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "No team users yet" })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Only the tenant admin is active. Invite advisors or client portal users to build out this workspace.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("0 users")).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Firm team and users roster" }))
+      .not.toBeInTheDocument();
+  });
+
+  test("invokes the role update handler with the selected user and role for Firm Admins", () => {
+    const onRoleChange = vi.fn();
+
+    render(
+      <TeamUsersScreen
+        users={fixtureUsers}
+        viewerRole="Firm Admin"
+        onRoleChange={onRoleChange}
+        queryState="data"
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Role for Brianna Cole" }), {
+      target: { value: "Firm Admin" },
+    });
+
+    expect(onRoleChange).toHaveBeenCalledWith(fixtureUsers[1], "Firm Admin");
+  });
+
+  test("disables role assignment controls for non-admin viewers", () => {
+    render(
+      <TeamUsersScreen
+        users={fixtureUsers}
+        viewerRole="Advisor"
+        onRoleChange={vi.fn()}
+        queryState="data"
+      />,
+    );
+
+    expect(screen.getByRole("combobox", { name: "Role for Alex Rivera" })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "Role for Brianna Cole" })).toBeDisabled();
+  });
+
   test("renders the team roster scaffold with live firm users", async () => {
-    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([firmAdminUser, advisorUser] as never);
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      firmAdminUser,
+      advisorUser,
+    ] as never);
 
     renderTeamUsersPage();
 
@@ -171,7 +228,8 @@ describe("TeamUsersPage", () => {
     const skeleton = await screen.findByRole("status", { name: "Loading Team & Users" });
 
     expect(skeleton).toBeInTheDocument();
-    expect(screen.queryByRole("table", { name: "Firm team and users roster" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Firm team and users roster" }))
+      .not.toBeInTheDocument();
   });
 
   test("renders the firm admin roster when only admins exist", async () => {
@@ -182,7 +240,8 @@ describe("TeamUsersPage", () => {
 
     renderTeamUsersPage();
 
-    expect(await screen.findByRole("table", { name: "Firm team and users roster" })).toBeInTheDocument();
+    expect(await screen.findByRole("table", { name: "Firm team and users roster" }))
+      .toBeInTheDocument();
     expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
     expect(screen.getByText("Casey Morgan")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "No team users yet" })).not.toBeInTheDocument();
@@ -193,9 +252,11 @@ describe("TeamUsersPage", () => {
 
     renderTeamUsersPage();
 
-    expect(await screen.findByRole("heading", { name: "No team users yet" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "No team users yet" }))
+      .toBeInTheDocument();
     expect(screen.getByText("0 users")).toBeInTheDocument();
-    expect(screen.queryByRole("table", { name: "Firm team and users roster" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Firm team and users roster" }))
+      .not.toBeInTheDocument();
   });
 
   test("renders an error state with retry and recovers after retry", async () => {
@@ -205,12 +266,14 @@ describe("TeamUsersPage", () => {
 
     renderTeamUsersPage();
 
-    expect(await screen.findByRole("heading", { name: "Team users could not load" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Team users could not load" }))
+      .toBeInTheDocument();
     expect(screen.getByText("Firm users request failed.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 
-    expect(await screen.findByRole("table", { name: "Firm team and users roster" })).toBeInTheDocument();
+    expect(await screen.findByRole("table", { name: "Firm team and users roster" }))
+      .toBeInTheDocument();
     expect(screen.getByText("Brianna Cole")).toBeInTheDocument();
   });
 });
