@@ -138,8 +138,8 @@ describe("Pulse UI app shell", () => {
 
     const sessionFooter = await screen.findByLabelText("Session");
 
-    expect(within(sessionFooter).getByText("Jordan Lee")).toBeInTheDocument();
-    expect(within(sessionFooter).getByText("Firm Admin")).toBeInTheDocument();
+    expect(within(sessionFooter).getByText("TaxPulse User")).toBeInTheDocument();
+    expect(within(sessionFooter).getByText("Advisor")).toBeInTheDocument();
     expect(within(sessionFooter).getByRole("button", { name: "Logout" })).toBeInTheDocument();
   });
 

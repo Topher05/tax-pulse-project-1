@@ -29,6 +29,7 @@ function createRepository(
     create: vi.fn(),
     insert: vi.fn(),
     findByCaseId: vi.fn(async () => originalCycle),
+    findCurrentByClientId: vi.fn(async () => null),
     transition,
     listQueue: vi.fn(async () => []),
   };

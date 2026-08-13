@@ -5,6 +5,145 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira152 - SCRUM-152
+
+**Branch:** `dylan-harle-jira152`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-152
+
+**Summary:** Build the Roles & Permissions and Audit Log admin screens.
+
+**Description:** As a TaxPulse Platform Admin, I want the Roles & Permissions and
+Audit Log screens, so that I can review the permission matrix and platform-wide audit
+events.
+
+**Acceptance Criteria:**
+
+- The Roles & Permissions screen renders the read-only permission matrix for the four
+  roles.
+- The Audit Log screen lists platform-wide audit entries with redacted figures.
+- Both screens render loading and empty states.
+
+**Code Connection:**
+
+- Built on SCRUM-151's platform administration BFF boundary and ADR-0032's guidance that
+  TaxPulse Platform Admin screens should use explicit platform-admin-only endpoints
+  rather than widening tenant-scoped firm user routes.
+- Added platform administration read models for `GET /v1/administration/roles-permissions`
+  and `GET /v1/administration/audit-log`, both guarded to `TaxPulse Platform Admin`.
+- Added a read-only permission matrix for `TaxPulse Platform Admin`, `Firm Admin`,
+  `Advisor`, and `Client`, grouped into internal firm-staff and external client
+  capabilities.
+- Added a platform-wide audit log repository read over the append-only `audit_entry`
+  table, joining case and tenant context and reusing the existing audit output serializer
+  so financial figures are redacted before response output.
+- Replaced the Pulse UI placeholder administration routes with the Roles & Permissions
+  and Audit Log pages, tightened both routes to platform-admin-only access, and added
+  TanStack Query hooks, loading states, empty states, populated tables, and an audit role
+  filter.
+- Updated OpenAPI documentation for the new platform administration reads.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Read-models/BFF platform administration surface.
+- Fills the SCRUM-152 follow-on gap called out after SCRUM-151 while preserving tenant
+  isolation, least privilege, and append-only audit redaction behavior from the project
+  ADRs.
+
+**Changed Files:**
+
+- `src/typescript/features/platformAdministration/*`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/entities/platformAdministration.ts`
+- `src/pulseUI/entities/platformAdministrationQueries.ts`
+- `src/pulseUI/pages/administration/*`
+- `src/pulseUI/tests/administration/*`
+- `tests/typescript/platformAdministration/*`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/platformAdministration/platformAdministrationRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/platformAdministration/platformAdministrationRepository.test.ts` passed with 3 files and 27 tests after rerunning outside the sandbox because Windows denied Vitest config access in the sandbox.
+- `npm --prefix src/pulseUI run test:vitest -- tests/administration/AllTenantsUsersQueries.test.tsx tests/administration/PlatformAdminScreens.test.tsx` passed with 2 files and 12 tests after rerunning outside the sandbox for the same Vitest config access issue.
+
+## dylan-harle-jira151 - SCRUM-151
+
+**Branch:** `dylan-harle-jira151`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-151
+
+**Summary:** Build the All Tenants & Users admin screen.
+
+**Description:** As a TaxPulse Platform Admin, I want the All Tenants & Users screen,
+so that I can manage accounts across tenants without impersonating.
+
+**Acceptance Criteria:**
+
+- The screen lists tenants and their users with role and status.
+- An Invite User control creates a user under a chosen tenant.
+- No impersonation control is present, per MVP scope.
+
+**Code Connection:**
+
+- Added a separate platform administration BFF boundary instead of widening the
+  SCRUM-147/SCRUM-149 `/v1/firm/users` tenant-scoped contract documented in ADR-0032.
+- Added `GET /v1/administration/tenants-users` for TaxPulse Platform Admins to read all
+  tenants with users sectioned under each tenant, using the same visible user row fields
+  as the existing Team & Users roster.
+- Added `POST /v1/administration/tenants/{tenantId}/users` so a platform admin can
+  create a user in a selected tenant with admin-entered display name, email, role, and
+  visible status.
+- Added the Pulse UI All Tenants & Users route at `/administration/tenants-users`,
+  platform-admin-only routing, grouped tenant user tables, and an enabled Invite User
+  modal/form.
+- Expanded deterministic synthetic tenant/user/client fixture data so tenant-scoped
+  rosters include client-role users and the platform screen displays multiple populated
+  tenant sections.
+- Updated OpenAPI documentation and ADR-0032 to capture the platform administration
+  boundary and the explicit no-impersonation MVP scope.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Read-models/BFF platform administration surface.
+- Preserves tenant isolation by leaving firm users tenant-scoped while making
+  cross-tenant access explicit and role-gated to `TaxPulse Platform Admin`.
+
+**Changed Files:**
+
+- `src/typescript/features/platformAdministration/*`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/pulseUI/entities/platformAdministration.ts`
+- `src/pulseUI/entities/platformAdministrationQueries.ts`
+- `src/pulseUI/pages/administration/AllTenantsUsersPage.tsx`
+- `src/pulseUI/pages/administration/AllTenantsUsersPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/administration/*`
+- `tests/typescript/platformAdministration/*`
+- `tests/typescript/clientRoster/clientRosterRepository.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/firmUsers/firmUsersRepository.test.ts`
+- `adr/0032-team-users-screen.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- tests/administration/AllTenantsUsersPage.test.tsx tests/administration/AllTenantsUsersQueries.test.tsx tests/firm/TeamUsersPage.test.tsx tests/firm/FirmUserQueries.test.tsx` passed with 4 files and 15 tests after rerunning outside the sandbox because Windows denied access while Vitest loaded its config in the sandbox.
+- `npm run test:vitest -- tests/typescript/platformAdministration/platformAdministrationRoutes.test.ts tests/typescript/firmUsers/firmUsersRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed with 3 files and 24 tests after rerunning outside the sandbox for the same Vitest config access issue.
+- `npm run test:vitest -- tests/typescript/platformAdministration/platformAdministrationRepository.test.ts tests/typescript/firmUsers/firmUsersRepository.test.ts tests/typescript/clientRoster/clientRosterRepository.test.ts` passed with 3 files and 7 tests after rerunning outside the sandbox for the same Vitest config access issue.
+
 ## development-scrum147 - SCRUM-147
 
 **Branch:** `development`

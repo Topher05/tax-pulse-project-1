@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
+import { axe } from "vitest-axe";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
@@ -21,7 +22,7 @@ afterEach(() => {
 });
 
 function renderClientRosterPage() {
-  render(
+  return render(
     <QueryClientProvider client={createPulseQueryClient()}>
       <TestSessionProvider>
         <RouterProvider router={createPulseRouter(["/clients"])} />
@@ -48,6 +49,35 @@ function clientNamesInTable(): string[] {
 }
 
 describe("ClientRosterPage", () => {
+  test("passes axe on the rendered client roster screen", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      {
+        id: "client-avery-chen",
+        clientName: "Avery Chen",
+        filingStatus: "Single - 1099",
+        ytdIncome: 108_500,
+        estimatedTax: 32_100,
+        quarterlyStatus: "Q2 due Jun 15",
+      },
+      {
+        id: "client-riley-khan",
+        clientName: "Riley Khan",
+        filingStatus: "HoH - W-2",
+        ytdIncome: 72_500,
+        estimatedTax: 11_140,
+        quarterlyStatus: null,
+      },
+    ]);
+
+    const { container } = renderClientRosterPage();
+
+    expect(await screen.findByRole("table", { name: "Client roster" })).toBeInTheDocument();
+
+    const results = await axe(container);
+
+    expect(results.violations).toHaveLength(0);
+  });
+
   test("renders a loading skeleton while the roster request is in flight", async () => {
     let resolveRequest: (value: unknown) => void = () => undefined;
     const request = new Promise((resolve) => {

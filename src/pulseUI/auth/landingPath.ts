@@ -1,9 +1,6 @@
 import type { SessionRole } from "./session.ts";
 
-/**
- * Dedicated client and platform-admin landing routes arrive in later UI tickets. Until then,
- * every authenticated role uses the existing dashboard route.
- */
-export function getLandingPathForRole(_role: SessionRole): "/" {
-  return "/";
+/** Client users enter the scoped portal instead of the operator workspace. */
+export function getLandingPathForRole(role: SessionRole): "/" | "/my-tax-plan" {
+  return role === "Client" ? "/my-tax-plan" : "/";
 }

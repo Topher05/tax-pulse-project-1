@@ -161,6 +161,7 @@ describe("Pulse UI accessibility gate", () => {
 
     await expectNoViolations(container);
   });
+  
   test("income screen reports no axe violations", async () => {
     const { container } = render(
       <IncomeScreen

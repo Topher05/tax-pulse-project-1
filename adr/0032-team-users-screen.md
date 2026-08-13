@@ -5,11 +5,13 @@
 SCRUM-146 established the Pulse UI Team & Users screen as a typed firm administration
 surface with KPI cards and a roster table. SCRUM-147 made that screen read live tenant
 data without taking over the later responsibilities in SCRUM-148 and SCRUM-149.
-SCRUM-148 adds the visible loading, empty, retry, and error-state behavior on top of
-that hook boundary. SCRUM-149 fills the role-assignment gap left by SCRUM-147 while
-avoiding invite and impersonation behavior reserved for adjacent tickets. SCRUM-150
-adds regression coverage for the populated roster, zero-user empty state, non-admin
-role controls, and accessibility checks without introducing new production behavior.
+SCRUM-149 now fills the role-assignment gap left by SCRUM-147 while avoiding invite,
+impersonation, and loading or error-state behavior reserved for adjacent tickets.
+SCRUM-150 adds regression coverage for the populated roster and accessibility checks
+without introducing the loading, empty, retry, or error states owned by SCRUM-148.
+SCRUM-151 builds the All Tenants & Users administration screen on top of the same user
+row semantics while keeping platform-wide access outside the tenant-scoped firm users
+route.
 
 The existing authentication data model already stores tenant-scoped users, roles, and
 status values. It did not store the display name or last-login timestamp needed by the
@@ -56,6 +58,14 @@ screen and asserts no supported axe rule violations. The jsdom-based Team & User
 run disables the `color-contrast` rule because that rule depends on canvas APIs
 unavailable in this test environment.
 
+SCRUM-151 adds a separate platform administration boundary:
+`GET /v1/administration/tenants-users` and
+`POST /v1/administration/tenants/{tenantId}/users`. Both operations require the
+`TaxPulse Platform Admin` role. The read model groups users under each tenant and uses
+the same visible user fields as the Team & Users roster. The create command accepts the
+tenant path parameter plus administrator-entered display name, email, role, and visible
+status, then creates the user under that tenant without adding an impersonation control.
+
 ## Consequences
 
 The screen now has one typed live-data boundary, and tenant isolation remains enforced
@@ -71,6 +81,12 @@ overloading `GET /v1/firm/users` or the role-update command.
 Testing coverage now guards the screen's successful roster branch, zero-user empty
 state, admin-only roster regression, retryable error state, loading skeleton,
 non-admin assignment boundary, and populated-screen axe check.
+
+Platform administration can now list users across tenants without weakening the
+tenant-derived `/v1/firm/users` contract. Firm Admins continue to use the existing
+Team & Users table for their own tenant, while TaxPulse Platform Admins use the new
+All Tenants & Users screen to review sectioned tenant users and create a user in a
+chosen tenant. MVP scope still excludes impersonation.
 
 ## Alternatives considered
 

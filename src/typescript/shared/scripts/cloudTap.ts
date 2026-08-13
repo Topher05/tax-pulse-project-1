@@ -19,13 +19,13 @@ import {
   type PresentToClientSaga,
   type StageChangedEventPublishInput,
   type TaxPlanCycle,
-} from "../../features/taxPlanCycle/infrastructure/cloudEvents/index.js";
+} from "../../features/taxPlanCycle/infrastructure/CloudEvents/index.js";
 import {
   createActionItemCreatedCloudEvent,
   createRedisActionItemConsumer,
   type ActionItemCreatedCloudEventV1,
   type ActionItemCreatedConsumerHandleResult,
-} from "../../features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.js";
+} from "../../features/taxPlanCycle/infrastructure/CloudEvents/actionItemCreated/index.js";
 import {
   createRedisIdempotencyStore,
   createSqsConsumer,
@@ -34,7 +34,7 @@ import {
   type ConsumerLogger as StageChangedEventConsumerLogger,
   type SqsConsumerClient as StageChangedSqsClient,
   createCloudEventV1,
-} from "../../features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
+} from "../../features/taxPlanCycle/infrastructure/CloudEvents/stageChanged/index.js";
 import {
   stageChangedCloudEventSchemaV1,
   type StageChangedCloudEventV1,
