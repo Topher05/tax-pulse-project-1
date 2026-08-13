@@ -736,6 +736,64 @@ out of MVP scope.
 - `npm --prefix src/pulseUI run test` passed with 31 files and 137 tests. The run
   printed existing stderr from intentional scenario error-path coverage and jsdom's
   missing canvas implementation during axe checks, but all tests passed.
+
+## martins-okorie-jira139 - SCRUM-139
+
+**Branch:** `martins-okorie-jira139`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-139
+
+**Summary:** Generate the SOAP TIN/EIN client from the WSDL
+
+**Description:** As a Backend Developer, I want a node-soap client for the TIN/EIN
+service, so that Intake can validate a client's tax identifier.
+
+**Acceptance Criteria:**
+
+- A node-soap client consumes the WSDL and exposes the TIN/EIN validation operation.
+- A call against a stub SOAP service returns a raw validation response.
+- A test asserts the operation is callable with a sample TIN/EIN.
+
+**Code Connection:** Added a raw `node-soap` TIVS client under the Tax Plan Cycle
+infrastructure layer. The client loads the WSDL, overrides the legacy WSDL endpoint
+with the configured endpoint URL, attaches WS-Security UsernameToken credentials, and
+exposes raw `VerifyTaxpayer` and `GetTaxpayerStatus` operations without mapping SOAP
+values into domain types.
+
+**Project Scope Connection:** This creates the brownfield TIVS integration adapter
+needed by Intake while keeping legacy SOAP shapes isolated to infrastructure code. The
+domain-facing anti-corruption layer, match-code translation, date conversion, and typed
+fault handling remain scoped to SCRUM-140 and SCRUM-141.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `.env.example`
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationSoapClient.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/fixtures/README.md`
+- `tests/typescript/features/taxPlanCycle/fixtures/tinEinValidation.wsdl`
+- `tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm install soap` completed after granting registry network access. npm reported the
+  existing Node engine mismatch (`22.0.0` required, `24.17.0` used) and 14 audit
+  findings.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts`
+  passed with 1 file and 2 tests after granting localhost socket access for the stub
+  SOAP service.
+- `npm test` was rerun with elevated localhost/Docker permissions. Typecheck passed
+  and the new SOAP test passed inside the full suite, but the full Vitest run still
+  failed because Docker/Testcontainers suites could not find a working container runtime
+  strategy. `docker info --format '{{.ServerVersion}}'` confirmed Docker was not
+  reachable in this environment.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 

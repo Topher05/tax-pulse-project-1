@@ -269,6 +269,19 @@ export {
   type ScenarioComparisonEngineRequest,
 } from "./infrastructure/engineClient.js";
 export {
+  createTinEinValidationSoapClient,
+  getTinEinValidationSoapConfigFromEnv,
+  type TinEinValidationSoapClient,
+  type TinEinValidationSoapClientOptions,
+  type TivsGetTaxpayerStatusRawResponse,
+  type TivsGetTaxpayerStatusRequest,
+  type TivsMatchCode,
+  type TivsStandingCode,
+  type TivsTinType,
+  type TivsVerifyTaxpayerRawResponse,
+  type TivsVerifyTaxpayerRequest,
+} from "./infrastructure/tinEinValidationSoapClient.js";
+export {
   quarterlyEstimateQuarterSchema,
   quarterlyEstimateReadParamsSchema,
   quarterlyEstimateRowsSchema,

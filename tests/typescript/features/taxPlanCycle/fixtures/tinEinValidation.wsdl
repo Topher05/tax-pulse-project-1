@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:tns="urn:gov:treasury:fiscal:tivs:v1"
+    targetNamespace="urn:gov:treasury:fiscal:tivs:v1"
+    name="TIVSService">
+
+  <wsdl:types>
+    <xsd:schema targetNamespace="urn:gov:treasury:fiscal:tivs:v1"
+                elementFormDefault="qualified">
+      <xsd:simpleType name="TINTypeCode">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="EIN"/>
+          <xsd:enumeration value="SSN"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+
+      <xsd:simpleType name="MatchCodeType">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="0"/>
+          <xsd:enumeration value="1"/>
+          <xsd:enumeration value="2"/>
+          <xsd:enumeration value="3"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+
+      <xsd:simpleType name="StandingCode">
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="ACTIVE"/>
+          <xsd:enumeration value="INACTIVE"/>
+          <xsd:enumeration value="SUSPENDED"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+
+      <xsd:element name="VerifyTaxpayer">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="TIN" type="xsd:string"/>
+            <xsd:element name="TINType" type="tns:TINTypeCode"/>
+            <xsd:element name="LegalName" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="VerifyTaxpayerResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="MatchCode" type="tns:MatchCodeType"/>
+            <xsd:element name="VerifiedName" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="TINType" type="tns:TINTypeCode"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="GetTaxpayerStatus">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="TIN" type="xsd:string"/>
+            <xsd:element name="TINType" type="tns:TINTypeCode"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="GetTaxpayerStatusResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Standing" type="tns:StandingCode"/>
+            <xsd:element name="AsOfDate" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="TaxpayerNotFoundFault">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="FaultCode" type="xsd:string"/>
+            <xsd:element name="FaultReason" type="xsd:string"/>
+            <xsd:element name="TIN" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </wsdl:types>
+
+  <wsdl:message name="VerifyTaxpayerRequest">
+    <wsdl:part name="parameters" element="tns:VerifyTaxpayer"/>
+  </wsdl:message>
+  <wsdl:message name="VerifyTaxpayerResponse">
+    <wsdl:part name="parameters" element="tns:VerifyTaxpayerResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetTaxpayerStatusRequest">
+    <wsdl:part name="parameters" element="tns:GetTaxpayerStatus"/>
+  </wsdl:message>
+  <wsdl:message name="GetTaxpayerStatusResponse">
+    <wsdl:part name="parameters" element="tns:GetTaxpayerStatusResponse"/>
+  </wsdl:message>
+  <wsdl:message name="TaxpayerNotFoundFault">
+    <wsdl:part name="fault" element="tns:TaxpayerNotFoundFault"/>
+  </wsdl:message>
+
+  <wsdl:portType name="TIVSPortType">
+    <wsdl:operation name="VerifyTaxpayer">
+      <wsdl:input message="tns:VerifyTaxpayerRequest"/>
+      <wsdl:output message="tns:VerifyTaxpayerResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetTaxpayerStatus">
+      <wsdl:input message="tns:GetTaxpayerStatusRequest"/>
+      <wsdl:output message="tns:GetTaxpayerStatusResponse"/>
+      <wsdl:fault name="TaxpayerNotFoundFault" message="tns:TaxpayerNotFoundFault"/>
+    </wsdl:operation>
+  </wsdl:portType>
+
+  <wsdl:binding name="TIVSBinding" type="tns:TIVSPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="VerifyTaxpayer">
+      <soap:operation soapAction="urn:gov:treasury:fiscal:tivs:v1/VerifyTaxpayer"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetTaxpayerStatus">
+      <soap:operation soapAction="urn:gov:treasury:fiscal:tivs:v1/GetTaxpayerStatus"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+      <wsdl:fault name="TaxpayerNotFoundFault">
+        <soap:fault name="TaxpayerNotFoundFault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:binding>
+
+  <wsdl:service name="TIVSService">
+    <wsdl:port name="TIVSPort" binding="tns:TIVSBinding">
+      <soap:address location="http://localhost:8081/tivs"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
