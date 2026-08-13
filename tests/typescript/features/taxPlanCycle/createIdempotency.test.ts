@@ -4,6 +4,8 @@ import {
   buildTaxPlanCycleCreateIdempotencyKey,
   createRedisTaxPlanCycleCreateIdempotencyStore,
   createTaxPlanCycleCreateController,
+  type TaxpayerIdentifierValidationRepository,
+  type TaxpayerIdentifierValidator,
   type TaxPlanCycleCreateIdempotencyClient,
   type TaxPlanCycleRepository,
 } from "../../../../src/typescript/index.js";
@@ -165,6 +167,111 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
     ).rejects.toMatchObject({
       status: 503,
       type: "https://taxpulse.example/problems/idempotency-store-unavailable",
+    });
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  test("records a clean taxpayer identifier validation result during Intake create", async () => {
+    const repository: TaxPlanCycleRepository = {
+      create: vi.fn(async () => caseId),
+      insert: vi.fn(),
+      findByCaseId: vi.fn(async () => null),
+      transition: vi.fn(async () => null),
+      listQueue: vi.fn(async () => []),
+    };
+    const taxpayerIdentifierValidator: TaxpayerIdentifierValidator = {
+      validateTaxpayerIdentifier: vi.fn(async () => ({
+        tinType: "ein",
+        result: "match",
+        verifiedName: "ACME GOVERNMENT SERVICES LLC",
+        provider: "tivs",
+      } as const)),
+    };
+    const taxpayerIdentifierValidationRepository: TaxpayerIdentifierValidationRepository = {
+      record: vi.fn(async () => ({
+        case_id: caseId,
+        tin_type: "ein",
+        validation_result: "match",
+        verified_name: "ACME GOVERNMENT SERVICES LLC",
+        provider: "tivs",
+        validated_at: "2026-07-21T14:00:00.000Z",
+      } as const)),
+      findByCaseId: vi.fn(async () => null),
+    };
+    const controller = createTaxPlanCycleCreateController(repository, {
+      idempotencyStore: createRedisTaxPlanCycleCreateIdempotencyStore(
+        createInMemoryCreateIdempotencyClient(),
+      ),
+      taxpayerIdentifierValidator,
+      taxpayerIdentifierValidationRepository,
+    });
+
+    await expect(
+      controller.create({
+        tenantId,
+        actor: "advisor-001",
+        idempotencyKey,
+        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+        planning_period: "2026-Q4",
+        owner: "advisor-001",
+        priority: "high",
+        due_date: "2026-12-31",
+        taxpayer_identifier: {
+          tin: "12-3456789",
+          tin_type: "EIN",
+          legal_name: "ACME GOVERNMENT SERVICES LLC",
+        },
+      }),
+    ).resolves.toEqual({ case_id: caseId });
+
+    expect(taxpayerIdentifierValidator.validateTaxpayerIdentifier).toHaveBeenCalledWith({
+      tin: "12-3456789",
+      tin_type: "EIN",
+      legal_name: "ACME GOVERNMENT SERVICES LLC",
+    });
+    expect(taxpayerIdentifierValidationRepository.record).toHaveBeenCalledWith({
+      tenantId,
+      caseId,
+      tinType: "ein",
+      validationResult: "match",
+      verifiedName: "ACME GOVERNMENT SERVICES LLC",
+      provider: "tivs",
+    });
+  });
+
+  test("rejects taxpayer identifier input when Intake validation is not configured", async () => {
+    const repository: TaxPlanCycleRepository = {
+      create: vi.fn(async () => caseId),
+      insert: vi.fn(),
+      findByCaseId: vi.fn(async () => null),
+      transition: vi.fn(async () => null),
+      listQueue: vi.fn(async () => []),
+    };
+    const controller = createTaxPlanCycleCreateController(repository, {
+      idempotencyStore: createRedisTaxPlanCycleCreateIdempotencyStore(
+        createInMemoryCreateIdempotencyClient(),
+      ),
+    });
+
+    await expect(
+      controller.create({
+        tenantId,
+        actor: "advisor-001",
+        idempotencyKey,
+        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+        planning_period: "2026-Q4",
+        owner: "advisor-001",
+        priority: "high",
+        due_date: "2026-12-31",
+        taxpayer_identifier: {
+          tin: "12-3456789",
+          tin_type: "EIN",
+          legal_name: "ACME GOVERNMENT SERVICES LLC",
+        },
+      }),
+    ).rejects.toMatchObject({
+      status: 503,
+      type: "https://taxpulse.example/problems/taxpayer-identifier-validation-unavailable",
     });
     expect(repository.create).not.toHaveBeenCalled();
   });

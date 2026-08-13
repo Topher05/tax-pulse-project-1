@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import { scenarioSchema } from "../../scenario.js";
+import {
+  taxpayerIdentifierInputSchema,
+  taxpayerIdentifierValidationSchema,
+} from "./taxpayerIdentifierValidation.js";
 
 export const taxPlanCycleStages = [
   "Intake",
@@ -68,6 +72,8 @@ export const taxPlanCycleQueueGetResponseSchema = z.array(
 
 export const taxPlanCycleReadResponseSchema = taxPlanCycleSchema.extend({
   scenarios: z.array(scenarioSchema),
+  taxpayer_identifier_validation:
+    taxpayerIdentifierValidationSchema.optional(),
 });
 
 export const taxPlanCycleCreateSchema = z.strictObject({
@@ -76,6 +82,7 @@ export const taxPlanCycleCreateSchema = z.strictObject({
   owner: z.string().min(1),
   priority: taxPlanCyclePrioritySchema,
   due_date: z.iso.date(),
+  taxpayer_identifier: taxpayerIdentifierInputSchema.optional(),
 });
 export const taxPlanCycleReadParamsSchema = z.object({
   caseId: z.uuid(),

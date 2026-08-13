@@ -1,13 +1,21 @@
 import { z } from "zod";
 
 import { ProblemHttpError } from "../../../errors.js";
-import type { TaxPlanCycle, TaxPlanCycleCreateInput } from "../taxPlanCycle.js";
+import type {
+  TaxPlanCycle,
+  TaxPlanCycleCreateInput,
+} from "../taxPlanCycle.js";
+import type { TaxpayerIdentifierValidator } from "../infrastructure/tinEinValidationAcl.js";
 import {
   TaxPlanCycleCreateIdempotencyInProgressError,
   TaxPlanCycleCreateIdempotencyUnavailableError,
   createUnavailableTaxPlanCycleCreateIdempotencyStore,
   type TaxPlanCycleCreateIdempotencyStore,
 } from "../infrastructure/createIdempotency.js";
+import type {
+  TaxpayerIdentifierValidationRepository,
+} from "../repositories/taxpayerIdentifierValidation.js";
+import type { TaxpayerIdentifierValidation } from "../taxpayerIdentifierValidation.js";
 import type {
   TaxPlanCycleReadInput,
   TaxPlanCycleRepository,
@@ -27,17 +35,26 @@ export type TaxPlanCycleCreateControllerInput = TaxPlanCycleCreateInput & {
   idempotencyKey: string;
 };
 
+export type TaxPlanCycleCreateControllerReadResult = TaxPlanCycle & {
+  taxpayer_identifier_validation?: TaxpayerIdentifierValidation;
+};
+
 export interface TaxPlanCycleCreateController {
   create(
     input: TaxPlanCycleCreateControllerInput,
   ): TaxPlanCycleCreateResult | Promise<TaxPlanCycleCreateResult>;
   findByCaseId(
     input: TaxPlanCycleReadInput,
-  ): TaxPlanCycle | null | Promise<TaxPlanCycle | null>;
+  ):
+    | TaxPlanCycleCreateControllerReadResult
+    | null
+    | Promise<TaxPlanCycleCreateControllerReadResult | null>;
 }
 
 export interface CreateTaxPlanCycleCreateControllerOptions {
   idempotencyStore?: TaxPlanCycleCreateIdempotencyStore;
+  taxpayerIdentifierValidator?: TaxpayerIdentifierValidator;
+  taxpayerIdentifierValidationRepository?: TaxpayerIdentifierValidationRepository;
 }
 
 function createIdempotencyUnavailableProblem(): ProblemHttpError {
@@ -58,6 +75,15 @@ function createIdempotencyInProgressProblem(): ProblemHttpError {
   });
 }
 
+function createTaxpayerIdentifierValidationUnavailableProblem(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/taxpayer-identifier-validation-unavailable",
+    title: "Taxpayer Identifier Validation Unavailable",
+    status: 503,
+    detail: "TIVS validation is required when taxpayer identifier input is provided.",
+  });
+}
+
 export function createTaxPlanCycleCreateController(
   repository: TaxPlanCycleRepository,
   options: CreateTaxPlanCycleCreateControllerOptions = {},
@@ -74,6 +100,14 @@ export function createTaxPlanCycleCreateController(
             idempotencyKey: input.idempotencyKey,
           },
           async () => {
+            if (
+              input.taxpayer_identifier &&
+              (!options.taxpayerIdentifierValidator ||
+                !options.taxpayerIdentifierValidationRepository)
+            ) {
+              throw createTaxpayerIdentifierValidationUnavailableProblem();
+            }
+
             const caseId = await repository.create({
               tenantId: input.tenantId,
               planningPeriod: input.planning_period,
@@ -83,6 +117,28 @@ export function createTaxPlanCycleCreateController(
               dueDate: input.due_date,
               actor: input.actor,
             });
+
+            if (
+              input.taxpayer_identifier &&
+              options.taxpayerIdentifierValidator &&
+              options.taxpayerIdentifierValidationRepository
+            ) {
+              const validation =
+                await options.taxpayerIdentifierValidator.validateTaxpayerIdentifier(
+                  input.taxpayer_identifier,
+                );
+
+              await options.taxpayerIdentifierValidationRepository.record({
+                tenantId: input.tenantId,
+                caseId,
+                tinType: validation.tinType,
+                validationResult: validation.result,
+                ...(validation.verifiedName
+                  ? { verifiedName: validation.verifiedName }
+                  : {}),
+                provider: validation.provider,
+              });
+            }
 
             return { case_id: caseId };
           },
@@ -99,7 +155,23 @@ export function createTaxPlanCycleCreateController(
         throw error;
       }
     },
-    findByCaseId: (input) => repository.findByCaseId(input),
+    async findByCaseId(input) {
+      const cycle = await repository.findByCaseId(input);
+
+      if (!cycle) {
+        return null;
+      }
+
+      const validation =
+        await options.taxpayerIdentifierValidationRepository?.findByCaseId(input);
+
+      return {
+        ...cycle,
+        ...(validation
+          ? { taxpayer_identifier_validation: validation }
+          : {}),
+      };
+    },
   };
 }
 

@@ -794,6 +794,69 @@ fault handling remain scoped to SCRUM-140 and SCRUM-141.
   failed because Docker/Testcontainers suites could not find a working container runtime
   strategy. `docker info --format '{{.ServerVersion}}'` confirmed Docker was not
   reachable in this environment.
+
+## martins-okorie-jira140 - SCRUM-140
+
+**Branch:** `martins-okorie-jira140`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-140
+
+**Summary:** Map the SOAP response through an anti-corruption layer
+
+**Description:** As an Advisor, I want the SOAP response mapped through an ACL, so that
+the legacy contract never leaks into the domain.
+
+**Acceptance Criteria:**
+
+- An anti-corruption layer maps the SOAP response into a clean internal validation
+  result type.
+- The TIN/EIN validation runs at the Intake stage and records the result on the case.
+- A test asserts the domain type contains no SOAP-specific fields.
+
+**Code Connection:** Added a TaxPulse-facing taxpayer identifier validation model and
+an ACL that translates raw TIVS `MatchCode` responses into clean results such as
+`match`, `tin_not_found`, and `name_mismatch`. The create-cycle controller now runs the
+validator when Intake create input includes a taxpayer identifier and records the clean
+validation result through a case-linked repository. Case reads can include the clean
+validation result without exposing SOAP field names or raw identifiers.
+
+**Project Scope Connection:** SCRUM-140 builds on SCRUM-139's raw SOAP client by
+putting a clean boundary between TIVS and TaxPulse. The new
+`taxpayer_identifier_validation` table records the Intake validation result on the case
+without storing the submitted TIN/EIN. SOAP fault translation and typed error recording
+remain scoped to SCRUM-141.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/controllers/createController.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationAcl.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/repositories/taxpayerIdentifierValidation.ts`
+- `src/typescript/features/taxPlanCycle/taxpayerIdentifierValidation.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/drizzle-migrations/0015_taxpayer_identifier_validation.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0015_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/seed.ts`
+- `tests/typescript/features/taxPlanCycle/createIdempotency.test.ts`
+- `tests/typescript/features/taxPlanCycle/taxpayerIdentifierValidation.typecheck.ts`
+- `tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen -- --name taxpayer_identifier_validation` generated the Drizzle
+  migration.
+- `npm run db:check` passed.
+- `npm run typecheck` passed, including the taxpayer identifier type-leak guard.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts tests/typescript/features/taxPlanCycle/createIdempotency.test.ts tests/typescript/features/taxPlanCycle/schema.test.ts`
+  passed with 3 files and 15 tests.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/routes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts`
+  passed with 3 files and 36 tests after granting localhost socket access.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 
