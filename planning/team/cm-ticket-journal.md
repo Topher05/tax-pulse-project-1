@@ -139,6 +139,11 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
   refreshes once for an unknown key to support rotation, and validates RS256 access tokens
   without a signing key. The legacy HS256 path remains temporarily available only when no JWKS
   URL is configured.
+- Documented that the Core Case Service alone requires the RSA private key, while the Tax Engine
+  requires only the issuer and public JWKS URL.
+- Added focused RS256/JWKS FastAPI coverage for valid, expired, and tampered access tokens.
+- Added `cryptography` as the declared Python runtime dependency required by PyJWT's RS256
+  validation backend.
 
 **Project Scope Connection:**
 
@@ -153,6 +158,10 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 - `src/typescript/index.ts`
 - `src/typescript/jwtAuthentication.ts`
 - `src/tax_liability_engine/jwt_authentication.py`
+- `README.md`
+- `pyproject.toml`
+- `uv.lock`
+- `tests/tax_liability_engine/jwt_jwks_authentication_test.py`
 - `.env.example`
 - `planning/team/cm-ticket-journal.md`
 
@@ -161,6 +170,9 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 - Not run: this configuration-only slice deliberately defers test updates until the final
   SCRUM-200 validation step.
 - `npm run typecheck` passed.
+- `uv run --isolated --with "cryptography>=44,<47" --with "pytest>=8" --with
+  "fastapi>=0.115,<1" --with "httpx>=0.28,<1" --with "PyJWT>=2.10,<3" python -m pytest
+  tests/tax_liability_engine/jwt_jwks_authentication_test.py` passed: 3 tests.
 - A focused `tsx` check built and schema-validated a deterministic stage-changed
   CloudEvent through the relocated domain helper.
 - `npm run db:check` and `git diff --check` continue to pass after the second slice.

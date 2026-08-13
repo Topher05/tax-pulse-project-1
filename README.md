@@ -93,7 +93,9 @@ docker run --name case-service -p 3000:3000 --env-file .env taxpulse/case-servic
 
 The container exposes the Core Case Service on `http://localhost:3000`. Make sure `.env`
 includes the runtime values the service needs, including `DATABASE_URL`, `JWT_ISSUER`,
-and `JWT_SIGNING_SECRET`.
+`JWT_SIGNING_PRIVATE_KEY`, and `JWT_SIGNING_KEY_ID`. The private key belongs only to
+the Core Case Service; it signs RS256 access tokens and publishes its public counterpart
+at `/.well-known/jwks.json`.
 When the API container connects to a database on your host machine, `DATABASE_URL` must
 use `host.docker.internal` instead of `localhost` as in the example.
 
@@ -108,8 +110,8 @@ docker run --name tax-engine -p 8000:8000 --env-file .env taxpulse/tax-engine
 The container exposes the FastAPI liability engine on `http://localhost:8000`. The
 image starts `tax_liability_engine.api:create_app` through Uvicorn, and the container
 healthcheck calls `GET /health`. Make sure `.env` includes `JWT_ISSUER` and
-`JWT_SIGNING_SECRET`; the FastAPI app loads those values during startup so calculation
-routes can validate the shared JWTs issued by the Core Case Service.
+`JWT_JWKS_URL`; the FastAPI app uses that public-key endpoint to validate RS256 access
+tokens issued by the Core Case Service. Do not give the Tax Engine a signing private key.
 
 ```bash
 python -m tax_liability_engine.main
