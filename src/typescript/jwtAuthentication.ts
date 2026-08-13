@@ -1,8 +1,9 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
-import { jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 import type { JwtConfig } from "./authConfig.js";
 import type { AuthenticatedPrincipal, UserRole } from "./authTypes.js";
+import type { JwtJwksVerifierConfig } from "./jwtRs256Config.js";
 import { roleNameEnum } from "./shared/database/schema.js";
 import { ProblemHttpError } from "./errors.js";
 
@@ -22,6 +23,7 @@ declare global {
 
 export interface CreateJwtAuthenticationMiddlewareOptions {
   config: JwtConfig;
+  jwksVerifierConfig?: JwtJwksVerifierConfig;
 }
 
 export interface CreateHydrateUserClaimsOptions {
@@ -102,8 +104,29 @@ export function hydrateUserClaims(
 
 export function createJwtAuthenticationMiddleware({
   config,
+  jwksVerifierConfig,
 }: CreateJwtAuthenticationMiddlewareOptions): RequestHandler {
-  const signingKey = new TextEncoder().encode(config.signingSecret);
+  const verifyToken = (() => {
+    if (jwksVerifierConfig) {
+      const issuer = jwksVerifierConfig.issuer;
+      const jwks = createRemoteJWKSet(new URL(jwksVerifierConfig.jwksUrl));
+
+      return async (token: string) => await jwtVerify(token, jwks, {
+        algorithms: ["RS256"],
+        issuer,
+        requiredClaims: ["exp"],
+      });
+    }
+
+    const issuer = config.issuer;
+    const signingKey = new TextEncoder().encode(config.signingSecret);
+
+    return async (token: string) => await jwtVerify(token, signingKey, {
+      algorithms: ["HS256"],
+      issuer,
+      requiredClaims: ["exp"],
+    });
+  })();
 
   return async (req: Request, _res: Response, next: NextFunction) => {
     const token = getBearerToken(req.header("authorization"));
@@ -114,11 +137,7 @@ export function createJwtAuthenticationMiddleware({
     }
 
     try {
-      const { payload } = await jwtVerify(token, signingKey, {
-        algorithms: ["HS256"],
-        issuer: config.issuer,
-        requiredClaims: ["exp"],
-      });
+      const { payload } = await verifyToken(token);
       const principal = toAuthenticatedPrincipal(payload);
 
       if (!principal) {

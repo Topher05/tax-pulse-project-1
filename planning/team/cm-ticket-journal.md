@@ -132,6 +132,9 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 - RS256-configured issuers now sign access tokens with an `RS256` and `kid` protected header,
   and publish the corresponding public JWK at `GET /.well-known/jwks.json`. The legacy HS256
   path remains temporarily available only when the RS256 issuer configuration is absent.
+- The Node authentication middleware now uses `createRemoteJWKSet` when RS256 is configured,
+  selects the public key by `kid`, and restricts verification to RS256. Its JWKS path does not
+  retain a signing key.
 
 **Project Scope Connection:**
 
@@ -144,6 +147,7 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 - `src/typescript/jwksRoutes.ts`
 - `src/typescript/tokenService.ts`
 - `src/typescript/index.ts`
+- `src/typescript/jwtAuthentication.ts`
 - `.env.example`
 - `planning/team/cm-ticket-journal.md`
 
