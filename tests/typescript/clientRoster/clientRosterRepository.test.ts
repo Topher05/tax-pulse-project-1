@@ -35,7 +35,7 @@ describe("Client Roster repository", () => {
       expect(structure.constraints.client_roster_pkey?.type).toBe("p");
       expect(structure.constraints.client_roster_tenant_id_fk?.type).toBe("f");
       expect(structure.indexes).toContain("client_roster_tenant_id_client_name_idx");
-      expect(structure.rowCount).toBe(3);
+      expect(structure.rowCount).toBe(6);
     });
   });
 

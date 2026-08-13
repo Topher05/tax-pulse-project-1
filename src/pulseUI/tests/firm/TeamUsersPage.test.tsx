@@ -82,6 +82,34 @@ describe("TeamUsersPage", () => {
     },
   ] as const satisfies readonly FirmUserRow[];
 
+  test("renders roster rows from supplied firm users", () => {
+    render(
+      <TeamUsersScreen
+        users={fixtureUsers}
+        viewerRole="Firm Admin"
+        onRoleChange={vi.fn()}
+        queryState="data"
+      />,
+    );
+
+    const roster = screen.getByRole("table", { name: "Firm team and users roster" });
+    const rows = within(roster).getAllByRole("row");
+
+    expect(rows).toHaveLength(3);
+    expect(within(rows[1]!).getByText("Alex Rivera")).toBeInTheDocument();
+    expect(within(rows[1]!).getByText("alex@example.com")).toBeInTheDocument();
+    expect(within(rows[1]!).getByRole("combobox", { name: "Role for Alex Rivera" }))
+      .toHaveValue("Firm Admin");
+    expect(within(rows[1]!).getByText("Inactive")).toBeInTheDocument();
+    expect(within(rows[1]!).getByText("Never")).toBeInTheDocument();
+    expect(within(rows[2]!).getByText("Brianna Cole")).toBeInTheDocument();
+    expect(within(rows[2]!).getByText("brianna@example.com")).toBeInTheDocument();
+    expect(within(rows[2]!).getByRole("combobox", { name: "Role for Brianna Cole" }))
+      .toHaveValue("Advisor");
+    expect(within(rows[2]!).getByText("Active")).toBeInTheDocument();
+    expect(within(rows[2]!).getByText("Aug 5, 2026")).toBeInTheDocument();
+  });
+
   test("renders the team roster scaffold with live firm users", async () => {
     vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([firmAdminUser, advisorUser] as never);
 
