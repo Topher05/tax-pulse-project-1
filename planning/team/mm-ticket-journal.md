@@ -5,6 +5,49 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira126 - SCRUM-126
+
+**Branch:** `martins-okorie-jira126`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-126
+
+**Summary:** Add accessibility and component tests for the Client Roster screen
+
+**Description:** As a Frontend Developer, I want accessibility and component tests
+for the Client Roster screen, so that the roster is usable and stable.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check runs against the rendered Client Roster screen and
+  reports no violations.
+- Component coverage verifies the roster table renders mocked `/v1/clients` rows.
+- Component coverage verifies the empty state and client column sorting behavior.
+
+**Code Connection:** The Client Roster page test suite now includes an axe check
+that reuses the mocked `caseApiGetJson` `/v1/clients` data path, waits for the
+accessible roster table, and asserts zero violations. The existing component tests
+continue to cover table rendering, empty state behavior, TanStack column sorting,
+nullable quarterly status sorting, loading, retry, and error states.
+
+**Project Scope Connection:** This protects the Client Roster workspace in the
+advisor-facing React app, where tenant-scoped client records are listed, scanned,
+and sorted before advisors open deeper tax planning workflows.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run test:vitest -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx`
+  passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+
 ## martins-okorie-jira148 - SCRUM-148
 
 **Branch:** `martins-okorie-jira148`

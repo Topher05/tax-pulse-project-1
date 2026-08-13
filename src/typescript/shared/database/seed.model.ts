@@ -359,6 +359,51 @@ export const userRows = [
     statusId: userStatusRows[2].id,
     lastLoginAt: new Date("2026-07-29T16:00:00Z"),
   },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d66",
+    tenantId: tenantRows[0].id,
+    email: "avery.client@example.com",
+    displayName: "Avery Chen",
+    roleId: roleRows[2].id,
+    statusId: userStatusRows[1].id,
+    lastLoginAt: new Date("2026-08-02T13:00:00Z"),
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d67",
+    tenantId: tenantRows[1].id,
+    email: "riley.client@example.com",
+    displayName: "Riley Khan",
+    roleId: roleRows[2].id,
+    statusId: userStatusRows[0].id,
+    lastLoginAt: null,
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d68",
+    tenantId: tenantRows[2].id,
+    email: "marisol.admin@example.com",
+    displayName: "Marisol Vega",
+    roleId: roleRows[0].id,
+    statusId: userStatusRows[1].id,
+    lastLoginAt: new Date("2026-08-03T18:10:00Z"),
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d69",
+    tenantId: tenantRows[3].id,
+    email: "nolan.advisor@example.com",
+    displayName: "Nolan Brooks",
+    roleId: roleRows[1].id,
+    statusId: userStatusRows[1].id,
+    lastLoginAt: new Date("2026-08-01T15:45:00Z"),
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d70",
+    tenantId: tenantRows[4].id,
+    email: "piper.client@example.com",
+    displayName: "Piper Stone",
+    roleId: roleRows[2].id,
+    statusId: userStatusRows[0].id,
+    lastLoginAt: null,
+  },
 ] as const satisfies readonly SeedUserRow[];
 
 export const credentialRows = [
@@ -392,6 +437,36 @@ export const credentialRows = [
     passwordHash:
       "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtNQ$YXV0aC1oYXNoLW9uZS0wNQ",
   },
+  {
+    id: "cm7zq8f4k0005a1b2c3d4e5f6",
+    userId: userRows[5].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtNg$YXV0aC1oYXNoLW9uZS0wNg",
+  },
+  {
+    id: "cm7zq8f4k0006a1b2c3d4e5f6",
+    userId: userRows[6].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtNw$YXV0aC1oYXNoLW9uZS0wNw",
+  },
+  {
+    id: "cm7zq8f4k0007a1b2c3d4e5f6",
+    userId: userRows[7].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtOA$YXV0aC1oYXNoLW9uZS0wOA",
+  },
+  {
+    id: "cm7zq8f4k0008a1b2c3d4e5f6",
+    userId: userRows[8].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtOQ$YXV0aC1oYXNoLW9uZS0wOQ",
+  },
+  {
+    id: "cm7zq8f4k0009a1b2c3d4e5f6",
+    userId: userRows[9].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtMTA$YXV0aC1oYXNoLTEw",
+  },
 ] as const satisfies readonly SeedCredentialRow[];
 
 export const mfaEnrollmentRows = [
@@ -419,6 +494,31 @@ export const mfaEnrollmentRows = [
     userId: userRows[4].id,
     totpSecret: "PBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXS",
     isEnrolled: true,
+  },
+  {
+    userId: userRows[5].id,
+    totpSecret: "QBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXT",
+    isEnrolled: true,
+  },
+  {
+    userId: userRows[6].id,
+    totpSecret: "RBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXU",
+    isEnrolled: false,
+  },
+  {
+    userId: userRows[7].id,
+    totpSecret: "SBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXV",
+    isEnrolled: true,
+  },
+  {
+    userId: userRows[8].id,
+    totpSecret: "TBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXW",
+    isEnrolled: true,
+  },
+  {
+    userId: userRows[9].id,
+    totpSecret: "UBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXX",
+    isEnrolled: false,
   },
 ] as const satisfies readonly SeedMfaEnrollmentRow[];
 
@@ -574,6 +674,33 @@ export const clientRosterRows = [
     filingStatus: "HoH - W-2",
     ytdIncome: "72500.00",
     estimatedTax: "11140.00",
+    quarterlyStatus: null,
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e84",
+    tenantId: tenantRows[2].id,
+    clientName: "Casey Morgan",
+    filingStatus: "MFJ - K-1",
+    ytdIncome: "286000.00",
+    estimatedTax: "84200.00",
+    quarterlyStatus: "Q3 due Sep 15",
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e85",
+    tenantId: tenantRows[3].id,
+    clientName: "Taylor Reed",
+    filingStatus: "Single - Schedule C",
+    ytdIncome: "152750.00",
+    estimatedTax: "46900.00",
+    quarterlyStatus: "Q3 due Sep 15",
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e86",
+    tenantId: tenantRows[4].id,
+    clientName: "Piper Stone",
+    filingStatus: "HoH - W-2 + 1099",
+    ytdIncome: "96300.00",
+    estimatedTax: "18450.00",
     quarterlyStatus: null,
   },
 ] as const satisfies readonly SeedClientRosterRow[];
