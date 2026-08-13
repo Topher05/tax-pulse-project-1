@@ -1184,6 +1184,50 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - `docker compose -f docker-compose.yml -f docker-compose.redis.yml config --quiet` passed.
 - `npm run aws:stage-changed-smoke` passed against the team AWS SNS/SQS resources after using the `taxpulse-login` profile, blanking LocalStack endpoint overrides for the process, and correcting the SNS topic ARN to the topic resource rather than the subscription ARN. Latest smoke published event `stage-transition-956f813e-ae8e-4fb8-ac13-04c60f93113c`, received it from SQS, and inspected 1 message.
 
+## dylan-harle-jira159 - SCRUM-159
+
+**Branch:** `dylan-harle-jira159`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-159
+
+**Summary:** Refactor the stage-event consumer to a Lambda
+
+**Description:** As a Platform Engineer, I want the Sprint 4 stage-changed consumer running as a Lambda, so that bursting events are handled serverlessly.
+
+**Acceptance Criteria:**
+
+- The consumer that was a plain service now runs as a Lambda triggered by the SQS queue.
+- The Lambda updates the Plan Cycle Queue read model on each event.
+- Messages that fail processing route to the existing DLQ.
+
+**Code Connection:**
+
+- Added a Lambda SQS batch handler for stage-changed events.
+- Reused the existing SNS-to-SQS parser and updated the DynamoDB queue projection stage directly from the CloudEvent payload so the Lambda does not require new AWS Postgres or Redis resources.
+- Returned Lambda partial batch failures by SQS message id so successful records can be deleted by Lambda while failed records retry through SQS redrive to the existing DLQ.
+- Kept the plain SQS polling consumer intact for local smoke and SCRUM-156 compatibility.
+
+**Project Scope Connection:**
+
+- Platform.
+- Builds directly on SCRUM-156 AWS SNS/SQS wiring and SCRUM-136 idempotent queue-projection behavior without changing the stage-changed CloudEvents schema or adding a separate case status.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/stageChanged/LambdaHandler.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/stageChanged/index.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedLambdaHandler.test.ts`
+- `src/typescript/shared/scripts/awsStageChangedSmoke.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- Not run yet at user request while AWS Lambda setup is still in progress.
+
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
 

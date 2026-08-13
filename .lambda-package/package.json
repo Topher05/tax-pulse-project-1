@@ -1,0 +1,71 @@
+{
+  "name": "tax-pulse-project-team-1",
+  "version": "1.0.0",
+  "description": "TaxPulse project workspace",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": "22.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:web": "npm --prefix src/pulseUI run build",
+    "db:check": "drizzle-kit check",
+    "db:gen": "drizzle-kit generate",
+    "db:monitor": "drizzle-kit studio",
+    "db:migrate": "drizzle-kit migrate",
+    "db:force": "drizzle-kit push",
+    "db:up": "drizzle-kit up",
+    "dev": "tsx src/typescript/index.ts",
+    "dev:web": "npm --prefix src/pulseUI run dev",
+    "aws:stage-changed-smoke": "tsx src/typescript/shared/scripts/awsStageChangedSmoke.ts",
+    "cloud:tap": "tsx src/typescript/shared/scripts/cloudTap.ts",
+    "redis:up": "docker compose -f docker-compose.redis.yml up -d",
+    "redis:down": "docker compose -f docker-compose.redis.yml down",
+    "redis:smoke": "tsx src/typescript/shared/scripts/redisSmoke.ts",
+    "seed": "tsx src/typescript/shared/database/seed.ts",
+    "stack:up": "docker compose -f docker-compose.redis.yml down && docker compose -p taxpulse-local -f docker-compose.yml -f docker-compose.redis.yml up --build -d",
+    "stack:down": "docker compose -p taxpulse-local -f docker-compose.yml -f docker-compose.redis.yml down",
+    "stack:smoke": "tsx src/typescript/shared/scripts/stackSmoke.ts",
+    "start": "node dist/typescript/index.js",
+    "test": "npm run typecheck && npm run test:vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:pact": "vitest run tests/typescript/features/taxPlanCycle/engineClient.pact.test.ts",
+    "test:cov": "vitest run --coverage",
+    "test:smoke": "node --import tsx --test tests/typescript/smoke.test.ts",
+    "test:vitest": "vitest run --config vitest.config.ts",
+    "typecheck": "node scripts/typecheck.mjs"
+  },
+  "devDependencies": {
+    "@pact-foundation/pact": "^17.0.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.15.5",
+    "@vitest/coverage-v8": "^2.1.9",
+    "drizzle-kit": "^0.31.10",
+    "testcontainers": "^12.0.4",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0",
+    "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/client-sns": "^3.1101.0",
+    "@aws-sdk/client-sqs": "^3.1101.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0",
+    "argon2": "^0.44.0",
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.2.1",
+    "jose": "^6.2.3",
+    "otplib": "^13.4.1",
+    "pg": "^8.16.3",
+    "pino": "^9.14.0",
+    "pino-http": "^10.5.0",
+    "redis": "^5.0.0",
+    "zod": "^4.4.3"
+  },
+  "overrides": {
+    "undici": "7.16.0"
+  }
+}
