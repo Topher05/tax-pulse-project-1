@@ -101,6 +101,52 @@ stage-change events from being lost before asynchronous delivery.
 
 - `npm run db:check` passed and loaded the updated Drizzle schema successfully.
 - `git diff --check` passed.
+
+## christopher-martus-jira200 - SCRUM-200
+
+**Branch:** `christopher-martus-jira200`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-200
+
+**Summary:** Migrate the shared JWT from shared-key to RS256 with a JWKS
+
+**Description:**
+
+As a Security Engineer, migrate the shared JWT from a shared key to RS256 with a
+published JWKS so the gateway and Tax Calculation Engine verify tokens with public keys only.
+
+**Acceptance Criteria:**
+
+- The Node issuer signs access tokens with RS256 and a `kid` header.
+- The issuer publishes public keys by `kid` through a JWKS endpoint.
+- Node middleware and FastAPI select RS256 public keys by `kid` from JWKS and hold no signing key.
+- Existing valid, expired, and tampered-token tests pass against RS256.
+
+**Code Connection:**
+
+- Added the first migration boundary: separate, validated issuer-only RS256 private-key and
+  `kid` configuration from public-key-only JWKS verifier configuration. The existing HS256
+  configuration remains temporarily while the issuing and verification paths are migrated.
+
+**Project Scope Connection:**
+
+- Platform security. This prepares key separation without yet changing the token wire format
+  or access-control claims used by the Core Case Service and Tax Calculation Engine.
+
+**Changed Files:**
+
+- `src/typescript/jwtRs256Config.ts`
+- `.env.example`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Not run: this configuration-only slice deliberately defers test updates until the final
+  SCRUM-200 validation step.
+- `npm run typecheck` is currently blocked by an unrelated `CloudEvents` versus `cloudEvents`
+  filename-casing conflict in `src/typescript/shared/scripts/awsStageChangedSmoke.ts`.
 - A focused `tsx` check built and schema-validated a deterministic stage-changed
   CloudEvent through the relocated domain helper.
 - `npm run db:check` and `git diff --check` continue to pass after the second slice.
