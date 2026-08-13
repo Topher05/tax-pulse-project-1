@@ -5,6 +5,9 @@ import { DashboardPage } from "../pages/dashboard/DashboardPage.tsx";
 import { EmptyPage } from "../pages/EmptyPage.tsx";
 import { ClientRosterPage } from "../pages/clients/ClientRosterPage.tsx";
 import { TeamUsersPage } from "../pages/firm/TeamUsersPage.tsx";
+import { AllTenantsUsersPage } from "../pages/administration/AllTenantsUsersPage.tsx";
+import { AuditLogPage } from "../pages/administration/AuditLogPage.tsx";
+import { RolesPermissionsPage } from "../pages/administration/RolesPermissionsPage.tsx";
 import { DeductionsPage } from "../pages/deductions/DeductionsPage.tsx";
 import { QuarterlyPaymentsPage } from "../pages/quarterlyPayments/QuarterlyPaymentsPage.tsx";
 import { IncomePage } from "../pages/income/IncomePage.tsx";
@@ -51,6 +54,16 @@ function ClientOnlyRoute({ children }: { readonly children: ReactNode }) {
   const { user } = useSession();
 
   if (user?.role !== "Client") {
+    return <Navigate replace to="/" />;
+  }
+
+  return <>{children}</>;
+}
+
+function PlatformAdminOnlyRoute({ children }: { readonly children: ReactNode }) {
+  const { user } = useSession();
+
+  if (user === null || user.role !== "TaxPulse Platform Admin") {
     return <Navigate replace to="/" />;
   }
 
@@ -170,9 +183,9 @@ const administrationTenantsUsersRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/administration/tenants-users",
   component: () => (
-    <AdminOnlyRoute>
-      <EmptyPage />
-    </AdminOnlyRoute>
+    <PlatformAdminOnlyRoute>
+      <AllTenantsUsersPage />
+    </PlatformAdminOnlyRoute>
   ),
 });
 
@@ -180,9 +193,9 @@ const administrationRolesPermissionsRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/administration/roles-permissions",
   component: () => (
-    <AdminOnlyRoute>
-      <EmptyPage />
-    </AdminOnlyRoute>
+    <PlatformAdminOnlyRoute>
+      <RolesPermissionsPage />
+    </PlatformAdminOnlyRoute>
   ),
 });
 
@@ -190,9 +203,9 @@ const administrationAuditLogRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/administration/audit-log",
   component: () => (
-    <AdminOnlyRoute>
-      <EmptyPage />
-    </AdminOnlyRoute>
+    <PlatformAdminOnlyRoute>
+      <AuditLogPage />
+    </PlatformAdminOnlyRoute>
   ),
 });
 
