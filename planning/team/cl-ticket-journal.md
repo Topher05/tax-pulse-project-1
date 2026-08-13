@@ -406,7 +406,7 @@ sequenceDiagram
 
 **Code Connection:**
 
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/PresentToClientSaga.ts` owns the compensating saga orchestration.
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/PresentToClientSaga.ts` owns the compensating saga orchestration.
 - `src/typescript/features/taxPlanCycle/controllers/transitionController.ts` delegates the present-to-client branch to the saga helper.
 - `src/typescript/shared/scripts/cloudTap.ts` adds the in-memory present-to-client success and compensation sequences.
 - `tests/typescript/features/taxPlanCycle/presentToClientSaga.test.ts` covers the saga success and rollback behavior.
@@ -421,8 +421,8 @@ sequenceDiagram
 
 **Changed Files:**
 
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/PresentToClientSaga.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/PresentToClientSaga.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/index.ts`
 - `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/index.ts`
