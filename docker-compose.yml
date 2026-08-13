@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:18-alpine
     environment:
-      POSTGRES_DB: taxpulse
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
+      POSTGRES_USER: ${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}
+      POSTGRES_PASSWORD: ${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}
     ports:
       - "54318:5432"
     volumes:
       - taxpulse-postgres-18-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d taxpulse"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -46,7 +46,7 @@ services:
       dockerfile: Dockerfile
       target: build
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/taxpulse
+      DATABASE_URL: postgresql://${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}:${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}@postgres:5432/${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,7 +58,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/taxpulse
+      DATABASE_URL: postgresql://${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}:${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}@postgres:5432/${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
       JWT_ISSUER: ${JWT_ISSUER:-https://auth.taxpulse.example}
       JWT_SIGNING_SECRET: ${JWT_SIGNING_SECRET:-local-compose-signing-secret-at-least-32-bytes}
       JWT_ACCESS_TOKEN_TTL_SECONDS: ${JWT_ACCESS_TOKEN_TTL_SECONDS:-900}
