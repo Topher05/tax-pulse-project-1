@@ -7,7 +7,7 @@ const defaultTaxEngineBaseUrl = "http://127.0.0.1:8000";
 const defaultRedisUrl = "redis://localhost:6379";
 const smokeTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01";
 const defaultRetryDelayMs = 1_000;
-const defaultRetryAttempts = 45;
+const defaultRetryAttempts = 5;
 
 export interface StackSmokeResult {
   coreHealth: string;
@@ -30,6 +30,14 @@ export function buildStackSmokeEmail(now: () => Date = () => new Date()): string
   const timestamp = now().toISOString().replace(/[^0-9]/g, "");
 
   return `compose-smoke-${timestamp}@example.com`;
+}
+
+export function buildStackSmokeConnectionFailureMessage(
+  label: string,
+  attempts: number,
+  reason: string,
+): string {
+  return `${label} failed to connect container after ${attempts} attempts: ${reason}`;
 }
 
 async function fetchJson(
@@ -107,9 +115,11 @@ async function retry<T>(
   }
 
   throw new Error(
-    `${label} did not pass after ${attempts} attempts: ${
-      lastError instanceof Error ? lastError.message : String(lastError)
-    }`,
+    buildStackSmokeConnectionFailureMessage(
+      label,
+      attempts,
+      lastError instanceof Error ? lastError.message : String(lastError),
+    ),
   );
 }
 
