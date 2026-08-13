@@ -97,6 +97,20 @@ and `JWT_SIGNING_SECRET`.
 When the API container connects to a database on your host machine, `DATABASE_URL` must
 use `host.docker.internal` instead of `localhost` as in the example.
 
+To run the Tax Engine in Docker, build the Python image and start a container from the
+repository root:
+
+```bash
+docker build -f Dockerfile.tax-engine -t taxpulse/tax-engine .
+docker run --name tax-engine -p 8000:8000 --env-file .env taxpulse/tax-engine
+```
+
+The container exposes the FastAPI liability engine on `http://localhost:8000`. The
+image starts `tax_liability_engine.api:create_app` through Uvicorn, and the container
+healthcheck calls `GET /health`. Make sure `.env` includes `JWT_ISSUER` and
+`JWT_SIGNING_SECRET`; the FastAPI app loads those values during startup so calculation
+routes can validate the shared JWTs issued by the Core Case Service.
+
 ```bash
 python -m tax_liability_engine.main
 python -m ruff format --check src tests

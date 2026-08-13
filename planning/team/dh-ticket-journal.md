@@ -5,6 +5,74 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira154 - SCRUM-154
+
+**Branch:** `dylan-harle-jira154`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-154
+
+**Summary:** Write the multi-stage Dockerfile for the Tax Engine.
+
+**Description:** As a Platform Engineer, I want a multi-stage Dockerfile for the Tax
+Calculation Engine, so that its production image is lean.
+
+**Acceptance Criteria:**
+
+- The Python image builds in multiple stages and ships only runtime dependencies.
+- The container runs the FastAPI service and passes a healthcheck.
+- The build is reproducible from a clean checkout.
+
+**Code Connection:**
+
+- Added `Dockerfile.tax-engine` as the dedicated Python Tax Engine image while leaving
+  the existing root Core Case Service Dockerfile intact.
+- The builder stage installs locked runtime dependencies from `uv.lock` without Python
+  dev extras, installs `tax_liability_engine`, and copies only the resulting virtualenv
+  into the runtime stage.
+- The runtime stage starts `tax_liability_engine.api:create_app` through Uvicorn on
+  `0.0.0.0:${PORT:-8000}` and uses the existing unauthenticated `/health` route for the
+  Docker healthcheck.
+- Added a Dockerfile-specific ignore file so clean-checkout builds include the Python
+  package and dependency metadata without sending Node, Pulse UI, tests, docs, local
+  env files, or planning artifacts into the Tax Engine build context.
+- Documented the Tax Engine Docker build/run commands and clarified the JWT environment
+  values used by Docker and Docker Compose.
+
+**Project Scope Connection:**
+
+- Containers, Serverless & Deployment.
+- Builds on SCRUM-84 and ADR-0016 by packaging the existing feature-sliced FastAPI
+  service without changing calculation routes, JWT behavior, persistence boundaries, or
+  the ADR's local interpreter startup command.
+- Preserves ADR-0009 service ownership by keeping the Tax Engine image focused on
+  calculation execution and free of Core Case Service database ownership.
+
+**Changed Files:**
+
+- `Dockerfile.tax-engine`
+- `Dockerfile.tax-engine.dockerignore`
+- `.env.example`
+- `README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `.\.venv\Scripts\python.exe -m pyright --pythonpath .\.venv\Scripts\python.exe`
+  passed.
+- `.\.venv\Scripts\python.exe -m pytest` passed with 91 tests passed and 2 skipped.
+- `docker build -f Dockerfile.tax-engine -t taxpulse/tax-engine .` passed.
+- `docker run -d --rm --name tax-engine-scrum154 -e JWT_ISSUER=... -e
+  JWT_SIGNING_SECRET=... taxpulse/tax-engine` started successfully, and
+  `docker inspect --format='{{.State.Health.Status}}' tax-engine-scrum154` reported
+  `healthy`.
+- Runtime dependency inspection inside `taxpulse/tax-engine` reported required runtime
+  modules present and dev-only modules `pytest`, `ruff`, and `pyright` absent.
+- `git diff --check` passed with line-ending normalization warnings only.
+- `.\.venv\Scripts\python.exe -m ruff format --check src tests` was blocked by an
+  existing unrelated formatting issue in `tests/tax_liability_engine/smoke_test.py`.
+
 ## dylan-harle-jira152 - SCRUM-152
 
 **Branch:** `dylan-harle-jira152`
