@@ -38,11 +38,13 @@ function hashRefreshToken(rawRefreshToken: string): string {
 }
 
 export function createTokenService(options: CreateTokenServiceOptions): TokenService {
+  if (!options.rs256IssuerConfig) {
+    throw new Error("RS256 issuer configuration is required.");
+  }
   const now = options.now ?? (() => new Date());
   const randomBytes = options.randomBytes ?? nodeRandomBytes;
-  const signingKey = options.rs256IssuerConfig === undefined
-    ? new TextEncoder().encode(options.config.signingSecret)
-    : importPKCS8(options.rs256IssuerConfig.signingPrivateKeyPem, "RS256");
+  const issuerConfig = options.rs256IssuerConfig;
+  const signingKey = importPKCS8(issuerConfig.signingPrivateKeyPem, "RS256");
 
   const service: TokenService = {
     async issue(principal) {
@@ -65,13 +67,11 @@ export function createTokenService(options: CreateTokenServiceOptions): TokenSer
         tenant_id: principal.tenantId,
       } satisfies Omit<AccessTokenClaims, "sub" | "iss" | "iat" | "exp">)
         .setProtectedHeader(
-          options.rs256IssuerConfig === undefined
-            ? { alg: "HS256", typ: "JWT" }
-            : {
-                alg: "RS256",
-                kid: options.rs256IssuerConfig.signingKeyId,
-                typ: "JWT",
-              },
+          {
+            alg: "RS256",
+            kid: issuerConfig.signingKeyId,
+            typ: "JWT",
+          },
         )
         .setSubject(principal.userId)
         .setIssuer(options.config.issuer)

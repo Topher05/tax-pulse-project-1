@@ -88,8 +88,7 @@ class JwtValidationConfig:
     """JWT validation configuration supplied by the service environment."""
 
     issuer: str
-    jwks_url: str | None = None
-    signing_secret: str | None = None
+    jwks_url: str
 
     @classmethod
     def from_environment(cls, environment: Mapping[str, str] | None = None) -> JwtValidationConfig:
@@ -101,16 +100,9 @@ class JwtValidationConfig:
 
         if not issuer:
             raise ValueError("JWT_ISSUER is required.")
-        if jwks_url:
-            return cls(issuer=issuer, jwks_url=jwks_url)
-
-        signing_secret = values.get("JWT_SIGNING_SECRET", "")
-        if not signing_secret.strip():
+        if not jwks_url:
             raise ValueError("JWT_JWKS_URL is required.")
-        if len(signing_secret.encode("utf-8")) < 32:
-            raise ValueError("JWT_SIGNING_SECRET must contain at least 32 UTF-8 bytes.")
-
-        return cls(issuer=issuer, signing_secret=signing_secret)
+        return cls(issuer=issuer, jwks_url=jwks_url)
 
 
 @dataclass(frozen=True)
@@ -147,7 +139,7 @@ def create_jwt_authentication_dependency(
     """Create a FastAPI dependency that validates Node-issued access JWTs."""
 
     bearer_scheme = HTTPBearer(auto_error=False)
-    jwks_key_provider = _JwksKeyProvider(config.jwks_url) if config.jwks_url else None
+    jwks_key_provider = _JwksKeyProvider(config.jwks_url)
 
     async def require_authenticated_principal(
         credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),  # noqa: B008
@@ -156,14 +148,8 @@ def create_jwt_authentication_dependency(
             raise _authentication_required()
 
         try:
-            if jwks_key_provider:
-                signing_key = await jwks_key_provider.get_signing_key(credentials.credentials)
-                algorithms = ["RS256"]
-            elif config.signing_secret:
-                signing_key = config.signing_secret
-                algorithms = ["HS256"]
-            else:
-                raise _JwksKeyNotFoundError
+            signing_key = await jwks_key_provider.get_signing_key(credentials.credentials)
+            algorithms = ["RS256"]
 
             payload = jwt.decode(
                 credentials.credentials,

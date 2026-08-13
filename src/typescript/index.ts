@@ -572,7 +572,6 @@ import {
   getTenantLoginBaseDomainFromEnv,
 } from "./authConfig.js";
 import { getJwtRs256IssuerConfigFromEnv } from "./jwtRs256Config.js";
-import { getJwtJwksVerifierConfigFromEnv } from "./jwtRs256Config.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createAuthSessionRouter } from "./authSessionRoutes.js";
@@ -643,11 +642,7 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 
 export async function main(): Promise<Server> {
   const jwtConfig = getJwtConfigFromEnv();
-  const useRs256Issuer = Boolean(
-    process.env.JWT_SIGNING_PRIVATE_KEY || process.env.JWT_SIGNING_KEY_ID,
-  );
-  const jwtRs256IssuerConfig = useRs256Issuer ? getJwtRs256IssuerConfigFromEnv() : undefined;
-  const jwtJwksVerifierConfig = useRs256Issuer ? getJwtJwksVerifierConfigFromEnv() : undefined;
+  const jwtRs256IssuerConfig = getJwtRs256IssuerConfigFromEnv();
   const tenantLoginBaseDomain = getTenantLoginBaseDomainFromEnv();
   const logger = createLogger();
 
@@ -757,9 +752,7 @@ export async function main(): Promise<Server> {
   const app = createApp({
     logger,
     registerRoutes: (app) => {
-      if (jwtRs256IssuerConfig) {
-        app.use(createJwksRouter({ issuerConfig: jwtRs256IssuerConfig }));
-      }
+      app.use(createJwksRouter({ issuerConfig: jwtRs256IssuerConfig }));
       app.use(createCoreCaseOpenApiRouter());
       app.use(createMfaEnrollmentRouter({
         controller: mfaEnrollmentController,
@@ -767,7 +760,7 @@ export async function main(): Promise<Server> {
       // CL Version-scoped auth middleware for v1 routes; review before removing or widening this guard.
       app.use(
         taxPlanCycleApiPrefix,
-        createJwtAuthenticationMiddleware({ config: jwtConfig, jwksVerifierConfig: jwtJwksVerifierConfig }),
+        createJwtAuthenticationMiddleware({ config: jwtConfig }),
         hydrateUserClaims(),
         createCostAccountingMiddleware(),
         createTenantRateLimitMiddleware(),

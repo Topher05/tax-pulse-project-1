@@ -126,19 +126,14 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 
 **Code Connection:**
 
-- Added the first migration boundary: separate, validated issuer-only RS256 private-key and
-  `kid` configuration from public-key-only JWKS verifier configuration. The existing HS256
-  configuration remains temporarily while the issuing and verification paths are migrated.
-- RS256-configured issuers now sign access tokens with an `RS256` and `kid` protected header,
-  and publish the corresponding public JWK at `GET /.well-known/jwks.json`. The legacy HS256
-  path remains temporarily available only when the RS256 issuer configuration is absent.
-- The Node authentication middleware now uses `createRemoteJWKSet` when RS256 is configured,
-  selects the public key by `kid`, and restricts verification to RS256. Its JWKS path does not
-  retain a signing key.
-- The FastAPI dependency now retrieves public JWKS keys by `kid`, caches them for five minutes,
-  refreshes once for an unknown key to support rotation, and validates RS256 access tokens
-  without a signing key. The legacy HS256 path remains temporarily available only when no JWKS
-  URL is configured.
+- Added validated issuer-only RS256 private-key and `kid` configuration plus public-key-only
+  JWKS verifier configuration; the former shared-secret environment setting is no longer read.
+- The Node issuer always signs access tokens with an `RS256` and `kid` protected header, and
+  publishes the corresponding public JWK at `GET /.well-known/jwks.json`.
+- Node authentication middleware uses `createRemoteJWKSet`, selects the public key by `kid`,
+  and restricts verification to RS256 without retaining a signing key.
+- The FastAPI dependency requires a JWKS URL, retrieves public keys by `kid`, caches them for
+  five minutes, refreshes once for an unknown key to support rotation, and accepts RS256 only.
 - Documented that the Core Case Service alone requires the RSA private key, while the Tax Engine
   requires only the issuer and public JWKS URL.
 - Added focused RS256/JWKS FastAPI coverage for valid, expired, and tampered access tokens.

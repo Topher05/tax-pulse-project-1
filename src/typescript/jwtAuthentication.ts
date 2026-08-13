@@ -3,7 +3,6 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 
 import type { JwtConfig } from "./authConfig.js";
 import type { AuthenticatedPrincipal, UserRole } from "./authTypes.js";
-import type { JwtJwksVerifierConfig } from "./jwtRs256Config.js";
 import { roleNameEnum } from "./shared/database/schema.js";
 import { ProblemHttpError } from "./errors.js";
 
@@ -23,7 +22,6 @@ declare global {
 
 export interface CreateJwtAuthenticationMiddlewareOptions {
   config: JwtConfig;
-  jwksVerifierConfig?: JwtJwksVerifierConfig;
 }
 
 export interface CreateHydrateUserClaimsOptions {
@@ -104,26 +102,14 @@ export function hydrateUserClaims(
 
 export function createJwtAuthenticationMiddleware({
   config,
-  jwksVerifierConfig,
 }: CreateJwtAuthenticationMiddlewareOptions): RequestHandler {
   const verifyToken = (() => {
-    if (jwksVerifierConfig) {
-      const issuer = jwksVerifierConfig.issuer;
-      const jwks = createRemoteJWKSet(new URL(jwksVerifierConfig.jwksUrl));
-
-      return async (token: string) => await jwtVerify(token, jwks, {
-        algorithms: ["RS256"],
-        issuer,
-        requiredClaims: ["exp"],
-      });
-    }
-
-    const issuer = config.issuer;
-    const signingKey = new TextEncoder().encode(config.signingSecret);
-
-    return async (token: string) => await jwtVerify(token, signingKey, {
-      algorithms: ["HS256"],
-      issuer,
+    const jwks = createRemoteJWKSet(
+      new URL(config.jwksUrl ?? new URL("/.well-known/jwks.json", config.issuer)),
+    );
+    return async (token: string) => await jwtVerify(token, jwks, {
+      algorithms: ["RS256"],
+      issuer: config.issuer,
       requiredClaims: ["exp"],
     });
   })();
