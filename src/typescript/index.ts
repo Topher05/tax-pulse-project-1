@@ -306,6 +306,19 @@ export {
   type TaxEngineComparisonRequest,
 } from "./features/taxPlanCycle/index.js";
 export {
+  createTinEinValidationSoapClient,
+  getTinEinValidationSoapConfigFromEnv,
+  type TinEinValidationSoapClient,
+  type TinEinValidationSoapClientOptions,
+  type TivsGetTaxpayerStatusRawResponse,
+  type TivsGetTaxpayerStatusRequest,
+  type TivsMatchCode,
+  type TivsStandingCode,
+  type TivsTinType,
+  type TivsVerifyTaxpayerRawResponse,
+  type TivsVerifyTaxpayerRequest,
+} from "./features/taxPlanCycle/index.js";
+export {
   getJwtConfigFromEnv,
   getTenantLoginBaseDomainFromEnv,
   type JwtConfig,
