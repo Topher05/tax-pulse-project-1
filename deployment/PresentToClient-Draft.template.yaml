@@ -24,12 +24,6 @@ Parameters:
     Type: String
     Default: ""
     Description: Optional Redis URL for queue cache invalidation.
-  VpcSubnetIds:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: Private subnets for the Lambda functions.
-  VpcSecurityGroupIds:
-    Type: List<AWS::EC2::SecurityGroup::Id>
-    Description: Security groups that can reach the database.
 
 Globals:
   Function:
@@ -47,9 +41,6 @@ Globals:
         TAXPULSE_ACTION_ITEM_CREATED_TOPIC_ARN: !Ref ActionItemCreatedTopicArn
         TAXPULSE_REDIS_URL: !Ref RedisUrl
         AWS_REGION: !Ref AWS::Region
-    VpcConfig:
-      SecurityGroupIds: !Ref VpcSecurityGroupIds
-      SubnetIds: !Ref VpcSubnetIds
 
 Resources:
   PresentToClientFunction:

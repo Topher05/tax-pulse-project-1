@@ -45,24 +45,27 @@ Add new ticket entries below using this template.
 
 **Summary:** Refactor present-to-client and execute stubs to Lambda + API Gateway
 
-**Description:** Implement SCRUM-160 as a full AWS deployment refactor for the present-to-client and execute transitions, with a new ADR at index 30 and SCRUM-138 already merged into the branch before implementation starts.
+**Description:** Implement SCRUM-160 as a full AWS deployment refactor for the present-to-client and execute transitions, with a new ADR at index 30 and SCRUM-138 already merged into the branch before implementation starts. SCRUM-138 is the behavioral dependency for the compensating present-to-client saga and event contract, while SCRUM-156 is only a local emulation dependency that should not shape the AWS delivery path.
 
 **Acceptance Criteria:**
 
 - The present-to-client and execute transitions run behind AWS Lambda handlers and API Gateway routes.
 - The AWS deployment path includes the required runtime config, IAM permissions, and event-publishing wiring.
 - The new ADR at index 30 records the Lambda + API Gateway architecture decision.
-- Any SCRUM-156-dependent behavior is scaffolded and explicitly marked with `TODO: Implmentation needs Jira 156` if encountered.
+- Lambda is the command boundary only; the Tax Plan Cycle feature slice retains transition rules, audit writes, stage-changed emission, and present-to-client compensation.
+- SCRUM-138 supplies the saga and event semantics that the Lambda path must preserve.
+- SCRUM-156 is not a production prerequisite; if any legacy code still depends on it, it is scaffolded only and marked with `TODO: Implmentation needs Jira 156`.
 - The code compiles and the relevant tests pass with the SCRUM-138 behavior already present.
 
 **Code Connection:**
 
 - `src/typescript/features/taxPlanCycle/lambdaHandlers.ts` adds the Lambda HTTP adapters, auth handling, validation, and transition responses.
 - `src/typescript/features/taxPlanCycle/lambdaRuntime.ts` wires the AWS runtime together with Postgres, Redis cache invalidation, JWT auth, and SNS publishers.
-- `deployment/scrum160.template.yaml` defines the Lambda, API Gateway, IAM, and environment-variable deployment shape.
+- `deployment/PresentToClient-Draft.template.yaml` defines the Lambda, API Gateway, IAM, and environment-variable deployment shape.
 - `adr/0030-lambda-api-gateway-integration.md` documents the AWS Lambda + API Gateway cutover decision.
 - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/SnsPublisher.ts` adds the action-item SNS publisher boundary used by the present-to-client flow.
 - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/model.ts` keeps the action-item CloudEvent contract aligned with the existing SCRUM-138 behavior.
+- The Lambda boundary does not absorb the transition logic; it adapts API Gateway requests to the existing Tax Plan Cycle use case and preserves the same auth and event semantics.
 - `src/typescript/features/taxPlanCycle/index.ts` and `src/typescript/index.ts` re-export the new Lambda and SNS helpers for composition and testing.
 
 **Project Scope Connection:**
@@ -70,32 +73,34 @@ Add new ticket entries below using this template.
 - Event-Driven Workflow & Legacy Integration
 - Serverless deployment cutover for the Tax Plan Cycle workflow
 - Preserves the SCRUM-138 transition behavior while moving the delivery path into AWS infrastructure
+- Keeps SCRUM-156 out of the AWS path unless a temporary scaffold is still required for a leftover local-only code path
 
-**Changed Files:**
+  **Changed Files:**
 
-- `.env.example`
-- `README.md`
-- `adr/0030-lambda-api-gateway-integration.md`
-- `adr/README.md`
-- `deployment/scrum160.template.yaml`
-- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
-- `src/typescript/features/taxPlanCycle/lambdaRuntime.ts`
-- `src/typescript/features/taxPlanCycle/index.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/SnsPublisher.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/model.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/index.ts`
-- `src/typescript/index.ts`
-- `vitest.config.ts`
-- `tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts`
-- `tests/typescript/features/taxPlanCycle/lambdaHandlers.test.ts`
+  - `.env.example`
+  - `.env`
+  - `README.md`
+  - `adr/0030-lambda-api-gateway-integration.md`
+  - `adr/README.md`
+  - `deployment/PresentToClient-Draft.template.yaml`
+  - `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+  - `src/typescript/features/taxPlanCycle/lambdaRuntime.ts`
+  - `src/typescript/features/taxPlanCycle/index.ts`
+  - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/SnsPublisher.ts`
+  - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.ts`
+  - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/model.ts`
+  - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/index.ts`
+  - `src/typescript/index.ts`
+  - `vitest.config.ts`
+  - `tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts`
+  - `tests/typescript/features/taxPlanCycle/lambdaHandlers.test.ts`
 
-**Validation Notes:**
+  **Validation Notes:**
 
-- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run typecheck"` passed.
-- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/lambdaHandlers.test.ts tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/actionItemCreatedEvent.test.ts tests/typescript/features/taxPlanCycle/actionItemConsumer.test.ts tests/typescript/shared/scripts/cloudTap.test.ts"` passed.
-- `vitest.config.ts` now excludes `tests/typescript/tenantsMigration.test.ts` so the commented-out deprecated file is not discovered by the runner.
-- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd test"` still reaches the active suite, but it fails on existing long-running repository tests and a Docker/Testcontainers port-binding issue unrelated to SCRUM-160.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/lambdaHandlers.test.ts tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/actionItemCreatedEvent.test.ts tests/typescript/features/taxPlanCycle/actionItemConsumer.test.ts tests/typescript/shared/scripts/cloudTap.test.ts"` now fails during Vitest module loading with `Failed to load url sqlite (resolved id: sqlite)`, so the active test pass is currently blocked by that runner issue rather than by the SCRUM-160 config edits.
+  - `vitest.config.ts` now excludes `tests/typescript/tenantsMigration.test.ts` so the commented-out deprecated file is not discovered by the runner.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd test"` still reaches the active suite, but it fails on existing long-running repository tests and a Docker/Testcontainers port-binding issue unrelated to SCRUM-160.
 
 ## caleb-latimer-jira128 - SCRUM-128
 

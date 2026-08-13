@@ -457,7 +457,7 @@ present in the runtime environment:
 - `TAXPULSE_ACTION_ITEM_CREATED_TOPIC_ARN`
 
 The reference deployment template for that cutover lives in
-[`deployment/scrum160.template.yaml`](./deployment/scrum160.template.yaml).
+[`deployment/PresentToClient-Draft.template.yaml`](./deployment/PresentToClient-Draft.template.yaml).
 
 Apply all migrations:
 
