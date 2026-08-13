@@ -5,6 +5,74 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira155 - SCRUM-155
+
+**Branch:** `dylan-harle-jira155`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-155
+
+**Summary:** Compose the services, PostgreSQL, and Redis.
+
+**Description:** As a Platform Engineer, I want Docker Compose running the services and
+data stores, so that the team can run the stack locally.
+
+**Acceptance Criteria:**
+
+- Compose starts the Core Case Service, Tax Engine, PostgreSQL, and Redis together.
+- The services reach the data stores over the Compose network; the Core Case Service
+  serves the identity/auth routes against its Postgres tables.
+- A documented command brings the stack up and a smoke check passes.
+
+**Code Connection:**
+
+- Added a root `docker-compose.yml` for PostgreSQL 18, the SCRUM-153 Core Case Service
+  image, the SCRUM-154 Tax Engine image, and a one-shot Core seed service.
+- The full-stack npm scripts reuse `docker-compose.redis.yml` so Redis and RedisInsight
+  keep their existing service definition and container names.
+- Compose overrides runtime URLs inside containers with Compose DNS:
+  `postgres:5432`, `taxpulse-redis:6379`, and `tax-engine:8000`, while preserving
+  `.env.example`'s `host.docker.internal` guidance for standalone `docker run`.
+- Added a stack smoke script that checks both health endpoints, Redis ping, and a
+  synthetic `POST /auth/register` through the Core Case Service's PostgreSQL-backed
+  auth route.
+
+**Project Scope Connection:**
+
+- Containers, Serverless & Deployment.
+- Builds directly on SCRUM-153 and SCRUM-154 without changing either production
+  Dockerfile boundary.
+- Leaves LocalStack SNS/SQS, ECS/Fargate, ALB routing, Terraform, Lambda refactors, and
+  release/security pipeline work to SCRUM-156 and later platform tickets.
+
+**Changed Files:**
+
+- `docker-compose.yml`
+- `package.json`
+- `.env.example`
+- `README.md`
+- `src/typescript/shared/scripts/stackSmoke.ts`
+- `tests/typescript/stackSmoke.test.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/stackSmoke.test.ts
+  tests/typescript/redisSmoke.test.ts` passed with 7 tests.
+- `docker compose -p taxpulse-local -f docker-compose.yml -f
+  docker-compose.redis.yml config` passed and showed Core, Tax Engine, PostgreSQL, and
+  the reused Redis services on the same Compose network.
+- `npm run stack:up` built the Core and Tax Engine images, started PostgreSQL, Redis,
+  and the Tax Engine, and completed the one-shot seed service after the Postgres 18
+  volume target was corrected.
+- Full default startup and `npm run stack:smoke` were blocked locally because an
+  existing standalone `case-service` container already owns host port `3000`. The
+  Compose file now supports `TAXPULSE_CORE_HOST_PORT` and the README documents the
+  matching `TAXPULSE_STACK_CORE_URL` smoke override for that case.
+- `npm run stack:down` was run after validation to clean up the partial Compose stack.
+
 ## dylan-harle-jira154 - SCRUM-154
 
 **Branch:** `dylan-harle-jira154`
