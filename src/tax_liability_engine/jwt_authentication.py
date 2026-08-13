@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import os
+import time
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import Literal, cast
+from urllib.request import urlopen
 
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt.algorithms import RSAAlgorithm
 
 UserRole = Literal["Firm Admin", "Advisor", "Client", "TaxPulse Platform Admin"]
 
@@ -17,27 +22,91 @@ _USER_ROLES: frozenset[str] = frozenset(
     {"Firm Admin", "Advisor", "Client", "TaxPulse Platform Admin"}
 )
 _AUTHENTICATION_REQUIRED_DETAIL = "A valid access token is required."
+_JWKS_CACHE_SECONDS = 300
+
+
+class _JwksKeyNotFoundError(Exception):
+    """Raised when a token cannot be matched to an RSA public key in the JWKS."""
+
+
+class _JwksKeyProvider:
+    """Fetches and caches public signing keys, refreshing once for key rotation."""
+
+    def __init__(self, jwks_url: str) -> None:
+        self._jwks_url = jwks_url
+        self._keys: list[dict[str, object]] = []
+        self._loaded_at = 0.0
+        self._lock = asyncio.Lock()
+
+    async def get_signing_key(self, token: str) -> object:
+        try:
+            header = jwt.get_unverified_header(token)
+        except jwt.InvalidTokenError as error:
+            raise _JwksKeyNotFoundError from error
+
+        key_id = header.get("kid")
+        if header.get("alg") != "RS256" or not isinstance(key_id, str) or not key_id:
+            raise _JwksKeyNotFoundError
+
+        key = self._find_key(await self._get_keys(), key_id)
+        if key is None:
+            key = self._find_key(await self._get_keys(force_refresh=True), key_id)
+        if key is None:
+            raise _JwksKeyNotFoundError
+
+        return RSAAlgorithm.from_jwk(json.dumps(key))
+
+    async def _get_keys(self, *, force_refresh: bool = False) -> list[dict[str, object]]:
+        async with self._lock:
+            cache_is_fresh = time.monotonic() - self._loaded_at < _JWKS_CACHE_SECONDS
+            if self._keys and cache_is_fresh and not force_refresh:
+                return self._keys
+
+            self._keys = await asyncio.to_thread(self._fetch_keys)
+            self._loaded_at = time.monotonic()
+            return self._keys
+
+    def _fetch_keys(self) -> list[dict[str, object]]:
+        with urlopen(self._jwks_url, timeout=5) as response:  # noqa: S310
+            document = cast(object, json.load(response))
+
+        if not isinstance(document, dict):
+            raise _JwksKeyNotFoundError
+        keys = document.get("keys")
+        if not isinstance(keys, list):
+            raise _JwksKeyNotFoundError
+
+        return [key for key in keys if isinstance(key, dict)]
+
+    @staticmethod
+    def _find_key(keys: list[dict[str, object]], key_id: str) -> dict[str, object] | None:
+        return next((key for key in keys if key.get("kid") == key_id), None)
 
 
 @dataclass(frozen=True)
 class JwtValidationConfig:
-    """Shared HMAC JWT configuration supplied by the service environment."""
+    """JWT validation configuration supplied by the service environment."""
 
     issuer: str
-    signing_secret: str
+    jwks_url: str | None = None
+    signing_secret: str | None = None
 
     @classmethod
     def from_environment(cls, environment: Mapping[str, str] | None = None) -> JwtValidationConfig:
-        """Load the shared Node JWT configuration without reading it at import time."""
+        """Load JWT verification configuration without reading it at import time."""
 
         values = os.environ if environment is None else environment
         issuer = values.get("JWT_ISSUER", "").strip()
-        signing_secret = values.get("JWT_SIGNING_SECRET", "")
+        jwks_url = values.get("JWT_JWKS_URL", "").strip()
 
         if not issuer:
             raise ValueError("JWT_ISSUER is required.")
+        if jwks_url:
+            return cls(issuer=issuer, jwks_url=jwks_url)
+
+        signing_secret = values.get("JWT_SIGNING_SECRET", "")
         if not signing_secret.strip():
-            raise ValueError("JWT_SIGNING_SECRET is required.")
+            raise ValueError("JWT_JWKS_URL is required.")
         if len(signing_secret.encode("utf-8")) < 32:
             raise ValueError("JWT_SIGNING_SECRET must contain at least 32 UTF-8 bytes.")
 
@@ -75,9 +144,10 @@ def _to_authenticated_principal(payload: dict[str, object]) -> AuthenticatedPrin
 def create_jwt_authentication_dependency(
     config: JwtValidationConfig,
 ) -> Callable[..., Awaitable[AuthenticatedPrincipal]]:
-    """Create a FastAPI dependency that validates Node-issued HS256 access JWTs."""
+    """Create a FastAPI dependency that validates Node-issued access JWTs."""
 
     bearer_scheme = HTTPBearer(auto_error=False)
+    jwks_key_provider = _JwksKeyProvider(config.jwks_url) if config.jwks_url else None
 
     async def require_authenticated_principal(
         credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),  # noqa: B008
@@ -86,14 +156,23 @@ def create_jwt_authentication_dependency(
             raise _authentication_required()
 
         try:
+            if jwks_key_provider:
+                signing_key = await jwks_key_provider.get_signing_key(credentials.credentials)
+                algorithms = ["RS256"]
+            elif config.signing_secret:
+                signing_key = config.signing_secret
+                algorithms = ["HS256"]
+            else:
+                raise _JwksKeyNotFoundError
+
             payload = jwt.decode(
                 credentials.credentials,
-                config.signing_secret,
-                algorithms=["HS256"],
+                signing_key,
+                algorithms=algorithms,
                 issuer=config.issuer,
                 options={"require": ["exp"]},
             )
-        except jwt.InvalidTokenError:
+        except (OSError, ValueError, _JwksKeyNotFoundError, jwt.PyJWTError):
             raise _authentication_required() from None
 
         principal = _to_authenticated_principal(payload)

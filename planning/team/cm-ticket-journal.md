@@ -135,6 +135,10 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 - The Node authentication middleware now uses `createRemoteJWKSet` when RS256 is configured,
   selects the public key by `kid`, and restricts verification to RS256. Its JWKS path does not
   retain a signing key.
+- The FastAPI dependency now retrieves public JWKS keys by `kid`, caches them for five minutes,
+  refreshes once for an unknown key to support rotation, and validates RS256 access tokens
+  without a signing key. The legacy HS256 path remains temporarily available only when no JWKS
+  URL is configured.
 
 **Project Scope Connection:**
 
@@ -148,6 +152,7 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 - `src/typescript/tokenService.ts`
 - `src/typescript/index.ts`
 - `src/typescript/jwtAuthentication.ts`
+- `src/tax_liability_engine/jwt_authentication.py`
 - `.env.example`
 - `planning/team/cm-ticket-journal.md`
 
