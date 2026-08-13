@@ -1363,6 +1363,67 @@ or live stage updates.
   directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
   changed files.
 - `npm --prefix src/pulseUI run typecheck` passed.
+
+---
+
+## christopher-martus-jira143
+
+**Branch:** christopher-martus-jira143
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-143
+
+**Summary:** Show read-only scenarios and live stage updates in the portal
+
+**Description:** As a Client, I want read-only scenarios and live stage updates, so that I
+always see the current plan state.
+
+**Acceptance Criteria:**
+
+- Scenarios appear read-only to the client, matching the external permission matrix.
+- A stage-changed event updates the displayed stage without a manual refresh.
+- The advisor-messages panel renders read-only.
+
+**Code Connection:**
+
+- The JWT-scoped `GET /portal/my-tax-plan` BFF now reads persisted scenarios for the already
+  authorized client cycle and projects only each scenario's ID, name, total tax, and delta versus
+  baseline. Advisor-entered figures are intentionally excluded from the external response.
+- The portal includes a display-only Advisor Messages panel with an explicit empty state; no
+  message-composer or portal write path is introduced before an authoritative message read model
+  exists.
+
+**Project Scope Connection:**
+
+This is the first MVP chunk for SCRUM-143, extending SCRUM-142's scoped client portal without
+adding portal writes, a separate status field, or new event transport.
+
+The portal automatically refetches its scoped read model every 15 seconds and on window focus,
+so the stage label and stepper reconcile after the existing stage-changed workflow persists a
+transition without requiring a client-side page refresh.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/pulseUI/entities/clientTaxPlanQueries.ts`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.tsx`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.module.css`
+- `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused tests cover the client-safe scenario BFF projection and automatic portal stage refresh.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` remains blocked by the pre-existing duplicate `CloudEvents`/`cloudEvents`
+  directories whose paths differ only by casing (TS1261).
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+  passed (7 tests).
+- `npx vitest run --config vitest.config.ts tests/clientPortal/MyTaxPlanPage.test.tsx` passed
+  (4 tests); the suite emits pre-existing jsdom `window.scrollTo` warnings from TanStack Router.
 - `npm --prefix src/pulseUI test` passed: 163 tests in 36 files. The existing jsdom canvas and
   scroll-restoration warnings remain non-failing.
 - `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`

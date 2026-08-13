@@ -24,6 +24,16 @@ function formatMeeting(nextMeeting: string | null): string {
   }).format(new Date(nextMeeting));
 }
 
+function formatDelta(delta: number): string {
+  const absoluteDelta = currencyFormatter.format(Math.abs(delta));
+
+  if (delta === 0) {
+    return "Matches baseline";
+  }
+
+  return delta < 0 ? `${absoluteDelta} below baseline` : `${absoluteDelta} above baseline`;
+}
+
 export function MyTaxPlanPage() {
   const taxPlanQuery = useClientTaxPlanQuery();
 
@@ -113,6 +123,41 @@ export function MyTaxPlanPage() {
           </article>
         </div>
       </section>
+
+      <section className={styles.scenariosSection} aria-labelledby="scenario-summary-title">
+        <div className={styles.summaryHeading}>
+          <p className={styles.eyebrow}>Scenario comparison</p>
+          <h2 id="scenario-summary-title">Modeled options</h2>
+        </div>
+
+        {taxPlan.scenarios.length === 0 ? (
+          <PanelCard>
+            <p className={styles.emptyState}>Your advisor has not shared any modeled scenarios yet.</p>
+          </PanelCard>
+        ) : (
+          <div className={styles.scenarioGrid}>
+            {taxPlan.scenarios.map((scenario) => (
+              <article className={styles.scenarioCard} key={scenario.id}>
+                <div className={styles.scenarioHeading}>
+                  <h3>{scenario.name}</h3>
+                  <StatusPill tone={scenario.delta_vs_baseline <= 0 ? "success" : "warning"}>
+                    {formatDelta(scenario.delta_vs_baseline)}
+                  </StatusPill>
+                </div>
+                <p className={styles.summaryLabel}>Estimated total tax</p>
+                <p className={styles.scenarioTax}>{currencyFormatter.format(scenario.total_tax)}</p>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <PanelCard className={styles.messagesPanel} title="Advisor messages">
+        <p className={styles.messageCopy}>
+          Updates from your advisor will appear here.
+        </p>
+        <p className={styles.emptyState}>No advisor messages yet.</p>
+      </PanelCard>
 
       <PanelCard className={styles.recommendation}>
         <div className={styles.recommendationLayout}>

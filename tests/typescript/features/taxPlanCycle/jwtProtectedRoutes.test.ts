@@ -16,6 +16,7 @@ import {
   createTaxPlanCycleRouter,
   type AuditEntryReader,
   type JwtConfig,
+  type ScenarioRepository,
   type TaxPlanCycle,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateInput,
@@ -72,6 +73,7 @@ async function withProtectedTaxPlanCycleServer(
   options: {
     auditEntryReader?: AuditEntryReader;
     clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
+    scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
     costAccountingMiddleware?: RequestHandler;
     rateLimitMiddleware?: RequestHandler;
   } = {},
@@ -98,6 +100,7 @@ async function withProtectedTaxPlanCycleServer(
         createTaxPlanCycleRouter({
           auditEntryReader: options.auditEntryReader,
           clientPortalReadRepository: options.clientPortalReadRepository,
+          scenarioRepository: options.scenarioRepository,
           controller,
         }),
       );
@@ -345,6 +348,24 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
       async () => otherClientCycle,
     );
     const findCurrentByClientId = vi.fn(async () => cycle);
+    const listByCaseId = vi.fn(async () => [
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e31",
+        case_id: cycle.id,
+        name: "Increase retirement contributions",
+        typed_figures: {
+          income: 250_000,
+          deductions: 30_000,
+          state: "NY",
+          filing_status: "married_filing_jointly" as const,
+        },
+        computed_result: {
+          totalTax: "72100",
+          deltaVBaseline: "-4500",
+        },
+        created_at: "2026-08-12T14:00:00.000Z",
+      },
+    ]);
     const token = await createAccessToken({ role: "Client", userId: clientId });
 
     await withProtectedTaxPlanCycleServer(
@@ -365,17 +386,32 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
           next_meeting: null,
           projected_savings: null,
           top_recommendation: null,
+          scenarios: [
+            {
+              id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e31",
+              name: "Increase retirement contributions",
+              total_tax: 72_100,
+              delta_vs_baseline: -4_500,
+            },
+          ],
         });
         expect(findCurrentByClientId).toHaveBeenCalledWith({
           tenantId: "tenant-from-jwt",
           clientId,
+        });
+        expect(listByCaseId).toHaveBeenCalledWith({
+          tenantId: "tenant-from-jwt",
+          caseId: cycle.id,
         });
         expect(directResponse.status).toBe(403);
         await expect(directResponse.json()).resolves.toMatchObject({
           title: "Operator Access Required",
         });
       },
-      { clientPortalReadRepository: { findCurrentByClientId } },
+      {
+        clientPortalReadRepository: { findCurrentByClientId },
+        scenarioRepository: { listByCaseId },
+      },
     );
   });
 

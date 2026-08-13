@@ -20,6 +20,7 @@ import {
   taxPlanCycleTransitionParamsSchema,
   taxPlanCycleTransitionSchema,
   isLegalTaxPlanCycleStageTransition,
+  clientTaxPlanScenarioSchema,
   type TaxPlanCycleStage,
 } from "./taxPlanCycle.js";
 import {
@@ -29,6 +30,7 @@ import {
 import type { ScenarioModelingController } from "./controllers/scenarios.js";
 import { scenarioModelingRequestSchema } from "./scenarioModeling.js";
 import type { ScenarioRepository } from "./repositories/scenarios.js";
+import type { Scenario } from "../../scenario.js";
 import type { TaxPlanCycleRepository } from "./repositories/repository.js";
 
 export interface ValidationErrorIssue {
@@ -174,13 +176,34 @@ function isClientUser(user: TenantScopedRequest["user"]): boolean {
   return user?.role === "Client";
 }
 
-function toClientTaxPlanReadModel(cycle: ReturnType<typeof taxPlanCycleSchema.parse>) {
+function toClientTaxPlanScenario(scenario: Scenario) {
+  const computedResult = scenario.computed_result;
+  const totalTax =
+    "total_tax" in computedResult ? computedResult.total_tax : Number(computedResult.totalTax);
+  const deltaVsBaseline =
+    "delta_vs_baseline" in computedResult
+      ? computedResult.delta_vs_baseline
+      : Number(computedResult.deltaVBaseline);
+
+  return clientTaxPlanScenarioSchema.parse({
+    id: scenario.id,
+    name: scenario.name,
+    total_tax: totalTax,
+    delta_vs_baseline: deltaVsBaseline,
+  });
+}
+
+function toClientTaxPlanReadModel(
+  cycle: ReturnType<typeof taxPlanCycleSchema.parse>,
+  scenarios: readonly Scenario[],
+) {
   return clientTaxPlanReadModelSchema.parse({
     ...cycle,
     advisor: cycle.owner,
     next_meeting: null,
     projected_savings: null,
     top_recommendation: null,
+    scenarios: scenarios.map(toClientTaxPlanScenario),
   });
 }
 
@@ -354,7 +377,12 @@ export function createTaxPlanCycleRouter(
           return;
         }
 
-        res.status(200).json(toClientTaxPlanReadModel(cycle));
+        const scenarios = await scenarioRepository.listByCaseId({
+          tenantId,
+          caseId: cycle.id,
+        });
+
+        res.status(200).json(toClientTaxPlanReadModel(cycle, scenarios));
       } catch (error) {
         next(error);
       }
