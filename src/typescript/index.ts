@@ -154,6 +154,16 @@ export {
 } from "./coreCaseOpenApi.js";
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
+  createJwksRouter,
+  type CreateJwksRouterOptions,
+} from "./jwksRoutes.js";
+export {
+  getJwtJwksVerifierConfigFromEnv,
+  getJwtRs256IssuerConfigFromEnv,
+  type JwtJwksVerifierConfig,
+  type JwtRs256IssuerConfig,
+} from "./jwtRs256Config.js";
+export {
   clientRoster,
   auditEntry,
   actionItem,
@@ -535,6 +545,7 @@ import { createClient } from "redis";
 
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
+import { createJwksRouter } from "./jwksRoutes.js";
 import { createLogger } from "./logger.js";
 import { createJwtAuthenticationMiddleware, hydrateUserClaims } from "./jwtAuthentication.js";
 import { createCostAccountingMiddleware } from "./costAccounting.js";
@@ -560,6 +571,7 @@ import {
   getJwtConfigFromEnv,
   getTenantLoginBaseDomainFromEnv,
 } from "./authConfig.js";
+import { getJwtRs256IssuerConfigFromEnv } from "./jwtRs256Config.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createAuthSessionRouter } from "./authSessionRoutes.js";
@@ -630,6 +642,10 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 
 export async function main(): Promise<Server> {
   const jwtConfig = getJwtConfigFromEnv();
+  const useRs256Issuer = Boolean(
+    process.env.JWT_SIGNING_PRIVATE_KEY || process.env.JWT_SIGNING_KEY_ID,
+  );
+  const jwtRs256IssuerConfig = useRs256Issuer ? getJwtRs256IssuerConfigFromEnv() : undefined;
   const tenantLoginBaseDomain = getTenantLoginBaseDomainFromEnv();
   const logger = createLogger();
 
@@ -722,6 +738,7 @@ export async function main(): Promise<Server> {
     authenticatePasswordForMfaChallenge(input, credentialReader);
   const tokenService = createTokenService({
     config: jwtConfig,
+    rs256IssuerConfig: jwtRs256IssuerConfig,
     refreshTokenRepository,
   });
 
@@ -738,6 +755,9 @@ export async function main(): Promise<Server> {
   const app = createApp({
     logger,
     registerRoutes: (app) => {
+      if (jwtRs256IssuerConfig) {
+        app.use(createJwksRouter({ issuerConfig: jwtRs256IssuerConfig }));
+      }
       app.use(createCoreCaseOpenApiRouter());
       app.use(createMfaEnrollmentRouter({
         controller: mfaEnrollmentController,

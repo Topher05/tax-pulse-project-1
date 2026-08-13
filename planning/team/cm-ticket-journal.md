@@ -129,6 +129,9 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 - Added the first migration boundary: separate, validated issuer-only RS256 private-key and
   `kid` configuration from public-key-only JWKS verifier configuration. The existing HS256
   configuration remains temporarily while the issuing and verification paths are migrated.
+- RS256-configured issuers now sign access tokens with an `RS256` and `kid` protected header,
+  and publish the corresponding public JWK at `GET /.well-known/jwks.json`. The legacy HS256
+  path remains temporarily available only when the RS256 issuer configuration is absent.
 
 **Project Scope Connection:**
 
@@ -138,6 +141,9 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 **Changed Files:**
 
 - `src/typescript/jwtRs256Config.ts`
+- `src/typescript/jwksRoutes.ts`
+- `src/typescript/tokenService.ts`
+- `src/typescript/index.ts`
 - `.env.example`
 - `planning/team/cm-ticket-journal.md`
 
@@ -145,8 +151,7 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 
 - Not run: this configuration-only slice deliberately defers test updates until the final
   SCRUM-200 validation step.
-- `npm run typecheck` is currently blocked by an unrelated `CloudEvents` versus `cloudEvents`
-  filename-casing conflict in `src/typescript/shared/scripts/awsStageChangedSmoke.ts`.
+- `npm run typecheck` passed.
 - A focused `tsx` check built and schema-validated a deterministic stage-changed
   CloudEvent through the relocated domain helper.
 - `npm run db:check` and `git diff --check` continue to pass after the second slice.
