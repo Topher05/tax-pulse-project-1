@@ -32,6 +32,20 @@ export {
   parseSqsMessage as parseStageChangedSqsMessage,
 } from "./SqsConsumer.js";
 export {
+  createStageChangedProjectionUpdater,
+  createStageChangedLambdaHandler,
+  createStageChangedLambdaRuntimeHandler,
+  handler as stageChangedLambdaHandler,
+  type StageChangedLambdaBatchItemFailure,
+  type StageChangedLambdaBatchResponse,
+  type StageChangedLambdaHandlerDependencies,
+  type StageChangedLambdaRuntimeDependencies,
+  type StageChangedLambdaSqsEvent,
+  type StageChangedLambdaSqsRecord,
+  type StageChangedProjectionDynamoClient,
+  type StageChangedProjectionUpdater,
+} from "./LambdaHandler.js";
+export {
   createWriter,
   createCloudEvent,
   cloudEventSchemaV1,
