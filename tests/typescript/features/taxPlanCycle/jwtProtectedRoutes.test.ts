@@ -19,6 +19,7 @@ import {
   type TaxPlanCycle,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateInput,
+  type TaxPlanCycleRepository,
 } from "../../../../src/typescript/index.js";
 
 const config: JwtConfig = {
@@ -45,13 +46,21 @@ const cycle: TaxPlanCycle = {
   on_hold: false,
 };
 
-async function createAccessToken(tenantId = "tenant-from-jwt"): Promise<string> {
+async function createAccessToken({
+  tenantId = "tenant-from-jwt",
+  userId = "user-from-jwt",
+  role = "Advisor",
+}: {
+  tenantId?: string;
+  userId?: string;
+  role?: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
+} = {}): Promise<string> {
   return await new SignJWT({
-    role: "Advisor",
+    role,
     tenant_id: tenantId,
   })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-    .setSubject("user-from-jwt")
+    .setSubject(userId)
     .setIssuer(config.issuer)
     .setExpirationTime("15m")
     .sign(new TextEncoder().encode(config.signingSecret));
@@ -62,6 +71,7 @@ async function withProtectedTaxPlanCycleServer(
   run: (baseUrl: string) => Promise<void>,
   options: {
     auditEntryReader?: AuditEntryReader;
+    clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
     costAccountingMiddleware?: RequestHandler;
     rateLimitMiddleware?: RequestHandler;
   } = {},
@@ -70,11 +80,11 @@ async function withProtectedTaxPlanCycleServer(
     logger: silentLogger,
     registerRoutes: (server) => {
       server.use(
-        "/v1/tax-plan-cycles",
+        "/v1",
         createJwtAuthenticationMiddleware({ config }),
       );
       server.use(
-        "/tax-plan-cycles",
+        "/v1",
         hydrateUserClaims(),
       );
       if (options.costAccountingMiddleware) {
@@ -87,6 +97,7 @@ async function withProtectedTaxPlanCycleServer(
         "/v1",
         createTaxPlanCycleRouter({
           auditEntryReader: options.auditEntryReader,
+          clientPortalReadRepository: options.clientPortalReadRepository,
           controller,
         }),
       );
@@ -261,8 +272,8 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
       case_id: cycle.id,
     }));
     const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
-    const tenantAToken = await createAccessToken("tenant-rate-a");
-    const tenantBToken = await createAccessToken("tenant-rate-b");
+    const tenantAToken = await createAccessToken({ tenantId: "tenant-rate-a" });
+    const tenantBToken = await createAccessToken({ tenantId: "tenant-rate-b" });
 
     await withProtectedTaxPlanCycleServer(
       { create, findByCaseId },
@@ -320,5 +331,71 @@ describe("JWT-protected Tax Plan Cycle routes", () => {
         }),
       },
     );
+  });
+
+  test("scopes client portal and direct cycle reads to the JWT client ID", async () => {
+    const clientId = validCreateBody.client_id;
+    const otherClientCycle: TaxPlanCycle = {
+      ...cycle,
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02",
+      client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e12",
+    };
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({ case_id: cycle.id }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      async () => otherClientCycle,
+    );
+    const findCurrentByClientId = vi.fn(async () => cycle);
+    const token = await createAccessToken({ role: "Client", userId: clientId });
+
+    await withProtectedTaxPlanCycleServer(
+      { create, findByCaseId },
+      async (baseUrl) => {
+        const portalResponse = await fetch(`${baseUrl}/v1/portal/my-tax-plan`, {
+          headers: { authorization: `Bearer ${token}` },
+        });
+        const directResponse = await fetch(
+          `${baseUrl}/v1/tax-plan-cycles/${otherClientCycle.id}`,
+          { headers: { authorization: `Bearer ${token}` } },
+        );
+
+        expect(portalResponse.status).toBe(200);
+        await expect(portalResponse.json()).resolves.toEqual({
+          ...cycle,
+          advisor: cycle.owner,
+          next_meeting: null,
+          projected_savings: null,
+          top_recommendation: null,
+        });
+        expect(findCurrentByClientId).toHaveBeenCalledWith({
+          tenantId: "tenant-from-jwt",
+          clientId,
+        });
+        expect(directResponse.status).toBe(403);
+        await expect(directResponse.json()).resolves.toMatchObject({
+          title: "Operator Access Required",
+        });
+      },
+      { clientPortalReadRepository: { findCurrentByClientId } },
+    );
+  });
+
+  test("does not expose the tenant-wide cycle queue to a Client user", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({ case_id: cycle.id }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => cycle);
+    const token = await createAccessToken({
+      role: "Client",
+      userId: validCreateBody.client_id,
+    });
+
+    await withProtectedTaxPlanCycleServer({ create, findByCaseId }, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/v1/tax-plan-cycles`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.status).toBe(403);
+      await expect(response.json()).resolves.toMatchObject({
+        title: "Operator Access Required",
+      });
+    });
   });
 });

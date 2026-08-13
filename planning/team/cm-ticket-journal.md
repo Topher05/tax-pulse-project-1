@@ -1294,6 +1294,80 @@ workflow behavior.
   compilation error was reported.
 
 
+## christopher-martus-jira142 - SCRUM-142
+
+**Branch:** `christopher-martus-jira142`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-142
+
+**Summary:** Build the client My Tax Plan view scoped to the client
+
+**Description:** As a Client, I want the My Tax Plan view, so that I can follow my plan's
+progress in the portal.
+
+**Acceptance Criteria:**
+
+- The portal shows the client's current Plan Cycle stage stepper scoped to only their own cycle.
+- The hero and plan summary (advisor, next meeting, projected savings, top recommendation) render.
+- The view is unreachable for another client's cycle.
+
+**Code Connection:**
+
+- Task 1 adds a parameter-free `GET /portal/my-tax-plan` BFF read. It takes the verified JWT
+  subject as `client_id`, combines it with the verified tenant ID, and never accepts a client or
+  case identifier from the browser.
+- The repository selects the latest unarchived cycle for that tenant-client pair. The BFF maps
+  the owned cycle to a typed portal read model, with the advisor sourced from the cycle owner and
+  nullable fields for summary values that have no authoritative record yet.
+- Client sign-in now lands on `/my-tax-plan`; the app shell redirects Client users away from
+  operator routes, shows only the portal navigation item, and reads the scoped endpoint through
+  one authenticated TanStack Query boundary.
+- The read-only My Tax Plan view renders the BFF-backed stage, advisor, next meeting, projected
+  savings, and top recommendation. Missing BFF values render explicit in-progress states rather
+  than fabricated meeting, savings, or recommendation data.
+- Client users are denied access to tenant-wide queue, direct-cycle, audit, creation, scenario,
+  and transition routes; their only Tax Plan read is the JWT-scoped portal endpoint.
+
+**Project Scope Connection:**
+
+This establishes the least-privilege server boundary for the client portal. It does not add a
+separate cycle status, a client-account mapping, portal writes, scenarios, action items, approval,
+or live stage updates.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/auth/landingPath.ts`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/entities/clientTaxPlanQueries.ts`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.tsx`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.module.css`
+- `src/pulseUI/shared/navigation.ts`
+- `src/pulseUI/shared/viewTitle.ts`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`
+- `src/typescript/jwtAuthentication.ts`
+- `tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm run typecheck` is blocked by pre-existing duplicate `CloudEvents`/`cloudEvents`
+  directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
+  changed files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test` passed: 163 tests in 36 files. The existing jsdom canvas and
+  scroll-restoration warnings remain non-failing.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+  passed: 7 tests, including Client queue denial.
+
 ## christopher-martus-jira134 - SCRUM-134
 
 **Branch:** `christopher-martus-jira134`

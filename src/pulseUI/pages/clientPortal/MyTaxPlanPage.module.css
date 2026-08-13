@@ -1,0 +1,185 @@
+.page {
+  display: grid;
+  gap: 1.5rem;
+  width: min(100%, 1100px);
+  margin: 0 auto;
+}
+
+.hero {
+  position: relative;
+  background:
+    linear-gradient(120deg, rgb(99 102 241 / 18%), transparent 52%),
+    var(--pulse-surface);
+}
+
+.heroContent {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.eyebrow,
+.sectionLabel,
+.summaryLabel {
+  margin: 0;
+  color: var(--pulse-accent-light);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.title,
+.summaryHeading h2,
+.recommendationTitle {
+  margin: 0.45rem 0 0;
+  color: var(--pulse-ink);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.title {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  line-height: 1.08;
+}
+
+.lead {
+  max-width: 40rem;
+  margin: 0.8rem 0 0;
+  color: var(--pulse-muted);
+  line-height: 1.55;
+}
+
+.stageSection {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--pulse-border);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.stageName {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-weight: 750;
+}
+
+.summarySection {
+  display: grid;
+  gap: 1rem;
+}
+
+.summaryHeading h2 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.summaryCard {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 20px;
+  background: var(--pulse-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+}
+
+.summaryIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+}
+
+.summaryIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.iconIndigo {
+  color: var(--pulse-accent-light);
+  background: var(--pulse-accent-bg);
+}
+
+.iconCyan {
+  color: var(--pulse-cyan);
+  background: var(--pulse-cyan-bg);
+}
+
+.iconAmber {
+  color: var(--pulse-amber);
+  background: var(--pulse-amber-bg);
+}
+
+.iconGreen {
+  color: var(--pulse-success);
+  background: var(--pulse-success-bg);
+}
+
+.summaryLabel {
+  margin-top: 1rem;
+  color: var(--pulse-muted);
+  letter-spacing: 0.06em;
+}
+
+.summaryValue,
+.savingsValue {
+  margin: 0.45rem 0 0;
+  color: var(--pulse-ink);
+  font-size: 1.1rem;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.savingsValue {
+  color: var(--pulse-success);
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+}
+
+.summaryCopy,
+.recommendationCopy {
+  margin: 0.5rem 0 0;
+  color: var(--pulse-subtle);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.recommendationLayout {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.recommendationTitle {
+  max-width: 50rem;
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  line-height: 1.32;
+}
+
+@media (max-width: 760px) {
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .heroContent,
+  .sectionHeading,
+  .recommendationLayout {
+    flex-direction: column;
+  }
+}

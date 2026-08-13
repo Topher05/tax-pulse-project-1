@@ -4,6 +4,7 @@ import {
   Building2,
   Calculator,
   CalendarClock,
+  ClipboardList,
   CircleCheckBig,
   Percent,
   ShieldCheck,
@@ -12,6 +13,8 @@ import {
   Users,
   UsersRound,
 } from "lucide-react";
+
+import type { SessionRole } from "../auth/session.ts";
 
 export type PulseNavItem = {
   label: string;
@@ -58,3 +61,14 @@ export const pulseNavGroups: readonly PulseNavGroup[] = [
     ],
   },
 ] as const;
+
+const clientPortalNavGroups = [
+  {
+    label: "Portal",
+    items: [{ label: "My Tax Plan", path: "/my-tax-plan", icon: ClipboardList }],
+  },
+] as const satisfies readonly PulseNavGroup[];
+
+export function getPulseNavGroupsForRole(role: SessionRole | undefined): readonly PulseNavGroup[] {
+  return role === "Client" ? clientPortalNavGroups : pulseNavGroups;
+}

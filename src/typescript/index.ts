@@ -742,6 +742,7 @@ export async function main(): Promise<Server> {
         createTaxPlanCycleRouter({
           auditEntryReader: auditEntryRepository,
           auditEntryWriter,
+          clientPortalReadRepository: taxPlanCycleRepository,
           controller: taxPlanCycleController,
           taxPlanCycleRepository,
           scenarioRepository,
