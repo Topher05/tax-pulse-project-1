@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { createPresentToClientSaga } from "../../../../src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/presentToClientSaga/index.js";
+import { createPresentToClientSaga } from "../../../../src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/presentToClientSaga/index.js";
 import type { TaxPlanCycle } from "../../../../src/typescript/features/taxPlanCycle/index.js";
 
 describe("createPresentToClientSaga", () => {

@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
 import { outboxDeadLetter, outboxEvent } from "../../../shared/database/schema.js";
-import { PublishCommand, type SnsClient } from "./cloudEvents/stageChanged/index.js";
+import { PublishCommand, type SnsClient } from "./CloudEvents/stageChanged/index.js";
 
 export interface OutboxEventPublisher {
   publish(payload: string): Promise<void> | void;

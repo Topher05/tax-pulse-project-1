@@ -1,4 +1,4 @@
-import { and, asc, eq, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, max, ne, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
@@ -19,6 +19,11 @@ export interface TaxPlanCycleReadInput {
 export interface TaxPlanCycleQueueInput {
   tenantId: string;
   asOfDate?: string;
+}
+
+export interface TaxPlanCycleClientReadInput {
+  tenantId: string;
+  clientId: string;
 }
 
 export interface TaxPlanCycleRepositoryCreateInput {
@@ -53,6 +58,7 @@ export interface TaxPlanCycleRepository {
   create(input: TaxPlanCycleRepositoryCreateInput): Promise<string>;
   insert(input: TaxPlanCycleInsertInput): Promise<string>;
   findByCaseId(input: TaxPlanCycleReadInput): Promise<TaxPlanCycle | null>;
+  findCurrentByClientId(input: TaxPlanCycleClientReadInput): Promise<TaxPlanCycle | null>;
   transition(
     input: TaxPlanCycleTransitionInput,
   ): Promise<TaxPlanCycle | null>;
@@ -212,6 +218,34 @@ export function createTaxPlanCycleRepository(
             eq(taxPlanCycleTable.id, caseId),
           ),
         )
+        .limit(1);
+
+      const row = rows[0];
+
+      return row ? toTaxPlanCycle(row) : null;
+    },
+
+    async findCurrentByClientId({ tenantId, clientId }) {
+      const rows = await db
+        .select({
+          id: taxPlanCycleTable.id,
+          clientId: taxPlanCycleTable.clientId,
+          stage: taxPlanCycleTable.stage,
+          owner: taxPlanCycleTable.owner,
+          priority: taxPlanCycleTable.priority,
+          dueDate: taxPlanCycleTable.dueDate,
+          onHold: taxPlanCycleTable.onHold,
+          holdReason: taxPlanCycleTable.holdReason,
+        })
+        .from(taxPlanCycleTable)
+        .where(
+          and(
+            eq(taxPlanCycleTable.tenantId, tenantId),
+            eq(taxPlanCycleTable.clientId, clientId),
+            ne(taxPlanCycleTable.stage, "Archived"),
+          ),
+        )
+        .orderBy(desc(taxPlanCycleTable.dueDate))
         .limit(1);
 
       const row = rows[0];
