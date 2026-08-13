@@ -939,6 +939,52 @@ control, so that I can manage my firm's staff and their roles.
 - `npm.cmd --prefix src/pulseUI run typecheck` passed.
 - `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx` passed after rerunning outside the sandbox because Windows denied access while Vitest loaded its config in the sandbox.
 
+## dylan-harle-jira156 - SCRUM-156
+
+**Branch:** `dylan-harle-jira156`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-156
+
+**Summary:** Wire SNS/SQS via the team's AWS environment
+
+**Description:** As a Platform Engineer, I want the workflow events wired to the team's AWS SNS/SQS resources, so that the events run against AWS.
+
+**Acceptance Criteria:**
+
+- The team's AWS environment provides the SNS/SQS resources the workflow events use.
+- The publisher and consumer connect to the AWS SNS/SQS endpoints in the local profile.
+- A smoke check publishes and consumes one stage-changed event end-to-end.
+
+**Code Connection:**
+
+- Added a real AWS stage-changed smoke script that loads the local profile configuration, publishes one schema-valid CloudEvent to the configured SNS topic, polls the configured SQS queue, validates the SNS-to-SQS envelope with the existing parser, and deletes the matching smoke message.
+- Added an npm script so the AWS smoke can be run consistently without exposing local `.env` values in command output.
+- Passed the AWS SNS/SQS environment variables through the local Compose Core Case service configuration so the app stack reads the configured topic, queue, endpoints, region, and credential/profile settings.
+- Updated `.env.example` with the AWS CLI browser login profile flow and the distinction between LocalStack endpoint overrides and real AWS smoke values.
+
+**Project Scope Connection:**
+
+- Platform.
+- Builds on the SCRUM-131 SNS publisher and SCRUM-132 SQS consumer contract without changing the stage-changed event schema, tenant-scoped event payload, or LocalStack endpoint support.
+
+**Changed Files:**
+
+- `package.json`
+- `docker-compose.yml`
+- `.env.example`
+- `src/typescript/shared/scripts/awsStageChangedSmoke.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/stageChangedSqsConsumer.test.ts` passed: 2 files, 8 tests.
+- `aws sts get-caller-identity --profile taxpulse-login` passed for account `814650854375`.
+- `docker compose -f docker-compose.yml -f docker-compose.redis.yml config --quiet` passed.
+- `npm run aws:stage-changed-smoke` passed against the team AWS SNS/SQS resources after using the `taxpulse-login` profile, blanking LocalStack endpoint overrides for the process, and correcting the SNS topic ARN to the topic resource rather than the subscription ARN. Latest smoke published event `stage-transition-956f813e-ae8e-4fb8-ac13-04c60f93113c`, received it from SQS, and inspected 1 message.
+
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
 
