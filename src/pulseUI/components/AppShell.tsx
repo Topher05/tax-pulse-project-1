@@ -1,10 +1,10 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { LogOut, Settings2 } from "lucide-react";
 import { useState } from "react";
 
 import { useSession } from "../auth/AuthProvider.tsx";
 import styles from "./AppShell.module.css";
-import { pulseNavGroups } from "../shared/navigation.ts";
+import { getPulseNavGroupsForRole } from "../shared/navigation.ts";
 import { getViewTitle } from "../shared/viewTitle.ts";
 
 export function AppShell() {
@@ -13,6 +13,11 @@ export function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const viewTitle = getViewTitle(pathname);
+  const navGroups = getPulseNavGroupsForRole(user?.role);
+
+  if (user?.role === "Client" && pathname !== "/my-tax-plan") {
+    return <Navigate replace to="/my-tax-plan" />;
+  }
 
   const handleLogout = () => {
     void logout().catch(() => undefined);
@@ -32,7 +37,7 @@ export function AppShell() {
         </div>
 
         <nav className={styles.nav} aria-label="Primary">
-          {pulseNavGroups.map((group) => (
+          {navGroups.map((group) => (
             <section key={group.label}>
               <h2 className={styles.navGroupHeading}>{group.label}</h2>
               <ul className={styles.navList}>
@@ -64,8 +69,8 @@ export function AppShell() {
               JL
             </div>
             <div className={styles.userCopy}>
-              <p className={styles.userName}>Jordan Lee</p>
-              <p className={styles.userRole}>Firm Admin</p>
+              <p className={styles.userName}>TaxPulse User</p>
+              <p className={styles.userRole}>{user?.role ?? "User"}</p>
             </div>
           </div>
 

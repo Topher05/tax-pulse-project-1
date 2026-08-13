@@ -1,6 +1,10 @@
 import { pulseNavGroups } from "./navigation.ts";
 
 export const getViewTitle = (pathname: string): string => {
+  if (pathname === "/my-tax-plan") {
+    return "My Tax Plan";
+  }
+
   if (pathname === "/cycles/queue") {
     return "Tax Plan Cycle Queue";
   }
