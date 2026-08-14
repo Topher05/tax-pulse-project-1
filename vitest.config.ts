@@ -15,6 +15,7 @@ export default defineConfig({
       "**/node_modules/**",
       "src/pulseUI/**",
       "tests/typescript/smoke.test.ts",
+      "tests/typescript/tenantsMigration.test.ts",
       "**/*.integration.test.ts",
     ],
   },

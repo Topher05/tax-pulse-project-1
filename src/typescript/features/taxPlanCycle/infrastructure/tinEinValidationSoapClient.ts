@@ -118,12 +118,12 @@ export async function createTinEinValidationSoapClient(
     async verifyTaxpayer(input) {
       const [response] = await soapClient.VerifyTaxpayerAsync(input);
 
-      return response;
+      return response as TivsVerifyTaxpayerRawResponse;
     },
     async getTaxpayerStatus(input) {
       const [response] = await soapClient.GetTaxpayerStatusAsync(input);
 
-      return response;
+      return response as TivsGetTaxpayerStatusRawResponse;
     },
   };
 }

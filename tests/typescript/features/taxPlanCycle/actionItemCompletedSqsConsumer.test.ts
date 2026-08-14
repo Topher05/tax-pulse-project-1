@@ -8,8 +8,8 @@ import {
   createActionItemCompletedCloudEvent,
   createActionItemCompletedSqsConsumer,
   getActionItemCompletedQueueUrlFromEnv,
-} from "../../../../src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/index.js";
-import type { IdempotencyGuard } from "../../../../src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/stageChanged/index.js";
+} from "../../../../src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCompleted/index.js";
+import type { IdempotencyGuard } from "../../../../src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
 
 const completionInput = {
   tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e81",

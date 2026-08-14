@@ -1,4 +1,3 @@
-// TODO: Remove legacy migration behavior from project
 // Legacy hand-written migrations remain commented out while the codebase
 // moves fully to drizzle-sequenced SQL migrations.
 //

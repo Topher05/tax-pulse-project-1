@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 import { scenarioSchema } from "../../scenario.js";
 import {
   taxpayerIdentifierInputSchema,

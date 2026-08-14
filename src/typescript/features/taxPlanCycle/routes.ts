@@ -33,7 +33,7 @@ import type { ScenarioRepository } from "./repositories/scenarios.js";
 import type { Scenario } from "../../scenario.js";
 import type { TaxPlanCycleRepository } from "./repositories/repository.js";
 import type { ActionItemRepository } from "./repositories/actionItems.js";
-import type { ActionItemCompletedEventPublishInput } from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
+import type { ActionItemCompletedEventPublishInput } from "./infrastructure/cloudEvents/actionItemCompleted/index.js";
 
 export interface ValidationErrorIssue {
   path: Array<string | number>;
