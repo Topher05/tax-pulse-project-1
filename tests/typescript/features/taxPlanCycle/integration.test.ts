@@ -29,6 +29,7 @@ import {
   stageTransition,
   taxPlanCycle,
   taxPlanCycleSchema,
+  taxpayerIdentifierValidation,
   tenants,
   type AuditEntryWriter,
   type TaxPlanCycleCreateIdempotencyClient,
@@ -781,6 +782,51 @@ describe("taxPlanCycle integration", () => {
         outcome: "succeeded",
       });
       expect(auditRows[0]?.occurred_at).toEqual(transitionRows[0]?.occurred_at);
+    });
+  });
+
+  test("creates a cycle in Intake with taxpayer identifier validation and persists both atomically in Drizzle", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const repository = createTaxPlanCycleRepository(client);
+
+      await seedSampleTenant(client);
+
+      const caseId = await repository.create({
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q1",
+        clientId: repositoryClientIds.primary,
+        owner: "advisor-003",
+        priority: "high",
+        dueDate: "2026-09-30",
+        actor: "advisor-003",
+        taxpayerIdentifierValidation: {
+          tinType: "ein",
+          validationResult: "match",
+          verifiedName: "ACME HOLDINGS LLC",
+          provider: "tivs",
+        },
+      });
+
+      const validationRows = await db
+        .select({
+          caseId: taxpayerIdentifierValidation.caseId,
+          tinType: taxpayerIdentifierValidation.tinType,
+          validationResult: taxpayerIdentifierValidation.validationResult,
+          verifiedName: taxpayerIdentifierValidation.verifiedName,
+          provider: taxpayerIdentifierValidation.provider,
+        })
+        .from(taxpayerIdentifierValidation)
+        .where(eq(taxpayerIdentifierValidation.caseId, caseId));
+
+      expect(validationRows).toHaveLength(1);
+      expect(validationRows[0]).toEqual({
+        caseId,
+        tinType: "ein",
+        validationResult: "match",
+        verifiedName: "ACME HOLDINGS LLC",
+        provider: "tivs",
+      });
     });
   });
 

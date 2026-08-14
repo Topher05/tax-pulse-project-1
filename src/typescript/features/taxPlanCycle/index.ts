@@ -282,6 +282,29 @@ export {
   type TivsVerifyTaxpayerRequest,
 } from "./infrastructure/tinEinValidationSoapClient.js";
 export {
+  createTinEinValidationAcl,
+  type TaxpayerIdentifierValidationOutcome,
+  type TaxpayerIdentifierValidator,
+} from "./infrastructure/tinEinValidationAcl.js";
+export {
+  taxpayerIdentifierInputSchema,
+  taxpayerIdentifierTypeSchema,
+  taxpayerIdentifierTypeValues,
+  taxpayerIdentifierValidationResultSchema,
+  taxpayerIdentifierValidationResultValues,
+  taxpayerIdentifierValidationSchema,
+  type TaxpayerIdentifierInput,
+  type TaxpayerIdentifierType,
+  type TaxpayerIdentifierValidation,
+  type TaxpayerIdentifierValidationResult,
+} from "./taxpayerIdentifierValidation.js";
+export {
+  createTaxpayerIdentifierValidationRepository,
+  type TaxpayerIdentifierValidationReadInput,
+  type TaxpayerIdentifierValidationRecordInput,
+  type TaxpayerIdentifierValidationRepository,
+} from "./repositories/taxpayerIdentifierValidation.js";
+export {
   quarterlyEstimateQuarterSchema,
   quarterlyEstimateReadParamsSchema,
   quarterlyEstimateRowsSchema,

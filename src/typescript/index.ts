@@ -166,6 +166,7 @@ export {
   roles,
   stageTransition,
   stateTaxBracket,
+  taxpayerIdentifierValidation,
   taxPlanCycle,
   tenants,
   users,
@@ -335,6 +336,25 @@ export {
   type TivsTinType,
   type TivsVerifyTaxpayerRawResponse,
   type TivsVerifyTaxpayerRequest,
+} from "./features/taxPlanCycle/index.js";
+export {
+  createTinEinValidationAcl,
+  createTaxpayerIdentifierValidationRepository,
+  taxpayerIdentifierInputSchema,
+  taxpayerIdentifierTypeSchema,
+  taxpayerIdentifierTypeValues,
+  taxpayerIdentifierValidationResultSchema,
+  taxpayerIdentifierValidationResultValues,
+  taxpayerIdentifierValidationSchema,
+  type TaxpayerIdentifierInput,
+  type TaxpayerIdentifierType,
+  type TaxpayerIdentifierValidation,
+  type TaxpayerIdentifierValidationOutcome,
+  type TaxpayerIdentifierValidationReadInput,
+  type TaxpayerIdentifierValidationRecordInput,
+  type TaxpayerIdentifierValidationRepository,
+  type TaxpayerIdentifierValidationResult,
+  type TaxpayerIdentifierValidator,
 } from "./features/taxPlanCycle/index.js";
 export {
   getJwtConfigFromEnv,
@@ -555,6 +575,11 @@ import {
   createScenarioModelingController,
   createScenarioRepository,
   createTaxEngineClient,
+  createTinEinValidationAcl,
+  createTinEinValidationSoapClient,
+  createTaxpayerIdentifierValidationRepository,
+  getTinEinValidationSoapConfigFromEnv,
+  type TaxpayerIdentifierValidator,
 } from "./features/taxPlanCycle/index.js";
 import {
   getJwtConfigFromEnv,
@@ -654,9 +679,17 @@ export async function main(): Promise<Server> {
   const platformAdministrationRepository = createPlatformAdministrationRepository(client);
   const scenarioRepository = createScenarioRepository(client);
   const deductionRepository = createDeductionRepository(client);
+  const taxpayerIdentifierValidationRepository =
+    createTaxpayerIdentifierValidationRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   const liabilityEngineBase = process.env.LIABILITY_ENGINE_BASE?.trim();
   const stageChangedTopicArn = process.env.TAXPULSE_STAGE_CHANGED_TOPIC_ARN?.trim();
+  const tivsConfigComplete = [
+    process.env.TIVS_WSDL_URL,
+    process.env.TIVS_ENDPOINT_URL,
+    process.env.TIVS_USERNAME,
+    process.env.TIVS_PASSWORD,
+  ].every((value) => value?.trim());
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
   let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
   let createIdempotencyStore: ReturnType<
@@ -668,6 +701,7 @@ export async function main(): Promise<Server> {
   let scenarioModelingController:
     | ReturnType<typeof createScenarioModelingController>
     | undefined;
+  let taxpayerIdentifierValidator: TaxpayerIdentifierValidator | undefined;
 
   if (queueRedisUrl) {
     queueCacheRedisClient = createClient({ url: queueRedisUrl });
@@ -703,12 +737,22 @@ export async function main(): Promise<Server> {
     logger.info("Connected to the liability engine for scenario modeling");
   }
 
+  if (tivsConfigComplete) {
+    const tivsSoapClient = await createTinEinValidationSoapClient(
+      getTinEinValidationSoapConfigFromEnv(),
+    );
+    taxpayerIdentifierValidator = createTinEinValidationAcl(tivsSoapClient);
+    logger.info("Connected to TIVS for Intake taxpayer identifier validation");
+  }
+
   const auditEntryRepository = createAuditEntryRepository(client);
   const auditEntryWriter = createAuditEntryWriter(client);
   const taxPlanCycleController = createTaxPlanCycleCreateController(
     taxPlanCycleRepository,
     {
       idempotencyStore: createIdempotencyStore,
+      taxpayerIdentifierValidator,
+      taxpayerIdentifierValidationRepository,
     },
   );
   const taxPlanCycleTransitionController = createTaxPlanCycleTransitionController(

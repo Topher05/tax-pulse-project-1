@@ -16,6 +16,7 @@ import {
   roles,
   stageTransition,
   stateTaxBracket,
+  taxpayerIdentifierValidation,
   taxPlanCycle,
   tenants,
   userStatus,
@@ -52,6 +53,7 @@ export async function applySeed(client: Client): Promise<void> {
       TRUNCATE TABLE
         "audit_entry",
         "action_item",
+        "taxpayer_identifier_validation",
         "scenario",
         "deduction",
         "stage_transition",
@@ -76,6 +78,17 @@ export async function applySeed(client: Client): Promise<void> {
     await db.insert(mfaEnrollment).values([...mfaEnrollmentRows]);
     await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
     await db.insert(actionItem).values(buildActionItemInsertRows());
+    await db.insert(taxpayerIdentifierValidation).values([
+      {
+        caseId: taxPlanCycleRows[1].id,
+        tenantId: taxPlanCycleRows[1].tenantId,
+        tinType: "ein",
+        validationResult: "match",
+        verifiedName: "ACME GOVERNMENT SERVICES LLC",
+        provider: "tivs",
+        validatedAt: new Date("2026-07-21T14:00:00.000Z"),
+      },
+    ]);
     await db.insert(clientRoster).values([...clientRosterRows]);
     await db.insert(deduction).values([...deductionRows]);
     await db.insert(stageTransition).values([...stageTransitionRows]);
