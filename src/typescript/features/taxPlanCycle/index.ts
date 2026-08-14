@@ -49,6 +49,28 @@ export {
   type CreateActionItemCreatedCloudEventOptions,
 } from "./infrastructure/CloudEvents/actionItemCreated/index.js";
 export {
+  actionItemCompletedCloudEventSchemaV1,
+  actionItemCompletedEventDataSchema,
+  actionItemCompletedEventDataSchemaV1,
+  actionItemCompletedEventSchemaVersion,
+  actionItemCompletedEventSource,
+  actionItemCompletedEventType,
+  createActionItemCompletedCloudEvent,
+  createActionItemCompletedSnsPublisher,
+  ACTION_ITEM_COMPLETED_CONSUMER_NAME,
+  ACTION_ITEM_COMPLETED_IDEMPOTENCY_NAMESPACE,
+  createActionItemCompletedConsumer,
+  createRedisActionItemCompletedConsumer,
+  createActionItemCompletedSqsConsumer,
+  getActionItemCompletedQueueUrlFromEnv,
+  parseActionItemCompletedSqsMessage,
+} from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
+export type {
+  ActionItemCompletedCloudEventV1,
+  ActionItemCompletedEventPublishInput,
+  ActionItemCompletedEventPublisher,
+} from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
+export {
   createPresentToClientSaga,
 } from "./infrastructure/CloudEvents/presentToClientSaga/index.js";
 export {

@@ -292,6 +292,18 @@ export {
   type ActionItemCreatedEventInput,
   type ActionItemCreatedEventPublishInput,
   type CreateActionItemCreatedCloudEventOptions,
+  actionItemCompletedCloudEventSchemaV1,
+  actionItemCompletedEventDataSchema,
+  actionItemCompletedEventDataSchemaV1,
+  actionItemCompletedEventSchemaVersion,
+  actionItemCompletedEventSource,
+  actionItemCompletedEventType,
+  createActionItemCompletedCloudEvent,
+  createActionItemCompletedSqsConsumer,
+  getActionItemCompletedQueueUrlFromEnv,
+  parseActionItemCompletedSqsMessage,
+  type ActionItemCompletedCloudEventV1,
+  type ActionItemCompletedEventPublishInput,
   createActionItemRepository,
   type ActionItemCreateInput,
   type ActionItemRepository,
@@ -567,6 +579,8 @@ import {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleRepository,
+  createActionItemRepository,
+  createActionItemCompletedSnsPublisher,
   createSnsStageChangedEventPublisher,
   createStageChangedSnsClient,
   createQuarterlyPaymentsRouter,
@@ -674,6 +688,7 @@ export async function main(): Promise<Server> {
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const actionItemRepository = createActionItemRepository(client);
   const clientRosterRepository = createClientRosterRepository(client);
   const firmUsersRepository = createFirmUsersRepository(client);
   const platformAdministrationRepository = createPlatformAdministrationRepository(client);
@@ -697,6 +712,9 @@ export async function main(): Promise<Server> {
   > | undefined;
   let stageChangedEventPublisher:
     | ReturnType<typeof createSnsStageChangedEventPublisher>
+    | undefined;
+  let actionItemCompletedEventPublisher:
+    | ReturnType<typeof createActionItemCompletedSnsPublisher>
     | undefined;
   let scenarioModelingController:
     | ReturnType<typeof createScenarioModelingController>
@@ -722,7 +740,11 @@ export async function main(): Promise<Server> {
       stageChangedSnsClient,
       stageChangedTopicArn,
     );
-    logger.info("Connected to SNS for stage-changed publishing");
+    actionItemCompletedEventPublisher = createActionItemCompletedSnsPublisher(
+      stageChangedSnsClient,
+      stageChangedTopicArn,
+    );
+    logger.info("Connected to SNS for tax plan cycle event publishing");
   }
 
   if (liabilityEngineBase) {
@@ -800,6 +822,8 @@ export async function main(): Promise<Server> {
           auditEntryReader: auditEntryRepository,
           auditEntryWriter,
           clientPortalReadRepository: taxPlanCycleRepository,
+          actionItemRepository,
+          actionItemCompletedEventPublisher,
           controller: taxPlanCycleController,
           taxPlanCycleRepository,
           scenarioRepository,

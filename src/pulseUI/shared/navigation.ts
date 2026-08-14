@@ -65,7 +65,10 @@ export const pulseNavGroups: readonly PulseNavGroup[] = [
 const clientPortalNavGroups = [
   {
     label: "Portal",
-    items: [{ label: "My Tax Plan", path: "/my-tax-plan", icon: ClipboardList }],
+    items: [
+      { label: "My Tax Plan", path: "/my-tax-plan", icon: ClipboardList },
+      { label: "Action Items", path: "/action-items", icon: CircleCheckBig },
+    ],
   },
 ] as const satisfies readonly PulseNavGroup[];
 

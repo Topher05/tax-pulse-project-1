@@ -80,3 +80,12 @@ Runtime configuration:
 
 The consumer is not a Lambda/cloud runtime in this sprint and does not mutate Tax Plan
 Cycle state or add durable projection behavior.
+
+## Action-item completion projection
+
+SCRUM-144 publishes `com.taxpulse.tax_plan_cycle.action_item_completed.v1` after a client
+completes an action item. The Action Item Tracking subscriber uses
+`TAXPULSE_ACTION_ITEM_COMPLETED_QUEUE_URL` for its SNS-to-SQS subscription, validates the
+CloudEvent, and idempotently marks the matching case-scoped action item completed. It deletes
+the SQS message only after the projection succeeds; malformed messages remain available for
+retry/DLQ handling.

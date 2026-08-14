@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
@@ -15,6 +15,8 @@ export interface ActionItemCreateInput {
 export interface ActionItemRepository {
   insert(input: ActionItemCreateInput): Promise<ActionItem>;
   listByCaseId(caseId: string): Promise<readonly ActionItem[]>;
+  complete(input: { caseId: string; actionItemId: number }): Promise<ActionItem | null>;
+  markCompleted(input: { caseId: string; actionItemId: number }): Promise<ActionItem | null>;
 }
 
 function toActionItem(row: {
@@ -79,6 +81,49 @@ export function createActionItemRepository(client: Client): ActionItemRepository
         .orderBy(asc(actionItemTable.deadline), asc(actionItemTable.id));
 
       return rows.map(toActionItem);
+    },
+    async complete(input) {
+      const rows = await db
+        .update(actionItemTable)
+        .set({ completed: true })
+        .where(
+          and(
+            eq(actionItemTable.id, input.actionItemId),
+            eq(actionItemTable.caseId, input.caseId),
+            eq(actionItemTable.completed, false),
+          ),
+        )
+        .returning({
+          id: actionItemTable.id,
+          caseId: actionItemTable.caseId,
+          description: actionItemTable.description,
+          deadline: actionItemTable.deadline,
+          completed: actionItemTable.completed,
+        });
+
+      const row = rows[0];
+      return row ? toActionItem(row) : null;
+    },
+    async markCompleted(input) {
+      const rows = await db
+        .update(actionItemTable)
+        .set({ completed: true })
+        .where(
+          and(
+            eq(actionItemTable.id, input.actionItemId),
+            eq(actionItemTable.caseId, input.caseId),
+          ),
+        )
+        .returning({
+          id: actionItemTable.id,
+          caseId: actionItemTable.caseId,
+          description: actionItemTable.description,
+          deadline: actionItemTable.deadline,
+          completed: actionItemTable.completed,
+        });
+
+      const row = rows[0];
+      return row ? toActionItem(row) : null;
     },
   };
 }

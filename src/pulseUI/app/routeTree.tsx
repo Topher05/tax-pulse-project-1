@@ -13,6 +13,7 @@ import { QuarterlyPaymentsPage } from "../pages/quarterlyPayments/QuarterlyPayme
 import { IncomePage } from "../pages/income/IncomePage.tsx";
 import { PlanCycle } from "../pages/taxPlanCycle/PlanCycle.tsx";
 import { MyTaxPlanPage } from "../pages/clientPortal/MyTaxPlanPage.tsx";
+import { ActionItemsPage } from "../pages/clientPortal/ActionItemsPage.tsx";
 
 import { AuthBoundary } from "../auth/AuthBoundary.tsx";
 import { MfaChallengePage } from "../pages/auth/MfaChallengePage.tsx";
@@ -116,6 +117,12 @@ const myTaxPlanRoute = createRoute({
   ),
 });
 
+const actionItemsRoute = createRoute({
+  getParentRoute: () => workspaceRoute,
+  path: "/action-items",
+  component: () => <ClientOnlyRoute><ActionItemsPage /></ClientOnlyRoute>,
+});
+
 const cyclesQueueRoute = createRoute({
   getParentRoute: () => workspaceRoute,
   path: "/cycles/queue",
@@ -217,6 +224,7 @@ export const routeTree = rootRoute.addChildren([
   workspaceRoute.addChildren([
     dashboardRoute,
     myTaxPlanRoute,
+    actionItemsRoute,
     cyclesQueueRoute,
     cycleDetailsRoute,
     scenarioPlannerRoute,
