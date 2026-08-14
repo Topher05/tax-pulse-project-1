@@ -74,15 +74,22 @@ vi.mock("redis", () => ({
   }),
 }));
 
-vi.mock("../../../../src/typescript/features/taxPlanCycle/repositories/repository.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/repositories/repository.js")>()),
-  createTaxPlanCycleRepository,
-}));
+vi.mock(
+  "../../../../src/typescript/features/taxPlanCycle/repositories/repository.js",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/repositories/repository.js")>();
+
+    return {
+      ...actual,
+      createTaxPlanCycleRepository,
+    };
+  },
+);
 
 vi.mock("../../../../src/typescript/features/taxPlanCycle/index.js", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("../../../../src/typescript/features/taxPlanCycle/index.js")
-  >();
+  const actual =
+    await importOriginal<typeof import("../../../../src/typescript/features/taxPlanCycle/index.js")>();
 
   return {
     ...actual,
