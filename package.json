@@ -9,8 +9,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "build:present-to-client-lambda": "node scripts/build-present-to-client-lambda.mjs",
-    "build:execute-lambda": "node scripts/build-execute-lambda.mjs",
+    "build:present-to-client-lambda": "node src/typescript/shared/scripts/lambda-build/build-present-to-client-lambda.mjs",
+    "build:execute-lambda": "node src/typescript/shared/scripts/lambda-build/build-execute-lambda.mjs",
     "build:web": "npm --prefix src/pulseUI run build",
     "db:check": "drizzle-kit check",
     "db:gen": "drizzle-kit generate",
@@ -36,7 +36,7 @@
     "test:cov": "vitest run --coverage",
     "test:smoke": "node --import tsx --test tests/typescript/smoke.test.ts",
     "test:vitest": "vitest run --config vitest.config.ts",
-    "typecheck": "node scripts/typecheck.mjs"
+    "typecheck": "node src/typescript/shared/scripts/typecheck.mjs"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^17.0.1",

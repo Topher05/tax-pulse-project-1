@@ -14,3 +14,4 @@ src/pulseUI/playwright-report/
 .DS_Store
 codebase_guide/*
 .vscode/
+src/typescript/soap.d.ts
