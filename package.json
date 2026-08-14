@@ -9,6 +9,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:present-to-client-lambda": "node scripts/build-present-to-client-lambda.mjs",
+    "build:execute-lambda": "node scripts/build-execute-lambda.mjs",
     "build:web": "npm --prefix src/pulseUI run build",
     "db:check": "drizzle-kit check",
     "db:gen": "drizzle-kit generate",

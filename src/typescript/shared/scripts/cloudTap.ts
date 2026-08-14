@@ -17,13 +17,13 @@ import {
   type ActionItemCreatedEventInput,
   type StageChangedEventPublishInput,
   type TaxPlanCycle,
-} from "../../features/taxPlanCycle/infrastructure/CloudEvents/index.js";
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/index.js";
 import {
   createActionItemCreatedCloudEvent,
   createRedisActionItemConsumer,
   type ActionItemCreatedCloudEventV1,
   type ActionItemCreatedConsumerHandleResult,
-} from "../../features/taxPlanCycle/infrastructure/CloudEvents/actionItemCreated/index.js";
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.js";
 import {
   createRedisIdempotencyStore,
   createSqsConsumer,
@@ -32,7 +32,7 @@ import {
   type ConsumerLogger as StageChangedEventConsumerLogger,
   type SqsConsumerClient as StageChangedSqsClient,
   createCloudEventV1,
-} from "../../features/taxPlanCycle/infrastructure/CloudEvents/stageChanged/index.js";
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
 import {
   stageChangedCloudEventSchemaV1,
   type StageChangedCloudEventV1,
@@ -303,6 +303,10 @@ function createInMemoryTransitionRepository(
     actor: string;
   }) => Promise<TaxPlanCycle | null>;
   findByCaseId: (input: { tenantId: string; caseId: string }) => Promise<TaxPlanCycle | null>;
+  findCurrentByClientId: (input: {
+    tenantId: string;
+    clientId: string;
+  }) => Promise<TaxPlanCycle | null>;
   listQueue: (input: { tenantId: string; asOfDate?: string }) => Promise<Array<
     TaxPlanCycle & { is_overdue: boolean; updated_at: string }
   >>;
@@ -328,6 +332,11 @@ function createInMemoryTransitionRepository(
     async findByCaseId(input) {
       void input.tenantId;
       return input.caseId === currentCycle.id ? currentCycle : null;
+    },
+    async findCurrentByClientId(input) {
+      void input.tenantId;
+      void input.clientId;
+      return null;
     },
     async listQueue() {
       return [

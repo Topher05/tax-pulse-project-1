@@ -20,7 +20,7 @@ The business behavior already exists in the Tax Plan Cycle feature slice:
 - stage changes remain controlled by the existing transition rules and audit history,
 - present-to-client also emits the action-item CloudEvent required by the SCRUM-138 saga path.
 
-The delivery boundary needs to change without changing the domain behavior. The AWS runtime must also be able to reach the database and publish workflow events without relying on emulator-only wiring.
+The delivery boundary needs to change without changing the domain behavior. The AWS runtime for this slice stays event-focused and should wire the Lambda entrypoints to the shared workflow controller and SNS publishers without relying on emulator-only wiring.
 
 ## Decision
 Expose the two workflow transitions as AWS Lambda handlers fronted by API Gateway:
@@ -31,7 +31,7 @@ Expose the two workflow transitions as AWS Lambda handlers fronted by API Gatewa
 The handlers will:
 
 - authenticate requests with the existing JWT claims contract,
-- reuse the Tax Plan Cycle transition controller and repository layer,
+- reuse the Tax Plan Cycle transition controller and keep persistence behind the shared workflow boundary,
 - preserve the existing audit and validation behavior,
 - publish stage-changed events through SNS,
 - publish action-item-created events for present-to-client,
@@ -58,8 +58,8 @@ Benefits:
 
 Tradeoffs:
 
-- the deployment shape is now AWS-specific and requires IAM, SNS, database connectivity, and API Gateway configuration,
-- Lambda handlers need explicit bootstrap code for database, auth, and event publishing,
+- the deployment shape is now AWS-specific and requires IAM, SNS, and API Gateway configuration, plus any future persistence wiring the workflow slice may add,
+- Lambda handlers need explicit bootstrap code for auth and event publishing, while persistence stays outside the thin delivery boundary for this cutover,
 - the present-to-client endpoint now depends on the action-item event publisher being available in production,
 - SCRUM-156 is intentionally not a production prerequisite; if it appears at all, it should remain a narrow scaffold only.
 

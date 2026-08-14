@@ -15,11 +15,27 @@ export function createPresentToClientSaga(
       }
 
       try {
+        console.info({
+          message: "present-to-client action-item publish starting",
+          tenant_id: input.tenantId,
+          case_id: input.caseId,
+          actor: input.actor,
+          from_stage: input.transitionedCycle.stage,
+          to_stage: "Client Approval",
+        });
         await options.actionItemEventPublisher.publishActionItemCreated({
           tenantId: input.tenantId,
           caseId: input.caseId,
           actor: input.actor,
           ...input.actionItem,
+        });
+        console.info({
+          message: "present-to-client action-item publish completed",
+          tenant_id: input.tenantId,
+          case_id: input.caseId,
+          actor: input.actor,
+          from_stage: input.transitionedCycle.stage,
+          to_stage: "Client Approval",
         });
       } catch (error) {
         try {

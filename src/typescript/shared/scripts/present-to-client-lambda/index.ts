@@ -7,6 +7,7 @@ import { roleNameEnum } from "../../../shared/database/schema.js";
 import type { TaxPlanCycle } from "../../../features/taxPlanCycle/taxPlanCycle.js";
 import type { ActionItemCreatedEventInput } from "../../../features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.js";
 import type { TaxPlanCycleTransitionController } from "../../../features/taxPlanCycle/controllers/transitionController.js";
+export { presentToClientHandler } from "./runtime.js";
 /*
   CL, This lambda ONLY allows and should be triggered on Review => Client Approval transition meaning
 // 1. Sender MUST be firm admin
@@ -220,13 +221,11 @@ function toPrincipal(
     readString(source.tenantId) ??
     readString(source.tenant_id) ??
     readString(source["tenant-id"]);
-    console.log(`Teneant id is: ${tenantId}`)
   const userId =
     readString(source.userId) ??
     readString(source.sub) ??
     readString(source.principalId);
   const role = readString(source.role);
-  console.log(`Role is: ${role}`)
 
   if (!tenantId || !userId || !role || !isUserRole(role)) {
     return null;

@@ -5,12 +5,12 @@ import type {
   TaxPlanCycleTransitionInput,
 } from "../repositories/repository.js";
 import type { TaxPlanCycleQueueCacheInvalidator } from "../infrastructure/queueCache.js";
-import type { StageChangedEventPublisher } from "../infrastructure/CloudEvents/stageChanged/index.js";
+import type { StageChangedEventPublisher } from "../infrastructure/cloudEvents/stageChanged/index.js";
 import type {
   ActionItemCreatedEventInput,
   ActionItemCreatedEventPublishInput,
-} from "../infrastructure/CloudEvents/actionItemCreated/index.js";
-import { createPresentToClientSaga } from "../infrastructure/CloudEvents/presentToClientSaga/index.js";
+} from "../infrastructure/cloudEvents/actionItemCreated/index.js";
+import { createPresentToClientSaga } from "../infrastructure/cloudEvents/presentToClientSaga/index.js";
 
 export interface ActionItemCreatedEventPublisher {
   publishActionItemCreated(
@@ -60,11 +60,27 @@ export function createTaxPlanCycleTransitionController(
       if (options.stageChangedEventPublisher) {
         // CL, Best-effort after commit: the database mutation owns the state change, and the SNS publish follows as an event side effect. Might rework with dev sync post Jira-156 merge
         try {
+          console.info({
+            message: "present-to-client stage-changed publish starting",
+            tenant_id: input.tenantId,
+            case_id: input.caseId,
+            from_stage: input.fromStage,
+            to_stage: input.toStage,
+            actor: input.actor,
+          });
           await options.stageChangedEventPublisher.publishStageChanged({
             tenantId: input.tenantId,
             caseId: input.caseId,
             fromStage: input.fromStage,
             toStage: input.toStage,
+            actor: input.actor,
+          });
+          console.info({
+            message: "present-to-client stage-changed publish completed",
+            tenant_id: input.tenantId,
+            case_id: input.caseId,
+            from_stage: input.fromStage,
+            to_stage: input.toStage,
             actor: input.actor,
           });
         } catch (error) {
@@ -89,12 +105,24 @@ export function createTaxPlanCycleTransitionController(
           actionItemEventPublisher: options.actionItemEventPublisher,
         });
 
+        console.info({
+          message: "present-to-client action-item saga starting",
+          tenant_id: input.tenantId,
+          case_id: input.caseId,
+          actor: input.actor,
+        });
         await presentToClientSaga.run({
           transitionedCycle: transitioned,
           tenantId: input.tenantId,
           caseId: input.caseId,
           actor: input.actor,
           actionItem: input.actionItem,
+        });
+        console.info({
+          message: "present-to-client action-item saga completed",
+          tenant_id: input.tenantId,
+          case_id: input.caseId,
+          actor: input.actor,
         });
       }
 

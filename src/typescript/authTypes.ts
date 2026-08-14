@@ -45,7 +45,7 @@ Note: Secret maanager is the env file for the aws project (What all needs to be 
 
 1. Left off with bug from auth, auth isn't working correctly as function is crashing, auth fixed (DONE)
 2. Working on present-to-client lambda export, the export is complete (DONE)
-3. Execute endpoint (WIP)
-4. Update both with sns integration (Next)
-5. Cleanup (Figure out testing replication strategy)
+3. Execute endpoint (DONE)
+4. Update both with sns integration (DONE and testing, execute just pushes DLQ, dunno what the ohter is breaking about)
+5. Cleanup, Make PR, push changes and remove any uneeeded stuff, condense scripts into one folder under typescript ()
  */

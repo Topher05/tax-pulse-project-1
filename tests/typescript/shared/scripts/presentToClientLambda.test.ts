@@ -30,6 +30,11 @@ function createInMemoryRepository(initialCycle: TaxPlanCycle) {
       void input.tenantId;
       return currentCycle;
     },
+    async findCurrentByClientId(input: { tenantId: string; clientId: string }) {
+      void input.tenantId;
+      void input.clientId;
+      return null;
+    },
     async listQueue() {
       return [
         {

@@ -1,72 +1,66 @@
-import type { TaxPlanCycle } from "../../../features/taxPlanCycle/taxPlanCycle.js";
+import type { AuditEntryWriter } from "../../../auditEntryRepository.js";
+import {
+  createTaxPlanCycleTransitionController,
+} from "../../../features/taxPlanCycle/controllers/transitionController.js";
+import type {
+  SnsClient as StageChangedSnsClient,
+} from "../../../features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
+import {
+  createSnsStageChangedEventPublisher,
+  createStageChangedSnsClient,
+  getStageChangedTopicArnFromEnv,
+} from "../../../features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
 import {
   createExecuteLambdaHandler,
   type ExecuteLambdaRequest,
   type ExecuteLambdaResponse,
 } from "./index.js";
+import {
+  createMutableTaxPlanCycleRepository,
+  createNoopAuditEntryWriter,
+} from "../taxPlanCycleLambdaRuntime.js";
+import type { TaxPlanCycleRepository } from "../../../features/taxPlanCycle/repositories/repository.js";
 
 export interface ExecuteLambdaRuntime {
   handler(event: ExecuteLambdaRequest): Promise<ExecuteLambdaResponse>;
 }
 
+export interface ExecuteLambdaRuntimeOptions {
+  env?: NodeJS.ProcessEnv;
+  repository?: TaxPlanCycleRepository;
+  auditEntryWriter?: AuditEntryWriter;
+  stageChangedSnsClient?: StageChangedSnsClient;
+}
+
 let runtimePromise: Promise<ExecuteLambdaRuntime> | undefined;
 
-async function createRuntime(): Promise<ExecuteLambdaRuntime> {
-  // AWS stub composition root for SCRUM-160: keep this Lambda free of
-  // database wiring until the execute delivery path is promoted to the real
-  // persistence-backed runtime.
-  const controller = {
-    async findByCaseId(input: { tenantId: string; caseId: string }): Promise<TaxPlanCycle | null> {
-      void input.tenantId;
-
-      return {
-        id: input.caseId,
-        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e97",
-        stage: "Client Approval",
-        owner: "lambda-stub",
-        priority: "medium",
-        due_date: "2026-08-14",
-        on_hold: false,
-      };
-    },
-    async transition(input: {
-      tenantId: string;
-      caseId: string;
-      fromStage: TaxPlanCycle["stage"];
-      toStage: TaxPlanCycle["stage"];
-      actor: string;
-    }): Promise<TaxPlanCycle | null> {
-      void input.tenantId;
-      void input.caseId;
-      void input.fromStage;
-      void input.actor;
-
-      return {
-        id: input.caseId,
-        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e97",
-        stage: input.toStage,
-        owner: "lambda-stub",
-        priority: "medium",
-        due_date: "2026-08-14",
-        on_hold: false,
-      };
-    },
-  };
+export async function createExecuteLambdaRuntime(
+  options: ExecuteLambdaRuntimeOptions = {},
+): Promise<ExecuteLambdaRuntime> {
+  const env = options.env ?? process.env;
+  const repository =
+    options.repository ?? createMutableTaxPlanCycleRepository("Client Approval");
+  const auditEntryWriter = options.auditEntryWriter ?? createNoopAuditEntryWriter();
+  const stageChangedSnsClient =
+    options.stageChangedSnsClient ?? createStageChangedSnsClient(env);
+  const stageChangedEventPublisher = createSnsStageChangedEventPublisher(
+    stageChangedSnsClient,
+    getStageChangedTopicArnFromEnv(env),
+  );
+  const controller = createTaxPlanCycleTransitionController(repository, {
+    stageChangedEventPublisher,
+  });
 
   return {
     handler: createExecuteLambdaHandler({
       controller,
-      auditEntryWriter: {
-        async record() {
-          return undefined;
-        },
-      },
+      auditEntryWriter,
     }),
   };
 }
 
 async function getRuntime(): Promise<ExecuteLambdaRuntime> {
-  runtimePromise ??= createRuntime();
+  runtimePromise ??= createExecuteLambdaRuntime();
   return await runtimePromise;
 }
 

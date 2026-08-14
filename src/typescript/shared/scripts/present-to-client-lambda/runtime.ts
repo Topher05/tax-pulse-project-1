@@ -1,82 +1,94 @@
-import type { TaxPlanCycle } from "../../../features/taxPlanCycle/taxPlanCycle.js";
+import type { AuditEntryWriter } from "../../../auditEntryRepository.js";
+import {
+  createTaxPlanCycleTransitionController,
+} from "../../../features/taxPlanCycle/controllers/transitionController.js";
+import type {
+  ActionItemCreatedSnsClient,
+} from "../../../features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.js";
+import type {
+  SnsClient as StageChangedSnsClient,
+} from "../../../features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
+import {
+  createActionItemCreatedSnsClient,
+  createSnsActionItemCreatedEventPublisher,
+  getActionItemCreatedTopicArnFromEnv,
+} from "../../../features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.js";
+import {
+  createSnsStageChangedEventPublisher,
+  createStageChangedSnsClient,
+  getStageChangedTopicArnFromEnv,
+} from "../../../features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
 import {
   createPresentToClientLambdaHandler,
   type PresentToClientLambdaRequest,
   type PresentToClientLambdaResponse,
 } from "./index.js";
+import {
+  createMutableTaxPlanCycleRepository,
+  createNoopAuditEntryWriter,
+} from "../taxPlanCycleLambdaRuntime.js";
+import type { TaxPlanCycleRepository } from "../../../features/taxPlanCycle/repositories/repository.js";
 
 export interface PresentToClientLambdaRuntime {
   handler(event: PresentToClientLambdaRequest): Promise<PresentToClientLambdaResponse>;
 }
 
+export interface PresentToClientLambdaRuntimeOptions {
+  env?: NodeJS.ProcessEnv;
+  repository?: TaxPlanCycleRepository;
+  auditEntryWriter?: AuditEntryWriter;
+  stageChangedSnsClient?: StageChangedSnsClient;
+  actionItemCreatedSnsClient?: ActionItemCreatedSnsClient;
+}
+
 let runtimePromise: Promise<PresentToClientLambdaRuntime> | undefined;
 
-async function createRuntime(): Promise<PresentToClientLambdaRuntime> {
-  // AWS stub composition root for SCRUM-160: keep this Lambda free of
-  // database and Redis wiring until the SNS/SQS cutover work is available.
-  const controller = {
-    async findByCaseId(input: { tenantId: string; caseId: string }): Promise<TaxPlanCycle | null> {
-      void input.tenantId;
-      return {
-        id: input.caseId,
-        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e97",
-        stage: "Review",
-        owner: "lambda-stub",
-        priority: "medium",
-        due_date: "2026-08-14",
-        on_hold: false,
-      };
-    },
-    async transition(input: {
-      tenantId: string;
-      caseId: string;
-      fromStage: TaxPlanCycle["stage"];
-      toStage: TaxPlanCycle["stage"];
-      actor: string;
-      actionItem?: {
-        description: string;
-        deadline: string;
-        completed?: boolean;
-      };
-    }): Promise<TaxPlanCycle | null> {
-      void input.tenantId;
-      void input.caseId;
-      void input.fromStage;
-      void input.actor;
-      void input.actionItem;
-
-      return {
-        id: input.caseId,
-        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e97",
-        stage: input.toStage,
-        owner: "lambda-stub",
-        priority: "medium",
-        due_date: "2026-08-14",
-        on_hold: false,
-      };
-    },
-  };
+export async function createPresentToClientLambdaRuntime(
+  options: PresentToClientLambdaRuntimeOptions = {},
+): Promise<PresentToClientLambdaRuntime> {
+  const env = options.env ?? process.env;
+  const repository =
+    options.repository ?? createMutableTaxPlanCycleRepository("Review");
+  const auditEntryWriter = options.auditEntryWriter ?? createNoopAuditEntryWriter();
+  const stageChangedSnsClient =
+    options.stageChangedSnsClient ?? createStageChangedSnsClient(env);
+  const actionItemCreatedSnsClient =
+    options.actionItemCreatedSnsClient ?? createActionItemCreatedSnsClient(env);
+  const stageChangedEventPublisher = createSnsStageChangedEventPublisher(
+    stageChangedSnsClient,
+    getStageChangedTopicArnFromEnv(env),
+  );
+  const actionItemEventPublisher = createSnsActionItemCreatedEventPublisher(
+    actionItemCreatedSnsClient,
+    getActionItemCreatedTopicArnFromEnv(env),
+  );
+  const controller = createTaxPlanCycleTransitionController(repository, {
+    stageChangedEventPublisher,
+    actionItemEventPublisher,
+  });
 
   return {
     handler: createPresentToClientLambdaHandler({
       controller,
-      auditEntryWriter: {
-        async record() {
-          return undefined;
-        },
-      },
+      auditEntryWriter,
     }),
   };
 }
 
 async function getRuntime(): Promise<PresentToClientLambdaRuntime> {
-  runtimePromise ??= createRuntime();
+  runtimePromise ??= createPresentToClientLambdaRuntime();
   return await runtimePromise;
 }
 
 export async function presentToClientHandler(
   event: PresentToClientLambdaRequest,
 ): Promise<PresentToClientLambdaResponse> {
+  console.info({
+    message: "present-to-client lambda entrypoint invoked",
+    path_parameters: event.pathParameters,
+    has_body: Boolean(event.body && event.body.trim().length > 0),
+  });
+
   const runtime = await getRuntime();
   return await runtime.handler(event);
 }

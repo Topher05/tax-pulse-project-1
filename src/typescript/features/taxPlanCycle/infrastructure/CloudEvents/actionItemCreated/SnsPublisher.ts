@@ -89,12 +89,19 @@ export function createSnsActionItemCreatedEventPublisher(
     async publishActionItemCreated(input) {
       //CL, Keep event serialization in the boundary layer; business logic should only provide the input payload.
       const event = createActionItemCreatedCloudEvent(input, options);
+      const publishInput = {
+        TopicArn: topicArn,
+        Message: JSON.stringify(event),
+        ...(topicArn.endsWith(".fifo")
+          ? {
+              MessageGroupId: input.caseId,
+              MessageDeduplicationId: event.id,
+            }
+          : {}),
+      };
 
       await snsClient.send(
-        new PublishCommand({
-          TopicArn: topicArn,
-          Message: JSON.stringify(event),
-        }),
+        new PublishCommand(publishInput),
       );
     },
   };

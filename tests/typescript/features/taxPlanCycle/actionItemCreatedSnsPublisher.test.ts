@@ -45,7 +45,7 @@ describe("action-item-created SNS publisher", () => {
     const send = vi.fn(async (_command: PublishCommand) => ({}));
     const publisher = createSnsActionItemCreatedEventPublisher(
       { send },
-      "arn:aws:sns:us-east-1:123456789012:taxpulse-action-item-created",
+      "arn:aws:sns:us-east-1:123456789012:taxpulse-action-item-created.fifo",
       {
         idFactory: () => "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e83",
         now: () => new Date("2026-07-01T14:00:00.000Z"),
@@ -58,7 +58,11 @@ describe("action-item-created SNS publisher", () => {
     const command = send.mock.calls[0]?.[0];
     expect(command).toBeInstanceOf(PublishCommand);
     expect(command?.input.TopicArn).toBe(
-      "arn:aws:sns:us-east-1:123456789012:taxpulse-action-item-created",
+      "arn:aws:sns:us-east-1:123456789012:taxpulse-action-item-created.fifo",
+    );
+    expect(command?.input.MessageGroupId).toBe(actionItemInput.caseId);
+    expect(command?.input.MessageDeduplicationId).toBe(
+      "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e83",
     );
     const message = JSON.parse(String(command?.input.Message)) as unknown;
 
