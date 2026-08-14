@@ -1,4 +1,5 @@
 import type {
+  TaxpayerIdentifierSoapFaultError,
   TaxpayerIdentifierValidation,
   TaxpayerIdentifierValidationOutcome,
   TaxpayerIdentifierValidator,
@@ -27,4 +28,18 @@ validationRecord.MatchCode;
 // @ts-expect-error domain validation records use tin_type, not SOAP TINType
 validationRecord.TINType;
 
+declare const faultError: TaxpayerIdentifierSoapFaultError;
+const faultCode: string = faultError.faultCode;
+const faultReason: string = faultError.faultReason;
+const faultProvider: "tivs" = faultError.provider;
+
+// @ts-expect-error domain fault errors must not leak raw SOAP envelope properties
+faultError.Envelope;
+
+// @ts-expect-error domain fault errors must not leak raw SOAP body properties
+faultError.Body;
+
 void leakedSoapResponse;
+void faultCode;
+void faultReason;
+void faultProvider;
