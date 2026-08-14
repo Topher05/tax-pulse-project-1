@@ -50,6 +50,28 @@ export {
   type CreateActionItemCreatedCloudEventOptions,
 } from "./infrastructure/cloudEvents/actionItemCreated/index.js";
 export {
+  actionItemCompletedCloudEventSchemaV1,
+  actionItemCompletedEventDataSchema,
+  actionItemCompletedEventDataSchemaV1,
+  actionItemCompletedEventSchemaVersion,
+  actionItemCompletedEventSource,
+  actionItemCompletedEventType,
+  createActionItemCompletedCloudEvent,
+  createActionItemCompletedSnsPublisher,
+  ACTION_ITEM_COMPLETED_CONSUMER_NAME,
+  ACTION_ITEM_COMPLETED_IDEMPOTENCY_NAMESPACE,
+  createActionItemCompletedConsumer,
+  createRedisActionItemCompletedConsumer,
+  createActionItemCompletedSqsConsumer,
+  getActionItemCompletedQueueUrlFromEnv,
+  parseActionItemCompletedSqsMessage,
+} from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
+export type {
+  ActionItemCompletedCloudEventV1,
+  ActionItemCompletedEventPublishInput,
+  ActionItemCompletedEventPublisher,
+} from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
+export {
   createPresentToClientSaga,
 } from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
 export {
@@ -288,6 +310,29 @@ export {
   type TivsVerifyTaxpayerRawResponse,
   type TivsVerifyTaxpayerRequest,
 } from "./infrastructure/tinEinValidationSoapClient.js";
+export {
+  createTinEinValidationAcl,
+  type TaxpayerIdentifierValidationOutcome,
+  type TaxpayerIdentifierValidator,
+} from "./infrastructure/tinEinValidationAcl.js";
+export {
+  taxpayerIdentifierInputSchema,
+  taxpayerIdentifierTypeSchema,
+  taxpayerIdentifierTypeValues,
+  taxpayerIdentifierValidationResultSchema,
+  taxpayerIdentifierValidationResultValues,
+  taxpayerIdentifierValidationSchema,
+  type TaxpayerIdentifierInput,
+  type TaxpayerIdentifierType,
+  type TaxpayerIdentifierValidation,
+  type TaxpayerIdentifierValidationResult,
+} from "./taxpayerIdentifierValidation.js";
+export {
+  createTaxpayerIdentifierValidationRepository,
+  type TaxpayerIdentifierValidationReadInput,
+  type TaxpayerIdentifierValidationRecordInput,
+  type TaxpayerIdentifierValidationRepository,
+} from "./repositories/taxpayerIdentifierValidation.js";
 export {
   quarterlyEstimateQuarterSchema,
   quarterlyEstimateReadParamsSchema,

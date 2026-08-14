@@ -15,7 +15,7 @@ export function AppShell() {
   const viewTitle = getViewTitle(pathname);
   const navGroups = getPulseNavGroupsForRole(user?.role);
 
-  if (user?.role === "Client" && pathname !== "/my-tax-plan") {
+  if (user?.role === "Client" && !["/my-tax-plan", "/action-items"].includes(pathname)) {
     return <Navigate replace to="/my-tax-plan" />;
   }
 
