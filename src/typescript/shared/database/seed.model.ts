@@ -404,6 +404,15 @@ export const userRows = [
     statusId: userStatusRows[0].id,
     lastLoginAt: null,
   },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+    tenantId: tenantRows[2].id,
+    email: "test-client@example.com",
+    displayName: "Test Client",
+    roleId: roleRows[2].id,
+    statusId: userStatusRows[1].id,
+    lastLoginAt: null,
+  },
 ] as const satisfies readonly SeedUserRow[];
 
 export const credentialRows = [
@@ -467,6 +476,12 @@ export const credentialRows = [
     passwordHash:
       "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtMTA$YXV0aC1oYXNoLTEw",
   },
+  {
+    id: "testclientdemo202600001",
+    userId: userRows[10].id,
+    passwordHash:
+      "$argon2id$v=19$m=65536,t=3,p=4$c3ludGhldGljLXRlc3QtY2xpZW50LXNlZWQtMDE$+IPCTtDIPAJDcHuRvZpGqvDAGYJbpeiK1gKMg6SSV6E",
+  },
 ] as const satisfies readonly SeedCredentialRow[];
 
 export const mfaEnrollmentRows = [
@@ -519,6 +534,11 @@ export const mfaEnrollmentRows = [
     userId: userRows[9].id,
     totpSecret: "UBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXX",
     isEnrolled: false,
+  },
+  {
+    userId: userRows[10].id,
+    totpSecret: "6XF5UF2Y7SUVJ3CJ24GVE2QV7GT4UFGQ",
+    isEnrolled: true,
   },
 ] as const satisfies readonly SeedMfaEnrollmentRow[];
 
@@ -583,6 +603,18 @@ export const taxPlanCycleRows = [
     onHold: true,
     holdReason: "Archived workpapers pending review",
   },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d16",
+    clientId: userRows[10].id,
+    tenantId: tenantRows[2].id,
+    planningPeriod: "2026-Q4",
+    stage: "Client Approval",
+    owner: "Jordan Patel",
+    priority: "high",
+    dueDate: new Date("2026-12-31T00:00:00Z"),
+    onHold: false,
+    holdReason: null,
+  },
 ] as const satisfies readonly SeedTaxPlanCycleRow[];
 
 export const actionItemRows = [
@@ -644,6 +676,24 @@ export const actionItemRows = [
     caseId: taxPlanCycleRows[1].id,
     description: "Finalize present-to-client checklist",
     deadline: new Date("2026-10-07T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[5].id,
+    description: "Review your estimated tax payment schedule",
+    deadline: new Date("2026-10-15T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[5].id,
+    description: "Upload your year-to-date income statement",
+    deadline: new Date("2026-10-22T00:00:00Z"),
+    completed: false,
+  },
+  {
+    caseId: taxPlanCycleRows[5].id,
+    description: "Confirm the proposed quarterly payment amount",
+    deadline: new Date("2026-10-31T00:00:00Z"),
     completed: false,
   },
 ] as const satisfies readonly SeedActionItemRow[];

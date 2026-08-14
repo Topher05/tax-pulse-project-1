@@ -101,6 +101,43 @@ stage-change events from being lost before asynchronous delivery.
 
 - `npm run db:check` passed and loaded the updated Drizzle schema successfully.
 - `git diff --check` passed.
+
+## christopher-martus-jira144 - SCRUM-144 Seed Data Follow-up
+
+**Branch:** `christopher-martus-jira144`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-144
+
+**Summary:** Seed a client portal account with action items for manual acceptance testing
+
+**Description:** Add synthetic, client-scoped portal data that allows the Action Items screen
+and completion workflow to be exercised after a local database reset.
+
+**Acceptance Criteria:**
+
+- A seeded generic test Client can sign in and see action items for their current plan.
+- The items can be completed through the existing client portal workflow.
+
+**Code Connection:**
+
+- The seed model links the client user, credential, MFA enrollment, current Tax Plan Cycle,
+  and incomplete action-item rows to the same tenant and client ID.
+
+**Project Scope Connection:**
+
+This supports SCRUM-144's end-to-end portal acceptance flow without bypassing tenant isolation
+or scoped client access.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/seed.model.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
 - A focused `tsx` check built and schema-validated a deterministic stage-changed
   CloudEvent through the relocated domain helper.
 - `npm run db:check` and `git diff --check` continue to pass after the second slice.
