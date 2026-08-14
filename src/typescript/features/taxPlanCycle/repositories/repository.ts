@@ -7,9 +7,14 @@ import {
   outboxEvent as outboxEventTable,
   stageTransition as stageTransitionTable,
   taxPlanCycle as taxPlanCycleTable,
+  taxpayerIdentifierValidation as taxpayerIdentifierValidationTable,
 } from "../../../shared/database/schema.js";
 import { createStageChangedCloudEventV1 } from "../stageChangedEvent.js";
 import { taxPlanCycleSchema, type TaxPlanCycle } from "../taxPlanCycle.js";
+import type {
+  TaxpayerIdentifierType,
+  TaxpayerIdentifierValidationResult,
+} from "../taxpayerIdentifierValidation.js";
 
 export interface TaxPlanCycleReadInput {
   tenantId: string;
@@ -29,6 +34,13 @@ export interface TaxPlanCycleRepositoryCreateInput {
   priority: TaxPlanCycle["priority"];
   dueDate: TaxPlanCycle["due_date"];
   actor: string;
+  taxpayerIdentifierValidation?: {
+    tinType: TaxpayerIdentifierType;
+    validationResult: TaxpayerIdentifierValidationResult;
+    verifiedName?: string;
+    provider: "tivs";
+    validatedAt?: Date;
+  };
 }
 
 export interface TaxPlanCycleInsertInput {
@@ -117,6 +129,7 @@ export function createTaxPlanCycleRepository(
     onHold: boolean;
     holdReason: string | null;
     actor: string;
+    taxpayerIdentifierValidation?: TaxPlanCycleRepositoryCreateInput["taxpayerIdentifierValidation"];
   }): Promise<string> {
     return await db.transaction(async (tx) => {
       const rows = await tx
@@ -160,6 +173,18 @@ export function createTaxPlanCycleRepository(
         occurredAt,
       });
 
+      if (input.taxpayerIdentifierValidation) {
+        await tx.insert(taxpayerIdentifierValidationTable).values({
+          tenantId: input.tenantId,
+          caseId,
+          tinType: input.taxpayerIdentifierValidation.tinType,
+          validationResult: input.taxpayerIdentifierValidation.validationResult,
+          verifiedName: input.taxpayerIdentifierValidation.verifiedName ?? null,
+          provider: input.taxpayerIdentifierValidation.provider,
+          validatedAt: input.taxpayerIdentifierValidation.validatedAt ?? occurredAt,
+        });
+      }
+
       return caseId;
     });
   }
@@ -176,6 +201,7 @@ export function createTaxPlanCycleRepository(
         onHold: false,
         holdReason: null,
         actor: input.actor,
+        taxpayerIdentifierValidation: input.taxpayerIdentifierValidation,
       });
     },
 

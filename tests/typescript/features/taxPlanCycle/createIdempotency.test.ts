@@ -229,13 +229,20 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
       tin_type: "EIN",
       legal_name: "ACME GOVERNMENT SERVICES LLC",
     });
-    expect(taxpayerIdentifierValidationRepository.record).toHaveBeenCalledWith({
+    expect(repository.create).toHaveBeenCalledWith({
       tenantId,
-      caseId,
-      tinType: "ein",
-      validationResult: "match",
-      verifiedName: "ACME GOVERNMENT SERVICES LLC",
-      provider: "tivs",
+      actor: "advisor-001",
+      planningPeriod: "2026-Q4",
+      clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+      owner: "advisor-001",
+      priority: "high",
+      dueDate: "2026-12-31",
+      taxpayerIdentifierValidation: {
+        tinType: "ein",
+        validationResult: "match",
+        verifiedName: "ACME GOVERNMENT SERVICES LLC",
+        provider: "tivs",
+      },
     });
   });
 
@@ -273,6 +280,52 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
       status: 503,
       type: "https://taxpulse.example/problems/taxpayer-identifier-validation-unavailable",
     });
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  test("does not create a case in the repository if taxpayer identifier validation fails", async () => {
+    const repository: TaxPlanCycleRepository = {
+      create: vi.fn(async () => caseId),
+      insert: vi.fn(),
+      findByCaseId: vi.fn(async () => null),
+      transition: vi.fn(async () => null),
+      listQueue: vi.fn(async () => []),
+    };
+    const taxpayerIdentifierValidator: TaxpayerIdentifierValidator = {
+      validateTaxpayerIdentifier: vi.fn(async () => {
+        throw new Error("SOAP endpoint unreachable");
+      }),
+    };
+    const taxpayerIdentifierValidationRepository: TaxpayerIdentifierValidationRepository = {
+      record: vi.fn(),
+      findByCaseId: vi.fn(async () => null),
+    };
+    const controller = createTaxPlanCycleCreateController(repository, {
+      idempotencyStore: createRedisTaxPlanCycleCreateIdempotencyStore(
+        createInMemoryCreateIdempotencyClient(),
+      ),
+      taxpayerIdentifierValidator,
+      taxpayerIdentifierValidationRepository,
+    });
+
+    await expect(
+      controller.create({
+        tenantId,
+        actor: "advisor-001",
+        idempotencyKey,
+        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+        planning_period: "2026-Q4",
+        owner: "advisor-001",
+        priority: "high",
+        due_date: "2026-12-31",
+        taxpayer_identifier: {
+          tin: "12-3456789",
+          tin_type: "EIN",
+          legal_name: "ACME GOVERNMENT SERVICES LLC",
+        },
+      }),
+    ).rejects.toThrow("SOAP endpoint unreachable");
+
     expect(repository.create).not.toHaveBeenCalled();
   });
 });

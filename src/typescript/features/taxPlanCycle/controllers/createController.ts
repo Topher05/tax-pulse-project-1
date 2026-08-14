@@ -19,6 +19,7 @@ import type { TaxpayerIdentifierValidation } from "../taxpayerIdentifierValidati
 import type {
   TaxPlanCycleReadInput,
   TaxPlanCycleRepository,
+  TaxPlanCycleRepositoryCreateInput,
 } from "../repositories/repository.js";
 
 export const taxPlanCycleCreateResultSchema = z.object({
@@ -108,6 +109,29 @@ export function createTaxPlanCycleCreateController(
               throw createTaxpayerIdentifierValidationUnavailableProblem();
             }
 
+            let taxpayerIdentifierValidation:
+              | TaxPlanCycleRepositoryCreateInput["taxpayerIdentifierValidation"]
+              | undefined;
+
+            if (
+              input.taxpayer_identifier &&
+              options.taxpayerIdentifierValidator
+            ) {
+              const validation =
+                await options.taxpayerIdentifierValidator.validateTaxpayerIdentifier(
+                  input.taxpayer_identifier,
+                );
+
+              taxpayerIdentifierValidation = {
+                tinType: validation.tinType,
+                validationResult: validation.result,
+                ...(validation.verifiedName
+                  ? { verifiedName: validation.verifiedName }
+                  : {}),
+                provider: validation.provider,
+              };
+            }
+
             const caseId = await repository.create({
               tenantId: input.tenantId,
               planningPeriod: input.planning_period,
@@ -116,29 +140,10 @@ export function createTaxPlanCycleCreateController(
               priority: input.priority,
               dueDate: input.due_date,
               actor: input.actor,
+              ...(taxpayerIdentifierValidation
+                ? { taxpayerIdentifierValidation }
+                : {}),
             });
-
-            if (
-              input.taxpayer_identifier &&
-              options.taxpayerIdentifierValidator &&
-              options.taxpayerIdentifierValidationRepository
-            ) {
-              const validation =
-                await options.taxpayerIdentifierValidator.validateTaxpayerIdentifier(
-                  input.taxpayer_identifier,
-                );
-
-              await options.taxpayerIdentifierValidationRepository.record({
-                tenantId: input.tenantId,
-                caseId,
-                tinType: validation.tinType,
-                validationResult: validation.result,
-                ...(validation.verifiedName
-                  ? { verifiedName: validation.verifiedName }
-                  : {}),
-                provider: validation.provider,
-              });
-            }
 
             return { case_id: caseId };
           },
