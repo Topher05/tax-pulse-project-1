@@ -65,12 +65,12 @@ export {
   createActionItemCompletedSqsConsumer,
   getActionItemCompletedQueueUrlFromEnv,
   parseActionItemCompletedSqsMessage,
-} from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
+} from "./infrastructure/cloudEvents/actionItemCompleted/index.js";
 export type {
   ActionItemCompletedCloudEventV1,
   ActionItemCompletedEventPublishInput,
   ActionItemCompletedEventPublisher,
-} from "./infrastructure/CloudEvents/actionItemCompleted/index.js";
+} from "./infrastructure/cloudEvents/actionItemCompleted/index.js";
 export {
   createPresentToClientSaga,
 } from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
