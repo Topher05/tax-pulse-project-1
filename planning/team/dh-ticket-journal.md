@@ -5,6 +5,281 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira155 - SCRUM-155
+
+**Branch:** `dylan-harle-jira155`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-155
+
+**Summary:** Compose the services, PostgreSQL, and Redis.
+
+**Description:** As a Platform Engineer, I want Docker Compose running the services and
+data stores, so that the team can run the stack locally.
+
+**Acceptance Criteria:**
+
+- Compose starts the Core Case Service, Tax Engine, PostgreSQL, and Redis together.
+- The services reach the data stores over the Compose network; the Core Case Service
+  serves the identity/auth routes against its Postgres tables.
+- A documented command brings the stack up and a smoke check passes.
+
+**Code Connection:**
+
+- Added a root `docker-compose.yml` for PostgreSQL 18, the SCRUM-153 Core Case Service
+  image, the SCRUM-154 Tax Engine image, and a one-shot Core seed service.
+- The full-stack npm scripts reuse `docker-compose.redis.yml` so Redis and RedisInsight
+  keep their existing service definition and container names.
+- Compose overrides runtime URLs inside containers with Compose DNS:
+  `postgres:5432`, `taxpulse-redis:6379`, and `tax-engine:8000`, while preserving
+  `.env.example`'s `host.docker.internal` guidance for standalone `docker run`.
+- Added a stack smoke script that checks both health endpoints, Redis ping, and a
+  synthetic `POST /auth/register` through the Core Case Service's PostgreSQL-backed
+  auth route.
+
+**Project Scope Connection:**
+
+- Containers, Serverless & Deployment.
+- Builds directly on SCRUM-153 and SCRUM-154 without changing either production
+  Dockerfile boundary.
+- Leaves LocalStack SNS/SQS, ECS/Fargate, ALB routing, Terraform, Lambda refactors, and
+  release/security pipeline work to SCRUM-156 and later platform tickets.
+
+**Changed Files:**
+
+- `docker-compose.yml`
+- `package.json`
+- `.env.example`
+- `README.md`
+- `src/typescript/shared/scripts/stackSmoke.ts`
+- `tests/typescript/stackSmoke.test.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/stackSmoke.test.ts
+  tests/typescript/redisSmoke.test.ts` passed with 7 tests.
+- `docker compose -p taxpulse-local -f docker-compose.yml -f
+  docker-compose.redis.yml config` passed and showed Core, Tax Engine, PostgreSQL, and
+  the reused Redis services on the same Compose network.
+- `npm run stack:up` built the Core and Tax Engine images, started PostgreSQL, Redis,
+  and the Tax Engine, and completed the one-shot seed service after the Postgres 18
+  volume target was corrected.
+- Full default startup and `npm run stack:smoke` were blocked locally because an
+  existing standalone `case-service` container already owns host port `3000`. The
+  Compose file now supports `TAXPULSE_CORE_HOST_PORT` and the README documents the
+  matching `TAXPULSE_STACK_CORE_URL` smoke override for that case.
+- `npm run stack:down` was run after validation to clean up the partial Compose stack.
+
+## dylan-harle-jira154 - SCRUM-154
+
+**Branch:** `dylan-harle-jira154`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-154
+
+**Summary:** Write the multi-stage Dockerfile for the Tax Engine.
+
+**Description:** As a Platform Engineer, I want a multi-stage Dockerfile for the Tax
+Calculation Engine, so that its production image is lean.
+
+**Acceptance Criteria:**
+
+- The Python image builds in multiple stages and ships only runtime dependencies.
+- The container runs the FastAPI service and passes a healthcheck.
+- The build is reproducible from a clean checkout.
+
+**Code Connection:**
+
+- Added `Dockerfile.tax-engine` as the dedicated Python Tax Engine image while leaving
+  the existing root Core Case Service Dockerfile intact.
+- The builder stage installs locked runtime dependencies from `uv.lock` without Python
+  dev extras, installs `tax_liability_engine`, and copies only the resulting virtualenv
+  into the runtime stage.
+- The runtime stage starts `tax_liability_engine.api:create_app` through Uvicorn on
+  `0.0.0.0:${PORT:-8000}` and uses the existing unauthenticated `/health` route for the
+  Docker healthcheck.
+- Added a Dockerfile-specific ignore file so clean-checkout builds include the Python
+  package and dependency metadata without sending Node, Pulse UI, tests, docs, local
+  env files, or planning artifacts into the Tax Engine build context.
+- Documented the Tax Engine Docker build/run commands and clarified the JWT environment
+  values used by Docker and Docker Compose.
+
+**Project Scope Connection:**
+
+- Containers, Serverless & Deployment.
+- Builds on SCRUM-84 and ADR-0016 by packaging the existing feature-sliced FastAPI
+  service without changing calculation routes, JWT behavior, persistence boundaries, or
+  the ADR's local interpreter startup command.
+- Preserves ADR-0009 service ownership by keeping the Tax Engine image focused on
+  calculation execution and free of Core Case Service database ownership.
+
+**Changed Files:**
+
+- `Dockerfile.tax-engine`
+- `Dockerfile.tax-engine.dockerignore`
+- `.env.example`
+- `README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `.\.venv\Scripts\python.exe -m pyright --pythonpath .\.venv\Scripts\python.exe`
+  passed.
+- `.\.venv\Scripts\python.exe -m pytest` passed with 91 tests passed and 2 skipped.
+- `docker build -f Dockerfile.tax-engine -t taxpulse/tax-engine .` passed.
+- `docker run -d --rm --name tax-engine-scrum154 -e JWT_ISSUER=... -e
+  JWT_SIGNING_SECRET=... taxpulse/tax-engine` started successfully, and
+  `docker inspect --format='{{.State.Health.Status}}' tax-engine-scrum154` reported
+  `healthy`.
+- Runtime dependency inspection inside `taxpulse/tax-engine` reported required runtime
+  modules present and dev-only modules `pytest`, `ruff`, and `pyright` absent.
+- `git diff --check` passed with line-ending normalization warnings only.
+- `.\.venv\Scripts\python.exe -m ruff format --check src tests` was blocked by an
+  existing unrelated formatting issue in `tests/tax_liability_engine/smoke_test.py`.
+
+## dylan-harle-jira152 - SCRUM-152
+
+**Branch:** `dylan-harle-jira152`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-152
+
+**Summary:** Build the Roles & Permissions and Audit Log admin screens.
+
+**Description:** As a TaxPulse Platform Admin, I want the Roles & Permissions and
+Audit Log screens, so that I can review the permission matrix and platform-wide audit
+events.
+
+**Acceptance Criteria:**
+
+- The Roles & Permissions screen renders the read-only permission matrix for the four
+  roles.
+- The Audit Log screen lists platform-wide audit entries with redacted figures.
+- Both screens render loading and empty states.
+
+**Code Connection:**
+
+- Built on SCRUM-151's platform administration BFF boundary and ADR-0032's guidance that
+  TaxPulse Platform Admin screens should use explicit platform-admin-only endpoints
+  rather than widening tenant-scoped firm user routes.
+- Added platform administration read models for `GET /v1/administration/roles-permissions`
+  and `GET /v1/administration/audit-log`, both guarded to `TaxPulse Platform Admin`.
+- Added a read-only permission matrix for `TaxPulse Platform Admin`, `Firm Admin`,
+  `Advisor`, and `Client`, grouped into internal firm-staff and external client
+  capabilities.
+- Added a platform-wide audit log repository read over the append-only `audit_entry`
+  table, joining case and tenant context and reusing the existing audit output serializer
+  so financial figures are redacted before response output.
+- Replaced the Pulse UI placeholder administration routes with the Roles & Permissions
+  and Audit Log pages, tightened both routes to platform-admin-only access, and added
+  TanStack Query hooks, loading states, empty states, populated tables, and an audit role
+  filter.
+- Updated OpenAPI documentation for the new platform administration reads.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Read-models/BFF platform administration surface.
+- Fills the SCRUM-152 follow-on gap called out after SCRUM-151 while preserving tenant
+  isolation, least privilege, and append-only audit redaction behavior from the project
+  ADRs.
+
+**Changed Files:**
+
+- `src/typescript/features/platformAdministration/*`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/entities/platformAdministration.ts`
+- `src/pulseUI/entities/platformAdministrationQueries.ts`
+- `src/pulseUI/pages/administration/*`
+- `src/pulseUI/tests/administration/*`
+- `tests/typescript/platformAdministration/*`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/platformAdministration/platformAdministrationRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/platformAdministration/platformAdministrationRepository.test.ts` passed with 3 files and 27 tests after rerunning outside the sandbox because Windows denied Vitest config access in the sandbox.
+- `npm --prefix src/pulseUI run test:vitest -- tests/administration/AllTenantsUsersQueries.test.tsx tests/administration/PlatformAdminScreens.test.tsx` passed with 2 files and 12 tests after rerunning outside the sandbox for the same Vitest config access issue.
+
+## dylan-harle-jira151 - SCRUM-151
+
+**Branch:** `dylan-harle-jira151`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-151
+
+**Summary:** Build the All Tenants & Users admin screen.
+
+**Description:** As a TaxPulse Platform Admin, I want the All Tenants & Users screen,
+so that I can manage accounts across tenants without impersonating.
+
+**Acceptance Criteria:**
+
+- The screen lists tenants and their users with role and status.
+- An Invite User control creates a user under a chosen tenant.
+- No impersonation control is present, per MVP scope.
+
+**Code Connection:**
+
+- Added a separate platform administration BFF boundary instead of widening the
+  SCRUM-147/SCRUM-149 `/v1/firm/users` tenant-scoped contract documented in ADR-0032.
+- Added `GET /v1/administration/tenants-users` for TaxPulse Platform Admins to read all
+  tenants with users sectioned under each tenant, using the same visible user row fields
+  as the existing Team & Users roster.
+- Added `POST /v1/administration/tenants/{tenantId}/users` so a platform admin can
+  create a user in a selected tenant with admin-entered display name, email, role, and
+  visible status.
+- Added the Pulse UI All Tenants & Users route at `/administration/tenants-users`,
+  platform-admin-only routing, grouped tenant user tables, and an enabled Invite User
+  modal/form.
+- Expanded deterministic synthetic tenant/user/client fixture data so tenant-scoped
+  rosters include client-role users and the platform screen displays multiple populated
+  tenant sections.
+- Updated OpenAPI documentation and ADR-0032 to capture the platform administration
+  boundary and the explicit no-impersonation MVP scope.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Read-models/BFF platform administration surface.
+- Preserves tenant isolation by leaving firm users tenant-scoped while making
+  cross-tenant access explicit and role-gated to `TaxPulse Platform Admin`.
+
+**Changed Files:**
+
+- `src/typescript/features/platformAdministration/*`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/pulseUI/entities/platformAdministration.ts`
+- `src/pulseUI/entities/platformAdministrationQueries.ts`
+- `src/pulseUI/pages/administration/AllTenantsUsersPage.tsx`
+- `src/pulseUI/pages/administration/AllTenantsUsersPage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/tests/administration/*`
+- `tests/typescript/platformAdministration/*`
+- `tests/typescript/clientRoster/clientRosterRepository.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/firmUsers/firmUsersRepository.test.ts`
+- `adr/0032-team-users-screen.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- tests/administration/AllTenantsUsersPage.test.tsx tests/administration/AllTenantsUsersQueries.test.tsx tests/firm/TeamUsersPage.test.tsx tests/firm/FirmUserQueries.test.tsx` passed with 4 files and 15 tests after rerunning outside the sandbox because Windows denied access while Vitest loaded its config in the sandbox.
+- `npm run test:vitest -- tests/typescript/platformAdministration/platformAdministrationRoutes.test.ts tests/typescript/firmUsers/firmUsersRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed with 3 files and 24 tests after rerunning outside the sandbox for the same Vitest config access issue.
+- `npm run test:vitest -- tests/typescript/platformAdministration/platformAdministrationRepository.test.ts tests/typescript/firmUsers/firmUsersRepository.test.ts tests/typescript/clientRoster/clientRosterRepository.test.ts` passed with 3 files and 7 tests after rerunning outside the sandbox for the same Vitest config access issue.
+
 ## development-scrum147 - SCRUM-147
 
 **Branch:** `development`
@@ -83,6 +358,136 @@ firm's users, so that the screen reads live data through one typed boundary.
   only collected `user.test.ts` because the root Vitest config excludes
   `**/*.integration.test.ts`; the collected file passed with 3 tests, and the integration
   fixtures are covered by `npm run typecheck`.
+
+## dylan-harle-jira149 - SCRUM-149
+
+**Branch:** `dylan-harle-jira149`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-149
+
+**Summary:** Render the user roster table with a role-assignment control.
+
+**Description:** As a Firm Admin, I want the user roster table with a role-assignment
+control, so that I can manage my firm's staff and their roles.
+
+**Acceptance Criteria:**
+
+- The table renders name, email, role, status, and last login for the tenant's users.
+- A role-assignment control lets a Firm Admin change a user's tenant-scoped role; it is
+  disabled for non-admins.
+- Changing a role invokes the update handler with the user and new role.
+
+**Code Connection:**
+
+- Built directly on SCRUM-147's `/v1/firm/users` read boundary and `FirmUserRow` screen
+  model, replacing the placeholder row action with a role select in the roster's role
+  column.
+- Added a tenant-scoped `PATCH /v1/firm/users/{userId}/role` command that validates the
+  role payload, rejects `TaxPulse Platform Admin` promotion, requires Firm Admin access,
+  updates only the authenticated tenant's user, and returns the updated row.
+- Added a Pulse UI role update helper and mutation hook that invalidates the existing
+  firm users query after a successful role change.
+- Limited the role-assignment control to tenant-assignable roles (`Firm Admin`,
+  `Advisor`, and `Client`) and disabled platform-admin rows in the tenant roster.
+- Updated ADR-0032 to capture the role-assignment command/control decision while leaving
+  loading, empty, retry, error, invite, and impersonation work to adjacent tickets.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Firm administration UI completion.
+- Preserves tenant isolation by deriving update scope from authenticated request context
+  and never accepting tenant IDs from the browser.
+
+**Changed Files:**
+
+- `src/typescript/features/firmUsers/*`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/entities/firmUsers.ts`
+- `src/pulseUI/entities/firmUserQueries.ts`
+- `src/pulseUI/pages/firm/TeamUsersPage.tsx`
+- `src/pulseUI/pages/firm/TeamUsersPage.module.css`
+- `src/pulseUI/tests/firm/FirmUserQueries.test.tsx`
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `tests/typescript/firmUsers/firmUsersRoutes.test.ts`
+- `tests/typescript/firmUsers/firmUsersRepository.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `adr/0032-team-users-screen.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- FirmUserQueries.test.tsx TeamUsersPage.test.tsx`
+  passed with 2 files and 10 tests.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRoutes.test.ts tests/typescript/coreCaseOpenApi.test.ts`
+  passed with 2 files and 18 tests.
+- `npm run test:vitest -- tests/typescript/firmUsers/firmUsersRepository.test.ts`
+  passed with 1 file and 3 tests.
+
+## dylan-harle-jira150 - SCRUM-150
+
+**Branch:** `dylan-harle-jira150`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-150
+
+**Summary:** Add accessibility and a component test for the Team & Users screen.
+
+**Description:** As a Frontend Developer, I want the Team & Users screen to pass an
+axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the roster renders rows and the empty state for no extra
+  users.
+- The test asserts the role-assignment control is disabled for a non-admin role.
+
+**Code Connection:**
+
+- Added direct Team & Users component coverage for populated roster rows, including
+  name, email, role select value, status, and last-login cells.
+- Added direct component coverage for the SCRUM-148 zero-user empty state now that the
+  real empty-state UI exists.
+- Restored direct component coverage for the SCRUM-149 role-assignment callback and
+  disabled non-admin role controls against the current `queryState` screen contract.
+- Added routed Team & Users axe coverage for the populated `/firm/users` screen using
+  the existing TanStack Query and session test providers.
+- Kept the SCRUM-148 loading, route-level empty, admin-only roster, and retryable error
+  tests aligned with the current implementation.
+- Updated ADR-0032 to reflect SCRUM-148's completed request-state behavior and
+  SCRUM-150's completed testing coverage.
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience.
+- Firm administration UI regression coverage.
+- Keeps tenant-scoped Team & Users behavior on the existing SCRUM-147 read boundary
+  and SCRUM-149 role-assignment control while covering the SCRUM-148 request-state
+  surface.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `adr/0032-team-users-screen.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm.cmd --prefix src/pulseUI test -- tests/firm/TeamUsersPage.test.tsx tests/accessibility/axeGate.test.tsx`
+  passed with 2 files and 14 tests after rerunning outside the sandbox because Windows
+  denied access while Vitest loaded its config in the sandbox.
+- The Team & Users axe assertion checks for zero supported-rule violations; the
+  jsdom-based run disables `color-contrast` because axe-core requires canvas APIs that
+  are unavailable in this test environment.
 
 ## dylan-harle-jira132 - SCRUM-132
 
@@ -732,6 +1137,52 @@ firm's users, so that the screen reads live data through one typed boundary.
 
 - `npm.cmd --prefix src/pulseUI run typecheck` passed.
 - `npm.cmd --prefix src/pulseUI test -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx` passed after rerunning outside the sandbox because Windows denied access while Vitest loaded its config in the sandbox.
+
+## dylan-harle-jira156 - SCRUM-156
+
+**Branch:** `dylan-harle-jira156`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-156
+
+**Summary:** Wire SNS/SQS via the team's AWS environment
+
+**Description:** As a Platform Engineer, I want the workflow events wired to the team's AWS SNS/SQS resources, so that the events run against AWS.
+
+**Acceptance Criteria:**
+
+- The team's AWS environment provides the SNS/SQS resources the workflow events use.
+- The publisher and consumer connect to the AWS SNS/SQS endpoints in the local profile.
+- A smoke check publishes and consumes one stage-changed event end-to-end.
+
+**Code Connection:**
+
+- Added a real AWS stage-changed smoke script that loads the local profile configuration, publishes one schema-valid CloudEvent to the configured SNS topic, polls the configured SQS queue, validates the SNS-to-SQS envelope with the existing parser, and deletes the matching smoke message.
+- Added an npm script so the AWS smoke can be run consistently without exposing local `.env` values in command output.
+- Passed the AWS SNS/SQS environment variables through the local Compose Core Case service configuration so the app stack reads the configured topic, queue, endpoints, region, and credential/profile settings.
+- Updated `.env.example` with the AWS CLI browser login profile flow and the distinction between LocalStack endpoint overrides and real AWS smoke values.
+
+**Project Scope Connection:**
+
+- Platform.
+- Builds on the SCRUM-131 SNS publisher and SCRUM-132 SQS consumer contract without changing the stage-changed event schema, tenant-scoped event payload, or LocalStack endpoint support.
+
+**Changed Files:**
+
+- `package.json`
+- `docker-compose.yml`
+- `.env.example`
+- `src/typescript/shared/scripts/awsStageChangedSmoke.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/stageChangedSqsConsumer.test.ts` passed: 2 files, 8 tests.
+- `aws sts get-caller-identity --profile taxpulse-login` passed for account `814650854375`.
+- `docker compose -f docker-compose.yml -f docker-compose.redis.yml config --quiet` passed.
+- `npm run aws:stage-changed-smoke` passed against the team AWS SNS/SQS resources after using the `taxpulse-login` profile, blanking LocalStack endpoint overrides for the process, and correcting the SNS topic ARN to the topic resource rather than the subscription ARN. Latest smoke published event `stage-transition-956f813e-ae8e-4fb8-ac13-04c60f93113c`, received it from SQS, and inspected 1 message.
 
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX

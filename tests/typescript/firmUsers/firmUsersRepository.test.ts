@@ -44,6 +44,14 @@ describe("Firm users repository", () => {
           status: "Inactive",
           lastLoginAt: null,
         },
+        {
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d66",
+          name: "Avery Chen",
+          email: "avery.client@example.com",
+          role: "Client",
+          status: "Active",
+          lastLoginAt: "2026-08-02T13:00:00.000Z",
+        },
       ]);
 
       await expect(
@@ -56,6 +64,60 @@ describe("Firm users repository", () => {
           role: "Advisor",
           status: "Active",
           lastLoginAt: "2026-08-05T14:30:00.000Z",
+        },
+        {
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d67",
+          name: "Riley Khan",
+          email: "riley.client@example.com",
+          role: "Client",
+          status: "Inactive",
+          lastLoginAt: null,
+        },
+      ]);
+    });
+  });
+
+  test("updates only the requested tenant's user role", { timeout: 60000 }, async () => {
+    await withDockerDrizzleSeededDatabase(async (client) => {
+      const repository = createFirmUsersRepository(client);
+
+      await expect(
+        repository.updateTenantUserRole({
+          tenantId: tenantRows[1].id,
+          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+          role: "Firm Admin",
+        }),
+      ).resolves.toMatchObject({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+        role: "Firm Admin",
+      });
+
+      await expect(
+        repository.updateTenantUserRole({
+          tenantId: tenantRows[0].id,
+          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+          role: "Advisor",
+        }),
+      ).resolves.toBeNull();
+
+      await expect(
+        repository.listByTenant({ tenantId: tenantRows[1].id }),
+      ).resolves.toEqual([
+        {
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+          name: "Brianna Cole",
+          email: "brianna@example.com",
+          role: "Firm Admin",
+          status: "Active",
+          lastLoginAt: "2026-08-05T14:30:00.000Z",
+        },
+        {
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d67",
+          name: "Riley Khan",
+          email: "riley.client@example.com",
+          role: "Client",
+          status: "Inactive",
+          lastLoginAt: null,
         },
       ]);
     });

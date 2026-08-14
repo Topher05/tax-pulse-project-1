@@ -48,10 +48,10 @@ export {
   type ActionItemCreatedEventInput,
   type ActionItemCreatedEventPublishInput,
   type CreateActionItemCreatedCloudEventOptions,
-} from "./infrastructure/cloudEvents/actionItemCreated/index.js";
+} from "./infrastructure/CloudEvents/actionItemCreated/index.js";
 export {
   createPresentToClientSaga,
-} from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
+} from "./infrastructure/CloudEvents/presentToClientSaga/index.js";
 export {
   createActionItemCreatedSnsClient,
   createSnsActionItemCreatedEventPublisher,
@@ -92,6 +92,17 @@ export {
   type TaxPlanCycleQueueCacheReadInput,
 } from "./infrastructure/queueCache.js";
 export {
+  createOutboxRelay,
+  createPostgresOutboxRelayStore,
+  createSnsOutboxEventPublisher,
+  type DeadLetterOutboxEvent,
+  type OutboxEventPublisher,
+  type OutboxRelay,
+  type OutboxRelayOptions,
+  type OutboxRelayStore,
+  type UnsentOutboxEvent,
+} from "./infrastructure/outboxRelay.js";
+export {
   buildIdempotencyKey,
   cloudEventSchemaV1,
   createCloudEvent,
@@ -124,12 +135,12 @@ export {
   ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
   createActionItemConsumer,
   createRedisActionItemConsumer,
-} from "./infrastructure/cloudEvents/index.js";
+} from "./infrastructure/CloudEvents/index.js";
 export {
   parseSqsMessage,
   parseSqsMessage as parseStageChangedSqsMessage,
   PublishCommand,
-} from "./infrastructure/cloudEvents/stageChanged/index.js";
+} from "./infrastructure/CloudEvents/stageChanged/index.js";
 export type {
   CloudEventDataV1,
   CloudEventPublishInput,
@@ -155,14 +166,14 @@ export type {
   SqsConsumerOptions as StageChangedSqsConsumerOptions,
   Writer,
   WriterClient,
-} from "./infrastructure/cloudEvents/stageChanged/index.js";
+} from "./infrastructure/CloudEvents/stageChanged/index.js";
 export type {
   PresentToClientActionItemCreatedEventPublisher,
   PresentToClientSaga,
   PresentToClientSagaInput,
   PresentToClientSagaOptions,
   PresentToClientStageChangedEventPublisher,
-} from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
+} from "./infrastructure/CloudEvents/presentToClientSaga/index.js";
 export {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
@@ -264,6 +275,19 @@ export {
   type TaxCalculationEngineResult,
   type ScenarioComparisonEngineRequest,
 } from "./infrastructure/engineClient.js";
+export {
+  createTinEinValidationSoapClient,
+  getTinEinValidationSoapConfigFromEnv,
+  type TinEinValidationSoapClient,
+  type TinEinValidationSoapClientOptions,
+  type TivsGetTaxpayerStatusRawResponse,
+  type TivsGetTaxpayerStatusRequest,
+  type TivsMatchCode,
+  type TivsStandingCode,
+  type TivsTinType,
+  type TivsVerifyTaxpayerRawResponse,
+  type TivsVerifyTaxpayerRequest,
+} from "./infrastructure/tinEinValidationSoapClient.js";
 export {
   quarterlyEstimateQuarterSchema,
   quarterlyEstimateReadParamsSchema,

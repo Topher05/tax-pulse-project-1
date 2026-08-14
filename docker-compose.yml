@@ -1,0 +1,91 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
+      POSTGRES_USER: ${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}
+      POSTGRES_PASSWORD: ${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}
+    ports:
+      - "54318:5432"
+    volumes:
+      - taxpulse-postgres-18-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  tax-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.tax-engine
+    environment:
+      JWT_ISSUER: ${JWT_ISSUER:-https://auth.taxpulse.example}
+      JWT_SIGNING_SECRET: ${JWT_SIGNING_SECRET:-local-compose-signing-secret-at-least-32-bytes}
+      PORT: "8000"
+    ports:
+      - "${TAXPULSE_TAX_ENGINE_HOST_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os, sys, urllib.request; port = os.environ.get('PORT', '8000'); url = f'http://127.0.0.1:{port}/health'; sys.exit(0 if urllib.request.urlopen(url, timeout=2).status == 200 else 1)",
+        ]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
+      retries: 5
+    restart: unless-stopped
+
+  core-case-seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+    environment:
+      DATABASE_URL: postgresql://${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}:${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}@postgres:5432/${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["node", "dist/typescript/shared/database/seed.js"]
+    restart: "no"
+
+  core-case-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}:${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}@postgres:5432/${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-https://auth.taxpulse.example}
+      JWT_SIGNING_SECRET: ${JWT_SIGNING_SECRET:-local-compose-signing-secret-at-least-32-bytes}
+      JWT_ACCESS_TOKEN_TTL_SECONDS: ${JWT_ACCESS_TOKEN_TTL_SECONDS:-900}
+      JWT_REFRESH_TOKEN_TTL_SECONDS: ${JWT_REFRESH_TOKEN_TTL_SECONDS:-2592000}
+      LIABILITY_ENGINE_BASE: http://tax-engine:8000
+      PORT: "3000"
+      TAXPULSE_LOGIN_BASE_DOMAIN: localhost
+      TAXPULSE_REDIS_URL: redis://taxpulse-redis:6379
+      AWS_PROFILE: ${AWS_PROFILE:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      TAXPULSE_STAGE_CHANGED_TOPIC_ARN: ${TAXPULSE_STAGE_CHANGED_TOPIC_ARN:-}
+      TAXPULSE_STAGE_CHANGED_QUEUE_URL: ${TAXPULSE_STAGE_CHANGED_QUEUE_URL:-}
+      TAXPULSE_SNS_ENDPOINT_URL: ${TAXPULSE_SNS_ENDPOINT_URL:-}
+      TAXPULSE_SQS_ENDPOINT_URL: ${TAXPULSE_SQS_ENDPOINT_URL:-}
+    ports:
+      - "${TAXPULSE_CORE_HOST_PORT:-3000}:3000"
+    depends_on:
+      core-case-seed:
+        condition: service_completed_successfully
+      tax-engine:
+        condition: service_healthy
+      taxpulse-redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  taxpulse-postgres-18-data:

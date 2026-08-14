@@ -1067,6 +1067,114 @@ table refresh remain outside this ticket.
 - `npm --prefix src/pulseUI test -- --run tests/components/IncomeEntryForm.test.tsx`
   passed: 3 tests.
 
+## christopher-martus-jira120 - SCRUM-120
+
+**Branch:** `christopher-martus-jira120`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-120
+
+**Summary:** Render the KPI cards and read-only quarter timeline
+
+**Description:** As a Frontend Developer, I want the KPI cards and quarter timeline
+rendered read-only, so that estimated amounts and deadlines are visible without any
+recording action.
+
+**Acceptance Criteria:**
+
+- The four 1040-ES quarter items render with date and estimated amount from the hook data.
+- KPI cards render total estimated, paid so far, and remaining; a withholding-progress
+  bar renders coverage.
+- No mark-paid or payment-recording control is present; recording remains outside MVP.
+
+**Code Connection:**
+
+- The quarterly-estimate view model retains the endpoint's covered and remaining values,
+  allowing the KPI cards to sum the API contract directly while withholding remains the
+  separate input to the coverage calculation.
+- The withholding bar clamps coverage to the 0-100 range and exposes its value through a
+  progress indicator.
+- The page removes synthetic fallback quarters and maps successful hook data into a
+  canonical Q1-Q4 timeline with each deadline and estimated amount visible.
+- The focused route/component coverage verifies four hook-backed quarter items, KPI
+  totals, withholding coverage, and the absence of payment-recording controls.
+
+**Project Scope Connection:**
+
+This completes the read-only Quarterly Payments presentation slice for the React SPA. It
+consumes the tenant-scoped query boundary without introducing payment mutations, forms,
+or recording behavior. Loading, empty, and error-state presentation remains owned by
+SCRUM-119, while broader accessibility coverage remains owned by SCRUM-121.
+
+**Changed Files:**
+
+- `src/pulseUI/components/QuarterlyTimelineItem.tsx`
+- `src/pulseUI/components/WithholdingProgressChart.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+  passed: 4 tests.
+- `npm --prefix src/pulseUI run build` passed; Vite reported only its existing bundle-size
+  advisory.
+- The full Pulse UI run passed 121 of 123 tests. Two unrelated Deductions tests fail
+  because their `caseApiGetJson` expectations omit the authenticated fetcher argument;
+  the SCRUM-120 test file passed within the same run.
+- `git diff --check` passed.
+
+## christopher-martus-jira121 - SCRUM-121
+
+**Branch:** `christopher-martus-jira121`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-121
+
+**Summary:** Add accessibility and a component test for the Quarterly Payments screen
+
+**Description:** As a Frontend Developer, I want the Quarterly Payments screen to pass
+an axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the four quarter items and KPI cards render from sample data.
+- The test asserts no payment-recording control is present in the rendered screen.
+
+**Code Connection:**
+
+- The existing Quarterly Payments component test now runs `vitest-axe` against the
+  production screen rendered with its reusable sample-data fixture.
+- The regression assertions explicitly cover Q1 through Q4 and scope the three expected
+  totals to the labeled KPI region.
+- The read-only assertion continues to guard against payment and mark-paid controls.
+
+**Project Scope Connection:**
+
+This adds focused accessibility and regression coverage to the read-only Quarterly
+Payments presentation without changing its production behavior or the loading, empty,
+error, and retry states owned by SCRUM-119.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+- Corrected the loading-state regression assertion to expect the two rendered occurrences
+  of `$3,620`: the Q1 estimated amount and its withholding-applied value.
+- `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+  passed: 8 tests, including the axe check.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- The full Pulse UI run passed 122 of 124 tests. The same two unrelated Deductions
+  tests documented by SCRUM-120 fail because their `caseApiGetJson` expectations omit
+  the authenticated fetcher argument; all Quarterly Payments tests passed.
+- `git diff --check` passed.
 
 ## christopher-martus-jira109 - SCRUM-109
 
@@ -1139,6 +1247,7 @@ rewriting the table or KPI logic.
 **Description:** As a Frontend Developer, I want the Income screen to pass an axe check
 and a component test, so that it is accessible and regression-guarded.
 
+
 **Acceptance Criteria:**
 
 - An axe accessibility check on the rendered screen reports no violations.
@@ -1183,3 +1292,259 @@ workflow behavior.
 - `npm --prefix src/pulseUI run build` transformed all 2,108 modules but could not replace
   the existing `dist/pulseUI/assets` directory because Windows returned `EPERM`; no source
   compilation error was reported.
+
+
+## christopher-martus-jira142 - SCRUM-142
+
+**Branch:** `christopher-martus-jira142`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-142
+
+**Summary:** Build the client My Tax Plan view scoped to the client
+
+**Description:** As a Client, I want the My Tax Plan view, so that I can follow my plan's
+progress in the portal.
+
+**Acceptance Criteria:**
+
+- The portal shows the client's current Plan Cycle stage stepper scoped to only their own cycle.
+- The hero and plan summary (advisor, next meeting, projected savings, top recommendation) render.
+- The view is unreachable for another client's cycle.
+
+**Code Connection:**
+
+- Task 1 adds a parameter-free `GET /portal/my-tax-plan` BFF read. It takes the verified JWT
+  subject as `client_id`, combines it with the verified tenant ID, and never accepts a client or
+  case identifier from the browser.
+- The repository selects the latest unarchived cycle for that tenant-client pair. The BFF maps
+  the owned cycle to a typed portal read model, with the advisor sourced from the cycle owner and
+  nullable fields for summary values that have no authoritative record yet.
+- Client sign-in now lands on `/my-tax-plan`; the app shell redirects Client users away from
+  operator routes, shows only the portal navigation item, and reads the scoped endpoint through
+  one authenticated TanStack Query boundary.
+- The read-only My Tax Plan view renders the BFF-backed stage, advisor, next meeting, projected
+  savings, and top recommendation. Missing BFF values render explicit in-progress states rather
+  than fabricated meeting, savings, or recommendation data.
+- Client users are denied access to tenant-wide queue, direct-cycle, audit, creation, scenario,
+  and transition routes; their only Tax Plan read is the JWT-scoped portal endpoint.
+
+**Project Scope Connection:**
+
+This establishes the least-privilege server boundary for the client portal. It does not add a
+separate cycle status, a client-account mapping, portal writes, scenarios, action items, approval,
+or live stage updates.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/auth/landingPath.ts`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/entities/clientTaxPlanQueries.ts`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.tsx`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.module.css`
+- `src/pulseUI/shared/navigation.ts`
+- `src/pulseUI/shared/viewTitle.ts`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`
+- `src/typescript/jwtAuthentication.ts`
+- `tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm run typecheck` is blocked by pre-existing duplicate `CloudEvents`/`cloudEvents`
+  directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
+  changed files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+
+---
+
+## christopher-martus-jira143
+
+**Branch:** christopher-martus-jira143
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-143
+
+**Summary:** Show read-only scenarios and live stage updates in the portal
+
+**Description:** As a Client, I want read-only scenarios and live stage updates, so that I
+always see the current plan state.
+
+**Acceptance Criteria:**
+
+- Scenarios appear read-only to the client, matching the external permission matrix.
+- A stage-changed event updates the displayed stage without a manual refresh.
+- The advisor-messages panel renders read-only.
+
+**Code Connection:**
+
+- The JWT-scoped `GET /portal/my-tax-plan` BFF now reads persisted scenarios for the already
+  authorized client cycle and projects only each scenario's ID, name, total tax, and delta versus
+  baseline. Advisor-entered figures are intentionally excluded from the external response.
+- The portal includes a display-only Advisor Messages panel with an explicit empty state; no
+  message-composer or portal write path is introduced before an authoritative message read model
+  exists.
+
+**Project Scope Connection:**
+
+This is the first MVP chunk for SCRUM-143, extending SCRUM-142's scoped client portal without
+adding portal writes, a separate status field, or new event transport.
+
+The portal automatically refetches its scoped read model every 15 seconds and on window focus,
+so the stage label and stepper reconcile after the existing stage-changed workflow persists a
+transition without requiring a client-side page refresh.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/pulseUI/entities/clientTaxPlanQueries.ts`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.tsx`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.module.css`
+- `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused tests cover the client-safe scenario BFF projection and automatic portal stage refresh.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` remains blocked by the pre-existing duplicate `CloudEvents`/`cloudEvents`
+  directories whose paths differ only by casing (TS1261).
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+  passed (7 tests).
+- `npx vitest run --config vitest.config.ts tests/clientPortal/MyTaxPlanPage.test.tsx` passed
+  (4 tests); the suite emits pre-existing jsdom `window.scrollTo` warnings from TanStack Router.
+- `npm --prefix src/pulseUI test` passed: 163 tests in 36 files. The existing jsdom canvas and
+  scroll-restoration warnings remain non-failing.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+  passed: 7 tests, including Client queue denial.
+
+## christopher-martus-jira134 - SCRUM-134
+
+**Branch:** `christopher-martus-jira134`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-134
+
+**Summary:** Relay outbox rows with retry
+
+**Description:** As a Backend Developer, I want a relay that publishes outbox rows and
+retries on failure, so that committed events are reliably delivered.
+
+**Acceptance Criteria:**
+
+- A relay publishes unsent outbox rows and marks them sent.
+- A transient publish failure is retried with backoff.
+- A test asserts a row is marked sent only after a successful publish.
+
+**Code Connection:**
+
+- Adds the nullable `outbox_event.sent_at` delivery marker. The relay will select rows
+  without this value and set it only after a successful publisher call.
+- `createOutboxRelay` reads unsent rows in creation order, publishes the serialized
+  CloudEvent payload, and records `sent_at` only after publication succeeds.
+- `createSnsOutboxEventPublisher` sends that stored payload to the configured SNS topic
+  without rebuilding the event.
+- The relay retries transient publisher failures up to three total attempts, using 100 ms,
+  then 200 ms exponential backoff by default. Retry count and timing are injectable for
+  deterministic tests.
+- A focused relay test simulates one transient publisher failure and verifies the row remains
+  unsent until the second publish attempt succeeds.
+
+**Project Scope Connection:**
+
+This provides the minimal relay path and transient-failure retry behavior for reliable
+delivery of the transactional outbox introduced in SCRUM-133, without introducing a worker
+runtime, scheduler, retries for database writes, or SCRUM-135 dead-letter behavior.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0013_low_callisto.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0013_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/features/taxPlanCycle/infrastructure/outboxRelay.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed after the schema and migration change.
+- `npm run typecheck` passed after adding relay behavior and its test seam.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+  passed: 1 test verifies retry backoff and marks the row sent only after success.
+- `git diff --check` passed.
+
+
+## christopher-martus-jira135 - SCRUM-135
+
+**Branch:** `christopher-martus-jira135`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-135
+
+**Summary:** Route repeatedly failing messages to a DLQ
+
+**Description:** As a Backend Developer, I want a dead-letter queue, so that a poison
+message never blocks the queue.
+
+**Acceptance Criteria:**
+
+- A message that fails repeatedly past a max-retry count lands in a DLQ.
+- The DLQ entry preserves the original payload and the failure reason.
+- A test asserts a persistently failing message reaches the DLQ and the queue continues.
+
+**Code Connection:**
+
+- `outbox_dead_letter` stores the source outbox ID, original serialized payload, failure
+  reason, and failure timestamp.
+- The PostgreSQL relay store atomically inserts that record and removes the poison event
+  from the active outbox queue.
+- After the final configured publish attempt fails, the relay records the final error
+  message in the DLQ and continues processing later outbox events.
+- The focused relay test forces one event to fail twice, verifies the preserved payload and
+  failure reason, then verifies a later event is sent and no active messages remain.
+
+**Project Scope Connection:**
+
+This adds the minimal terminal-failure path to SCRUM-134's transactional outbox relay.
+It intentionally excludes DLQ replay tooling, alerting, and an external DLQ management API.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0014_zippy_luke_cage.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0014_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/features/taxPlanCycle/infrastructure/outboxRelay.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen` generated the SCRUM-135 migration.
+- `npm run db:check` passed.
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+  passed: 2 tests, including persistent failure routing and continued processing.
+- The focused relay suite now includes a PostgreSQL-backed persistence test that asserts the
+  stored DLQ payload and failure reason, poison-event removal, and delivery of the following
+  event. Local execution could not start it because this workspace has no container runtime;
+  it requires the existing Docker-backed integration-test environment in CI.
+- `git diff --check` passed.

@@ -69,6 +69,26 @@ export const taxPlanCycleReadResponseSchema = taxPlanCycleSchema.extend({
   scenarios: z.array(scenarioSchema),
 });
 
+/** A scenario projection safe to expose in the client portal. */
+export const clientTaxPlanScenarioSchema = z.strictObject({
+  id: z.uuid(),
+  name: z.string().min(1),
+  total_tax: z.number().finite().nonnegative(),
+  delta_vs_baseline: z.number().finite(),
+});
+
+/**
+ * Read model intentionally tailored for the authenticated client portal. Summary fields are
+ * nullable until their source records (meeting schedule and selected recommendation) exist.
+ */
+export const clientTaxPlanReadModelSchema = taxPlanCycleSchema.extend({
+  advisor: z.string().min(1),
+  next_meeting: z.string().datetime().nullable(),
+  projected_savings: z.number().finite().nonnegative().nullable(),
+  top_recommendation: z.string().min(1).nullable(),
+  scenarios: z.array(clientTaxPlanScenarioSchema),
+});
+
 export const taxPlanCycleCreateSchema = z.strictObject({
   client_id: z.uuid(),
   planning_period: z.string().min(1),
@@ -96,6 +116,8 @@ export type TaxPlanCycleQueueGetResponse = z.infer<
 export type TaxPlanCycleReadResponse = z.infer<
   typeof taxPlanCycleReadResponseSchema
 >;
+export type ClientTaxPlanReadModel = z.infer<typeof clientTaxPlanReadModelSchema>;
+export type ClientTaxPlanScenario = z.infer<typeof clientTaxPlanScenarioSchema>;
 export type TaxPlanCycleCreateInput = z.infer<typeof taxPlanCycleCreateSchema>;
 export type TaxPlanCycleReadParams = z.infer<
   typeof taxPlanCycleReadParamsSchema

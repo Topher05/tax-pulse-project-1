@@ -128,7 +128,7 @@ export function createJwtAuthenticationMiddleware({
 
       req.authenticatedPrincipal = principal;
       req.tenant = { id: principal.tenantId };
-      req.user = { id: principal.userId };
+      req.user = { id: principal.userId, role: principal.role };
       next();
     } catch {
       next(authenticationRequired());

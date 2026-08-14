@@ -15,6 +15,8 @@ import {
   createLogger,
   deductionCreateSchema,
   deductionTableRowSchema,
+  firmUserRoleUpdateParamsSchema,
+  firmUserRoleUpdateRequestSchema,
   firmUsersListResponseSchema,
   firmUserRowSchema,
   mfaChallengeResponseSchema,
@@ -23,6 +25,11 @@ import {
   mfaEnrollRequestSchema,
   mfaEnrollResultSchema,
   passwordLoginRequestSchema,
+  platformTenantUserCreateParamsSchema,
+  platformTenantUserCreateRequestSchema,
+  platformTenantUserRowSchema,
+  platformTenantUsersListResponseSchema,
+  platformTenantUsersTenantSchema,
   registrationAccountResponseSchema,
   registrationRequestSchema,
   taxPlanCycleCreateResultSchema,
@@ -189,17 +196,49 @@ describe("Core Case Service OpenAPI document", () => {
       requiredRecord(paths, "/v1/firm/users"),
       "get",
     );
+    const updateFirmUserRoleOperation = requiredRecord(
+      requiredRecord(paths, "/v1/firm/users/{userId}/role"),
+      "patch",
+    );
+    const platformTenantsUsersOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/tenants-users"),
+      "get",
+    );
+    const platformRolesPermissionsOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/roles-permissions"),
+      "get",
+    );
+    const platformAuditLogOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/audit-log"),
+      "get",
+    );
+    const createPlatformTenantUserOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/tenants/{tenantId}/users"),
+      "post",
+    );
 
     expect(queueOperation.operationId).toBe("listTaxPlanCycleQueue");
     expect(createOperation.operationId).toBe("createTaxPlanCycle");
     expect(readOperation.operationId).toBe("readTaxPlanCycle");
     expect(clientRosterOperation.operationId).toBe("listClientRoster");
     expect(firmUsersOperation.operationId).toBe("listFirmUsers");
+    expect(updateFirmUserRoleOperation.operationId).toBe("updateFirmUserRole");
+    expect(platformTenantsUsersOperation.operationId).toBe("listPlatformTenantsUsers");
+    expect(platformRolesPermissionsOperation.operationId).toBe(
+      "listPlatformRolesPermissions",
+    );
+    expect(platformAuditLogOperation.operationId).toBe("listPlatformAuditLog");
+    expect(createPlatformTenantUserOperation.operationId).toBe("createPlatformTenantUser");
     expect(queueOperation.tags).toEqual(["Core Case Service"]);
     expect(createOperation.tags).toEqual(["Core Case Service"]);
     expect(readOperation.tags).toEqual(["Core Case Service"]);
     expect(clientRosterOperation.tags).toEqual(["Core Case Service"]);
     expect(firmUsersOperation.tags).toEqual(["Core Case Service"]);
+    expect(updateFirmUserRoleOperation.tags).toEqual(["Core Case Service"]);
+    expect(platformTenantsUsersOperation.tags).toEqual(["Core Case Service"]);
+    expect(platformRolesPermissionsOperation.tags).toEqual(["Core Case Service"]);
+    expect(platformAuditLogOperation.tags).toEqual(["Core Case Service"]);
+    expect(createPlatformTenantUserOperation.tags).toEqual(["Core Case Service"]);
   });
 
   test("documents MFA enrollment operations using challenge identifiers", () => {
@@ -468,6 +507,151 @@ describe("Core Case Service OpenAPI document", () => {
     });
   });
 
+  test("documents tenant-scoped firm user role assignment", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const operation = requiredRecord(
+      requiredRecord(paths, "/v1/firm/users/{userId}/role"),
+      "patch",
+    );
+    const parameters = asRecordArray(operation.parameters, "parameters");
+    const requestBody = requiredRecord(operation, "requestBody");
+    const requestContent = requiredRecord(requestBody, "content");
+    const requestJson = requiredRecord(requestContent, "application/json");
+    const requestProperties = requiredRecord(requiredRecord(requestJson, "schema"), "properties");
+    const responses = requiredRecord(operation, "responses");
+    const okResponse = requiredRecord(responses, "200");
+    const okContent = requiredRecord(okResponse, "content");
+    const okJson = requiredRecord(okContent, "application/json");
+    const okExample = requiredRecord(okJson, "example");
+
+    expect(parameters).toEqual([
+      expect.objectContaining({
+        name: "userId",
+        in: "path",
+        required: true,
+      }),
+    ]);
+    expect(requestProperties).toMatchObject({
+      role: expect.any(Object),
+    });
+    expect(requestProperties.tenantId).toBeUndefined();
+    expect(requestJson.example).toEqual({ role: "Firm Admin" });
+    expect(okExample).toMatchObject({
+      role: "Firm Admin",
+    });
+    expect(Object.keys(responses)).toEqual(
+      expect.arrayContaining(["200", "400", "401", "403", "404"]),
+    );
+  });
+
+  test("documents platform tenant user administration", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const listOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/tenants-users"),
+      "get",
+    );
+    const listResponses = requiredRecord(listOperation, "responses");
+    const listOkResponse = requiredRecord(listResponses, "200");
+    const listOkContent = requiredRecord(listOkResponse, "content");
+    const listOkJson = requiredRecord(listOkContent, "application/json");
+    const listSchema = requiredRecord(listOkJson, "schema");
+    const tenantItems = requiredRecord(listSchema, "items");
+    const tenantProperties = requiredRecord(tenantItems, "properties");
+    const usersProperty = requiredRecord(tenantProperties, "users");
+    const userItems = requiredRecord(usersProperty, "items");
+    const userProperties = requiredRecord(userItems, "properties");
+    const listExample = asRecordArray(listOkJson.example, "example");
+    const createOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/tenants/{tenantId}/users"),
+      "post",
+    );
+    const parameters = asRecordArray(createOperation.parameters, "parameters");
+    const requestBody = requiredRecord(createOperation, "requestBody");
+    const requestContent = requiredRecord(requestBody, "content");
+    const requestJson = requiredRecord(requestContent, "application/json");
+    const requestProperties = requiredRecord(requiredRecord(requestJson, "schema"), "properties");
+    const createResponses = requiredRecord(createOperation, "responses");
+
+    expect(Object.keys(tenantProperties)).toEqual(
+      expect.arrayContaining(["id", "name", "loginSlug", "isActive", "users"]),
+    );
+    expect(Object.keys(userProperties)).toEqual(
+      expect.arrayContaining(["id", "name", "email", "role", "status", "lastLoginAt"]),
+    );
+    expect(listExample[0]).toMatchObject({
+      name: "North Shore Advisors",
+      users: expect.arrayContaining([
+        expect.objectContaining({
+          name: "Avery Chen",
+          role: "Client",
+        }),
+      ]),
+    });
+    expect(listOperation.description).not.toMatch(/imperson/i);
+    expect(parameters).toEqual([
+      expect.objectContaining({
+        name: "tenantId",
+        in: "path",
+        required: true,
+      }),
+    ]);
+    expect(requestProperties).toMatchObject({
+      displayName: expect.any(Object),
+      email: expect.any(Object),
+      role: expect.any(Object),
+      status: expect.any(Object),
+    });
+    expect(Object.keys(createResponses)).toEqual(
+      expect.arrayContaining(["201", "400", "401", "403", "404", "409"]),
+    );
+  });
+
+  test("documents platform roles and audit administration", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const permissionsOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/roles-permissions"),
+      "get",
+    );
+    const permissionsResponses = requiredRecord(permissionsOperation, "responses");
+    const permissionsOkResponse = requiredRecord(permissionsResponses, "200");
+    const permissionsOkContent = requiredRecord(permissionsOkResponse, "content");
+    const permissionsOkJson = requiredRecord(permissionsOkContent, "application/json");
+    const permissionsExample = asRecordArray(permissionsOkJson.example, "example");
+    const auditOperation = requiredRecord(
+      requiredRecord(paths, "/v1/administration/audit-log"),
+      "get",
+    );
+    const auditResponses = requiredRecord(auditOperation, "responses");
+    const auditOkResponse = requiredRecord(auditResponses, "200");
+    const auditOkContent = requiredRecord(auditOkResponse, "content");
+    const auditOkJson = requiredRecord(auditOkContent, "application/json");
+    const auditExample = asRecordArray(auditOkJson.example, "example");
+
+    expect(permissionsExample[0]).toMatchObject({
+      title: "Internal - Firm Staff",
+      roles: expect.arrayContaining(["TaxPulse Platform Admin", "Firm Admin", "Advisor"]),
+    });
+    expect(permissionsExample[1]).toMatchObject({
+      title: "External - Clients",
+      roles: expect.arrayContaining(["TaxPulse Platform Admin", "Client"]),
+    });
+    expect(Object.keys(permissionsResponses)).toEqual(
+      expect.arrayContaining(["200", "401", "403"]),
+    );
+    expect(auditOperation.description).toMatch(/redacted/i);
+    expect(auditExample[0]).toMatchObject({
+      role: "Advisor",
+      action: expect.stringContaining("[REDACTED_AMOUNT]"),
+    });
+    expect(JSON.stringify(auditExample)).not.toContain("125000");
+    expect(Object.keys(auditResponses)).toEqual(
+      expect.arrayContaining(["200", "401", "403"]),
+    );
+  });
+
   test("documents creating a deduction for a selected case", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
@@ -560,6 +744,34 @@ describe("Core Case Service OpenAPI document", () => {
           schema: firmUsersListResponseSchema,
         }),
         expect.objectContaining({
+          name: "FirmUserRoleUpdateParams",
+          schema: firmUserRoleUpdateParamsSchema,
+        }),
+        expect.objectContaining({
+          name: "FirmUserRoleUpdateRequest",
+          schema: firmUserRoleUpdateRequestSchema,
+        }),
+        expect.objectContaining({
+          name: "PlatformTenantUserRow",
+          schema: platformTenantUserRowSchema,
+        }),
+        expect.objectContaining({
+          name: "PlatformTenantUsersTenant",
+          schema: platformTenantUsersTenantSchema,
+        }),
+        expect.objectContaining({
+          name: "PlatformTenantUsersListResponse",
+          schema: platformTenantUsersListResponseSchema,
+        }),
+        expect.objectContaining({
+          name: "PlatformTenantUserCreateParams",
+          schema: platformTenantUserCreateParamsSchema,
+        }),
+        expect.objectContaining({
+          name: "PlatformTenantUserCreateRequest",
+          schema: platformTenantUserCreateRequestSchema,
+        }),
+        expect.objectContaining({
           name: "DeductionCreateRequest",
           schema: deductionCreateSchema,
         }),
@@ -585,6 +797,12 @@ describe("Core Case Service OpenAPI document", () => {
         }),
       ]),
     );
+
+    expect(
+      firmUserRoleUpdateRequestSchema.safeParse({
+        role: "TaxPulse Platform Admin",
+      }).success,
+    ).toBe(false);
   });
 
   test("validates the generated document structure required by OpenAPI 3.0", () => {

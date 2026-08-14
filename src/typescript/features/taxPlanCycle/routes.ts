@@ -15,9 +15,12 @@ import {
   taxPlanCycleCreateSchema,
   taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleReadParamsSchema,
+  taxPlanCycleSchema,
+  clientTaxPlanReadModelSchema,
   taxPlanCycleTransitionParamsSchema,
   taxPlanCycleTransitionSchema,
   isLegalTaxPlanCycleStageTransition,
+  clientTaxPlanScenarioSchema,
   type TaxPlanCycleStage,
 } from "./taxPlanCycle.js";
 import {
@@ -27,6 +30,7 @@ import {
 import type { ScenarioModelingController } from "./controllers/scenarios.js";
 import { scenarioModelingRequestSchema } from "./scenarioModeling.js";
 import type { ScenarioRepository } from "./repositories/scenarios.js";
+import type { Scenario } from "../../scenario.js";
 import type { TaxPlanCycleRepository } from "./repositories/repository.js";
 
 export interface ValidationErrorIssue {
@@ -44,6 +48,7 @@ export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
   transitionController?: TaxPlanCycleTransitionController;
   taxPlanCycleRepository?: Pick<TaxPlanCycleRepository, "findByCaseId" | "listQueue">;
+  clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
   scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
   scenarioModelingController?: ScenarioModelingController;
   auditEntryReader?: AuditEntryReader;
@@ -154,6 +159,54 @@ function isAdvisorWithEditPermission(
   );
 }
 
+function canReadCycle(user: TenantScopedRequest["user"], cycle: { client_id: string }): boolean {
+  return user?.role !== "Client" || user.id === cycle.client_id;
+}
+
+function operatorAccessRequired(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/operator-access-required",
+    title: "Operator Access Required",
+    status: 403,
+    detail: "Client users can access plan progress only through the My Tax Plan view.",
+  });
+}
+
+function isClientUser(user: TenantScopedRequest["user"]): boolean {
+  return user?.role === "Client";
+}
+
+function toClientTaxPlanScenario(scenario: Scenario) {
+  const computedResult = scenario.computed_result;
+  const totalTax =
+    "total_tax" in computedResult ? computedResult.total_tax : Number(computedResult.totalTax);
+  const deltaVsBaseline =
+    "delta_vs_baseline" in computedResult
+      ? computedResult.delta_vs_baseline
+      : Number(computedResult.deltaVBaseline);
+
+  return clientTaxPlanScenarioSchema.parse({
+    id: scenario.id,
+    name: scenario.name,
+    total_tax: totalTax,
+    delta_vs_baseline: deltaVsBaseline,
+  });
+}
+
+function toClientTaxPlanReadModel(
+  cycle: ReturnType<typeof taxPlanCycleSchema.parse>,
+  scenarios: readonly Scenario[],
+) {
+  return clientTaxPlanReadModelSchema.parse({
+    ...cycle,
+    advisor: cycle.owner,
+    next_meeting: null,
+    projected_savings: null,
+    top_recommendation: null,
+    scenarios: scenarios.map(toClientTaxPlanScenario),
+  });
+}
+
 function isTransitionAuthorized(
   currentStage: TaxPlanCycleStage,
   user: TenantScopedRequest["user"],
@@ -238,6 +291,12 @@ export function createTaxPlanCycleRouter(
         return [];
       },
     };
+  const clientPortalReadRepository =
+    options.clientPortalReadRepository ?? {
+      async findCurrentByClientId() {
+        return null;
+      },
+    };
   const scenarioRepository = options.scenarioRepository ?? {
     async listByCaseId() {
       return [];
@@ -262,10 +321,68 @@ export function createTaxPlanCycleRouter(
           return;
         }
 
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
+
         const queue = await taxPlanCycleRepository.listQueue({ tenantId });
         const response = taxPlanCycleQueueGetResponseSchema.parse(queue);
 
         res.status(200).json(response);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/portal/my-tax-plan",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+
+        if (user.role !== "Client") {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/client-portal-access-required",
+              title: "Client Portal Access Required",
+              status: 403,
+              detail: "Only Client users can access the My Tax Plan view.",
+            }),
+          );
+          return;
+        }
+
+        const cycle = await clientPortalReadRepository.findCurrentByClientId({
+          tenantId,
+          clientId: user.id,
+        });
+
+        if (cycle === null || !canReadCycle((req as TenantScopedRequest).user, cycle)) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Cycle Not Found",
+              status: 404,
+              detail: "No current tax plan cycle was found for this client.",
+            }),
+          );
+          return;
+        }
+
+        const scenarios = await scenarioRepository.listByCaseId({
+          tenantId,
+          caseId: cycle.id,
+        });
+
+        res.status(200).json(toClientTaxPlanReadModel(cycle, scenarios));
       } catch (error) {
         next(error);
       }
@@ -295,12 +412,18 @@ export function createTaxPlanCycleRouter(
 
       try {
         const tenantId = (req as TenantScopedRequest).tenant.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
         const cycle = await controller.findByCaseId({
           tenantId,
           caseId: parsedParams.data.caseId,
         });
 
-        if (cycle === null) {
+        if (cycle === null || !canReadCycle((req as TenantScopedRequest).user, cycle)) {
           next(
             new ProblemHttpError({
               type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
@@ -346,12 +469,18 @@ export function createTaxPlanCycleRouter(
 
       try {
         const tenantId = (req as TenantScopedRequest).tenant.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
         const cycle = await controller.findByCaseId({
           tenantId,
           caseId: parsedParams.data.caseId,
         });
 
-        if (cycle === null) {
+        if (cycle === null || !canReadCycle((req as TenantScopedRequest).user, cycle)) {
           next(
             new ProblemHttpError({
               type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
@@ -393,6 +522,12 @@ export function createTaxPlanCycleRouter(
 
       try {
         const tenantId = (req as TenantScopedRequest).tenant.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
         const idempotencyKey = getIdempotencyKey(req);
         const result = await controller.create({
           ...parsedBody.data,
@@ -443,6 +578,11 @@ export function createTaxPlanCycleRouter(
 
           if (!tenantId || !user?.id || req.headers.authorization === undefined) {
             next(authenticationRequired());
+            return;
+          }
+
+          if (isClientUser(user)) {
+            next(operatorAccessRequired());
             return;
           }
 
@@ -498,6 +638,11 @@ export function createTaxPlanCycleRouter(
 
         if (!tenantId || !user?.role || !user.id) {
           next(authenticationRequired());
+          return;
+        }
+
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
           return;
         }
 

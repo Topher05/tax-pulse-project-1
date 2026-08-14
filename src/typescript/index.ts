@@ -185,18 +185,43 @@ export {
 export {
   createFirmUsersRepository,
   createFirmUsersRouter,
+  firmUserAssignableRoleSchema,
   firmUserRoleSchema,
+  firmUserRoleUpdateParamsSchema,
+  firmUserRoleUpdateRequestSchema,
   firmUsersListResponseSchema,
   firmUserRowSchema,
   firmUserStatusSchema,
   type CreateFirmUsersRouterOptions,
+  type FirmUserAssignableRole,
   type FirmUserRole,
+  type FirmUserRoleUpdateInput,
+  type FirmUserRoleUpdateParams,
+  type FirmUserRoleUpdateRequest,
   type FirmUsersListInput,
   type FirmUsersListResponse,
   type FirmUserRow,
   type FirmUsersRepository,
   type FirmUserStatus,
 } from "./features/firmUsers/index.js";
+export {
+  createPlatformAdministrationRepository,
+  createPlatformAdministrationRouter,
+  platformTenantUserCreateParamsSchema,
+  platformTenantUserCreateRequestSchema,
+  platformTenantUserRowSchema,
+  platformTenantUsersListResponseSchema,
+  platformTenantUsersTenantSchema,
+  PlatformTenantUserEmailConflictError,
+  type CreatePlatformAdministrationRouterOptions,
+  type PlatformAdministrationRepository,
+  type PlatformTenantUserCreateInput,
+  type PlatformTenantUserCreateParams,
+  type PlatformTenantUserCreateRequest,
+  type PlatformTenantUserRow,
+  type PlatformTenantUsersListResponse,
+  type PlatformTenantUsersTenant,
+} from "./features/platformAdministration/index.js";
 export {
   buildIncomeEventMockRows,
   createIncomeEventsRouter,
@@ -320,6 +345,19 @@ export {
   type TaxEngineComparisonRequest,
 } from "./features/taxPlanCycle/index.js";
 export {
+  createTinEinValidationSoapClient,
+  getTinEinValidationSoapConfigFromEnv,
+  type TinEinValidationSoapClient,
+  type TinEinValidationSoapClientOptions,
+  type TivsGetTaxpayerStatusRawResponse,
+  type TivsGetTaxpayerStatusRequest,
+  type TivsMatchCode,
+  type TivsStandingCode,
+  type TivsTinType,
+  type TivsVerifyTaxpayerRawResponse,
+  type TivsVerifyTaxpayerRequest,
+} from "./features/taxPlanCycle/index.js";
+export {
   getJwtConfigFromEnv,
   getTenantLoginBaseDomainFromEnv,
   type JwtConfig,
@@ -428,6 +466,9 @@ export {
   createUnavailableTaxPlanCycleCreateIdempotencyStore,
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
+  createOutboxRelay,
+  createPostgresOutboxRelayStore,
+  createSnsOutboxEventPublisher,
   createRedisTaxPlanCycleCreateIdempotencyStore,
   createRedisIdempotencyStore,
   createRedisConsumer,
@@ -466,6 +507,12 @@ export {
   type TaxPlanCycleQueueCacheClient,
   type TaxPlanCycleQueueCacheInvalidator,
   type TaxPlanCycleQueueCacheReadInput,
+  type DeadLetterOutboxEvent,
+  type OutboxEventPublisher,
+  type OutboxRelay,
+  type OutboxRelayOptions,
+  type OutboxRelayStore,
+  type UnsentOutboxEvent,
   type TaxPlanCycleCreateIdempotencyClient,
   type TaxPlanCycleCreateIdempotencyInput,
   type TaxPlanCycleCreateIdempotencyStore,
@@ -565,6 +612,10 @@ import {
   createFirmUsersRepository,
   createFirmUsersRouter,
 } from "./features/firmUsers/index.js";
+import {
+  createPlatformAdministrationRepository,
+  createPlatformAdministrationRouter,
+} from "./features/platformAdministration/index.js";
 import { createIncomeEventsRouter } from "./features/incomeEvents/index.js";
 
 loadEnv();
@@ -621,6 +672,7 @@ export async function main(): Promise<Server> {
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
   const clientRosterRepository = createClientRosterRepository(client);
   const firmUsersRepository = createFirmUsersRepository(client);
+  const platformAdministrationRepository = createPlatformAdministrationRepository(client);
   const scenarioRepository = createScenarioRepository(client);
   const deductionRepository = createDeductionRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
@@ -724,6 +776,7 @@ export async function main(): Promise<Server> {
         createTaxPlanCycleRouter({
           auditEntryReader: auditEntryRepository,
           auditEntryWriter,
+          clientPortalReadRepository: taxPlanCycleRepository,
           controller: taxPlanCycleController,
           taxPlanCycleRepository,
           scenarioRepository,
@@ -741,6 +794,12 @@ export async function main(): Promise<Server> {
         taxPlanCycleApiPrefix,
         createFirmUsersRouter({
           repository: firmUsersRepository,
+        }),
+      );
+      app.use(
+        taxPlanCycleApiPrefix,
+        createPlatformAdministrationRouter({
+          repository: platformAdministrationRepository,
         }),
       );
       app.use(

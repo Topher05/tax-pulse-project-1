@@ -5,6 +5,95 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira126 - SCRUM-126
+
+**Branch:** `martins-okorie-jira126`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-126
+
+**Summary:** Add accessibility and component tests for the Client Roster screen
+
+**Description:** As a Frontend Developer, I want accessibility and component tests
+for the Client Roster screen, so that the roster is usable and stable.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check runs against the rendered Client Roster screen and
+  reports no violations.
+- Component coverage verifies the roster table renders mocked `/v1/clients` rows.
+- Component coverage verifies the empty state and client column sorting behavior.
+
+**Code Connection:** The Client Roster page test suite now includes an axe check
+that reuses the mocked `caseApiGetJson` `/v1/clients` data path, waits for the
+accessible roster table, and asserts zero violations. The existing component tests
+continue to cover table rendering, empty state behavior, TanStack column sorting,
+nullable quarterly status sorting, loading, retry, and error states.
+
+**Project Scope Connection:** This protects the Client Roster workspace in the
+advisor-facing React app, where tenant-scoped client records are listed, scanned,
+and sorted before advisors open deeper tax planning workflows.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/clients/ClientRosterPage.tsx`
+- `src/pulseUI/pages/clients/ClientRosterPage.module.css`
+- `src/pulseUI/tests/clients/ClientRosterPage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run test:vitest -- tests/clients/ClientRosterPage.test.tsx tests/clients/ClientRosterQueries.test.tsx`
+  passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+
+## martins-okorie-jira148 - SCRUM-148
+
+**Branch:** `martins-okorie-jira148`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-148
+
+**Summary:** Add loading, empty, and error states to the Team & Users screen
+
+**Description:** As a Frontend Developer, I want the Team & Users screen to render
+loading, empty, and error states, so that the screen behaves predictably while data
+resolves.
+
+**Acceptance Criteria:**
+
+- A loading skeleton renders while the users request is in flight.
+- An empty state renders when the firm users endpoint returns no tenant users;
+  admin-only rosters remain visible so Firm Admins can see one another.
+- An error state renders with a retry affordance on request failure.
+
+**Code Connection:** The Team & Users page now consumes the SCRUM-147
+`useFirmUsersQuery` request state directly, keeps the existing Team & Users shell
+mounted, and switches the roster region between a table skeleton, an empty state for
+tenants with zero returned users, a retryable error state, and the existing data
+table. A review follow-up removed the `hasUsersBeyondAdmin` guard so multiple Firm
+Admins render in the roster instead of producing an empty table area.
+
+**Project Scope Connection:** This completes the Team & Users request-state behavior
+for the firm administration workspace while preserving tenant-scoped user data access
+through the existing TanStack Query hook boundary.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/firm/TeamUsersPage.tsx`
+- `src/pulseUI/pages/firm/TeamUsersPage.module.css`
+- `src/pulseUI/tests/firm/TeamUsersPage.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm test -- TeamUsersPage FirmUserQueries` passed.
+- `npm run typecheck` passed from `src/pulseUI`.
+- `npm --prefix src/pulseUI run test:vitest -- tests/firm/TeamUsersPage.test.tsx`
+  passed after adding the admin-only roster regression case.
+
 ## martins-okorie-jira82 - SCRUM-82
 
 **Branch:** `martins-okorie-jira82`
@@ -647,6 +736,64 @@ out of MVP scope.
 - `npm --prefix src/pulseUI run test` passed with 31 files and 137 tests. The run
   printed existing stderr from intentional scenario error-path coverage and jsdom's
   missing canvas implementation during axe checks, but all tests passed.
+
+## martins-okorie-jira139 - SCRUM-139
+
+**Branch:** `martins-okorie-jira139`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-139
+
+**Summary:** Generate the SOAP TIN/EIN client from the WSDL
+
+**Description:** As a Backend Developer, I want a node-soap client for the TIN/EIN
+service, so that Intake can validate a client's tax identifier.
+
+**Acceptance Criteria:**
+
+- A node-soap client consumes the WSDL and exposes the TIN/EIN validation operation.
+- A call against a stub SOAP service returns a raw validation response.
+- A test asserts the operation is callable with a sample TIN/EIN.
+
+**Code Connection:** Added a raw `node-soap` TIVS client under the Tax Plan Cycle
+infrastructure layer. The client loads the WSDL, overrides the legacy WSDL endpoint
+with the configured endpoint URL, attaches WS-Security UsernameToken credentials, and
+exposes raw `VerifyTaxpayer` and `GetTaxpayerStatus` operations without mapping SOAP
+values into domain types.
+
+**Project Scope Connection:** This creates the brownfield TIVS integration adapter
+needed by Intake while keeping legacy SOAP shapes isolated to infrastructure code. The
+domain-facing anti-corruption layer, match-code translation, date conversion, and typed
+fault handling remain scoped to SCRUM-140 and SCRUM-141.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `.env.example`
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationSoapClient.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/fixtures/README.md`
+- `tests/typescript/features/taxPlanCycle/fixtures/tinEinValidation.wsdl`
+- `tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm install soap` completed after granting registry network access. npm reported the
+  existing Node engine mismatch (`22.0.0` required, `24.17.0` used) and 14 audit
+  findings.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts`
+  passed with 1 file and 2 tests after granting localhost socket access for the stub
+  SOAP service.
+- `npm test` was rerun with elevated localhost/Docker permissions. Typecheck passed
+  and the new SOAP test passed inside the full suite, but the full Vitest run still
+  failed because Docker/Testcontainers suites could not find a working container runtime
+  strategy. `docker info --format '{{.ServerVersion}}'` confirmed Docker was not
+  reachable in this environment.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 

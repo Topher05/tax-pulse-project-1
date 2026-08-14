@@ -50,9 +50,22 @@ import {
   clientRosterRowSchema,
 } from "./features/clientRoster/index.js";
 import {
+  firmUserRoleUpdateParamsSchema,
+  firmUserRoleUpdateRequestSchema,
   firmUsersListResponseSchema,
   firmUserRowSchema,
 } from "./features/firmUsers/index.js";
+import {
+  platformAuditLogEntrySchema,
+  platformAuditLogResponseSchema,
+  platformPermissionMatrixResponseSchema,
+  platformPermissionMatrixSectionSchema,
+  platformTenantUserCreateParamsSchema,
+  platformTenantUserCreateRequestSchema,
+  platformTenantUserRowSchema,
+  platformTenantUsersListResponseSchema,
+  platformTenantUsersTenantSchema,
+} from "./features/platformAdministration/index.js";
 
 type JsonValue =
   | string
@@ -113,6 +126,50 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "FirmUsersListResponse",
     schema: firmUsersListResponseSchema,
+  },
+  {
+    name: "FirmUserRoleUpdateParams",
+    schema: firmUserRoleUpdateParamsSchema,
+  },
+  {
+    name: "FirmUserRoleUpdateRequest",
+    schema: firmUserRoleUpdateRequestSchema,
+  },
+  {
+    name: "PlatformTenantUserRow",
+    schema: platformTenantUserRowSchema,
+  },
+  {
+    name: "PlatformTenantUsersTenant",
+    schema: platformTenantUsersTenantSchema,
+  },
+  {
+    name: "PlatformTenantUsersListResponse",
+    schema: platformTenantUsersListResponseSchema,
+  },
+  {
+    name: "PlatformPermissionMatrixSection",
+    schema: platformPermissionMatrixSectionSchema,
+  },
+  {
+    name: "PlatformPermissionMatrixResponse",
+    schema: platformPermissionMatrixResponseSchema,
+  },
+  {
+    name: "PlatformAuditLogEntry",
+    schema: platformAuditLogEntrySchema,
+  },
+  {
+    name: "PlatformAuditLogResponse",
+    schema: platformAuditLogResponseSchema,
+  },
+  {
+    name: "PlatformTenantUserCreateParams",
+    schema: platformTenantUserCreateParamsSchema,
+  },
+  {
+    name: "PlatformTenantUserCreateRequest",
+    schema: platformTenantUserCreateRequestSchema,
   },
   {
     name: "DeductionReadParams",
@@ -234,6 +291,110 @@ const fakeFirmUsersExample = [
     role: "Advisor",
     status: "Active",
     lastLoginAt: "2026-08-05T14:30:00.000Z",
+  },
+];
+
+const fakeFirmUserRoleUpdateRequestExample = {
+  role: "Firm Admin",
+};
+
+const fakePlatformTenantUsersExample = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+    name: "North Shore Advisors",
+    loginSlug: "north-shore-advisors",
+    isActive: true,
+    users: [
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        name: "Alex Rivera",
+        email: "alex@example.com",
+        role: "Firm Admin",
+        status: "Inactive",
+        lastLoginAt: null,
+      },
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d66",
+        name: "Avery Chen",
+        email: "avery.client@example.com",
+        role: "Client",
+        status: "Active",
+        lastLoginAt: "2026-08-02T13:00:00.000Z",
+      },
+    ],
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02",
+    name: "Harbor View Planning",
+    loginSlug: "harbor-view-planning",
+    isActive: true,
+    users: [
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
+        name: "Brianna Cole",
+        email: "brianna@example.com",
+        role: "Advisor",
+        status: "Active",
+        lastLoginAt: "2026-08-05T14:30:00.000Z",
+      },
+    ],
+  },
+];
+
+const fakePlatformTenantUserCreateRequestExample = {
+  displayName: "Jordan Client",
+  email: "jordan.client@example.test",
+  role: "Client",
+  status: "Inactive",
+};
+
+const fakePlatformPermissionMatrixExample = [
+  {
+    id: "internal-firm-staff",
+    title: "Internal - Firm Staff",
+    description:
+      "An Advisor cannot sign off their own work; Firm Admin review is required before a plan is presented or sealed.",
+    roles: ["TaxPulse Platform Admin", "Firm Admin", "Advisor", "Client"],
+    rows: [
+      {
+        feature: "Plan Cycle Queue",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": "Full",
+          Advisor: "Scoped",
+          Client: null,
+        },
+      },
+    ],
+  },
+  {
+    id: "external-clients",
+    title: "External - Clients",
+    description: "Client portal capabilities available outside the firm workspace.",
+    roles: ["TaxPulse Platform Admin", "Firm Admin", "Advisor", "Client"],
+    rows: [
+      {
+        feature: "Client Portal Dashboard",
+        access: {
+          "TaxPulse Platform Admin": "Full",
+          "Firm Admin": null,
+          Advisor: null,
+          Client: "Full",
+        },
+      },
+    ],
+  },
+];
+
+const fakePlatformAuditLogExample = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d42",
+    occurredAt: "2026-07-02T15:30:00.000Z",
+    user: "advisor-001",
+    role: "Advisor",
+    action: "income amount [REDACTED_AMOUNT] recorded",
+    resource:
+      "North Shore Advisors - 2026-Q3 - Case 018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11",
   },
 ];
 
@@ -409,6 +570,35 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
     clientRosterListResponseSchema,
   );
   const firmUsersListOpenApiSchema = toOpenApiSchema(firmUsersListResponseSchema);
+  const firmUserRoleUpdateParamsOpenApiSchema = toOpenApiSchema(
+    firmUserRoleUpdateParamsSchema,
+  );
+  const firmUserRoleUpdateUserIdSchema = requireObjectProperty(
+    firmUserRoleUpdateParamsOpenApiSchema,
+    "userId",
+  );
+  const firmUserRoleUpdateRequestOpenApiSchema = toOpenApiSchema(
+    firmUserRoleUpdateRequestSchema,
+  );
+  const platformTenantUsersListOpenApiSchema = toOpenApiSchema(
+    platformTenantUsersListResponseSchema,
+  );
+  const platformPermissionMatrixOpenApiSchema = toOpenApiSchema(
+    platformPermissionMatrixResponseSchema,
+  );
+  const platformAuditLogOpenApiSchema = toOpenApiSchema(
+    platformAuditLogResponseSchema,
+  );
+  const platformTenantUserCreateParamsOpenApiSchema = toOpenApiSchema(
+    platformTenantUserCreateParamsSchema,
+  );
+  const platformTenantUserCreateTenantIdSchema = requireObjectProperty(
+    platformTenantUserCreateParamsOpenApiSchema,
+    "tenantId",
+  );
+  const platformTenantUserCreateRequestOpenApiSchema = toOpenApiSchema(
+    platformTenantUserCreateRequestSchema,
+  );
   const createAcceptedSchema = toOpenApiSchema(taxPlanCycleCreateResultSchema);
   const deductionReadCaseIdSchema = requireObjectProperty(
     toOpenApiSchema(deductionReadParamsSchema),
@@ -1210,6 +1400,292 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
             "401": {
               description:
                 "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/firm/users/{userId}/role": {
+        patch: {
+          operationId: "updateFirmUserRole",
+          tags: ["Core Case Service"],
+          summary: "Update a tenant-scoped firm user role",
+          description:
+            "Lets a Firm Admin change a user's role within the authenticated firm tenant. " +
+            "Tenant scope is derived from the shared JWT; clients must not send tenant_id.",
+          parameters: [
+            {
+              name: "userId",
+              in: "path",
+              required: true,
+              description:
+                "User identifier scoped by the authenticated request tenant.",
+              schema: firmUserRoleUpdateUserIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d66",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: firmUserRoleUpdateRequestOpenApiSchema,
+                example: fakeFirmUserRoleUpdateRequestExample,
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "The firm user's tenant-scoped role was updated.",
+              content: {
+                "application/json": {
+                  schema: toOpenApiSchema(firmUserRowSchema),
+                  example: {
+                    ...fakeFirmUsersExample[1],
+                    role: fakeFirmUserRoleUpdateRequestExample.role,
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "The role update request failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: validationErrorExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description:
+                "The authenticated user is not a Firm Admin.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "404": {
+              description:
+                "No tenant-scoped firm user was found for the requested user ID.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/administration/tenants-users": {
+        get: {
+          operationId: "listPlatformTenantsUsers",
+          tags: ["Core Case Service"],
+          summary: "List all tenants and their users",
+          description:
+            "Returns every tenant with its user roster for TaxPulse Platform Admins. " +
+            "This endpoint is intentionally separate from the tenant-scoped firm users route.",
+          responses: {
+            "200": {
+              description: "All tenants with users sectioned under each tenant.",
+              content: {
+                "application/json": {
+                  schema: platformTenantUsersListOpenApiSchema,
+                  example: fakePlatformTenantUsersExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description:
+                "The authenticated user is not a TaxPulse Platform Admin.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/administration/roles-permissions": {
+        get: {
+          operationId: "listPlatformRolesPermissions",
+          tags: ["Core Case Service"],
+          summary: "List platform role permissions",
+          description:
+            "Returns the read-only permission matrix for TaxPulse Platform Admins.",
+          responses: {
+            "200": {
+              description: "The platform role permission matrix.",
+              content: {
+                "application/json": {
+                  schema: platformPermissionMatrixOpenApiSchema,
+                  example: fakePlatformPermissionMatrixExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description:
+                "The authenticated user is not a TaxPulse Platform Admin.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/administration/audit-log": {
+        get: {
+          operationId: "listPlatformAuditLog",
+          tags: ["Core Case Service"],
+          summary: "List platform-wide audit events",
+          description:
+            "Returns append-only audit entries across tenants for TaxPulse Platform Admins, " +
+            "with financial figures redacted before output.",
+          responses: {
+            "200": {
+              description: "The platform-wide audit log.",
+              content: {
+                "application/json": {
+                  schema: platformAuditLogOpenApiSchema,
+                  example: fakePlatformAuditLogExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description:
+                "The authenticated user is not a TaxPulse Platform Admin.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/administration/tenants/{tenantId}/users": {
+        post: {
+          operationId: "createPlatformTenantUser",
+          tags: ["Core Case Service"],
+          summary: "Create a user under a chosen tenant",
+          description:
+            "Lets a TaxPulse Platform Admin create a user under the selected tenant " +
+            "without creating an impersonation control or session switch.",
+          parameters: [
+            {
+              name: "tenantId",
+              in: "path",
+              required: true,
+              description: "Tenant identifier that will own the created user.",
+              schema: platformTenantUserCreateTenantIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: platformTenantUserCreateRequestOpenApiSchema,
+                example: fakePlatformTenantUserCreateRequestExample,
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The tenant user was created.",
+              content: {
+                "application/json": {
+                  schema: toOpenApiSchema(platformTenantUserRowSchema),
+                  example: {
+                    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02",
+                    name: fakePlatformTenantUserCreateRequestExample.displayName,
+                    email: fakePlatformTenantUserCreateRequestExample.email,
+                    role: fakePlatformTenantUserCreateRequestExample.role,
+                    status: fakePlatformTenantUserCreateRequestExample.status,
+                    lastLoginAt: null,
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "The create request failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: validationErrorExample,
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description:
+                "The authenticated user is not a TaxPulse Platform Admin.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "404": {
+              description: "The requested tenant was not found.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "409": {
+              description: "The tenant already has a user with this email.",
               content: {
                 "application/problem+json": {
                   schema: problemDetailsSchema,
