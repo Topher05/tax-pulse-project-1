@@ -1,20 +1,4 @@
-import { Client } from "pg";
-import { createClient } from "redis";
-
-import { createAuditEntryWriter } from "../../../auditEntryRepository.js";
-import { createLogger } from "../../../logger.js";
-import { createTaxPlanCycleRepository } from "../../../features/taxPlanCycle/repositories/repository.js";
-import { createTaxPlanCycleTransitionController } from "../../../features/taxPlanCycle/controllers/transitionController.js";
-import {
-  createSnsStageChangedEventPublisher,
-  createStageChangedSnsClient,
-  getStageChangedTopicArnFromEnv,
-} from "../../../features/taxPlanCycle/infrastructure/CloudEvents/stageChanged/index.js";
-import {
-  createNoopTaxPlanCycleQueueCacheInvalidator,
-  createTaxPlanCycleQueueCache,
-  createTaxPlanCycleQueueCacheInvalidator,
-} from "../../../features/taxPlanCycle/infrastructure/queueCache.js";
+import type { TaxPlanCycle } from "../../../features/taxPlanCycle/taxPlanCycle.js";
 import {
   createPresentToClientLambdaHandler,
   type PresentToClientLambdaRequest,
@@ -27,56 +11,66 @@ export interface PresentToClientLambdaRuntime {
 
 let runtimePromise: Promise<PresentToClientLambdaRuntime> | undefined;
 
-async function createRuntime(
-  env: NodeJS.ProcessEnv = process.env,
-): Promise<PresentToClientLambdaRuntime> {
-  // AWS composition root for SCRUM-160: keep the Lambda-only wiring here so
-  // the feature logic stays reusable for local development and tests.
-  const logger = createLogger();
-  const databaseUrl = env.DATABASE_URL?.trim();
+async function createRuntime(): Promise<PresentToClientLambdaRuntime> {
+  // AWS stub composition root for SCRUM-160: keep this Lambda free of
+  // database and Redis wiring until the SNS/SQS cutover work is available.
+  const controller = {
+    async findByCaseId(input: { tenantId: string; caseId: string }): Promise<TaxPlanCycle | null> {
+      void input.tenantId;
+      return {
+        id: input.caseId,
+        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e97",
+        stage: "Review",
+        owner: "lambda-stub",
+        priority: "medium",
+        due_date: "2026-08-14",
+        on_hold: false,
+      };
+    },
+    async transition(input: {
+      tenantId: string;
+      caseId: string;
+      fromStage: TaxPlanCycle["stage"];
+      toStage: TaxPlanCycle["stage"];
+      actor: string;
+      actionItem?: {
+        description: string;
+        deadline: string;
+        completed?: boolean;
+      };
+    }): Promise<TaxPlanCycle | null> {
+      void input.tenantId;
+      void input.caseId;
+      void input.fromStage;
+      void input.actor;
+      void input.actionItem;
 
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required for the Present-to-Client Lambda runtime.");
-  }
-
-  const client = new Client({ connectionString: databaseUrl });
-  await client.connect();
-
-  const repository = createTaxPlanCycleRepository(client);
-  const auditEntryWriter = createAuditEntryWriter(client);
-  const queueRedisUrl = env.TAXPULSE_REDIS_URL?.trim();
-  let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
-
-  if (queueRedisUrl) {
-    const redisClient = createClient({ url: queueRedisUrl });
-    await redisClient.connect();
-    queueCacheInvalidator = createTaxPlanCycleQueueCacheInvalidator(
-      createTaxPlanCycleQueueCache(redisClient),
-    );
-    logger.info("Connected to Redis for queue cache invalidation");
-  }
-
-  const stageChangedEventPublisher = createSnsStageChangedEventPublisher(
-    createStageChangedSnsClient(env),
-    getStageChangedTopicArnFromEnv(env),
-  );
-  const controller = createTaxPlanCycleTransitionController(repository, {
-    queueCacheInvalidator,
-    stageChangedEventPublisher,
-  });
+      return {
+        id: input.caseId,
+        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e97",
+        stage: input.toStage,
+        owner: "lambda-stub",
+        priority: "medium",
+        due_date: "2026-08-14",
+        on_hold: false,
+      };
+    },
+  };
 
   return {
     handler: createPresentToClientLambdaHandler({
       controller,
-      auditEntryWriter,
+      auditEntryWriter: {
+        async record() {
+          return undefined;
+        },
+      },
     }),
   };
 }
 
-async function getRuntime(
-  env: NodeJS.ProcessEnv = process.env,
-): Promise<PresentToClientLambdaRuntime> {
-  runtimePromise ??= createRuntime(env);
+async function getRuntime(): Promise<PresentToClientLambdaRuntime> {
+  runtimePromise ??= createRuntime();
   return await runtimePromise;
 }
 

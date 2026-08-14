@@ -38,6 +38,7 @@ let runtimePromise: Promise<TaxPlanCycleLambdaRuntime> | undefined;
 async function createRuntime(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<TaxPlanCycleLambdaRuntime> {
+  //CL, AWS composition root for SCRUM-160: keep Lambda-only wiring here so the feature logic stays reusable for the local Express path.
   const logger = createLogger();
   const databaseUrl = env.DATABASE_URL?.trim();
 
@@ -63,6 +64,7 @@ async function createRuntime(
     logger.info("Connected to Redis for queue cache invalidation");
   }
 
+  //CL, AWS runtime adapters: these publishers target real SNS topics in the deployed environment rather than the local development transport.
   const stageChangedEventPublisher = createSnsStageChangedEventPublisher(
     createStageChangedSnsClient(env),
     getStageChangedTopicArnFromEnv(env),

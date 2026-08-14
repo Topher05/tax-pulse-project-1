@@ -5,8 +5,13 @@ import { ProblemHttpError, type ProblemDetails } from "../../../errors.js";
 import type { AuthenticatedPrincipal, UserRole } from "../../../authTypes.js";
 import { roleNameEnum } from "../../../shared/database/schema.js";
 import type { TaxPlanCycle } from "../../../features/taxPlanCycle/taxPlanCycle.js";
-import type { ActionItemCreatedEventInput } from "../../../features/taxPlanCycle/infrastructure/CloudEvents/actionItemCreated/index.js";
+import type { ActionItemCreatedEventInput } from "../../../features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.js";
 import type { TaxPlanCycleTransitionController } from "../../../features/taxPlanCycle/controllers/transitionController.js";
+/*
+  CL, This lambda ONLY allows and should be triggered on Review => Client Approval transition meaning
+// 1. Sender MUST be firm admin
+// 2. This cannot be a send back to modelling call
+*/
 
 export interface PresentToClientApiGatewayAuthorizerContext {
   tenantId?: string;
@@ -215,11 +220,13 @@ function toPrincipal(
     readString(source.tenantId) ??
     readString(source.tenant_id) ??
     readString(source["tenant-id"]);
+    console.log(`Teneant id is: ${tenantId}`)
   const userId =
     readString(source.userId) ??
     readString(source.sub) ??
     readString(source.principalId);
   const role = readString(source.role);
+  console.log(`Role is: ${role}`)
 
   if (!tenantId || !userId || !role || !isUserRole(role)) {
     return null;

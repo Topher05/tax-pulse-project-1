@@ -321,6 +321,7 @@ async function handleTransitionRequest(
     authenticator: LambdaAuthenticator;
   },
 ): Promise<LambdaHttpResponse> {
+  // CL API Gateway proxy request boundary: this parses the raw Lambda event & normalizes it into the shared transition use case shape.
   const parsedParams = transitionPathSchema.safeParse(input.event.pathParameters ?? {});
   const requestBody = parseRequestBody(input.event.body);
 
@@ -343,6 +344,7 @@ async function handleTransitionRequest(
     );
   }
 
+  // CL, Bearer-token check stays in the Lambda path so the same auth rules work in AWS and in feature-level tests.
   const principal = await authenticate(input.event.headers?.authorization, input.authenticator);
 
   if (!principal) {
@@ -443,6 +445,8 @@ async function handleTransitionRequest(
     );
   }
 
+  // Normalize the successful Lambda response back into the API Gateway proxy
+  // contract expected by the AWS route.
   return jsonResponse(200, transitioned);
 }
 

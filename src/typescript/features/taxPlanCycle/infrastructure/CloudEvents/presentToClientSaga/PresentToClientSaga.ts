@@ -9,6 +9,7 @@ export function createPresentToClientSaga(
 ): PresentToClientSaga {
   return {
     async run(input: PresentToClientSagaInput): Promise<void> {
+      //CL, Compensation boundary: the saga owns rollback behavior if the action item publish fails after the main transition has already completed.
       if (!options.actionItemEventPublisher) {
         return;
       }

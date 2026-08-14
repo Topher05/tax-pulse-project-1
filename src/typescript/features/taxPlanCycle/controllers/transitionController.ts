@@ -58,7 +58,7 @@ export function createTaxPlanCycleTransitionController(
       }
 
       if (options.stageChangedEventPublisher) {
-        // Event publishing is best-effort because the database transition already committed.
+        // CL, Best-effort after commit: the database mutation owns the state change, and the SNS publish follows as an event side effect. Might rework with dev sync post Jira-156 merge
         try {
           await options.stageChangedEventPublisher.publishStageChanged({
             tenantId: input.tenantId,

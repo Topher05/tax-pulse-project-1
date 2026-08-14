@@ -53,6 +53,7 @@ export function createActionItemCreatedCloudEvent(
 export function createActionItemCreatedSnsClient(
   env: NodeJS.ProcessEnv = process.env,
 ): SNSClient {
+  // CL, AWS SNS adapter for the action-item-created event boundary.
   const regionName = env.AWS_REGION?.trim() || "us-east-1";
   const clientConfig: SNSClientConfig = {
     region: regionName,
@@ -86,6 +87,7 @@ export function createSnsActionItemCreatedEventPublisher(
 } {
   return {
     async publishActionItemCreated(input) {
+      //CL, Keep event serialization in the boundary layer; business logic should only provide the input payload.
       const event = createActionItemCreatedCloudEvent(input, options);
 
       await snsClient.send(
