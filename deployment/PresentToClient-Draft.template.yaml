@@ -69,7 +69,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../dist
-      Handler: typescript/features/taxPlanCycle/lambdaRuntime.executeHandler
+      Handler: execute-lambda/index.handler
       Description: Transition a Tax Plan Cycle from Client Approval to Executed.
       Policies:
         - AWSLambdaBasicExecutionRole
