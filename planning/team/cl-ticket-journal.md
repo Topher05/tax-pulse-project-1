@@ -60,8 +60,13 @@ Add new ticket entries below using this template.
 **Code Connection:**
 
 - `src/typescript/features/taxPlanCycle/lambdaHandlers.ts` adds the Lambda HTTP adapters, auth handling, validation, and transition responses.
-- `src/typescript/features/taxPlanCycle/lambdaRuntime.ts` wires the AWS runtime together with Postgres, Redis cache invalidation, JWT auth, and SNS publishers.
-- `deployment/PresentToClient-Draft.template.yaml` defines the Lambda, API Gateway, IAM, and environment-variable deployment shape.
+- `src/typescript/features/taxPlanCycle/lambdaRuntime.ts` wires the AWS runtime together with Postgres, Redis cache invalidation, JWT auth, and SNS publishers for the feature-slice delivery path.
+- `src/typescript/shared/scripts/execute-lambda/index.ts` adds the Gateway-authorized execute Lambda boundary and normalizes its responses.
+- `src/typescript/shared/scripts/execute-lambda/runtime.ts` composes the AWS execute stub runtime without database wiring so the Lambda stays Gateway-authorized and self-contained.
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts` now exposes a direct Lambda handler entrypoint for the shared present-to-client bundle.
+- `scripts/build-execute-lambda.mjs` bundles the execute Lambda into `dist/execute-lambda/index.js` for AWS deployment.
+- `scripts/build-present-to-client-lambda.mjs` bundles the present-to-client Lambda into `dist/present-to-client-lambda/index.js` for AWS deployment.
+- `deployment/PresentToClient-Draft.template.yaml` now points both Lambda resources at the shared stub bundles and removes the old DB/JWT/Redis/SNS template wiring.
 - `adr/0030-lambda-api-gateway-integration.md` documents the AWS Lambda + API Gateway cutover decision.
 - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/SnsPublisher.ts` adds the action-item SNS publisher boundary used by the present-to-client flow.
 - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/model.ts` keeps the action-item CloudEvent contract aligned with the existing SCRUM-138 behavior.
@@ -77,15 +82,20 @@ Add new ticket entries below using this template.
 
   **Changed Files:**
 
-  - `.env.example`
-  - `.env`
-  - `README.md`
-  - `adr/0030-lambda-api-gateway-integration.md`
-  - `adr/README.md`
-  - `deployment/PresentToClient-Draft.template.yaml`
-  - `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
-  - `src/typescript/features/taxPlanCycle/lambdaRuntime.ts`
-  - `src/typescript/features/taxPlanCycle/index.ts`
+- `.env.example`
+- `.env`
+- `README.md`
+- `adr/0030-lambda-api-gateway-integration.md`
+- `adr/README.md`
+- `deployment/PresentToClient-Draft.template.yaml`
+- `scripts/build-execute-lambda.mjs`
+- `scripts/build-present-to-client-lambda.mjs`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/execute-lambda/runtime.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/features/taxPlanCycle/lambdaRuntime.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
   - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/SnsPublisher.ts`
   - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.ts`
   - `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/model.ts`
@@ -98,6 +108,10 @@ Add new ticket entries below using this template.
   **Validation Notes:**
 
   - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/shared/scripts/executeLambdaRuntime.test.ts tests/typescript/shared/scripts/executeLambda.test.ts tests/typescript/features/taxPlanCycle/lambdaHandlers.test.ts"` passed and confirms the execute Lambda runtime no longer requires `DATABASE_URL`.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/shared/scripts/executeLambda.test.ts tests/typescript/features/taxPlanCycle/lambdaHandlers.test.ts"` passed and covers the new execute Lambda boundary plus the existing feature Lambda handler contract.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && node scripts/build-execute-lambda.mjs"` produced `dist/execute-lambda/index.js` and its source map for the AWS bundle.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && node scripts/build-present-to-client-lambda.mjs"` produces `dist/present-to-client-lambda/index.js` and its source map for the AWS bundle.
   - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/lambdaHandlers.test.ts tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/actionItemCreatedEvent.test.ts tests/typescript/features/taxPlanCycle/actionItemConsumer.test.ts tests/typescript/shared/scripts/cloudTap.test.ts"` now fails during Vitest module loading with `Failed to load url sqlite (resolved id: sqlite)`, so the active test pass is currently blocked by that runner issue rather than by the SCRUM-160 config edits.
   - `vitest.config.ts` now excludes `tests/typescript/tenantsMigration.test.ts` so the commented-out deprecated file is not discovered by the runner.
   - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd test"` still reaches the active suite, but it fails on existing long-running repository tests and a Docker/Testcontainers port-binding issue unrelated to SCRUM-160.
