@@ -14,3 +14,6 @@ src/pulseUI/playwright-report/
 .DS_Store
 codebase_guide/*
 .vscode/
+artifacts/
+.terraform/
+**/.terraform/
