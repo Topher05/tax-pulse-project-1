@@ -3,6 +3,7 @@ import { LogOut, Settings2 } from "lucide-react";
 import { useState } from "react";
 
 import { useSession } from "../auth/AuthProvider.tsx";
+import { NotificationToastProvider } from "./NotificationToast.tsx";
 import styles from "./AppShell.module.css";
 import { getPulseNavGroupsForRole } from "../shared/navigation.ts";
 import { getViewTitle } from "../shared/viewTitle.ts";
@@ -24,7 +25,8 @@ export function AppShell() {
   };
 
   return (
-    <div className={styles.shell}>
+    <NotificationToastProvider>
+      <div className={styles.shell}>
       <aside className={styles.sidebar} aria-label="Primary">
         <div className={styles.brand}>
           <span className={styles.brandMark} aria-hidden="true">
@@ -169,6 +171,6 @@ export function AppShell() {
           </div>
         </div>
       ) : null}
-    </div>
+    </NotificationToastProvider>
   );
 }
