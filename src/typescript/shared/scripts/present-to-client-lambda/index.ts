@@ -9,10 +9,10 @@ import type { ActionItemCreatedEventInput } from "../../../features/taxPlanCycle
 import type { TaxPlanCycleTransitionController } from "../../../features/taxPlanCycle/controllers/transitionController.js";
 import {
   emitObservabilityEvent,
-  extractObservabilityContext,
-  type ObservabilityContext,
+  cloudWatchObservabilityProvider,
+  type CloudWatchContext,
   type StructuredLogger,
-} from "../../../observability.js";
+} from "../../cloud-logger/observability.js";
 export { presentToClientHandler } from "./runtime.js";
 /*
   CL, This lambda ONLY allows and should be triggered on Review => Client Approval transition meaning
@@ -323,13 +323,13 @@ async function handlePresentToClientRequest(input: {
   // API Gateway owns admission and auth; this Lambda only adapts the request
   // into the shared transition use case and enforces the feature boundary.
   const startedAt = Date.now();
-  const requestContext: ObservabilityContext = {
+  const requestContext: CloudWatchContext = {
     service: "core-case-service",
     layer: "lambda",
     operation: "present-to-client",
     route: "/v1/tax-plan-cycles/{caseId}/present-to-client",
     method: "POST",
-    ...extractObservabilityContext(input.event.headers),
+    ...cloudWatchObservabilityProvider(input.event.headers),
   };
   emitObservabilityEvent(input.telemetryLogger, "info", "present-to-client lambda request received", {
     ...requestContext,

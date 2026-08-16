@@ -8,10 +8,10 @@ import type { TaxPlanCycle } from "../../../features/taxPlanCycle/taxPlanCycle.j
 import type { TaxPlanCycleTransitionController } from "../../../features/taxPlanCycle/controllers/transitionController.js";
 import {
   emitObservabilityEvent,
-  extractObservabilityContext,
-  type ObservabilityContext,
+  cloudWatchObservabilityProvider,
+  type CloudWatchContext,
   type StructuredLogger,
-} from "../../../observability.js";
+} from "../../cloud-logger/observability.js";
 import { executeHandler as runtimeExecuteHandler } from "./runtime.js";
 
 export interface ExecuteApiGatewayAuthorizerContext {
@@ -302,13 +302,13 @@ async function handleExecuteRequest(input: {
   // API Gateway owns admission and auth for this delivery path; the Lambda
   // only adapts the proxy event into the Tax Plan Cycle transition use case.
   const startedAt = Date.now();
-  const requestContext: ObservabilityContext = {
+  const requestContext: CloudWatchContext = {
     service: "core-case-service",
     layer: "lambda",
     operation: "execute",
     route: "/v1/tax-plan-cycles/{caseId}/execute",
     method: "POST",
-    ...extractObservabilityContext(input.event.headers),
+    ...cloudWatchObservabilityProvider(input.event.headers),
   };
   emitObservabilityEvent(input.telemetryLogger, "info", "execute lambda request received", {
     ...requestContext,
