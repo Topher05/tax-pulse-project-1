@@ -52,7 +52,11 @@ vulnerable dependencies and committed secrets are blocked.
 
 - OSV flags a known-vulnerable dependency and fails the PR.
 - Gitleaks blocks a committed secret.
-- Both run automatically on every pull request.
+- Checkov runs as its own Terraform security step and fails on a high-severity finding.
+- tfsec runs as its own Terraform security step and fails on a high-severity finding.
+- Confirm whether an org-level `GITLEAKS_LICENSE` secret already exists and should be
+  preferred over the repo-level secret before merging.
+- All four checks run automatically on the pull request path.
 
 **Code Connection:**
 
@@ -62,6 +66,8 @@ vulnerable dependencies and committed secrets are blocked.
   boundaries plus scan suppressions and exceptions in the Risk Notes section.
 - `planning/ai-review-checklist.md` now asks reviewers to verify that mocked or stubbed
   boundaries and any scan suppressions or exceptions are surfaced in Risk Notes.
+- `GITLEAKS_LICENSE` must be populated as a GitHub Secret for the org-owned repository
+  or the Gitleaks action fails before scanning starts.
 - `terraform/vpc.tf`, `terraform/database.tf`, and `terraform/redis.tf` already carry
   the seeded infrastructure stance that later tickets will need to revisit: public
   subnet auto-IP is intentionally explicit, and the ECS task security-group references
@@ -73,6 +79,7 @@ vulnerable dependencies and committed secrets are blocked.
 - PR-time dependency and secret scanning before merge
 - Supply-chain and secret detection on the repository's merge path
 - Stubbed platform plumbing until ECS, load balancer, and container delivery exist
+- Gitleaks license validation for the organization-owned repo
 
 **Changed Files:**
 
@@ -87,6 +94,8 @@ vulnerable dependencies and committed secrets are blocked.
 - Repository-local workflow coverage was added for the new dependency and secret gate.
 - The journal records the existing Terraform stub/suppression posture so the future PR
   checklist can carry it forward as risk notes.
+- The Gitleaks action now expects the `GITLEAKS_LICENSE` secret to be configured in
+  GitHub before the workflow can succeed in an organization-owned repo.
 - No runtime validation was run against the new workflow in this shell.
 
 ## caleb-latimer-jira163 - SCRUM-163

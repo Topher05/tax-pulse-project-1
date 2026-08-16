@@ -21,5 +21,6 @@ describe("Dependency and secret gate workflow", () => {
     expect(workflow).toContain("--include-git-root");
     expect(workflow).toContain("--recursive");
     expect(workflow).toContain("GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}");
+    expect(workflow).toContain("GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}");
   });
 });
