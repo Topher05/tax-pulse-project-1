@@ -9,8 +9,13 @@ describe("Dependency and secret gate workflow", () => {
   test("uses the Blacksmith runner and runs the PR security scans", () => {
     const workflow = readFileSync(workflowPath, "utf8");
 
+    expect(workflow).toContain("actions: read");
+    expect(workflow).toContain("pull-requests: read");
+    expect(workflow).toContain("security-events: write");
+    expect(workflow).toContain(
+      "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@v2.5.0",
+    );
     expect(workflow).toContain("runs-on: blacksmith-2vcpu-ubuntu-2404");
-    expect(workflow).toContain("google/osv-scanner-action/osv-scanner-action@v2.5.0");
     expect(workflow).toContain("gitleaks/gitleaks-action@v3");
     expect(workflow).toContain("fetch-depth: 0");
   });
@@ -22,5 +27,7 @@ describe("Dependency and secret gate workflow", () => {
     expect(workflow).toContain("--recursive");
     expect(workflow).toContain("GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}");
     expect(workflow).toContain("GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}");
+    expect(workflow).toContain("upload-sarif: false");
+    expect(workflow).toContain("fail-on-vuln: true");
   });
 });
