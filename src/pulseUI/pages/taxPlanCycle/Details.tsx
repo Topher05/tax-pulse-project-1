@@ -1,6 +1,26 @@
 import { useEffect, useId, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useSearch } from "@tanstack/react-router";
+
+import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
+import { EmptyState } from "../../components/EmptyState.tsx";
+import { useNotificationToast } from "../../components/NotificationToast.tsx";
+import { PanelCard } from "../../components/PanelCard.tsx";
+import { StatusPill } from "../../components/StatusPill.tsx";
+import {
+  createErrorNotificationMessage,
+  createInfoNotificationMessage,
+  createSuccessNotificationMessage,
+} from "../../entities/notificationMessage.ts";
+import {
+  fetchTaxPlanCycleAuditEntries,
+  fetchTaxPlanCycleComments,
+  fetchTaxPlanCycleDetails,
+  taxPlanCycleAuditEntriesQueryKey,
+  taxPlanCycleCommentsQueryKey,
+  taxPlanCycleDetailsQueryKey,
+} from "../../entities/taxPlanCycleQueries.ts";
+import { caseApiPatchJson, CaseApiError } from "../../shared/caseApi.ts";
 
 import styles from "./Details.module.css";
 import {
@@ -10,18 +30,6 @@ import {
   type DetailStage,
   type DetailTab,
 } from "./detailViewState.ts";
-import {
-  fetchTaxPlanCycleAuditEntries,
-  fetchTaxPlanCycleComments,
-  fetchTaxPlanCycleDetails,
-  taxPlanCycleAuditEntriesQueryKey,
-  taxPlanCycleCommentsQueryKey,
-  taxPlanCycleDetailsQueryKey,
-} from "../../entities/taxPlanCycleQueries.ts";
-import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
-import { EmptyState } from "../../components/EmptyState.tsx";
-import { PanelCard } from "../../components/PanelCard.tsx";
-import { StatusPill } from "../../components/StatusPill.tsx";
 
 const sampleScenarios = [
   {
@@ -50,6 +58,33 @@ function priorityTone(priority: string): "danger" | "warning" | "info" {
   return "info";
 }
 
+function getNextStage(stage: DetailStage): DetailStage | null {
+  const stageIndex = caseStages.indexOf(stage);
+
+  if (stageIndex < 0 || stageIndex >= caseStages.length - 1) {
+    return null;
+  }
+
+  return caseStages[stageIndex + 1];
+}
+
+function parseProblemPayload(body: string): { header?: string; message?: string } | null {
+  try {
+    const parsed = JSON.parse(body) as { title?: unknown; detail?: unknown };
+
+    return {
+      header: typeof parsed.title === "string" ? parsed.title : undefined,
+      message: typeof parsed.detail === "string" ? parsed.detail : undefined,
+    };
+  } catch {
+    if (body.trim().length === 0) {
+      return null;
+    }
+
+    return { message: body };
+  }
+}
+
 export function DetailsPage() {
   const { id: caseId = "" } = useParams({ from: "/_workspace/cycles/$id" });
   const search = useSearch({ from: "/_workspace/cycles/$id" });
@@ -57,8 +92,11 @@ export function DetailsPage() {
   const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
   const [commentDraft, setCommentDraft] = useState("");
   const [selectedStageOverride, setSelectedStageOverride] = useState<DetailStage | null>(null);
+  const [isAdvancingStage, setIsAdvancingStage] = useState(false);
   const stageLabelId = useId();
   const authenticatedFetch = useAuthenticatedFetch();
+  const queryClient = useQueryClient();
+  const { showNotification } = useNotificationToast();
 
   useEffect(() => {
     setActiveTab("Overview");
@@ -114,6 +152,70 @@ export function DetailsPage() {
 
   const selectedStage = selectedStageOverride ?? detailSearch.stage ?? details.stage;
   const activeStageIndex = caseStages.indexOf(selectedStage as DetailStage);
+  const nextStage = getNextStage(details.stage as DetailStage);
+
+  const handleInfoAction = (action: "Reassign" | "Hold") => {
+    showNotification(createInfoNotificationMessage("Implementation Details TBD.", action));
+  };
+
+  const handleAdvanceStage = async () => {
+    if (isAdvancingStage || nextStage === null) {
+      showNotification(
+        createErrorNotificationMessage(
+          nextStage === null
+            ? "There is no further stage available for this cycle."
+            : "The stage transition is already in progress.",
+          "Advance Stage unavailable",
+        ),
+      );
+      return;
+    }
+
+    setIsAdvancingStage(true);
+
+    try {
+      const transitioned = await caseApiPatchJson<{ stage: DetailStage }>(
+        `/v1/tax-plan-cycles/${caseId}/transition`,
+        { to_stage: nextStage },
+        authenticatedFetch,
+      );
+
+      setSelectedStageOverride(transitioned.stage);
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: taxPlanCycleDetailsQueryKey(caseId) }),
+        queryClient.invalidateQueries({ queryKey: taxPlanCycleAuditEntriesQueryKey(caseId) }),
+      ]);
+
+      showNotification(
+        createSuccessNotificationMessage(
+          `The tax plan cycle advanced to ${transitioned.stage}.`,
+          "Stage advanced",
+        ),
+      );
+    } catch (error) {
+      let header = "Advance Stage failed";
+      let message = "The stage transition could not be completed.";
+
+      if (error instanceof CaseApiError) {
+        const problem = parseProblemPayload(error.body);
+
+        if (problem?.header) {
+          header = problem.header;
+        }
+
+        if (problem?.message) {
+          message = problem.message;
+        }
+      } else if (error instanceof Error && error.message.trim().length > 0) {
+        message = error.message;
+      }
+
+      showNotification(createErrorNotificationMessage(message, header));
+    } finally {
+      setIsAdvancingStage(false);
+    }
+  };
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -163,7 +265,9 @@ export function DetailsPage() {
           <PanelCard title="Comments">
             <div className={styles.commentList}>
               {commentsQuery.isPending ? (
-                <p className={styles.stateCopy} role="status">Loading comments...</p>
+                <p className={styles.stateCopy} role="status">
+                  Loading comments...
+                </p>
               ) : commentsQuery.isError ? (
                 <p className={styles.stateCopy} role="alert">
                   Comments could not load.
@@ -209,7 +313,9 @@ export function DetailsPage() {
         return (
           <PanelCard title="Audit Trail">
             {auditEntriesQuery.isPending ? (
-              <p className={styles.stateCopy} role="status">Loading audit trail...</p>
+              <p className={styles.stateCopy} role="status">
+                Loading audit trail...
+              </p>
             ) : auditEntriesQuery.isError ? (
               <p className={styles.stateCopy} role="alert">
                 Audit trail could not load.
@@ -255,14 +361,33 @@ export function DetailsPage() {
           </div>
 
           <div className={styles.actionCluster}>
-            <button className={styles.secondaryAction} type="button">
+            <button
+              className={styles.secondaryAction}
+              type="button"
+              onClick={() => {
+                handleInfoAction("Reassign");
+              }}
+            >
               Reassign
             </button>
-            <button className={styles.secondaryAction} type="button">
+            <button
+              className={styles.secondaryAction}
+              type="button"
+              onClick={() => {
+                handleInfoAction("Hold");
+              }}
+            >
               Hold
             </button>
-            <button className={styles.primaryAction} type="button">
-              Advance Stage →
+            <button
+              className={styles.primaryAction}
+              type="button"
+              disabled={isAdvancingStage || nextStage === null}
+              onClick={() => {
+                void handleAdvanceStage();
+              }}
+            >
+              {isAdvancingStage ? "Advancing..." : "Advance Stage ->"}
             </button>
           </div>
         </div>
@@ -272,7 +397,9 @@ export function DetailsPage() {
             <h3 id={stageLabelId} className={styles.sectionTitle}>
               Stage
             </h3>
-            <p className={styles.sectionCopy}>Interactive stage navigation stays local to the page.</p>
+            <p className={styles.sectionCopy}>
+              Interactive stage navigation reflects the persisted cycle state.
+            </p>
           </div>
 
           <ol className={styles.stageStepper} aria-label="Case stage progression">
