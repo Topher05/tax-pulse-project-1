@@ -10,7 +10,7 @@ describe("Dependency and secret gate workflow", () => {
     const workflow = readFileSync(workflowPath, "utf8");
 
     expect(workflow).toContain("runs-on: blacksmith-2vcpu-ubuntu-2404");
-    expect(workflow).toContain("google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@v2.3.8");
+    expect(workflow).toContain("google/osv-scanner-action/osv-scanner-action@v2.5.0");
     expect(workflow).toContain("gitleaks/gitleaks-action@v3");
     expect(workflow).toContain("fetch-depth: 0");
   });
@@ -20,8 +20,6 @@ describe("Dependency and secret gate workflow", () => {
 
     expect(workflow).toContain("--include-git-root");
     expect(workflow).toContain("--recursive");
-    expect(workflow).toContain("upload-sarif: false");
-    expect(workflow).toContain("fail-on-vuln: true");
     expect(workflow).toContain("GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}");
   });
 });

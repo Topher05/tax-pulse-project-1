@@ -9,17 +9,21 @@ permissions:
 jobs:
   osv-scan:
     name: OSV Dependency Scan
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@v2.3.8
-    permissions:
-      contents: read
-    with:
-      runs-on: blacksmith-2vcpu-ubuntu-2404
-      scan-args: |-
-        --include-git-root
-        --recursive
-        ./
-      upload-sarif: false
-      fail-on-vuln: true
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run OSV scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v2.5.0
+        with:
+          scan-args: |-
+            --include-git-root
+            --recursive
+            ./
 
   gitleaks-scan:
     name: Gitleaks Secret Scan
