@@ -738,12 +738,26 @@ export function createTaxPlanCycleRouter(
   router.patch(
     "/tax-plan-cycles/:caseId/transition",
     async (req: Request, res: Response, next: NextFunction) => {
+      console.log("[tax-plan-cycle transition] request received", {
+        params: req.params,
+        body: req.body,
+      });
+
       const parsedParams = taxPlanCycleTransitionParamsSchema.safeParse(
         req.params,
       );
       const parsedBody = taxPlanCycleTransitionSchema.safeParse(req.body);
 
       if (!parsedParams.success || !parsedBody.success) {
+        console.log("[tax-plan-cycle transition] validation failure", {
+          paramsIssues: parsedParams.success
+            ? []
+            : parsedParams.error.issues.map(toValidationIssue),
+          bodyIssues: parsedBody.success
+            ? []
+            : parsedBody.error.issues.map(toValidationIssue),
+        });
+
         next(
           new ProblemHttpError({
             type: "https://taxpulse.example/problems/validation-error",
@@ -771,11 +785,24 @@ export function createTaxPlanCycleRouter(
         const user = (req as TenantScopedRequest).user;
 
         if (!tenantId || !user?.role || !user.id) {
+          console.log("[tax-plan-cycle transition] authentication failure", {
+            tenantIdPresent: Boolean(tenantId),
+            userIdPresent: Boolean(user?.id),
+            rolePresent: Boolean(user?.role),
+          });
+
           next(authenticationRequired());
           return;
         }
 
         if (isClientUser(user)) {
+          console.log("[tax-plan-cycle transition] authorization failure", {
+            caseId: parsedParams.data.caseId,
+            actor: user.id,
+            role: user.role,
+            reason: "client-role-not-allowed",
+          });
+
           next(operatorAccessRequired());
           return;
         }
@@ -800,8 +827,24 @@ export function createTaxPlanCycleRouter(
 
         const requestedStage = parsedBody.data.to_stage;
         const action = `transition ${cycle.stage} -> ${requestedStage}`;
+        console.log("[tax-plan-cycle transition] authorization check", {
+          caseId: parsedParams.data.caseId,
+          actor,
+          role: user.role,
+          fromStage: cycle.stage,
+          toStage: requestedStage,
+        });
 
         if (!isTransitionAuthorized(cycle.stage, user)) {
+          console.log("[tax-plan-cycle transition] validation or authorization failure", {
+            caseId: parsedParams.data.caseId,
+            actor,
+            role: user.role,
+            fromStage: cycle.stage,
+            toStage: requestedStage,
+            reason: "role-not-authorized",
+          });
+
           await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
             caseId: parsedParams.data.caseId,
             actor,
@@ -820,6 +863,15 @@ export function createTaxPlanCycleRouter(
         }
 
         if (!isLegalTaxPlanCycleStageTransition(cycle.stage, requestedStage)) {
+          console.log("[tax-plan-cycle transition] validation or authorization failure", {
+            caseId: parsedParams.data.caseId,
+            actor,
+            role: user.role,
+            fromStage: cycle.stage,
+            toStage: requestedStage,
+            reason: "illegal-stage-transition",
+          });
+
           await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
             caseId: parsedParams.data.caseId,
             actor,
@@ -856,6 +908,13 @@ export function createTaxPlanCycleRouter(
           );
           return;
         }
+
+        console.log("[tax-plan-cycle transition] transition success", {
+          caseId: parsedParams.data.caseId,
+          actor,
+          fromStage: cycle.stage,
+          toStage: requestedStage,
+        });
 
         res.status(200).json(transitioned);
       } catch (error) {
