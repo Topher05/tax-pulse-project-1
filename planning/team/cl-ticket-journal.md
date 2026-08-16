@@ -56,28 +56,38 @@ vulnerable dependencies and committed secrets are blocked.
 
 **Code Connection:**
 
-- `.github/workflows/terraform-security-gate.yml` already establishes the PR-time
-  Blacksmith-backed gate pattern that SCRUM-166 extends with dependency and secret
-  scanning.
-- `adr/0033-terraform-security-gate-on-blacksmith-runners.md` records the static
-  enforcement boundary and the expected high-severity fail behavior for the gate.
-- `tests/typescript/workflows/terraformSecurityGate.test.ts` keeps the Terraform gate
-  workflow shape and scan requirements pinned for regression coverage.
+- `.github/workflows/dependency-security-gate.yml` adds the PR-time OSV and Gitleaks
+  gate on the same Blacksmith runner pattern used by SCRUM-165.
+- `.github/pull_request_template.md` now calls out mocked or stubbed infrastructure
+  boundaries plus scan suppressions and exceptions in the Risk Notes section.
+- `planning/ai-review-checklist.md` now asks reviewers to verify that mocked or stubbed
+  boundaries and any scan suppressions or exceptions are surfaced in Risk Notes.
+- `terraform/vpc.tf`, `terraform/database.tf`, and `terraform/redis.tf` already carry
+  the seeded infrastructure stance that later tickets will need to revisit: public
+  subnet auto-IP is intentionally explicit, and the ECS task security-group references
+  still describe a future compute layer rather than a live one.
 
 **Project Scope Connection:**
 
 - IaC, Secure Pipeline & Observability
-- PR-time security scanning before merge
+- PR-time dependency and secret scanning before merge
 - Supply-chain and secret detection on the repository's merge path
+- Stubbed platform plumbing until ECS, load balancer, and container delivery exist
 
 **Changed Files:**
 
+- `.github/pull_request_template.md`
+- `.github/workflows/dependency-security-gate.yml`
+- `planning/ai-review-checklist.md`
 - `planning/team/cl-ticket-journal.md`
+- `tests/typescript/workflows/dependencySecurityGate.test.ts`
 
 **Validation Notes:**
 
-- Journal entry updated from the SCRUM-166 ticket context; no code validation was run
-  for this documentation-only change.
+- Repository-local workflow coverage was added for the new dependency and secret gate.
+- The journal records the existing Terraform stub/suppression posture so the future PR
+  checklist can carry it forward as risk notes.
+- No runtime validation was run against the new workflow in this shell.
 
 ## caleb-latimer-jira163 - SCRUM-163
 
