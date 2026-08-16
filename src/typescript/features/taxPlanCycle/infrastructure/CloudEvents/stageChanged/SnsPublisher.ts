@@ -62,6 +62,7 @@ function buildCloudEvent(
 export function createSnsClient(
   env: NodeJS.ProcessEnv = process.env,
 ): SNSClient {
+  //CL, AWS SNS adapter: the client stays infrastructure-only so the stage-changed CloudEvent factory remains reusable in tests and local tooling.
   const regionName = env.AWS_REGION?.trim() || "us-east-1";
   const endpointUrl = env.TAXPULSE_SNS_ENDPOINT_URL?.trim();
   const clientConfig: SNSClientConfig = {
@@ -98,6 +99,7 @@ export function createSnsPublisher(
 ): StageChangedEventPublisher {
   return {
     async publishStageChanged(input) {
+      //CL, This adapter publishes the already-validated CloudEvent to SNS; it does not decide whether a transition is legal.
       const event = buildCloudEvent(input, options);
 
       await snsClient.send(

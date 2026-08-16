@@ -85,7 +85,6 @@ export function ScenarioForm({ onClose, onSubmit }: ScenarioFormProps) {
 
   const submitForm = handleSubmit(
     async (values) => {
-      // TODO: submission work is handled in Scrum-102.
       try {
         if (onSubmit) {
           await onSubmit(values);

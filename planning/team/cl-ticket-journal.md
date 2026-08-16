@@ -35,6 +35,82 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira160 - SCRUM-160
+
+**Branch:** `caleb-latimer-jira160`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-160
+
+**Summary:** Refactor present-to-client and execute stubs to Lambda + API Gateway
+
+**Description:** Implement SCRUM-160 as a full AWS deployment refactor for the present-to-client and execute transitions, with a new ADR at index 30 and SCRUM-138 already merged into the branch before implementation starts. SCRUM-138 is the behavioral dependency for the compensating present-to-client saga and event contract, while SCRUM-156 is only a local emulation dependency that should not shape the AWS delivery path.
+
+**Acceptance Criteria:**
+
+- The present-to-client and execute transitions run behind AWS Lambda handlers and API Gateway routes.
+- The AWS deployment path includes the required runtime config, IAM permissions, and event-publishing wiring.
+- The new ADR at index 30 records the Lambda + API Gateway architecture decision.
+- Lambda is the command boundary only; the Tax Plan Cycle feature slice retains transition rules, audit writes, stage-changed emission, and present-to-client compensation.
+- SCRUM-138 supplies the saga and event semantics that the Lambda path must preserve.
+- SCRUM-156 is not a production prerequisite; if any legacy code still depends on it, it is scaffolded only and marked with `TODO: Implmentation needs Jira 156`.
+- The code compiles and the relevant tests pass with the SCRUM-138 behavior already present.
+
+**Code Connection:**
+
+- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts` now composes the present-to-client Lambda around the shared transition controller, a mutable in-memory repository, and the real SNS publishers.
+- `src/typescript/shared/scripts/execute-lambda/runtime.ts` now composes the execute Lambda around the shared transition controller and the real stage-changed SNS publisher.
+- `src/typescript/shared/scripts/taxPlanCycleLambdaRuntime.ts` holds the Lambda-local mutable repository and no-op audit writer used by both bundles.
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts` and `src/typescript/shared/scripts/execute-lambda/index.ts` remain the thin API Gateway proxy adapters for the two routes.
+- `scripts/build-present-to-client-lambda.mjs` and `scripts/build-execute-lambda.mjs` build the deployable `dist/present-to-client-lambda/index.js` and `dist/execute-lambda/index.js` bundles.
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/SnsPublisher.ts` now handles FIFO topic publish requirements by supplying `MessageGroupId` and `MessageDeduplicationId` when the action-item topic ARN ends with `.fifo`.
+- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts`, `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`, and `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/presentToClientSaga/PresentToClientSaga.ts` now emit explicit telemetry markers for the Lambda entrypoint, stage-changed publish, and action-item publish boundaries.
+- `src/typescript/soap.d.ts` plus `tests/typescript/bootstrap/testSetup.ts` keep the shared root exports loadable in Vitest by mocking the absent SOAP package.
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationSoapClient.ts` and `tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts` were adjusted so the typecheck and test harness accept the local SOAP shim.
+- `adr/0030-lambda-api-gateway-integration.md` now matches the Lambda boundary and event-focused AWS cutover.
+- `src/typescript/shared/scripts/cloudTap.ts` keeps the action-item and stage-changed cloud tap paths aligned with the current repository contract.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration
+- Serverless deployment cutover for the Tax Plan Cycle workflow
+- Preserves the SCRUM-138 transition behavior while moving the delivery path into AWS infrastructure
+- Keeps SCRUM-156 out of the AWS path unless a temporary scaffold is still required for a leftover local-only code path
+
+  **Changed Files:**
+
+- `adr/0030-lambda-api-gateway-integration.md`
+- `package.json`
+- `scripts/build-execute-lambda.mjs`
+- `scripts/build-present-to-client-lambda.mjs`
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationSoapClient.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/execute-lambda/runtime.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts`
+- `src/typescript/shared/scripts/taxPlanCycleLambdaRuntime.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/SnsPublisher.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/presentToClientSaga/PresentToClientSaga.ts`
+- `src/typescript/soap.d.ts`
+- `tests/typescript/bootstrap/testSetup.ts`
+- `tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts`
+- `tests/typescript/shared/scripts/executeLambdaRuntime.test.ts`
+- `tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
+- `tests/typescript/shared/scripts/presentToClientLambdaRuntime.test.ts`
+
+  **Validation Notes:**
+
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run build:present-to-client-lambda && npm.cmd run build:execute-lambda"` produced `dist/present-to-client-lambda/index.js` and `dist/execute-lambda/index.js` plus source maps.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/shared/scripts/presentToClientLambda.test.ts tests/typescript/shared/scripts/presentToClientLambdaRuntime.test.ts tests/typescript/shared/scripts/executeLambdaRuntime.test.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/actionItemConsumer.test.ts tests/typescript/shared/scripts/cloudTap.test.ts tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts"` passed after the local `soap` bootstrap mock was added.
+  - The FIFO action-item SNS publish path was verified by adding `MessageGroupId` and `MessageDeduplicationId` assertions to the present-to-client runtime and action-item publisher tests.
+  - The present-to-client runtime and saga now emit targeted telemetry markers so CloudWatch can show entry, stage-changed publish, and action-item publish boundaries.
+  - The shared test bootstrap now mocks the absent `soap` package so the root TypeScript exports can load in Vitest without adding a new runtime dependency.
+
 ## caleb-latimer-jira128 - SCRUM-128
 
 **Branch:** `caleb-latimer-jira128`

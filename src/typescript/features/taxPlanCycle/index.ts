@@ -41,6 +41,7 @@ export {
   actionItemCreatedEventSchemaVersion,
   actionItemCreatedEventSource,
   actionItemCreatedEventType,
+  actionItemCreatedEventInputSchema,
   createActionItemCreatedCloudEvent,
   type ActionItemCreatedCloudEventV1,
   type ActionItemCreatedEventDataV1,
@@ -73,6 +74,12 @@ export type {
 export {
   createPresentToClientSaga,
 } from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
+export {
+  createActionItemCreatedSnsClient,
+  createSnsActionItemCreatedEventPublisher,
+  getActionItemCreatedTopicArnFromEnv,
+  type ActionItemCreatedSnsClient,
+} from "./infrastructure/cloudEvents/actionItemCreated/index.js";
 export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
@@ -339,3 +346,23 @@ export {
   createQuarterlyPaymentsRouter,
   type CreateQuarterlyPaymentsRouterOptions,
 } from "../quarterlyPayments/routes.js";
+export {
+  createJwtLambdaAuthenticator,
+  createPresentToClientLambdaHandler,
+  createExecuteLambdaHandler,
+  serializeLambdaJsonResponse,
+  serializeLambdaProblemResponse,
+  type CreateExecuteLambdaHandlerOptions,
+  type CreateJwtLambdaAuthenticatorOptions,
+  type CreatePresentToClientLambdaHandlerOptions,
+  type LambdaAuthenticator,
+  type LambdaHttpRequest,
+  type LambdaHttpResponse,
+  type LambdaRequestContext,
+} from "./lambdaHandlers.js";
+export {
+  executeHandler,
+  presentToClientHandler,
+  resetTaxPlanCycleLambdaRuntimeForTests,
+  type TaxPlanCycleLambdaRuntime,
+} from "./lambdaRuntime.js";

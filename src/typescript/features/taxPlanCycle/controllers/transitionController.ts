@@ -58,13 +58,29 @@ export function createTaxPlanCycleTransitionController(
       }
 
       if (options.stageChangedEventPublisher) {
-        // Event publishing is best-effort because the database transition already committed.
+        // CL, Best-effort after commit: the database mutation owns the state change, and the SNS publish follows as an event side effect. Might rework with dev sync post Jira-156 merge
         try {
+          console.info({
+            message: "present-to-client stage-changed publish starting",
+            tenant_id: input.tenantId,
+            case_id: input.caseId,
+            from_stage: input.fromStage,
+            to_stage: input.toStage,
+            actor: input.actor,
+          });
           await options.stageChangedEventPublisher.publishStageChanged({
             tenantId: input.tenantId,
             caseId: input.caseId,
             fromStage: input.fromStage,
             toStage: input.toStage,
+            actor: input.actor,
+          });
+          console.info({
+            message: "present-to-client stage-changed publish completed",
+            tenant_id: input.tenantId,
+            case_id: input.caseId,
+            from_stage: input.fromStage,
+            to_stage: input.toStage,
             actor: input.actor,
           });
         } catch (error) {
@@ -89,12 +105,24 @@ export function createTaxPlanCycleTransitionController(
           actionItemEventPublisher: options.actionItemEventPublisher,
         });
 
+        console.info({
+          message: "present-to-client action-item saga starting",
+          tenant_id: input.tenantId,
+          case_id: input.caseId,
+          actor: input.actor,
+        });
         await presentToClientSaga.run({
           transitionedCycle: transitioned,
           tenantId: input.tenantId,
           caseId: input.caseId,
           actor: input.actor,
           actionItem: input.actionItem,
+        });
+        console.info({
+          message: "present-to-client action-item saga completed",
+          tenant_id: input.tenantId,
+          case_id: input.caseId,
+          actor: input.actor,
         });
       }
 

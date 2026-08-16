@@ -177,7 +177,6 @@ export function createTaxEngineClient(
         );
 
         if (!response.ok) {
-          // TODO: Add 502 custom messaging support Jira-91
           const errorBody = await response.text();
 
           if (isRetryableStatus(response.status) && attempt < maxAttempts) {
