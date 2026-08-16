@@ -6,7 +6,7 @@ export type StructuredLogger = {
 
 export type LogLevel = "info" | "warn" | "error";
 
-export interface ObservabilityContext {
+export interface CloudWatchContext {
   service: string;
   layer: string;
   operation: string;
@@ -91,14 +91,15 @@ function parseAmznTraceId(xAmznTraceId: string): {
   };
 }
 
-export function extractObservabilityContext(
+export function cloudWatchObservabilityProvider(
   headers: Record<string, string | string[] | undefined> | undefined,
-): Partial<ObservabilityContext> {
+): Partial<CloudWatchContext> {
   if (!headers) {
     return {};
   }
 
-  const requestId = readHeaderValue(headers, "x-request-id") ??
+  const requestId =
+    readHeaderValue(headers, "x-request-id") ??
     readHeaderValue(headers, "x-amzn-requestid") ??
     readHeaderValue(headers, "x-amz-request-id");
   const traceparent = readHeaderValue(headers, "traceparent");
@@ -121,7 +122,7 @@ export function emitObservabilityEvent(
   logger: StructuredLogger,
   level: LogLevel,
   message: string,
-  context: ObservabilityContext,
+  context: CloudWatchContext,
 ): void {
   const entry = {
     telemetry: "observability",

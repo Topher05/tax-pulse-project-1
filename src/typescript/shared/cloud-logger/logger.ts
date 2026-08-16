@@ -2,7 +2,7 @@ import pino, { type DestinationStream, type Logger } from "pino";
 import { pinoHttp } from "pino-http";
 import type { RequestHandler } from "express";
 
-import { extractObservabilityContext } from "./observability.js";
+import { cloudWatchObservabilityProvider } from "./observability.js";
 
 export interface CreateLoggerOptions {
   destination?: DestinationStream;
@@ -27,7 +27,7 @@ export function createRequestLogger(logger: Logger): RequestHandler {
     customErrorMessage: () => "request errored",
     customProps: (req) => {
       const requestUrl = (req as { originalUrl?: string; url?: string }).originalUrl ?? req.url;
-      const observabilityContext = extractObservabilityContext(req.headers);
+      const observabilityContext = cloudWatchObservabilityProvider(req.headers);
 
       return {
         service: "core-case-service",
