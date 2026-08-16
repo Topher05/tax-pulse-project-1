@@ -771,11 +771,13 @@ export async function main(): Promise<Server> {
   if (liabilityEngineBase) {
     const taxEngineClient = createTaxEngineClient({
       baseUrl: liabilityEngineBase,
+      telemetryLogger: logger,
     });
     scenarioModelingController = createScenarioModelingController({
       taxPlanCycleRepository,
       scenarioRepository,
       taxEngineClient,
+      telemetryLogger: logger,
     });
     logger.info("Connected to the liability engine for scenario modeling");
   }
@@ -803,6 +805,7 @@ export async function main(): Promise<Server> {
     {
       queueCacheInvalidator,
       stageChangedEventPublisher,
+      telemetryLogger: logger,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
