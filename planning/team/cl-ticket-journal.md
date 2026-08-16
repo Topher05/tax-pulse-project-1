@@ -35,6 +35,74 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira170 - SCRUM-170
+
+**Branch:** `caleb-latimer-jira170`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-170
+
+**Summary:** Emit CloudWatch metrics and X-Ray traces across services
+
+**Description:** As a Platform Engineer, I want CloudWatch metrics and X-Ray traces, so
+that I can observe the deployed stack. SCRUM-164 infrastructure is intentionally not
+available yet, so this work is landing as far as it can go with structured telemetry,
+explicit trace-context capture, and deferred deployment wiring.
+
+**Acceptance Criteria:**
+
+- Services emit structured logs and metric-shaped telemetry for the workflow and Tax
+  Engine boundaries.
+- Trace context is captured from incoming HTTP and Lambda requests and carried into the
+  emitted observability records.
+- Outbound Tax Engine requests log start, retry, failure, and success outcomes with
+  duration fields.
+- The PR descriptor calls out the deferred SCRUM-164 mock/suppression/stub block.
+- No stage, audit, or domain behavior changes are introduced.
+
+**Code Connection:**
+
+- `src/typescript/observability.ts`
+- `src/typescript/logger.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/controllers/scenarios.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts`
+- `src/typescript/features/taxPlanCycle/lambdaRuntime.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts`
+- `src/typescript/shared/scripts/execute-lambda/runtime.ts`
+- `src/typescript/index.ts`
+- `.github/pull_request_template.md`
+
+**Project Scope Connection:**
+
+- IaC, Secure Pipeline & Observability
+- Cross-service request tracing and CloudWatch-ready structured telemetry
+- Deferred AWS resource wiring until SCRUM-164 is available
+
+**Changed Files:**
+
+- `.github/pull_request_template.md`
+- `planning/team/cl-ticket-journal.md`
+- `src/typescript/features/taxPlanCycle/controllers/scenarios.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/features/taxPlanCycle/lambdaRuntime.ts`
+- `src/typescript/index.ts`
+- `src/typescript/logger.ts`
+- `src/typescript/observability.ts`
+- `src/typescript/shared/scripts/execute-lambda/runtime.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts`
+
+**Validation Notes:**
+
+- Tests were intentionally suspended per instruction.
+- The current pass focused on code-path telemetry and PR-descriptor updates only.
+- Follow-up review still needs to confirm the final AWS-side resource plan once SCRUM-164
+  becomes available.
+
 ## caleb-latimer-jira166 - SCRUM-166
 
 **Branch:** `caleb-latimer-jira166`
