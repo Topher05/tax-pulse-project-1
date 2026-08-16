@@ -111,11 +111,12 @@ describe("TIN/EIN validation SOAP client", () => {
       wsdlXml,
     );
 
-    soapServer.authenticate = (security: {
-      UsernameToken?: { Username?: unknown; Password?: unknown };
-    }) => {
-      const username = soapText(security.UsernameToken?.Username);
-      const password = soapText(security.UsernameToken?.Password);
+    soapServer.authenticate = (security: unknown) => {
+      const record = security as {
+        UsernameToken?: { Username?: unknown; Password?: unknown };
+      };
+      const username = soapText(record.UsernameToken?.Username);
+      const password = soapText(record.UsernameToken?.Password);
 
       if (username) {
         receivedUsernames.push(username);

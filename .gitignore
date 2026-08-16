@@ -9,6 +9,7 @@ __pycache__/
 .env
 planning/prompt-journal/*
 coverage/*
+src/pulseUI/coverage/*
 src/pulseUI/test-results/
 src/pulseUI/playwright-report/
 .DS_Store
@@ -17,3 +18,5 @@ codebase_guide/*
 artifacts/
 .terraform/
 **/.terraform/
+src/typescript/soap.d.ts
+backend-cov*

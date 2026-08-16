@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: TaxPulse SCRUM-160 Lambda + API Gateway integration.
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 30
+    MemorySize: 512
+    Architectures:
+      - arm64
+
+Resources:
+  PresentToClientFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist
+      Handler: present-to-client-lambda/index.handler
+      Description: Transition a Tax Plan Cycle from Review to Client Approval.
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        PresentToClientApi:
+          Type: Api
+          Properties:
+            Path: /v1/tax-plan-cycles/{caseId}/present-to-client
+            Method: post
+
+  ExecuteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist
+      Handler: execute-lambda/index.handler
+      Description: Transition a Tax Plan Cycle from Client Approval to Executed.
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        ExecuteApi:
+          Type: Api
+          Properties:
+            Path: /v1/tax-plan-cycles/{caseId}/execute
+            Method: post
+
+Outputs:
+  PresentToClientFunctionArn:
+    Value: !GetAtt PresentToClientFunction.Arn
+  ExecuteFunctionArn:
+    Value: !GetAtt ExecuteFunction.Arn

@@ -32,5 +32,6 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0027: Use vitest-axe for Pulse UI accessibility checks](./0027-vitest-axe-accessibility-testing.md)
 - [ADR-0028: Define the stage-changed CloudEvents schema](./0028-stage-changed-cloudevents-schema.md)
 - [ADR-0029: Use Playwright for headless Pulse UI end-to-end regression coverage](./0029-playwright-pulse-ui-e2e-integration.md)
+- [ADR-0030: Lambda + API Gateway integration for SCRUM-160](./0030-lambda-api-gateway-integration.md)
 - [ADR-0031: Add a reproducible Lighthouse performance gate for the Pulse UI dashboard](./0031-lighthouse-integration.md)
 - [ADR-0032: Back the Team & Users screen with a tenant-scoped read boundary](./0032-team-users-screen.md)
