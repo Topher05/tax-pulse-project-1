@@ -24,7 +24,7 @@ describe("Terraform security gate workflow", () => {
     expect(workflow).toContain("terraform validate");
     expect(workflow).toContain("checkov -d . --framework terraform --hard-fail-on HIGH --compact --quiet");
     expect(workflow).toContain(
-      "docker run --rm -v \"${{ github.workspace }}:/src\" aquasec/tfsec-ci /src/terraform --minimum-severity HIGH --no-color",
+      "docker run --rm -v \"${{ github.workspace }}:/src\" aquasec/tfsec-ci tfsec /src/terraform --minimum-severity HIGH --no-color",
     );
   });
 
