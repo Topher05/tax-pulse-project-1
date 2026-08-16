@@ -24,6 +24,8 @@ resource "aws_internet_gateway" "main" {
 
 # Public Subnets
 resource "aws_subnet" "public_1" {
+  # tfsec:ignore:aws-ec2-no-public-ip-subnet
+  #checkov:skip=CKV_AWS_130: Public subnets intentionally assign public IPs for internet-facing delivery.
   vpc_id                  = aws_vpc.main.id
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, 1)
   availability_zone       = data.aws_availability_zones.available.names[0]
@@ -36,6 +38,8 @@ resource "aws_subnet" "public_1" {
 }
 
 resource "aws_subnet" "public_2" {
+  # tfsec:ignore:aws-ec2-no-public-ip-subnet
+  #checkov:skip=CKV_AWS_130: Public subnets intentionally assign public IPs for internet-facing delivery.
   vpc_id                  = aws_vpc.main.id
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, 2)
   availability_zone       = data.aws_availability_zones.available.names[1]

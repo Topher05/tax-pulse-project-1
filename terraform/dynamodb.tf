@@ -4,6 +4,10 @@ resource "aws_dynamodb_table" "plan_cycle_queue_projection" {
   hash_key     = "tenant_id"
   range_key    = "case_id"
 
+  server_side_encryption {
+    enabled = true
+  }
+
   attribute {
     name = "tenant_id"
     type = "S"

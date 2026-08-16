@@ -38,6 +38,13 @@ The workflow will:
 The gate is intentionally enforcement-only. It does not add apply, plan, or AWS
 mutation behavior, and it does not introduce any agent configuration.
 
+The Terraform implementation is expected to clear the real findings directly:
+
+- enable RDS storage encryption,
+- enable DynamoDB server-side encryption,
+- scope security-group egress to the VPC instead of the public internet, and
+- keep public subnet auto-IP assignment explicit with documented suppressions.
+
 ### Architecture diagram
 
 ```mermaid

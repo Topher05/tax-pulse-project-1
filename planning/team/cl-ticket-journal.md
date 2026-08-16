@@ -57,8 +57,12 @@ Add new ticket entries below using this template.
 **Code Connection:**
 
 - `.github/workflows/terraform-security-gate.yml` adds the PR-time Terraform gate on the Blacksmith runner and runs `terraform fmt`, `terraform init -backend=false`, `terraform validate`, Checkov, and tfsec.
+- `.github/workflows/container-build-scaffold.yml` keeps the Blacksmith Docker builder helpers on deck for the future container delivery work without changing the Terraform gate.
+- `terraform/database.tf`, `terraform/dynamodb.tf`, and `terraform/redis.tf` now tighten the security posture that the scanners were flagging.
+- `terraform/vpc.tf` documents the intentional public-subnet behavior with inline tfsec and Checkov suppressions.
 - `terraform/.tfsec/config.yml` makes the tfsec severity threshold explicit in repo config.
 - `tests/typescript/workflows/terraformSecurityGate.test.ts` guards the workflow shape and scan requirements with a repo-local regression test.
+- `tests/typescript/workflows/containerBuildScaffold.test.ts` guards the future container scaffold text and helper references.
 - `adr/0033-terraform-security-gate-on-blacksmith-runners.md` records the deployment boundary and visual flow for the gate.
 
 **Architecture Diagram:**
@@ -89,10 +93,12 @@ flowchart LR
 **Changed Files:**
 
 - `.github/workflows/terraform-security-gate.yml`
+- `.github/workflows/container-build-scaffold.yml`
 - `adr/0033-terraform-security-gate-on-blacksmith-runners.md`
 - `adr/README.md`
 - `terraform/.tfsec/config.yml`
 - `tests/typescript/workflows/terraformSecurityGate.test.ts`
+- `tests/typescript/workflows/containerBuildScaffold.test.ts`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
