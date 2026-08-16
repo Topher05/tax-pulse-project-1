@@ -80,6 +80,12 @@
   color: #f8fafc;
 }
 
+.primaryAction:disabled {
+  background: rgb(148 163 184 / 32%);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .secondaryAction:hover {
   background: var(--pulse-surface-muted);
 }
@@ -141,6 +147,11 @@
   font-size: 0.82rem;
   font-weight: 700;
   text-align: left;
+  transition:
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    background-color 160ms ease;
 }
 
 .stageStepComplete {
@@ -149,9 +160,33 @@
 }
 
 .stageStepActive {
+  position: relative;
+  overflow: hidden;
   border-color: var(--pulse-accent);
   box-shadow: 0 0 0 1px rgb(84 182 177 / 18%);
   color: var(--pulse-accent-light);
+}
+
+.stageStepActive::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 10%,
+    rgb(255 255 255 / 18%) 35%,
+    rgb(255 255 255 / 36%) 50%,
+    rgb(255 255 255 / 18%) 65%,
+    transparent 90%
+  );
+  transform: translateX(-130%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stageStepActive:hover::after {
+  animation: stageStepShimmer 800ms ease forwards;
+  opacity: 1;
 }
 
 .stageStepNumber {
@@ -440,6 +475,16 @@
 .stateCopy {
   color: var(--pulse-muted);
   font-size: 0.9rem;
+}
+
+@keyframes stageStepShimmer {
+  from {
+    transform: translateX(-130%);
+  }
+
+  to {
+    transform: translateX(130%);
+  }
 }
 
 @media (max-width: 1100px) {

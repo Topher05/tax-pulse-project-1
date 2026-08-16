@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useSearch } from "@tanstack/react-router";
+import { useParams } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 
 import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
 import { EmptyState } from "../../components/EmptyState.tsx";
@@ -26,7 +27,6 @@ import styles from "./Details.module.css";
 import {
   caseStages,
   detailTabs,
-  normalizeDetailsSearch,
   type DetailStage,
   type DetailTab,
 } from "./detailViewState.ts";
@@ -65,7 +65,7 @@ function getNextStage(stage: DetailStage): DetailStage | null {
     return null;
   }
 
-  return caseStages[stageIndex + 1];
+  return caseStages[stageIndex + 1] as DetailStage;
 }
 
 function parseProblemPayload(body: string): { header?: string; message?: string } | null {
@@ -87,11 +87,8 @@ function parseProblemPayload(body: string): { header?: string; message?: string 
 
 export function DetailsPage() {
   const { id: caseId = "" } = useParams({ from: "/_workspace/cycles/$id" });
-  const search = useSearch({ from: "/_workspace/cycles/$id" });
-  const detailSearch = normalizeDetailsSearch(search);
   const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
   const [commentDraft, setCommentDraft] = useState("");
-  const [selectedStageOverride, setSelectedStageOverride] = useState<DetailStage | null>(null);
   const [isAdvancingStage, setIsAdvancingStage] = useState(false);
   const stageLabelId = useId();
   const authenticatedFetch = useAuthenticatedFetch();
@@ -101,7 +98,6 @@ export function DetailsPage() {
   useEffect(() => {
     setActiveTab("Overview");
     setCommentDraft("");
-    setSelectedStageOverride(null);
   }, [caseId]);
 
   const detailsQuery = useQuery({
@@ -150,12 +146,16 @@ export function DetailsPage() {
     return null;
   }
 
-  const selectedStage = selectedStageOverride ?? detailSearch.stage ?? details.stage;
-  const activeStageIndex = caseStages.indexOf(selectedStage as DetailStage);
+  const selectedStage = details.stage;
+  const activeStageIndex = caseStages.indexOf(details.stage as DetailStage);
   const nextStage = getNextStage(details.stage as DetailStage);
 
-  const handleInfoAction = (action: "Reassign" | "Hold") => {
-    showNotification(createInfoNotificationMessage("Implementation Details TBD.", action));
+  const handleReassignAction = () => {
+    showNotification(createErrorNotificationMessage("Implementation Details TBD.", "Reassign"));
+  };
+
+  const handleHoldAction = () => {
+    showNotification(createInfoNotificationMessage("Implementation Details TBD.", "Hold"));
   };
 
   const handleAdvanceStage = async () => {
@@ -180,8 +180,6 @@ export function DetailsPage() {
         authenticatedFetch,
       );
 
-      setSelectedStageOverride(transitioned.stage);
-
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taxPlanCycleDetailsQueryKey(caseId) }),
         queryClient.invalidateQueries({ queryKey: taxPlanCycleAuditEntriesQueryKey(caseId) }),
@@ -189,8 +187,8 @@ export function DetailsPage() {
 
       showNotification(
         createSuccessNotificationMessage(
-          `The tax plan cycle advanced to ${transitioned.stage}.`,
-          "Stage advanced",
+          `${details.stage} → ${transitioned.stage} transition successful.`,
+          "Stage Advanced",
         ),
       );
     } catch (error) {
@@ -212,6 +210,7 @@ export function DetailsPage() {
       }
 
       showNotification(createErrorNotificationMessage(message, header));
+      await queryClient.invalidateQueries({ queryKey: taxPlanCycleAuditEntriesQueryKey(caseId) });
     } finally {
       setIsAdvancingStage(false);
     }
@@ -365,7 +364,7 @@ export function DetailsPage() {
               className={styles.secondaryAction}
               type="button"
               onClick={() => {
-                handleInfoAction("Reassign");
+                handleReassignAction();
               }}
             >
               Reassign
@@ -374,7 +373,7 @@ export function DetailsPage() {
               className={styles.secondaryAction}
               type="button"
               onClick={() => {
-                handleInfoAction("Hold");
+                handleHoldAction();
               }}
             >
               Hold
@@ -387,21 +386,13 @@ export function DetailsPage() {
                 void handleAdvanceStage();
               }}
             >
-              {isAdvancingStage ? "Advancing..." : "Advance Stage ->"}
+              <span>{isAdvancingStage ? "Advancing..." : "Advance Stage"}</span>
+              {!isAdvancingStage ? <ChevronRight className={styles.actionButtonIcon} aria-hidden="true" /> : null}
             </button>
           </div>
         </div>
 
         <section className={styles.stageSection} aria-labelledby={stageLabelId}>
-          <div className={styles.sectionHeader}>
-            <h3 id={stageLabelId} className={styles.sectionTitle}>
-              Stage
-            </h3>
-            <p className={styles.sectionCopy}>
-              Interactive stage navigation reflects the persisted cycle state.
-            </p>
-          </div>
-
           <ol className={styles.stageStepper} aria-label="Case stage progression">
             {caseStages.map((stage, index) => {
               const isActive = selectedStage === stage;
@@ -409,21 +400,17 @@ export function DetailsPage() {
 
               return (
                 <li key={stage} className={styles.stageStepItem}>
-                  <button
+                  <div
                     className={[
                       styles.stageStep,
                       isActive ? styles.stageStepActive : "",
                       isComplete ? styles.stageStepComplete : "",
                     ].join(" ")}
-                    type="button"
                     aria-current={isActive ? "step" : undefined}
-                    onClick={() => {
-                      setSelectedStageOverride(stage);
-                    }}
                   >
                     <span className={styles.stageStepNumber}>{index + 1}</span>
                     <span>{stage}</span>
-                  </button>
+                  </div>
                 </li>
               );
             })}
