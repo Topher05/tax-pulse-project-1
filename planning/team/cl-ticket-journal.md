@@ -35,6 +35,50 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira166 - SCRUM-166
+
+**Branch:** `caleb-latimer-jira166`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-166
+
+**Summary:** Add the OSV and Gitleaks gate
+
+**Description:** As a Security Engineer, I want OSV and Gitleaks on every PR, so that
+vulnerable dependencies and committed secrets are blocked.
+
+**Acceptance Criteria:**
+
+- OSV flags a known-vulnerable dependency and fails the PR.
+- Gitleaks blocks a committed secret.
+- Both run automatically on every pull request.
+
+**Code Connection:**
+
+- `.github/workflows/terraform-security-gate.yml` already establishes the PR-time
+  Blacksmith-backed gate pattern that SCRUM-166 extends with dependency and secret
+  scanning.
+- `adr/0033-terraform-security-gate-on-blacksmith-runners.md` records the static
+  enforcement boundary and the expected high-severity fail behavior for the gate.
+- `tests/typescript/workflows/terraformSecurityGate.test.ts` keeps the Terraform gate
+  workflow shape and scan requirements pinned for regression coverage.
+
+**Project Scope Connection:**
+
+- IaC, Secure Pipeline & Observability
+- PR-time security scanning before merge
+- Supply-chain and secret detection on the repository's merge path
+
+**Changed Files:**
+
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- Journal entry updated from the SCRUM-166 ticket context; no code validation was run
+  for this documentation-only change.
+
 ## caleb-latimer-jira163 - SCRUM-163
 
 **Branch:** `caleb-latimer-jira163`
