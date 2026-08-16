@@ -251,13 +251,24 @@ Add new ticket entries below using this template.
 - `src/pulseUI/components/NotificationToast.module.css`
 - `src/pulseUI/entities/notificationMessage.ts`
 - `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/components/NotificationToast.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `src/pulseUI/vitest.config.ts`
 - `src/pulseUI/shared/caseApi.ts`
 - `src/typescript/features/taxPlanCycle/routes.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
-- Validation was not run for this pass because the ticket requested a logic-first implementation and explicitly suspended test work.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test"` passed with 42 test files and 204 tests green.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/routes.test.ts"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/integration.test.ts"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/auditEntryOutput.test.ts"` passed.
 
 ## caleb-latimer-jira124 - SCRUM-124
 
@@ -391,7 +402,7 @@ sequenceDiagram
 
 **Code Connection:**
 
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/PresentToClientSaga.ts` owns the compensating saga orchestration.
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/PresentToClientSaga.ts` owns the compensating saga orchestration.
 - `src/typescript/features/taxPlanCycle/controllers/transitionController.ts` delegates the present-to-client branch to the saga helper.
 - `src/typescript/shared/scripts/cloudTap.ts` adds the in-memory present-to-client success and compensation sequences.
 - `tests/typescript/features/taxPlanCycle/presentToClientSaga.test.ts` covers the saga success and rollback behavior.
@@ -406,8 +417,8 @@ sequenceDiagram
 
 **Changed Files:**
 
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/PresentToClientSaga.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/PresentToClientSaga.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/index.ts`
 - `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/index.ts`
