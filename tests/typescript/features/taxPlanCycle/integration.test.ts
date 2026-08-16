@@ -1353,7 +1353,18 @@ describe("taxPlanCycle integration", () => {
             .from(auditEntry)
             .where(eq(auditEntry.caseId, "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71"));
 
-          expect(auditRows).toHaveLength(0);
+          expect(auditRows).toHaveLength(1);
+          expect(auditRows[0]).toMatchObject({
+            case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
+            actor: "advisor-transition-001",
+            action: "transition Data Aggregation -> Modeling",
+            outcome: "200",
+          });
+          expect(
+            Math.abs(
+              auditRows[0]!.occurred_at.getTime() - transitionRows[0]!.occurred_at.getTime(),
+            ),
+          ).toBeLessThan(1000);
         },
       );
     });

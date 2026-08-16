@@ -101,7 +101,7 @@ describe("Pulse UI app shell", () => {
   });
 
   test("renders the administration view title", async () => {
-    renderShell("/administration/tenants-users", true, undefined, "Firm Admin");
+    renderShell("/administration/tenants-users", true, undefined, "TaxPulse Platform Admin");
 
     expect(
       await screen.findByRole("heading", { name: "All Tenants & Users", level: 1 }),

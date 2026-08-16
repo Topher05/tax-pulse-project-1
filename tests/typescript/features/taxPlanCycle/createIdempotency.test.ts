@@ -177,6 +177,7 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
       create: vi.fn(async () => caseId),
       insert: vi.fn(),
       findByCaseId: vi.fn(async () => null),
+      findCurrentByClientId: vi.fn(async () => null),
       transition: vi.fn(async () => null),
       listQueue: vi.fn(async () => []),
     };
@@ -252,6 +253,7 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
       create: vi.fn(async () => caseId),
       insert: vi.fn(),
       findByCaseId: vi.fn(async () => null),
+      findCurrentByClientId: vi.fn(async () => null),
       transition: vi.fn(async () => null),
       listQueue: vi.fn(async () => []),
     };
@@ -289,6 +291,7 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
       create: vi.fn(async () => caseId),
       insert: vi.fn(),
       findByCaseId: vi.fn(async () => null),
+      findCurrentByClientId: vi.fn(async () => null),
       transition: vi.fn(async () => null),
       listQueue: vi.fn(async () => []),
     };
