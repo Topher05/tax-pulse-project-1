@@ -1,0 +1,222 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: TaxPulse SCRUM-158 ECS services, ALB routing, and health-based replacement.
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-0f2c3b110a05c423a
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: subnet-0104ce7ee4752681b,subnet-0e4c7b76f7f2a91b7,subnet-04754cd11ab10a5a5
+  CoreCaseTaskDefinition:
+    Type: String
+    Default: taxpulse-core-case-service
+    Description: Registered ECS task definition family, revision, or ARN for the Core Case Service.
+  TaxEngineTaskDefinition:
+    Type: String
+    Default: taxpulse-tax-engine
+    Description: Registered ECS task definition family, revision, or ARN for the Tax Engine.
+  DesiredCount:
+    Type: Number
+    Default: 1
+    MinValue: 1
+  ListenerPort:
+    Type: Number
+    Default: 80
+  CoreContainerPort:
+    Type: Number
+    Default: 3000
+  TaxEngineContainerPort:
+    Type: Number
+    Default: 8000
+
+Resources:
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: taxpulse-api
+
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP traffic to the TaxPulse application load balancer.
+      GroupName: taxpulse-alb
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref ListenerPort
+          ToPort: !Ref ListenerPort
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+
+  ServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow only ALB-originated traffic to the TaxPulse ECS tasks.
+      GroupName: taxpulse-ecs-services
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref CoreContainerPort
+          ToPort: !Ref CoreContainerPort
+          SourceSecurityGroupId: !Ref AlbSecurityGroup
+        - IpProtocol: tcp
+          FromPort: !Ref TaxEngineContainerPort
+          ToPort: !Ref TaxEngineContainerPort
+          SourceSecurityGroupId: !Ref AlbSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: taxpulse-api-alb
+      Scheme: internet-facing
+      Type: application
+      IpAddressType: ipv4
+      SecurityGroups:
+        - !Ref AlbSecurityGroup
+      Subnets: !Ref PublicSubnetIds
+
+  CoreTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: taxpulse-core-case
+      VpcId: !Ref VpcId
+      Protocol: HTTP
+      Port: !Ref CoreContainerPort
+      TargetType: ip
+      HealthCheckEnabled: true
+      HealthCheckPath: /health
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher:
+        HttpCode: "200"
+
+  TaxEngineTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: taxpulse-tax-engine
+      VpcId: !Ref VpcId
+      Protocol: HTTP
+      Port: !Ref TaxEngineContainerPort
+      TargetType: ip
+      HealthCheckEnabled: true
+      HealthCheckPath: /health
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher:
+        HttpCode: "200"
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: !Ref ListenerPort
+      Protocol: HTTP
+      DefaultActions:
+        - Type: fixed-response
+          FixedResponseConfig:
+            StatusCode: "404"
+            ContentType: application/json
+            MessageBody: '{"error":"route_not_found"}'
+
+  CoreCaseListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 10
+      Conditions:
+        - Field: path-pattern
+          PathPatternConfig:
+            Values:
+              - /v1/*
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref CoreTargetGroup
+
+  TaxCalculationListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpListener
+      Priority: 20
+      Conditions:
+        - Field: path-pattern
+          PathPatternConfig:
+            Values:
+              - /tax-calculations
+              - /tax-calculations/*
+              - /scenarios/comparisons
+              - /scenarios/comparisons/*
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref TaxEngineTargetGroup
+
+  CoreCaseService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - CoreCaseListenerRule
+    Properties:
+      ServiceName: core-case-service
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref CoreCaseTaskDefinition
+      LaunchType: FARGATE
+      DesiredCount: !Ref DesiredCount
+      HealthCheckGracePeriodSeconds: 60
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref ServiceSecurityGroup
+          Subnets: !Ref PublicSubnetIds
+      LoadBalancers:
+        - ContainerName: core-case-service
+          ContainerPort: !Ref CoreContainerPort
+          TargetGroupArn: !Ref CoreTargetGroup
+
+  TaxEngineService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - TaxCalculationListenerRule
+    Properties:
+      ServiceName: tax-engine
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref TaxEngineTaskDefinition
+      LaunchType: FARGATE
+      DesiredCount: !Ref DesiredCount
+      HealthCheckGracePeriodSeconds: 60
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - !Ref ServiceSecurityGroup
+          Subnets: !Ref PublicSubnetIds
+      LoadBalancers:
+        - ContainerName: tax-engine
+          ContainerPort: !Ref TaxEngineContainerPort
+          TargetGroupArn: !Ref TaxEngineTargetGroup
+
+Outputs:
+  ClusterName:
+    Value: !Ref Cluster
+  LoadBalancerDnsName:
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+  CoreTargetGroupArn:
+    Value: !Ref CoreTargetGroup
+  TaxEngineTargetGroupArn:
+    Value: !Ref TaxEngineTargetGroup

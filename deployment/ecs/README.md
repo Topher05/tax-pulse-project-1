@@ -58,12 +58,15 @@ Logs through the `awslogs` driver.
 - Core log group: `Case-Service`
 - Tax Engine log group: `Tax-Engine`
 
-Resources still needed before deployment:
+Resources still needed before registering the SCRUM-157 task definitions:
 
 - ECR repositories/images for both services.
 - ECS task execution role.
 - Service-specific ECS task roles.
-- ECS cluster and service definitions.
+
+SCRUM-158 adds `alb-services.template.yaml` to define the ECS cluster, services,
+target groups, listener rules, and ALB security group wiring around the registered
+task definitions.
 
 ## Register
 
@@ -85,4 +88,54 @@ aws ecs describe-task-definition \
 
 aws ecs describe-task-definition \
   --task-definition taxpulse-tax-engine
+```
+
+## Deploy ALB and ECS Services
+
+After the SCRUM-157 task definitions are registered, deploy the SCRUM-158 ALB and ECS
+service stack:
+
+```bash
+aws cloudformation deploy \
+  --stack-name taxpulse-ecs-alb-services \
+  --template-file deployment/ecs/alb-services.template.yaml \
+  --parameter-overrides \
+    CoreCaseTaskDefinition=taxpulse-core-case-service \
+    TaxEngineTaskDefinition=taxpulse-tax-engine
+```
+
+The template routes:
+
+- `/v1/*` to the Core Case Service target group on port `3000`.
+- `/tax-calculations` and `/scenarios/comparisons` to the Tax Engine target group on
+  port `8000`.
+
+Both target groups check `GET /health`. ECS services are attached to the target groups
+with a health check grace period and rolling deployment settings, so ECS replaces tasks
+that fail the target group health check.
+
+## Smoke Through the ALB
+
+Get the ALB DNS name:
+
+```bash
+aws cloudformation describe-stacks \
+  --stack-name taxpulse-ecs-alb-services \
+  --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDnsName`].OutputValue' \
+  --output text
+```
+
+Then send smoke requests through the ALB DNS name. Use a valid bearer token for protected
+routes.
+
+```bash
+ALB_DNS_NAME="<load-balancer-dns-name>"
+
+curl -i "http://${ALB_DNS_NAME}/v1/tax-plan-cycles" \
+  -H "Authorization: Bearer <access-token>"
+
+curl -i "http://${ALB_DNS_NAME}/tax-calculations" \
+  -H "Authorization: Bearer <access-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"filing_status":"single","state":"CA","income":100000,"deductions":12950,"credits":0,"withholding":0}'
 ```

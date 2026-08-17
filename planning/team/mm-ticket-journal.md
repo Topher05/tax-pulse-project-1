@@ -5,6 +5,55 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira158 - SCRUM-158
+
+**Branch:** `martins-okorie-jira158`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-158
+
+**Summary:** Route ALB traffic and auto-replace unhealthy tasks
+
+**Description:** As a Platform Engineer, I want an ALB routing to the services
+with health-based replacement, so that the APIs are reachable and self-healing.
+
+**Acceptance Criteria:**
+
+- The ALB routes `/v1` case traffic and calculation traffic to the correct
+  service.
+- A task that fails its health check is replaced automatically.
+- A smoke request through the ALB reaches each service.
+
+**Code Connection:** Added a CloudFormation template that defines the TaxPulse ECS
+cluster, internet-facing ALB, ALB and service security groups, Core Case Service
+and Tax Engine target groups, listener rules, and Fargate ECS services. The
+template routes `/v1/*` to the Core Case Service and routes `/tax-calculations`
+plus `/scenarios/comparisons` to the Tax Engine. Both target groups use `/health`
+checks, and each ECS service is attached to its target group with a health check
+grace period and rolling deployment settings so ECS can replace unhealthy tasks.
+
+**Project Scope Connection:** This builds directly on SCRUM-157 by taking the
+registered task definitions and defining how the long-lived API tasks become
+reachable, health-checked ECS services behind an ALB in the team AWS account.
+
+**Changed Files:**
+
+- `deployment/ecs/alb-services.template.yaml`
+- `deployment/ecs/README.md`
+- `tests/typescript/ecsAlbServicesTemplate.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run test:vitest -- tests/typescript/ecsAlbServicesTemplate.test.ts
+  tests/typescript/ecsTaskDefinitions.test.ts` passed.
+- `aws cloudformation validate-template --template-body
+  file://deployment/ecs/alb-services.template.yaml` passed.
+- `npm run typecheck` was attempted but is currently blocked by a pre-existing
+  case-only path conflict between `CloudEvents` and `cloudEvents` imports under
+  `src/typescript/features/taxPlanCycle/infrastructure`.
+
 ## martins-okorie-jira157 - SCRUM-157
 
 **Branch:** `martins-okorie-jira157`
