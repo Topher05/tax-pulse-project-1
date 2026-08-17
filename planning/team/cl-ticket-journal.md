@@ -35,6 +35,56 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira171 - SCRUM-171
+
+**Branch:** `caleb-latimer-jira171`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-171
+
+**Summary:** Add a disposition log for triaged issues
+
+**Description:** As a Platform Engineer, I want a disposition log template, so that
+triaged issues are recorded with their root cause and action. The deliverable is a
+planning artifact under `planning/` that references an existing observability signal
+from SCRUM-170.
+
+**Acceptance Criteria:**
+
+- A new markdown planning artifact exists under `planning/`.
+- The artifact defines the disposition log template fields.
+- The artifact includes one synthetic sample disposition entry.
+- The sample entry links to an existing CloudWatch metric or trace context from the
+  observability work.
+- The artifact explicitly states that no runtime source code, tests, or IaC changes are
+  required for this ticket.
+
+**Code Connection:**
+
+- `planning/scrum-171-disposition-log-template.md`
+- `src/typescript/shared/cloud-logger/observability.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Project Scope Connection:**
+
+- IaC, Secure Pipeline & Observability
+- Triage evidence and release-readiness documentation
+- Follow-on work from SCRUM-170 observability outputs
+
+**Changed Files:**
+
+- `planning/scrum-171-disposition-log-template.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- Reviewed the existing observability field names and metric names so the plan can
+  reference real outputs.
+- No executable tests were required because this is a docs-only planning artifact.
+- No IaC or AWS changes were made for this ticket.
+
 ## caleb-latimer-jira170 - SCRUM-170
 
 **Branch:** `caleb-latimer-jira170`
