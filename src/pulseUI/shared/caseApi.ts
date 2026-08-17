@@ -90,3 +90,11 @@ export async function caseApiPostJson<T>(
 ): Promise<T> {
   return await caseApiSendJson<T>(path, { method: "POST", body }, fetcher);
 }
+
+export async function caseApiPatchJson<T>(
+  path: string,
+  body: unknown,
+  fetcher: CaseApiFetcher = fetch,
+): Promise<T> {
+  return await caseApiSendJson<T>(path, { method: "PATCH", body }, fetcher);
+}

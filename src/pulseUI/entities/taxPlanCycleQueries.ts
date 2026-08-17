@@ -97,7 +97,6 @@ const auditDateTimeFormat = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
   hour: "numeric",
   minute: "2-digit",
-  timeZone: "UTC",
 });
 
 export const taxPlanCycleQueueQueryKey = ["taxPlanCycle", "queue"] as const;

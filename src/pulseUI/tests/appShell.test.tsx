@@ -111,7 +111,6 @@ describe("Pulse UI app shell", () => {
         users: [],
       },
     ] as never);
-
     renderShell("/administration/tenants-users", true, undefined, "TaxPulse Platform Admin");
 
     expect(

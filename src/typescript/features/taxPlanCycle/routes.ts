@@ -298,14 +298,14 @@ function logDeniedTransitionAttempt(
   return occurredAt;
 }
 
-async function writeDeniedTransitionAttempt(
+async function writeTransitionAttemptAudit(
   auditLogger: Pick<Console, "info">,
   auditEntryWriter: AuditEntryWriter,
   input: {
     caseId: string;
     actor: string;
     action: string;
-    outcome: "403" | "422";
+    outcome: string;
   },
 ): Promise<void> {
   const occurredAt = logDeniedTransitionAttempt(auditLogger, input);
@@ -317,6 +317,19 @@ async function writeDeniedTransitionAttempt(
     outcome: input.outcome,
     occurredAt,
   });
+}
+
+async function writeDeniedTransitionAttempt(
+  auditLogger: Pick<Console, "info">,
+  auditEntryWriter: AuditEntryWriter,
+  input: {
+    caseId: string;
+    actor: string;
+    action: string;
+    outcome: "403" | "422";
+  },
+): Promise<void> {
+  await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, input);
 }
 
 export function createTaxPlanCycleRouter(
@@ -738,12 +751,35 @@ export function createTaxPlanCycleRouter(
   router.patch(
     "/tax-plan-cycles/:caseId/transition",
     async (req: Request, res: Response, next: NextFunction) => {
+      console.log("[tax-plan-cycle transition] request received", {
+        params: req.params,
+        body: req.body,
+      });
+
       const parsedParams = taxPlanCycleTransitionParamsSchema.safeParse(
         req.params,
       );
       const parsedBody = taxPlanCycleTransitionSchema.safeParse(req.body);
 
       if (!parsedParams.success || !parsedBody.success) {
+        console.log("[tax-plan-cycle transition] validation failure", {
+          paramsIssues: parsedParams.success
+            ? []
+            : parsedParams.error.issues.map(toValidationIssue),
+          bodyIssues: parsedBody.success
+            ? []
+            : parsedBody.error.issues.map(toValidationIssue),
+        });
+
+        if (parsedParams.success) {
+          await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            caseId: parsedParams.data.caseId,
+            actor: (req as TenantScopedRequest).user?.id ?? "unknown",
+            action: "transition request validation failed",
+            outcome: "400",
+          });
+        }
+
         next(
           new ProblemHttpError({
             type: "https://taxpulse.example/problems/validation-error",
@@ -766,16 +802,52 @@ export function createTaxPlanCycleRouter(
         return;
       }
 
+      let transitionAuditContext:
+        | {
+            caseId: string;
+            actor: string;
+            action: string;
+          }
+        | null = null;
+      let transitionAuditRecorded = false;
+
       try {
         const tenantId = (req as TenantScopedRequest).tenant?.id;
         const user = (req as TenantScopedRequest).user;
 
         if (!tenantId || !user?.role || !user.id) {
+          console.log("[tax-plan-cycle transition] authentication failure", {
+            tenantIdPresent: Boolean(tenantId),
+            userIdPresent: Boolean(user?.id),
+            rolePresent: Boolean(user?.role),
+          });
+
+          await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            caseId: parsedParams.data.caseId,
+            actor: user?.id ?? "unknown",
+            action: "transition authentication required",
+            outcome: "401",
+          });
+
           next(authenticationRequired());
           return;
         }
 
         if (isClientUser(user)) {
+          console.log("[tax-plan-cycle transition] authorization failure", {
+            caseId: parsedParams.data.caseId,
+            actor: user.id,
+            role: user.role,
+            reason: "client-role-not-allowed",
+          });
+
+          await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            caseId: parsedParams.data.caseId,
+            actor: user.id,
+            action: `transition ${parsedParams.data.caseId} client-role-not-allowed`,
+            outcome: "403",
+          });
+
           next(operatorAccessRequired());
           return;
         }
@@ -800,8 +872,29 @@ export function createTaxPlanCycleRouter(
 
         const requestedStage = parsedBody.data.to_stage;
         const action = `transition ${cycle.stage} -> ${requestedStage}`;
+        transitionAuditContext = {
+          caseId: parsedParams.data.caseId,
+          actor,
+          action,
+        };
+        console.log("[tax-plan-cycle transition] authorization check", {
+          caseId: parsedParams.data.caseId,
+          actor,
+          role: user.role,
+          fromStage: cycle.stage,
+          toStage: requestedStage,
+        });
 
         if (!isTransitionAuthorized(cycle.stage, user)) {
+          console.log("[tax-plan-cycle transition] validation or authorization failure", {
+            caseId: parsedParams.data.caseId,
+            actor,
+            role: user.role,
+            fromStage: cycle.stage,
+            toStage: requestedStage,
+            reason: "role-not-authorized",
+          });
+
           await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
             caseId: parsedParams.data.caseId,
             actor,
@@ -820,6 +913,15 @@ export function createTaxPlanCycleRouter(
         }
 
         if (!isLegalTaxPlanCycleStageTransition(cycle.stage, requestedStage)) {
+          console.log("[tax-plan-cycle transition] validation or authorization failure", {
+            caseId: parsedParams.data.caseId,
+            actor,
+            role: user.role,
+            fromStage: cycle.stage,
+            toStage: requestedStage,
+            reason: "illegal-stage-transition",
+          });
+
           await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
             caseId: parsedParams.data.caseId,
             actor,
@@ -857,8 +959,35 @@ export function createTaxPlanCycleRouter(
           return;
         }
 
+        await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+          caseId: parsedParams.data.caseId,
+          actor,
+          action,
+          outcome: "200",
+        });
+        transitionAuditRecorded = true;
+
+        console.log("[tax-plan-cycle transition] transition success", {
+          caseId: parsedParams.data.caseId,
+          actor,
+          fromStage: cycle.stage,
+          toStage: requestedStage,
+        });
+
         res.status(200).json(transitioned);
       } catch (error) {
+        if (transitionAuditContext && !transitionAuditRecorded) {
+          try {
+            await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+              ...transitionAuditContext,
+              outcome: "500",
+            });
+            transitionAuditRecorded = true;
+          } catch {
+            // Ignore audit write failures on the error path so the original error still surfaces.
+          }
+        }
+
         next(error);
       }
     },
