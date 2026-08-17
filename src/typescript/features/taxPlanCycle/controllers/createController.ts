@@ -15,7 +15,11 @@ import {
 import type {
   TaxpayerIdentifierValidationRepository,
 } from "../repositories/taxpayerIdentifierValidation.js";
-import type { TaxpayerIdentifierValidation } from "../taxpayerIdentifierValidation.js";
+import {
+  isTaxpayerIdentifierSoapFaultError,
+  type TaxpayerIdentifierType,
+  type TaxpayerIdentifierValidation,
+} from "../taxpayerIdentifierValidation.js";
 import type {
   TaxPlanCycleReadInput,
   TaxPlanCycleRepository,
@@ -117,19 +121,32 @@ export function createTaxPlanCycleCreateController(
               input.taxpayer_identifier &&
               options.taxpayerIdentifierValidator
             ) {
-              const validation =
-                await options.taxpayerIdentifierValidator.validateTaxpayerIdentifier(
-                  input.taxpayer_identifier,
-                );
+              try {
+                const validation =
+                  await options.taxpayerIdentifierValidator.validateTaxpayerIdentifier(
+                    input.taxpayer_identifier,
+                  );
 
-              taxpayerIdentifierValidation = {
-                tinType: validation.tinType,
-                validationResult: validation.result,
-                ...(validation.verifiedName
-                  ? { verifiedName: validation.verifiedName }
-                  : {}),
-                provider: validation.provider,
-              };
+                taxpayerIdentifierValidation = {
+                  tinType: validation.tinType,
+                  validationResult: validation.result,
+                  ...(validation.verifiedName
+                    ? { verifiedName: validation.verifiedName }
+                    : {}),
+                  provider: validation.provider,
+                };
+              } catch (error) {
+                if (isTaxpayerIdentifierSoapFaultError(error)) {
+                  taxpayerIdentifierValidation = {
+                    tinType:
+                      input.taxpayer_identifier.tin_type.toLowerCase() as TaxpayerIdentifierType,
+                    validationResult: "soap_fault",
+                    provider: "tivs",
+                  };
+                } else {
+                  throw error;
+                }
+              }
             }
 
             const caseId = await repository.create({

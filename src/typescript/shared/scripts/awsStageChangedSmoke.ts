@@ -10,7 +10,7 @@ import {
   getStageChangedTopicArnFromEnv,
   parseStageChangedSqsMessage,
   PublishCommand,
-} from "../../features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
+} from "../../features/taxPlanCycle/infrastructure/CloudEvents/stageChanged/index.js";
 import {
   createStageChangedCloudEventV1,
   stageChangedCloudEventSchemaV1,

@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 
 import {
+  TaxpayerIdentifierSoapFaultError,
   buildTaxPlanCycleCreateIdempotencyKey,
   createRedisTaxPlanCycleCreateIdempotencyStore,
   createTaxPlanCycleCreateController,
@@ -332,4 +333,74 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
 
     expect(repository.create).not.toHaveBeenCalled();
   });
+
+  test("records soap_fault on the case rather than crashing Intake when taxpayer identifier validation produces a SOAP fault", async () => {
+    const repository: TaxPlanCycleRepository = {
+      create: vi.fn(async () => caseId),
+      insert: vi.fn(),
+      findByCaseId: vi.fn(async () => null),
+      findCurrentByClientId: vi.fn(async () => null),
+      transition: vi.fn(async () => null),
+      listQueue: vi.fn(async () => []),
+    };
+    const taxpayerIdentifierValidator: TaxpayerIdentifierValidator = {
+      validateTaxpayerIdentifier: vi.fn(async () => {
+        throw new TaxpayerIdentifierSoapFaultError({
+          faultCode: "soap:Server",
+          faultReason: "TIVS backend unavailable during maintenance window",
+          provider: "tivs",
+        });
+      }),
+    };
+    const taxpayerIdentifierValidationRepository: TaxpayerIdentifierValidationRepository = {
+      record: vi.fn(),
+      findByCaseId: vi.fn(async () => null),
+    };
+    const controller = createTaxPlanCycleCreateController(repository, {
+      idempotencyStore: createRedisTaxPlanCycleCreateIdempotencyStore(
+        createInMemoryCreateIdempotencyClient(),
+      ),
+      taxpayerIdentifierValidator,
+      taxpayerIdentifierValidationRepository,
+    });
+
+    await expect(
+      controller.create({
+        tenantId,
+        actor: "advisor-001",
+        idempotencyKey,
+        client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+        planning_period: "2026-Q4",
+        owner: "advisor-001",
+        priority: "high",
+        due_date: "2026-12-31",
+        taxpayer_identifier: {
+          tin: "12-3456789",
+          tin_type: "EIN",
+          legal_name: "ACME GOVERNMENT SERVICES LLC",
+        },
+      }),
+    ).resolves.toEqual({ case_id: caseId });
+
+    expect(taxpayerIdentifierValidator.validateTaxpayerIdentifier).toHaveBeenCalledWith({
+      tin: "12-3456789",
+      tin_type: "EIN",
+      legal_name: "ACME GOVERNMENT SERVICES LLC",
+    });
+    expect(repository.create).toHaveBeenCalledWith({
+      tenantId,
+      actor: "advisor-001",
+      planningPeriod: "2026-Q4",
+      clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+      owner: "advisor-001",
+      priority: "high",
+      dueDate: "2026-12-31",
+      taxpayerIdentifierValidation: {
+        tinType: "ein",
+        validationResult: "soap_fault",
+        provider: "tivs",
+      },
+    });
+  });
 });
+
