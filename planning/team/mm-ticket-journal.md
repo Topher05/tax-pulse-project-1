@@ -5,6 +5,60 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira157 - SCRUM-157
+
+**Branch:** `martins-okorie-jira157`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-157
+
+**Summary:** Define ECS Fargate task definitions for the services
+
+**Description:** As a Platform Engineer, I want ECS Fargate task definitions, so
+that the long-lived APIs have a managed runtime.
+
+**Acceptance Criteria:**
+
+- Task definitions exist for the Core Case Service and the Tax Engine images.
+- Each task specifies CPU, memory, env, and a container healthcheck.
+- The tasks pull from the image registry and register with the cluster.
+
+**Code Connection:** Added ECS Fargate task definition JSON for the Core Case
+Service and Tax Engine containers, translating the SCRUM-155 Compose contracts
+into AWS task runtime settings. The task definitions declare ECR image references,
+Fargate `awsvpc` networking, CPU and memory, container ports, environment values,
+Secrets Manager references, `/health` container health checks, and CloudWatch
+Logs configuration. The discovered account ID, SNS topic, SQS queue, shared
+Secrets Manager ARN, and existing log groups are wired into the definitions;
+missing ECR repositories and ECS IAM roles remain explicit placeholders.
+
+**Project Scope Connection:** This advances the Containers, Serverless &
+Deployment workstream by defining the managed runtime contract for TaxPulse's
+long-lived APIs while leaving ECS services, ALB routing, and health-based
+replacement to SCRUM-158.
+
+**Changed Files:**
+
+- `deployment/ecs/core-case-service.task-definition.json`
+- `deployment/ecs/tax-engine.task-definition.json`
+- `deployment/ecs/README.md`
+- `tests/typescript/ecsTaskDefinitions.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run test:vitest -- tests/typescript/ecsTaskDefinitions.test.ts` passed.
+- `AWS_DEFAULT_REGION=us-east-1 aws ecs register-task-definition --cli-input-json
+  file://deployment/ecs/core-case-service.task-definition.json
+  --generate-cli-skeleton output` passed.
+- `AWS_DEFAULT_REGION=us-east-1 aws ecs register-task-definition --cli-input-json
+  file://deployment/ecs/tax-engine.task-definition.json
+  --generate-cli-skeleton output` passed.
+- `npm run typecheck` was attempted but is currently blocked by a pre-existing
+  case-only path conflict between `CloudEvents` and `cloudEvents` imports under
+  `src/typescript/features/taxPlanCycle/infrastructure`.
+
 ## martins-okorie-jira126 - SCRUM-126
 
 **Branch:** `martins-okorie-jira126`
