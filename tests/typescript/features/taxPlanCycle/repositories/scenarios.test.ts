@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest";
-
 import { taxPlanCycleRows, tenantRows } from "../../../../../src/typescript/shared/database/seed.model.js";
 import {
   createScenarioRepository,

@@ -32,6 +32,8 @@ import { scenarioModelingRequestSchema } from "./scenarioModeling.js";
 import type { ScenarioRepository } from "./repositories/scenarios.js";
 import type { Scenario } from "../../scenario.js";
 import type { TaxPlanCycleRepository } from "./repositories/repository.js";
+import type { ActionItemRepository } from "./repositories/actionItems.js";
+import type { ActionItemCompletedEventPublishInput } from "./infrastructure/cloudEvents/actionItemCompleted/index.js";
 
 export interface ValidationErrorIssue {
   path: Array<string | number>;
@@ -50,6 +52,12 @@ export interface CreateTaxPlanCycleRouterOptions {
   taxPlanCycleRepository?: Pick<TaxPlanCycleRepository, "findByCaseId" | "listQueue">;
   clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
   scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
+  actionItemRepository?: Pick<ActionItemRepository, "listByCaseId" | "complete">;
+  actionItemCompletedEventPublisher?: {
+    publishActionItemCompleted(
+      input: ActionItemCompletedEventPublishInput,
+    ): Promise<void> | void;
+  };
   scenarioModelingController?: ScenarioModelingController;
   auditEntryReader?: AuditEntryReader;
   auditEntryWriter?: AuditEntryWriter;
@@ -193,6 +201,42 @@ function toClientTaxPlanScenario(scenario: Scenario) {
   });
 }
 
+function clientPortalAccessRequired(viewName: string): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/client-portal-access-required",
+    title: "Client Portal Access Required",
+    status: 403,
+    detail: `Only Client users can access the ${viewName} view.`,
+  });
+}
+
+function clientCycleNotFound(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+    title: "Tax Plan Cycle Not Found",
+    status: 404,
+    detail: "No current tax plan cycle was found for this client.",
+  });
+}
+
+function actionItemNotFound(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/action-item-not-found",
+    title: "Action Item Not Found",
+    status: 404,
+    detail: "No incomplete action item was found for this client.",
+  });
+}
+
+function validationError(detail: string): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/validation-error",
+    title: "Validation Error",
+    status: 400,
+    detail,
+  });
+}
+
 function toClientTaxPlanReadModel(
   cycle: ReturnType<typeof taxPlanCycleSchema.parse>,
   scenarios: readonly Scenario[],
@@ -302,6 +346,7 @@ export function createTaxPlanCycleRouter(
       return [];
     },
   };
+  const actionItemRepository = options.actionItemRepository;
   const auditLogger = options.auditLogger ?? console;
   const auditEntryWriter =
     options.auditEntryWriter ?? deprecatedNoopAuditEntryWriter;
@@ -330,6 +375,95 @@ export function createTaxPlanCycleRouter(
         const response = taxPlanCycleQueueGetResponseSchema.parse(queue);
 
         res.status(200).json(response);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/portal/action-items",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+        if (user.role !== "Client") {
+          next(clientPortalAccessRequired("Action Items"));
+          return;
+        }
+        if (!actionItemRepository) {
+          throw new Error("Action item repository is required for the portal action-items route.");
+        }
+
+        const cycle = await clientPortalReadRepository.findCurrentByClientId({
+          tenantId,
+          clientId: user.id,
+        });
+        if (cycle === null || !canReadCycle(user, cycle)) {
+          next(clientCycleNotFound());
+          return;
+        }
+
+        res.status(200).json(await actionItemRepository.listByCaseId(cycle.id));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.post(
+    "/portal/action-items/:actionItemId/complete",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const actionItemId = Number(req.params.actionItemId);
+      if (!Number.isSafeInteger(actionItemId) || actionItemId < 1) {
+        next(validationError("Action item ID must be a positive integer."));
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+        if (user.role !== "Client") {
+          next(clientPortalAccessRequired("Action Items"));
+          return;
+        }
+        if (!actionItemRepository) {
+          throw new Error("Action item repository is required for the portal action-items route.");
+        }
+
+        const cycle = await clientPortalReadRepository.findCurrentByClientId({
+          tenantId,
+          clientId: user.id,
+        });
+        if (cycle === null || !canReadCycle(user, cycle)) {
+          next(clientCycleNotFound());
+          return;
+        }
+
+        const item = await actionItemRepository.complete({
+          caseId: cycle.id,
+          actionItemId,
+        });
+        if (item === null) {
+          next(actionItemNotFound());
+          return;
+        }
+
+        await options.actionItemCompletedEventPublisher?.publishActionItemCompleted({
+          tenantId,
+          caseId: cycle.id,
+          actionItemId: item.id,
+          actor: user.id,
+        });
+        res.status(200).json(item);
       } catch (error) {
         next(error);
       }

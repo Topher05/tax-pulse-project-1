@@ -13,19 +13,17 @@ import {
   STAGE_CHANGED_CONSUMER_NAME,
   buildIdempotencyKey,
   createRedisConsumer,
-  createPresentToClientSaga,
   createStageChangedCloudEvent,
   type ActionItemCreatedEventInput,
-  type PresentToClientSaga,
   type StageChangedEventPublishInput,
   type TaxPlanCycle,
-} from "../../features/taxPlanCycle/infrastructure/CloudEvents/index.js";
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/index.js";
 import {
   createActionItemCreatedCloudEvent,
   createRedisActionItemConsumer,
   type ActionItemCreatedCloudEventV1,
   type ActionItemCreatedConsumerHandleResult,
-} from "../../features/taxPlanCycle/infrastructure/CloudEvents/actionItemCreated/index.js";
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.js";
 import {
   createRedisIdempotencyStore,
   createSqsConsumer,
@@ -34,11 +32,16 @@ import {
   type ConsumerLogger as StageChangedEventConsumerLogger,
   type SqsConsumerClient as StageChangedSqsClient,
   createCloudEventV1,
-} from "../../features/taxPlanCycle/infrastructure/CloudEvents/stageChanged/index.js";
+} from "../../features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/index.js";
 import {
   stageChangedCloudEventSchemaV1,
   type StageChangedCloudEventV1,
 } from "../../features/taxPlanCycle/stageChangedEvent.js";
+import { createTaxPlanCycleTransitionController } from "../../features/taxPlanCycle/controllers/transitionController.js";
+import {
+  buildPresentToClientLambdaRequest,
+  createPresentToClientLambdaHandler,
+} from "./present-to-client-lambda/index.js";
 
 export interface CloudTapTraceWriter {
   set(
@@ -279,12 +282,34 @@ function buildPresentToClientCloudTapCycle(stage: TaxPlanCycle["stage"]): TaxPla
 function createInMemoryTransitionRepository(
   initialCycle: TaxPlanCycle,
 ): {
+  create: (input: {
+    tenantId: string;
+    planningPeriod: string;
+    clientId: string;
+    owner: string;
+    priority: string;
+    dueDate: string;
+    actor: string;
+  }) => Promise<string>;
+  insert: (input: {
+    tenantId: string;
+    planningPeriod: string;
+    cycle: Omit<TaxPlanCycle, "id">;
+  }) => Promise<string>;
   transition: (input: {
     tenantId: string;
     caseId: string;
     toStage: TaxPlanCycle["stage"];
     actor: string;
   }) => Promise<TaxPlanCycle | null>;
+  findByCaseId: (input: { tenantId: string; caseId: string }) => Promise<TaxPlanCycle | null>;
+  findCurrentByClientId: (input: {
+    tenantId: string;
+    clientId: string;
+  }) => Promise<TaxPlanCycle | null>;
+  listQueue: (input: { tenantId: string; asOfDate?: string }) => Promise<Array<
+    TaxPlanCycle & { is_overdue: boolean; updated_at: string }
+  >>;
   getCurrentCycle: () => TaxPlanCycle;
   transitions: Array<{
     fromStage: TaxPlanCycle["stage"];
@@ -298,6 +323,30 @@ function createInMemoryTransitionRepository(
   }> = [];
 
   return {
+    async create() {
+      return "cloudtap-case-id";
+    },
+    async insert() {
+      return "cloudtap-case-id";
+    },
+    async findByCaseId(input) {
+      void input.tenantId;
+      return input.caseId === currentCycle.id ? currentCycle : null;
+    },
+    async findCurrentByClientId(input) {
+      void input.tenantId;
+      void input.clientId;
+      return null;
+    },
+    async listQueue() {
+      return [
+        {
+          ...currentCycle,
+          is_overdue: false,
+          updated_at: new Date().toISOString(),
+        },
+      ];
+    },
     async transition(input) {
       void input.tenantId;
       void input.caseId;
@@ -375,7 +424,7 @@ async function runPresentToClientCloudTapSequence(
   traceWriter?: CloudTapTraceWriter,
 ): Promise<PresentToClientCloudTapSequenceResult> {
   const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e95";
-  const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e96";
+  const caseId = cloudTapCaseId;
   const actor = "cloud-tap-advisor";
   const actionItem: ActionItemCreatedEventInput = {
     description: "Send the client presentation packet",
@@ -400,39 +449,27 @@ async function runPresentToClientCloudTapSequence(
       }
     },
   };
-
-  const transition = await repository.transition({
-    tenantId,
-    caseId,
-    toStage: "Client Approval",
-    actor,
-  });
-
-  if (!transition) {
-    throw new Error("Expected the present-to-client transition to succeed.");
-  }
-
-  await stageChangedEventPublisher.publishStageChanged({
-    tenantId,
-    caseId,
-    fromStage: "Review",
-    toStage: "Client Approval",
-    actor,
-  });
-
-  const saga: PresentToClientSaga = createPresentToClientSaga({
-    repository,
+  const controller = createTaxPlanCycleTransitionController(repository, {
     stageChangedEventPublisher,
     actionItemEventPublisher,
   });
-
-  await saga.run({
-    transitionedCycle: transition,
-    tenantId,
-    caseId,
-    actor,
-    actionItem,
-  }).catch(() => undefined);
+  const handler = createPresentToClientLambdaHandler({
+    controller,
+    auditEntryWriter: {
+      async record() {
+        return undefined;
+      },
+    },
+  });
+  await handler(
+    buildPresentToClientLambdaRequest({
+      tenantId,
+      caseId,
+      userId: actor,
+      role: "Firm Admin",
+      actionItem,
+    }),
+  );
 
   const result = {
     finalStage: repository.getCurrentCycle().stage,

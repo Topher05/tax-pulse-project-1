@@ -201,9 +201,73 @@ stage-change events from being lost before asynchronous delivery.
 - `npm run db:check` passed and loaded the updated Drizzle schema successfully.
 - `git diff --check` passed.
 
+## christopher-martus-jira144 - SCRUM-144 Seed Data Follow-up
 
+**Branch:** `christopher-martus-jira144`
 
+**Assignee:** Christopher Martus
 
+**Jira Key:** SCRUM-144
+
+**Summary:** Seed a client portal account with action items for manual acceptance testing
+
+**Description:** Add synthetic, client-scoped portal data that allows the Action Items screen
+and completion workflow to be exercised after a local database reset.
+
+**Acceptance Criteria:**
+
+- A seeded generic test Client can sign in and see action items for their current plan.
+- The items can be completed through the existing client portal workflow.
+
+**Code Connection:**
+
+- The seed model links the client user, credential, MFA enrollment, current Tax Plan Cycle,
+  and incomplete action-item rows to the same tenant and client ID.
+
+**Project Scope Connection:**
+
+This supports SCRUM-144's end-to-end portal acceptance flow without bypassing tenant isolation
+or scoped client access.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/seed.model.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- A focused `tsx` check built and schema-validated a deterministic stage-changed
+  CloudEvent through the relocated domain helper.
+- `npm run db:check` and `git diff --check` continue to pass after the second slice.
+- A scoped strict TypeScript compile of the updated repository passed after the third
+  slice.
+- `npm run db:check` and `git diff --check` continue to pass with the transactional write.
+- The application and TypeScript test typechecks passed. The combined `npm run typecheck`
+  then stopped in the unrelated Pulse UI because its local `@playwright/test` type
+  dependency is absent.
+- The focused CloudEvent schema and SNS publisher suites passed: 11 tests in two files.
+- Rebuilt the inherited Drizzle metadata chain so tenant login, deductions, client roster,
+  and the outbox are registered sequentially as migrations `0007` through `0010` with
+  matching snapshots. A no-op `drizzle-kit generate` confirmed there is no schema drift.
+- `npm run db:check`, `npm run typecheck`, and `git diff --check` passed after rebuilding
+  the migration metadata.
+- Standardized runtime, seed, and test migration execution on Drizzle. Drizzle Kit remains
+  the operator CLI, while the programmatic paths use Drizzle ORM's PostgreSQL migrator
+  and the shared `drizzle.__drizzle_migrations` ledger.
+- Removed the custom filename scanner and `drizzle_schema_migrations` ledger. Destructive
+  seed and shared-schema test setup now remove both `public` and `drizzle` before replaying
+  the generated journal from `0000`.
+- `npm run db:gen -- --name verify_no_schema_drift` reported no schema changes and created
+  no migration files. `npm run db:check`, `npm run typecheck`, and `git diff --check` passed.
+- `npm test` and `npm run test:integration` reached their database-backed suites but could
+  not start Testcontainers because no Docker-compatible runtime is available. The explicit
+  integration run still passed its six non-container authentication tests.
+- The Tax Plan Cycle integration suite collected successfully, but its 22 database tests
+  could not start because no Docker-compatible container runtime is available locally.
+  This includes both new transactional-outbox acceptance paths.
+- The cumulative SCRUM-133 diff is 316 changed lines (255 additions and 61 deletions),
+  remaining below the 500-line PR limit.
 
 ## christopher-martus-jira192 - SCRUM-192
 
@@ -1431,10 +1495,127 @@ or live stage updates.
 **Validation Notes:**
 
 - `git diff --check` passed.
+
+
+## christopher-martus-jira144 - SCRUM-144
+
+**Branch:** `christopher-martus-jira144`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-144
+
+**Summary:** Build the portal Action Items screen with completion
+
+**Description:** As a Client, I want to mark action items complete, so that my advisor can
+track execution.
+
+**Acceptance Criteria:**
+
+- The Action Items screen lists items with their deadline and lets the client mark each complete.
+- Completing an action item emits an event that updates the internal Action Item Tracking view.
+- A completed item reflects its new state without a manual refresh.
+
+**Code Connection:**
+
+- Adds a client-scoped BFF contract for listing the current plan's action items and completing
+  one by ID.
+- Extends the action-item repository with a case-scoped, incomplete-only completion update,
+  preventing a portal user from changing an item outside their current case.
+- Defines and exports the versioned `action_item_completed` CloudEvent contract so the later
+  publisher and tracking projection share a stable payload.
+- Instantiates the action-item repository in application startup and injects it into the
+  Tax Plan Cycle router.
+
+**Project Scope Connection:**
+
+This is the first MVP chunk for SCRUM-144. It establishes the portal BFF and event boundary;
+the Action Items UI, concrete event publisher/tracking consumer, and focused acceptance tests
+remain separate follow-up chunks to keep the PR small.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/repositories/actionItems.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/model.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/index.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/index.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- Focused acceptance tests are deliberately deferred to the final SCRUM-144 chunk.
+
+**Follow-up UI Chunk:**
+
+- Adds the Client-only `/action-items` route and portal navigation entry.
+- Adds a TanStack Query read/mutation pair for the portal action-items BFF. A successful
+  completion replaces the matching cached item, so the screen reflects completion immediately.
+- Adds the Action Items screen with descriptions, deadlines, completed state, completion
+  controls, and loading/error/empty states.
+- Changed files: `src/pulseUI/entities/clientActionItemQueries.ts`,
+  `src/pulseUI/pages/clientPortal/ActionItemsPage.tsx`,
+  `src/pulseUI/pages/clientPortal/ActionItemsPage.module.css`,
+  `src/pulseUI/app/routeTree.tsx`, and `src/pulseUI/shared/navigation.ts`.
+- Validation: `npm run typecheck` and `git diff --check` passed; focused UI tests remain
+  intentionally deferred to the final ticket chunk.
+
+**Follow-up Event/Projection Chunk:**
+
+- Publishes the versioned `action_item_completed` CloudEvent through the configured Tax Plan
+  Cycle SNS topic after portal completion succeeds.
+- Adds an idempotent completion-event consumer that applies the completed state to the action
+  item tracking read model. Its idempotent persistence operation is safe when the portal write
+  has already updated the same projection.
+- Changed files: `src/typescript/features/taxPlanCycle/repositories/actionItems.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/Consumer.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/SnsPublisher.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/index.ts`,
+  `src/typescript/features/taxPlanCycle/index.ts`, and `src/typescript/index.ts`.
+- Validation: `npm run typecheck` and `git diff --check` passed; focused event and UI tests
+  remain intentionally deferred to the final ticket chunk.
+
+**Final Acceptance-Test Chunk:**
+
+- Adds an authenticated BFF test that lists the current client's action items, completes one,
+  and asserts the emitted completion-event payload.
+- Adds a portal UI test that verifies the completed state replaces the action immediately after
+  the mutation response, without a manual refresh.
+- Updates the client shell guard to permit the Action Items route instead of redirecting it to
+  My Tax Plan.
+- Changed files: `tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`,
+  `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`, and `src/pulseUI/components/AppShell.tsx`.
+- Validation: `npm run typecheck`, `npx vitest run --config vitest.config.ts
+  tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`,
+  `npm --prefix src/pulseUI run test:vitest -- tests/clientPortal/MyTaxPlanPage.test.tsx`,
+  and `git diff --check` passed. The UI suite retains pre-existing jsdom `window.scrollTo`
+  warnings, but all five tests passed.
 - `npm run typecheck` is blocked by pre-existing duplicate `CloudEvents`/`cloudEvents`
   directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
   changed files.
 - `npm --prefix src/pulseUI run typecheck` passed.
+
+**Completion Projection Follow-up:**
+
+- Adds a dedicated SNS-to-SQS adapter for the versioned `action_item_completed` event. The
+  adapter validates the message envelope and CloudEvent, uses Redis idempotency, applies the
+  case-scoped completion to the Action Item Tracking projection, and only deletes the SQS
+  message after successful handling.
+- Documents the dedicated `TAXPULSE_ACTION_ITEM_COMPLETED_QUEUE_URL` subscription required by
+  the tracking projection. This completes the event-handling contract without defining how
+  advisors generate action items, which remains outside SCRUM-144.
+- Changed files: `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/SqsConsumer.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/Consumer.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/index.ts`,
+  `src/typescript/features/taxPlanCycle/index.ts`, `src/typescript/index.ts`,
+  `tests/typescript/features/taxPlanCycle/actionItemCompletedSqsConsumer.test.ts`, and
+  `docs/stage-changed-event.md`.
+- Validation: `npm run typecheck` and `npx vitest run --config vitest.config.ts
+  tests/typescript/features/taxPlanCycle/actionItemCompletedSqsConsumer.test.ts
+  tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts` passed.
 
 ---
 

@@ -19,9 +19,25 @@ import {
 } from "drizzle-orm/pg-core";
 import type { ScenarioComputedResult, ScenarioTypedFigures } from "../../scenario.js";
 import { taxPlanCycleStages } from "../../features/taxPlanCycle/taxPlanCycle.js";
+import {
+  taxpayerIdentifierTypeValues,
+  taxpayerIdentifierValidationResultValues,
+} from "../../features/taxPlanCycle/taxpayerIdentifierValidation.js";
 
 const stageValuesSql = sql.join(
   taxPlanCycleStages.map((stage) => sql.raw(`'${stage.replace(/'/g, "''")}'`)),
+  sql`, `,
+);
+const taxpayerIdentifierTypeValuesSql = sql.join(
+  taxpayerIdentifierTypeValues.map((value) =>
+    sql.raw(`'${value.replace(/'/g, "''")}'`),
+  ),
+  sql`, `,
+);
+const taxpayerIdentifierValidationResultValuesSql = sql.join(
+  taxpayerIdentifierValidationResultValues.map((value) =>
+    sql.raw(`'${value.replace(/'/g, "''")}'`),
+  ),
   sql`, `,
 );
 
@@ -274,6 +290,51 @@ export const actionItem = pgTable(
       foreignColumns: [taxPlanCycle.id],
     }),
     index("action_item_case_id_idx").on(table.caseId),
+  ],
+);
+
+export const taxpayerIdentifierValidation = pgTable(
+  "taxpayer_identifier_validation",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    caseId: uuid("case_id").notNull(),
+    tenantId: uuid("tenant_id").notNull(),
+    tinType: text("tin_type").notNull(),
+    validationResult: text("validation_result").notNull(),
+    verifiedName: text("verified_name"),
+    provider: text("provider").default("tivs").notNull(),
+    validatedAt: timestamp("validated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "taxpayer_identifier_validation_id_pk",
+      columns: [table.id],
+    }),
+    foreignKey({
+      name: "taxpayer_identifier_validation_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    foreignKey({
+      name: "taxpayer_identifier_validation_tenant_id_fk",
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }),
+    check(
+      "taxpayer_identifier_validation_tin_type_check",
+      sql`${table.tinType} IN (${taxpayerIdentifierTypeValuesSql})`,
+    ),
+    check(
+      "taxpayer_identifier_validation_result_check",
+      sql`${table.validationResult} IN (${taxpayerIdentifierValidationResultValuesSql})`,
+    ),
+    uniqueIndex("taxpayer_identifier_validation_case_id_key").on(table.caseId),
+    index("taxpayer_identifier_validation_tenant_case_idx").on(
+      table.tenantId,
+      table.caseId,
+    ),
   ],
 );
 
