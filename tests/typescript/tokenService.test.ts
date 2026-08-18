@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { exportPKCS8, generateKeyPair, type KeyLike, jwtVerify } from "jose";
+import { exportPKCS8, generateKeyPair, jwtVerify } from "jose";
 import { beforeAll, describe, expect, test } from "vitest";
 
 import type { JwtConfig } from "../../src/typescript/authConfig.js";
@@ -19,7 +19,7 @@ const config: JwtConfig = {
   refreshTokenLifetimeSeconds: 2_592_000,
 };
 const signingKeyId = "test-rs256-key";
-let verificationKey: KeyLike;
+let verificationKey: Awaited<ReturnType<typeof generateKeyPair>>["publicKey"];
 let rs256IssuerConfig: JwtRs256IssuerConfig;
 
 beforeAll(async () => {

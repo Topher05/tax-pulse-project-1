@@ -84,6 +84,7 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 - `src/typescript/tokenService.ts`
 - `src/typescript/index.ts`
 - `src/typescript/jwtAuthentication.ts`
+- `src/typescript/shared/scripts/awsStageChangedSmoke.ts`
 - `src/tax_liability_engine/jwt_authentication.py`
 - `README.md`
 - `pyproject.toml`
@@ -115,9 +116,12 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
   `JWT_JWKS_URL` and the retired shared-secret setting.
 - `npx vitest run tests/typescript/jwtAuthentication.test.ts tests/typescript/tokenService.test.ts
   tests/typescript/authConfig.test.ts --config vitest.config.ts` passed: 27 tests.
-- `npm run typecheck` remains blocked by unrelated `CloudEvents`/`cloudEvents` import-path
-  casing collisions under `src/typescript/features/taxPlanCycle`; this test-only change
-  introduces no application typecheck diagnostics.
+- Follow-up path normalization: renamed the Tax Plan Cycle CloudEvents directory and the
+  remaining smoke-script import to `cloudEvents`; `npm run typecheck` now passes across the
+  application, TypeScript tests, and Pulse UI.
+- `npx vitest run tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts
+  tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts --config
+  vitest.config.ts` passed: 5 tests.
 - The application and TypeScript test typechecks passed. The combined `npm run typecheck`
   then stopped in the unrelated Pulse UI because its local `@playwright/test` type
   dependency is absent.
