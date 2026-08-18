@@ -916,8 +916,24 @@ describe("transitionTaxPlanCycleRouter", () => {
           toStage: "Client Approval",
           actor: "firm-admin-001",
         });
-        expect(auditLogger.info).not.toHaveBeenCalled();
-        expect(auditWriter.record).not.toHaveBeenCalled();
+        expect(auditLogger.info).toHaveBeenCalledWith(
+          expect.objectContaining({
+            case_id: reviewCycle.id,
+            actor: "firm-admin-001",
+            action: "transition Review -> Client Approval",
+            outcome: "200",
+            occurred_at: expect.any(String),
+          }),
+        );
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: reviewCycle.id,
+            actor: "firm-admin-001",
+            action: "transition Review -> Client Approval",
+            outcome: "200",
+            occurredAt: expect.any(Date),
+          }),
+        );
         expect(create).not.toHaveBeenCalled();
       },
     );
@@ -982,8 +998,24 @@ describe("transitionTaxPlanCycleRouter", () => {
           toStage: "Modeling",
           actor: "advisor-edit-001",
         });
-        expect(auditLogger.info).not.toHaveBeenCalled();
-        expect(auditWriter.record).not.toHaveBeenCalled();
+        expect(auditLogger.info).toHaveBeenCalledWith(
+          expect.objectContaining({
+            case_id: dataAggregationCycle.id,
+            actor: "advisor-edit-001",
+            action: "transition Data Aggregation -> Modeling",
+            outcome: "200",
+            occurred_at: expect.any(String),
+          }),
+        );
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: dataAggregationCycle.id,
+            actor: "advisor-edit-001",
+            action: "transition Data Aggregation -> Modeling",
+            outcome: "200",
+            occurredAt: expect.any(Date),
+          }),
+        );
         expect(create).not.toHaveBeenCalled();
       },
     );
@@ -1278,8 +1310,24 @@ describe("transitionTaxPlanCycleRouter", () => {
         });
         expect(findByCaseId).not.toHaveBeenCalled();
         expect(transition).not.toHaveBeenCalled();
-        expect(auditLogger.info).not.toHaveBeenCalled();
-        expect(auditWriter.record).not.toHaveBeenCalled();
+        expect(auditLogger.info).toHaveBeenCalledWith(
+          expect.objectContaining({
+            case_id: dataAggregationCycle.id,
+            actor: "advisor-edit-003",
+            action: "transition request validation failed",
+            outcome: "400",
+            occurred_at: expect.any(String),
+          }),
+        );
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: dataAggregationCycle.id,
+            actor: "advisor-edit-003",
+            action: "transition request validation failed",
+            outcome: "400",
+            occurredAt: expect.any(Date),
+          }),
+        );
       },
     );
   });
@@ -1325,8 +1373,24 @@ describe("transitionTaxPlanCycleRouter", () => {
         });
         expect(findByCaseId).not.toHaveBeenCalled();
         expect(transition).not.toHaveBeenCalled();
-        expect(auditLogger.info).not.toHaveBeenCalled();
-        expect(auditWriter.record).not.toHaveBeenCalled();
+        expect(auditLogger.info).toHaveBeenCalledWith(
+          expect.objectContaining({
+            case_id: dataAggregationCycle.id,
+            actor: "unknown",
+            action: "transition authentication required",
+            outcome: "401",
+            occurred_at: expect.any(String),
+          }),
+        );
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: dataAggregationCycle.id,
+            actor: "unknown",
+            action: "transition authentication required",
+            outcome: "401",
+            occurredAt: expect.any(Date),
+          }),
+        );
         expect(create).not.toHaveBeenCalled();
       },
     );
