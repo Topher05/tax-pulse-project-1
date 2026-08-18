@@ -1,7 +1,7 @@
 {
   "family": "taxpulse-tax-engine",
-  "taskRoleArn": "arn:aws:iam::814650854375:role/replace-with-tax-engine-task-role",
-  "executionRoleArn": "arn:aws:iam::814650854375:role/replace-with-ecs-task-execution-role",
+  "taskRoleArn": "arn:aws:iam::814650854375:role/taxpulse-tax-engine-task-role",
+  "executionRoleArn": "arn:aws:iam::814650854375:role/taxpulse-ecs-task-execution-role",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
