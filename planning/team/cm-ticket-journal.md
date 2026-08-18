@@ -64,6 +64,8 @@ with the RS256 token issued by the Core Case Service.
 - Replaced the REST API events with a single HTTP API that applies the native shared JWT
   authorizer to both transition routes. The issuer now publishes OIDC discovery metadata
   that points API Gateway to the existing public JWKS.
+- Updated both Lambda transport adapters to read verified HTTP API JWT claims from
+  `requestContext.authorizer.jwt.claims`, including the required `tenant_id` and `role`.
 
 **Project Scope Connection:**
 
@@ -77,13 +79,15 @@ with the RS256 token issued by the Core Case Service.
 - `src/typescript/jwtAuthentication.ts`
 - `src/typescript/jwksRoutes.ts`
 - `deployment/PresentToClient-Draft.template.yaml`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
 - `.env.example`
 - `README.md`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
-- Steps 1 and 2 only. Focused test updates and the deployed gateway smoke test are
+- Steps 1 through 3 only. Focused test updates and the deployed gateway smoke test are
   deferred to the final SCRUM-201 validation step.
 
 ## christopher-martus-jira200 - SCRUM-200

@@ -15,6 +15,9 @@ export { presentToClientHandler } from "./runtime.js";
 */
 
 export interface PresentToClientApiGatewayAuthorizerContext {
+  jwt?: {
+    claims?: Record<string, unknown>;
+  };
   tenantId?: string;
   tenant_id?: string;
   userId?: string;
@@ -199,6 +202,10 @@ function getAuthorizerSource(
 ): Record<string, unknown> | null {
   if (!authorizer || typeof authorizer !== "object") {
     return null;
+  }
+
+  if (authorizer.jwt?.claims && typeof authorizer.jwt.claims === "object") {
+    return authorizer.jwt.claims;
   }
 
   if (authorizer.claims && typeof authorizer.claims === "object") {
