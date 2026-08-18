@@ -54,6 +54,17 @@ function expectFargateTask(task: TaskDefinition): void {
   expect(task.containerDefinitions).toHaveLength(1);
 }
 
+function getOnlyContainer(task: TaskDefinition): ContainerDefinition {
+  expect(task.containerDefinitions).toHaveLength(1);
+  const container = task.containerDefinitions[0];
+
+  if (!container) {
+    throw new Error("Expected one container definition.");
+  }
+
+  return container;
+}
+
 function expectCloudWatchLogs(container: ContainerDefinition, logGroup: string): void {
   expect(container.logConfiguration?.logDriver).toBe("awslogs");
   expect(container.logConfiguration?.options["awslogs-group"]).toBe(logGroup);
@@ -75,7 +86,7 @@ describe("ECS Fargate task definitions", () => {
     const task = readTaskDefinition("core-case-service.task-definition.json");
     expectFargateTask(task);
 
-    const [container] = task.containerDefinitions;
+    const container = getOnlyContainer(task);
     expect(task.family).toBe("taxpulse-core-case-service");
     expect(container.name).toBe("core-case-service");
     expectEcrImage(container, "core-case-service");
@@ -110,7 +121,7 @@ describe("ECS Fargate task definitions", () => {
     const task = readTaskDefinition("tax-engine.task-definition.json");
     expectFargateTask(task);
 
-    const [container] = task.containerDefinitions;
+    const container = getOnlyContainer(task);
     expect(task.family).toBe("taxpulse-tax-engine");
     expect(container.name).toBe("tax-engine");
     expectEcrImage(container, "tax-engine");
