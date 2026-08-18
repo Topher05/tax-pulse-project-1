@@ -72,7 +72,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../dist
-      Handler: present-to-client-lambda/index.handler
+      Handler: present-to-client-lambda/index.presentToClientHandler
       Description: Transition a Tax Plan Cycle from Review to Client Approval.
       Policies:
         - AWSLambdaBasicExecutionRole

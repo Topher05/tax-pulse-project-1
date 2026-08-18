@@ -63,13 +63,21 @@ async function issueSmokeToken(input: {
 }
 
 function tamperToken(token: string): string {
-  const finalCharacter = token.at(-1);
+  const segments = token.split(".");
+  const signature = segments.at(-1);
 
-  if (!finalCharacter) {
-    throw new Error("Cannot tamper an empty JWT.");
+  if (!signature) {
+    throw new Error("Cannot tamper a JWT without a signature.");
   }
 
-  return `${token.slice(0, -1)}${finalCharacter === "a" ? "b" : "a"}`;
+  const firstCharacter = signature[0];
+
+  if (!firstCharacter) {
+    throw new Error("Cannot tamper an empty JWT signature.");
+  }
+
+  segments[segments.length - 1] = `${firstCharacter === "a" ? "b" : "a"}${signature.slice(1)}`;
+  return segments.join(".");
 }
 
 async function invokeProtectedRoute(input: {

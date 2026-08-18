@@ -71,6 +71,8 @@ with the RS256 token issued by the Core Case Service.
 - Added a sandbox issuer-metadata Lambda Function URL for environments without a custom
   domain. It exposes only OIDC discovery and the public JWK, while the native authorizer
   references its generated HTTPS URL.
+- Corrected the relocated target-Lambda bundle entrypoints and present-to-client handler
+  name so the SCRUM-201 deployment artifacts match the current source layout.
 
 **Project Scope Connection:**
 
@@ -94,15 +96,23 @@ with the RS256 token issued by the Core Case Service.
 - `src/typescript/shared/scripts/lambda-build/build-issuer-metadata-lambda.mjs`
 - `tests/typescript/shared/scripts/issuerMetadataLambda.test.ts`
 - `src/typescript/shared/scripts/printJwtPublicJwk.ts`
+- `src/typescript/shared/scripts/lambda-build/build-present-to-client-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/build-execute-lambda.mjs`
 - `.env.example`
 - `README.md`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
-- The HTTP API payload coverage and final local validation are included in this step.
-- The deployed smoke command is not run locally because this workspace has no deployed
-  HTTP API URL or approved issuer-admin credentials.
+- `npm run typecheck` passed.
+- The three focused Lambda/issuer metadata test files passed (8 tests).
+- `npm run build:present-to-client-lambda`, `npm run build:execute-lambda`, and
+  `npm run build:issuer-metadata-lambda` passed.
+- Sandbox AWS deployment created HTTP API `6ppu8m5ggd`, native JWT authorizer `64e7gb`,
+  the two JWT-protected transition routes, and a public issuer-metadata Lambda Function URL.
+- `npm run aws:http-api-jwt-smoke` passed against the deployed HTTP API: the valid RS256
+  token reached the target route (HTTP 422 for intentionally synthetic action data), while
+  expired, tampered, and missing tokens each returned HTTP 401 from API Gateway.
 
 ## christopher-martus-jira200 - SCRUM-200
 
