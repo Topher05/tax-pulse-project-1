@@ -34,6 +34,53 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira201 - SCRUM-201
+
+**Branch:** `christopher-martus-jira201`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-201
+
+**Summary:** Stand up the HTTP API with the shared JWT authorizer
+
+**Description:**
+
+Provision an HTTP API with a native JWT authorizer so serverless endpoints authorize
+with the RS256 token issued by the Core Case Service.
+
+**Acceptance Criteria:**
+
+- The HTTP API validates issuer, audience, JWKS key selected by `kid`, and token validity.
+- Invalid requests receive a gateway `401` before Lambda invocation.
+- Verified `tenant_id` and `role` claims reach target Lambdas through authorizer context.
+- A smoke test accepts a valid token and rejects expired or tampered tokens.
+
+**Code Connection:**
+
+- Added the configurable `JWT_AUDIENCE` access-token claim and validates it in the Core
+  Case Service JWT middleware. The default `taxpulse-http-api` will be used by the HTTP
+  API authorizer in the next implementation step.
+
+**Project Scope Connection:**
+
+- Platform security boundary for the existing present-to-client and execute Lambda routes.
+
+**Changed Files:**
+
+- `src/typescript/authConfig.ts`
+- `src/typescript/authTypes.ts`
+- `src/typescript/tokenService.ts`
+- `src/typescript/jwtAuthentication.ts`
+- `.env.example`
+- `README.md`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Step 1 only. Focused test updates and the deployed gateway smoke test are deferred to
+  the final SCRUM-201 validation step.
+
 ## christopher-martus-jira200 - SCRUM-200
 
 **Branch:** `christopher-martus-jira200`

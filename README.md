@@ -93,9 +93,9 @@ docker run --name case-service -p 3000:3000 --env-file .env taxpulse/case-servic
 
 The container exposes the Core Case Service on `http://localhost:3000`. Make sure `.env`
 includes the runtime values the service needs, including `DATABASE_URL`, `JWT_ISSUER`,
-`JWT_SIGNING_PRIVATE_KEY`, and `JWT_SIGNING_KEY_ID`. The private key belongs only to
-the Core Case Service; it signs RS256 access tokens and publishes its public counterpart
-at `/.well-known/jwks.json`.
+`JWT_AUDIENCE`, `JWT_SIGNING_PRIVATE_KEY`, and `JWT_SIGNING_KEY_ID`. The private key
+belongs only to the Core Case Service; it signs RS256 access tokens for the configured
+audience and publishes its public counterpart at `/.well-known/jwks.json`.
 When the API container connects to a database on your host machine, `DATABASE_URL` must
 use `host.docker.internal` instead of `localhost` as in the example.
 
