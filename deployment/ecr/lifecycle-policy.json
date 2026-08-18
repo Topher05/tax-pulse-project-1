@@ -2,12 +2,12 @@
   "rules": [
     {
       "rulePriority": 1,
-      "description": "Keep the 10 most recent tagged images",
+      "description": "Keep the 5 most recent tagged images",
       "selection": {
         "tagStatus": "tagged",
         "tagPatternList": ["*"],
         "countType": "imageCountMoreThan",
-        "countNumber": 10
+        "countNumber": 5
       },
       "action": {
         "type": "expire"
