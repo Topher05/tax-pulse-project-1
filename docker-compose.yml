@@ -22,7 +22,7 @@ services:
       dockerfile: Dockerfile.tax-engine
     environment:
       JWT_ISSUER: ${JWT_ISSUER:-https://auth.taxpulse.example}
-      JWT_SIGNING_SECRET: ${JWT_SIGNING_SECRET:-local-compose-signing-secret-at-least-32-bytes}
+      JWT_JWKS_URL: ${JWT_JWKS_URL:-http://core-case-service:3000/.well-known/jwks.json}
       PORT: "8000"
     ports:
       - "${TAXPULSE_TAX_ENGINE_HOST_PORT:-8000}:8000"
@@ -60,7 +60,9 @@ services:
     environment:
       DATABASE_URL: postgresql://${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}:${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}@postgres:5432/${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
       JWT_ISSUER: ${JWT_ISSUER:-https://auth.taxpulse.example}
-      JWT_SIGNING_SECRET: ${JWT_SIGNING_SECRET:-local-compose-signing-secret-at-least-32-bytes}
+      JWT_JWKS_URL: ${JWT_JWKS_URL:-http://core-case-service:3000/.well-known/jwks.json}
+      JWT_SIGNING_PRIVATE_KEY: ${JWT_SIGNING_PRIVATE_KEY:?JWT_SIGNING_PRIVATE_KEY is required in .env}
+      JWT_SIGNING_KEY_ID: ${JWT_SIGNING_KEY_ID:?JWT_SIGNING_KEY_ID is required in .env}
       JWT_ACCESS_TOKEN_TTL_SECONDS: ${JWT_ACCESS_TOKEN_TTL_SECONDS:-900}
       JWT_REFRESH_TOKEN_TTL_SECONDS: ${JWT_REFRESH_TOKEN_TTL_SECONDS:-2592000}
       LIABILITY_ENGINE_BASE: http://tax-engine:8000
