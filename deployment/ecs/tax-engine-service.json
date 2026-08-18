@@ -1,0 +1,42 @@
+{
+  "cluster": "taxpulse-api",
+  "serviceName": "tax-engine",
+  "taskDefinition": "arn:aws:ecs:us-east-1:814650854375:task-definition/taxpulse-tax-engine:1",
+  "desiredCount": 1,
+  "launchType": "FARGATE",
+  "healthCheckGracePeriodSeconds": 60,
+  "deploymentConfiguration": {
+    "minimumHealthyPercent": 100,
+    "maximumPercent": 200
+  },
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": [
+        "subnet-0104ce7ee4752681b",
+        "subnet-0e4c7b76f7f2a91b7",
+        "subnet-04754cd11ab10a5a5"
+      ],
+      "securityGroups": [
+        "sg-0820ddfb63117696a"
+      ],
+      "assignPublicIp": "ENABLED"
+    }
+  },
+  "loadBalancers": [
+    {
+      "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-tax-engine/306b27944c5a636a",
+      "containerName": "tax-engine",
+      "containerPort": 8000
+    }
+  ],
+  "tags": [
+    {
+      "key": "user",
+      "value": "chimaobi-okorie"
+    },
+    {
+      "key": "env",
+      "value": "sandbox"
+    }
+  ]
+}

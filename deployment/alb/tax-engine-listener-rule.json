@@ -1,0 +1,23 @@
+{
+  "ListenerArn": "arn:aws:elasticloadbalancing:us-east-1:814650854375:listener/app/taxpulse-api-alb/962b5650b94eda05/40b773b1fa8f01e8",
+  "Priority": 20,
+  "Conditions": [
+    {
+      "Field": "path-pattern",
+      "PathPatternConfig": {
+        "Values": [
+          "/tax-calculations",
+          "/tax-calculations/*",
+          "/scenarios/comparisons",
+          "/scenarios/comparisons/*"
+        ]
+      }
+    }
+  ],
+  "Actions": [
+    {
+      "Type": "forward",
+      "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-tax-engine/306b27944c5a636a"
+    }
+  ]
+}

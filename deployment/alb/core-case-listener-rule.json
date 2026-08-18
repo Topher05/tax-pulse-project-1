@@ -1,0 +1,20 @@
+{
+  "ListenerArn": "arn:aws:elasticloadbalancing:us-east-1:814650854375:listener/app/taxpulse-api-alb/962b5650b94eda05/40b773b1fa8f01e8",
+  "Priority": 10,
+  "Conditions": [
+    {
+      "Field": "path-pattern",
+      "PathPatternConfig": {
+        "Values": [
+          "/v1/*"
+        ]
+      }
+    }
+  ],
+  "Actions": [
+    {
+      "Type": "forward",
+      "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-core-case/05b4e6ffa119fc42"
+    }
+  ]
+}

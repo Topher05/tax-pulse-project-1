@@ -99,9 +99,15 @@ Resources still needed before registering the SCRUM-157 task definitions:
 - ECS task execution role.
 - Service-specific ECS task roles.
 
-SCRUM-158 adds `alb-services.template.yaml` to define the ECS cluster, services,
-target groups, listener rules, and ALB security group wiring around the registered
-task definitions.
+SCRUM-158 should add the ECS service and ALB layer around the registered task
+definitions. That work should define an ECS cluster, one service per task
+definition, target groups for each service, listener rules for case and
+calculation traffic, service security groups, and health-based replacement.
+The ALB input files currently live under `deployment/alb/`.
+The current ALB security group is `sg-018ec94c7599d219c`, and the ECS service
+security group that only trusts the ALB is `sg-0820ddfb63117696a`.
+The ECS cluster and service input files live under `deployment/ecs/`:
+`cluster.json`, `core-case-service.json`, and `tax-engine-service.json`.
 
 ## Register
 
@@ -126,52 +132,73 @@ aws ecs describe-task-definition \
   --task-definition taxpulse-tax-engine
 ```
 
-## Deploy ALB and ECS Services
+## Create ECS Cluster and Services
 
-After the SCRUM-157 task definitions are registered, deploy the SCRUM-158 ALB and ECS
-service stack:
+After the task definitions are registered, create the ECS cluster and services:
 
 ```bash
-aws cloudformation deploy \
-  --stack-name taxpulse-ecs-alb-services \
-  --template-file deployment/ecs/alb-services.template.yaml \
-  --parameter-overrides \
-    CoreCaseTaskDefinition=taxpulse-core-case-service \
-    TaxEngineTaskDefinition=taxpulse-tax-engine
+aws ecs create-cluster \
+  --cli-input-json file://deployment/ecs/cluster.json
+
+aws ecs create-service \
+  --cli-input-json file://deployment/ecs/core-case-service.json
+
+aws ecs create-service \
+  --cli-input-json file://deployment/ecs/tax-engine-service.json
 ```
 
-The template routes:
+Current AWS services:
+
+- Core Case Service:
+  `arn:aws:ecs:us-east-1:814650854375:service/taxpulse-api/core-case-service`.
+- Tax Engine:
+  `arn:aws:ecs:us-east-1:814650854375:service/taxpulse-api/tax-engine`.
+
+The Tax Engine service reached steady state with one healthy Fargate task. The
+Core Case Service was created, but its container currently exits during startup
+because `DATABASE_URL` resolves to `127.0.0.1:5432` inside Fargate. That means it
+is looking for Postgres inside its own container. Point the shared
+`TAX_PULSE_CONFIG` secret's `DATABASE_URL` value at a reachable database before
+expecting the `/v1/*` ALB smoke check to pass.
+
+For AWS, that database should be a reachable PostgreSQL database, normally the RDS
+PostgreSQL instance owned by SCRUM-162. The secret value should look like:
+
+```text
+postgresql://<username>:<password>@<rds-postgres-endpoint>:5432/<database-name>
+```
+
+Do not use `localhost` or `127.0.0.1` in Fargate. Inside a Fargate task,
+`localhost` means "inside this same container," not the team database.
+
+## SCRUM-158 ALB and ECS Service Scope
+
+After the SCRUM-157 task definitions are registered, SCRUM-158 should create the
+long-running ECS service layer and route traffic through an Application Load
+Balancer.
+
+The routing should send:
 
 - `/v1/*` to the Core Case Service target group on port `3000`.
 - `/tax-calculations` and `/scenarios/comparisons` to the Tax Engine target group on
   port `8000`.
 
-Both target groups check `GET /health`. ECS services are attached to the target groups
-with a health check grace period and rolling deployment settings, so ECS replaces tasks
-that fail the target group health check.
+Both target groups should check `GET /health`. ECS services should be attached to
+those target groups with a health check grace period and rolling deployment
+settings, so ECS replaces tasks that fail health checks.
 
 ## Smoke Through the ALB
 
-Get the ALB DNS name:
+After SCRUM-158 creates the ALB, run the smoke script through the ALB DNS name.
+Use a valid bearer token for protected routes.
 
 ```bash
-aws cloudformation describe-stacks \
-  --stack-name taxpulse-ecs-alb-services \
-  --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDnsName`].OutputValue' \
-  --output text
+TAXPULSE_ALB_BASE_URL="http://taxpulse-api-alb-350585859.us-east-1.elb.amazonaws.com" \
+TAXPULSE_SMOKE_BEARER_TOKEN="<access-token>" \
+npm run aws:alb-smoke
 ```
 
-Then send smoke requests through the ALB DNS name. Use a valid bearer token for protected
-routes.
+The script checks both routed paths:
 
-```bash
-ALB_DNS_NAME="<load-balancer-dns-name>"
-
-curl -i "http://${ALB_DNS_NAME}/v1/tax-plan-cycles" \
-  -H "Authorization: Bearer <access-token>"
-
-curl -i "http://${ALB_DNS_NAME}/tax-calculations" \
-  -H "Authorization: Bearer <access-token>" \
-  -H "Content-Type: application/json" \
-  -d '{"filing_status":"single","state":"CA","income":100000,"deductions":12950,"credits":0,"withholding":0}'
-```
+- `GET /v1/tax-plan-cycles` reaches the Core Case Service target group.
+- `POST /tax-calculations` reaches the Tax Engine target group.

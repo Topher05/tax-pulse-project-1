@@ -1,0 +1,13 @@
+{
+  "clusterName": "taxpulse-api",
+  "tags": [
+    {
+      "key": "user",
+      "value": "chimaobi-okorie"
+    },
+    {
+      "key": "env",
+      "value": "sandbox"
+    }
+  ]
+}

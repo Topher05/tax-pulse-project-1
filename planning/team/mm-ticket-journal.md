@@ -25,13 +25,16 @@ with health-based replacement, so that the APIs are reachable and self-healing.
 - A task that fails its health check is replaced automatically.
 - A smoke request through the ALB reaches each service.
 
-**Code Connection:** Added a CloudFormation template that defines the TaxPulse ECS
-cluster, internet-facing ALB, ALB and service security groups, Core Case Service
-and Tax Engine target groups, listener rules, and Fargate ECS services. The
-template routes `/v1/*` to the Core Case Service and routes `/tax-calculations`
-plus `/scenarios/comparisons` to the Tax Engine. Both target groups use `/health`
-checks, and each ECS service is attached to its target group with a health check
-grace period and rolling deployment settings so ECS can replace unhealthy tasks.
+**Code Connection:** Added AWS CLI input JSON for the SCRUM-158 ALB layer around
+the SCRUM-157 task definitions and created the backing AWS resources. The ALB
+JSON defines an internet-facing Application Load Balancer in the discovered
+public subnets, Fargate-compatible `ip` target groups for the Core Case Service
+and Tax Engine, an HTTP listener, and path routing for `/v1/*`,
+`/tax-calculations`, and `/scenarios/comparisons`. Created dedicated security
+groups so the ALB is internet-facing on port `80`, while service traffic on
+ports `3000` and `8000` is allowed only from the ALB security group. Added ECS
+cluster and service JSON that attaches each Fargate service to its target group
+with desired count, health check grace period, and rolling replacement settings.
 
 **Project Scope Connection:** This builds directly on SCRUM-157 by taking the
 registered task definitions and defining how the long-lived API tasks become
@@ -39,20 +42,58 @@ reachable, health-checked ECS services behind an ALB in the team AWS account.
 
 **Changed Files:**
 
-- `deployment/ecs/alb-services.template.yaml`
 - `deployment/ecs/README.md`
-- `tests/typescript/ecsAlbServicesTemplate.test.ts`
+- `deployment/alb/load-balancer.json`
+- `deployment/alb/security-groups.json`
+- `deployment/alb/core-case-target-group.json`
+- `deployment/alb/tax-engine-target-group.json`
+- `deployment/alb/listener.json`
+- `deployment/alb/core-case-listener-rule.json`
+- `deployment/alb/tax-engine-listener-rule.json`
+- `tests/typescript/albJsonDefinitions.test.ts`
+- `deployment/ecs/cluster.json`
+- `deployment/ecs/core-case-service.json`
+- `deployment/ecs/tax-engine-service.json`
+- `src/typescript/shared/scripts/albSmoke.ts`
+- `package.json`
 - `planning/team/mm-ticket-journal.md`
 
 **Validation Notes:**
 
-- `npm run test:vitest -- tests/typescript/ecsAlbServicesTemplate.test.ts
-  tests/typescript/ecsTaskDefinitions.test.ts` passed.
-- `aws cloudformation validate-template --template-body
-  file://deployment/ecs/alb-services.template.yaml` passed.
-- `npm run typecheck` was attempted but is currently blocked by a pre-existing
-  case-only path conflict between `CloudEvents` and `cloudEvents` imports under
-  `src/typescript/features/taxPlanCycle/infrastructure`.
+- Created ALB security group `sg-018ec94c7599d219c`.
+- Created ECS service security group `sg-0820ddfb63117696a`.
+- Created ALB `taxpulse-api-alb`:
+  `arn:aws:elasticloadbalancing:us-east-1:814650854375:loadbalancer/app/taxpulse-api-alb/962b5650b94eda05`.
+- Created target groups:
+  `arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-core-case/05b4e6ffa119fc42`
+  and
+  `arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-tax-engine/306b27944c5a636a`.
+- Created listener:
+  `arn:aws:elasticloadbalancing:us-east-1:814650854375:listener/app/taxpulse-api-alb/962b5650b94eda05/40b773b1fa8f01e8`.
+- Created listener rules for `/v1/*`, `/tax-calculations`, and
+  `/scenarios/comparisons`.
+- Created ECS cluster:
+  `arn:aws:ecs:us-east-1:814650854375:cluster/taxpulse-api`.
+- Registered task definitions:
+  `arn:aws:ecs:us-east-1:814650854375:task-definition/taxpulse-core-case-service:1`
+  and
+  `arn:aws:ecs:us-east-1:814650854375:task-definition/taxpulse-tax-engine:1`.
+- Created ECS services:
+  `arn:aws:ecs:us-east-1:814650854375:service/taxpulse-api/core-case-service`
+  and
+  `arn:aws:ecs:us-east-1:814650854375:service/taxpulse-api/tax-engine`.
+- Tax Engine reached steady state behind the ALB target group with one healthy
+  Fargate task.
+- Core Case Service was created and ECS auto-replaced failed tasks, but the
+  container exits with `connect ECONNREFUSED 127.0.0.1:5432`; the shared
+  `DATABASE_URL` secret needs to point at a reachable database before the Core
+  Case smoke request can pass.
+- Added `npm run aws:alb-smoke` to verify the ALB routes
+  `GET /v1/tax-plan-cycles` to Core Case and `POST /tax-calculations` to the Tax
+  Engine with a bearer token.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/ecsTaskDefinitions.test.ts
+  tests/typescript/albJsonDefinitions.test.ts` passed.
 
 ## martins-okorie-jira157 - SCRUM-157
 

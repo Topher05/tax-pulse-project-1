@@ -1,0 +1,25 @@
+{
+  "LoadBalancerArn": "arn:aws:elasticloadbalancing:us-east-1:814650854375:loadbalancer/app/taxpulse-api-alb/962b5650b94eda05",
+  "Protocol": "HTTP",
+  "Port": 80,
+  "DefaultActions": [
+    {
+      "Type": "fixed-response",
+      "FixedResponseConfig": {
+        "StatusCode": "404",
+        "ContentType": "application/json",
+        "MessageBody": "{\"error\":\"route_not_found\"}"
+      }
+    }
+  ],
+  "Tags": [
+    {
+      "Key": "user",
+      "Value": "chimaobi-okorie"
+    },
+    {
+      "Key": "env",
+      "Value": "sandbox"
+    }
+  ]
+}

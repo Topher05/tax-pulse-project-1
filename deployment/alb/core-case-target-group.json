@@ -1,0 +1,27 @@
+{
+  "Name": "taxpulse-core-case",
+  "Protocol": "HTTP",
+  "Port": 3000,
+  "VpcId": "vpc-0f2c3b110a05c423a",
+  "HealthCheckProtocol": "HTTP",
+  "HealthCheckPath": "/health",
+  "HealthCheckEnabled": true,
+  "HealthCheckIntervalSeconds": 30,
+  "HealthCheckTimeoutSeconds": 5,
+  "HealthyThresholdCount": 2,
+  "UnhealthyThresholdCount": 2,
+  "Matcher": {
+    "HttpCode": "200"
+  },
+  "TargetType": "ip",
+  "Tags": [
+    {
+      "Key": "user",
+      "Value": "chimaobi-okorie"
+    },
+    {
+      "Key": "env",
+      "Value": "sandbox"
+    }
+  ]
+}
