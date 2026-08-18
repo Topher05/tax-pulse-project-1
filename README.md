@@ -101,6 +101,16 @@ the HTTP API JWT authorizer can resolve that JWKS without receiving private-key 
 When the API container connects to a database on your host machine, `DATABASE_URL` must
 use `host.docker.internal` instead of `localhost` as in the example.
 
+When no custom domain is available for a sandbox issuer, the serverless deployment creates
+a dedicated public Lambda Function URL for discovery and JWKS metadata. Deploy it with a
+public-only `JwtPublicJwk` parameter matching the Core Case Service signing key, then copy
+the `JwtIssuerUrl` stack output into the Core Case Service's `JWT_ISSUER`. The issuer
+metadata Lambda never receives the private key.
+
+To create the public deployment value from an approved local issuer-admin environment,
+run `npm run jwt:public-jwk`. The command prints a public JWK only; it must still be derived
+from the same private signing key used by the Core Case Service.
+
 To run the Tax Engine in Docker, build the Python image and start a container from the
 repository root:
 

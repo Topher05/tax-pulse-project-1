@@ -3,13 +3,13 @@ Transform: AWS::Serverless-2016-10-31
 Description: TaxPulse SCRUM-160 Lambda + API Gateway integration.
 
 Parameters:
-  JwtIssuer:
-    Type: String
-    Description: Public HTTPS issuer URL that exposes OpenID Connect discovery and JWKS metadata.
   JwtAudience:
     Type: String
     Default: taxpulse-http-api
     Description: Audience required on TaxPulse serverless access tokens.
+  JwtPublicJwk:
+    Type: String
+    Description: Public RSA JWK JSON for the Core Case Service signing key, including its kid.
 
 Globals:
   Function:
@@ -20,6 +20,40 @@ Globals:
       - arm64
 
 Resources:
+  IssuerMetadataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist
+      Handler: issuer-metadata-lambda/index.handler
+      Description: Serves public OIDC discovery and JWKS metadata for the shared JWT issuer.
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          JWT_PUBLIC_JWK: !Ref JwtPublicJwk
+
+  IssuerMetadataFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      AuthType: NONE
+      TargetFunctionArn: !GetAtt IssuerMetadataFunction.Arn
+
+  IssuerMetadataFunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunctionUrl
+      FunctionName: !Ref IssuerMetadataFunction
+      FunctionUrlAuthType: NONE
+      Principal: "*"
+
+  IssuerMetadataFunctionInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref IssuerMetadataFunction
+      InvokedViaFunctionUrl: true
+      Principal: "*"
+
   TaxPulseHttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
@@ -29,7 +63,7 @@ Resources:
           SharedJwt:
             IdentitySource: $request.header.Authorization
             JwtConfiguration:
-              issuer: !Ref JwtIssuer
+              issuer: !GetAtt IssuerMetadataFunctionUrl.FunctionUrl
               audience:
                 - !Ref JwtAudience
         DefaultAuthorizer: SharedJwt
@@ -76,3 +110,6 @@ Outputs:
   TaxPulseHttpApiUrl:
     Description: Base URL for the protected TaxPulse HTTP API.
     Value: !Sub "https://${TaxPulseHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod"
+  JwtIssuerUrl:
+    Description: Configure the Core Case Service JWT_ISSUER to this public issuer URL.
+    Value: !GetAtt IssuerMetadataFunctionUrl.FunctionUrl

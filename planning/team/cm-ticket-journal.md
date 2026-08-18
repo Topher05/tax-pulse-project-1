@@ -68,6 +68,9 @@ with the RS256 token issued by the Core Case Service.
   `requestContext.authorizer.jwt.claims`, including the required `tenant_id` and `role`.
 - Added a deploy-time smoke command that proves a valid signed JWT reaches the protected
   route while expired, tampered, and missing tokens receive `401` from API Gateway.
+- Added a sandbox issuer-metadata Lambda Function URL for environments without a custom
+  domain. It exposes only OIDC discovery and the public JWK, while the native authorizer
+  references its generated HTTPS URL.
 
 **Project Scope Connection:**
 
@@ -87,6 +90,10 @@ with the RS256 token issued by the Core Case Service.
 - `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
 - `tests/typescript/shared/scripts/executeLambdaRuntime.test.ts`
 - `package.json`
+- `src/typescript/shared/scripts/issuer-metadata-lambda/index.ts`
+- `src/typescript/shared/scripts/lambda-build/build-issuer-metadata-lambda.mjs`
+- `tests/typescript/shared/scripts/issuerMetadataLambda.test.ts`
+- `src/typescript/shared/scripts/printJwtPublicJwk.ts`
 - `.env.example`
 - `README.md`
 - `planning/team/cm-ticket-journal.md`
