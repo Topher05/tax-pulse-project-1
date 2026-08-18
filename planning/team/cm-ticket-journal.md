@@ -60,7 +60,10 @@ with the RS256 token issued by the Core Case Service.
 
 - Added the configurable `JWT_AUDIENCE` access-token claim and validates it in the Core
   Case Service JWT middleware. The default `taxpulse-http-api` will be used by the HTTP
-  API authorizer in the next implementation step.
+  API authorizer.
+- Replaced the REST API events with a single HTTP API that applies the native shared JWT
+  authorizer to both transition routes. The issuer now publishes OIDC discovery metadata
+  that points API Gateway to the existing public JWKS.
 
 **Project Scope Connection:**
 
@@ -72,14 +75,16 @@ with the RS256 token issued by the Core Case Service.
 - `src/typescript/authTypes.ts`
 - `src/typescript/tokenService.ts`
 - `src/typescript/jwtAuthentication.ts`
+- `src/typescript/jwksRoutes.ts`
+- `deployment/PresentToClient-Draft.template.yaml`
 - `.env.example`
 - `README.md`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
-- Step 1 only. Focused test updates and the deployed gateway smoke test are deferred to
-  the final SCRUM-201 validation step.
+- Steps 1 and 2 only. Focused test updates and the deployed gateway smoke test are
+  deferred to the final SCRUM-201 validation step.
 
 ## christopher-martus-jira200 - SCRUM-200
 

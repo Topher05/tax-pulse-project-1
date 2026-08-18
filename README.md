@@ -96,6 +96,8 @@ includes the runtime values the service needs, including `DATABASE_URL`, `JWT_IS
 `JWT_AUDIENCE`, `JWT_SIGNING_PRIVATE_KEY`, and `JWT_SIGNING_KEY_ID`. The private key
 belongs only to the Core Case Service; it signs RS256 access tokens for the configured
 audience and publishes its public counterpart at `/.well-known/jwks.json`.
+It also publishes OpenID Connect discovery at `/.well-known/openid-configuration`, so
+the HTTP API JWT authorizer can resolve that JWKS without receiving private-key material.
 When the API container connects to a database on your host machine, `DATABASE_URL` must
 use `host.docker.internal` instead of `localhost` as in the example.
 
