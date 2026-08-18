@@ -10,6 +10,11 @@ The JSON files in this folder are intentionally limited to task definitions. ECS
 service creation, load balancer target groups, listener rules, and health-based task
 replacement are left to SCRUM-158.
 
+In ECS terms, these task definitions are the container recipes: which image to run,
+which port to expose, which environment values and secrets to inject, how to check
+readiness, and where logs should go. The ECS service "manager" resources that keep
+copies running are outside SCRUM-157.
+
 ## Before Registration
 
 The task definitions use the discovered AWS account ID, region, SNS topic, SQS queue,
@@ -17,11 +22,41 @@ CloudWatch log groups, and Secrets Manager ARN from the team account. The IAM ro
 names and ECR image tags remain placeholders because those resources were not present
 in the account during discovery.
 
-The task definitions expect these container images to exist in a registry such as ECR:
+The task definitions expect these container images to exist in Amazon ECR. Replace
+`replace-with-immutable-image-tag` with the pushed image tag from the build pipeline,
+such as a Git commit SHA. Do not use `latest` for registered task definitions because
+ECS should run a specific reviewed image version.
 
 ```bash
-814650854375.dkr.ecr.us-east-1.amazonaws.com/taxpulse/core-case-service:replace-with-image-tag
-814650854375.dkr.ecr.us-east-1.amazonaws.com/taxpulse/tax-engine:replace-with-image-tag
+814650854375.dkr.ecr.us-east-1.amazonaws.com/taxpulse/core-case-service:replace-with-immutable-image-tag
+814650854375.dkr.ecr.us-east-1.amazonaws.com/taxpulse/tax-engine:replace-with-immutable-image-tag
+```
+
+If the repositories do not already exist, create them before pushing images:
+
+```bash
+aws ecr create-repository --repository-name taxpulse/core-case-service --region us-east-1
+aws ecr create-repository --repository-name taxpulse/tax-engine --region us-east-1
+```
+
+Build, tag, and push with an immutable tag:
+
+```bash
+IMAGE_TAG="$(git rev-parse --short HEAD)"
+ECR_REGISTRY="814650854375.dkr.ecr.us-east-1.amazonaws.com"
+
+aws ecr get-login-password --region us-east-1 \
+  | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+
+docker build -f Dockerfile -t "taxpulse/core-case-service:${IMAGE_TAG}" .
+docker tag "taxpulse/core-case-service:${IMAGE_TAG}" \
+  "${ECR_REGISTRY}/taxpulse/core-case-service:${IMAGE_TAG}"
+docker push "${ECR_REGISTRY}/taxpulse/core-case-service:${IMAGE_TAG}"
+
+docker build -f Dockerfile.tax-engine -t "taxpulse/tax-engine:${IMAGE_TAG}" .
+docker tag "taxpulse/tax-engine:${IMAGE_TAG}" \
+  "${ECR_REGISTRY}/taxpulse/tax-engine:${IMAGE_TAG}"
+docker push "${ECR_REGISTRY}/taxpulse/tax-engine:${IMAGE_TAG}"
 ```
 
 ## Runtime Wiring
@@ -70,7 +105,8 @@ task definitions.
 
 ## Register
 
-After replacing placeholders, register the task definitions from the repository root:
+After replacing `replace-with-immutable-image-tag` and the IAM role placeholders,
+register the task definitions from the repository root:
 
 ```bash
 aws ecs register-task-definition \

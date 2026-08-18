@@ -54,6 +54,17 @@ function expectFargateTask(task: TaskDefinition): void {
   expect(task.containerDefinitions).toHaveLength(1);
 }
 
+function getOnlyContainer(task: TaskDefinition): ContainerDefinition {
+  expect(task.containerDefinitions).toHaveLength(1);
+  const container = task.containerDefinitions[0];
+
+  if (!container) {
+    throw new Error("Expected one container definition.");
+  }
+
+  return container;
+}
+
 function expectCloudWatchLogs(container: ContainerDefinition, logGroup: string): void {
   expect(container.logConfiguration?.logDriver).toBe("awslogs");
   expect(container.logConfiguration?.options["awslogs-group"]).toBe(logGroup);
@@ -61,15 +72,24 @@ function expectCloudWatchLogs(container: ContainerDefinition, logGroup: string):
   expect(container.logConfiguration?.options["awslogs-stream-prefix"]).toBe("ecs");
 }
 
+function expectEcrImage(container: ContainerDefinition, repositoryName: string): void {
+  expect(container.image).toMatch(
+    new RegExp(
+      `^814650854375\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/taxpulse/${repositoryName}:[\\w][\\w.-]{0,127}$`,
+    ),
+  );
+  expect(container.image.endsWith(":latest")).toBe(false);
+}
+
 describe("ECS Fargate task definitions", () => {
   test("defines the Core Case Service runtime contract", () => {
     const task = readTaskDefinition("core-case-service.task-definition.json");
     expectFargateTask(task);
 
-    const [container] = task.containerDefinitions;
+    const container = getOnlyContainer(task);
     expect(task.family).toBe("taxpulse-core-case-service");
     expect(container.name).toBe("core-case-service");
-    expect(container.image).toContain("/taxpulse/core-case-service:");
+    expectEcrImage(container, "core-case-service");
     expect(container.portMappings).toContainEqual({
       name: "core-case-service-http",
       containerPort: 3000,
@@ -101,10 +121,10 @@ describe("ECS Fargate task definitions", () => {
     const task = readTaskDefinition("tax-engine.task-definition.json");
     expectFargateTask(task);
 
-    const [container] = task.containerDefinitions;
+    const container = getOnlyContainer(task);
     expect(task.family).toBe("taxpulse-tax-engine");
     expect(container.name).toBe("tax-engine");
-    expect(container.image).toContain("/taxpulse/tax-engine:");
+    expectEcrImage(container, "tax-engine");
     expect(container.portMappings).toContainEqual({
       name: "tax-engine-http",
       containerPort: 8000,

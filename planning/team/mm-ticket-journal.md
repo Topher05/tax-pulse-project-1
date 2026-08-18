@@ -75,12 +75,13 @@ that the long-lived APIs have a managed runtime.
 
 **Code Connection:** Added ECS Fargate task definition JSON for the Core Case
 Service and Tax Engine containers, translating the SCRUM-155 Compose contracts
-into AWS task runtime settings. The task definitions declare ECR image references,
-Fargate `awsvpc` networking, CPU and memory, container ports, environment values,
-Secrets Manager references, `/health` container health checks, and CloudWatch
-Logs configuration. The discovered account ID, SNS topic, SQS queue, shared
-Secrets Manager ARN, and existing log groups are wired into the definitions;
-missing ECR repositories and ECS IAM roles remain explicit placeholders.
+into AWS task runtime settings. The task definitions declare ECR image references
+that must be replaced with immutable pushed image tags, Fargate `awsvpc`
+networking, CPU and memory, container ports, environment values, Secrets Manager
+references, `/health` container health checks, and CloudWatch Logs
+configuration. The discovered account ID, SNS topic, SQS queue, shared Secrets
+Manager ARN, and existing log groups are wired into the definitions; missing ECR
+repositories and ECS IAM roles remain explicit placeholders.
 
 **Project Scope Connection:** This advances the Containers, Serverless &
 Deployment workstream by defining the managed runtime contract for TaxPulse's
@@ -98,6 +99,7 @@ replacement to SCRUM-158.
 **Validation Notes:**
 
 - `npm run test:vitest -- tests/typescript/ecsTaskDefinitions.test.ts` passed.
+- `node -e "JSON.parse(...)"` smoke-parsed both ECS task definition JSON files.
 - `AWS_DEFAULT_REGION=us-east-1 aws ecs register-task-definition --cli-input-json
   file://deployment/ecs/core-case-service.task-definition.json
   --generate-cli-skeleton output` passed.

@@ -1,0 +1,45 @@
+{
+  "roleName": "taxpulse-ecs-task-execution-role",
+  "description": "Launch-time ECS/Fargate execution role for pulling images, fetching secrets, and writing logs.",
+  "assumeRolePolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "ecs-tasks.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  },
+  "managedPolicyArns": [
+    "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+  ],
+  "inlinePolicies": [
+    {
+      "policyName": "taxpulse-ecs-task-secret-access",
+      "policyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "ReadSharedRuntimeConfigSecret",
+            "Effect": "Allow",
+            "Action": "secretsmanager:GetSecretValue",
+            "Resource": "arn:aws:secretsmanager:us-east-1:814650854375:secret:TAX_PULSE_CONFIG-q9DNrQ"
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [
+    {
+      "Key": "user",
+      "Value": "chimaobi-okorie"
+    },
+    {
+      "Key": "env",
+      "Value": "sandbox"
+    }
+  ]
+}
