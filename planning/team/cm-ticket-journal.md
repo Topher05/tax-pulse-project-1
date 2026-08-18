@@ -89,6 +89,9 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 - `pyproject.toml`
 - `uv.lock`
 - `tests/tax_liability_engine/jwt_jwks_authentication_test.py`
+- `tests/typescript/jwtAuthentication.test.ts`
+- `tests/typescript/tokenService.test.ts`
+- `tests/typescript/authConfig.test.ts`
 - `.env.example`
 - `planning/team/cm-ticket-journal.md`
 
@@ -106,6 +109,15 @@ published JWKS so the gateway and Tax Calculation Engine verify tokens with publ
 - A scoped strict TypeScript compile of the updated repository passed after the third
   slice.
 - `npm run db:check` and `git diff --check` continue to pass with the transactional write.
+- Follow-up test alignment: the Node middleware tests now generate synthetic extractable RSA
+  keys and retrieve the matching public JWK from a local JWKS endpoint; token-service tests
+  verify issued RS256 tokens with the public key and `kid`; JWT configuration tests cover
+  `JWT_JWKS_URL` and the retired shared-secret setting.
+- `npx vitest run tests/typescript/jwtAuthentication.test.ts tests/typescript/tokenService.test.ts
+  tests/typescript/authConfig.test.ts --config vitest.config.ts` passed: 27 tests.
+- `npm run typecheck` remains blocked by unrelated `CloudEvents`/`cloudEvents` import-path
+  casing collisions under `src/typescript/features/taxPlanCycle`; this test-only change
+  introduces no application typecheck diagnostics.
 - The application and TypeScript test typechecks passed. The combined `npm run typecheck`
   then stopped in the unrelated Pulse UI because its local `@playwright/test` type
   dependency is absent.
