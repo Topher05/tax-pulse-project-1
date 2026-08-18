@@ -29,9 +29,13 @@ describe("execute Lambda runtime", () => {
       },
       requestContext: {
         authorizer: {
-          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e92",
-          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e93",
-          role: "Firm Admin",
+          jwt: {
+            claims: {
+              tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e92",
+              sub: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e93",
+              role: "Firm Admin",
+            },
+          },
         },
       },
     });

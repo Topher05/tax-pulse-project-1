@@ -66,6 +66,8 @@ with the RS256 token issued by the Core Case Service.
   that points API Gateway to the existing public JWKS.
 - Updated both Lambda transport adapters to read verified HTTP API JWT claims from
   `requestContext.authorizer.jwt.claims`, including the required `tenant_id` and `role`.
+- Added a deploy-time smoke command that proves a valid signed JWT reaches the protected
+  route while expired, tampered, and missing tokens receive `401` from API Gateway.
 
 **Project Scope Connection:**
 
@@ -81,14 +83,19 @@ with the RS256 token issued by the Core Case Service.
 - `deployment/PresentToClient-Draft.template.yaml`
 - `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
 - `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/httpApiJwtSmoke.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
+- `tests/typescript/shared/scripts/executeLambdaRuntime.test.ts`
+- `package.json`
 - `.env.example`
 - `README.md`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
-- Steps 1 through 3 only. Focused test updates and the deployed gateway smoke test are
-  deferred to the final SCRUM-201 validation step.
+- The HTTP API payload coverage and final local validation are included in this step.
+- The deployed smoke command is not run locally because this workspace has no deployed
+  HTTP API URL or approved issuer-admin credentials.
 
 ## christopher-martus-jira200 - SCRUM-200
 

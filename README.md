@@ -535,6 +535,18 @@ present in the runtime environment:
 - `TAXPULSE_STAGE_CHANGED_TOPIC_ARN`
 - `TAXPULSE_ACTION_ITEM_CREATED_TOPIC_ARN`
 
+After deploying the protected HTTP API, an issuer administrator can run its JWT smoke
+test with a synthetic case, tenant, and user configured through the `TAXPULSE_HTTP_API_*`
+values in `.env`:
+
+```bash
+npm run aws:http-api-jwt-smoke
+```
+
+The command creates a valid, expired, and tampered RS256 token locally. It must run only
+from an approved issuer-admin environment because it uses the issuer signing key; it does
+not send that key to AWS or package it into either Lambda.
+
 The reference deployment template for that cutover lives in
 [`deployment/PresentToClient-Draft.template.yaml`](./deployment/PresentToClient-Draft.template.yaml).
 
