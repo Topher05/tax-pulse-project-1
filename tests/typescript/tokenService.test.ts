@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 
-import { decodeProtectedHeader, jwtVerify } from "jose";
-import { describe, expect, test } from "vitest";
+import { exportPKCS8, generateKeyPair, jwtVerify } from "jose";
+import { beforeAll, describe, expect, test } from "vitest";
 
 import type { JwtConfig } from "../../src/typescript/authConfig.js";
 import type { AuthenticatedPrincipal } from "../../src/typescript/authTypes.js";
+import type { JwtRs256IssuerConfig } from "../../src/typescript/jwtRs256Config.js";
 import type {
   PersistRefreshTokenInput,
   RefreshTokenRepository,
@@ -14,10 +15,22 @@ import { createTokenService } from "../../src/typescript/tokenService.js";
 
 const config: JwtConfig = {
   issuer: "https://auth.taxpulse.example",
-  signingSecret: "a-unique-test-secret-that-is-more-than-32-bytes",
   accessTokenLifetimeSeconds: 900,
   refreshTokenLifetimeSeconds: 2_592_000,
 };
+const signingKeyId = "test-rs256-key";
+let verificationKey: Awaited<ReturnType<typeof generateKeyPair>>["publicKey"];
+let rs256IssuerConfig: JwtRs256IssuerConfig;
+
+beforeAll(async () => {
+  const keyPair = await generateKeyPair("RS256", { extractable: true });
+  verificationKey = keyPair.publicKey;
+  rs256IssuerConfig = {
+    issuer: config.issuer,
+    signingPrivateKeyPem: await exportPKCS8(keyPair.privateKey),
+    signingKeyId,
+  };
+});
 const principal: AuthenticatedPrincipal = {
   userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62",
   role: "Advisor",
@@ -56,6 +69,7 @@ describe("token service", () => {
     const state = createRepository();
     const tokenService = createTokenService({
       config,
+      rs256IssuerConfig,
       refreshTokenRepository: state.repository,
       now: () => issuedAt,
       randomBytes: () => Buffer.alloc(32, 7),
@@ -64,11 +78,15 @@ describe("token service", () => {
     const pair = await tokenService.issue(principal);
     const verified = await jwtVerify(
       pair.accessToken,
-      new TextEncoder().encode(config.signingSecret),
-      { issuer: config.issuer, currentDate: issuedAt },
+      verificationKey,
+      {
+        algorithms: ["RS256"],
+        issuer: config.issuer,
+        currentDate: issuedAt,
+      },
     );
 
-    expect(decodeProtectedHeader(pair.accessToken)).toMatchObject({ alg: "HS256" });
+    expect(verified.protectedHeader).toMatchObject({ alg: "RS256", kid: signingKeyId });
     expect(verified.payload).toMatchObject({
       sub: principal.userId,
       role: principal.role,
@@ -95,6 +113,7 @@ describe("token service", () => {
   test("does not return a token pair when refresh-token persistence fails", async () => {
     const tokenService = createTokenService({
       config,
+      rs256IssuerConfig,
       refreshTokenRepository: {
         async persist() {
           throw new Error("database unavailable");
@@ -117,6 +136,7 @@ describe("token service", () => {
     const state = createRepository();
     const tokenService = createTokenService({
       config,
+      rs256IssuerConfig,
       refreshTokenRepository: state.repository,
       now: () => issuedAt,
     });
@@ -136,6 +156,7 @@ describe("token service", () => {
     const state = createRepository();
     const tokenService = createTokenService({
       config,
+      rs256IssuerConfig,
       refreshTokenRepository: state.repository,
       now: () => issuedAt,
       randomBytes: () => Buffer.alloc(32, 3),
