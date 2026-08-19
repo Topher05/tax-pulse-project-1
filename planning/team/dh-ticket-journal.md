@@ -1272,6 +1272,57 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - `docker compose -f docker-compose.yml -f docker-compose.redis.yml config --quiet` passed.
 - `npm run aws:stage-changed-smoke` passed against the team AWS SNS/SQS resources after using the `taxpulse-login` profile, blanking LocalStack endpoint overrides for the process, and correcting the SNS topic ARN to the topic resource rather than the subscription ARN. Latest smoke published event `stage-transition-956f813e-ae8e-4fb8-ac13-04c60f93113c`, received it from SQS, and inspected 1 message.
 
+## dylan-harle-jira162 - SCRUM-162
+
+**Branch:** `dylan-harle-jira162`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-162
+
+**Summary:** Codify the VPC and data stores in Terraform
+
+**Description:** As a Platform Engineer, I want the networking and data stores in Terraform, so that infrastructure is reproducible.
+
+**Acceptance Criteria:**
+
+- Terraform defines the VPC, PostgreSQL, DynamoDB, and Redis resources.
+- terraform plan is clean after an apply (no drift).
+- State is stored in a remote backend.
+
+**Code Connection:**
+
+- Created new directory `terraform/` for IaC provisioning.
+- Configured Terraform S3 remote state backend and AWS provider version lock in `providers.tf`.
+- Defined infrastructure parameters (VPC CIDR, target AWS region, DB credentials) in `variables.tf`.
+- Codified public/private subnets across multiple availability zones, IGW, route tables, and NAT Gateway in `vpc.tf`.
+- Configured PostgreSQL RDS instance and subnet groups in `database.tf`, referencing engine version 18.
+- Configured DynamoDB table for `taxpulse_plan_cycle_queue_projection` with partition key `tenant_id` and sort key `case_id` in `dynamodb.tf`.
+- Configured ElastiCache Redis cluster replication group in `redis.tf` running on default Redis 7.x.
+- Set up security groups restricting ingress on Postgres (5432) and Redis (6379) to a future ECS task compute layer.
+- Declared stack outputs for resource endpoints, names, and subnet groupings in `outputs.tf`.
+
+**Project Scope Connection:**
+
+- Infrastructure as Code, Secure Networking, and Cloud Data Provisioning.
+
+**Changed Files:**
+
+- `terraform/providers.tf`
+- `terraform/variables.tf`
+- `terraform/vpc.tf`
+- `terraform/database.tf`
+- `terraform/dynamodb.tf`
+- `terraform/redis.tf`
+- `terraform/outputs.tf`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `terraform init -backend=false` passed.
+- `terraform validate` passed.
+- `terraform fmt -check` passed.
+
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
 
