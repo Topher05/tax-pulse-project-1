@@ -1,0 +1,20 @@
+{
+  "ListenerArn": "SCRUM-164_TAXPULSE_API_HTTP_LISTENER_ARN",
+  "Priority": 10,
+  "Conditions": [
+    {
+      "Field": "path-pattern",
+      "PathPatternConfig": {
+        "Values": [
+          "/v1/*"
+        ]
+      }
+    }
+  ],
+  "Actions": [
+    {
+      "Type": "forward",
+      "TargetGroupArn": "SCRUM-164_CORE_CASE_TARGET_GROUP_ARN"
+    }
+  ]
+}

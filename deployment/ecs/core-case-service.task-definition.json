@@ -47,7 +47,7 @@
         },
         {
           "name": "LIABILITY_ENGINE_BASE",
-          "value": "http://tax-engine.taxpulse.local:8000"
+          "value": "http://tax-engine.service.taxpulse.internal:8000"
         },
         {
           "name": "TAXPULSE_LOGIN_BASE_DOMAIN",
@@ -55,7 +55,7 @@
         },
         {
           "name": "TAXPULSE_REDIS_URL",
-          "value": "redis://taxpulse-redis.taxpulse.local:6379"
+          "value": "redis://taxpulse-redis.cache.taxpulse.internal:6379"
         },
         {
           "name": "AWS_REGION",

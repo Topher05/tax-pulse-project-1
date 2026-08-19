@@ -1,0 +1,23 @@
+{
+  "ListenerArn": "SCRUM-164_TAXPULSE_API_HTTP_LISTENER_ARN",
+  "Priority": 20,
+  "Conditions": [
+    {
+      "Field": "path-pattern",
+      "PathPatternConfig": {
+        "Values": [
+          "/tax-calculations",
+          "/tax-calculations/*",
+          "/scenarios/comparisons",
+          "/scenarios/comparisons/*"
+        ]
+      }
+    }
+  ],
+  "Actions": [
+    {
+      "Type": "forward",
+      "TargetGroupArn": "SCRUM-164_TAX_ENGINE_TARGET_GROUP_ARN"
+    }
+  ]
+}
