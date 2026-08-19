@@ -36,7 +36,7 @@ export {
   createLogger,
   createRequestLogger,
   type CreateLoggerOptions,
-} from "./logger.js";
+} from "./shared/cloud-logger/logger.js";
 export {
   defaultPasswordHashingConfig,
   hashPassword,
@@ -602,8 +602,8 @@ import { createClient } from "redis";
 
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
+import { createLogger } from "./shared/cloud-logger/logger.js";
 import { createJwksRouter } from "./jwksRoutes.js";
-import { createLogger } from "./logger.js";
 import { createJwtAuthenticationMiddleware, hydrateUserClaims } from "./jwtAuthentication.js";
 import { createCostAccountingMiddleware } from "./costAccounting.js";
 import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
@@ -788,11 +788,13 @@ export async function main(): Promise<Server> {
   if (liabilityEngineBase) {
     const taxEngineClient = createTaxEngineClient({
       baseUrl: liabilityEngineBase,
+      telemetryLogger: logger,
     });
     scenarioModelingController = createScenarioModelingController({
       taxPlanCycleRepository,
       scenarioRepository,
       taxEngineClient,
+      telemetryLogger: logger,
     });
     logger.info("Connected to the liability engine for scenario modeling");
   }
@@ -820,6 +822,7 @@ export async function main(): Promise<Server> {
     {
       queueCacheInvalidator,
       stageChangedEventPublisher,
+      telemetryLogger: logger,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
