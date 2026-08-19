@@ -312,10 +312,13 @@ export {
 } from "./infrastructure/tinEinValidationSoapClient.js";
 export {
   createTinEinValidationAcl,
+  translateSoapFault,
   type TaxpayerIdentifierValidationOutcome,
   type TaxpayerIdentifierValidator,
 } from "./infrastructure/tinEinValidationAcl.js";
 export {
+  TaxpayerIdentifierSoapFaultError,
+  isTaxpayerIdentifierSoapFaultError,
   taxpayerIdentifierInputSchema,
   taxpayerIdentifierTypeSchema,
   taxpayerIdentifierTypeValues,
@@ -323,6 +326,7 @@ export {
   taxpayerIdentifierValidationResultValues,
   taxpayerIdentifierValidationSchema,
   type TaxpayerIdentifierInput,
+  type TaxpayerIdentifierSoapFaultOptions,
   type TaxpayerIdentifierType,
   type TaxpayerIdentifierValidation,
   type TaxpayerIdentifierValidationResult,

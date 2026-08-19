@@ -860,6 +860,66 @@ remain scoped to SCRUM-141.
 - `npm run db:check` passed.
 - `npm run typecheck` passed cleanly across app, tests, and pulseUI.
 - `npx vitest run tests/typescript/features/taxPlanCycle/createIdempotency.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts tests/typescript/features/taxPlanCycle/schema.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts` passed (6 files, 41 tests).
+
+## martins-okorie-jira141 - SCRUM-141
+
+**Branch:** `martins-okorie-jira141`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-141
+
+**Summary:** Translate SOAP faults to typed domain errors
+
+**Description:** As a Backend Developer, I want SOAP faults translated to domain errors,
+so that legacy failures are handled cleanly.
+
+**Acceptance Criteria:**
+
+- A SOAP fault is translated into a typed domain error.
+- The error is recorded on the case rather than crashing Intake.
+- A test asserts an injected SOAP fault produces the typed domain error.
+
+**Code Connection:** Defined the `TaxpayerIdentifierSoapFaultError` domain error type and
+implemented `translateSoapFault()` in the TIVS Anti-Corruption Layer (ACL). The ACL catches
+SOAP faults (and remote service failures) thrown during `verifyTaxpayer` and normalizes them
+into typed `TaxpayerIdentifierSoapFaultError` instances containing structured fields (`faultCode`,
+`faultReason`, `detail`, `provider: "tivs"`). In `createController.create()`, when taxpayer
+identifier validation fails with a SOAP fault during Intake, the error is handled cleanly by
+recording `validationResult: "soap_fault"` rather than throwing an uncaught exception or
+crashing the Intake stage. The case is created with its initial stage transition and validation
+audit record within the atomic database transaction, and the generated Drizzle migration
+`0016_taxpayer_identifier_validation_soap_fault.sql` updates the check constraint accordingly.
+
+**Project Scope Connection:** SCRUM-141 completes the TIVS integration sequence (SCRUM-139,
+SCRUM-140, SCRUM-141) by establishing resilient fault tolerance at the Anti-Corruption Layer
+boundary. Legacy external SOAP failures never crash internal Tax Plan Cycle creation, nor do
+raw XML/SOAP structures leak into the core domain.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/controllers/createController.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationAcl.ts`
+- `src/typescript/features/taxPlanCycle/taxpayerIdentifierValidation.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/drizzle-migrations/0016_taxpayer_identifier_validation_soap_fault.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0016_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/scripts/awsStageChangedSmoke.ts`
+- `tests/typescript/features/taxPlanCycle/createIdempotency.test.ts`
+- `tests/typescript/features/taxPlanCycle/taxpayerIdentifierValidation.typecheck.ts`
+- `tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen -- --name taxpayer_identifier_validation_soap_fault` generated the Drizzle migration.
+- `npm run db:check` passed cleanly.
+- `npm run typecheck` passed cleanly across app, tests, and pulseUI.
+- `npx vitest run tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts tests/typescript/features/taxPlanCycle/createIdempotency.test.ts tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/schema.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts` passed (7 files, 48 tests).
+- `.venv/bin/python -m pyright --pythonpath .venv/bin/python` passed with 0 errors.
+- `.venv/bin/python -m pytest` passed 93 tests.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 
@@ -889,3 +949,4 @@ remain scoped to SCRUM-141.
 
 -
 -->
+

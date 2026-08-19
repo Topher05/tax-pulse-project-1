@@ -536,6 +536,69 @@ flowchart LR
 - `src/pulseUI/pages/firm/TeamUsersPage.tsx`
 - `src/pulseUI/pages/firm/TeamUsersPage.module.css`
 - `src/pulseUI/app/routeTree.tsx`
+
+## caleb-latimer-jira145 - Jira-145
+
+**Branch:** `caleb-latimer-jira145`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** Jira-145
+
+**Summary:** Wire the cycle details action buttons and notification feedback
+
+**Description:** Implement the cycle-details action bar behavior so Reassign and Hold show placeholder info toasts, Advance Stage advances the tax-plan cycle through the existing transition endpoint, and the page refreshes the visible stage and audit trail on success.
+
+**Acceptance Criteria:**
+
+- Reassign and Hold are clickable and show info toasts that implementation details are still TBD.
+- Advance Stage computes the next canonical forward stage and PATCHes the existing transition endpoint.
+- Successful transitions refresh the details and audit-trail query state and surface a success toast.
+- Unauthorized or illegal transitions stay on the page and surface backend problem details in an error toast.
+- The notification system is reusable from the app shell and auto-dismisses after the default display time.
+
+**Code Connection:**
+
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/NotificationToast.tsx`
+- `src/pulseUI/components/NotificationToast.module.css`
+- `src/pulseUI/entities/notificationMessage.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/shared/caseApi.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Tax-plan cycle advancement wiring and user feedback
+- Preserves the existing transition permission matrix while surfacing the result in the internal case details UI
+
+**Changed Files:**
+
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/NotificationToast.tsx`
+- `src/pulseUI/components/NotificationToast.module.css`
+- `src/pulseUI/entities/notificationMessage.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/components/NotificationToast.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `src/pulseUI/vitest.config.ts`
+- `src/pulseUI/shared/caseApi.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test"` passed with 42 test files and 204 tests green.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/routes.test.ts"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/integration.test.ts"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/auditEntryOutput.test.ts"` passed.
+
 ## caleb-latimer-jira124 - SCRUM-124
 
 **Branch:** `caleb-latimer-jira124`
