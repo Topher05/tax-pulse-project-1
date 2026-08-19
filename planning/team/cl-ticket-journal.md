@@ -35,6 +35,69 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira166 - SCRUM-166
+
+**Branch:** `caleb-latimer-jira166`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-166
+
+**Summary:** Add the OSV and Gitleaks gate
+
+**Description:** As a Security Engineer, I want OSV and Gitleaks on every PR, so that
+vulnerable dependencies and committed secrets are blocked.
+
+**Acceptance Criteria:**
+
+- OSV flags a known-vulnerable dependency and fails the PR.
+- Gitleaks blocks a committed secret.
+- Checkov runs as its own Terraform security step and fails on a high-severity finding.
+- tfsec runs as its own Terraform security step and fails on a high-severity finding.
+- Confirm whether an org-level `GITLEAKS_LICENSE` secret already exists and should be
+  preferred over the repo-level secret before merging.
+- All four checks run automatically on the pull request path.
+
+**Code Connection:**
+
+- `.github/workflows/dependency-security-gate.yml` adds the PR-time OSV and Gitleaks
+  gate on the same Blacksmith runner pattern used by SCRUM-165.
+- `.github/pull_request_template.md` now calls out mocked or stubbed infrastructure
+  boundaries plus scan suppressions and exceptions in the Risk Notes section.
+- `planning/ai-review-checklist.md` now asks reviewers to verify that mocked or stubbed
+  boundaries and any scan suppressions or exceptions are surfaced in Risk Notes.
+- `GITLEAKS_LICENSE` must be populated as a GitHub Secret for the org-owned repository
+  or the Gitleaks action fails before scanning starts.
+- `terraform/vpc.tf`, `terraform/database.tf`, and `terraform/redis.tf` already carry
+  the seeded infrastructure stance that later tickets will need to revisit: public
+  subnet auto-IP is intentionally explicit, and the ECS task security-group references
+  still describe a future compute layer rather than a live one.
+
+**Project Scope Connection:**
+
+- IaC, Secure Pipeline & Observability
+- PR-time dependency and secret scanning before merge
+- Supply-chain and secret detection on the repository's merge path
+- Stubbed platform plumbing until ECS, load balancer, and container delivery exist
+- Gitleaks license validation for the organization-owned repo
+
+**Changed Files:**
+
+- `.github/pull_request_template.md`
+- `.github/workflows/dependency-security-gate.yml`
+- `planning/ai-review-checklist.md`
+- `planning/team/cl-ticket-journal.md`
+- `tests/typescript/workflows/dependencySecurityGate.test.ts`
+
+**Validation Notes:**
+
+- Repository-local workflow coverage was added for the new dependency and secret gate.
+- The journal records the existing Terraform stub/suppression posture so the future PR
+  checklist can carry it forward as risk notes.
+- The Gitleaks action now expects the `GITLEAKS_LICENSE` secret to be configured in
+  GitHub before the workflow can succeed in an organization-owned repo.
+- No runtime validation was run against the new workflow in this shell.
+
 ## caleb-latimer-jira163 - SCRUM-163
 
 **Branch:** `caleb-latimer-jira163`
