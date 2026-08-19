@@ -1,5 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
-import { jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 import type { JwtConfig } from "./authConfig.js";
 import type { AuthenticatedPrincipal, UserRole } from "./authTypes.js";
@@ -103,7 +103,16 @@ export function hydrateUserClaims(
 export function createJwtAuthenticationMiddleware({
   config,
 }: CreateJwtAuthenticationMiddlewareOptions): RequestHandler {
-  const signingKey = new TextEncoder().encode(config.signingSecret);
+  const verifyToken = (() => {
+    const jwks = createRemoteJWKSet(
+      new URL(config.jwksUrl ?? new URL("/.well-known/jwks.json", config.issuer)),
+    );
+    return async (token: string) => await jwtVerify(token, jwks, {
+      algorithms: ["RS256"],
+      issuer: config.issuer,
+      requiredClaims: ["exp"],
+    });
+  })();
 
   return async (req: Request, _res: Response, next: NextFunction) => {
     const token = getBearerToken(req.header("authorization"));
@@ -114,11 +123,7 @@ export function createJwtAuthenticationMiddleware({
     }
 
     try {
-      const { payload } = await jwtVerify(token, signingKey, {
-        algorithms: ["HS256"],
-        issuer: config.issuer,
-        requiredClaims: ["exp"],
-      });
+      const { payload } = await verifyToken(token);
       const principal = toAuthenticatedPrincipal(payload);
 
       if (!principal) {

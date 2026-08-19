@@ -65,7 +65,7 @@ describe("Tax Plan Cycle detail query mapping", () => {
       dueDate: "May 12, 2026",
       scenarioCount: 0,
       onHold: false,
-      overdue: false,
+      overdue: true,
     });
   });
 });
@@ -95,7 +95,7 @@ describe("Tax Plan Cycle audit query mapping", () => {
         actor: "Maya Reed",
         action: "Updated estimated tax to [REDACTED_AMOUNT]",
         outcome: "Transition denied",
-        occurredAt: "May 12, 2026, 2:30 PM",
+        occurredAt: "May 12, 2026, 10:30 AM",
       },
     ]);
     expect(caseApi.caseApiGetJson).toHaveBeenCalledWith(

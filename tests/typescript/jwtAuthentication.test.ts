@@ -1,28 +1,46 @@
 import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
-import { SignJWT } from "jose";
-import { describe, expect, test } from "vitest";
+import { exportPKCS8, generateKeyPair, importPKCS8, SignJWT } from "jose";
+import { beforeAll, describe, expect, test } from "vitest";
 
 import {
   createApp,
   createJwtAuthenticationMiddleware,
+  createJwksRouter,
   createLogger,
   type JwtConfig,
+  type JwtRs256IssuerConfig,
 } from "../../src/typescript/index.js";
 
 const config: JwtConfig = {
   issuer: "https://auth.taxpulse.example",
-  signingSecret: "a-unique-test-secret-that-is-more-than-32-bytes",
   accessTokenLifetimeSeconds: 900,
   refreshTokenLifetimeSeconds: 2_592_000,
 };
-const signingKey = new TextEncoder().encode(config.signingSecret);
+const signingKeyId = "test-rs256-key";
 const silentLogger = createLogger({ level: "silent" });
+let signingPrivateKeyPem: string;
+let alternateSigningPrivateKeyPem: string;
+let issuerConfig: JwtRs256IssuerConfig;
+
+beforeAll(async () => {
+  const [signingKeyPair, alternateSigningKeyPair] = await Promise.all([
+    generateKeyPair("RS256", { extractable: true }),
+    generateKeyPair("RS256", { extractable: true }),
+  ]);
+  signingPrivateKeyPem = await exportPKCS8(signingKeyPair.privateKey);
+  alternateSigningPrivateKeyPem = await exportPKCS8(alternateSigningKeyPair.privateKey);
+  issuerConfig = {
+    issuer: config.issuer,
+    signingPrivateKeyPem,
+    signingKeyId,
+  };
+});
 
 async function createAccessToken(input: {
   issuer?: string;
-  signingSecret?: string;
+  signingPrivateKeyPem?: string;
   subject?: unknown;
   role?: unknown;
   tenantId?: unknown;
@@ -49,7 +67,7 @@ async function createAccessToken(input: {
   }
 
   const token = new SignJWT(claims)
-    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setProtectedHeader({ alg: "RS256", kid: signingKeyId, typ: "JWT" })
     .setIssuer(input.issuer ?? config.issuer);
 
   if (input.includeExpiration ?? true) {
@@ -65,7 +83,7 @@ async function createAccessToken(input: {
   }
 
   return await token.sign(
-    new TextEncoder().encode(input.signingSecret ?? config.signingSecret),
+    await importPKCS8(input.signingPrivateKeyPem ?? signingPrivateKeyPem, "RS256"),
   );
 }
 
@@ -80,6 +98,9 @@ async function createTokenWithoutClaim(claim: "role" | "tenant_id" | "sub"): Pro
 }
 
 async function invalidTokenFor(description: string): Promise<string> {
+  if (description === "invalid signature") {
+    return await createAccessToken({ signingPrivateKeyPem: alternateSigningPrivateKeyPem });
+  }
   if (description === "missing role") {
     return await createTokenWithoutClaim("role");
   }
@@ -98,9 +119,6 @@ async function invalidTokenFor(description: string): Promise<string> {
 }
 
 const invalidTokenOptions: Record<string, Parameters<typeof createAccessToken>[0]> = {
-  "invalid signature": {
-    signingSecret: "another-test-secret-that-is-more-than-32-bytes",
-  },
   "expired token": { expirationTime: 0 },
   "wrong issuer": { issuer: "https://other.taxpulse.example" },
   "missing expiry": { includeExpiration: false },
@@ -111,10 +129,21 @@ const invalidTokenOptions: Record<string, Parameters<typeof createAccessToken>[0
 async function withProtectedServer(
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
+  const jwksApp = createApp({
+    logger: silentLogger,
+    registerRoutes: (server) => server.use(createJwksRouter({ issuerConfig })),
+  });
+  const jwksServer = jwksApp.listen(0);
+  await once(jwksServer, "listening");
+  const jwksAddress = jwksServer.address() as AddressInfo;
+  const middlewareConfig: JwtConfig = {
+    ...config,
+    jwksUrl: `http://127.0.0.1:${jwksAddress.port}/.well-known/jwks.json`,
+  };
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (server) => {
-      server.use(createJwtAuthenticationMiddleware({ config }));
+      server.use(createJwtAuthenticationMiddleware({ config: middlewareConfig }));
       server.get("/protected", (req, res) => {
         res.status(200).json(req.authenticatedPrincipal);
       });
@@ -129,6 +158,8 @@ async function withProtectedServer(
   } finally {
     server.close();
     await once(server, "close");
+    jwksServer.close();
+    await once(jwksServer, "close");
   }
 }
 
