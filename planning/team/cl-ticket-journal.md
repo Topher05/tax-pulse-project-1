@@ -35,6 +35,78 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira163 - SCRUM-163
+
+**Branch:** `caleb-latimer-jira163`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-163
+
+**Summary:** Gate Terraform with Checkov and tfsec
+
+**Description:** As a Security Engineer, I want Checkov and tfsec scanning the Terraform, so that misconfigurations are caught before apply.
+
+**Acceptance Criteria:**
+
+- Checkov and tfsec run in CI against the Terraform root.
+- The gate fails on a high-severity misconfiguration.
+- Documented suppressions require a justification comment.
+- The workflow runs on a Blacksmith-backed GitHub Actions runner.
+
+**Code Connection:**
+
+- `.github/workflows/terraform-security-gate.yml` adds the PR-time Terraform gate on the Blacksmith runner and runs `terraform fmt`, `terraform init -backend=false`, `terraform validate`, Checkov, and tfsec.
+- `.github/workflows/container-build-scaffold.yml` keeps the Blacksmith Docker builder helpers on deck for the future container delivery work without changing the Terraform gate.
+- `terraform/database.tf`, `terraform/dynamodb.tf`, and `terraform/redis.tf` now tighten the security posture that the scanners were flagging.
+- `terraform/vpc.tf` documents the intentional public-subnet behavior with inline tfsec and Checkov suppressions.
+- `terraform/.tfsec/config.yml` makes the tfsec severity threshold explicit in repo config.
+- `tests/typescript/workflows/terraformSecurityGate.test.ts` guards the workflow shape and scan requirements with a repo-local regression test.
+- `tests/typescript/workflows/containerBuildScaffold.test.ts` guards the future container scaffold text and helper references.
+- `adr/0033-terraform-security-gate-on-blacksmith-runners.md` records the deployment boundary and visual flow for the gate.
+
+**Architecture Diagram:**
+
+```mermaid
+flowchart LR
+  PR[Pull request updates terraform/]
+  WF[GitHub Actions workflow]
+  BS[Blacksmith runner]
+  TF[Terraform checks<br/>fmt / init -backend=false / validate]
+  CK[Checkov<br/>hard fail on HIGH]
+  TS[tfsec<br/>minimum severity HIGH]
+  PASS[Required status check passes]
+  FAIL[Fail the gate]
+  BR[Branch protection / merge policy]
+
+  PR --> WF --> BS --> TF --> CK --> TS --> PASS --> BR
+  CK -->|high-severity finding| FAIL
+  TS -->|high-severity finding| FAIL
+```
+
+**Project Scope Connection:**
+
+- IaC, Secure Pipeline & Observability
+- Terraform provisioning safety for the seeded SCRUM-162 infrastructure
+- PR-time security scanning before any future apply path
+
+**Changed Files:**
+
+- `.github/workflows/terraform-security-gate.yml`
+- `.github/workflows/container-build-scaffold.yml`
+- `adr/0033-terraform-security-gate-on-blacksmith-runners.md`
+- `adr/README.md`
+- `terraform/.tfsec/config.yml`
+- `tests/typescript/workflows/terraformSecurityGate.test.ts`
+- `tests/typescript/workflows/containerBuildScaffold.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- Repository-local workflow assertions were added to cover the Blacksmith runner label, Terraform trigger scope, and required scan commands.
+- No AWS credentials are required for the static gate path.
+- GitHub branch protection and required status checks still need to be configured in the repository settings.
+
 ## caleb-latimer-jira160 - SCRUM-160
 
 **Branch:** `caleb-latimer-jira160`
