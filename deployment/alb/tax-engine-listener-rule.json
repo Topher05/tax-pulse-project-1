@@ -1,5 +1,5 @@
 {
-  "ListenerArn": "arn:aws:elasticloadbalancing:us-east-1:814650854375:listener/app/taxpulse-api-alb/962b5650b94eda05/40b773b1fa8f01e8",
+  "ListenerArn": "SCRUM-164_TAXPULSE_API_HTTP_LISTENER_ARN",
   "Priority": 20,
   "Conditions": [
     {
@@ -17,7 +17,7 @@
   "Actions": [
     {
       "Type": "forward",
-      "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-tax-engine/306b27944c5a636a"
+      "TargetGroupArn": "SCRUM-164_TAX_ENGINE_TARGET_GROUP_ARN"
     }
   ]
 }

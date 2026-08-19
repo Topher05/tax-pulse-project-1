@@ -2,7 +2,7 @@
   "Name": "taxpulse-tax-engine",
   "Protocol": "HTTP",
   "Port": 8000,
-  "VpcId": "vpc-0f2c3b110a05c423a",
+  "VpcId": "SCRUM-162_VPC_ID",
   "HealthCheckProtocol": "HTTP",
   "HealthCheckPath": "/health",
   "HealthCheckEnabled": true,

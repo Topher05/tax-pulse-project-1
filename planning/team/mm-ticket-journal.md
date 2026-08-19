@@ -35,6 +35,11 @@ groups so the ALB is internet-facing on port `80`, while service traffic on
 ports `3000` and `8000` is allowed only from the ALB security group. Added ECS
 cluster and service JSON that attaches each Fargate service to its target group
 with desired count, health check grace period, and rolling replacement settings.
+The ALB and service JSON is production-shaped for the later Terraform work: the
+ALB is intended for SCRUM-162 public subnets, tasks are intended for SCRUM-162
+private subnets with public IP assignment disabled, service ingress comes only
+from the ALB security group, and RDS PostgreSQL plus ElastiCache Redis remain
+external managed dependencies.
 
 **Project Scope Connection:** This builds directly on SCRUM-157 by taking the
 registered task definitions and defining how the long-lived API tasks become
@@ -88,6 +93,11 @@ reachable, health-checked ECS services behind an ALB in the team AWS account.
   container exits with `connect ECONNREFUSED 127.0.0.1:5432`; the shared
   `DATABASE_URL` secret needs to point at a reachable database before the Core
   Case smoke request can pass.
+- The 157/158 JSON files now preserve the production handoff contract for
+  SCRUM-162/164: ECR app images, Secrets Manager database credentials, managed
+  Redis endpoint placeholder, public ALB subnet placeholders, private ECS subnet
+  placeholders, Terraform-owned listener/target-group ARN placeholders, and
+  ALB-only service ingress.
 - Added `npm run aws:alb-smoke` to verify the ALB routes
   `GET /v1/tax-plan-cycles` to Core Case and `POST /tax-calculations` to the Tax
   Engine with a bearer token.

@@ -16,12 +16,17 @@ type TargetGroupDefinition = {
 };
 
 type ListenerRuleDefinition = {
+  ListenerArn: string;
   Priority: number;
   Conditions: Array<{
     Field: string;
     PathPatternConfig?: {
       Values: string[];
     };
+  }>;
+  Actions: Array<{
+    Type: string;
+    TargetGroupArn: string;
   }>;
 };
 
@@ -76,11 +81,11 @@ describe("SCRUM-158 ALB JSON definitions", () => {
     expect(loadBalancer.Scheme).toBe("internet-facing");
     expect(loadBalancer.Type).toBe("application");
     expect(loadBalancer.Subnets).toEqual([
-      "subnet-0104ce7ee4752681b",
-      "subnet-0e4c7b76f7f2a91b7",
-      "subnet-04754cd11ab10a5a5",
+      "SCRUM-162_PUBLIC_SUBNET_A",
+      "SCRUM-162_PUBLIC_SUBNET_B",
+      "SCRUM-162_PUBLIC_SUBNET_C",
     ]);
-    expect(loadBalancer.SecurityGroups).toEqual(["sg-018ec94c7599d219c"]);
+    expect(loadBalancer.SecurityGroups).toEqual(["SCRUM-162_ALB_SECURITY_GROUP_ID"]);
     expect(tagValues(loadBalancer.Tags)).toMatchObject({
       user: "chimaobi-okorie",
       env: "sandbox",
@@ -96,14 +101,14 @@ describe("SCRUM-158 ALB JSON definitions", () => {
       Port: 3000,
       TargetType: "ip",
       HealthCheckPath: "/health",
-      VpcId: "vpc-0f2c3b110a05c423a",
+      VpcId: "SCRUM-162_VPC_ID",
     });
     expect(taxEngine).toMatchObject({
       Name: "taxpulse-tax-engine",
       Port: 8000,
       TargetType: "ip",
       HealthCheckPath: "/health",
-      VpcId: "vpc-0f2c3b110a05c423a",
+      VpcId: "SCRUM-162_VPC_ID",
     });
   });
 
@@ -112,15 +117,25 @@ describe("SCRUM-158 ALB JSON definitions", () => {
     const taxEngineRule = readAlbJson<ListenerRuleDefinition>("tax-engine-listener-rule.json");
 
     expect(coreCaseRule.Priority).toBe(10);
+    expect(coreCaseRule.ListenerArn).toBe("SCRUM-164_TAXPULSE_API_HTTP_LISTENER_ARN");
     expect(coreCaseRule.Conditions[0]?.PathPatternConfig?.Values).toEqual(["/v1/*"]);
+    expect(coreCaseRule.Actions).toContainEqual({
+      Type: "forward",
+      TargetGroupArn: "SCRUM-164_CORE_CASE_TARGET_GROUP_ARN",
+    });
 
     expect(taxEngineRule.Priority).toBe(20);
+    expect(taxEngineRule.ListenerArn).toBe("SCRUM-164_TAXPULSE_API_HTTP_LISTENER_ARN");
     expect(taxEngineRule.Conditions[0]?.PathPatternConfig?.Values).toEqual([
       "/tax-calculations",
       "/tax-calculations/*",
       "/scenarios/comparisons",
       "/scenarios/comparisons/*",
     ]);
+    expect(taxEngineRule.Actions).toContainEqual({
+      Type: "forward",
+      TargetGroupArn: "SCRUM-164_TAX_ENGINE_TARGET_GROUP_ARN",
+    });
   });
 
   test("defines ECS services attached to the ALB target groups", () => {
@@ -139,11 +154,16 @@ describe("SCRUM-158 ALB JSON definitions", () => {
       maximumPercent: 200,
     });
     expect(coreCase.networkConfiguration.awsvpcConfiguration.securityGroups).toEqual([
-      "sg-0820ddfb63117696a",
+      "SCRUM-162_ECS_SERVICE_SECURITY_GROUP_ID",
     ]);
+    expect(coreCase.networkConfiguration.awsvpcConfiguration.subnets).toEqual([
+      "SCRUM-162_PRIVATE_SUBNET_A",
+      "SCRUM-162_PRIVATE_SUBNET_B",
+      "SCRUM-162_PRIVATE_SUBNET_C",
+    ]);
+    expect(coreCase.networkConfiguration.awsvpcConfiguration.assignPublicIp).toBe("DISABLED");
     expect(coreCase.loadBalancers).toContainEqual({
-      targetGroupArn:
-        "arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-core-case/05b4e6ffa119fc42",
+      targetGroupArn: "SCRUM-164_CORE_CASE_TARGET_GROUP_ARN",
       containerName: "core-case-service",
       containerPort: 3000,
     });
@@ -155,9 +175,14 @@ describe("SCRUM-158 ALB JSON definitions", () => {
       launchType: "FARGATE",
       healthCheckGracePeriodSeconds: 60,
     });
+    expect(taxEngine.networkConfiguration.awsvpcConfiguration.subnets).toEqual([
+      "SCRUM-162_PRIVATE_SUBNET_A",
+      "SCRUM-162_PRIVATE_SUBNET_B",
+      "SCRUM-162_PRIVATE_SUBNET_C",
+    ]);
+    expect(taxEngine.networkConfiguration.awsvpcConfiguration.assignPublicIp).toBe("DISABLED");
     expect(taxEngine.loadBalancers).toContainEqual({
-      targetGroupArn:
-        "arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-tax-engine/306b27944c5a636a",
+      targetGroupArn: "SCRUM-164_TAX_ENGINE_TARGET_GROUP_ARN",
       containerName: "tax-engine",
       containerPort: 8000,
     });

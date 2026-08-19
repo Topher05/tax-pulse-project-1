@@ -1,8 +1,8 @@
 {
-  "vpcId": "vpc-0f2c3b110a05c423a",
+  "vpcId": "SCRUM-162_VPC_ID",
   "albSecurityGroup": {
     "groupName": "taxpulse-alb-sg",
-    "groupId": "sg-018ec94c7599d219c",
+    "groupId": "SCRUM-162_ALB_SECURITY_GROUP_ID",
     "inbound": [
       {
         "protocol": "tcp",
@@ -14,19 +14,19 @@
   },
   "serviceSecurityGroup": {
     "groupName": "taxpulse-ecs-services-sg",
-    "groupId": "sg-0820ddfb63117696a",
+    "groupId": "SCRUM-162_ECS_SERVICE_SECURITY_GROUP_ID",
     "inbound": [
       {
         "protocol": "tcp",
         "fromPort": 3000,
         "toPort": 3000,
-        "sourceSecurityGroupId": "sg-018ec94c7599d219c"
+        "sourceSecurityGroupId": "SCRUM-162_ALB_SECURITY_GROUP_ID"
       },
       {
         "protocol": "tcp",
         "fromPort": 8000,
         "toPort": 8000,
-        "sourceSecurityGroupId": "sg-018ec94c7599d219c"
+        "sourceSecurityGroupId": "SCRUM-162_ALB_SECURITY_GROUP_ID"
       }
     ]
   },

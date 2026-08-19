@@ -19,8 +19,9 @@ copies running are outside SCRUM-157.
 
 The task definitions use the discovered AWS account ID, region, SNS topic, SQS queue,
 CloudWatch log groups, and Secrets Manager ARN from the team account. The IAM role
-names and ECR image tags remain placeholders because those resources were not present
-in the account during discovery.
+names, service-discovery names, data-store endpoints, and ECR image tags are the
+production contract that SCRUM-162 and SCRUM-164 should preserve when they codify the
+stack in Terraform.
 
 The task definitions expect these container images to exist in Amazon ECR. Replace
 `replace-with-immutable-image-tag` with the pushed image tag from the build pipeline,
@@ -61,13 +62,14 @@ docker push "${ECR_REGISTRY}/taxpulse/tax-engine:${IMAGE_TAG}"
 
 ## Runtime Wiring
 
-The Core Case Service task mirrors the SCRUM-155 Compose contract:
+The Core Case Service task mirrors the SCRUM-155 Compose contract, but with
+production AWS dependencies instead of local Compose containers:
 
 - `PORT=3000`
 - `DATABASE_URL` loaded from Secrets Manager
 - `JWT_SIGNING_SECRET` loaded from Secrets Manager
-- `LIABILITY_ENGINE_BASE` points at the internal Tax Engine endpoint
-- `TAXPULSE_REDIS_URL` points at the managed Redis endpoint
+- `LIABILITY_ENGINE_BASE` points at the internal Tax Engine service-discovery name
+- `TAXPULSE_REDIS_URL` points at the managed Redis/ElastiCache endpoint
 - SNS/SQS identifiers are supplied as environment values
 
 The Tax Engine task mirrors the Python service container contract:
@@ -98,16 +100,29 @@ Resources still needed before registering the SCRUM-157 task definitions:
 - ECR repositories/images for both services.
 - ECS task execution role.
 - Service-specific ECS task roles.
+- SCRUM-162-owned PostgreSQL and Redis endpoints for the runtime values.
+
+PostgreSQL and Redis are intentionally not represented as ECS task containers. Docker
+Compose uses `postgres` and `redis` images for local development, but the production
+contract expects `DATABASE_URL` to point at RDS PostgreSQL and `TAXPULSE_REDIS_URL` to
+point at ElastiCache Redis/Valkey after SCRUM-162 creates those resources.
 
 SCRUM-158 should add the ECS service and ALB layer around the registered task
 definitions. That work should define an ECS cluster, one service per task
 definition, target groups for each service, listener rules for case and
 calculation traffic, service security groups, and health-based replacement.
 The ALB input files currently live under `deployment/alb/`.
-The current ALB security group is `sg-018ec94c7599d219c`, and the ECS service
-security group that only trusts the ALB is `sg-0820ddfb63117696a`.
+The ALB and service security group IDs are SCRUM-162 placeholders:
+`SCRUM-162_ALB_SECURITY_GROUP_ID` and
+`SCRUM-162_ECS_SERVICE_SECURITY_GROUP_ID`.
 The ECS cluster and service input files live under `deployment/ecs/`:
 `cluster.json`, `core-case-service.json`, and `tax-engine-service.json`.
+Those ECS service files use `SCRUM-162_PRIVATE_SUBNET_*` placeholders and
+`assignPublicIp=DISABLED` to capture the intended production placement. Terraform
+should replace those placeholders with private subnet IDs from the VPC module.
+The ALB input files under `deployment/alb/` use `SCRUM-162_PUBLIC_SUBNET_*`,
+`SCRUM-162_VPC_ID`, and `SCRUM-164_*_ARN` placeholders for the public load
+balancer, target groups, listener, and listener rules.
 
 ## Register
 
@@ -156,10 +171,10 @@ Current AWS services:
 
 The Tax Engine service reached steady state with one healthy Fargate task. The
 Core Case Service was created, but its container currently exits during startup
-because `DATABASE_URL` resolves to `127.0.0.1:5432` inside Fargate. That means it
-is looking for Postgres inside its own container. Point the shared
-`TAX_PULSE_CONFIG` secret's `DATABASE_URL` value at a reachable database before
-expecting the `/v1/*` ALB smoke check to pass.
+because the current `DATABASE_URL` secret resolves to `127.0.0.1:5432` inside
+Fargate. That means it is looking for Postgres inside its own container. Point the
+shared `TAX_PULSE_CONFIG` secret's `DATABASE_URL` value at a reachable database
+before expecting the `/v1/*` ALB smoke check to pass.
 
 For AWS, that database should be a reachable PostgreSQL database, normally the RDS
 PostgreSQL instance owned by SCRUM-162. The secret value should look like:
@@ -170,6 +185,16 @@ postgresql://<username>:<password>@<rds-postgres-endpoint>:5432/<database-name>
 
 Do not use `localhost` or `127.0.0.1` in Fargate. Inside a Fargate task,
 `localhost` means "inside this same container," not the team database.
+
+The Redis value follows the same rule. SCRUM-157 records the production-shaped value
+as:
+
+```text
+redis://taxpulse-redis.cache.taxpulse.internal:6379
+```
+
+SCRUM-162 should replace that placeholder with the real ElastiCache/Valkey endpoint
+or a private DNS name that resolves to it.
 
 ## SCRUM-158 ALB and ECS Service Scope
 
@@ -186,6 +211,13 @@ The routing should send:
 Both target groups should check `GET /health`. ECS services should be attached to
 those target groups with a health check grace period and rolling deployment
 settings, so ECS replaces tasks that fail health checks.
+
+The SCRUM-158 ALB and ECS service JSON is a production contract for the later
+Terraform module. It intentionally places the internet-facing ALB in public subnets,
+places ECS tasks in private subnets with public IP assignment disabled, and allows
+service ingress only from the ALB security group. The placeholder subnet IDs, security
+group IDs, listener ARN, and target group ARNs should become Terraform module outputs
+or references during SCRUM-164.
 
 ## Smoke Through the ALB
 

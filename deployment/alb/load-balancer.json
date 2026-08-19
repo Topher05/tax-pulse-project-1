@@ -1,12 +1,12 @@
 {
   "Name": "taxpulse-api-alb",
   "Subnets": [
-    "subnet-0104ce7ee4752681b",
-    "subnet-0e4c7b76f7f2a91b7",
-    "subnet-04754cd11ab10a5a5"
+    "SCRUM-162_PUBLIC_SUBNET_A",
+    "SCRUM-162_PUBLIC_SUBNET_B",
+    "SCRUM-162_PUBLIC_SUBNET_C"
   ],
   "SecurityGroups": [
-    "sg-018ec94c7599d219c"
+    "SCRUM-162_ALB_SECURITY_GROUP_ID"
   ],
   "Scheme": "internet-facing",
   "Type": "application",

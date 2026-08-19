@@ -46,6 +46,10 @@ function names(values: NamedValue[] | undefined): string[] {
   return values?.map((value) => value.name) ?? [];
 }
 
+function valueByName(values: NamedValue[] | undefined, name: string): string | undefined {
+  return values?.find((value) => value.name === name)?.value;
+}
+
 function expectFargateTask(task: TaskDefinition): void {
   expect(task.networkMode).toBe("awsvpc");
   expect(task.requiresCompatibilities).toContain("FARGATE");
@@ -111,6 +115,12 @@ describe("ECS Fargate task definitions", () => {
         "TAXPULSE_STAGE_CHANGED_TOPIC_ARN",
         "TAXPULSE_STAGE_CHANGED_QUEUE_URL",
       ]),
+    );
+    expect(valueByName(container.environment, "LIABILITY_ENGINE_BASE")).toBe(
+      "http://tax-engine.service.taxpulse.internal:8000",
+    );
+    expect(valueByName(container.environment, "TAXPULSE_REDIS_URL")).toBe(
+      "redis://taxpulse-redis.cache.taxpulse.internal:6379",
     );
     expect(names(container.secrets)).toEqual(expect.arrayContaining(["DATABASE_URL", "JWT_SIGNING_SECRET"]));
     expect(container.healthCheck?.command.join(" ")).toContain("/health");

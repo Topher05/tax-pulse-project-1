@@ -12,19 +12,19 @@
   "networkConfiguration": {
     "awsvpcConfiguration": {
       "subnets": [
-        "subnet-0104ce7ee4752681b",
-        "subnet-0e4c7b76f7f2a91b7",
-        "subnet-04754cd11ab10a5a5"
+        "SCRUM-162_PRIVATE_SUBNET_A",
+        "SCRUM-162_PRIVATE_SUBNET_B",
+        "SCRUM-162_PRIVATE_SUBNET_C"
       ],
       "securityGroups": [
-        "sg-0820ddfb63117696a"
+        "SCRUM-162_ECS_SERVICE_SECURITY_GROUP_ID"
       ],
-      "assignPublicIp": "ENABLED"
+      "assignPublicIp": "DISABLED"
     }
   },
   "loadBalancers": [
     {
-      "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-core-case/05b4e6ffa119fc42",
+      "targetGroupArn": "SCRUM-164_CORE_CASE_TARGET_GROUP_ARN",
       "containerName": "core-case-service",
       "containerPort": 3000
     }
