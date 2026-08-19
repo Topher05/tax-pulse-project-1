@@ -7,8 +7,9 @@ import {
 const chunksPath = process.env.CORPUS_CHUNKS_PATH?.trim() || defaultCorpusChunkArtifactPath;
 const query =
   process.env.CORPUS_SMOKE_QUERY?.trim() ||
-  "estimated payments for income that is not subject to withholding";
-const expectedSectionId = process.env.CORPUS_SMOKE_EXPECTED_SECTION_ID?.trim();
+  "quarterly estimated payment review for dividend and self-employment income not subject to withholding";
+const expectedSectionId =
+  process.env.CORPUS_SMOKE_EXPECTED_SECTION_ID?.trim() || "SYN-TC-4100-b";
 
 const chunks = await readCorpusChunkArtifact(chunksPath);
 const results = retrieveCorpusChunksForSmoke(chunks, query, 3);
