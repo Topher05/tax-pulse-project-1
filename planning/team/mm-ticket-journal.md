@@ -5,6 +5,68 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira161 - SCRUM-161
+
+**Branch:** `martins-okorie-jira161`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-161
+
+**Summary:** Serve the SPA from S3 behind CloudFront
+
+**Description:** As a Platform Engineer, I want the SPA served from S3 via
+CloudFront, so that users load the app from an edge-cached CDN.
+
+**Acceptance Criteria:**
+
+- The built SPA is synced to a private S3 bucket served only through CloudFront.
+- SPA client-side routes resolve to index.html via the CloudFront error/rewrite
+  config.
+- A deploy invalidates the CloudFront cache for changed assets.
+
+**Code Connection:** Added a `deployment/spa/` production handoff contract for
+the TaxPulse SPA delivery layer. The contract defines a private S3 origin bucket,
+public-access blocking, CloudFront Origin Access Control, a CloudFront
+distribution with HTTPS redirects, `index.html` as the default root object, and
+403/404 rewrites back to `/index.html` for client-side routes. Added deploy
+configuration plus `npm run aws:spa-deploy` to sync `src/pulseUI/dist` to S3
+with cache-aware headers and create a CloudFront invalidation for `/*`.
+
+**Project Scope Connection:** This completes the SCRUM-19 SPA delivery contract
+that sits after the SCRUM-158 ALB/API layer. It gives SCRUM-164 a concrete
+Terraform target for the static frontend module while preserving the separation
+between build artifacts, private S3 origin access, and public CloudFront edge
+delivery.
+
+**Changed Files:**
+
+- `deployment/spa/README.md`
+- `deployment/spa/bucket.json`
+- `deployment/spa/bucket-policy.json`
+- `deployment/spa/cloudfront-distribution.json`
+- `deployment/spa/deploy-config.json`
+- `deployment/spa/origin-access-control.json`
+- `src/typescript/shared/scripts/spaDeploy.ts`
+- `tests/typescript/spaDeliveryDefinitions.test.ts`
+- `package.json`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- The SPA delivery JSON uses `SCRUM-164_*` placeholders for Terraform-owned S3
+  bucket, CloudFront distribution, Origin Access Control, cache policy, and
+  distribution identifiers.
+- The bucket contract blocks public access; the bucket policy allows read access
+  only from the CloudFront service principal scoped to the distribution ARN.
+- The CloudFront contract rewrites 403 and 404 responses to `/index.html` with a
+  `200` response so SPA client-side routes survive direct navigation and refresh.
+- The deploy command syncs hashed assets with immutable cache headers, uploads
+  `index.html` with no-cache headers, and invalidates `/*`.
+- `npm run test:vitest -- tests/typescript/spaDeliveryDefinitions.test.ts`
+  passed.
+- `npm run typecheck` passed.
+
 ## martins-okorie-jira158 - SCRUM-158
 
 **Branch:** `martins-okorie-jira158`
