@@ -21,6 +21,7 @@
     "dev": "tsx src/typescript/index.ts",
     "dev:web": "npm --prefix src/pulseUI run dev",
     "aws:stage-changed-smoke": "tsx src/typescript/shared/scripts/awsStageChangedSmoke.ts",
+    "aws:alb-smoke": "tsx src/typescript/shared/scripts/albSmoke.ts",
     "cloud:tap": "tsx src/typescript/shared/scripts/cloudTap.ts",
     "redis:up": "docker compose -f docker-compose.redis.yml up -d",
     "redis:down": "docker compose -f docker-compose.redis.yml down",
