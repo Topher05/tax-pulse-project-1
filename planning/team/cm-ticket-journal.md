@@ -269,6 +269,45 @@ tenant request enforcement remain out of scope.
 - `npm run typecheck` passed for the app, tests, and pulseUI.
 - `git diff --check` passed.
 
+### Step 3 acceptance tests
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Verify deterministic corpus embedding persistence and similarity retrieval
+
+**Description:** Add focused acceptance tests for the embedding and retrieval helpers delivered
+in the preceding implementation steps.
+
+**Acceptance Criteria:**
+
+- Rebuild tests verify stable chunk ordering and preservation of corpus metadata.
+- Validation tests reject vectors with incorrect dimensions.
+- Retrieval tests verify vector-ranked results and numeric similarity conversion.
+
+**Code Connection:**
+
+- Adds `tests/typescript/assist/embeddings.test.ts` covering deterministic rebuild behavior,
+  metadata persistence, vector validation, and similarity result mapping.
+
+**Project Scope Connection:**
+
+This completes the planned acceptance-test step for SCRUM-179. Hybrid retrieval, reranking,
+RAGAS evaluation, APIs, and tenant request enforcement remain out of scope.
+
+**Changed Files:**
+
+- `tests/typescript/assist/embeddings.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused Vitest run passed: `tests/typescript/assist/embeddings.test.ts` (3 tests).
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+
 ## christopher-martus-jira144 - SCRUM-144 Seed Data Follow-up
 
 **Branch:** `christopher-martus-jira144`
