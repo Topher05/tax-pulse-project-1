@@ -35,6 +35,7 @@ Add new ticket entries below using this template.
 -
 -->
 
+
 ## caleb-latimer-jira170 - SCRUM-170
 
 **Branch:** `caleb-latimer-jira170`
@@ -237,6 +238,69 @@ flowchart LR
 - Repository-local workflow assertions were added to cover the Blacksmith runner label, Terraform trigger scope, and required scan commands.
 - No AWS credentials are required for the static gate path.
 - GitHub branch protection and required status checks still need to be configured in the repository settings.
+
+## caleb-latimer-jira184 - SCRUM-184
+
+**Branch:** `caleb-latimer-jira184`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-184
+
+**Summary:** Add the AI-Assist drawer to Plan Cycle Detail
+
+**Description:** Implement the AI-Assist drawer experience on Plan Cycle Detail, with a
+shell-level floating action button, a slide-in assistant panel, and a temporary
+feature-slice `/assist` endpoint that accepts an empty request body and returns the
+current stub response path.
+
+**Acceptance Criteria:**
+
+- The Pulse UI shows an AI-Assist FAB on Plan Cycle Detail that opens a slide-in drawer.
+- The drawer renders a top toolbar, a message log area, and a modern AI-style input row.
+- The drawer shows a themed loader while the assistant request is in flight.
+- The UI posts an empty `{}` body to `/v1/tax-plan-cycles/assist`.
+- The tax-plan-cycle feature slice exposes a typed `/assist` endpoint stub for the UI.
+
+**Code Connection:**
+
+- Added app-shell assistant state and drawer wiring so the assistant overlays routed views
+  instead of living inside the detail page.
+- Added `AssistFAB`, `AssistantDrawer`, and `AssitantLoader` components under
+  `src/pulseUI/components/assist/` plus the assistant panel state hook.
+- Added a `taxPlanDetailsAssistant` client helper for the empty-body POST flow.
+- Added a feature-slice assistant controller and `/assist` route stub in
+  `src/typescript/features/taxPlanCycle/`.
+- Updated Plan Cycle Detail to register the current case context with the assistant
+  shell.
+
+**Project Scope Connection:**
+
+- Extends the Plan Cycle Detail experience with a reusable RAG-assistant shell surface.
+- Keeps the first pass focused on UI orchestration and the backend stub contract rather
+  than the full assist pipeline.
+- Preserves the existing Plan Cycle Detail route, stage workflow, and audit history flow.
+
+**Changed Files:**
+
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.module.css`
+- `src/pulseUI/components/assist/AssistFAB.tsx`
+- `src/pulseUI/components/assist/AssistFAB.module.css`
+- `src/pulseUI/components/assist/AssitantLoader.tsx`
+- `src/pulseUI/components/assist/AssitantLoader.module.css`
+- `src/pulseUI/components/assist/assistantPanel.tsx`
+- `src/pulseUI/entities/taxPlanDetailsAssistant.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/typescript/features/taxPlanCycle/controllers/assistantController.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+
+**Validation Notes:**
+
+- Logic-only implementation pass completed.
+- Tests and typecheck were intentionally deferred per instruction.
 
 ## caleb-latimer-jira160 - SCRUM-160
 

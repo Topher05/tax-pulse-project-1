@@ -6,6 +6,11 @@ import {
   taxPlanCycleCreateController,
   type TaxPlanCycleCreateController,
 } from "./controllers/createController.js";
+import {
+  taxPlanDetailsAssistantController,
+  taxPlanDetailsAssistantRequestSchema,
+  type TaxPlanDetailsAssistantController,
+} from "./controllers/assistantController.js";
 import type {
   AuditEntryReader,
   AuditEntryWriter,
@@ -49,6 +54,7 @@ export interface ValidationErrorResponse extends ProblemDetails {
 export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
   transitionController?: TaxPlanCycleTransitionController;
+  assistantController?: TaxPlanDetailsAssistantController;
   taxPlanCycleRepository?: Pick<TaxPlanCycleRepository, "findByCaseId" | "listQueue">;
   clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
   scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
@@ -338,6 +344,8 @@ export function createTaxPlanCycleRouter(
   const router = Router();
   const controller = options.controller ?? taxPlanCycleCreateController;
   const transitionController = options.transitionController ?? taxPlanCycleTransitionController;
+  const assistantController =
+    options.assistantController ?? taxPlanDetailsAssistantController;
   const scenarioModelingController = options.scenarioModelingController;
   const taxPlanCycleRepository =
     options.taxPlanCycleRepository ?? {
@@ -640,6 +648,54 @@ export function createTaxPlanCycleRouter(
         }
 
         res.status(200).json(cycle);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.post(
+    "/assist",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedBody = taxPlanDetailsAssistantRequestSchema.safeParse(req.body);
+
+      if (!parsedBody.success) {
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Assistant request body failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: parsedBody.error.issues.map(toValidationIssue),
+            },
+          }),
+        );
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
+
+        const response = await assistantController.assist({
+          tenantId,
+          actor: user.id,
+          ...parsedBody.data,
+        });
+
+        res.status(418).json(response);
       } catch (error) {
         next(error);
       }

@@ -25,10 +25,18 @@ Pull Request: release-v3.11.2
 - [ ] Command to run for tests, all should be passing
 -->
 <!-- List checks, tests, and manual verification. -->
+- Confirm whether an org-level `GITLEAKS_LICENSE` secret already exists and should be
+  used instead of the repo-level secret before merge.
 
 ## Risk Notes
 
-<!-- Call out migrations, rollout concerns, and any reviewer attention points. -->
+<!-- Call out migrations, rollout concerns, mocked or stubbed infrastructure boundaries,
+and any scan suppressions or exceptions that reviewers need to track. -->
+- Call out that SCRUM-164 infrastructure is intentionally deferred for now.
+- List any mock, suppression, or stub blocks that remain because the observability
+  deployment resources are not yet available.
+- Note any CloudWatch, X-Ray, IAM, or runtime permissions that must be added later when
+  the infrastructure ticket becomes available.
 
 ## AI Review Checklist
 
