@@ -1,0 +1,52 @@
+.fab {
+  position: relative;
+  isolation: isolate;
+}
+
+.fab::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: 9999px;
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.18) 40%, transparent 75%);
+  transform: translateX(-140%);
+  opacity: 0;
+}
+
+.fab:hover::before {
+  animation: fabShimmer 850ms ease forwards;
+}
+
+.fabSpinning .fabIcon {
+  animation: fabSpin 840ms linear;
+}
+
+.fabIcon {
+  width: 1.75rem;
+  height: 1.75rem;
+  transition: transform 180ms ease;
+}
+
+@keyframes fabShimmer {
+  0% {
+    transform: translateX(-140%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(140%);
+    opacity: 0;
+  }
+}
+
+@keyframes fabSpin {
+  from {
+    transform: rotateY(0deg) rotateZ(0deg);
+  }
+  to {
+    transform: rotateY(360deg) rotateZ(360deg);
+  }
+}
