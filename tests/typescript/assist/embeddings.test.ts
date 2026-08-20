@@ -159,10 +159,32 @@ describe("assist corpus embeddings", () => {
       provider,
     );
 
-    expect(results[0]).toMatchObject({ chunkId: "a", similarity: 0.98 });
+    expect(results.map(({ chunkId, similarity }) => ({ chunkId, similarity }))).toEqual([
+      { chunkId: "a", similarity: 0.98 },
+      { chunkId: "b", similarity: 0.97 },
+    ]);
     expect(results[0]?.embedding).toHaveLength(corpusEmbeddingDimensions);
     expect(results).toHaveLength(2);
     expect(database.requestedLimit).toBe(2);
     expect(results[0]?.citation).toEqual(chunk("a", 1).citation);
+  });
+
+  test("rejects query providers that return zero or multiple vectors", async () => {
+    const invalidQueryResponses: readonly (readonly number[])[][] = [
+      [],
+      [embedding(1), embedding(2)],
+    ];
+
+    for (const queryEmbeddings of invalidQueryResponses) {
+      const provider: EmbeddingProvider = {
+        embed: async () => queryEmbeddings,
+      };
+
+      await expect(
+        retrieveSimilarCorpusChunks(fakeDatabase() as never, "estimated payments", 1, provider),
+      ).rejects.toThrow(
+        `Embedding provider returned ${queryEmbeddings.length} vectors for 1 query.`,
+      );
+    }
   });
 });

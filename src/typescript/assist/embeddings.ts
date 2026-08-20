@@ -116,8 +116,14 @@ export async function retrieveSimilarCorpusChunks(
     return [];
   }
 
-  const [queryEmbedding] = await provider.embed([query]);
-  const vector = [...(queryEmbedding ?? [])];
+  const queryEmbeddings = await provider.embed([query]);
+  if (queryEmbeddings.length !== 1) {
+    throw new Error(
+      `Embedding provider returned ${queryEmbeddings.length} vectors for 1 query.`,
+    );
+  }
+
+  const vector = [...queryEmbeddings[0]!];
   validateEmbedding(vector, "query");
   const vectorParameter = vectorToSqlParameter(vector);
   const distance = sql<number>`${aiAssistCorpusEmbedding.embedding} <=> ${vectorParameter}::vector`;

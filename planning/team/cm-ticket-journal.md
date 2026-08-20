@@ -360,6 +360,48 @@ RAGAS evaluation, APIs, UI work, and tenant request enforcement remain out of sc
   no container runtime; CI/Docker is required for `pgvector/pgvector:pg18`.
 - Added `npm run corpus:embed` to rebuild the pgvector index from the generated chunk artifact.
 
+### Review follow-up: retrieval coverage and provider cardinality
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Strengthen semantic retrieval ranking and provider-response coverage
+
+**Description:** Address review feedback by asserting the full similarity-ranked result set and
+rejecting embedding providers that return anything other than one vector for a single query.
+
+**Acceptance Criteria:**
+
+- Retrieval tests prove that lower-similarity results follow higher-similarity results.
+- Retrieval rejects zero or multiple provider vectors for one query.
+
+**Code Connection:**
+
+- `retrieveSimilarCorpusChunks` validates the query provider response cardinality before
+  validating and sending the query vector to pgvector.
+- `embeddings.test.ts` asserts both returned ranks and covers zero/multiple query vectors.
+
+**Project Scope Connection:**
+
+This is a focused SCRUM-179 review follow-up for deterministic embedding retrieval correctness;
+hybrid retrieval, reranking, RAGAS evaluation, APIs, UI work, and tenant request enforcement
+remain out of scope.
+
+**Changed Files:**
+
+- `src/typescript/assist/embeddings.ts`
+- `tests/typescript/assist/embeddings.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm exec vitest run tests/typescript/assist/embeddings.test.ts` passed (5 tests).
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+- `git diff --check` passed.
+
 ## christopher-martus-jira144 - SCRUM-144 Seed Data Follow-up
 
 **Branch:** `christopher-martus-jira144`
