@@ -9,3 +9,4 @@ __pycache__/
 planning/prompt-journal/*
 coverage/*
 .DS_Store
+.codebase_guide/*
