@@ -30,8 +30,9 @@ the TaxPulse SPA delivery layer. The contract defines a private S3 origin bucket
 public-access blocking, CloudFront Origin Access Control, a CloudFront
 distribution with HTTPS redirects, `index.html` as the default root object, and
 403/404 rewrites back to `/index.html` for client-side routes. Added deploy
-configuration plus `npm run aws:spa-deploy` to sync `src/pulseUI/dist` to S3
-with cache-aware headers and create a CloudFront invalidation for `/*`.
+configuration that records how `src/pulseUI/dist` should sync to S3 with
+cache-aware headers and create a CloudFront invalidation for `/*` once
+SCRUM-164 or the release pipeline supplies real resources.
 
 **Project Scope Connection:** This completes the SCRUM-19 SPA delivery contract
 that sits after the SCRUM-158 ALB/API layer. It gives SCRUM-164 a concrete
@@ -47,7 +48,6 @@ delivery.
 - `deployment/spa/cloudfront-distribution.json`
 - `deployment/spa/deploy-config.json`
 - `deployment/spa/origin-access-control.json`
-- `src/typescript/shared/scripts/spaDeploy.ts`
 - `tests/typescript/spaDeliveryDefinitions.test.ts`
 - `package.json`
 - `planning/team/mm-ticket-journal.md`
@@ -61,8 +61,9 @@ delivery.
   only from the CloudFront service principal scoped to the distribution ARN.
 - The CloudFront contract rewrites 403 and 404 responses to `/index.html` with a
   `200` response so SPA client-side routes survive direct navigation and refresh.
-- The deploy command syncs hashed assets with immutable cache headers, uploads
-  `index.html` with no-cache headers, and invalidates `/*`.
+- The deploy contract syncs hashed assets with immutable cache headers, uploads
+  `index.html` with no-cache headers, and invalidates `/*`; executable deploy
+  automation is left to SCRUM-164 or the release pipeline.
 - `npm run test:vitest -- tests/typescript/spaDeliveryDefinitions.test.ts`
   passed.
 - `npm run typecheck` passed.

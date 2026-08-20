@@ -18,18 +18,28 @@ SCRUM-164 should replace the `SCRUM-164_*` placeholders with Terraform resources
 or outputs for the S3 bucket, bucket regional domain name, origin access control,
 CloudFront distribution, cache policy, and distribution ID.
 
-## Deploy
+## Deploy Contract
 
-Build the SPA, sync it to the private bucket, then invalidate CloudFront:
+SCRUM-161 records the deploy behavior that SCRUM-164 or a later pipeline should
+automate. A deploy should build the SPA, sync the built files to the private bucket,
+then invalidate CloudFront:
 
 ```bash
 npm run build:web
 
-TAXPULSE_SPA_BUCKET="<bucket-name>" \
-TAXPULSE_CLOUDFRONT_DISTRIBUTION_ID="<distribution-id>" \
-npm run aws:spa-deploy
+aws s3 sync src/pulseUI/dist "s3://<bucket-name>" \
+  --delete \
+  --cache-control "public,max-age=31536000,immutable" \
+  --exclude index.html
+
+aws s3 cp src/pulseUI/dist/index.html "s3://<bucket-name>/index.html" \
+  --cache-control "no-cache,max-age=0,must-revalidate" \
+  --content-type text/html
+
+aws cloudfront create-invalidation \
+  --distribution-id "<distribution-id>" \
+  --paths "/*"
 ```
 
-The deploy script uploads hashed assets with long-lived immutable cache headers,
-uploads `index.html` with no-cache headers, and invalidates `/*` so changed assets
-and client-side routes are refreshed at the edge.
+`deployment/spa/deploy-config.json` captures these settings as a Terraform and
+pipeline handoff contract. It is not an executable deployment by itself.
