@@ -17,3 +17,9 @@ codebase_guide/*
 .vscode/
 src/typescript/soap.d.ts
 backend-cov*
+**/.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+terraform.tfvars.json
+*.tfplan

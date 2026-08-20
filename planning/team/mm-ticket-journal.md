@@ -5,6 +5,82 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira161 - SCRUM-164
+
+**Branch:** `martins-okorie-jira161`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-164
+
+**Summary:** Modularize ECS, Lambda, and SPA delivery in Terraform
+
+**Description:** As a Platform Engineer, I want reusable Terraform modules, so
+that the whole stack provisions from one root configuration.
+
+**Acceptance Criteria:**
+
+- Separate modules exist for the ECS services, the Lambda consumers, and the SPA
+  delivery.
+- A root configuration wires the modules and outputs the public URLs.
+- Module inputs are documented with required variables.
+
+**Code Connection:** Added `infra/terraform/` as the SCRUM-164 Terraform root
+with reusable modules for ECS services, Lambda consumers, and SPA delivery. The
+ECS module translates the SCRUM-157/158 JSON contracts into ECR repositories,
+IAM roles, CloudWatch log groups, ALB security groups, target groups, listener
+rules, task definitions, and Fargate services. The Lambda module translates the
+SCRUM-159/160 contracts into transition Lambdas, API Gateway routes, shared IAM
+runtime permissions, and an optional SQS event-source mapping for the
+stage-changed consumer. The SPA module translates the SCRUM-161 contract into a
+private S3 origin, CloudFront Origin Access Control, CloudFront distribution,
+SPA route fallback rewrites, and deploy outputs.
+
+**Project Scope Connection:** This closes the handoff from placeholder deployment
+JSON to reusable infrastructure-as-code. The JSON files remain source contracts
+with `SCRUM-164_*` placeholders, while Terraform now owns the concrete AWS
+resources and exposes the public API, transition API, SPA bucket, and CloudFront
+outputs needed by later pipeline, security, and observability tickets.
+
+**Changed Files:**
+
+- `.gitignore`
+- `infra/terraform/README.md`
+- `infra/terraform/.terraform.lock.hcl`
+- `infra/terraform/main.tf`
+- `infra/terraform/outputs.tf`
+- `infra/terraform/terraform.tfvars.example`
+- `infra/terraform/variables.tf`
+- `infra/terraform/versions.tf`
+- `infra/terraform/modules/ecs_services/README.md`
+- `infra/terraform/modules/ecs_services/main.tf`
+- `infra/terraform/modules/ecs_services/outputs.tf`
+- `infra/terraform/modules/ecs_services/variables.tf`
+- `infra/terraform/modules/lambda_consumers/README.md`
+- `infra/terraform/modules/lambda_consumers/main.tf`
+- `infra/terraform/modules/lambda_consumers/outputs.tf`
+- `infra/terraform/modules/lambda_consumers/variables.tf`
+- `infra/terraform/modules/spa_delivery/README.md`
+- `infra/terraform/modules/spa_delivery/main.tf`
+- `infra/terraform/modules/spa_delivery/outputs.tf`
+- `infra/terraform/modules/spa_delivery/variables.tf`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Confirmed AWS caller identity for account `814650854375`.
+- Discovered sandbox VPC `vpc-0f2c3b110a05c423a`, current ALB
+  `taxpulse-api-alb-350585859.us-east-1.elb.amazonaws.com`, stage-changed SNS
+  topic, action-item-created FIFO SNS topic, and stage-changed SQS queue.
+- Confirmed no TaxPulse CloudFront distribution currently exists; only the
+  `taxpulse-terraform-state` S3 bucket matched the TaxPulse bucket filter.
+- `terraform fmt -recursive infra/terraform` passed.
+- `terraform init -backend=false` passed and produced the AWS provider lockfile.
+- `terraform validate` passed.
+- Did not run `terraform apply` against the sandbox because manually-created
+  SCRUM-157/158 resources already exist and should be imported into state before
+  Terraform manages those exact names.
+
 ## martins-okorie-jira161 - SCRUM-161
 
 **Branch:** `martins-okorie-jira161`
