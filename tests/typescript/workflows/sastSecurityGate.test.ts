@@ -7,7 +7,7 @@ const workflowPath = resolve(process.cwd(), ".github/workflows/sast-security-gat
 
 describe("SAST security gate workflow", () => {
   test("runs on every pull request using the Blacksmith runner", () => {
-    const workflow = readFileSync(workflowPath, "utf8");
+    const workflow = readFileSync(workflowPath, "utf8").replaceAll("\r\n", "\n");
 
     expect(workflow).toContain("on:\n  pull_request:");
     expect(workflow).not.toContain("paths:");
@@ -15,7 +15,7 @@ describe("SAST security gate workflow", () => {
   });
 
   test("runs Semgrep and Bandit with explicit high-severity enforcement", () => {
-    const workflow = readFileSync(workflowPath, "utf8");
+    const workflow = readFileSync(workflowPath, "utf8").replaceAll("\r\n", "\n");
 
     expect(workflow).toContain("semgrep scan --config auto --error --severity ERROR src/typescript");
     expect(workflow).toContain(

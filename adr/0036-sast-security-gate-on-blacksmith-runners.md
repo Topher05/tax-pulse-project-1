@@ -1,4 +1,4 @@
-# ADR-0034: SAST Security Gate on Blacksmith Runners
+# ADR-0036: SAST Security Gate on Blacksmith Runners
 
 ## Context
 

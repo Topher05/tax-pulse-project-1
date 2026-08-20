@@ -35,9 +35,9 @@ Add new ticket entries below using this template.
 -
 -->
 
-## christopher-martus-jira179 - SCRUM-165
+## christopher-martus-jira165 - SCRUM-165
 
-**Branch:** `christopher-martus-jira179`
+**Branch:** `christopher-martus-jira165`
 
 **Assignee:** Christopher Martus
 
@@ -62,25 +62,30 @@ findings.
   Bandit installation.
 - Semgrep explicitly fails on `ERROR` findings, and Bandit explicitly fails on
   `high` severity findings.
-- Recorded the runner and scanner decision in ADR-0034 and indexed it in `adr/README.md`.
+- Recorded the runner and scanner decision in ADR-0036 and indexed it in `adr/README.md`.
 
 **Project Scope Connection:**
 
-This is Step 1 of SCRUM-165 and establishes the CI/CD SAST enforcement boundary.
-Workflow regression tests remain in the dedicated Step 2; application code,
-scanner suppressions, branch protection, and non-PR triggers are out of scope.
+This completes the repository-scoped Steps 1–2 of SCRUM-165 and establishes the
+CI/CD SAST enforcement boundary. Application code, scanner suppressions, and
+non-PR triggers are out of scope. Branch protection is the separate
+repository-administration rollout in Step 3.
 
 **Changed Files:**
 
 - `.github/workflows/sast-security-gate.yml`
-- `adr/0034-sast-security-gate-on-blacksmith-runners.md`
+- `adr/0036-sast-security-gate-on-blacksmith-runners.md`
 - `adr/README.md`
 - `planning/team/cm-ticket-journal.md`
+- `tests/typescript/workflows/sastSecurityGate.test.ts`
 
 **Validation Notes:**
 
+- `npx vitest run --config vitest.config.ts tests/typescript/workflows/sastSecurityGate.test.ts` passed: 2 tests.
+- `npm run typecheck` passed.
 - `git diff --check` passed.
-- Dedicated workflow regression tests are deferred to Step 2.
+- `git diff --stat origin/development...HEAD` reports 5 files changed, 151 insertions, and 1 deletion.
+- Step 3 repository-administration rollout remains pending explicit authorization for push, PR creation, and branch-protection changes.
 
 ## christopher-martus-jira200 - SCRUM-200
 
