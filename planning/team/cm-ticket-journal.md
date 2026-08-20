@@ -34,6 +34,54 @@ Add new ticket entries below using this template.
 
 -
 -->
+
+## christopher-martus-jira179 - SCRUM-165
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-165
+
+**Summary:** Add the Semgrep and Bandit SAST gate in CI/CD
+
+**Description:** Add a pull-request security gate that runs Semgrep against the
+TypeScript source and Bandit against the Python source, failing on high-severity
+findings.
+
+**Acceptance Criteria:**
+
+- A GitHub Actions workflow runs Semgrep against `src/typescript`.
+- The workflow runs Bandit against `src/tax_liability_engine`.
+- High-severity findings cause the workflow job to exit unsuccessfully.
+- The workflow runs automatically for every `pull_request`, without path filtering.
+
+**Code Connection:**
+
+- Added a Blacksmith-run GitHub Actions workflow with Python 3.13, Semgrep, and
+  Bandit installation.
+- Semgrep explicitly fails on `ERROR` findings, and Bandit explicitly fails on
+  `high` severity findings.
+- Recorded the runner and scanner decision in ADR-0034 and indexed it in `adr/README.md`.
+
+**Project Scope Connection:**
+
+This is Step 1 of SCRUM-165 and establishes the CI/CD SAST enforcement boundary.
+Workflow regression tests remain in the dedicated Step 2; application code,
+scanner suppressions, branch protection, and non-PR triggers are out of scope.
+
+**Changed Files:**
+
+- `.github/workflows/sast-security-gate.yml`
+- `adr/0034-sast-security-gate-on-blacksmith-runners.md`
+- `adr/README.md`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- Dedicated workflow regression tests are deferred to Step 2.
+
 ## christopher-martus-jira200 - SCRUM-200
 
 **Branch:** `christopher-martus-jira200`
