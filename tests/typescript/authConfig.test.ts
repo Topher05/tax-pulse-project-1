@@ -7,14 +7,13 @@ import {
 
 const validEnvironment: NodeJS.ProcessEnv = {
   JWT_ISSUER: "https://auth.taxpulse.example",
-  JWT_SIGNING_SECRET: "a-unique-test-secret-that-is-more-than-32-bytes",
 };
 
 describe("JWT configuration", () => {
   test("returns validated defaults for token lifetimes", () => {
     expect(getJwtConfigFromEnv(validEnvironment)).toEqual({
       issuer: "https://auth.taxpulse.example",
-      signingSecret: "a-unique-test-secret-that-is-more-than-32-bytes",
+      jwksUrl: "https://auth.taxpulse.example/.well-known/jwks.json",
       accessTokenLifetimeSeconds: 900,
       refreshTokenLifetimeSeconds: 2_592_000,
     });
@@ -33,11 +32,22 @@ describe("JWT configuration", () => {
     });
   });
 
+  test("uses a configured JWKS URL and ignores the retired signing-secret setting", () => {
+    expect(
+      getJwtConfigFromEnv({
+        ...validEnvironment,
+        JWT_JWKS_URL: "https://keys.taxpulse.example/current.json",
+        JWT_SIGNING_SECRET: "retired-shared-secret",
+      }),
+    ).toMatchObject({
+      jwksUrl: "https://keys.taxpulse.example/current.json",
+    });
+  });
+
   test.each([
     ["missing issuer", { ...validEnvironment, JWT_ISSUER: undefined }],
     ["malformed issuer", { ...validEnvironment, JWT_ISSUER: "not-a-url" }],
-    ["missing secret", { ...validEnvironment, JWT_SIGNING_SECRET: undefined }],
-    ["short secret", { ...validEnvironment, JWT_SIGNING_SECRET: "too-short" }],
+    ["malformed JWKS URL", { ...validEnvironment, JWT_JWKS_URL: "not-a-url" }],
     [
       "non-integer access lifetime",
       { ...validEnvironment, JWT_ACCESS_TOKEN_TTL_SECONDS: "60.5" },

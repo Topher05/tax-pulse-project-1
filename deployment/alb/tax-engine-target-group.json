@@ -1,0 +1,27 @@
+{
+  "Name": "taxpulse-tax-engine",
+  "Protocol": "HTTP",
+  "Port": 8000,
+  "VpcId": "SCRUM-162_VPC_ID",
+  "HealthCheckProtocol": "HTTP",
+  "HealthCheckPath": "/health",
+  "HealthCheckEnabled": true,
+  "HealthCheckIntervalSeconds": 30,
+  "HealthCheckTimeoutSeconds": 5,
+  "HealthyThresholdCount": 2,
+  "UnhealthyThresholdCount": 2,
+  "Matcher": {
+    "HttpCode": "200"
+  },
+  "TargetType": "ip",
+  "Tags": [
+    {
+      "Key": "user",
+      "Value": "chimaobi-okorie"
+    },
+    {
+      "Key": "env",
+      "Value": "sandbox"
+    }
+  ]
+}

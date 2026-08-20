@@ -6,6 +6,11 @@ import type { ScenarioTypedFigures } from "../../../scenario.js";
 import type { TaxPlanCycleReadInput } from "../repositories/repository.js";
 import type { TaxPlanCycleRepository } from "../repositories/repository.js";
 import type { ScenarioModelingScenarioInput } from "../scenarioModeling.js";
+import {
+  emitObservabilityEvent,
+  type CloudWatchContext,
+  type StructuredLogger,
+} from "../../../shared/cloud-logger/observability.js";
 
 export interface ScenarioModelingControllerInput extends TaxPlanCycleReadInput {
   authorizationHeader: string;
@@ -23,6 +28,7 @@ export interface ScenarioModelingControllerOptions {
   taxPlanCycleRepository: Pick<TaxPlanCycleRepository, "findByCaseId">;
   scenarioRepository: Pick<ScenarioRepository, "createMany">;
   taxEngineClient: TaxEngineClient;
+  telemetryLogger?: StructuredLogger;
 }
 
 function modelingUnavailableError(): ProblemHttpError {
@@ -46,8 +52,27 @@ function taxEngineUnavailableError(): ProblemHttpError {
 export function createScenarioModelingController(
   options: ScenarioModelingControllerOptions,
 ): ScenarioModelingController {
+  const telemetryLogger = options.telemetryLogger ?? console;
+
   return {
     async model(input) {
+      const startedAt = Date.now();
+      const requestContext: CloudWatchContext = {
+        service: "core-case-service",
+        layer: "controller",
+        operation: "scenario_modeling",
+        tenant_id: input.tenantId,
+        case_id: input.caseId,
+      };
+
+      emitObservabilityEvent(telemetryLogger, "info", "scenario modeling started", {
+        ...requestContext,
+        outcome: "started",
+        metric_name: "tax_plan_cycle.scenario_modeling.count",
+        metric_value: 1,
+        metric_unit: "Count",
+      });
+
       const cycle = await options.taxPlanCycleRepository.findByCaseId({
         tenantId: input.tenantId,
         caseId: input.caseId,
@@ -76,12 +101,53 @@ export function createScenarioModelingController(
           scenarios: [...input.scenarios],
         });
       } catch (error) {
+        emitObservabilityEvent(telemetryLogger, "error", "scenario modeling failed", {
+          service: "core-case-service",
+          layer: "controller",
+          operation: "scenario_modeling",
+          dependency: "tax-engine",
+          tenant_id: input.tenantId,
+          case_id: input.caseId,
+          outcome: "failed",
+          duration_ms: Date.now() - startedAt,
+          error: error instanceof Error ? error.message : String(error),
+          metric_name: "tax_plan_cycle.scenario_modeling.count",
+          metric_value: 1,
+          metric_unit: "Count",
+        });
         throw taxEngineUnavailableError();
       }
 
       if (engineResults.length !== input.scenarios.length) {
+        emitObservabilityEvent(telemetryLogger, "error", "scenario modeling response mismatch", {
+          service: "core-case-service",
+          layer: "controller",
+          operation: "scenario_modeling",
+          dependency: "tax-engine",
+          tenant_id: input.tenantId,
+          case_id: input.caseId,
+          outcome: "failed",
+          duration_ms: Date.now() - startedAt,
+          metric_name: "tax_plan_cycle.scenario_modeling.count",
+          metric_value: 1,
+          metric_unit: "Count",
+        });
         throw taxEngineUnavailableError();
       }
+
+      emitObservabilityEvent(telemetryLogger, "info", "scenario modeling completed", {
+        service: "core-case-service",
+        layer: "controller",
+        operation: "scenario_modeling",
+        dependency: "tax-engine",
+        tenant_id: input.tenantId,
+        case_id: input.caseId,
+        outcome: "success",
+        duration_ms: Date.now() - startedAt,
+        metric_name: "tax_plan_cycle.scenario_modeling.duration_ms",
+        metric_value: Date.now() - startedAt,
+        metric_unit: "Milliseconds",
+      });
 
       return await options.scenarioRepository.createMany({
         tenantId: input.tenantId,

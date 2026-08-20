@@ -36,7 +36,7 @@ export {
   createLogger,
   createRequestLogger,
   type CreateLoggerOptions,
-} from "./logger.js";
+} from "./shared/cloud-logger/logger.js";
 export {
   defaultPasswordHashingConfig,
   hashPassword,
@@ -154,6 +154,16 @@ export {
 } from "./coreCaseOpenApi.js";
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
 export {
+  createJwksRouter,
+  type CreateJwksRouterOptions,
+} from "./jwksRoutes.js";
+export {
+  getJwtJwksVerifierConfigFromEnv,
+  getJwtRs256IssuerConfigFromEnv,
+  type JwtJwksVerifierConfig,
+  type JwtRs256IssuerConfig,
+} from "./jwtRs256Config.js";
+export {
   clientRoster,
   auditEntry,
   actionItem,
@@ -166,6 +176,7 @@ export {
   roles,
   stageTransition,
   stateTaxBracket,
+  taxpayerIdentifierValidation,
   taxPlanCycle,
   tenants,
   users,
@@ -285,12 +296,29 @@ export {
   actionItemCreatedEventSchemaVersion,
   actionItemCreatedEventSource,
   actionItemCreatedEventType,
+  actionItemCreatedEventInputSchema,
   createActionItemCreatedCloudEvent,
   type ActionItemCreatedCloudEventV1,
   type ActionItemCreatedEventDataV1,
   type ActionItemCreatedEventInput,
   type ActionItemCreatedEventPublishInput,
   type CreateActionItemCreatedCloudEventOptions,
+  createActionItemCreatedSnsClient,
+  createSnsActionItemCreatedEventPublisher,
+  getActionItemCreatedTopicArnFromEnv,
+  type ActionItemCreatedSnsClient,
+  actionItemCompletedCloudEventSchemaV1,
+  actionItemCompletedEventDataSchema,
+  actionItemCompletedEventDataSchemaV1,
+  actionItemCompletedEventSchemaVersion,
+  actionItemCompletedEventSource,
+  actionItemCompletedEventType,
+  createActionItemCompletedCloudEvent,
+  createActionItemCompletedSqsConsumer,
+  getActionItemCompletedQueueUrlFromEnv,
+  parseActionItemCompletedSqsMessage,
+  type ActionItemCompletedCloudEventV1,
+  type ActionItemCompletedEventPublishInput,
   createActionItemRepository,
   type ActionItemCreateInput,
   type ActionItemRepository,
@@ -300,6 +328,22 @@ export {
   createActionItemConsumer,
   createRedisActionItemConsumer,
   createPresentToClientSaga,
+  createJwtLambdaAuthenticator,
+  createPresentToClientLambdaHandler,
+  createExecuteLambdaHandler,
+  serializeLambdaJsonResponse,
+  serializeLambdaProblemResponse,
+  presentToClientHandler,
+  executeHandler,
+  resetTaxPlanCycleLambdaRuntimeForTests,
+  type CreateExecuteLambdaHandlerOptions,
+  type CreateJwtLambdaAuthenticatorOptions,
+  type CreatePresentToClientLambdaHandlerOptions,
+  type LambdaAuthenticator,
+  type LambdaHttpRequest,
+  type LambdaHttpResponse,
+  type LambdaRequestContext,
+  type TaxPlanCycleLambdaRuntime,
 } from "./features/taxPlanCycle/index.js";
 export {
   scenarioComputedResultSchema,
@@ -322,6 +366,42 @@ export {
   type TaxCalculationEngineResult,
   type ScenarioComparisonEngineRequest,
   type TaxEngineComparisonRequest,
+} from "./features/taxPlanCycle/index.js";
+export {
+  createTinEinValidationSoapClient,
+  getTinEinValidationSoapConfigFromEnv,
+  type TinEinValidationSoapClient,
+  type TinEinValidationSoapClientOptions,
+  type TivsGetTaxpayerStatusRawResponse,
+  type TivsGetTaxpayerStatusRequest,
+  type TivsMatchCode,
+  type TivsStandingCode,
+  type TivsTinType,
+  type TivsVerifyTaxpayerRawResponse,
+  type TivsVerifyTaxpayerRequest,
+} from "./features/taxPlanCycle/index.js";
+export {
+  createTinEinValidationAcl,
+  createTaxpayerIdentifierValidationRepository,
+  isTaxpayerIdentifierSoapFaultError,
+  taxpayerIdentifierInputSchema,
+  taxpayerIdentifierTypeSchema,
+  taxpayerIdentifierTypeValues,
+  taxpayerIdentifierValidationResultSchema,
+  taxpayerIdentifierValidationResultValues,
+  taxpayerIdentifierValidationSchema,
+  translateSoapFault,
+  TaxpayerIdentifierSoapFaultError,
+  type TaxpayerIdentifierInput,
+  type TaxpayerIdentifierSoapFaultOptions,
+  type TaxpayerIdentifierType,
+  type TaxpayerIdentifierValidation,
+  type TaxpayerIdentifierValidationOutcome,
+  type TaxpayerIdentifierValidationReadInput,
+  type TaxpayerIdentifierValidationRecordInput,
+  type TaxpayerIdentifierValidationRepository,
+  type TaxpayerIdentifierValidationResult,
+  type TaxpayerIdentifierValidator,
 } from "./features/taxPlanCycle/index.js";
 export {
   getJwtConfigFromEnv,
@@ -534,7 +614,8 @@ import { createClient } from "redis";
 
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
-import { createLogger } from "./logger.js";
+import { createLogger } from "./shared/cloud-logger/logger.js";
+import { createJwksRouter } from "./jwksRoutes.js";
 import { createJwtAuthenticationMiddleware, hydrateUserClaims } from "./jwtAuthentication.js";
 import { createCostAccountingMiddleware } from "./costAccounting.js";
 import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
@@ -546,6 +627,8 @@ import {
   createTaxPlanCycleQueueCache,
   createTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleRepository,
+  createActionItemRepository,
+  createActionItemCompletedSnsPublisher,
   createSnsStageChangedEventPublisher,
   createStageChangedSnsClient,
   createQuarterlyPaymentsRouter,
@@ -554,11 +637,17 @@ import {
   createScenarioModelingController,
   createScenarioRepository,
   createTaxEngineClient,
+  createTinEinValidationAcl,
+  createTinEinValidationSoapClient,
+  createTaxpayerIdentifierValidationRepository,
+  getTinEinValidationSoapConfigFromEnv,
+  type TaxpayerIdentifierValidator,
 } from "./features/taxPlanCycle/index.js";
 import {
   getJwtConfigFromEnv,
   getTenantLoginBaseDomainFromEnv,
 } from "./authConfig.js";
+import { getJwtRs256IssuerConfigFromEnv } from "./jwtRs256Config.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createAuthSessionRouter } from "./authSessionRoutes.js";
@@ -629,6 +718,7 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 
 export async function main(): Promise<Server> {
   const jwtConfig = getJwtConfigFromEnv();
+  const jwtRs256IssuerConfig = getJwtRs256IssuerConfigFromEnv();
   const tenantLoginBaseDomain = getTenantLoginBaseDomainFromEnv();
   const logger = createLogger();
 
@@ -648,14 +738,23 @@ export async function main(): Promise<Server> {
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
+  const actionItemRepository = createActionItemRepository(client);
   const clientRosterRepository = createClientRosterRepository(client);
   const firmUsersRepository = createFirmUsersRepository(client);
   const platformAdministrationRepository = createPlatformAdministrationRepository(client);
   const scenarioRepository = createScenarioRepository(client);
   const deductionRepository = createDeductionRepository(client);
+  const taxpayerIdentifierValidationRepository =
+    createTaxpayerIdentifierValidationRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
   const liabilityEngineBase = process.env.LIABILITY_ENGINE_BASE?.trim();
   const stageChangedTopicArn = process.env.TAXPULSE_STAGE_CHANGED_TOPIC_ARN?.trim();
+  const tivsConfigComplete = [
+    process.env.TIVS_WSDL_URL,
+    process.env.TIVS_ENDPOINT_URL,
+    process.env.TIVS_USERNAME,
+    process.env.TIVS_PASSWORD,
+  ].every((value) => value?.trim());
   let queueCacheRedisClient: ReturnType<typeof createClient> | undefined;
   let queueCacheInvalidator = createNoopTaxPlanCycleQueueCacheInvalidator();
   let createIdempotencyStore: ReturnType<
@@ -664,9 +763,13 @@ export async function main(): Promise<Server> {
   let stageChangedEventPublisher:
     | ReturnType<typeof createSnsStageChangedEventPublisher>
     | undefined;
+  let actionItemCompletedEventPublisher:
+    | ReturnType<typeof createActionItemCompletedSnsPublisher>
+    | undefined;
   let scenarioModelingController:
     | ReturnType<typeof createScenarioModelingController>
     | undefined;
+  let taxpayerIdentifierValidator: TaxpayerIdentifierValidator | undefined;
 
   if (queueRedisUrl) {
     queueCacheRedisClient = createClient({ url: queueRedisUrl });
@@ -687,19 +790,33 @@ export async function main(): Promise<Server> {
       stageChangedSnsClient,
       stageChangedTopicArn,
     );
-    logger.info("Connected to SNS for stage-changed publishing");
+    actionItemCompletedEventPublisher = createActionItemCompletedSnsPublisher(
+      stageChangedSnsClient,
+      stageChangedTopicArn,
+    );
+    logger.info("Connected to SNS for tax plan cycle event publishing");
   }
 
   if (liabilityEngineBase) {
     const taxEngineClient = createTaxEngineClient({
       baseUrl: liabilityEngineBase,
+      telemetryLogger: logger,
     });
     scenarioModelingController = createScenarioModelingController({
       taxPlanCycleRepository,
       scenarioRepository,
       taxEngineClient,
+      telemetryLogger: logger,
     });
     logger.info("Connected to the liability engine for scenario modeling");
+  }
+
+  if (tivsConfigComplete) {
+    const tivsSoapClient = await createTinEinValidationSoapClient(
+      getTinEinValidationSoapConfigFromEnv(),
+    );
+    taxpayerIdentifierValidator = createTinEinValidationAcl(tivsSoapClient);
+    logger.info("Connected to TIVS for Intake taxpayer identifier validation");
   }
 
   const auditEntryRepository = createAuditEntryRepository(client);
@@ -708,6 +825,8 @@ export async function main(): Promise<Server> {
     taxPlanCycleRepository,
     {
       idempotencyStore: createIdempotencyStore,
+      taxpayerIdentifierValidator,
+      taxpayerIdentifierValidationRepository,
     },
   );
   const taxPlanCycleTransitionController = createTaxPlanCycleTransitionController(
@@ -715,12 +834,14 @@ export async function main(): Promise<Server> {
     {
       queueCacheInvalidator,
       stageChangedEventPublisher,
+      telemetryLogger: logger,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
     authenticatePasswordForMfaChallenge(input, credentialReader);
   const tokenService = createTokenService({
     config: jwtConfig,
+    rs256IssuerConfig: jwtRs256IssuerConfig,
     refreshTokenRepository,
   });
 
@@ -737,6 +858,7 @@ export async function main(): Promise<Server> {
   const app = createApp({
     logger,
     registerRoutes: (app) => {
+      app.use(createJwksRouter({ issuerConfig: jwtRs256IssuerConfig }));
       app.use(createCoreCaseOpenApiRouter());
       app.use(createMfaEnrollmentRouter({
         controller: mfaEnrollmentController,
@@ -755,6 +877,8 @@ export async function main(): Promise<Server> {
           auditEntryReader: auditEntryRepository,
           auditEntryWriter,
           clientPortalReadRepository: taxPlanCycleRepository,
+          actionItemRepository,
+          actionItemCompletedEventPublisher,
           controller: taxPlanCycleController,
           taxPlanCycleRepository,
           scenarioRepository,

@@ -2,12 +2,20 @@ import "@testing-library/jest-dom/vitest";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
+import * as caseApi from "../../shared/caseApi.ts";
 import * as detailQueries from "../../entities/taxPlanCycleQueries.ts";
 
 beforeAll(() => {
@@ -21,8 +29,10 @@ afterEach(() => {
 
 type CommentRows = Awaited<ReturnType<typeof detailQueries.fetchTaxPlanCycleComments>>;
 type AuditRows = Awaited<ReturnType<typeof detailQueries.fetchTaxPlanCycleAuditEntries>>;
+type DetailsView = Awaited<ReturnType<typeof detailQueries.fetchTaxPlanCycleDetails>>;
 
 interface RenderDetailsOptions {
+  readonly details?: readonly DetailsView[];
   readonly comments?: CommentRows;
   readonly commentsPromise?: Promise<CommentRows>;
   readonly auditEntries?: AuditRows;
@@ -30,22 +40,33 @@ interface RenderDetailsOptions {
 }
 
 function renderDetails({
+  details,
   comments,
   commentsPromise,
   auditEntries,
   auditEntriesPromise,
 }: RenderDetailsOptions = {}) {
-  vi.spyOn(detailQueries, "fetchTaxPlanCycleDetails").mockResolvedValue({
-    caseId: "TP-24018",
-    client: "North Shore Family Office",
-    stage: "Review",
-    owner: "Maya Reed",
-    priority: "High",
-    dueDate: "May 12, 2026",
-    scenarioCount: 2,
-    onHold: false,
-    overdue: true,
+  const detailsMock = vi.spyOn(detailQueries, "fetchTaxPlanCycleDetails");
+  const detailSequence =
+    details ?? [
+      {
+        caseId: "TP-24018",
+        client: "North Shore Family Office",
+        stage: "Review",
+        owner: "Maya Reed",
+        priority: "High",
+        dueDate: "May 12, 2026",
+        scenarioCount: 2,
+        onHold: false,
+        overdue: true,
+      },
+    ];
+
+  detailSequence.forEach((detail) => {
+    detailsMock.mockResolvedValueOnce(detail);
   });
+  detailsMock.mockResolvedValue(detailSequence[detailSequence.length - 1]!);
+
   vi.spyOn(detailQueries, "fetchTaxPlanCycleComments").mockReturnValue(
     commentsPromise ?? Promise.resolve(comments ?? [
       {
@@ -68,6 +89,7 @@ function renderDetails({
       },
     ]),
   );
+  const patchSpy = vi.spyOn(caseApi, "caseApiPatchJson");
 
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
@@ -76,6 +98,8 @@ function renderDetails({
       </TestSessionProvider>
     </QueryClientProvider>,
   );
+
+  return { detailsMock, patchSpy };
 }
 
 describe("Tax Plan Cycle details page", () => {
@@ -96,11 +120,11 @@ describe("Tax Plan Cycle details page", () => {
     );
 
     const stageStepper = screen.getByLabelText("Case stage progression");
-    expect(within(stageStepper).getByRole("button", { name: /Review/ })).toHaveAttribute(
-      "aria-current",
-      "step",
+    expect(within(stageStepper).getByText("Review").closest("[aria-current='step']")).toBe(
+      stageStepper.querySelector("[aria-current='step']"),
     );
-    expect(within(stageStepper).getByRole("button", { name: /Archived/ })).toBeInTheDocument();
+    expect(within(stageStepper).getByText("Archived")).toBeInTheDocument();
+    expect(within(stageStepper).queryByRole("button", { name: /Review/ })).not.toBeInTheDocument();
   });
 
   test("renders overview and case properties content after the case loads", async () => {
@@ -179,15 +203,104 @@ describe("Tax Plan Cycle details page", () => {
     ).toBeInTheDocument();
   });
 
-  test("updates the active stage when a step is clicked", async () => {
+  test("renders the stage stepper as display-only backend state", async () => {
     renderDetails();
 
     const stageStepper = await screen.findByLabelText("Case stage progression");
-    fireEvent.click(within(stageStepper).getByRole("button", { name: /Modeling/ }));
 
-    expect(await within(stageStepper).findByRole("button", { name: /Modeling/ })).toHaveAttribute(
-      "aria-current",
-      "step",
+    expect(within(stageStepper).getByText("Review").closest("[aria-current='step']")).toBe(
+      stageStepper.querySelector("[aria-current='step']"),
+    );
+    expect(within(stageStepper).queryByRole("button", { name: /Modeling/ })).not.toBeInTheDocument();
+    expect(within(stageStepper).getByText("Modeling")).toBeInTheDocument();
+  });
+
+  test("shows an error toast for the reassign placeholder action", async () => {
+    renderDetails();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Reassign" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Reassign");
+    expect(screen.getByRole("alert")).toHaveTextContent("Implementation Details TBD.");
+  });
+
+  test("shows an info toast for the hold placeholder action", async () => {
+    renderDetails();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Hold" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Hold");
+    expect(screen.getByRole("status")).toHaveTextContent("Implementation Details TBD.");
+  });
+
+  test("shows a transition success toast and refreshes the displayed stage after advancing", async () => {
+    const nextDetails: DetailsView = {
+      caseId: "TP-24018",
+      client: "North Shore Family Office",
+      stage: "Client Approval",
+      owner: "Maya Reed",
+      priority: "High",
+      dueDate: "May 12, 2026",
+      scenarioCount: 2,
+      onHold: false,
+      overdue: true,
+    };
+    const { detailsMock, patchSpy } = renderDetails({
+      details: [
+        {
+          caseId: "TP-24018",
+          client: "North Shore Family Office",
+          stage: "Review",
+          owner: "Maya Reed",
+          priority: "High",
+          dueDate: "May 12, 2026",
+          scenarioCount: 2,
+          onHold: false,
+          overdue: true,
+        },
+        nextDetails,
+      ],
+    });
+
+    patchSpy.mockResolvedValueOnce({ stage: nextDetails.stage });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Advance Stage" }));
+
+    await waitFor(() => expect(patchSpy).toHaveBeenCalledTimes(1));
+    expect(patchSpy).toHaveBeenCalledWith(
+      "/v1/tax-plan-cycles/TP-24018/transition",
+      { to_stage: "Client Approval" },
+      expect.any(Function),
+    );
+
+    await waitFor(() => expect(detailsMock).toHaveBeenCalledTimes(2));
+
+    const stageStepper = await screen.findByLabelText("Case stage progression");
+    expect(within(stageStepper).getByText("Client Approval").closest("[aria-current='step']")).toBe(
+      stageStepper.querySelector("[aria-current='step']"),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Stage Advanced");
+    expect(screen.getByRole("status")).toHaveTextContent("transition successful");
+  });
+
+  test("shows an error toast when a transition is rejected", async () => {
+    const { patchSpy } = renderDetails();
+
+    patchSpy.mockRejectedValueOnce(
+      new caseApi.CaseApiError(
+        403,
+        JSON.stringify({
+          title: "Forbidden",
+          detail: "The current role is not authorized to perform this transition.",
+        }),
+      ),
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Advance Stage" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Forbidden");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "The current role is not authorized to perform this transition.",
     );
   });
 });

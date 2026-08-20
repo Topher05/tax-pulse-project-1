@@ -35,6 +35,285 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira170 - SCRUM-170
+
+**Branch:** `caleb-latimer-jira170`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-170
+
+**Summary:** Emit CloudWatch metrics and X-Ray traces across services
+
+**Description:** As a Platform Engineer, I want CloudWatch metrics and X-Ray traces, so
+that I can observe the deployed stack. SCRUM-164 infrastructure is intentionally not
+available yet, so this work is landing as far as it can go with structured telemetry,
+explicit trace-context capture, and deferred deployment wiring.
+
+**Acceptance Criteria:**
+
+- Services emit structured logs and metric-shaped telemetry for the workflow and Tax
+  Engine boundaries.
+- Trace context is captured from incoming HTTP and Lambda requests and carried into the
+  emitted observability records.
+- Outbound Tax Engine requests log start, retry, failure, and success outcomes with
+  duration fields.
+- The PR descriptor calls out the deferred SCRUM-164 mock/suppression/stub block.
+- No stage, audit, or domain behavior changes are introduced.
+
+**Code Connection:**
+
+- `src/typescript/observability.ts`
+- `src/typescript/logger.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/controllers/scenarios.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts`
+- `src/typescript/features/taxPlanCycle/lambdaRuntime.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts`
+- `src/typescript/shared/scripts/execute-lambda/runtime.ts`
+- `src/typescript/index.ts`
+- `.github/pull_request_template.md`
+
+**Project Scope Connection:**
+
+- IaC, Secure Pipeline & Observability
+- Cross-service request tracing and CloudWatch-ready structured telemetry
+- Deferred AWS resource wiring until SCRUM-164 is available
+
+**Changed Files:**
+
+- `.github/pull_request_template.md`
+- `planning/team/cl-ticket-journal.md`
+- `src/typescript/features/taxPlanCycle/controllers/scenarios.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/features/taxPlanCycle/lambdaRuntime.ts`
+- `src/typescript/index.ts`
+- `src/typescript/logger.ts`
+- `src/typescript/observability.ts`
+- `src/typescript/shared/scripts/execute-lambda/runtime.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts`
+
+**Validation Notes:**
+
+- Tests were intentionally suspended per instruction.
+- The current pass focused on code-path telemetry and PR-descriptor updates only.
+- Follow-up review still needs to confirm the final AWS-side resource plan once SCRUM-164
+  becomes available.
+
+## caleb-latimer-jira166 - SCRUM-166
+
+**Branch:** `caleb-latimer-jira166`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-166
+
+**Summary:** Add the OSV and Gitleaks gate
+
+**Description:** As a Security Engineer, I want OSV and Gitleaks on every PR, so that
+vulnerable dependencies and committed secrets are blocked.
+
+**Acceptance Criteria:**
+
+- OSV flags a known-vulnerable dependency and fails the PR.
+- Gitleaks blocks a committed secret.
+- Checkov runs as its own Terraform security step and fails on a high-severity finding.
+- tfsec runs as its own Terraform security step and fails on a high-severity finding.
+- Confirm whether an org-level `GITLEAKS_LICENSE` secret already exists and should be
+  preferred over the repo-level secret before merging.
+- All four checks run automatically on the pull request path.
+
+**Code Connection:**
+
+- `.github/workflows/dependency-security-gate.yml` adds the PR-time OSV and Gitleaks
+  gate on the same Blacksmith runner pattern used by SCRUM-165.
+- `.github/pull_request_template.md` now calls out mocked or stubbed infrastructure
+  boundaries plus scan suppressions and exceptions in the Risk Notes section.
+- `planning/ai-review-checklist.md` now asks reviewers to verify that mocked or stubbed
+  boundaries and any scan suppressions or exceptions are surfaced in Risk Notes.
+- `GITLEAKS_LICENSE` must be populated as a GitHub Secret for the org-owned repository
+  or the Gitleaks action fails before scanning starts.
+- `terraform/vpc.tf`, `terraform/database.tf`, and `terraform/redis.tf` already carry
+  the seeded infrastructure stance that later tickets will need to revisit: public
+  subnet auto-IP is intentionally explicit, and the ECS task security-group references
+  still describe a future compute layer rather than a live one.
+
+**Project Scope Connection:**
+
+- IaC, Secure Pipeline & Observability
+- PR-time dependency and secret scanning before merge
+- Supply-chain and secret detection on the repository's merge path
+- Stubbed platform plumbing until ECS, load balancer, and container delivery exist
+- Gitleaks license validation for the organization-owned repo
+
+**Changed Files:**
+
+- `.github/pull_request_template.md`
+- `.github/workflows/dependency-security-gate.yml`
+- `planning/ai-review-checklist.md`
+- `planning/team/cl-ticket-journal.md`
+- `tests/typescript/workflows/dependencySecurityGate.test.ts`
+
+**Validation Notes:**
+
+- Repository-local workflow coverage was added for the new dependency and secret gate.
+- The journal records the existing Terraform stub/suppression posture so the future PR
+  checklist can carry it forward as risk notes.
+- The Gitleaks action now expects the `GITLEAKS_LICENSE` secret to be configured in
+  GitHub before the workflow can succeed in an organization-owned repo.
+- No runtime validation was run against the new workflow in this shell.
+
+## caleb-latimer-jira163 - SCRUM-163
+
+**Branch:** `caleb-latimer-jira163`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-163
+
+**Summary:** Gate Terraform with Checkov and tfsec
+
+**Description:** As a Security Engineer, I want Checkov and tfsec scanning the Terraform, so that misconfigurations are caught before apply.
+
+**Acceptance Criteria:**
+
+- Checkov and tfsec run in CI against the Terraform root.
+- The gate fails on a high-severity misconfiguration.
+- Documented suppressions require a justification comment.
+- The workflow runs on a Blacksmith-backed GitHub Actions runner.
+
+**Code Connection:**
+
+- `.github/workflows/terraform-security-gate.yml` adds the PR-time Terraform gate on the Blacksmith runner and runs `terraform fmt`, `terraform init -backend=false`, `terraform validate`, Checkov, and tfsec.
+- `.github/workflows/container-build-scaffold.yml` keeps the Blacksmith Docker builder helpers on deck for the future container delivery work without changing the Terraform gate.
+- `terraform/database.tf`, `terraform/dynamodb.tf`, and `terraform/redis.tf` now tighten the security posture that the scanners were flagging.
+- `terraform/vpc.tf` documents the intentional public-subnet behavior with inline tfsec and Checkov suppressions.
+- `terraform/.tfsec/config.yml` makes the tfsec severity threshold explicit in repo config.
+- `tests/typescript/workflows/terraformSecurityGate.test.ts` guards the workflow shape and scan requirements with a repo-local regression test.
+- `tests/typescript/workflows/containerBuildScaffold.test.ts` guards the future container scaffold text and helper references.
+- `adr/0033-terraform-security-gate-on-blacksmith-runners.md` records the deployment boundary and visual flow for the gate.
+
+**Architecture Diagram:**
+
+```mermaid
+flowchart LR
+  PR[Pull request updates terraform/]
+  WF[GitHub Actions workflow]
+  BS[Blacksmith runner]
+  TF[Terraform checks<br/>fmt / init -backend=false / validate]
+  CK[Checkov<br/>hard fail on HIGH]
+  TS[tfsec<br/>minimum severity HIGH]
+  PASS[Required status check passes]
+  FAIL[Fail the gate]
+  BR[Branch protection / merge policy]
+
+  PR --> WF --> BS --> TF --> CK --> TS --> PASS --> BR
+  CK -->|high-severity finding| FAIL
+  TS -->|high-severity finding| FAIL
+```
+
+**Project Scope Connection:**
+
+- IaC, Secure Pipeline & Observability
+- Terraform provisioning safety for the seeded SCRUM-162 infrastructure
+- PR-time security scanning before any future apply path
+
+**Changed Files:**
+
+- `.github/workflows/terraform-security-gate.yml`
+- `.github/workflows/container-build-scaffold.yml`
+- `adr/0033-terraform-security-gate-on-blacksmith-runners.md`
+- `adr/README.md`
+- `terraform/.tfsec/config.yml`
+- `tests/typescript/workflows/terraformSecurityGate.test.ts`
+- `tests/typescript/workflows/containerBuildScaffold.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- Repository-local workflow assertions were added to cover the Blacksmith runner label, Terraform trigger scope, and required scan commands.
+- No AWS credentials are required for the static gate path.
+- GitHub branch protection and required status checks still need to be configured in the repository settings.
+
+## caleb-latimer-jira160 - SCRUM-160
+
+**Branch:** `caleb-latimer-jira160`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-160
+
+**Summary:** Refactor present-to-client and execute stubs to Lambda + API Gateway
+
+**Description:** Implement SCRUM-160 as a full AWS deployment refactor for the present-to-client and execute transitions, with a new ADR at index 30 and SCRUM-138 already merged into the branch before implementation starts. SCRUM-138 is the behavioral dependency for the compensating present-to-client saga and event contract, while SCRUM-156 is only a local emulation dependency that should not shape the AWS delivery path.
+
+**Acceptance Criteria:**
+
+- The present-to-client and execute transitions run behind AWS Lambda handlers and API Gateway routes.
+- The AWS deployment path includes the required runtime config, IAM permissions, and event-publishing wiring.
+- The new ADR at index 30 records the Lambda + API Gateway architecture decision.
+- Lambda is the command boundary only; the Tax Plan Cycle feature slice retains transition rules, audit writes, stage-changed emission, and present-to-client compensation.
+- SCRUM-138 supplies the saga and event semantics that the Lambda path must preserve.
+- SCRUM-156 is not a production prerequisite; if any legacy code still depends on it, it is scaffolded only and marked with `TODO: Implmentation needs Jira 156`.
+- The code compiles and the relevant tests pass with the SCRUM-138 behavior already present.
+
+**Code Connection:**
+
+- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts` now composes the present-to-client Lambda around the shared transition controller, a mutable in-memory repository, and the real SNS publishers.
+- `src/typescript/shared/scripts/execute-lambda/runtime.ts` now composes the execute Lambda around the shared transition controller and the real stage-changed SNS publisher.
+- `src/typescript/shared/scripts/taxPlanCycleLambdaRuntime.ts` holds the Lambda-local mutable repository and no-op audit writer used by both bundles.
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts` and `src/typescript/shared/scripts/execute-lambda/index.ts` remain the thin API Gateway proxy adapters for the two routes.
+- `scripts/build-present-to-client-lambda.mjs` and `scripts/build-execute-lambda.mjs` build the deployable `dist/present-to-client-lambda/index.js` and `dist/execute-lambda/index.js` bundles.
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/SnsPublisher.ts` now handles FIFO topic publish requirements by supplying `MessageGroupId` and `MessageDeduplicationId` when the action-item topic ARN ends with `.fifo`.
+- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts`, `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`, and `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/presentToClientSaga/PresentToClientSaga.ts` now emit explicit telemetry markers for the Lambda entrypoint, stage-changed publish, and action-item publish boundaries.
+- `src/typescript/soap.d.ts` plus `tests/typescript/bootstrap/testSetup.ts` keep the shared root exports loadable in Vitest by mocking the absent SOAP package.
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationSoapClient.ts` and `tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts` were adjusted so the typecheck and test harness accept the local SOAP shim.
+- `adr/0030-lambda-api-gateway-integration.md` now matches the Lambda boundary and event-focused AWS cutover.
+- `src/typescript/shared/scripts/cloudTap.ts` keeps the action-item and stage-changed cloud tap paths aligned with the current repository contract.
+
+**Project Scope Connection:**
+
+- Event-Driven Workflow & Legacy Integration
+- Serverless deployment cutover for the Tax Plan Cycle workflow
+- Preserves the SCRUM-138 transition behavior while moving the delivery path into AWS infrastructure
+- Keeps SCRUM-156 out of the AWS path unless a temporary scaffold is still required for a leftover local-only code path
+
+  **Changed Files:**
+
+- `adr/0030-lambda-api-gateway-integration.md`
+- `package.json`
+- `scripts/build-execute-lambda.mjs`
+- `scripts/build-present-to-client-lambda.mjs`
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationSoapClient.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/execute-lambda/runtime.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts`
+- `src/typescript/shared/scripts/taxPlanCycleLambdaRuntime.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/SnsPublisher.ts`
+- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/presentToClientSaga/PresentToClientSaga.ts`
+- `src/typescript/soap.d.ts`
+- `tests/typescript/bootstrap/testSetup.ts`
+- `tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts`
+- `tests/typescript/shared/scripts/executeLambdaRuntime.test.ts`
+- `tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
+- `tests/typescript/shared/scripts/presentToClientLambdaRuntime.test.ts`
+
+  **Validation Notes:**
+
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run typecheck"` passed.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run build:present-to-client-lambda && npm.cmd run build:execute-lambda"` produced `dist/present-to-client-lambda/index.js` and `dist/execute-lambda/index.js` plus source maps.
+  - `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/shared/scripts/presentToClientLambda.test.ts tests/typescript/shared/scripts/presentToClientLambdaRuntime.test.ts tests/typescript/shared/scripts/executeLambdaRuntime.test.ts tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts tests/typescript/features/taxPlanCycle/actionItemConsumer.test.ts tests/typescript/shared/scripts/cloudTap.test.ts tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts"` passed after the local `soap` bootstrap mock was added.
+  - The FIFO action-item SNS publish path was verified by adding `MessageGroupId` and `MessageDeduplicationId` assertions to the present-to-client runtime and action-item publisher tests.
+  - The present-to-client runtime and saga now emit targeted telemetry markers so CloudWatch can show entry, stage-changed publish, and action-item publish boundaries.
+  - The shared test bootstrap now mocks the absent `soap` package so the root TypeScript exports can load in Vitest without adding a new runtime dependency.
+
 ## caleb-latimer-jira128 - SCRUM-128
 
 **Branch:** `caleb-latimer-jira128`
@@ -207,6 +486,69 @@ Add new ticket entries below using this template.
 - `src/pulseUI/pages/firm/TeamUsersPage.tsx`
 - `src/pulseUI/pages/firm/TeamUsersPage.module.css`
 - `src/pulseUI/app/routeTree.tsx`
+
+## caleb-latimer-jira145 - Jira-145
+
+**Branch:** `caleb-latimer-jira145`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** Jira-145
+
+**Summary:** Wire the cycle details action buttons and notification feedback
+
+**Description:** Implement the cycle-details action bar behavior so Reassign and Hold show placeholder info toasts, Advance Stage advances the tax-plan cycle through the existing transition endpoint, and the page refreshes the visible stage and audit trail on success.
+
+**Acceptance Criteria:**
+
+- Reassign and Hold are clickable and show info toasts that implementation details are still TBD.
+- Advance Stage computes the next canonical forward stage and PATCHes the existing transition endpoint.
+- Successful transitions refresh the details and audit-trail query state and surface a success toast.
+- Unauthorized or illegal transitions stay on the page and surface backend problem details in an error toast.
+- The notification system is reusable from the app shell and auto-dismisses after the default display time.
+
+**Code Connection:**
+
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/NotificationToast.tsx`
+- `src/pulseUI/components/NotificationToast.module.css`
+- `src/pulseUI/entities/notificationMessage.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/shared/caseApi.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+
+**Project Scope Connection:**
+
+- React SPA - Operator & Portal Experience
+- Tax-plan cycle advancement wiring and user feedback
+- Preserves the existing transition permission matrix while surfacing the result in the internal case details UI
+
+**Changed Files:**
+
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/NotificationToast.tsx`
+- `src/pulseUI/components/NotificationToast.module.css`
+- `src/pulseUI/entities/notificationMessage.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/components/NotificationToast.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `src/pulseUI/vitest.config.ts`
+- `src/pulseUI/shared/caseApi.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd --prefix src/pulseUI test"` passed with 42 test files and 204 tests green.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/routes.test.ts"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/integration.test.ts"` passed.
+- `cmd /c "set PATH=C:\\nvm4w\\nodejs;%PATH% && npm.cmd run test:vitest -- tests/typescript/auditEntryOutput.test.ts"` passed.
+
 ## caleb-latimer-jira124 - SCRUM-124
 
 **Branch:** `caleb-latimer-jira124`
@@ -339,7 +681,7 @@ sequenceDiagram
 
 **Code Connection:**
 
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/PresentToClientSaga.ts` owns the compensating saga orchestration.
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/PresentToClientSaga.ts` owns the compensating saga orchestration.
 - `src/typescript/features/taxPlanCycle/controllers/transitionController.ts` delegates the present-to-client branch to the saga helper.
 - `src/typescript/shared/scripts/cloudTap.ts` adds the in-memory present-to-client success and compensation sequences.
 - `tests/typescript/features/taxPlanCycle/presentToClientSaga.test.ts` covers the saga success and rollback behavior.
@@ -354,8 +696,8 @@ sequenceDiagram
 
 **Changed Files:**
 
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/PresentToClientSaga.ts`
-- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/index.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/PresentToClientSaga.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/index.ts`
 - `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/index.ts`

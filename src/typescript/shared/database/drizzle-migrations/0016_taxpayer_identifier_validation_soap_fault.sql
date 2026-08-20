@@ -1,0 +1,2 @@
+ALTER TABLE "taxpayer_identifier_validation" DROP CONSTRAINT "taxpayer_identifier_validation_result_check";--> statement-breakpoint
+ALTER TABLE "taxpayer_identifier_validation" ADD CONSTRAINT "taxpayer_identifier_validation_result_check" CHECK ("taxpayer_identifier_validation"."validation_result" IN ('match', 'tin_not_issued', 'tin_not_found', 'name_mismatch', 'soap_fault'));

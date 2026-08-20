@@ -41,16 +41,45 @@ export {
   actionItemCreatedEventSchemaVersion,
   actionItemCreatedEventSource,
   actionItemCreatedEventType,
+  actionItemCreatedEventInputSchema,
   createActionItemCreatedCloudEvent,
   type ActionItemCreatedCloudEventV1,
   type ActionItemCreatedEventDataV1,
   type ActionItemCreatedEventInput,
   type ActionItemCreatedEventPublishInput,
   type CreateActionItemCreatedCloudEventOptions,
-} from "./infrastructure/CloudEvents/actionItemCreated/index.js";
+} from "./infrastructure/cloudEvents/actionItemCreated/index.js";
+export {
+  actionItemCompletedCloudEventSchemaV1,
+  actionItemCompletedEventDataSchema,
+  actionItemCompletedEventDataSchemaV1,
+  actionItemCompletedEventSchemaVersion,
+  actionItemCompletedEventSource,
+  actionItemCompletedEventType,
+  createActionItemCompletedCloudEvent,
+  createActionItemCompletedSnsPublisher,
+  ACTION_ITEM_COMPLETED_CONSUMER_NAME,
+  ACTION_ITEM_COMPLETED_IDEMPOTENCY_NAMESPACE,
+  createActionItemCompletedConsumer,
+  createRedisActionItemCompletedConsumer,
+  createActionItemCompletedSqsConsumer,
+  getActionItemCompletedQueueUrlFromEnv,
+  parseActionItemCompletedSqsMessage,
+} from "./infrastructure/cloudEvents/actionItemCompleted/index.js";
+export type {
+  ActionItemCompletedCloudEventV1,
+  ActionItemCompletedEventPublishInput,
+  ActionItemCompletedEventPublisher,
+} from "./infrastructure/cloudEvents/actionItemCompleted/index.js";
 export {
   createPresentToClientSaga,
-} from "./infrastructure/CloudEvents/presentToClientSaga/index.js";
+} from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
+export {
+  createActionItemCreatedSnsClient,
+  createSnsActionItemCreatedEventPublisher,
+  getActionItemCreatedTopicArnFromEnv,
+  type ActionItemCreatedSnsClient,
+} from "./infrastructure/cloudEvents/actionItemCreated/index.js";
 export {
   createTaxPlanCycleRepository,
   createTaxPlanCycleReadHelper,
@@ -132,12 +161,12 @@ export {
   ACTION_ITEM_CREATED_IDEMPOTENCY_NAMESPACE,
   createActionItemConsumer,
   createRedisActionItemConsumer,
-} from "./infrastructure/CloudEvents/index.js";
+} from "./infrastructure/cloudEvents/index.js";
 export {
   parseSqsMessage,
   parseSqsMessage as parseStageChangedSqsMessage,
   PublishCommand,
-} from "./infrastructure/CloudEvents/stageChanged/index.js";
+} from "./infrastructure/cloudEvents/stageChanged/index.js";
 export type {
   CloudEventDataV1,
   CloudEventPublishInput,
@@ -171,14 +200,14 @@ export type {
   SqsConsumerOptions as StageChangedSqsConsumerOptions,
   Writer,
   WriterClient,
-} from "./infrastructure/CloudEvents/stageChanged/index.js";
+} from "./infrastructure/cloudEvents/stageChanged/index.js";
 export type {
   PresentToClientActionItemCreatedEventPublisher,
   PresentToClientSaga,
   PresentToClientSagaInput,
   PresentToClientSagaOptions,
   PresentToClientStageChangedEventPublisher,
-} from "./infrastructure/CloudEvents/presentToClientSaga/index.js";
+} from "./infrastructure/cloudEvents/presentToClientSaga/index.js";
 export {
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
   TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE_NAME,
@@ -281,6 +310,46 @@ export {
   type ScenarioComparisonEngineRequest,
 } from "./infrastructure/engineClient.js";
 export {
+  createTinEinValidationSoapClient,
+  getTinEinValidationSoapConfigFromEnv,
+  type TinEinValidationSoapClient,
+  type TinEinValidationSoapClientOptions,
+  type TivsGetTaxpayerStatusRawResponse,
+  type TivsGetTaxpayerStatusRequest,
+  type TivsMatchCode,
+  type TivsStandingCode,
+  type TivsTinType,
+  type TivsVerifyTaxpayerRawResponse,
+  type TivsVerifyTaxpayerRequest,
+} from "./infrastructure/tinEinValidationSoapClient.js";
+export {
+  createTinEinValidationAcl,
+  translateSoapFault,
+  type TaxpayerIdentifierValidationOutcome,
+  type TaxpayerIdentifierValidator,
+} from "./infrastructure/tinEinValidationAcl.js";
+export {
+  TaxpayerIdentifierSoapFaultError,
+  isTaxpayerIdentifierSoapFaultError,
+  taxpayerIdentifierInputSchema,
+  taxpayerIdentifierTypeSchema,
+  taxpayerIdentifierTypeValues,
+  taxpayerIdentifierValidationResultSchema,
+  taxpayerIdentifierValidationResultValues,
+  taxpayerIdentifierValidationSchema,
+  type TaxpayerIdentifierInput,
+  type TaxpayerIdentifierSoapFaultOptions,
+  type TaxpayerIdentifierType,
+  type TaxpayerIdentifierValidation,
+  type TaxpayerIdentifierValidationResult,
+} from "./taxpayerIdentifierValidation.js";
+export {
+  createTaxpayerIdentifierValidationRepository,
+  type TaxpayerIdentifierValidationReadInput,
+  type TaxpayerIdentifierValidationRecordInput,
+  type TaxpayerIdentifierValidationRepository,
+} from "./repositories/taxpayerIdentifierValidation.js";
+export {
   quarterlyEstimateQuarterSchema,
   quarterlyEstimateReadParamsSchema,
   quarterlyEstimateRowsSchema,
@@ -293,3 +362,23 @@ export {
   createQuarterlyPaymentsRouter,
   type CreateQuarterlyPaymentsRouterOptions,
 } from "../quarterlyPayments/routes.js";
+export {
+  createJwtLambdaAuthenticator,
+  createPresentToClientLambdaHandler,
+  createExecuteLambdaHandler,
+  serializeLambdaJsonResponse,
+  serializeLambdaProblemResponse,
+  type CreateExecuteLambdaHandlerOptions,
+  type CreateJwtLambdaAuthenticatorOptions,
+  type CreatePresentToClientLambdaHandlerOptions,
+  type LambdaAuthenticator,
+  type LambdaHttpRequest,
+  type LambdaHttpResponse,
+  type LambdaRequestContext,
+} from "./lambdaHandlers.js";
+export {
+  executeHandler,
+  presentToClientHandler,
+  resetTaxPlanCycleLambdaRuntimeForTests,
+  type TaxPlanCycleLambdaRuntime,
+} from "./lambdaRuntime.js";

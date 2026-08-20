@@ -8,6 +8,7 @@ import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { createPulseQueryClient } from "../app/queryClient.ts";
 import { createPulseRouter } from "../app/createPulseRouter.ts";
 import type { AuthClient } from "../auth/authClient.ts";
+import * as caseApi from "../shared/caseApi.ts";
 import { TestSessionProvider } from "./auth/TestSessionProvider.tsx";
 
 beforeAll(() => {
@@ -101,7 +102,16 @@ describe("Pulse UI app shell", () => {
   });
 
   test("renders the administration view title", async () => {
-    renderShell("/administration/tenants-users", true, undefined, "Firm Admin");
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce([
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+        name: "North Shore Advisors",
+        loginSlug: "north-shore-advisors",
+        isActive: true,
+        users: [],
+      },
+    ] as never);
+    renderShell("/administration/tenants-users", true, undefined, "TaxPulse Platform Admin");
 
     expect(
       await screen.findByRole("heading", { name: "All Tenants & Users", level: 1 }),

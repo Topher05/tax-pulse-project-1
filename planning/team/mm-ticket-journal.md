@@ -5,6 +5,162 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira158 - SCRUM-158
+
+**Branch:** `martins-okorie-jira158`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-158
+
+**Summary:** Route ALB traffic and auto-replace unhealthy tasks
+
+**Description:** As a Platform Engineer, I want an ALB routing to the services
+with health-based replacement, so that the APIs are reachable and self-healing.
+
+**Acceptance Criteria:**
+
+- The ALB routes `/v1` case traffic and calculation traffic to the correct
+  service.
+- A task that fails its health check is replaced automatically.
+- A smoke request through the ALB reaches each service.
+
+**Code Connection:** Added AWS CLI input JSON for the SCRUM-158 ALB layer around
+the SCRUM-157 task definitions and created the backing AWS resources. The ALB
+JSON defines an internet-facing Application Load Balancer in the discovered
+public subnets, Fargate-compatible `ip` target groups for the Core Case Service
+and Tax Engine, an HTTP listener, and path routing for `/v1/*`,
+`/tax-calculations`, and `/scenarios/comparisons`. Created dedicated security
+groups so the ALB is internet-facing on port `80`, while service traffic on
+ports `3000` and `8000` is allowed only from the ALB security group. Added ECS
+cluster and service JSON that attaches each Fargate service to its target group
+with desired count, health check grace period, and rolling replacement settings.
+The ALB and service JSON is production-shaped for the later Terraform work: the
+ALB is intended for SCRUM-162 public subnets, tasks are intended for SCRUM-162
+private subnets with public IP assignment disabled, service ingress comes only
+from the ALB security group, and RDS PostgreSQL plus ElastiCache Redis remain
+external managed dependencies.
+
+**Project Scope Connection:** This builds directly on SCRUM-157 by taking the
+registered task definitions and defining how the long-lived API tasks become
+reachable, health-checked ECS services behind an ALB in the team AWS account.
+
+**Changed Files:**
+
+- `deployment/ecs/README.md`
+- `deployment/alb/load-balancer.json`
+- `deployment/alb/security-groups.json`
+- `deployment/alb/core-case-target-group.json`
+- `deployment/alb/tax-engine-target-group.json`
+- `deployment/alb/listener.json`
+- `deployment/alb/core-case-listener-rule.json`
+- `deployment/alb/tax-engine-listener-rule.json`
+- `tests/typescript/albJsonDefinitions.test.ts`
+- `deployment/ecs/cluster.json`
+- `deployment/ecs/core-case-service.json`
+- `deployment/ecs/tax-engine-service.json`
+- `src/typescript/shared/scripts/albSmoke.ts`
+- `package.json`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Created ALB security group `sg-018ec94c7599d219c`.
+- Created ECS service security group `sg-0820ddfb63117696a`.
+- Created ALB `taxpulse-api-alb`:
+  `arn:aws:elasticloadbalancing:us-east-1:814650854375:loadbalancer/app/taxpulse-api-alb/962b5650b94eda05`.
+- Created target groups:
+  `arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-core-case/05b4e6ffa119fc42`
+  and
+  `arn:aws:elasticloadbalancing:us-east-1:814650854375:targetgroup/taxpulse-tax-engine/306b27944c5a636a`.
+- Created listener:
+  `arn:aws:elasticloadbalancing:us-east-1:814650854375:listener/app/taxpulse-api-alb/962b5650b94eda05/40b773b1fa8f01e8`.
+- Created listener rules for `/v1/*`, `/tax-calculations`, and
+  `/scenarios/comparisons`.
+- Created ECS cluster:
+  `arn:aws:ecs:us-east-1:814650854375:cluster/taxpulse-api`.
+- Registered task definitions:
+  `arn:aws:ecs:us-east-1:814650854375:task-definition/taxpulse-core-case-service:1`
+  and
+  `arn:aws:ecs:us-east-1:814650854375:task-definition/taxpulse-tax-engine:1`.
+- Created ECS services:
+  `arn:aws:ecs:us-east-1:814650854375:service/taxpulse-api/core-case-service`
+  and
+  `arn:aws:ecs:us-east-1:814650854375:service/taxpulse-api/tax-engine`.
+- Tax Engine reached steady state behind the ALB target group with one healthy
+  Fargate task.
+- Core Case Service was created and ECS auto-replaced failed tasks, but the
+  container exits with `connect ECONNREFUSED 127.0.0.1:5432`; the shared
+  `DATABASE_URL` secret needs to point at a reachable database before the Core
+  Case smoke request can pass.
+- The 157/158 JSON files now preserve the production handoff contract for
+  SCRUM-162/164: ECR app images, Secrets Manager database credentials, managed
+  Redis endpoint placeholder, public ALB subnet placeholders, private ECS subnet
+  placeholders, Terraform-owned listener/target-group ARN placeholders, and
+  ALB-only service ingress.
+- Added `npm run aws:alb-smoke` to verify the ALB routes
+  `GET /v1/tax-plan-cycles` to Core Case and `POST /tax-calculations` to the Tax
+  Engine with a bearer token.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/ecsTaskDefinitions.test.ts
+  tests/typescript/albJsonDefinitions.test.ts` passed.
+
+## martins-okorie-jira157 - SCRUM-157
+
+**Branch:** `martins-okorie-jira157`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-157
+
+**Summary:** Define ECS Fargate task definitions for the services
+
+**Description:** As a Platform Engineer, I want ECS Fargate task definitions, so
+that the long-lived APIs have a managed runtime.
+
+**Acceptance Criteria:**
+
+- Task definitions exist for the Core Case Service and the Tax Engine images.
+- Each task specifies CPU, memory, env, and a container healthcheck.
+- The tasks pull from the image registry and register with the cluster.
+
+**Code Connection:** Added ECS Fargate task definition JSON for the Core Case
+Service and Tax Engine containers, translating the SCRUM-155 Compose contracts
+into AWS task runtime settings. The task definitions declare ECR image references
+that must be replaced with immutable pushed image tags, Fargate `awsvpc`
+networking, CPU and memory, container ports, environment values, Secrets Manager
+references, `/health` container health checks, and CloudWatch Logs
+configuration. The discovered account ID, SNS topic, SQS queue, shared Secrets
+Manager ARN, and existing log groups are wired into the definitions; missing ECR
+repositories and ECS IAM roles remain explicit placeholders.
+
+**Project Scope Connection:** This advances the Containers, Serverless &
+Deployment workstream by defining the managed runtime contract for TaxPulse's
+long-lived APIs while leaving ECS services, ALB routing, and health-based
+replacement to SCRUM-158.
+
+**Changed Files:**
+
+- `deployment/ecs/core-case-service.task-definition.json`
+- `deployment/ecs/tax-engine.task-definition.json`
+- `deployment/ecs/README.md`
+- `tests/typescript/ecsTaskDefinitions.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run test:vitest -- tests/typescript/ecsTaskDefinitions.test.ts` passed.
+- `node -e "JSON.parse(...)"` smoke-parsed both ECS task definition JSON files.
+- `AWS_DEFAULT_REGION=us-east-1 aws ecs register-task-definition --cli-input-json
+  file://deployment/ecs/core-case-service.task-definition.json
+  --generate-cli-skeleton output` passed.
+- `AWS_DEFAULT_REGION=us-east-1 aws ecs register-task-definition --cli-input-json
+  file://deployment/ecs/tax-engine.task-definition.json
+  --generate-cli-skeleton output` passed.
+- `npm run typecheck` was attempted but is currently blocked by a pre-existing
+  case-only path conflict between `CloudEvents` and `cloudEvents` imports under
+  `src/typescript/features/taxPlanCycle/infrastructure`.
+
 ## martins-okorie-jira126 - SCRUM-126
 
 **Branch:** `martins-okorie-jira126`
@@ -736,6 +892,190 @@ out of MVP scope.
 - `npm --prefix src/pulseUI run test` passed with 31 files and 137 tests. The run
   printed existing stderr from intentional scenario error-path coverage and jsdom's
   missing canvas implementation during axe checks, but all tests passed.
+
+## martins-okorie-jira139 - SCRUM-139
+
+**Branch:** `martins-okorie-jira139`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-139
+
+**Summary:** Generate the SOAP TIN/EIN client from the WSDL
+
+**Description:** As a Backend Developer, I want a node-soap client for the TIN/EIN
+service, so that Intake can validate a client's tax identifier.
+
+**Acceptance Criteria:**
+
+- A node-soap client consumes the WSDL and exposes the TIN/EIN validation operation.
+- A call against a stub SOAP service returns a raw validation response.
+- A test asserts the operation is callable with a sample TIN/EIN.
+
+**Code Connection:** Added a raw `node-soap` TIVS client under the Tax Plan Cycle
+infrastructure layer. The client loads the WSDL, overrides the legacy WSDL endpoint
+with the configured endpoint URL, attaches WS-Security UsernameToken credentials, and
+exposes raw `VerifyTaxpayer` and `GetTaxpayerStatus` operations without mapping SOAP
+values into domain types.
+
+**Project Scope Connection:** This creates the brownfield TIVS integration adapter
+needed by Intake while keeping legacy SOAP shapes isolated to infrastructure code. The
+domain-facing anti-corruption layer, match-code translation, date conversion, and typed
+fault handling remain scoped to SCRUM-140 and SCRUM-141.
+
+**Changed Files:**
+
+- `package.json`
+- `package-lock.json`
+- `.env.example`
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationSoapClient.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/fixtures/README.md`
+- `tests/typescript/features/taxPlanCycle/fixtures/tinEinValidation.wsdl`
+- `tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm install soap` completed after granting registry network access. npm reported the
+  existing Node engine mismatch (`22.0.0` required, `24.17.0` used) and 14 audit
+  findings.
+- `npm run typecheck` passed.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts`
+  passed with 1 file and 2 tests after granting localhost socket access for the stub
+  SOAP service.
+- `npm test` was rerun with elevated localhost/Docker permissions. Typecheck passed
+  and the new SOAP test passed inside the full suite, but the full Vitest run still
+  failed because Docker/Testcontainers suites could not find a working container runtime
+  strategy. `docker info --format '{{.ServerVersion}}'` confirmed Docker was not
+  reachable in this environment.
+
+## martins-okorie-jira140 - SCRUM-140
+
+**Branch:** `martins-okorie-jira140`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-140
+
+**Summary:** Map the SOAP response through an anti-corruption layer
+
+**Description:** As an Advisor, I want the SOAP response mapped through an ACL, so that
+the legacy contract never leaks into the domain.
+
+**Acceptance Criteria:**
+
+- An anti-corruption layer maps the SOAP response into a clean internal validation
+  result type.
+- The TIN/EIN validation runs at the Intake stage and records the result on the case.
+- A test asserts the domain type contains no SOAP-specific fields.
+
+**Code Connection:** Added a TaxPulse-facing taxpayer identifier validation model and
+an ACL that translates raw TIVS `MatchCode` responses into clean results such as
+`match`, `tin_not_found`, and `name_mismatch`. The create-cycle controller runs the
+TIVS validator first when Intake create input includes a taxpayer identifier, and then passes
+the validated result to `repository.create()`. The repository inserts the case, initial stage transition,
+audit log, and taxpayer identifier validation records within its internal atomic database
+transaction. If SOAP validation fails, no DB transaction is initiated; if DB persistence fails, all
+rows roll back cleanly. Case reads include the clean validation result without exposing SOAP field
+names or raw identifiers.
+
+**Project Scope Connection:** SCRUM-140 builds on SCRUM-139's raw SOAP client by
+putting a clean boundary between TIVS and TaxPulse. The new
+`taxpayer_identifier_validation` table records the Intake validation result on the case
+without storing the submitted TIN/EIN. SOAP fault translation and typed error recording
+remain scoped to SCRUM-141.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/controllers/createController.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationAcl.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/repositories/taxpayerIdentifierValidation.ts`
+- `src/typescript/features/taxPlanCycle/taxpayerIdentifierValidation.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/drizzle-migrations/0015_taxpayer_identifier_validation.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0015_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/seed.ts`
+- `tests/typescript/features/taxPlanCycle/createIdempotency.test.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/features/taxPlanCycle/taxpayerIdentifierValidation.typecheck.ts`
+- `tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen -- --name taxpayer_identifier_validation` generated the Drizzle
+  migration.
+- `npm run db:check` passed.
+- `npm run typecheck` passed cleanly across app, tests, and pulseUI.
+- `npx vitest run tests/typescript/features/taxPlanCycle/createIdempotency.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts tests/typescript/features/taxPlanCycle/schema.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts` passed (6 files, 41 tests).
+
+## martins-okorie-jira141 - SCRUM-141
+
+**Branch:** `martins-okorie-jira141`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-141
+
+**Summary:** Translate SOAP faults to typed domain errors
+
+**Description:** As a Backend Developer, I want SOAP faults translated to domain errors,
+so that legacy failures are handled cleanly.
+
+**Acceptance Criteria:**
+
+- A SOAP fault is translated into a typed domain error.
+- The error is recorded on the case rather than crashing Intake.
+- A test asserts an injected SOAP fault produces the typed domain error.
+
+**Code Connection:** Defined the `TaxpayerIdentifierSoapFaultError` domain error type and
+implemented `translateSoapFault()` in the TIVS Anti-Corruption Layer (ACL). The ACL catches
+SOAP faults (and remote service failures) thrown during `verifyTaxpayer` and normalizes them
+into typed `TaxpayerIdentifierSoapFaultError` instances containing structured fields (`faultCode`,
+`faultReason`, `detail`, `provider: "tivs"`). In `createController.create()`, when taxpayer
+identifier validation fails with a SOAP fault during Intake, the error is handled cleanly by
+recording `validationResult: "soap_fault"` rather than throwing an uncaught exception or
+crashing the Intake stage. The case is created with its initial stage transition and validation
+audit record within the atomic database transaction, and the generated Drizzle migration
+`0016_taxpayer_identifier_validation_soap_fault.sql` updates the check constraint accordingly.
+
+**Project Scope Connection:** SCRUM-141 completes the TIVS integration sequence (SCRUM-139,
+SCRUM-140, SCRUM-141) by establishing resilient fault tolerance at the Anti-Corruption Layer
+boundary. Legacy external SOAP failures never crash internal Tax Plan Cycle creation, nor do
+raw XML/SOAP structures leak into the core domain.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/controllers/createController.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationAcl.ts`
+- `src/typescript/features/taxPlanCycle/taxpayerIdentifierValidation.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/drizzle-migrations/0016_taxpayer_identifier_validation_soap_fault.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0016_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/scripts/awsStageChangedSmoke.ts`
+- `tests/typescript/features/taxPlanCycle/createIdempotency.test.ts`
+- `tests/typescript/features/taxPlanCycle/taxpayerIdentifierValidation.typecheck.ts`
+- `tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen -- --name taxpayer_identifier_validation_soap_fault` generated the Drizzle migration.
+- `npm run db:check` passed cleanly.
+- `npm run typecheck` passed cleanly across app, tests, and pulseUI.
+- `npx vitest run tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts tests/typescript/features/taxPlanCycle/createIdempotency.test.ts tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/schema.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts` passed (7 files, 48 tests).
+- `.venv/bin/python -m pyright --pythonpath .venv/bin/python` passed with 0 errors.
+- `.venv/bin/python -m pytest` passed 93 tests.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 
@@ -765,3 +1105,4 @@ out of MVP scope.
 
 -
 -->
+

@@ -40,6 +40,16 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
+  Object.defineProperty(window.HTMLCanvasElement.prototype, "getContext", {
+    configurable: true,
+    value: vi.fn(() => ({
+      clearRect: vi.fn(),
+      fillText: vi.fn(),
+      getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) })),
+      measureText: vi.fn(() => ({ width: 0 })),
+      putImageData: vi.fn(),
+    })),
+  });
 });
 
 afterEach(() => {

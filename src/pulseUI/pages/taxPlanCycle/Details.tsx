@@ -1,15 +1,18 @@
 import { useEffect, useId, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useParams, useSearch } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 
-import styles from "./Details.module.css";
+import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
+import { EmptyState } from "../../components/EmptyState.tsx";
+import { useNotificationToast } from "../../components/NotificationToast.tsx";
+import { PanelCard } from "../../components/PanelCard.tsx";
+import { StatusPill } from "../../components/StatusPill.tsx";
 import {
-  caseStages,
-  detailTabs,
-  normalizeDetailsSearch,
-  type DetailStage,
-  type DetailTab,
-} from "./detailViewState.ts";
+  createErrorNotificationMessage,
+  createInfoNotificationMessage,
+  createSuccessNotificationMessage,
+} from "../../entities/notificationMessage.ts";
 import {
   fetchTaxPlanCycleAuditEntries,
   fetchTaxPlanCycleComments,
@@ -18,10 +21,15 @@ import {
   taxPlanCycleCommentsQueryKey,
   taxPlanCycleDetailsQueryKey,
 } from "../../entities/taxPlanCycleQueries.ts";
-import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
-import { EmptyState } from "../../components/EmptyState.tsx";
-import { PanelCard } from "../../components/PanelCard.tsx";
-import { StatusPill } from "../../components/StatusPill.tsx";
+import { caseApiPatchJson, CaseApiError } from "../../shared/caseApi.ts";
+
+import styles from "./Details.module.css";
+import {
+  caseStages,
+  detailTabs,
+  type DetailStage,
+  type DetailTab,
+} from "./detailViewState.ts";
 
 const sampleScenarios = [
   {
@@ -50,20 +58,46 @@ function priorityTone(priority: string): "danger" | "warning" | "info" {
   return "info";
 }
 
+function getNextStage(stage: DetailStage): DetailStage | null {
+  const stageIndex = caseStages.indexOf(stage);
+
+  if (stageIndex < 0 || stageIndex >= caseStages.length - 1) {
+    return null;
+  }
+
+  return caseStages[stageIndex + 1] as DetailStage;
+}
+
+function parseProblemPayload(body: string): { header?: string; message?: string } | null {
+  try {
+    const parsed = JSON.parse(body) as { title?: unknown; detail?: unknown };
+
+    return {
+      header: typeof parsed.title === "string" ? parsed.title : undefined,
+      message: typeof parsed.detail === "string" ? parsed.detail : undefined,
+    };
+  } catch {
+    if (body.trim().length === 0) {
+      return null;
+    }
+
+    return { message: body };
+  }
+}
+
 export function DetailsPage() {
   const { id: caseId = "" } = useParams({ from: "/_workspace/cycles/$id" });
-  const search = useSearch({ from: "/_workspace/cycles/$id" });
-  const detailSearch = normalizeDetailsSearch(search);
   const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
   const [commentDraft, setCommentDraft] = useState("");
-  const [selectedStageOverride, setSelectedStageOverride] = useState<DetailStage | null>(null);
+  const [isAdvancingStage, setIsAdvancingStage] = useState(false);
   const stageLabelId = useId();
   const authenticatedFetch = useAuthenticatedFetch();
+  const queryClient = useQueryClient();
+  const { showNotification } = useNotificationToast();
 
   useEffect(() => {
     setActiveTab("Overview");
     setCommentDraft("");
-    setSelectedStageOverride(null);
   }, [caseId]);
 
   const detailsQuery = useQuery({
@@ -112,8 +146,75 @@ export function DetailsPage() {
     return null;
   }
 
-  const selectedStage = selectedStageOverride ?? detailSearch.stage ?? details.stage;
-  const activeStageIndex = caseStages.indexOf(selectedStage as DetailStage);
+  const selectedStage = details.stage;
+  const activeStageIndex = caseStages.indexOf(details.stage as DetailStage);
+  const nextStage = getNextStage(details.stage as DetailStage);
+
+  const handleReassignAction = () => {
+    showNotification(createErrorNotificationMessage("Implementation Details TBD.", "Reassign"));
+  };
+
+  const handleHoldAction = () => {
+    showNotification(createInfoNotificationMessage("Implementation Details TBD.", "Hold"));
+  };
+
+  const handleAdvanceStage = async () => {
+    if (isAdvancingStage || nextStage === null) {
+      showNotification(
+        createErrorNotificationMessage(
+          nextStage === null
+            ? "There is no further stage available for this cycle."
+            : "The stage transition is already in progress.",
+          "Advance Stage unavailable",
+        ),
+      );
+      return;
+    }
+
+    setIsAdvancingStage(true);
+
+    try {
+      const transitioned = await caseApiPatchJson<{ stage: DetailStage }>(
+        `/v1/tax-plan-cycles/${caseId}/transition`,
+        { to_stage: nextStage },
+        authenticatedFetch,
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: taxPlanCycleDetailsQueryKey(caseId) }),
+        queryClient.invalidateQueries({ queryKey: taxPlanCycleAuditEntriesQueryKey(caseId) }),
+      ]);
+
+      showNotification(
+        createSuccessNotificationMessage(
+          `${details.stage} → ${transitioned.stage} transition successful.`,
+          "Stage Advanced",
+        ),
+      );
+    } catch (error) {
+      let header = "Advance Stage failed";
+      let message = "The stage transition could not be completed.";
+
+      if (error instanceof CaseApiError) {
+        const problem = parseProblemPayload(error.body);
+
+        if (problem?.header) {
+          header = problem.header;
+        }
+
+        if (problem?.message) {
+          message = problem.message;
+        }
+      } else if (error instanceof Error && error.message.trim().length > 0) {
+        message = error.message;
+      }
+
+      showNotification(createErrorNotificationMessage(message, header));
+      await queryClient.invalidateQueries({ queryKey: taxPlanCycleAuditEntriesQueryKey(caseId) });
+    } finally {
+      setIsAdvancingStage(false);
+    }
+  };
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -163,7 +264,9 @@ export function DetailsPage() {
           <PanelCard title="Comments">
             <div className={styles.commentList}>
               {commentsQuery.isPending ? (
-                <p className={styles.stateCopy} role="status">Loading comments...</p>
+                <p className={styles.stateCopy} role="status">
+                  Loading comments...
+                </p>
               ) : commentsQuery.isError ? (
                 <p className={styles.stateCopy} role="alert">
                   Comments could not load.
@@ -209,7 +312,9 @@ export function DetailsPage() {
         return (
           <PanelCard title="Audit Trail">
             {auditEntriesQuery.isPending ? (
-              <p className={styles.stateCopy} role="status">Loading audit trail...</p>
+              <p className={styles.stateCopy} role="status">
+                Loading audit trail...
+              </p>
             ) : auditEntriesQuery.isError ? (
               <p className={styles.stateCopy} role="alert">
                 Audit trail could not load.
@@ -255,26 +360,39 @@ export function DetailsPage() {
           </div>
 
           <div className={styles.actionCluster}>
-            <button className={styles.secondaryAction} type="button">
+            <button
+              className={styles.secondaryAction}
+              type="button"
+              onClick={() => {
+                handleReassignAction();
+              }}
+            >
               Reassign
             </button>
-            <button className={styles.secondaryAction} type="button">
+            <button
+              className={styles.secondaryAction}
+              type="button"
+              onClick={() => {
+                handleHoldAction();
+              }}
+            >
               Hold
             </button>
-            <button className={styles.primaryAction} type="button">
-              Advance Stage →
+            <button
+              className={styles.primaryAction}
+              type="button"
+              disabled={isAdvancingStage || nextStage === null}
+              onClick={() => {
+                void handleAdvanceStage();
+              }}
+            >
+              <span>{isAdvancingStage ? "Advancing..." : "Advance Stage"}</span>
+              {!isAdvancingStage ? <ChevronRight className={styles.actionButtonIcon} aria-hidden="true" /> : null}
             </button>
           </div>
         </div>
 
         <section className={styles.stageSection} aria-labelledby={stageLabelId}>
-          <div className={styles.sectionHeader}>
-            <h3 id={stageLabelId} className={styles.sectionTitle}>
-              Stage
-            </h3>
-            <p className={styles.sectionCopy}>Interactive stage navigation stays local to the page.</p>
-          </div>
-
           <ol className={styles.stageStepper} aria-label="Case stage progression">
             {caseStages.map((stage, index) => {
               const isActive = selectedStage === stage;
@@ -282,21 +400,17 @@ export function DetailsPage() {
 
               return (
                 <li key={stage} className={styles.stageStepItem}>
-                  <button
+                  <div
                     className={[
                       styles.stageStep,
                       isActive ? styles.stageStepActive : "",
                       isComplete ? styles.stageStepComplete : "",
                     ].join(" ")}
-                    type="button"
                     aria-current={isActive ? "step" : undefined}
-                    onClick={() => {
-                      setSelectedStageOverride(stage);
-                    }}
                   >
                     <span className={styles.stageStepNumber}>{index + 1}</span>
                     <span>{stage}</span>
-                  </button>
+                  </div>
                 </li>
               );
             })}

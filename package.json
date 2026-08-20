@@ -9,6 +9,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:present-to-client-lambda": "node src/typescript/shared/scripts/lambda-build/build-present-to-client-lambda.mjs",
+    "build:execute-lambda": "node src/typescript/shared/scripts/lambda-build/build-execute-lambda.mjs",
     "build:web": "npm --prefix src/pulseUI run build",
     "db:check": "drizzle-kit check",
     "db:gen": "drizzle-kit generate",
@@ -19,7 +21,11 @@
     "dev": "tsx src/typescript/index.ts",
     "dev:web": "npm --prefix src/pulseUI run dev",
     "aws:stage-changed-smoke": "tsx src/typescript/shared/scripts/awsStageChangedSmoke.ts",
+    "aws:alb-smoke": "tsx src/typescript/shared/scripts/albSmoke.ts",
     "cloud:tap": "tsx src/typescript/shared/scripts/cloudTap.ts",
+    "corpus:build": "tsx src/typescript/shared/scripts/corpusBuild.ts",
+    "corpus:smoke": "tsx src/typescript/shared/scripts/corpusSmoke.ts",
+    "corpus:validate": "tsx src/typescript/shared/scripts/corpusValidate.ts",
     "redis:up": "docker compose -f docker-compose.redis.yml up -d",
     "redis:down": "docker compose -f docker-compose.redis.yml down",
     "redis:smoke": "tsx src/typescript/shared/scripts/redisSmoke.ts",
@@ -34,7 +40,7 @@
     "test:cov": "vitest run --coverage",
     "test:smoke": "node --import tsx --test tests/typescript/smoke.test.ts",
     "test:vitest": "vitest run --config vitest.config.ts",
-    "typecheck": "node scripts/typecheck.mjs"
+    "typecheck": "node src/typescript/shared/scripts/typecheck.mjs"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^17.0.1",
@@ -43,6 +49,7 @@
     "@types/pg": "^8.15.5",
     "@vitest/coverage-v8": "^2.1.9",
     "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.28.2",
     "testcontainers": "^12.0.4",
     "tsx": "^4.20.0",
     "typescript": "^5.8.0",
@@ -63,6 +70,7 @@
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",
     "redis": "^5.0.0",
+    "soap": "^1.10.0",
     "zod": "^4.4.3"
   },
   "overrides": {

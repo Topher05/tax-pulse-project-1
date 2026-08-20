@@ -32,6 +32,8 @@ import { scenarioModelingRequestSchema } from "./scenarioModeling.js";
 import type { ScenarioRepository } from "./repositories/scenarios.js";
 import type { Scenario } from "../../scenario.js";
 import type { TaxPlanCycleRepository } from "./repositories/repository.js";
+import type { ActionItemRepository } from "./repositories/actionItems.js";
+import type { ActionItemCompletedEventPublishInput } from "./infrastructure/cloudEvents/actionItemCompleted/index.js";
 
 export interface ValidationErrorIssue {
   path: Array<string | number>;
@@ -50,6 +52,12 @@ export interface CreateTaxPlanCycleRouterOptions {
   taxPlanCycleRepository?: Pick<TaxPlanCycleRepository, "findByCaseId" | "listQueue">;
   clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
   scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
+  actionItemRepository?: Pick<ActionItemRepository, "listByCaseId" | "complete">;
+  actionItemCompletedEventPublisher?: {
+    publishActionItemCompleted(
+      input: ActionItemCompletedEventPublishInput,
+    ): Promise<void> | void;
+  };
   scenarioModelingController?: ScenarioModelingController;
   auditEntryReader?: AuditEntryReader;
   auditEntryWriter?: AuditEntryWriter;
@@ -193,6 +201,42 @@ function toClientTaxPlanScenario(scenario: Scenario) {
   });
 }
 
+function clientPortalAccessRequired(viewName: string): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/client-portal-access-required",
+    title: "Client Portal Access Required",
+    status: 403,
+    detail: `Only Client users can access the ${viewName} view.`,
+  });
+}
+
+function clientCycleNotFound(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+    title: "Tax Plan Cycle Not Found",
+    status: 404,
+    detail: "No current tax plan cycle was found for this client.",
+  });
+}
+
+function actionItemNotFound(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/action-item-not-found",
+    title: "Action Item Not Found",
+    status: 404,
+    detail: "No incomplete action item was found for this client.",
+  });
+}
+
+function validationError(detail: string): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/validation-error",
+    title: "Validation Error",
+    status: 400,
+    detail,
+  });
+}
+
 function toClientTaxPlanReadModel(
   cycle: ReturnType<typeof taxPlanCycleSchema.parse>,
   scenarios: readonly Scenario[],
@@ -254,14 +298,14 @@ function logDeniedTransitionAttempt(
   return occurredAt;
 }
 
-async function writeDeniedTransitionAttempt(
+async function writeTransitionAttemptAudit(
   auditLogger: Pick<Console, "info">,
   auditEntryWriter: AuditEntryWriter,
   input: {
     caseId: string;
     actor: string;
     action: string;
-    outcome: "403" | "422";
+    outcome: string;
   },
 ): Promise<void> {
   const occurredAt = logDeniedTransitionAttempt(auditLogger, input);
@@ -273,6 +317,19 @@ async function writeDeniedTransitionAttempt(
     outcome: input.outcome,
     occurredAt,
   });
+}
+
+async function writeDeniedTransitionAttempt(
+  auditLogger: Pick<Console, "info">,
+  auditEntryWriter: AuditEntryWriter,
+  input: {
+    caseId: string;
+    actor: string;
+    action: string;
+    outcome: "403" | "422";
+  },
+): Promise<void> {
+  await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, input);
 }
 
 export function createTaxPlanCycleRouter(
@@ -302,6 +359,7 @@ export function createTaxPlanCycleRouter(
       return [];
     },
   };
+  const actionItemRepository = options.actionItemRepository;
   const auditLogger = options.auditLogger ?? console;
   const auditEntryWriter =
     options.auditEntryWriter ?? deprecatedNoopAuditEntryWriter;
@@ -330,6 +388,95 @@ export function createTaxPlanCycleRouter(
         const response = taxPlanCycleQueueGetResponseSchema.parse(queue);
 
         res.status(200).json(response);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/portal/action-items",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+        if (user.role !== "Client") {
+          next(clientPortalAccessRequired("Action Items"));
+          return;
+        }
+        if (!actionItemRepository) {
+          throw new Error("Action item repository is required for the portal action-items route.");
+        }
+
+        const cycle = await clientPortalReadRepository.findCurrentByClientId({
+          tenantId,
+          clientId: user.id,
+        });
+        if (cycle === null || !canReadCycle(user, cycle)) {
+          next(clientCycleNotFound());
+          return;
+        }
+
+        res.status(200).json(await actionItemRepository.listByCaseId(cycle.id));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.post(
+    "/portal/action-items/:actionItemId/complete",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const actionItemId = Number(req.params.actionItemId);
+      if (!Number.isSafeInteger(actionItemId) || actionItemId < 1) {
+        next(validationError("Action item ID must be a positive integer."));
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+        if (user.role !== "Client") {
+          next(clientPortalAccessRequired("Action Items"));
+          return;
+        }
+        if (!actionItemRepository) {
+          throw new Error("Action item repository is required for the portal action-items route.");
+        }
+
+        const cycle = await clientPortalReadRepository.findCurrentByClientId({
+          tenantId,
+          clientId: user.id,
+        });
+        if (cycle === null || !canReadCycle(user, cycle)) {
+          next(clientCycleNotFound());
+          return;
+        }
+
+        const item = await actionItemRepository.complete({
+          caseId: cycle.id,
+          actionItemId,
+        });
+        if (item === null) {
+          next(actionItemNotFound());
+          return;
+        }
+
+        await options.actionItemCompletedEventPublisher?.publishActionItemCompleted({
+          tenantId,
+          caseId: cycle.id,
+          actionItemId: item.id,
+          actor: user.id,
+        });
+        res.status(200).json(item);
       } catch (error) {
         next(error);
       }
@@ -604,12 +751,35 @@ export function createTaxPlanCycleRouter(
   router.patch(
     "/tax-plan-cycles/:caseId/transition",
     async (req: Request, res: Response, next: NextFunction) => {
+      console.log("[tax-plan-cycle transition] request received", {
+        params: req.params,
+        body: req.body,
+      });
+
       const parsedParams = taxPlanCycleTransitionParamsSchema.safeParse(
         req.params,
       );
       const parsedBody = taxPlanCycleTransitionSchema.safeParse(req.body);
 
       if (!parsedParams.success || !parsedBody.success) {
+        console.log("[tax-plan-cycle transition] validation failure", {
+          paramsIssues: parsedParams.success
+            ? []
+            : parsedParams.error.issues.map(toValidationIssue),
+          bodyIssues: parsedBody.success
+            ? []
+            : parsedBody.error.issues.map(toValidationIssue),
+        });
+
+        if (parsedParams.success) {
+          await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            caseId: parsedParams.data.caseId,
+            actor: (req as TenantScopedRequest).user?.id ?? "unknown",
+            action: "transition request validation failed",
+            outcome: "400",
+          });
+        }
+
         next(
           new ProblemHttpError({
             type: "https://taxpulse.example/problems/validation-error",
@@ -632,16 +802,52 @@ export function createTaxPlanCycleRouter(
         return;
       }
 
+      let transitionAuditContext:
+        | {
+            caseId: string;
+            actor: string;
+            action: string;
+          }
+        | null = null;
+      let transitionAuditRecorded = false;
+
       try {
         const tenantId = (req as TenantScopedRequest).tenant?.id;
         const user = (req as TenantScopedRequest).user;
 
         if (!tenantId || !user?.role || !user.id) {
+          console.log("[tax-plan-cycle transition] authentication failure", {
+            tenantIdPresent: Boolean(tenantId),
+            userIdPresent: Boolean(user?.id),
+            rolePresent: Boolean(user?.role),
+          });
+
+          await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            caseId: parsedParams.data.caseId,
+            actor: user?.id ?? "unknown",
+            action: "transition authentication required",
+            outcome: "401",
+          });
+
           next(authenticationRequired());
           return;
         }
 
         if (isClientUser(user)) {
+          console.log("[tax-plan-cycle transition] authorization failure", {
+            caseId: parsedParams.data.caseId,
+            actor: user.id,
+            role: user.role,
+            reason: "client-role-not-allowed",
+          });
+
+          await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            caseId: parsedParams.data.caseId,
+            actor: user.id,
+            action: `transition ${parsedParams.data.caseId} client-role-not-allowed`,
+            outcome: "403",
+          });
+
           next(operatorAccessRequired());
           return;
         }
@@ -666,8 +872,29 @@ export function createTaxPlanCycleRouter(
 
         const requestedStage = parsedBody.data.to_stage;
         const action = `transition ${cycle.stage} -> ${requestedStage}`;
+        transitionAuditContext = {
+          caseId: parsedParams.data.caseId,
+          actor,
+          action,
+        };
+        console.log("[tax-plan-cycle transition] authorization check", {
+          caseId: parsedParams.data.caseId,
+          actor,
+          role: user.role,
+          fromStage: cycle.stage,
+          toStage: requestedStage,
+        });
 
         if (!isTransitionAuthorized(cycle.stage, user)) {
+          console.log("[tax-plan-cycle transition] validation or authorization failure", {
+            caseId: parsedParams.data.caseId,
+            actor,
+            role: user.role,
+            fromStage: cycle.stage,
+            toStage: requestedStage,
+            reason: "role-not-authorized",
+          });
+
           await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
             caseId: parsedParams.data.caseId,
             actor,
@@ -686,6 +913,15 @@ export function createTaxPlanCycleRouter(
         }
 
         if (!isLegalTaxPlanCycleStageTransition(cycle.stage, requestedStage)) {
+          console.log("[tax-plan-cycle transition] validation or authorization failure", {
+            caseId: parsedParams.data.caseId,
+            actor,
+            role: user.role,
+            fromStage: cycle.stage,
+            toStage: requestedStage,
+            reason: "illegal-stage-transition",
+          });
+
           await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
             caseId: parsedParams.data.caseId,
             actor,
@@ -723,8 +959,35 @@ export function createTaxPlanCycleRouter(
           return;
         }
 
+        await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+          caseId: parsedParams.data.caseId,
+          actor,
+          action,
+          outcome: "200",
+        });
+        transitionAuditRecorded = true;
+
+        console.log("[tax-plan-cycle transition] transition success", {
+          caseId: parsedParams.data.caseId,
+          actor,
+          fromStage: cycle.stage,
+          toStage: requestedStage,
+        });
+
         res.status(200).json(transitioned);
       } catch (error) {
+        if (transitionAuditContext && !transitionAuditRecorded) {
+          try {
+            await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+              ...transitionAuditContext,
+              outcome: "500",
+            });
+            transitionAuditRecorded = true;
+          } catch {
+            // Ignore audit write failures on the error path so the original error still surfaces.
+          }
+        }
+
         next(error);
       }
     },

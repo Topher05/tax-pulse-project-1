@@ -4,6 +4,10 @@ import {
   type ScenarioComparisonEngineInput,
 } from "../scenarioModeling.js";
 import { z } from "zod";
+import {
+  emitObservabilityEvent,
+  type StructuredLogger,
+} from "../../../shared/cloud-logger/observability.js";
 
 export type TaxCalculationEngineFilingStatus =
   | "single"
@@ -63,6 +67,7 @@ export interface TaxEngineClientOptions {
   timeoutMs?: number;
   maxAttempts?: number;
   baseDelayMs?: number;
+  telemetryLogger?: StructuredLogger;
 }
 
 export interface TaxEngineClient {
@@ -149,6 +154,7 @@ export function createTaxEngineClient(
   const timeoutMs = options.timeoutMs ?? defaultTimeoutMs;
   const maxAttempts = options.maxAttempts ?? defaultMaxAttempts;
   const baseDelayMs = options.baseDelayMs ?? defaultBaseDelayMs;
+  const telemetryLogger = options.telemetryLogger ?? console;
 
   async function postJsonWithRetry(
     path: string,
@@ -161,6 +167,20 @@ export function createTaxEngineClient(
     const url = new URL(path, baseUrl).toString();
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const startedAt = Date.now();
+      emitObservabilityEvent(telemetryLogger, "info", "tax engine request started", {
+        service: "core-case-service",
+        layer: "tax-engine-client",
+        operation: path,
+        dependency: "tax-engine",
+        tenant_id: input.tenantId,
+        attempt,
+        route: path,
+        metric_name: "tax_plan_cycle.tax_engine_request.count",
+        metric_value: 1,
+        metric_unit: "Count",
+      });
+
       try {
         const response = await fetchWithTimeout(
           url,
@@ -177,20 +197,76 @@ export function createTaxEngineClient(
         );
 
         if (!response.ok) {
-          // TODO: Add 502 custom messaging support Jira-91
           const errorBody = await response.text();
 
           if (isRetryableStatus(response.status) && attempt < maxAttempts) {
+            emitObservabilityEvent(telemetryLogger, "warn", "tax engine request retrying", {
+              service: "core-case-service",
+              layer: "tax-engine-client",
+              operation: path,
+              dependency: "tax-engine",
+              tenant_id: input.tenantId,
+              attempt,
+              status_code: response.status,
+              duration_ms: Date.now() - startedAt,
+              outcome: "retrying",
+              metric_name: "tax_plan_cycle.tax_engine_request.count",
+              metric_value: 1,
+              metric_unit: "Count",
+            });
             await sleep(retryDelay(attempt, baseDelayMs));
             continue;
           }
 
+          emitObservabilityEvent(telemetryLogger, "error", "tax engine request failed", {
+            service: "core-case-service",
+            layer: "tax-engine-client",
+            operation: path,
+            dependency: "tax-engine",
+            tenant_id: input.tenantId,
+            attempt,
+            status_code: response.status,
+            duration_ms: Date.now() - startedAt,
+            outcome: "failed",
+            error: errorBody.slice(0, 120),
+            metric_name: "tax_plan_cycle.tax_engine_request.count",
+            metric_value: 1,
+            metric_unit: "Count",
+          });
           throw new TaxEngineHttpError(url, response.status, errorBody);
         }
 
+        emitObservabilityEvent(telemetryLogger, "info", "tax engine request completed", {
+          service: "core-case-service",
+          layer: "tax-engine-client",
+          operation: path,
+          dependency: "tax-engine",
+          tenant_id: input.tenantId,
+          attempt,
+          status_code: response.status,
+          duration_ms: Date.now() - startedAt,
+          outcome: "success",
+          metric_name: "tax_plan_cycle.tax_engine_request.duration_ms",
+          metric_value: Date.now() - startedAt,
+          metric_unit: "Milliseconds",
+        });
         return await response.json();
       } catch (error) {
         if (attempt >= maxAttempts) {
+          emitObservabilityEvent(telemetryLogger, "error", "tax engine request exhausted retries", {
+            service: "core-case-service",
+            layer: "tax-engine-client",
+            operation: path,
+            dependency: "tax-engine",
+            tenant_id: input.tenantId,
+            attempt,
+            duration_ms: Date.now() - startedAt,
+            outcome: "failed",
+            error: error instanceof Error ? error.message : String(error),
+            metric_name: "tax_plan_cycle.tax_engine_request.count",
+            metric_value: 1,
+            metric_unit: "Count",
+          });
           throw error;
         }
 
@@ -202,10 +278,38 @@ export function createTaxEngineClient(
             throw error;
           }
 
+          emitObservabilityEvent(telemetryLogger, "warn", "tax engine request retrying", {
+            service: "core-case-service",
+            layer: "tax-engine-client",
+            operation: path,
+            dependency: "tax-engine",
+            tenant_id: input.tenantId,
+            attempt,
+            duration_ms: Date.now() - startedAt,
+            outcome: "retrying",
+            error: error.message,
+            metric_name: "tax_plan_cycle.tax_engine_request.count",
+            metric_value: 1,
+            metric_unit: "Count",
+          });
           await sleep(retryDelay(attempt, baseDelayMs));
           continue;
         }
 
+        emitObservabilityEvent(telemetryLogger, "warn", "tax engine request retrying", {
+          service: "core-case-service",
+          layer: "tax-engine-client",
+          operation: path,
+          dependency: "tax-engine",
+          tenant_id: input.tenantId,
+          attempt,
+          duration_ms: Date.now() - startedAt,
+          outcome: "retrying",
+          error: error instanceof Error ? error.message : String(error),
+          metric_name: "tax_plan_cycle.tax_engine_request.count",
+          metric_value: 1,
+          metric_unit: "Count",
+        });
         await sleep(retryDelay(attempt, baseDelayMs));
       }
     }
