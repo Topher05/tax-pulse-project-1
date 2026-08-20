@@ -308,6 +308,55 @@ RAGAS evaluation, APIs, and tenant request enforcement remain out of scope.
 - Focused Vitest run passed: `tests/typescript/assist/embeddings.test.ts` (3 tests).
 - `npm run typecheck` passed for the app, tests, and pulseUI.
 
+### Step 4 acceptance-focused coverage
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Complete acceptance-focused coverage for deterministic corpus embeddings
+
+**Description:** Extend the embedding tests to cover every acceptance-focused behavior from
+the executor handoff, including provider inputs, citation preservation, query limits,
+deterministic replacement, and stale chunk removal. Add an opt-in pgvector integration test
+for the migration objects and actual similarity SQL.
+
+**Acceptance Criteria:**
+
+- Unit tests use deterministic fake vectors and never call the OpenAI API.
+- Rebuild coverage verifies stable ordering, metadata/citations, identical repeated output,
+  and removal of stale chunks.
+- Retrieval coverage verifies semantic ordering and result limits.
+- The integration test verifies the vector extension/index and real pgvector query behavior.
+
+**Code Connection:**
+
+- `tests/typescript/assist/embeddings.test.ts` covers deterministic unit-level acceptance
+  behavior with a fake database and embedding provider.
+- `tests/typescript/assist/embeddings.integration.test.ts` exercises the generated migration
+  and similarity query against a pgvector-backed PostgreSQL container.
+
+**Project Scope Connection:**
+
+This completes only SCRUM-179's acceptance-focused test step. Hybrid retrieval, reranking,
+RAGAS evaluation, APIs, UI work, and tenant request enforcement remain out of scope.
+
+**Changed Files:**
+
+- `tests/typescript/assist/embeddings.test.ts`
+- `tests/typescript/assist/embeddings.integration.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused Vitest unit run passed: 4 tests.
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+- `git diff --check` passed.
+- The focused integration test was discovered but could not run because this environment has
+  no container runtime; CI/Docker is required for `pgvector/pgvector:pg18`.
+
 ## christopher-martus-jira144 - SCRUM-144 Seed Data Follow-up
 
 **Branch:** `christopher-martus-jira144`

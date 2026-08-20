@@ -39,13 +39,19 @@ function chunk(chunkId: string, ordinal: number): CorpusChunk {
 function fakeDatabase() {
   const inserted: unknown[][] = [];
   const rows: unknown[] = [];
+  let requestedLimit: number | undefined;
 
   return {
     inserted,
     rows,
+    get requestedLimit() {
+      return requestedLimit;
+    },
     transaction: async (callback: (transaction: unknown) => Promise<void>) =>
       callback({
-        delete: async () => undefined,
+        delete: async () => {
+          inserted.length = 0;
+        },
         insert: () => ({
           values: async (values: unknown[]) => {
             inserted.push(values);
@@ -55,7 +61,10 @@ function fakeDatabase() {
     select: () => ({
       from: () => ({
         orderBy: () => ({
-          limit: async () => rows,
+          limit: async (limit: number) => {
+            requestedLimit = limit;
+            return rows.slice(0, limit);
+          },
         }),
       }),
     }),
@@ -66,8 +75,12 @@ describe("assist corpus embeddings", () => {
   test("rebuilds embeddings in stable chunk order and preserves corpus metadata", async () => {
     const database = fakeDatabase();
     const chunks = [chunk("b", 2), chunk("a", 1)];
+    const inputs: string[][] = [];
     const provider: EmbeddingProvider = {
-      embed: async (inputs) => inputs.map((value) => embedding(value.endsWith("a") ? 1 : 2)),
+      embed: async (values) => {
+        inputs.push([...values]);
+        return values.map((value) => embedding(value.endsWith("a") ? 1 : 2));
+      },
     };
 
     const records = await rebuildCorpusEmbeddings(
@@ -77,14 +90,35 @@ describe("assist corpus embeddings", () => {
     );
 
     expect(records.map((record) => record.chunkId)).toEqual(["a", "b"]);
+    expect(inputs).toEqual([
+      ["chunk a about quarterly estimated payments", "chunk b about quarterly estimated payments"],
+    ]);
     expect(records[0]).toMatchObject({
       documentId: "syn-tc-4100",
       sectionId: "SYN-TC-4100-b",
       contentHash: "hash-a",
       ordinal: 1,
       embeddingModel: corpusEmbeddingModel,
+      citation: chunk("a", 1).citation,
+      text: "chunk a about quarterly estimated payments",
     });
     expect(database.inserted[0]).toEqual(records);
+  });
+
+  test("rebuilding is deterministic and removes stale records", async () => {
+    const database = fakeDatabase();
+    const provider: EmbeddingProvider = {
+      embed: async (values) => values.map(() => embedding(1)),
+    };
+    const artifact = [chunk("b", 2), chunk("a", 1)];
+
+    const first = await rebuildCorpusEmbeddings(database as never, artifact, provider);
+    const repeat = await rebuildCorpusEmbeddings(database as never, artifact, provider);
+    const staleRemoved = await rebuildCorpusEmbeddings(database as never, [artifact[0]!], provider);
+
+    expect(repeat).toEqual(first);
+    expect(staleRemoved.map((record) => record.chunkId)).toEqual(["b"]);
+    expect(database.inserted[0]).toEqual(staleRemoved);
   });
 
   test("rejects providers that return vectors with the wrong dimensions", async () => {
@@ -98,20 +132,22 @@ describe("assist corpus embeddings", () => {
 
   test("returns vector-ranked chunks with cosine similarity", async () => {
     const database = fakeDatabase();
-    database.rows.push({
-      chunkId: "a",
-      documentId: "syn-tc-4100",
-      documentType: "tax_code",
-      sectionId: "SYN-TC-4100-b",
-      sectionPath: "Estimated Payments > Quarterly Triggers",
-      text: "quarterly estimated payments",
-      contentHash: "hash-a",
-      ordinal: 1,
-      citation: chunk("a", 1).citation,
-      embeddingModel: corpusEmbeddingModel,
-      embedding: embedding(1),
-      similarity: "0.98",
-    });
+    database.rows.push(
+      ...["a", "b", "c"].map((chunkId, index) => ({
+        chunkId,
+        documentId: "syn-tc-4100",
+        documentType: "tax_code",
+        sectionId: "SYN-TC-4100-b",
+        sectionPath: "Estimated Payments > Quarterly Triggers",
+        text: "quarterly estimated payments",
+        contentHash: `hash-${chunkId}`,
+        ordinal: index + 1,
+        citation: chunk(chunkId, index + 1).citation,
+        embeddingModel: corpusEmbeddingModel,
+        embedding: embedding(1),
+        similarity: String(0.98 - index / 100),
+      })),
+    );
     const provider: EmbeddingProvider = {
       embed: async () => [embedding(1)],
     };
@@ -119,11 +155,14 @@ describe("assist corpus embeddings", () => {
     const results = await retrieveSimilarCorpusChunks(
       database as never,
       "quarterly estimated payments",
-      3,
+      2,
       provider,
     );
 
     expect(results[0]).toMatchObject({ chunkId: "a", similarity: 0.98 });
     expect(results[0]?.embedding).toHaveLength(corpusEmbeddingDimensions);
+    expect(results).toHaveLength(2);
+    expect(database.requestedLimit).toBe(2);
+    expect(results[0]?.citation).toEqual(chunk("a", 1).citation);
   });
 });
