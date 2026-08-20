@@ -23,11 +23,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Set up uv and Python
-        uses: astral-sh/setup-uv@v9
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13.14"
+
+      - name: Set up uv
+        # v9.0.0; setup-uv uses immutable release tags and does not publish a v9 tag.
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
         with:
           version: latest
-          python-version: 3.13.14
           enable-cache: true
 
       - name: Install locked dependencies
@@ -86,9 +91,14 @@ jobs:
         with:
           node-version: 22.0.0
           cache: npm
-          cache-dependency-path: src/pulseUI/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            src/pulseUI/package-lock.json
 
-      - name: Install locked dependencies
+      - name: Install root dependencies required by shared TypeScript test fixtures
+        run: npm ci
+
+      - name: Install locked Pulse UI dependencies
         working-directory: src/pulseUI
         run: npm ci
 
