@@ -91,18 +91,10 @@ resource "aws_subnet" "private" {
   }
 }
 
-resource "aws_eip" "nat" {
-  domain = "vpc"
-
-  tags = {
-    Name        = "taxpulse-${var.environment}-nat-eip"
-    Environment = var.environment
-  }
-}
-
 resource "aws_nat_gateway" "main" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public["public_a"].id
+  vpc_id            = aws_vpc.main.id
+  availability_mode = "regional"
+  connectivity_type = "public"
 
   tags = {
     Name        = "taxpulse-${var.environment}-nat-gw"

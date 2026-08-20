@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.49"
     }
   }
 
@@ -18,5 +18,14 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region              = var.aws_region
+  profile             = "terraform-process"
+  shared_config_files = ["./aws-login-bridge.config"]
+
+  default_tags {
+    tags = {
+      env  = "sandbox"
+      user = "dylan-harle"
+    }
+  }
 }
