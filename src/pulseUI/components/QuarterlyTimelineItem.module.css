@@ -1,0 +1,104 @@
+.item {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 18px;
+  background: var(--pulse-surface-muted);
+}
+
+.dateSection {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+}
+
+.month {
+  color: var(--pulse-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.day {
+  color: var(--pulse-ink);
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.dataSection {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  transform: translateY(0.45rem);
+}
+
+.statusDot[data-tone="success"] {
+  background: var(--pulse-success);
+}
+
+.statusDot[data-tone="warning"] {
+  background: var(--pulse-amber);
+}
+
+.statusDot[data-tone="info"] {
+  background: var(--pulse-accent-light);
+}
+
+.statusDot[data-tone="neutral"] {
+  background: var(--pulse-muted);
+}
+
+.dataCopy {
+  min-width: 0;
+}
+
+.mainText {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.subText {
+  margin: 0.2rem 0 0;
+  color: var(--pulse-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.transactionDetails {
+  display: grid;
+  justify-items: end;
+  gap: 0.3rem;
+}
+
+.amount {
+  color: var(--pulse-ink);
+  font-size: 1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .item {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .transactionDetails {
+    justify-items: start;
+  }
+}

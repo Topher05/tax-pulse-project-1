@@ -1,0 +1,39 @@
+{
+  "expectedDocumentCount": {
+    "min": 10,
+    "max": 12
+  },
+  "expectedThresholdSectionIds": [
+    "SYN-TC-4110-a",
+    "SYN-TC-4110-b",
+    "SYN-TC-4200-a",
+    "SYN-TC-4210-a",
+    "SYN-TC-4300-a",
+    "SYN-PB-02-b",
+    "SYN-PB-03-b"
+  ],
+  "expectedNearDuplicatePairs": [
+    {
+      "leftSectionId": "SYN-TC-4110-a",
+      "rightSectionId": "SYN-TC-4110-b",
+      "materialDifference": "filing status"
+    },
+    {
+      "leftSectionId": "SYN-TC-4200-a",
+      "rightSectionId": "SYN-TC-4200-b",
+      "materialDifference": "tax year"
+    },
+    {
+      "leftSectionId": "SYN-TC-4210-a",
+      "rightSectionId": "SYN-TC-4210-b",
+      "materialDifference": "contribution limit"
+    }
+  ],
+  "expectedSupersededPairs": [
+    {
+      "supersededSectionId": "SYN-TC-4310-a",
+      "replacementSectionId": "SYN-TC-4310-b",
+      "effectiveDate": "2026-01-01"
+    }
+  ]
+}

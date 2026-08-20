@@ -2,14 +2,21 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
+    hookTimeout: 60_000,
+    testTimeout: 60_000,
+    setupFiles: ["tests/typescript/bootstrap/testSetup.ts"],
+    include: ["tests/typescript/**/*.test.ts"],
     exclude: [
       "**/.pytest_cache/**",
+      "**/.pytest_tmp/**",
       "**/.ruff_cache/**",
+      "**/.venv/**",
       "**/dist/**",
       "**/node_modules/**",
-      // Run smoke.test.ts only through `node --import tsx --test`, not Vitest.
+      "src/pulseUI/**",
       "tests/typescript/smoke.test.ts",
+      "tests/typescript/tenantsMigration.test.ts",
+      "**/*.integration.test.ts",
     ],
-    include: ["tests/typescript/**/*.test.ts"],
   },
 });

@@ -1,0 +1,178 @@
+.page {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.launchButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  color: #f8fafc;
+  background: var(--pulse-accent);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgb(99 102 241 / 24%);
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.launchButton:hover {
+  transform: translateY(-1px);
+}
+
+.launchButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
+.launchButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pageFooter {
+  margin: 0.25rem 0 0;
+  color: var(--pulse-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.stateCopy {
+  margin: 0;
+  color: var(--pulse-muted);
+  line-height: 1.5;
+}
+
+.skeletonTable {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.skeletonHeader,
+.skeletonRow {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.skeletonHeader {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.skeletonRow {
+  grid-template-columns:
+    minmax(120px, 0.9fr)
+    minmax(180px, 1.6fr)
+    minmax(120px, 1fr)
+    repeat(2, minmax(100px, 0.8fr));
+}
+
+.skeletonBlock {
+  min-height: 18px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #1a1d2b 0%, #23283a 50%, #1a1d2b 100%);
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.skeletonHeader .skeletonBlock {
+  min-height: 72px;
+}
+
+@keyframes skeletonPulse {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.amountCell {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.dateCell {
+  font-variant-numeric: tabular-nums;
+}
+
+.taxImpactCell {
+  color: #22c55e !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badgeBlue {
+  background: var(--accent-bg);
+  color: var(--accent-light);
+}
+
+.greenValue {
+  color: #22c55e;
+}
+
+.greenValue,
+.amountCell,
+.taxImpactCell {
+  font-variant-numeric: tabular-nums;
+}
+
+.removeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  color: var(--pulse-danger);
+  background: var(--pulse-danger-bg);
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.removeButton:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 920px) {
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeletonHeader,
+  .skeletonRow {
+    grid-template-columns: 1fr;
+  }
+}

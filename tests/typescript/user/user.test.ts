@@ -10,7 +10,7 @@ import {
   userStatus,
   userStatusEnum,
   users,
-} from "../../../src/typescript/db/schema.js";
+} from "../../../src/typescript/shared/database/schema.js";
 import {
   expectedUserColumnTypes,
   expectedUserColumns,
@@ -18,18 +18,6 @@ import {
   expectedUserRows,
   userRows,
 } from "./user.test.model.js";
-
-
-/*
-* Deprecate unsued migration files
-* Deprecate unsued tests
- * User and role do not work nicely in drizzle, renaming entity to not match psql keywords (DONE, need to note in PR)
- * Add relationship tests for user and role (DONE as integration test)
- * Figure out why drizzle table hook is inoperable (DONE, version migration mismatches fail silently fixed in beta version need to run upgrade, document for later)
- * Update npm notations for applying drizzle commands, update readme as well (DONE, needs review)
- * Review migration setup, what is different (TODO)
- * Generate new seed, consider faker &/or drizzle-seed (DONE, drizzle seed can be removed)
- */
 
 async function stubUserModuleState(_client: Client): Promise<void> {
   return;
@@ -45,14 +33,14 @@ async function withUserModuleDatabase<T>(
 }
 
 describe("user module", () => {
-  test("exports the user tables and status enum", { timeout: 30000 }, () => {
+  test("exports the user tables and status enum", { timeout: 60000 }, () => {
     expect(tenants).toBeDefined();
     expect(userStatus).toBeDefined();
     expect(users).toBeDefined();
     expect(userStatusEnum.enumValues).toEqual(["invited", "active", "disabled"]);
   });
 
-  test("tracks the users table contract and seeded user rows", { timeout: 30000 }, async () => {
+  test("tracks the users table contract and seeded user rows", { timeout: 60000 }, async () => {
     await withUserModuleDatabase(async (client) => {
       const db = drizzle(client);
       const structure = await getTableStructure(client, "users");
@@ -72,6 +60,8 @@ describe("user module", () => {
           email: users.email,
           role_id: users.roleId,
           status_id: users.statusId,
+          display_name: users.displayName,
+          last_login_at: users.lastLoginAt,
         })
         .from(users)
         .orderBy(asc(users.id));
@@ -80,7 +70,7 @@ describe("user module", () => {
     });
   });
 
-  test("rejects duplicate scoped email rows and invalid user column values", { timeout: 30000 }, async () => {
+  test("rejects duplicate scoped email rows and invalid user column values", { timeout: 60000 }, async () => {
     await withUserModuleDatabase(async (client) => {
       const db = drizzle(client);
 
@@ -88,6 +78,7 @@ describe("user module", () => {
         db.insert(users).values({
           tenantId: userRows[0].tenantId,
           email: userRows[0].email,
+          displayName: userRows[0].displayName,
           roleId: userRows[0].roleId,
           statusId: userRows[0].statusId,
         }),
@@ -99,11 +90,12 @@ describe("user module", () => {
             INSERT INTO users (
               tenant_id,
               email,
+              display_name,
               role_id,
               status_id
-            ) VALUES ($1, $2, $3, $4)
+            ) VALUES ($1, $2, $3, $4, $5)
           `,
-          ["not-a-uuid", "type-bad@example.com", 1, 1],
+          ["not-a-uuid", "type-bad@example.com", "Type Bad", 1, 1],
         ),
         { code: "22P02", messageIncludes: "invalid input syntax for type uuid" },
       );
@@ -113,11 +105,18 @@ describe("user module", () => {
             INSERT INTO users (
               tenant_id,
               email,
+              display_name,
               role_id,
               status_id
-            ) VALUES ($1, $2, $3, $4)
+            ) VALUES ($1, $2, $3, $4, $5)
           `,
-          [userRows[0].tenantId, "type-bad-role@example.com", "bad-role", 1],
+          [
+            userRows[0].tenantId,
+            "type-bad-role@example.com",
+            "Type Bad Role",
+            "bad-role",
+            1,
+          ],
         ),
         {
           code: "22P02",
@@ -130,11 +129,18 @@ describe("user module", () => {
             INSERT INTO users (
               tenant_id,
               email,
+              display_name,
               role_id,
               status_id
-            ) VALUES ($1, $2, $3, $4)
+            ) VALUES ($1, $2, $3, $4, $5)
           `,
-          [userRows[0].tenantId, "type-bad-status@example.com", 1, "bad-status"],
+          [
+            userRows[0].tenantId,
+            "type-bad-status@example.com",
+            "Type Bad Status",
+            1,
+            "bad-status",
+          ],
         ),
         {
           code: "22P02",

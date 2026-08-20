@@ -1,0 +1,66 @@
+.card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 24px;
+  background: var(--pulse-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: var(--pulse-danger);
+  background: var(--pulse-negative-bg);
+}
+
+.icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.copy {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.05rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.description {
+  margin: 0.3rem 0 0;
+  color: var(--pulse-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.action {
+  min-height: 38px;
+  padding: 0 14px;
+  color: var(--pulse-nav-text);
+  background: var(--pulse-accent);
+  border: 1px solid var(--pulse-border);
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .card {
+    grid-template-columns: 1fr;
+  }
+
+  .action {
+    justify-self: start;
+  }
+}

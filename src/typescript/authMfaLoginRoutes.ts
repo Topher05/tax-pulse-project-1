@@ -7,9 +7,11 @@ import {
   type AuthMfaLoginController,
 } from "./authMfaLogin.js";
 import { ProblemHttpError, type ProblemDetails } from "./errors.js";
+import { setRefreshTokenCookie } from "./authSessionCookies.js";
 
 export interface CreateAuthMfaLoginRouterOptions {
   controller: AuthMfaLoginController;
+  secureCookies?: boolean;
 }
 
 export interface AuthMfaValidationErrorIssue {
@@ -51,6 +53,7 @@ function validationError(input: {
 
 export function createAuthMfaLoginRouter({
   controller,
+  secureCookies = true,
 }: CreateAuthMfaLoginRouterOptions): Router {
   const router = Router();
 
@@ -72,7 +75,15 @@ export function createAuthMfaLoginRouter({
       try {
         const result = await controller.verify(parsedBody.data);
 
-        res.status(200).json(result);
+        setRefreshTokenCookie(res, result.refresh_token, result.refresh_expires_in, {
+          secure: secureCookies,
+        });
+        res.status(200).json({
+          access_token: result.access_token,
+          token_type: result.token_type,
+          expires_in: result.expires_in,
+          refresh_expires_in: result.refresh_expires_in,
+        });
       } catch (error) {
         next(error);
       }

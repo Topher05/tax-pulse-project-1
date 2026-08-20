@@ -3,17 +3,32 @@ import { test } from "node:test";
 import { z } from "zod";
 
 import {
-  clientIncomeDeductionAggregationPayloadSchema,
   createGreeting,
+  clientDeductionAggregationPayloadSchema,
+  deductionCategoryValues,
   taxPlanCycleSchema,
   taxPlanCycleStages,
-  type ClientIncomeDeductionAggregationPayload,
+  type ClientDeductionAggregationPayload,
   type TaxPlanCycle,
   type TaxPlanCycleStage,
 } from "../../src/typescript/index.js";
 
+const SMOKE_GREETING = "hello from TypeScript";
+
+function reportSmokeCheck(name: string, check: () => void): void {
+  try {
+    check();
+    console.log(`PASS ${name}`);
+  } catch (error) {
+    console.error(`FAIL ${name}`);
+    throw error;
+  }
+}
+
 test("createGreeting returns the TypeScript smoke message", () => {
-  assert.equal(createGreeting(), "hello from TypeScript");
+  reportSmokeCheck("createGreeting returns the TypeScript smoke message", () => {
+    assert.equal(createGreeting(), SMOKE_GREETING);
+  });
 });
 
 test("tax plan cycle stages are listed in canonical order", () => {
@@ -93,9 +108,9 @@ test("tax plan cycle accepts a hold reason when on hold", () => {
   assert.deepEqual(taxPlanCycleSchema.parse(heldCycle), heldCycle);
 });
 
-test("client income and deduction aggregation payload validates", () => {
-  const payload: ClientIncomeDeductionAggregationPayload = {
-    clientId: "client-123",
+test("client deduction aggregation payload validates", () => {
+  const payload: ClientDeductionAggregationPayload = {
+    caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
     incomeEvents: [
       {
         source: "W-2 wages",
@@ -110,21 +125,24 @@ test("client income and deduction aggregation payload validates", () => {
     ],
     deductions: [
       {
-        category: "Mortgage interest",
+        id: "ded-001",
+        date: "2026-07-30",
+        description: "Mortgage interest",
+        category: deductionCategoryValues[0],
         amount: 18500,
       },
     ],
   };
 
   assert.deepEqual(
-    clientIncomeDeductionAggregationPayloadSchema.parse(payload),
+    clientDeductionAggregationPayloadSchema.parse(payload),
     payload,
   );
 });
 
-test("client income and deduction aggregation payload rejects negative money amounts", () => {
-  const payload: ClientIncomeDeductionAggregationPayload = {
-    clientId: "client-123",
+test("client deduction aggregation payload rejects invalid category values", () => {
+  const payload: ClientDeductionAggregationPayload = {
+    caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
     incomeEvents: [
       {
         source: "W-2 wages",
@@ -134,7 +152,45 @@ test("client income and deduction aggregation payload rejects negative money amo
     ],
     deductions: [
       {
-        category: "Mortgage interest",
+        id: "ded-001",
+        date: "2026-07-30",
+        description: "Mortgage interest",
+        category: deductionCategoryValues[0],
+        amount: 18500,
+      },
+    ],
+  };
+
+  const invalidPayload: unknown = {
+    ...payload,
+    deductions: [
+      { ...payload.deductions[0], category: "Mortgage interest" as never },
+    ],
+  };
+
+  assert.equal(
+    clientDeductionAggregationPayloadSchema.safeParse(invalidPayload)
+      .success,
+    false,
+  );
+});
+
+test("client deduction aggregation payload rejects negative money amounts", () => {
+  const payload: ClientDeductionAggregationPayload = {
+    caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
+    incomeEvents: [
+      {
+        source: "W-2 wages",
+        amount: 125000,
+        withholding: 24500,
+      },
+    ],
+    deductions: [
+      {
+        id: "ded-001",
+        date: "2026-07-30",
+        description: "Mortgage interest",
+        category: deductionCategoryValues[0],
         amount: 18500,
       },
     ],
@@ -157,7 +213,7 @@ test("client income and deduction aggregation payload rejects negative money amo
 
   for (const invalidPayload of negativeAmountPayloads) {
     assert.equal(
-      clientIncomeDeductionAggregationPayloadSchema.safeParse(invalidPayload)
+      clientDeductionAggregationPayloadSchema.safeParse(invalidPayload)
         .success,
       false,
     );

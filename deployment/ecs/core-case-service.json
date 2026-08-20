@@ -1,0 +1,42 @@
+{
+  "cluster": "taxpulse-api",
+  "serviceName": "core-case-service",
+  "taskDefinition": "arn:aws:ecs:us-east-1:814650854375:task-definition/taxpulse-core-case-service:1",
+  "desiredCount": 1,
+  "launchType": "FARGATE",
+  "healthCheckGracePeriodSeconds": 60,
+  "deploymentConfiguration": {
+    "minimumHealthyPercent": 100,
+    "maximumPercent": 200
+  },
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": [
+        "SCRUM-162_PRIVATE_SUBNET_A",
+        "SCRUM-162_PRIVATE_SUBNET_B",
+        "SCRUM-162_PRIVATE_SUBNET_C"
+      ],
+      "securityGroups": [
+        "SCRUM-162_ECS_SERVICE_SECURITY_GROUP_ID"
+      ],
+      "assignPublicIp": "DISABLED"
+    }
+  },
+  "loadBalancers": [
+    {
+      "targetGroupArn": "SCRUM-164_CORE_CASE_TARGET_GROUP_ARN",
+      "containerName": "core-case-service",
+      "containerPort": 3000
+    }
+  ],
+  "tags": [
+    {
+      "key": "user",
+      "value": "chimaobi-okorie"
+    },
+    {
+      "key": "env",
+      "value": "sandbox"
+    }
+  ]
+}

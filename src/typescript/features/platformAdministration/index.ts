@@ -1,0 +1,36 @@
+export {
+  platformAuditLogEntrySchema,
+  platformAuditLogResponseSchema,
+  platformPermissionAccessSchema,
+  platformPermissionMatrixResponseSchema,
+  platformPermissionMatrixRoleSchema,
+  platformPermissionMatrixRowSchema,
+  platformPermissionMatrixSectionSchema,
+  platformTenantUserCreateParamsSchema,
+  platformTenantUserCreateRequestSchema,
+  platformTenantUserRowSchema,
+  platformTenantUsersListResponseSchema,
+  platformTenantUsersTenantSchema,
+  type PlatformAuditLogEntry,
+  type PlatformAuditLogResponse,
+  type PlatformPermissionAccess,
+  type PlatformPermissionMatrixResponse,
+  type PlatformPermissionMatrixRole,
+  type PlatformPermissionMatrixRow,
+  type PlatformPermissionMatrixSection,
+  type PlatformTenantUserCreateParams,
+  type PlatformTenantUserCreateRequest,
+  type PlatformTenantUserRow,
+  type PlatformTenantUsersListResponse,
+  type PlatformTenantUsersTenant,
+} from "./platformAdministration.js";
+export {
+  createPlatformAdministrationRepository,
+  PlatformTenantUserEmailConflictError,
+  type PlatformAdministrationRepository,
+  type PlatformTenantUserCreateInput,
+} from "./repository.js";
+export {
+  createPlatformAdministrationRouter,
+  type CreatePlatformAdministrationRouterOptions,
+} from "./routes.js";

@@ -2,9 +2,25 @@ import { z } from "zod";
 
 export interface JwtConfig {
   issuer: string;
-  signingSecret: string;
+  jwksUrl?: string;
+  /** @deprecated Test fixture compatibility only; production configuration never reads this. */
+  signingSecret?: string;
   accessTokenLifetimeSeconds: number;
   refreshTokenLifetimeSeconds: number;
+}
+
+/**
+ * Returns the deployment-owned base domain for tenant login hostnames.
+ *
+ * An omitted value intentionally preserves the default used by
+ * `parseTenantLoginHostname` for existing deployments.
+ */
+export function getTenantLoginBaseDomainFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  const baseDomain = env.TAXPULSE_LOGIN_BASE_DOMAIN?.trim();
+
+  return baseDomain || undefined;
 }
 
 const jwtEnvironmentSchema = z
@@ -14,13 +30,7 @@ const jwtEnvironmentSchema = z
       .trim()
       .min(1, "JWT_ISSUER is required.")
       .url("JWT_ISSUER must be a valid URL."),
-    JWT_SIGNING_SECRET: z
-      .string()
-      .min(1, "JWT_SIGNING_SECRET is required.")
-      .refine(
-        (secret) => Buffer.byteLength(secret, "utf8") >= 32,
-        "JWT_SIGNING_SECRET must contain at least 32 UTF-8 bytes.",
-      ),
+    JWT_JWKS_URL: z.string().trim().url("JWT_JWKS_URL must be a valid URL.").optional(),
     JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce
       .number()
       .int("JWT_ACCESS_TOKEN_TTL_SECONDS must be a whole number.")
@@ -53,14 +63,14 @@ export function getJwtConfigFromEnv(
 ): JwtConfig {
   const parsed = jwtEnvironmentSchema.parse({
     JWT_ISSUER: env.JWT_ISSUER,
-    JWT_SIGNING_SECRET: env.JWT_SIGNING_SECRET,
+    JWT_JWKS_URL: env.JWT_JWKS_URL,
     JWT_ACCESS_TOKEN_TTL_SECONDS: env.JWT_ACCESS_TOKEN_TTL_SECONDS,
     JWT_REFRESH_TOKEN_TTL_SECONDS: env.JWT_REFRESH_TOKEN_TTL_SECONDS,
   });
 
   return {
     issuer: parsed.JWT_ISSUER,
-    signingSecret: parsed.JWT_SIGNING_SECRET,
+    jwksUrl: parsed.JWT_JWKS_URL ?? new URL("/.well-known/jwks.json", parsed.JWT_ISSUER).toString(),
     accessTokenLifetimeSeconds: parsed.JWT_ACCESS_TOKEN_TTL_SECONDS,
     refreshTokenLifetimeSeconds: parsed.JWT_REFRESH_TOKEN_TTL_SECONDS,
   };

@@ -1,8 +1,9 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
-import { refreshToken } from "./db/schema.js";
+import { refreshToken, roles, users, userStatus } from "./shared/database/schema.js";
+import type { AuthenticatedPrincipal } from "./authTypes.js";
 
 export interface PersistRefreshTokenInput {
   userId: string;
@@ -19,6 +20,10 @@ export interface RevokeRefreshTokenByHashInput {
 export interface RefreshTokenRepository {
   persist(input: PersistRefreshTokenInput): Promise<void>;
   revokeByTokenHash(input: RevokeRefreshTokenByHashInput): Promise<boolean>;
+  findActivePrincipalByTokenHash(input: {
+    tokenHash: string;
+    now: Date;
+  }): Promise<AuthenticatedPrincipal | null>;
 }
 
 export function createRefreshTokenRepository(client: Client): RefreshTokenRepository {
@@ -42,6 +47,31 @@ export function createRefreshTokenRepository(client: Client): RefreshTokenReposi
         .returning({ id: refreshToken.id });
 
       return rows.length === 1;
+    },
+
+    async findActivePrincipalByTokenHash({ tokenHash, now }) {
+      const rows = await db
+        .select({
+          userId: users.id,
+          tenantId: users.tenantId,
+          role: roles.role,
+        })
+        .from(refreshToken)
+        .innerJoin(users, eq(refreshToken.userId, users.id))
+        .innerJoin(roles, eq(users.roleId, roles.id))
+        .innerJoin(userStatus, eq(users.statusId, userStatus.id))
+        .where(
+          and(
+            eq(refreshToken.tokenHash, tokenHash),
+            isNull(refreshToken.revokedAt),
+            gt(refreshToken.expiresAt, now),
+            eq(userStatus.status, "active"),
+          ),
+        )
+        .limit(1);
+
+      const principal = rows[0];
+      return principal ?? null;
     },
   };
 }
