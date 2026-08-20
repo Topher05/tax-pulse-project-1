@@ -477,7 +477,7 @@ export const credentialRows = [
       "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtMTA$YXV0aC1oYXNoLTEw",
   },
   {
-    id: "testclientdemo202600001",
+    id: "cm7zq8f4k0010a1b2c3d4e5f6",
     userId: userRows[10].id,
     passwordHash:
       "$argon2id$v=19$m=65536,t=3,p=4$c3ludGhldGljLXRlc3QtY2xpZW50LXNlZWQtMDE$+IPCTtDIPAJDcHuRvZpGqvDAGYJbpeiK1gKMg6SSV6E",

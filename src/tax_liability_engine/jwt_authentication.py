@@ -12,6 +12,7 @@ from typing import Literal, cast
 from urllib.request import urlopen
 
 import jwt
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.algorithms import RSAAlgorithm
@@ -38,7 +39,7 @@ class _JwksKeyProvider:
         self._loaded_at = 0.0
         self._lock = asyncio.Lock()
 
-    async def get_signing_key(self, token: str) -> object:
+    async def get_signing_key(self, token: str) -> RSAPublicKey:
         try:
             header = jwt.get_unverified_header(token)
         except jwt.InvalidTokenError as error:
@@ -54,7 +55,7 @@ class _JwksKeyProvider:
         if key is None:
             raise _JwksKeyNotFoundError
 
-        return RSAAlgorithm.from_jwk(json.dumps(key))
+        return cast(RSAPublicKey, RSAAlgorithm.from_jwk(json.dumps(key)))
 
     async def _get_keys(self, *, force_refresh: bool = False) -> list[dict[str, object]]:
         async with self._lock:

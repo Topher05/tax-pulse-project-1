@@ -1,20 +1,15 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-import jwt
 import pytest
 from httpx import ASGITransport, AsyncClient
+
 from tax_liability_engine.api import create_app
-from tax_liability_engine.jwt_authentication import JwtValidationConfig
 from tax_liability_engine.routers import tax_calculation as tax_calculation_router
 from tax_liability_engine.tax_calculation import TaxCalculationRequest, TaxCalculationResult
+from tests.tax_liability_engine.auth_test_support import JwtTestMaterial, issue_access_token
 
-CONFIG = JwtValidationConfig(
-    issuer="https://auth.taxpulse.example",
-    signing_secret="a-unique-test-secret-that-is-more-than-32-bytes",
-)
 SAMPLE_REQUEST = {
     "income": "100000",
     "deductions": "12000",
@@ -37,27 +32,6 @@ EXPECTED_RESPONSE = {
 }
 
 
-def issue_token(
-    *,
-    role: object = "Advisor",
-    tenant_id: object = "tenant-001",
-    issuer: str = CONFIG.issuer,
-    expires_at: datetime | None = None,
-) -> str:
-    return jwt.encode(
-        {
-            "sub": "user-001",
-            "role": role,
-            "tenant_id": tenant_id,
-            "iss": issuer,
-            "iat": datetime.now(UTC),
-            "exp": expires_at or datetime.now(UTC) + timedelta(minutes=5),
-        },
-        CONFIG.signing_secret,
-        algorithm="HS256",
-    )
-
-
 def make_result() -> TaxCalculationResult:
     return TaxCalculationResult(
         income=Decimal("100000"),
@@ -74,14 +48,16 @@ def make_result() -> TaxCalculationResult:
 
 
 @pytest.mark.asyncio
-async def test_tax_calculation_endpoint_returns_expected_liability() -> None:
-    app = create_app(CONFIG)
+async def test_tax_calculation_endpoint_returns_expected_liability(
+    jwt_test_material: JwtTestMaterial,
+) -> None:
+    app = create_app(jwt_test_material.config)
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         response = await client.post(
             "/tax-calculations",
-            headers={"Authorization": f"Bearer {issue_token()}"},
+            headers={"Authorization": f"Bearer {issue_access_token(jwt_test_material)}"},
             json=SAMPLE_REQUEST,
         )
 
@@ -93,6 +69,7 @@ async def test_tax_calculation_endpoint_returns_expected_liability() -> None:
 @pytest.mark.asyncio
 async def test_tax_calculation_endpoint_calls_calculate_tax_and_uses_tenant_claim(
     monkeypatch: pytest.MonkeyPatch,
+    jwt_test_material: JwtTestMaterial,
 ) -> None:
     seen_requests: list[dict[str, object]] = []
 
@@ -102,13 +79,15 @@ async def test_tax_calculation_endpoint_calls_calculate_tax_and_uses_tenant_clai
 
     monkeypatch.setattr(tax_calculation_router, "calculate_tax", fake_calculate_tax)
 
-    app = create_app(CONFIG)
+    app = create_app(jwt_test_material.config)
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         response = await client.post(
             "/tax-calculations",
-            headers={"Authorization": f"Bearer {issue_token(tenant_id='tenant-002')}"},
+            headers={
+                "Authorization": f"Bearer {issue_access_token(jwt_test_material, tenant_id='tenant-002')}"
+            },
             json=SAMPLE_REQUEST,
         )
 
@@ -126,8 +105,10 @@ async def test_tax_calculation_endpoint_calls_calculate_tax_and_uses_tenant_clai
 
 
 @pytest.mark.asyncio
-async def test_tax_calculation_endpoint_rejects_missing_jwt() -> None:
-    app = create_app(CONFIG)
+async def test_tax_calculation_endpoint_rejects_missing_jwt(
+    jwt_test_material: JwtTestMaterial,
+) -> None:
+    app = create_app(jwt_test_material.config)
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
@@ -139,14 +120,18 @@ async def test_tax_calculation_endpoint_rejects_missing_jwt() -> None:
 
 
 @pytest.mark.asyncio
-async def test_tax_calculation_endpoint_rejects_token_missing_tenant_claim() -> None:
-    app = create_app(CONFIG)
+async def test_tax_calculation_endpoint_rejects_token_missing_tenant_claim(
+    jwt_test_material: JwtTestMaterial,
+) -> None:
+    app = create_app(jwt_test_material.config)
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         response = await client.post(
             "/tax-calculations",
-            headers={"Authorization": f"Bearer {issue_token(tenant_id='')}"},
+            headers={
+                "Authorization": f"Bearer {issue_access_token(jwt_test_material, tenant_id='')}"
+            },
             json=SAMPLE_REQUEST,
         )
 

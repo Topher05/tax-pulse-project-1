@@ -31,6 +31,7 @@ const jwtEnvironmentSchema = z
       .min(1, "JWT_ISSUER is required.")
       .url("JWT_ISSUER must be a valid URL."),
     JWT_JWKS_URL: z.string().trim().url("JWT_JWKS_URL must be a valid URL.").optional(),
+    JWT_SIGNING_SECRET: z.string().trim().min(1).optional(),
     JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce
       .number()
       .int("JWT_ACCESS_TOKEN_TTL_SECONDS must be a whole number.")
@@ -64,6 +65,7 @@ export function getJwtConfigFromEnv(
   const parsed = jwtEnvironmentSchema.parse({
     JWT_ISSUER: env.JWT_ISSUER,
     JWT_JWKS_URL: env.JWT_JWKS_URL,
+    JWT_SIGNING_SECRET: env.JWT_SIGNING_SECRET,
     JWT_ACCESS_TOKEN_TTL_SECONDS: env.JWT_ACCESS_TOKEN_TTL_SECONDS,
     JWT_REFRESH_TOKEN_TTL_SECONDS: env.JWT_REFRESH_TOKEN_TTL_SECONDS,
   });
@@ -71,6 +73,7 @@ export function getJwtConfigFromEnv(
   return {
     issuer: parsed.JWT_ISSUER,
     jwksUrl: parsed.JWT_JWKS_URL ?? new URL("/.well-known/jwks.json", parsed.JWT_ISSUER).toString(),
+    signingSecret: parsed.JWT_SIGNING_SECRET,
     accessTokenLifetimeSeconds: parsed.JWT_ACCESS_TOKEN_TTL_SECONDS,
     refreshTokenLifetimeSeconds: parsed.JWT_REFRESH_TOKEN_TTL_SECONDS,
   };

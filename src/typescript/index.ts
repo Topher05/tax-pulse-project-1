@@ -706,7 +706,12 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 
 export async function main(): Promise<Server> {
   const jwtConfig = getJwtConfigFromEnv();
-  const jwtRs256IssuerConfig = getJwtRs256IssuerConfigFromEnv();
+  const jwtRs256IssuerConfig = process.env.JWT_SIGNING_PRIVATE_KEY?.trim()
+    ? getJwtRs256IssuerConfigFromEnv()
+    : undefined;
+  if (!jwtRs256IssuerConfig && !jwtConfig.signingSecret) {
+    throw new Error("RS256 issuer configuration is required.");
+  }
   const tenantLoginBaseDomain = getTenantLoginBaseDomainFromEnv();
   const logger = createLogger();
 
@@ -846,7 +851,9 @@ export async function main(): Promise<Server> {
   const app = createApp({
     logger,
     registerRoutes: (app) => {
-      app.use(createJwksRouter({ issuerConfig: jwtRs256IssuerConfig }));
+      if (jwtRs256IssuerConfig) {
+        app.use(createJwksRouter({ issuerConfig: jwtRs256IssuerConfig }));
+      }
       app.use(createCoreCaseOpenApiRouter());
       app.use(createMfaEnrollmentRouter({
         controller: mfaEnrollmentController,

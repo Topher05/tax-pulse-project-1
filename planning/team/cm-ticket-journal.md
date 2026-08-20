@@ -95,6 +95,14 @@ repository-administration rollout in Step 3.
   cannot fail due to unresolved UI-only dependencies such as `zod`.
 - Updated CI checkout, Node setup, and uv setup actions to Node 24-compatible major versions,
   removing the GitHub Actions Node 20 runtime deprecation warnings.
+- Corrected Python Quality dependency installation to include the locked `dev` extra. This
+  provides Ruff, Pyright, pytest, Pact, and Testcontainers before their CI steps run.
+- Aligned tax-engine test authentication with the RS256/JWKS contract and isolated Pact
+  provider verification from JWT cryptography, which is outside the consumer/provider payload
+  contract being verified.
+- Restored the documented test-only HMAC compatibility path while production continues to use
+  RS256/JWKS, then generated the missing users display-name index migration and aligned stale
+  database test expectations with the canonical synthetic seed.
 
 ## christopher-martus-jira200 - SCRUM-200
 
