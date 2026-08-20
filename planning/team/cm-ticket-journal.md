@@ -217,6 +217,58 @@ stage-change events from being lost before asynchronous delivery.
 - `npm run db:check` passed and loaded the updated Drizzle schema successfully.
 - `git diff --check` passed.
 
+
+## christopher-martus-jira179 - SCRUM-179
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Persist pgvector embeddings for deterministic AI-Assist corpus retrieval
+
+**Description:** Store embeddings and corpus metadata for the deterministic chunks produced
+by SCRUM-178, enabling later semantic retrieval work.
+
+**Acceptance Criteria:**
+
+- Every corpus chunk has a pgvector-backed persistence record and similarity index foundation.
+- Stored records preserve stable chunk metadata, citations, content hashes, and ordering fields.
+- The database and test infrastructure support the required vector PostgreSQL extension.
+
+**Code Connection:**
+
+- Adds `ai_assist_corpus_embedding` with stable `chunk_id`, corpus metadata, citation JSON,
+  embedding model, and `vector(1536)` embedding columns.
+- Adds an HNSW index using `vector_cosine_ops` for cosine similarity queries in the later
+  embedding/retrieval step.
+- Adds `CREATE EXTENSION IF NOT EXISTS vector` to the generated migration.
+
+**Project Scope Connection:**
+
+This is Step 1 of SCRUM-179 and provides only the AI-Assist corpus persistence foundation.
+Embedding calls, deterministic rebuild logic, similarity retrieval functions, scripts, and
+acceptance-focused tests remain for later plan steps. Hybrid retrieval, reranking, APIs, and
+tenant request enforcement remain out of scope.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0017_known_gabe_jones.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0017_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `docker-compose.yml`
+- `tests/typescript/bootstrap/dockerPostgres.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen` generated the migration.
+- `npm run db:check` passed.
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+- `git diff --check` passed.
+
 ## christopher-martus-jira144 - SCRUM-144 Seed Data Follow-up
 
 **Branch:** `christopher-martus-jira144`
