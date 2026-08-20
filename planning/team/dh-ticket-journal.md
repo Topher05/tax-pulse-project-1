@@ -5,6 +5,94 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira178 - SCRUM-178
+
+**Branch:** `dylan-harle-jira178`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-178
+
+**Summary:** Load and chunk the tax-code and playbook corpus.
+
+**Description:** As a Data Engineer, I want the tax-code and planning-playbook corpus
+chunked with citations, so that AI-Assist retrieval has a grounded source.
+
+**Acceptance Criteria:**
+
+- The corpus loader chunks the tax-code and planning-playbook documents.
+- Each chunk preserves a source citation.
+- A retrieval smoke test returns the expected rule chunk for a sample recommendation.
+
+**Code Connection:**
+
+- Added a separate AI-assist corpus bounded context that loads the generated synthetic
+  markdown corpus documents from `data/corpus`.
+- Added corpus validation, deterministic chunking, JSONL artifact writing, and lexical
+  smoke retrieval helpers without adding embeddings, vector storage, reranking, or an
+  HTTP `/assist` endpoint.
+- Added 11 clearly synthetic corpus documents generated from `data/corpus/CORPUS-SPEC.md`
+  and refactored the assist corpus tests to prove loading, validation, chunking,
+  citation preservation, and smoke retrieval against that generated corpus.
+- Added `corpus:validate`, `corpus:build`, and `corpus:smoke` scripts for the generated
+  corpus.
+
+**Project Scope Connection:**
+
+- RAG-Powered AI Assist.
+- Implements the SCRUM-178 intake and chunking frame while preserving ADR-0009 service
+  ownership boundaries: Core Case remains responsible for tenant case records and the
+  Tax Liability Engine remains focused on calculation execution.
+- Records ADR-0035 so the corpus is treated as a separate bounded context from Core
+  Case and the Tax Liability Engine.
+- Leaves embeddings and pgvector to SCRUM-179, hybrid retrieval and reranking to
+  SCRUM-180, RAGAS evaluation to SCRUM-181, and `/assist` delivery with tenant scoping
+  to SCRUM-182.
+
+**Changed Files:**
+
+- `src/typescript/assist/corpus.ts`
+- `src/typescript/shared/scripts/corpusValidate.ts`
+- `src/typescript/shared/scripts/corpusBuild.ts`
+- `src/typescript/shared/scripts/corpusSmoke.ts`
+- `src/python/retrieval/corpus_check.py`
+- `tests/typescript/assist/corpus.test.ts`
+- `data/corpus/CORPUS-SPEC.md`
+- `data/corpus/corpus-intake.json`
+- `data/corpus/syn-tc-4100-estimated-payment-triggers.md`
+- `data/corpus/syn-tc-4110-safe-harbor-thresholds.md`
+- `data/corpus/syn-tc-4120-quarterly-underpayment-exceptions.md`
+- `data/corpus/syn-tc-4200-itemized-deduction-caps.md`
+- `data/corpus/syn-tc-4210-charitable-contribution-limits.md`
+- `data/corpus/syn-tc-4300-retirement-credit-phase-outs.md`
+- `data/corpus/syn-tc-4310-superseded-retirement-credit.md`
+- `data/corpus/syn-pb-01-estimated-payment-playbook.md`
+- `data/corpus/syn-pb-02-deduction-bunching-playbook.md`
+- `data/corpus/syn-pb-03-retirement-contribution-playbook.md`
+- `data/corpus/syn-pb-04-superseded-rule-explanations.md`
+- `data/corpus/build/chunks.jsonl`
+- `data/corpus/README.md`
+- `adr/0035-ai-assist-corpus-boundary.md`
+- `adr/README.md`
+- `package.json`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/assist/corpus.test.ts`
+  passed with 10 tests against the generated `data/corpus` corpus.
+- `npm run corpus:validate` against the default `data/corpus` path passed for 11
+  documents and 44 sections.
+- `npm run corpus:build` against the default `data/corpus` path passed and wrote 45
+  chunks to `data/corpus/build/chunks.jsonl`.
+- `CORPUS_SMOKE_EXPECTED_SECTION_ID=SYN-TC-4100-b npm run corpus:smoke` passed for the
+  estimated-payment sample query.
+- `python src/python/retrieval/corpus_check.py` passed.
+- `python -m ruff check src/python/retrieval/corpus_check.py` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"
+  src/python/retrieval/corpus_check.py` passed.
+
 ## dylan-harle-jira155 - SCRUM-155
 
 **Branch:** `dylan-harle-jira155`

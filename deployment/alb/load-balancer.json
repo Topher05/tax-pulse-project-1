@@ -1,0 +1,24 @@
+{
+  "Name": "taxpulse-api-alb",
+  "Subnets": [
+    "SCRUM-162_PUBLIC_SUBNET_A",
+    "SCRUM-162_PUBLIC_SUBNET_B",
+    "SCRUM-162_PUBLIC_SUBNET_C"
+  ],
+  "SecurityGroups": [
+    "SCRUM-162_ALB_SECURITY_GROUP_ID"
+  ],
+  "Scheme": "internet-facing",
+  "Type": "application",
+  "IpAddressType": "ipv4",
+  "Tags": [
+    {
+      "Key": "user",
+      "Value": "chimaobi-okorie"
+    },
+    {
+      "Key": "env",
+      "Value": "sandbox"
+    }
+  ]
+}

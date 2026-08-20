@@ -1,0 +1,25 @@
+{
+  "LoadBalancerArn": "SCRUM-164_TAXPULSE_API_ALB_ARN",
+  "Protocol": "HTTP",
+  "Port": 80,
+  "DefaultActions": [
+    {
+      "Type": "fixed-response",
+      "FixedResponseConfig": {
+        "StatusCode": "404",
+        "ContentType": "application/json",
+        "MessageBody": "{\"error\":\"route_not_found\"}"
+      }
+    }
+  ],
+  "Tags": [
+    {
+      "Key": "user",
+      "Value": "chimaobi-okorie"
+    },
+    {
+      "Key": "env",
+      "Value": "sandbox"
+    }
+  ]
+}
