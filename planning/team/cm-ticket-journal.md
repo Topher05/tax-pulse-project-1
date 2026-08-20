@@ -74,6 +74,7 @@ repository-administration rollout in Step 3.
 **Changed Files:**
 
 - `.github/workflows/sast-security-gate.yml`
+- `.github/workflows/ci.yml`
 - `adr/0036-sast-security-gate-on-blacksmith-runners.md`
 - `adr/README.md`
 - `planning/team/cm-ticket-journal.md`
@@ -86,6 +87,9 @@ repository-administration rollout in Step 3.
 - `git diff --check` passed.
 - `git diff --stat origin/development...HEAD` reports 5 files changed, 151 insertions, and 1 deletion.
 - Step 3 repository-administration rollout remains pending explicit authorization for push, PR creation, and branch-protection changes.
+- Added the repository-level CI workflow with parallel Python, Core TypeScript, Pulse UI, and
+  container validation jobs, plus the stable `CI / Required Gate` aggregate check. It runs on
+  pull requests and pushes to `development`, with cancellation of obsolete runs.
 
 ## christopher-martus-jira200 - SCRUM-200
 
