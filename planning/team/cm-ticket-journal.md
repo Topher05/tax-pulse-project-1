@@ -90,6 +90,11 @@ repository-administration rollout in Step 3.
 - Added the repository-level CI workflow with parallel Python, Core TypeScript, Pulse UI, and
   container validation jobs, plus the stable `CI / Required Gate` aggregate check. It runs on
   pull requests and pushes to `development`, with cancellation of obsolete runs.
+- Corrected the Core TypeScript job to run only the root application and test TypeScript
+  projects. Pulse UI retains its independently installed and validated job, so the core job
+  cannot fail due to unresolved UI-only dependencies such as `zod`.
+- Updated CI checkout, Node setup, and uv setup actions to Node 24-compatible major versions,
+  removing the GitHub Actions Node 20 runtime deprecation warnings.
 
 ## christopher-martus-jira200 - SCRUM-200
 
