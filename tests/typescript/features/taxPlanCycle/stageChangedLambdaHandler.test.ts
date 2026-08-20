@@ -12,6 +12,7 @@ import {
   stageChangedCloudEventSchemaV1,
   type IdempotencyGuard,
   type StageChangedLambdaSqsEvent,
+  type StageChangedProjectionUpdater,
 } from "../../../../src/typescript/index.js";
 
 function createInMemoryRedisClient(
@@ -204,7 +205,7 @@ describe("stage-changed Lambda handler", () => {
     const duplicateEvent = buildStageChangedEvent("stage-transition-duplicate-159");
     const redisClient = createInMemoryRedisClient();
     const logger = createLogger();
-    const projectionUpdater = {
+    const projectionUpdater: StageChangedProjectionUpdater = {
       updateStage: vi.fn(async () => undefined),
     };
     const consumer = createConsumer({
