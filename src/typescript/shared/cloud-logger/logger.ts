@@ -2,6 +2,8 @@ import pino, { type DestinationStream, type Logger } from "pino";
 import { pinoHttp } from "pino-http";
 import type { RequestHandler } from "express";
 
+import { cloudWatchObservabilityProvider } from "./observability.js";
+
 export interface CreateLoggerOptions {
   destination?: DestinationStream;
   level?: string;
@@ -23,5 +25,17 @@ export function createRequestLogger(logger: Logger): RequestHandler {
     customReceivedMessage: () => "request received",
     customSuccessMessage: () => "request completed",
     customErrorMessage: () => "request errored",
+    customProps: (req) => {
+      const requestUrl = (req as { originalUrl?: string; url?: string }).originalUrl ?? req.url;
+      const observabilityContext = cloudWatchObservabilityProvider(req.headers);
+
+      return {
+        service: "core-case-service",
+        layer: "http",
+        method: req.method,
+        route: requestUrl,
+        ...observabilityContext,
+      };
+    },
   });
 }
