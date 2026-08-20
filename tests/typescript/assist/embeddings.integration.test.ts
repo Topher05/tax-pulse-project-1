@@ -7,34 +7,20 @@ import {
   retrieveSimilarCorpusChunks,
   type EmbeddingProvider,
 } from "../../../src/typescript/assist/embeddings.js";
-import type { CorpusChunk } from "../../../src/typescript/assist/corpus.js";
+import {
+  defaultCorpusChunkArtifactPath,
+  readCorpusChunkArtifact,
+} from "../../../src/typescript/assist/corpus.js";
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 
 const vector = (value: number): number[] =>
   Array.from({ length: corpusEmbeddingDimensions }, (_, index) => (index === 0 ? value : 0));
 
-const chunk = (chunkId: string): CorpusChunk => ({
-  chunkId,
-  documentId: "syn-tc-4100",
-  documentType: "tax_code",
-  sectionId: "SYN-TC-4100-b",
-  sectionPath: "Estimated Payments > Quarterly Triggers",
-  citation: {
-    documentTitle: "Synthetic Estimated Payment Triggers",
-    documentType: "tax_code",
-    fictionalIssuer: "Civic Ledger Training Authority",
-    tenantId: "tenant-training-alpha",
-    sectionId: "SYN-TC-4100-b",
-    sectionPath: "Estimated Payments > Quarterly Triggers",
-    syntheticNotice: "Synthetic training content; rates and limits are invented.",
-  },
-  text: `rule ${chunkId} about quarterly estimated payments`,
-  ordinal: 1,
-  contentHash: `hash-${chunkId}`,
-});
-
 describe("assist corpus embeddings against pgvector", () => {
   test("migrates the vector index and executes similarity retrieval", async () => {
+    const chunks = await readCorpusChunkArtifact(defaultCorpusChunkArtifactPath);
+    expect(chunks.length).toBeGreaterThan(0);
+
     await withDockerDrizzleSeededDatabase(async (client) => {
       const extension = await client.query<{ installed: string }>(
         "SELECT extname AS installed FROM pg_extension WHERE extname = 'vector'",
@@ -51,13 +37,40 @@ describe("assist corpus embeddings against pgvector", () => {
       const provider: EmbeddingProvider = {
         embed: async (inputs) =>
           inputs.map((input) =>
-            input.startsWith("quarterly") || input.startsWith("rule")
+            input.startsWith("quarterly") || input.includes("For retrieval testing")
               ? vector(1)
               : vector(0.1),
           ),
       };
 
-      await rebuildCorpusEmbeddings(database as never, [chunk("rule"), chunk("other")], provider);
+      await rebuildCorpusEmbeddings(database as never, chunks, provider);
+      const firstCount = await client.query<{ count: string }>(
+        'SELECT COUNT(*)::text AS count FROM "ai_assist_corpus_embedding"',
+      );
+      expect(Number(firstCount.rows[0]?.count)).toBe(chunks.length);
+
+      const firstIds = await client.query<{ chunk_id: string }>(
+        'SELECT chunk_id FROM "ai_assist_corpus_embedding" ORDER BY chunk_id',
+      );
+      expect(firstIds.rows.map((row) => row.chunk_id)).toEqual(
+        chunks
+          .map((chunk) => chunk.chunkId)
+          .sort((left, right) => left.localeCompare(right)),
+      );
+
+      await rebuildCorpusEmbeddings(database as never, chunks, provider);
+      const repeatCount = await client.query<{ count: string }>(
+        'SELECT COUNT(*)::text AS count FROM "ai_assist_corpus_embedding"',
+      );
+      expect(Number(repeatCount.rows[0]?.count)).toBe(chunks.length);
+
+      await rebuildCorpusEmbeddings(database as never, chunks.slice(0, 1), provider);
+      const staleRemovalCount = await client.query<{ count: string }>(
+        'SELECT COUNT(*)::text AS count FROM "ai_assist_corpus_embedding"',
+      );
+      expect(Number(staleRemovalCount.rows[0]?.count)).toBe(1);
+
+      await rebuildCorpusEmbeddings(database as never, chunks, provider);
       const results = await retrieveSimilarCorpusChunks(
         database as never,
         "quarterly estimated payments",
@@ -67,8 +80,7 @@ describe("assist corpus embeddings against pgvector", () => {
 
       expect(results).toHaveLength(1);
       expect(results[0]).toMatchObject({
-        chunkId: "rule",
-        citation: chunk("rule").citation,
+        sectionId: "SYN-TC-4100-b",
       });
     });
   });

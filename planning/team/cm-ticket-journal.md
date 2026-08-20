@@ -347,6 +347,8 @@ RAGAS evaluation, APIs, UI work, and tenant request enforcement remain out of sc
 
 - `tests/typescript/assist/embeddings.test.ts`
 - `tests/typescript/assist/embeddings.integration.test.ts`
+- `src/typescript/shared/scripts/corpusEmbed.ts`
+- `package.json`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
@@ -356,6 +358,7 @@ RAGAS evaluation, APIs, UI work, and tenant request enforcement remain out of sc
 - `git diff --check` passed.
 - The focused integration test was discovered but could not run because this environment has
   no container runtime; CI/Docker is required for `pgvector/pgvector:pg18`.
+- Added `npm run corpus:embed` to rebuild the pgvector index from the generated chunk artifact.
 
 ## christopher-martus-jira144 - SCRUM-144 Seed Data Follow-up
 

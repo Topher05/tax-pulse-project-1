@@ -24,6 +24,7 @@
     "aws:alb-smoke": "tsx src/typescript/shared/scripts/albSmoke.ts",
     "cloud:tap": "tsx src/typescript/shared/scripts/cloudTap.ts",
     "corpus:build": "tsx src/typescript/shared/scripts/corpusBuild.ts",
+    "corpus:embed": "tsx src/typescript/shared/scripts/corpusEmbed.ts",
     "corpus:smoke": "tsx src/typescript/shared/scripts/corpusSmoke.ts",
     "corpus:validate": "tsx src/typescript/shared/scripts/corpusValidate.ts",
     "redis:up": "docker compose -f docker-compose.redis.yml up -d",
