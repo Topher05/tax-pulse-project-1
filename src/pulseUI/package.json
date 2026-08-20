@@ -17,7 +17,8 @@
     "test:lighthouse": "node scripts/lighthouse-dashboard.mjs",
     "test:cov": "vitest run --config vitest.config.ts --coverage",
     "test:vitest": "vitest run --config vitest.config.ts",
-    "typecheck": "tsc -p tsconfig.pulseUI.json --noEmit"
+    "typecheck": "tsc -p tsconfig.pulseUI.json --noEmit",
+    "verify": "npm run typecheck && npm run test:vitest && npm run test:ax && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",

@@ -105,6 +105,7 @@ describe("ScenarioForm", () => {
   });
 
   test("starts with a clean form when reopened after validation errors", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const { unmount } = render(<ScenarioForm onClose={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Create Scenario" }));
