@@ -8,7 +8,7 @@ const outfile = resolve("dist/present-to-client-lambda/index.js");
 await mkdir(resolve("dist/present-to-client-lambda"), { recursive: true });
 
 await build({
-  entryPoints: [resolve("src/typescript/scripts/present-to-client-lambda/index.ts")],
+  entryPoints: [resolve("src/typescript/shared/scripts/present-to-client-lambda/index.ts")],
   bundle: true,
   platform: "node",
   target: "node20",

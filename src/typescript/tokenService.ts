@@ -67,7 +67,7 @@ export function createTokenService(options: CreateTokenServiceOptions): TokenSer
       const accessToken = await new SignJWT({
         role: principal.role,
         tenant_id: principal.tenantId,
-      } satisfies Omit<AccessTokenClaims, "sub" | "iss" | "iat" | "exp">)
+      } satisfies Omit<AccessTokenClaims, "sub" | "aud" | "iss" | "iat" | "exp">)
         .setProtectedHeader(
           issuerConfig
             ? { alg: "RS256", kid: issuerConfig.signingKeyId, typ: "JWT" }
@@ -75,6 +75,7 @@ export function createTokenService(options: CreateTokenServiceOptions): TokenSer
         )
         .setSubject(principal.userId)
         .setIssuer(options.config.issuer)
+        .setAudience(options.config.audience ?? "taxpulse-http-api")
         .setIssuedAt(issuedAtSeconds)
         .setExpirationTime(expiresAtSeconds)
         .sign(await signingKey);

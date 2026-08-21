@@ -119,6 +119,7 @@ export function createJwtAuthenticationMiddleware({
     return async (token: string) => await jwtVerify(token, jwks, {
       algorithms: ["RS256"],
       issuer: config.issuer,
+      audience: config.audience,
       requiredClaims: ["exp"],
     });
   })();

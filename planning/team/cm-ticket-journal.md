@@ -34,6 +34,87 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira201 - SCRUM-201
+
+**Branch:** `christopher-martus-jira201`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-201
+
+**Summary:** Stand up the HTTP API with the shared JWT authorizer
+
+**Description:**
+
+Provision an HTTP API with a native JWT authorizer so serverless endpoints authorize
+with the RS256 token issued by the Core Case Service.
+
+**Acceptance Criteria:**
+
+- The HTTP API validates issuer, audience, JWKS key selected by `kid`, and token validity.
+- Invalid requests receive a gateway `401` before Lambda invocation.
+- Verified `tenant_id` and `role` claims reach target Lambdas through authorizer context.
+- A smoke test accepts a valid token and rejects expired or tampered tokens.
+
+**Code Connection:**
+
+- Added the configurable `JWT_AUDIENCE` access-token claim and validates it in the Core
+  Case Service JWT middleware. The default `taxpulse-http-api` will be used by the HTTP
+  API authorizer.
+- Replaced the REST API events with a single HTTP API that applies the native shared JWT
+  authorizer to both transition routes. The issuer now publishes OIDC discovery metadata
+  that points API Gateway to the existing public JWKS.
+- Updated both Lambda transport adapters to read verified HTTP API JWT claims from
+  `requestContext.authorizer.jwt.claims`, including the required `tenant_id` and `role`.
+- Added a deploy-time smoke command that proves a valid signed JWT reaches the protected
+  route while expired, tampered, and missing tokens receive `401` from API Gateway.
+- Added a sandbox issuer-metadata Lambda Function URL for environments without a custom
+  domain. It exposes only OIDC discovery and the public JWK, while the native authorizer
+  references its generated HTTPS URL.
+- Corrected the relocated target-Lambda bundle entrypoints and present-to-client handler
+  name so the SCRUM-201 deployment artifacts match the current source layout.
+
+**Project Scope Connection:**
+
+- Platform security boundary for the existing present-to-client and execute Lambda routes.
+
+**Changed Files:**
+
+- `src/typescript/authConfig.ts`
+- `src/typescript/authTypes.ts`
+- `src/typescript/tokenService.ts`
+- `src/typescript/jwtAuthentication.ts`
+- `src/typescript/jwksRoutes.ts`
+- `deployment/PresentToClient-Draft.template.yaml`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/httpApiJwtSmoke.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
+- `tests/typescript/shared/scripts/executeLambdaRuntime.test.ts`
+- `package.json`
+- `src/typescript/shared/scripts/issuer-metadata-lambda/index.ts`
+- `src/typescript/shared/scripts/lambda-build/build-issuer-metadata-lambda.mjs`
+- `tests/typescript/shared/scripts/issuerMetadataLambda.test.ts`
+- `src/typescript/shared/scripts/printJwtPublicJwk.ts`
+- `src/typescript/shared/scripts/lambda-build/build-present-to-client-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/build-execute-lambda.mjs`
+- `.env.example`
+- `README.md`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- The three focused Lambda/issuer metadata test files passed (8 tests).
+- `npm run build:present-to-client-lambda`, `npm run build:execute-lambda`, and
+  `npm run build:issuer-metadata-lambda` passed.
+- Sandbox AWS deployment created HTTP API `6ppu8m5ggd`, native JWT authorizer `64e7gb`,
+  the two JWT-protected transition routes, and a public issuer-metadata Lambda Function URL.
+- `npm run aws:http-api-jwt-smoke` passed against the deployed HTTP API: the valid RS256
+  token reached the target route (HTTP 422 for intentionally synthetic action data), while
+  expired, tampered, and missing tokens each returned HTTP 401 from API Gateway.
+
+
 
 ## christopher-martus-jira165 - SCRUM-165
 
