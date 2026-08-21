@@ -65,9 +65,9 @@ resource "aws_internet_gateway" "main" {
 resource "aws_subnet" "public" {
   for_each = local.public_subnet_configs
 
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, each.value.netnum)
-  availability_zone       = local.availability_zones[each.value.az_index]
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, each.value.netnum)
+  availability_zone = local.availability_zones[each.value.az_index]
 
   tags = {
     Name        = "taxpulse-${var.environment}-public-${each.value.suffix}"
