@@ -1336,19 +1336,17 @@ axe check and a component test, so that it is accessible and regression-guarded.
 
 **Code Connection:**
 
-- Created new directory `terraform/` for IaC provisioning.
-- Configured Terraform S3 remote state backend and AWS provider version lock in `providers.tf`.
-- Defined infrastructure parameters (VPC CIDR, target AWS region, DB credentials) in `variables.tf`.
-- Codified public/private subnets across multiple availability zones, IGW, route tables, and NAT Gateway in `vpc.tf`.
-- Configured PostgreSQL RDS instance and subnet groups in `database.tf`, referencing engine version 18.
-- Configured DynamoDB table for `taxpulse_plan_cycle_queue_projection` with partition key `tenant_id` and sort key `case_id` in `dynamodb.tf`.
-- Configured ElastiCache Redis cluster replication group in `redis.tf` running on default Redis 7.x.
-- Set up security groups restricting ingress on Postgres (5432) and Redis (6379) to a future ECS task compute layer.
-- Declared stack outputs for resource endpoints, names, and subnet groupings in `outputs.tf`.
+- Codified a three-AZ VPC layout in `vpc.tf` with ordered public and private subnets, an Internet Gateway, a Terraform-managed regional public NAT Gateway for private-subnet egress, and route-table associations that line up with the SCRUM-158 placeholders.
+- Configured the Terraform backend in `providers.tf` to use the team S3 remote state bucket with S3 lockfiles, and added the AWS CLI credential-process bridge so teammates can authenticate through `aws login` while running Terraform locally.
+- Defined the future ECS service security group in `database.tf`, then restricted PostgreSQL and Redis ingress to that compute layer as the SCRUM-162 integration boundary for later ECS Terraform work.
+- Updated the RDS definition in `database.tf` to use PostgreSQL 18 in private subnets with encryption at rest, non-public access, and teammate-supplied credentials at apply time.
+- Corrected `dynamodb.tf` to provision the exact `taxpulse_plan_cycle_queue_projection` table name the application code already expects, keyed by `tenant_id` and `case_id`.
+- Kept Redis in `redis.tf` inside the private subnets with Multi-AZ failover and in-transit encryption so later service wiring can consume a TLS endpoint.
+- Expanded `outputs.tf` to expose the stable SCRUM-162 handoff contract for VPC ID, ordered subnet lists, ECS service security group ID, PostgreSQL connection metadata, DynamoDB identifiers, and Redis TLS connection details.
 
 **Project Scope Connection:**
 
-- Infrastructure as Code, Secure Networking, and Cloud Data Provisioning.
+- Platform infrastructure as code for the network and data-store foundation only; ECS, ALB, Lambda, and SPA hosting remain out of scope for SCRUM-162 and are left for the later Terraform delivery ticket.
 
 **Changed Files:**
 
@@ -1363,9 +1361,12 @@ axe check and a component test, so that it is accessible and regression-guarded.
 
 **Validation Notes:**
 
-- `terraform init -backend=false` passed.
+- `terraform fmt` passed.
+- `terraform init -upgrade` passed after moving to the regional NAT Gateway-capable AWS provider.
 - `terraform validate` passed.
-- `terraform fmt -check` passed.
+- `terraform init -reconfigure` passed against the remote S3 backend bucket `taxpulse-terraform-state`.
+- `terraform apply` completed successfully against the team AWS account and created the SCRUM-162 VPC, PostgreSQL, DynamoDB, Redis, and supporting networking resources.
+- `terraform plan -input=false` returned no changes immediately after apply, confirming a clean post-apply plan with no drift.
 
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
