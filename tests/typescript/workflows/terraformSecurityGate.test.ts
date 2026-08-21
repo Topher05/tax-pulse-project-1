@@ -38,7 +38,7 @@ describe("Terraform security gate workflow", () => {
   test("scans the current VPC configuration without legacy suppressions", () => {
     const vpc = readFileSync(vpcPath, "utf8");
 
-    expect(vpc).toContain("map_public_ip_on_launch = true");
+    expect(vpc).not.toContain("map_public_ip_on_launch");
     expect(vpc).not.toContain("checkov:skip=CKV_AWS_130");
     expect(vpc).not.toContain("tfsec:ignore:aws-ec2-no-public-ip-subnet");
   });

@@ -68,7 +68,6 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, each.value.netnum)
   availability_zone       = local.availability_zones[each.value.az_index]
-  map_public_ip_on_launch = true
 
   tags = {
     Name        = "taxpulse-${var.environment}-public-${each.value.suffix}"
