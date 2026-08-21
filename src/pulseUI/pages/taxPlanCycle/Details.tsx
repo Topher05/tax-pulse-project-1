@@ -516,7 +516,7 @@ export function DetailsPage() {
               </button>
             </div>
           </PanelCard>
-          <div ref={registerFabAnchor} className={styles.assistantFabAnchor} aria-hidden="true" />
+          <div ref={registerFabAnchor} className={styles.assistantFabAnchor} />
         </aside>
       </div>
     </div>

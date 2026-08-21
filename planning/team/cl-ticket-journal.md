@@ -318,6 +318,25 @@ current stub response path.
 - Migrated the assistant request to TanStack Query and changed the backend route to
   `/v1/tax-plan-cycles/:caseId/assist` with the `hello Tax Pulse v2` 418 stub response.
 
+**Feedback Loop II Changes:**
+
+- Moved FAB fixed/anchored positioning to the parent tooltip boundary so the tooltip
+  shares the visible button coordinate system in both scroll states.
+- Changed the FAB open animation to a Y-axis flip, and slide the full FAB boundary below
+  the viewport with disabled pointer, keyboard, and assistive-technology access while
+  the drawer is open.
+- Removed the hidden attribute from the Plan Cycle Detail FAB anchor so the portaled FAB
+  remains accessible before the drawer opens.
+- Restored pointer events on the open drawer above the backdrop so toolbar, message, and
+  composer interactions no longer click through and close the assistant.
+- API contract intentionally unchanged for Feedback Loop II.
+
+**Feedback Loop II Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- Focused Pulse UI assistant tests passed: 15 tests across 3 files.
+- `npm.cmd --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
+
 ## caleb-latimer-jira160 - SCRUM-160
 
 **Branch:** `caleb-latimer-jira160`

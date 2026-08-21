@@ -1,8 +1,7 @@
 import { BotMessageSquare } from "lucide-react";
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
-import { Tooltip } from "./Tooltips.tsx";
 import styles from "./AssistFAB.module.css";
 
 interface AssistFABProps {
@@ -14,7 +13,9 @@ interface AssistFABProps {
 export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
   const [isAnchored, setIsAnchored] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const spinTimeoutRef = useRef<number | null>(null);
+  const tooltipId = useId();
 
   useEffect(() => {
     if (anchorElement === null || typeof IntersectionObserver === "undefined") {
@@ -44,6 +45,10 @@ export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
   }, []);
 
   const handleClick = () => {
+    if (isOpen) {
+      return;
+    }
+
     if (spinTimeoutRef.current !== null) {
       window.clearTimeout(spinTimeoutRef.current);
     }
@@ -56,22 +61,41 @@ export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
     }, 600);
   };
 
+  const tooltipPlacement = isAnchored ? styles.tooltipTop : styles.tooltipLeft;
+  const boundaryClassName = [
+    styles.fabTooltipBoundary,
+    isAnchored ? styles.anchored : styles.fallback,
+  ].join(" ");
   const button = (
-    <Tooltip content="Open RAG assistant" placement={isAnchored ? "top" : "left"}>
+    <div
+      aria-hidden={isOpen}
+      className={boundaryClassName}
+      data-state={isOpen ? "drawer-open" : "drawer-closed"}
+      onMouseEnter={() => setIsTooltipVisible(true)}
+      onMouseLeave={() => setIsTooltipVisible(false)}
+      onFocus={() => setIsTooltipVisible(true)}
+      onBlur={() => setIsTooltipVisible(false)}
+    >
       <button
         type="button"
         aria-label="Open RAG assistant"
         aria-pressed={isOpen}
-        className={[
-          styles.fab,
-          isAnchored ? styles.anchored : styles.fallback,
-          isSpinning ? styles.fabSpinning : "",
-        ].join(" ")}
+        aria-describedby={isTooltipVisible ? tooltipId : undefined}
+        className={[styles.fab, isSpinning ? styles.fabSpinning : ""].join(" ")}
+        disabled={isOpen}
         onClick={handleClick}
       >
         <BotMessageSquare className={styles.fabIcon} aria-hidden="true" />
       </button>
-    </Tooltip>
+      <span
+        id={tooltipId}
+        className={[styles.fabTooltip, tooltipPlacement, isTooltipVisible ? styles.fabTooltipVisible : ""].join(" ")}
+        role="tooltip"
+        aria-hidden={!isTooltipVisible}
+      >
+        Open RAG assistant
+      </span>
+    </div>
   );
 
   if (isAnchored && anchorElement !== null) {

@@ -81,4 +81,28 @@ describe("AssistantDrawer", () => {
     expect(screen.getByRole("status", { name: "Loading assistant" })).toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "Assistant prompt" })).not.toBeInTheDocument();
   });
+
+  test("keeps drawer interactions from closing through the backdrop", () => {
+    const onClose = vi.fn();
+    renderDrawer({ onClose });
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand to fullscreen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start new dialogue" }));
+    fireEvent.click(screen.getByRole("textbox", { name: "Assistant prompt" }));
+
+    const input = screen.getByRole("textbox", { name: "Assistant prompt" });
+    fireEvent.change(input, { target: { value: "What changed?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  test("closes once when the backdrop is clicked", () => {
+    const onClose = vi.fn();
+    renderDrawer({ onClose });
+
+    fireEvent.click(screen.getByRole("button", { name: "Close assistant drawer backdrop" }));
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
 });

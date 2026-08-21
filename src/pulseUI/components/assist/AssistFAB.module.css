@@ -16,17 +16,80 @@
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
+.fabTooltipBoundary {
+  position: relative;
+  z-index: 70;
+  display: inline-flex;
+  transition: transform 200ms ease-in, opacity 160ms ease;
+  will-change: transform;
+}
+
 .fallback {
   position: fixed;
   right: 1.5rem;
   bottom: 1.5rem;
-  z-index: 55;
 }
 
 .anchored {
   flex: 0 0 auto;
   position: relative;
-  z-index: 55;
+}
+
+.fabTooltipBoundary[data-state="drawer-open"] {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(calc(100vh + 5rem));
+  transition-duration: 250ms;
+}
+
+.fabTooltipBoundary[data-state="drawer-closed"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fabTooltip {
+  position: absolute;
+  z-index: 80;
+  width: max-content;
+  max-width: 220px;
+  padding: 0.45rem 0.65rem;
+  color: #f8fafc;
+  background: #111827;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 24%);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.fabTooltipVisible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltipTop {
+  right: 50%;
+  bottom: calc(100% + 0.55rem);
+  transform: translate(50%, 0.25rem);
+}
+
+.tooltipTop.fabTooltipVisible {
+  transform: translate(50%, 0);
+}
+
+.tooltipLeft {
+  top: 50%;
+  right: calc(100% + 0.55rem);
+  transform: translate(0.25rem, -50%);
+}
+
+.tooltipLeft.fabTooltipVisible {
+  transform: translate(0, -50%);
 }
 
 .fab::before {
@@ -46,6 +109,10 @@
 
 .fab:hover::before {
   animation: fabShimmer 850ms ease forwards;
+}
+
+.fab:disabled {
+  cursor: not-allowed;
 }
 
 .fab:focus-visible {
@@ -74,11 +141,11 @@
 
 @keyframes fabPitch {
   from {
-    transform: rotateX(0deg);
+    transform: rotateY(0deg);
   }
 
   to {
-    transform: rotateX(360deg);
+    transform: rotateY(360deg);
   }
 }
 
