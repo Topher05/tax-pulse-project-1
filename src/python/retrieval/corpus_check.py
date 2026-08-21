@@ -19,9 +19,7 @@ ALLOWED_DOCUMENT_TYPES = {"tax_code", "playbook"}
 ALLOWED_TENANT_IDS = {"tenant-alpha", "tenant-beta", "tenant-shared"}
 ALLOWED_TENANT_VISIBILITY = {"single-tenant", "shared-training"}
 ALLOWED_AUDIENCES = {"advisor", "reviewer", "client-facing-summary"}
-SECTION_IDENTIFIER_PATTERN = re.compile(
-    r"\bSYN-(?:TC|PB)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\b"
-)
+SECTION_IDENTIFIER_PATTERN = re.compile(r"\bSYN-(?:TC|PB)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\b")
 HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+)$", re.MULTILINE)
 FRONT_MATTER_PATTERN = re.compile(r"^---\r?\n(?P<body>[\s\S]*?)\r?\n---\r?\n?")
 DATE_PATTERN = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
@@ -116,7 +114,9 @@ def check_corpus_wide(documents: Sequence[CorpusDocument]) -> Iterable[str]:
             yield f"{identifier}: section identifier is duplicated across corpus at {locations}"
 
     section_ids = set(sections_by_id)
-    threshold_ids = {section.identifier for section in sections if has_threshold_table(section.body)}
+    threshold_ids = {
+        section.identifier for section in sections if has_threshold_table(section.body)
+    }
 
     missing_threshold_ids = config.expected_threshold_section_ids - threshold_ids
     for section_id in sorted(missing_threshold_ids):
@@ -335,7 +335,9 @@ def check_headings(
     content: str,
     sections: Sequence[CorpusSection],
 ) -> Iterable[str]:
-    title_matches = [match for match in HEADING_PATTERN.finditer(content) if len(match.group(1)) == 1]
+    title_matches = [
+        match for match in HEADING_PATTERN.finditer(content) if len(match.group(1)) == 1
+    ]
     if len(title_matches) != 1:
         yield f"{document.path}: expected exactly one title heading; found {len(title_matches)}"
 

@@ -2,27 +2,26 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-import jwt
 import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 from httpx import Response
+
 from tax_liability_engine.jwt_authentication import (
     AuthenticatedPrincipal,
     JwtValidationConfig,
     create_jwt_authentication_dependency,
 )
-
-CONFIG = JwtValidationConfig(
-    issuer="https://auth.taxpulse.example",
-    signing_secret="a-unique-test-secret-that-is-more-than-32-bytes",
+from tests.tax_liability_engine.auth_test_support import (
+    JwtTestMaterial,
+    issue_access_token,
 )
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client(jwt_test_material: JwtTestMaterial) -> TestClient:
     app = FastAPI()
-    require_authenticated_principal = create_jwt_authentication_dependency(CONFIG)
+    require_authenticated_principal = create_jwt_authentication_dependency(jwt_test_material.config)
 
     @app.get("/protected")
     async def protected(
@@ -31,27 +30,6 @@ def client() -> TestClient:
         return {"role": principal.role, "tenant_id": principal.tenant_id}
 
     return TestClient(app)
-
-
-def issue_token(
-    *,
-    role: object = "Advisor",
-    tenant_id: object = "tenant-001",
-    issuer: str = CONFIG.issuer,
-    expires_at: datetime | None = None,
-) -> str:
-    return jwt.encode(
-        {
-            "sub": "user-001",
-            "role": role,
-            "tenant_id": tenant_id,
-            "iss": issuer,
-            "iat": datetime.now(UTC),
-            "exp": expires_at or datetime.now(UTC) + timedelta(minutes=5),
-        },
-        CONFIG.signing_secret,
-        algorithm="HS256",
-    )
 
 
 def authentication_headers(token: str) -> dict[str, str]:
@@ -64,8 +42,13 @@ def assert_authentication_required(response: Response) -> None:
     assert response.json() == {"detail": "A valid access token is required."}
 
 
-def test_valid_shared_jwt_exposes_role_and_tenant_id(client: TestClient) -> None:
-    response = client.get("/protected", headers=authentication_headers(issue_token()))
+def test_valid_shared_jwt_exposes_role_and_tenant_id(
+    client: TestClient,
+    jwt_test_material: JwtTestMaterial,
+) -> None:
+    response = client.get(
+        "/protected", headers=authentication_headers(issue_access_token(jwt_test_material))
+    )
 
     assert response.status_code == 200
     assert response.json() == {"role": "Advisor", "tenant_id": "tenant-001"}
@@ -74,12 +57,8 @@ def test_valid_shared_jwt_exposes_role_and_tenant_id(client: TestClient) -> None
 @pytest.mark.parametrize(
     ("environment", "message"),
     [
-        ({"JWT_SIGNING_SECRET": CONFIG.signing_secret}, "JWT_ISSUER is required."),
-        ({"JWT_ISSUER": CONFIG.issuer}, "JWT_SIGNING_SECRET is required."),
-        (
-            {"JWT_ISSUER": CONFIG.issuer, "JWT_SIGNING_SECRET": "too-short"},
-            "JWT_SIGNING_SECRET must contain at least 32 UTF-8 bytes.",
-        ),
+        ({"JWT_JWKS_URL": "https://auth.taxpulse.example/jwks"}, "JWT_ISSUER is required."),
+        ({"JWT_ISSUER": "https://auth.taxpulse.example"}, "JWT_JWKS_URL is required."),
     ],
 )
 def test_jwt_validation_config_rejects_invalid_environment(
@@ -103,28 +82,30 @@ def test_missing_or_malformed_bearer_token_is_rejected(
     assert_authentication_required(response)
 
 
-@pytest.mark.parametrize(
-    "token",
-    [
-        pytest.param(
-            issue_token(expires_at=datetime.now(UTC) - timedelta(minutes=1)), id="expired"
-        ),
-        pytest.param(issue_token(issuer="https://other.taxpulse.example"), id="wrong-issuer"),
-    ],
-)
-def test_invalid_token_claims_are_rejected(client: TestClient, token: str) -> None:
+@pytest.mark.parametrize("case", ["expired", "wrong-issuer"])
+def test_invalid_token_claims_are_rejected(
+    client: TestClient,
+    jwt_test_material: JwtTestMaterial,
+    case: str,
+) -> None:
+    token = issue_access_token(
+        jwt_test_material,
+        expires_at=datetime.now(UTC) - timedelta(minutes=1) if case == "expired" else None,
+        issuer="https://other.taxpulse.example" if case == "wrong-issuer" else None,
+    )
+
     response = client.get("/protected", headers=authentication_headers(token))
 
     assert_authentication_required(response)
 
 
-def test_tampered_token_is_rejected(client: TestClient) -> None:
-    token = issue_token()
-    header, payload, signature = token.split(".")
+def test_tampered_token_is_rejected(client: TestClient, jwt_test_material: JwtTestMaterial) -> None:
+    header, payload, signature = issue_access_token(jwt_test_material).split(".")
     changed_signature = ("a" if signature[0] != "a" else "b") + signature[1:]
 
     response = client.get(
-        "/protected", headers=authentication_headers(".".join((header, payload, changed_signature)))
+        "/protected",
+        headers=authentication_headers(".".join((header, payload, changed_signature))),
     )
 
     assert_authentication_required(response)
@@ -132,18 +113,19 @@ def test_tampered_token_is_rejected(client: TestClient) -> None:
 
 @pytest.mark.parametrize(
     ("role", "tenant_id"),
-    [
-        ("Unknown role", "tenant-001"),
-        (None, "tenant-001"),
-        ("Advisor", None),
-        ("Advisor", ""),
-    ],
+    [("Unknown role", "tenant-001"), (None, "tenant-001"), ("Advisor", None), ("Advisor", "")],
 )
 def test_invalid_downstream_claims_are_rejected(
-    client: TestClient, role: object, tenant_id: object
+    client: TestClient,
+    jwt_test_material: JwtTestMaterial,
+    role: object,
+    tenant_id: object,
 ) -> None:
     response = client.get(
-        "/protected", headers=authentication_headers(issue_token(role=role, tenant_id=tenant_id))
+        "/protected",
+        headers=authentication_headers(
+            issue_access_token(jwt_test_material, role=role, tenant_id=tenant_id)
+        ),
     )
 
     assert_authentication_required(response)

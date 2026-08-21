@@ -1,5 +1,6 @@
 """Tax liability engine project workspace package."""
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from .dynamodb import (
@@ -13,12 +14,6 @@ from .dynamodb import (
     wait_for_plan_cycle_queue_projection_table,
 )
 from .greetings import create_greeting
-from .tax_plan_cycle_queue_projection import (
-    TaxPlanCycleQueueProjectionItem,
-    TaxPlanCycleRecord,
-    project_tax_plan_cycle_to_queue_item,
-    upsert_tax_plan_cycle_queue_projection,
-)
 from .scenario_comparison import (
     ScenarioComparisonInput,
     ScenarioComparisonRequest,
@@ -30,12 +25,18 @@ from .tax_calculation import (
     TaxCalculationResult,
     calculate_tax,
 )
+from .tax_plan_cycle_queue_projection import (
+    TaxPlanCycleQueueProjectionItem,
+    TaxPlanCycleRecord,
+    project_tax_plan_cycle_to_queue_item,
+    upsert_tax_plan_cycle_queue_projection,
+)
 
 if TYPE_CHECKING:
     from .api import create_app
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Callable[..., object]:
     if name == "create_app":
         from .api import create_app
 

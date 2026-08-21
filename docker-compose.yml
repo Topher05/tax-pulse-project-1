@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:18-alpine
+    image: pgvector/pgvector:pg18
     environment:
       POSTGRES_DB: ${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
       POSTGRES_USER: ${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}

@@ -19,7 +19,7 @@ export interface DockerPostgresBootstrapOptions {
   bootstrap?: (connectionUri: string) => Promise<void>;
 }
 
-const defaultDockerPostgresImage = "postgres:18-alpine";
+const defaultDockerPostgresImage = "pgvector/pgvector:pg18";
 const defaultDockerPostgresDb = "taxpulse";
 const defaultDockerPostgresUser = "postgres";
 const defaultDockerPostgresPassword = "postgres";

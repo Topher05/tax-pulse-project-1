@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 import pytest
+
 from tax_liability_engine.tax_calculation import (
     ALLOWED_FILING_STATUSES,
     get_bracket_schedules,
