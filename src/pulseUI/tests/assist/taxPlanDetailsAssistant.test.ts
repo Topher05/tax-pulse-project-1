@@ -28,4 +28,23 @@ describe("tax plan details assistant API", () => {
       ),
     ).toBe("hello Tax Pulse v2");
   });
+
+  test("falls back to Problem Details detail text for assistant errors", () => {
+    expect(
+      parseTaxPlanDetailsAssistantErrorMessage(
+        new CaseApiError(403, JSON.stringify({ detail: "Client users cannot access the assistant." })),
+      ),
+    ).toBe("Client users cannot access the assistant.");
+  });
+
+  test("handles empty, raw, and generic assistant failures", () => {
+    expect(parseTaxPlanDetailsAssistantErrorMessage(new CaseApiError(500, ""))).toBe(
+      "Assistant request failed with HTTP 500.",
+    );
+    expect(parseTaxPlanDetailsAssistantErrorMessage(new CaseApiError(502, "upstream unavailable"))).toBe(
+      "upstream unavailable",
+    );
+    expect(parseTaxPlanDetailsAssistantErrorMessage(new Error("network down"))).toBe("network down");
+    expect(parseTaxPlanDetailsAssistantErrorMessage(null)).toBe("The assistant request could not be completed.");
+  });
 });

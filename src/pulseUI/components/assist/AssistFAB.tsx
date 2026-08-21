@@ -13,9 +13,12 @@ interface AssistFABProps {
 export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
   const [isAnchored, setIsAnchored] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isKeyboardFocused, setIsKeyboardFocused] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const wasOpenRef = useRef(isOpen);
+  const pointerInteractionRef = useRef(false);
+  const suppressRestoreFocusTooltipRef = useRef(false);
   const spinTimeoutRef = useRef<number | null>(null);
   const tooltipId = useId();
 
@@ -48,7 +51,13 @@ export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
 
   useEffect(() => {
     if (wasOpenRef.current && !isOpen) {
+      suppressRestoreFocusTooltipRef.current = true;
       buttonRef.current?.focus();
+    }
+
+    if (isOpen) {
+      setIsHovered(false);
+      setIsKeyboardFocused(false);
     }
 
     wasOpenRef.current = isOpen;
@@ -64,6 +73,9 @@ export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
     }
 
     setIsSpinning(true);
+    setIsHovered(false);
+    setIsKeyboardFocused(false);
+    pointerInteractionRef.current = false;
     onOpen();
     spinTimeoutRef.current = window.setTimeout(() => {
       setIsSpinning(false);
@@ -75,15 +87,33 @@ export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
     styles.fabTooltipBoundary,
     isAnchored ? styles.anchored : styles.fallback,
   ].join(" ");
+  const isTooltipVisible = isHovered || isKeyboardFocused;
   const button = (
     <div
       aria-hidden={isOpen}
       className={boundaryClassName}
       data-state={isOpen ? "drawer-open" : "drawer-closed"}
-      onMouseEnter={() => setIsTooltipVisible(true)}
-      onMouseLeave={() => setIsTooltipVisible(false)}
-      onFocus={() => setIsTooltipVisible(true)}
-      onBlur={() => setIsTooltipVisible(false)}
+      onMouseEnter={() => {
+        pointerInteractionRef.current = true;
+        setIsHovered(true);
+      }}
+      onMouseLeave={() => {
+        pointerInteractionRef.current = false;
+        setIsHovered(false);
+      }}
+      onFocus={() => {
+        if (suppressRestoreFocusTooltipRef.current) {
+          suppressRestoreFocusTooltipRef.current = false;
+          setIsKeyboardFocused(false);
+          return;
+        }
+
+        setIsKeyboardFocused(!pointerInteractionRef.current);
+      }}
+      onBlur={() => {
+        pointerInteractionRef.current = false;
+        setIsKeyboardFocused(false);
+      }}
     >
       <button
         ref={buttonRef}

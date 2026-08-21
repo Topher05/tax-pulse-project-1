@@ -16,7 +16,35 @@ function renderFab(anchorElement: HTMLElement | null = null, isOpen = false) {
 }
 
 describe("AssistFAB", () => {
-  test.todo("keeps the Open RAG assistant tooltip above the FAB in fixed and anchored states");
+  test("keeps the Open RAG assistant tooltip above the FAB in fixed and anchored states", async () => {
+    const css = readFileSync("components/assist/AssistFAB.module.css", "utf8");
+    expect(css).toContain(".tooltipTop");
+    expect(css).toContain("bottom: calc(100% + 0.55rem)");
+    expect(css).not.toContain(".tooltipLeft");
+
+    const anchor = document.createElement("div");
+    document.body.append(anchor);
+    vi.stubGlobal("IntersectionObserver", class {
+      observe() {
+        queueMicrotask(() => this.callback([{ isIntersecting: true }]));
+      }
+
+      disconnect() {}
+
+      callback: (entries: Array<{ isIntersecting: boolean }>) => void;
+
+      constructor(callback: (entries: Array<{ isIntersecting: boolean }>) => void) {
+        this.callback = callback;
+      }
+    });
+
+    render(<AssistFAB anchorElement={anchor} isOpen={false} onOpen={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(anchor.querySelector("button")).toBeInTheDocument();
+    });
+    expect(anchor.querySelector('[role="tooltip"]')?.className).toContain("tooltipTop");
+  });
 
   test("keeps the fallback button and tooltip in the same fixed boundary", () => {
     renderFab();
@@ -41,6 +69,37 @@ describe("AssistFAB", () => {
     expect(screen.getByRole("tooltip", { name: "Open RAG assistant" })).toBeVisible();
 
     fireEvent.mouseLeave(boundary);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  test("hides the tooltip immediately after a mouse click", () => {
+    const onOpen = vi.fn();
+    render(<AssistFAB anchorElement={null} isOpen={false} onOpen={onOpen} />);
+
+    const button = screen.getByRole("button", { name: "Open RAG assistant" });
+    const boundary = button.parentElement as HTMLElement;
+
+    fireEvent.mouseEnter(boundary);
+    expect(screen.getByRole("tooltip", { name: "Open RAG assistant" })).toBeVisible();
+
+    fireEvent.click(button);
+    expect(onOpen).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  test("does not restore a stale tooltip after the drawer closes", () => {
+    const onOpen = vi.fn();
+    const { rerender } = render(<AssistFAB anchorElement={null} isOpen={false} onOpen={onOpen} />);
+
+    const button = screen.getByRole("button", { name: "Open RAG assistant" });
+    const boundary = button.parentElement as HTMLElement;
+    fireEvent.mouseEnter(boundary);
+    fireEvent.click(button);
+
+    rerender(<AssistFAB anchorElement={null} isOpen onOpen={onOpen} />);
+    rerender(<AssistFAB anchorElement={null} isOpen={false} onOpen={onOpen} />);
+
+    expect(screen.getByRole("button", { name: "Open RAG assistant" })).toHaveFocus();
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 

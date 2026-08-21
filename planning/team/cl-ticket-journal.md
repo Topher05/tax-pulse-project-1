@@ -359,6 +359,65 @@ current stub response path.
   existing route bootstrap failed before execution because the RS256 issuer configuration was not
   available in this environment.
 
+**Test Coverage Pass Changes:**
+
+- Replaced SCRUM-184 `test.todo` placeholders with focused assistant coverage for `AssistFAB`,
+  `AssistantDrawer`, `Tooltips`, `AssitantLoader`, the `taxPlanDetailsAssistant` client helper,
+  and the Pulse UI axe accessibility gate.
+- Added FAB tooltip regression coverage for the post-click stale-tooltip behavior and focus restore
+  path after the drawer closes.
+- Added Core Case Service assistant controller coverage for the strict empty-body schema and
+  temporary `Hello TaxPulse v2` stub response.
+- Expanded tax-plan-cycle route coverage for `/v1/tax-plan-cycles/:caseId/assist`, including
+  successful controller wiring, strict `{}` body validation, invalid case ID handling,
+  missing tenant/user auth context, and client-role rejection.
+- Updated the route test harness to decode generated bootstrap JWT claims locally for route-unit
+  tests, keeping real RS256/JWKS verification in the dedicated JWT protected route suites.
+- Added RS256 issuer configuration to the bootstrap auth helper so test token generation stays
+  aligned with the current JWT service contract.
+- Added a reusable RS256/JWKS test fixture for protected route and main composition tests that
+  need real JWT verification without depending on an external JWKS host.
+- Updated the SignIn page test harness to include `QueryClientProvider`, matching the production
+  app bootstrap now that the authenticated shell mounts the assistant query mutation provider.
+
+**Test Coverage Pass Changed Files:**
+
+- `src/pulseUI/components/assist/AssistantDrawer.tsx`
+- `src/pulseUI/components/assist/AssistFAB.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/tests/assist/AssitantLoader.test.tsx`
+- `src/pulseUI/tests/assist/AssistFAB.test.tsx`
+- `src/pulseUI/tests/assist/AssistantDrawer.test.tsx`
+- `src/pulseUI/tests/assist/Tooltips.test.tsx`
+- `src/pulseUI/tests/assist/taxPlanDetailsAssistant.test.ts`
+- `src/pulseUI/tests/auth/SignInPage.test.tsx`
+- `tests/typescript/bootstrap/jwtTestUtils.ts`
+- `tests/typescript/bootstrap/authFlow.ts`
+- `tests/typescript/features/taxPlanCycle/assistantController.test.ts`
+- `tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+
+**Test Coverage Pass Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/assist/AssistFAB.test.tsx tests/assist/AssistantDrawer.test.tsx tests/assist/Tooltips.test.tsx tests/assist/AssitantLoader.test.tsx tests/assist/taxPlanDetailsAssistant.test.ts tests/accessibility/axeGate.test.tsx`
+  passed: 37 tests across 6 files. Axe emitted jsdom pseudo-element `getComputedStyle` warnings,
+  but all tested assistant states passed with zero reported violations.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm.cmd --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
+- `npm.cmd --prefix src/pulseUI run test` passed: 236 tests across 47 files. The run still emits
+  expected jsdom warnings for unimplemented scroll, canvas, and pseudo-element APIs.
+- `npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/assistantController.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts`
+  passed: 27 tests across 2 files. The existing scenario-modeling failure-path test logged the
+  expected local tax-engine `ECONNREFUSED 127.0.0.1:8000` error while asserting the 502 behavior.
+- `npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+  passed: 10 tests across 2 files.
+- `npm.cmd run typecheck` passed for app, tests, and Pulse UI.
+- `npm.cmd test` and a full root `npm.cmd run test:vitest -- --reporter=dot` were attempted. The
+  first timed out and hit reporter `EPIPE`; the second still reported failures in docker-backed
+  database/integration suites, which are outside this SCRUM-184 test pass per the instruction to
+  ignore docker-based runtime failures.
+
 ## caleb-latimer-jira160 - SCRUM-160
 
 **Branch:** `caleb-latimer-jira160`

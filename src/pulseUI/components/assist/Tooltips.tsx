@@ -1,5 +1,5 @@
 import type { ReactElement, FocusEventHandler, MouseEventHandler } from "react";
-import { cloneElement, useId, useState } from "react";
+import { cloneElement, useId, useRef, useState } from "react";
 
 import styles from "./Tooltips.module.css";
 
@@ -22,9 +22,9 @@ export function Tooltip({ content, placement = "top", children }: TooltipProps) 
   const tooltipId = useId();
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const pointerInteractedRef = useRef(false);
 
-  const isVisible = (isHovered || isFocused) && !isDismissed;
+  const isVisible = isHovered || isFocused;
 
   const child = cloneElement(children, {
     "aria-describedby": [children.props["aria-describedby"], tooltipId].filter(Boolean).join(" ") || undefined,
@@ -32,26 +32,23 @@ export function Tooltip({ content, placement = "top", children }: TooltipProps) 
       children.props.onBlur?.(event);
       setIsFocused(false);
       setIsHovered(false);
-      setIsDismissed(false);
-    },
-    onClickCapture: (event) => {
-      children.props.onClickCapture?.(event);
-      setIsDismissed(true);
+      pointerInteractedRef.current = false;
     },
     onFocus: (event) => {
       children.props.onFocus?.(event);
-      setIsFocused(true);
-      setIsDismissed(false);
+      setIsFocused(!pointerInteractedRef.current);
     },
     onMouseEnter: (event) => {
       children.props.onMouseEnter?.(event);
       setIsHovered(true);
-      setIsDismissed(false);
+      pointerInteractedRef.current = true;
     },
     onMouseLeave: (event) => {
       children.props.onMouseLeave?.(event);
       setIsHovered(false);
-      setIsDismissed(false);
+      if (!isFocused) {
+        pointerInteractedRef.current = false;
+      }
     },
   });
 

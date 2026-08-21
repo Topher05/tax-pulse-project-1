@@ -2,6 +2,7 @@ import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
 import type { RequestHandler } from "express";
+import { exportPKCS8, generateKeyPair } from "jose";
 
 import {
   createApp,
@@ -119,8 +120,14 @@ async function withBootstrapAuthServer(
   options: BootstrapOptions,
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
+  const keyPair = await generateKeyPair("RS256", { extractable: true });
   const tokenService = createTokenService({
     config: options.config,
+    rs256IssuerConfig: {
+      issuer: options.config.issuer,
+      signingKeyId: "bootstrap-test-rs256-key",
+      signingPrivateKeyPem: await exportPKCS8(keyPair.privateKey),
+    },
     refreshTokenRepository: createNoopRefreshTokenRepository(),
   });
   const controller = createAuthMfaLoginController({

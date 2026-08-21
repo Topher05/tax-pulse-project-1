@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import type { ReactNode } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { axe } from "vitest-axe";
 
@@ -12,6 +12,8 @@ import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import { ScenarioForm } from "../../components/ScenarioForm.tsx";
 import { DashboardPage } from "../../pages/dashboard/DashboardPage.tsx";
+import { NotificationToastProvider } from "../../components/NotificationToast.tsx";
+import { AssistantDrawer } from "../../components/assist/AssistantDrawer.tsx";
 import * as caseApi from "../../shared/caseApi.ts";
 import * as detailQueries from "../../entities/taxPlanCycleQueries.ts";
 import { IncomeScreen } from "../../pages/income/IncomePage.tsx";
@@ -83,7 +85,73 @@ async function expectNoViolations(container: HTMLElement): Promise<void> {
 }
 
 describe("Pulse UI accessibility gate", () => {
-  test.todo("covers the assistant drawer open, loading, composer, error, and fullscreen states against WCAG 2.2 AA expectations");
+  test("assistant drawer states report no axe violations", async () => {
+    const assistantCaseContext = {
+      caseId: "case-001",
+      caseTitle: "case-001 - Q2 2026 Tax Plan",
+      clientName: "Client 001",
+      recommendation: "Convert $40k traditional to Roth",
+      stage: "Archived",
+      advisor: "Advisor 001",
+      dueDate: "Jun 30, 2026",
+    };
+    const baseProps = {
+      assistantCaseContext,
+      isOpen: true,
+      onClose: vi.fn(),
+      onSendMessage: vi.fn(async () => undefined),
+      onStartNewDialogue: vi.fn(),
+    };
+    const { container, rerender } = render(
+      <NotificationToastProvider>
+        <AssistantDrawer
+          {...baseProps}
+          errorMessage={null}
+          isLoading={false}
+          messages={[
+            {
+              id: "message-1",
+              role: "user",
+              title: "Advisor prompt",
+              body: "Explain the Roth conversion recommendation.",
+            },
+          ]}
+        />
+      </NotificationToastProvider>,
+    );
+
+    expect(screen.getByRole("dialog", { name: "case-001 - Q2 2026 Tax Plan" })).toBeInTheDocument();
+    await expectNoViolations(container);
+
+    rerender(
+      <NotificationToastProvider>
+        <AssistantDrawer {...baseProps} errorMessage={null} isLoading messages={[]} />
+      </NotificationToastProvider>,
+    );
+    expect(screen.getByRole("status", { name: "Loading assistant" })).toBeInTheDocument();
+    await expectNoViolations(container);
+
+    rerender(
+      <NotificationToastProvider>
+        <AssistantDrawer
+          {...baseProps}
+          errorMessage="Assistant unavailable."
+          isLoading={false}
+          messages={[
+            {
+              id: "message-2",
+              role: "error",
+              title: "Assistant unavailable",
+              body: "Assistant unavailable.",
+            },
+          ]}
+        />
+      </NotificationToastProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Expand to fullscreen" }));
+    expect(screen.getByRole("button", { name: "Collapse to drawer" })).toBeInTheDocument();
+    await expectNoViolations(container);
+  });
 
   test("dashboard reports no critical axe violations", async () => {
     const { container } = render(<DashboardPage />);

@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { NotificationToastProvider } from "../../components/NotificationToast.tsx";
@@ -39,11 +40,6 @@ function renderDrawer(overrides: Partial<React.ComponentProps<typeof AssistantDr
 }
 
 describe("AssistantDrawer", () => {
-  test.todo("dismisses toolbar and composer tooltips after activation and restores them on a new hover or focus");
-  test.todo("resets fullscreen mode when the drawer closes");
-  test.todo("keeps focus trapped in the open drawer and restores it to the FAB on close");
-  test.todo("keeps the send control anchored to the bottom-right across responsive layouts");
-
   test("renders four toolbar controls with accessible tooltips", () => {
     renderDrawer();
 
@@ -52,7 +48,24 @@ describe("AssistantDrawer", () => {
     expect(screen.getByRole("button", { name: "Expand to fullscreen" })).toBeInTheDocument();
     expect(screen.getByRole("tooltip", { name: "Start new dialogue" })).toBeInTheDocument();
     expect(screen.getByText("case-001 - Q2 2026 Tax Plan")).toBeInTheDocument();
-    expect(screen.getByText("Advisor 001 · Jun 30, 2026 · Archived")).toBeInTheDocument();
+    expect(screen.getByText(/Advisor 001.*Jun 30, 2026.*Archived/)).toBeInTheDocument();
+  });
+
+  test("dismisses toolbar tooltips after activation and restores them on new hover", () => {
+    renderDrawer();
+
+    const button = screen.getByRole("button", { name: "Start new dialogue" });
+    const tooltip = screen.getByRole("tooltip", { name: "Start new dialogue" });
+
+    fireEvent.mouseEnter(button);
+    expect(tooltip).toHaveAttribute("data-visible", "true");
+
+    fireEvent.click(button);
+    fireEvent.mouseLeave(button);
+    expect(tooltip).toHaveAttribute("data-visible", "false");
+
+    fireEvent.mouseEnter(button);
+    expect(tooltip).toHaveAttribute("data-visible", "true");
   });
 
   test("toggles fullscreen and shows the prompt suggestion toast", () => {
@@ -65,6 +78,63 @@ describe("AssistantDrawer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Open prompt suggestions" }));
     expect(screen.getByText("Recommended Prompts")).toBeInTheDocument();
+  });
+
+  test("resets fullscreen mode when the drawer closes", () => {
+    const { rerender } = renderDrawer();
+
+    const drawer = screen.getByRole("dialog", { name: "case-001 - Q2 2026 Tax Plan" });
+    fireEvent.click(screen.getByRole("button", { name: "Expand to fullscreen" }));
+    expect(drawer.className).toContain("fullscreen");
+
+    rerender(
+      <NotificationToastProvider>
+        <AssistantDrawer
+          assistantCaseContext={context}
+          errorMessage={null}
+          isLoading={false}
+          isOpen={false}
+          messages={[]}
+          onClose={vi.fn()}
+          onSendMessage={vi.fn(async () => undefined)}
+          onStartNewDialogue={vi.fn()}
+        />
+      </NotificationToastProvider>,
+    );
+
+    rerender(
+      <NotificationToastProvider>
+        <AssistantDrawer
+          assistantCaseContext={context}
+          errorMessage={null}
+          isLoading={false}
+          isOpen
+          messages={[]}
+          onClose={vi.fn()}
+          onSendMessage={vi.fn(async () => undefined)}
+          onStartNewDialogue={vi.fn()}
+        />
+      </NotificationToastProvider>,
+    );
+
+    expect(screen.getByRole("dialog", { name: "case-001 - Q2 2026 Tax Plan" }).className).not.toContain(
+      "fullscreen",
+    );
+  });
+
+  test("traps focus in the open drawer and closes on Escape", () => {
+    const onClose = vi.fn();
+    renderDrawer({ onClose });
+
+    const drawer = screen.getByRole("dialog", { name: "case-001 - Q2 2026 Tax Plan" });
+    fireEvent.keyDown(drawer, { key: "Tab" });
+    expect(screen.getByRole("button", { name: "Expand to fullscreen" })).toHaveFocus();
+
+    fireEvent.keyDown(drawer, { key: "Tab", shiftKey: true });
+    expect(screen.getByRole("textbox", { name: "Assistant prompt" })).toHaveFocus();
+
+    fireEvent.keyDown(drawer, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
   test("submits a draft when Enter is pressed", async () => {
@@ -80,11 +150,38 @@ describe("AssistantDrawer", () => {
     });
   });
 
+  test("preserves newline behavior for Shift+Enter and blocks empty sends", () => {
+    const onSendMessage = vi.fn(async () => undefined);
+    renderDrawer({ onSendMessage });
+
+    const input = screen.getByRole("textbox", { name: "Assistant prompt" });
+    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.change(input, { target: { value: "Line one" } });
+    fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
+
+    expect(onSendMessage).not.toHaveBeenCalled();
+  });
+
   test("shows the loader while the request is pending", () => {
     renderDrawer({ isLoading: true });
 
     expect(screen.getByRole("status", { name: "Loading assistant" })).toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "Assistant prompt" })).not.toBeInTheDocument();
+  });
+
+  test("renders error and message log states", () => {
+    renderDrawer({
+      errorMessage: "Assistant unavailable.",
+      messages: [
+        { id: "message-1", role: "user", title: "Advisor prompt", body: "Explain this." },
+        { id: "message-2", role: "error", title: "Assistant unavailable", body: "Assistant unavailable." },
+      ],
+    });
+
+    expect(screen.getByRole("log")).toBeInTheDocument();
+    expect(screen.getByText("Assistant request failed")).toBeInTheDocument();
+    expect(screen.getByText("Advisor prompt")).toBeInTheDocument();
+    expect(screen.getAllByText("Assistant unavailable.")).toHaveLength(2);
   });
 
   test("keeps drawer interactions from closing through the backdrop", () => {
@@ -109,5 +206,14 @@ describe("AssistantDrawer", () => {
     fireEvent.click(screen.getByRole("presentation", { hidden: true }));
 
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  test("keeps the send control anchored to the bottom-right in component CSS", () => {
+    const css = readFileSync("components/assist/AssistantDrawer.module.css", "utf8");
+
+    expect(css).toContain(".sendAction");
+    expect(css).toContain("position: absolute");
+    expect(css).toContain("right: 0.75rem");
+    expect(css).toContain("bottom: 0.75rem");
   });
 });

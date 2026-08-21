@@ -2,12 +2,12 @@ import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
 import type { RequestHandler } from "express";
+import { decodeJwt } from "jose";
 import { describe, expect, test, vi } from "vitest";
 
 import {
   ProblemHttpError,
   createApp,
-  createJwtAuthenticationMiddleware,
   createLogger,
   createTaxPlanCycleRouter,
   type JwtConfig,
@@ -58,11 +58,61 @@ const validReadCycle: TaxPlanCycle = {
   on_hold: false,
 };
 
+type TestUserRole = "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
+
+function testAuthenticationRequired(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/authentication-required",
+    title: "Authentication Required",
+    status: 401,
+    detail: "A valid access token is required.",
+  });
+}
+
+function createTestJwtAuthenticationMiddleware(): RequestHandler {
+  return (req, _res, next) => {
+    const authorization = req.header("authorization");
+    const match = authorization ? /^Bearer ([^\s]+)$/.exec(authorization) : null;
+
+    if (match?.[1] === undefined) {
+      next(testAuthenticationRequired());
+      return;
+    }
+
+    try {
+      const payload = decodeJwt(match[1]);
+
+      if (
+        typeof payload.sub !== "string" ||
+        payload.sub.length === 0 ||
+        typeof payload.tenant_id !== "string" ||
+        payload.tenant_id.length === 0 ||
+        typeof payload.role !== "string"
+      ) {
+        next(testAuthenticationRequired());
+        return;
+      }
+
+      const role = payload.role as TestUserRole;
+      req.authenticatedPrincipal = {
+        userId: payload.sub,
+        tenantId: payload.tenant_id,
+        role,
+      };
+      req.tenant = { id: payload.tenant_id };
+      req.user = { id: payload.sub, role };
+      next();
+    } catch {
+      next(testAuthenticationRequired());
+    }
+  };
+}
+
 async function createAccessToken(input: {
   tenantId: string;
   userId: string;
   email: string;
-  role: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
+  role: TestUserRole;
   password: string;
   totpSecret: string;
   totpCode: string;
@@ -91,7 +141,7 @@ async function withRouteServer(
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
-      app.use(createJwtAuthenticationMiddleware({ config: authConfig }));
+      app.use(createTestJwtAuthenticationMiddleware());
       app.use(createTaxPlanCycleRouter({ auditEntryReader, controller }));
     },
   });
@@ -153,16 +203,27 @@ async function withScenarioRouteServer(
 async function withAssistantRouteServer(
   assistantController: TaxPlanDetailsAssistantController,
   run: (baseUrl: string) => Promise<void>,
+  requestContext: {
+    tenantId?: string;
+    user?: { id?: string; role?: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin" };
+  } = {
+    tenantId: "tenant-001",
+    user: { id: "advisor-001", role: "Advisor" },
+  },
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
       app.use((req, _res, next) => {
-        (req as typeof req & { tenant: { id: string } }).tenant = { id: "tenant-001" };
-        (req as typeof req & { user: { id: string; role: "Advisor" } }).user = {
-          id: "advisor-001",
-          role: "Advisor",
-        };
+        if (requestContext.tenantId !== undefined) {
+          (req as typeof req & { tenant: { id: string } }).tenant = { id: requestContext.tenantId };
+        }
+
+        if (requestContext.user !== undefined) {
+          (req as typeof req & { user: Express.Request["user"] }).user =
+            requestContext.user as Express.Request["user"];
+        }
+
         next();
       });
       app.use(
@@ -205,7 +266,7 @@ async function withTransitionRouteServer(
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
-      app.use(createJwtAuthenticationMiddleware({ config: authConfig }));
+      app.use(createTestJwtAuthenticationMiddleware());
       app.use(hydrateUserClaims(options.permissionsForRole));
       app.use(
         createTaxPlanCycleRouter({
@@ -266,8 +327,6 @@ async function withTransitionRouteServerWithoutAuth(
 }
 
 describe("createTaxPlanCycleRouter", () => {
-  test.todo("adds a placeholder for authenticated, tenant-scoped assistant access");
-
   test("returns the assistant stub through the case-scoped route", async () => {
     const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
       message: "hello Tax Pulse v2",
@@ -289,6 +348,61 @@ describe("createTaxPlanCycleRouter", () => {
         caseId,
       });
     });
+  });
+
+  test("rejects assistant requests without tenant or user context", async () => {
+    const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
+      message: "hello Tax Pulse v2",
+    }));
+    const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
+
+    await withAssistantRouteServer(
+      { assist },
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({}),
+        });
+
+        expect(response.status).toBe(401);
+        await expect(response.json()).resolves.toMatchObject({
+          title: "Authentication Required",
+          detail: "A valid access token is required.",
+        });
+        expect(assist).not.toHaveBeenCalled();
+      },
+      {},
+    );
+  });
+
+  test("rejects client assistant access before invoking the controller", async () => {
+    const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
+      message: "hello Tax Pulse v2",
+    }));
+    const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
+
+    await withAssistantRouteServer(
+      { assist },
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({}),
+        });
+
+        expect(response.status).toBe(403);
+        await expect(response.json()).resolves.toMatchObject({
+          title: "Operator Access Required",
+          detail: "Client users can access plan progress only through the My Tax Plan view.",
+        });
+        expect(assist).not.toHaveBeenCalled();
+      },
+      {
+        tenantId: "tenant-001",
+        user: { id: "client-001", role: "Client" },
+      },
+    );
   });
 
   test("rejects a non-empty assistant body", async () => {

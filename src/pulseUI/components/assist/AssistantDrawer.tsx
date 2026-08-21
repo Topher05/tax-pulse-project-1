@@ -75,10 +75,9 @@ export function AssistantDrawer({
   const [draft, setDraft] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { showNotification } = useNotificationToast();
-  const dialogRef = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
   const dialogTitleId = useId();
   const dialogSummaryId = useId();
-  const promptId = useId();
   const summary = formatCaseSummary(assistantCaseContext);
 
   useEffect(() => {
@@ -203,7 +202,7 @@ export function AssistantDrawer({
     <div className={styles.overlay} data-state={isOpen ? "open" : "closed"}>
       <div aria-hidden="true" className={styles.backdrop} onClick={onClose} role="presentation" />
 
-      <aside
+      <div
         aria-describedby={dialogSummaryId}
         aria-labelledby={dialogTitleId}
         aria-modal="true"
@@ -285,12 +284,9 @@ export function AssistantDrawer({
                 }}
               >
                 <div className={styles.composerField}>
-                  <label className={styles.inputLabel} htmlFor={promptId}>
-                    Assistant prompt
-                  </label>
                   <div className={styles.composerEditor}>
                     <textarea
-                      id={promptId}
+                      aria-label="Assistant prompt"
                       className={styles.composerInput}
                       placeholder="Ask a follow-up, refine the recommendation, or request a citation..."
                       value={draft}
@@ -305,16 +301,14 @@ export function AssistantDrawer({
                       }}
                     />
                     <div className={styles.sendAction}>
-                      <Tooltip content="Send message" placement="top">
-                        <button
-                          type="submit"
-                          aria-label="Send message"
-                          className={styles.sendButton}
-                          disabled={draft.trim().length === 0}
-                        >
-                          <Send aria-hidden="true" />
-                        </button>
-                      </Tooltip>
+                      <button
+                        type="submit"
+                        aria-label="Send message"
+                        className={styles.sendButton}
+                        disabled={draft.trim().length === 0}
+                      >
+                        <Send aria-hidden="true" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -325,7 +319,7 @@ export function AssistantDrawer({
             )}
           </footer>
         </div>
-      </aside>
+      </div>
     </div>
   );
 }
