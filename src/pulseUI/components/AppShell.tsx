@@ -20,12 +20,15 @@ function AppShellLayout() {
   const navGroups = getPulseNavGroupsForRole(user?.role);
   const {
     assistantCaseContext,
+    fabAnchorElement,
     closeAssistant,
     errorMessage,
     isDrawerOpen,
     isLoading,
     messages,
     openAssistant,
+    sendMessage,
+    startNewDialogue,
   } = useAssistantPanel();
 
   if (user?.role === "Client" && !["/my-tax-plan", "/action-items"].includes(pathname)) {
@@ -149,7 +152,11 @@ function AppShellLayout() {
           </div>
 
           {assistantCaseContext !== null ? (
-            <AssistFAB isOpen={isDrawerOpen} onOpen={() => void openAssistant()} />
+            <AssistFAB
+              anchorElement={fabAnchorElement}
+              isOpen={isDrawerOpen}
+              onOpen={() => void openAssistant()}
+            />
           ) : null}
 
           <AssistantDrawer
@@ -159,6 +166,8 @@ function AppShellLayout() {
             isOpen={isDrawerOpen}
             messages={messages}
             onClose={closeAssistant}
+            onSendMessage={sendMessage}
+            onStartNewDialogue={startNewDialogue}
           />
 
       {settingsOpen ? (
