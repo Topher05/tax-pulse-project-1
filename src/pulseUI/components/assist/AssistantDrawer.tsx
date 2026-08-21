@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import {
   BotMessageSquare,
   Orbit,
@@ -13,9 +13,7 @@ import {
 
 import { useNotificationToast } from "../NotificationToast.tsx";
 import { PanelCard } from "../PanelCard.tsx";
-import {
-  createInfoNotificationMessage,
-} from "../../entities/notificationMessage.ts";
+import { createInfoNotificationMessage } from "../../entities/notificationMessage.ts";
 import { AssitantLoader } from "./AssitantLoader.tsx";
 import type { AssistantCaseContext, AssistantMessage } from "./assistantPanel.tsx";
 import { Tooltip } from "./Tooltips.tsx";
@@ -49,6 +47,21 @@ function StickyNotePlusIcon() {
   );
 }
 
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      [
+        "button:not([disabled])",
+        "textarea:not([disabled])",
+        "input:not([disabled])",
+        "select:not([disabled])",
+        "a[href]",
+        "[tabindex]:not([tabindex='-1'])",
+      ].join(","),
+    ),
+  ).filter((element) => element.getAttribute("aria-hidden") !== "true" && !element.hasAttribute("disabled"));
+}
+
 export function AssistantDrawer({
   isOpen,
   isLoading,
@@ -62,7 +75,26 @@ export function AssistantDrawer({
   const [draft, setDraft] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { showNotification } = useNotificationToast();
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const dialogTitleId = useId();
+  const dialogSummaryId = useId();
+  const promptId = useId();
   const summary = formatCaseSummary(assistantCaseContext);
+
+  useEffect(() => {
+    if (isOpen) {
+      const frame = window.requestAnimationFrame(() => {
+        dialogRef.current?.focus();
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frame);
+      };
+    }
+
+    setIsFullscreen(false);
+    return undefined;
+  }, [isOpen]);
 
   const submitDraft = async () => {
     const trimmedDraft = draft.trim();
@@ -77,6 +109,53 @@ export function AssistantDrawer({
   const handleNewDialogue = () => {
     setDraft("");
     onStartNewDialogue();
+  };
+
+  const handleDialogKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      onClose();
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const dialog = dialogRef.current;
+    if (dialog === null) {
+      return;
+    }
+
+    const focusableElements = getFocusableElements(dialog);
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      dialog.focus();
+      return;
+    }
+
+    const firstFocusable = focusableElements[0];
+    const lastFocusable = focusableElements[focusableElements.length - 1];
+    const activeElement = document.activeElement;
+
+    if (event.shiftKey) {
+      if (activeElement === dialog || activeElement === firstFocusable || !dialog.contains(activeElement)) {
+        event.preventDefault();
+        lastFocusable?.focus();
+      }
+
+      return;
+    }
+
+    if (activeElement === dialog || activeElement === lastFocusable || !dialog.contains(activeElement)) {
+      event.preventDefault();
+      firstFocusable?.focus();
+    }
   };
 
   const toolbarActions: readonly {
@@ -122,28 +201,29 @@ export function AssistantDrawer({
 
   return (
     <div className={styles.overlay} data-state={isOpen ? "open" : "closed"}>
-      <button
-        aria-label="Close assistant drawer backdrop"
-        aria-hidden={!isOpen}
-        className={styles.backdrop}
-        type="button"
-        onClick={onClose}
-      />
+      <div aria-hidden="true" className={styles.backdrop} onClick={onClose} role="presentation" />
 
       <aside
-        aria-label="RAG assistant"
-        aria-hidden={!isOpen}
+        aria-describedby={dialogSummaryId}
+        aria-labelledby={dialogTitleId}
         aria-modal="true"
+        aria-hidden={!isOpen}
         className={[styles.drawer, isFullscreen ? styles.fullscreen : ""].join(" ")}
         data-state={isOpen ? "open" : "closed"}
+        inert={!isOpen ? true : undefined}
+        ref={dialogRef}
         role="dialog"
+        tabIndex={-1}
+        onKeyDown={handleDialogKeyDown}
       >
         <header className={styles.header}>
           <div className={styles.headerTitle}>
             <BotMessageSquare aria-hidden="true" />
-            <h2>{assistantCaseContext?.caseTitle ?? "Plan Cycle Detail"}</h2>
+            <h2 id={dialogTitleId}>{assistantCaseContext?.caseTitle ?? "Plan Cycle Detail"}</h2>
           </div>
-          <p className={styles.summary}>{summary}</p>
+          <p id={dialogSummaryId} className={styles.summary}>
+            {summary}
+          </p>
 
           <div className={styles.toolbar} aria-label="Assistant controls" role="group">
             {toolbarActions.map((action) => (
@@ -166,7 +246,7 @@ export function AssistantDrawer({
             {isLoading ? (
               <AssitantLoader />
             ) : (
-              <div className={styles.messageLog} aria-live="polite">
+              <div className={styles.messageLog} aria-live="polite" role="log">
                 {errorMessage ? (
                   <PanelCard className={styles.errorCard} title="Assistant request failed">
                     <p className={styles.errorMessage}>{errorMessage}</p>
@@ -204,34 +284,40 @@ export function AssistantDrawer({
                   void submitDraft();
                 }}
               >
-                <label className={styles.inputLabel}>
-                  <span className="sr-only">Assistant prompt</span>
-                  <textarea
-                    aria-label="Assistant prompt"
-                    className={styles.composerInput}
-                    placeholder="Ask a follow-up, refine the recommendation, or request a citation..."
-                    value={draft}
-                    onChange={(event) => {
-                      setDraft(event.target.value);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" && !event.shiftKey) {
-                        event.preventDefault();
-                        void submitDraft();
-                      }
-                    }}
-                  />
-                  <Tooltip content="Send message" placement="top">
-                    <button
-                      type="submit"
-                      aria-label="Send message"
-                      className={styles.sendButton}
-                      disabled={draft.trim().length === 0}
-                    >
-                      <Send aria-hidden="true" />
-                    </button>
-                  </Tooltip>
-                </label>
+                <div className={styles.composerField}>
+                  <label className={styles.inputLabel} htmlFor={promptId}>
+                    Assistant prompt
+                  </label>
+                  <div className={styles.composerEditor}>
+                    <textarea
+                      id={promptId}
+                      className={styles.composerInput}
+                      placeholder="Ask a follow-up, refine the recommendation, or request a citation..."
+                      value={draft}
+                      onChange={(event) => {
+                        setDraft(event.target.value);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                          event.preventDefault();
+                          void submitDraft();
+                        }
+                      }}
+                    />
+                    <div className={styles.sendAction}>
+                      <Tooltip content="Send message" placement="top">
+                        <button
+                          type="submit"
+                          aria-label="Send message"
+                          className={styles.sendButton}
+                          disabled={draft.trim().length === 0}
+                        >
+                          <Send aria-hidden="true" />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  </div>
+                </div>
                 <p className={styles.disclaimer}>
                   TaxPulse RAG Assistant can make mistakes. Issues will be addressed in future tickets
                 </p>

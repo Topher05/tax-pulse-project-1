@@ -20,22 +20,23 @@
   line-height: 1.25;
   opacity: 0;
   pointer-events: none;
+  max-width: min(220px, calc(100vw - 1rem));
+  overflow-wrap: anywhere;
   transform: translateY(0.25rem);
   transition: opacity 140ms ease, transform 140ms ease;
   visibility: hidden;
 }
 
-.root:hover .tooltip,
-.root:focus-within .tooltip {
+.tooltip[data-visible="true"] {
   opacity: 1;
   transform: translate(0);
   visibility: visible;
 }
 
 .top .tooltip {
-  right: 50%;
+  right: 0;
   bottom: calc(100% + 0.55rem);
-  transform: translate(50%, 0.25rem);
+  transform: translateY(0.25rem);
 }
 
 .bottom .tooltip {
@@ -53,31 +54,11 @@
 .right .tooltip {
   top: 50%;
   left: calc(100% + 0.55rem);
-  transform: translate(-0.25rem, -50%);
-}
-
-.top .tooltip,
-.bottom .tooltip,
-.left .tooltip,
-.right .tooltip {
-  transition: opacity 140ms ease, transform 140ms ease;
-}
-
-.top:hover .tooltip,
-.top:focus-within .tooltip,
-.bottom:hover .tooltip,
-.bottom:focus-within .tooltip {
-  transform: translate(-50%, 0);
-}
-
-.top:hover .tooltip,
-.top:focus-within .tooltip {
-  transform: translate(50%, 0);
-}
-
-.left:hover .tooltip,
-.left:focus-within .tooltip,
-.right:hover .tooltip,
-.right:focus-within .tooltip {
   transform: translate(0, -50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    transition: none;
+  }
 }

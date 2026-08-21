@@ -266,6 +266,8 @@ async function withTransitionRouteServerWithoutAuth(
 }
 
 describe("createTaxPlanCycleRouter", () => {
+  test.todo("adds a placeholder for authenticated, tenant-scoped assistant access");
+
   test("returns the assistant stub through the case-scoped route", async () => {
     const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
       message: "hello Tax Pulse v2",

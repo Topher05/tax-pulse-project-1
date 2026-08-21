@@ -16,6 +16,8 @@ function renderFab(anchorElement: HTMLElement | null = null, isOpen = false) {
 }
 
 describe("AssistFAB", () => {
+  test.todo("keeps the Open RAG assistant tooltip above the FAB in fixed and anchored states");
+
   test("keeps the fallback button and tooltip in the same fixed boundary", () => {
     renderFab();
 

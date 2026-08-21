@@ -51,7 +51,7 @@
   position: absolute;
   z-index: 80;
   width: max-content;
-  max-width: 220px;
+  max-width: min(220px, calc(100vw - 1rem));
   padding: 0.45rem 0.65rem;
   color: #f8fafc;
   background: #111827;
@@ -73,23 +73,13 @@
 }
 
 .tooltipTop {
-  right: 50%;
+  right: 0;
   bottom: calc(100% + 0.55rem);
-  transform: translate(50%, 0.25rem);
+  transform: translateY(0.25rem);
 }
 
 .tooltipTop.fabTooltipVisible {
-  transform: translate(50%, 0);
-}
-
-.tooltipLeft {
-  top: 50%;
-  right: calc(100% + 0.55rem);
-  transform: translate(0.25rem, -50%);
-}
-
-.tooltipLeft.fabTooltipVisible {
-  transform: translate(0, -50%);
+  transform: translateY(0);
 }
 
 .fab::before {
@@ -153,5 +143,18 @@
   .fallback {
     right: 1rem;
     bottom: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab,
+  .fabTooltipBoundary,
+  .fabTooltip {
+    transition: none;
+  }
+
+  .fab:hover::before,
+  .fabSpinning .fabIcon {
+    animation: none;
   }
 }

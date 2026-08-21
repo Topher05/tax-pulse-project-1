@@ -337,6 +337,28 @@ current stub response path.
 - Focused Pulse UI assistant tests passed: 15 tests across 3 files.
 - `npm.cmd --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
 
+**Feedback Loop III Changes:**
+
+- Reworked the shared tooltip primitive to use explicit hover, focus, and dismiss state instead of
+  `:focus-within`, and connected tooltips to their controls with `aria-describedby`.
+- Turned the assistant drawer into a modal dialog with focus trapping, Escape-to-close behavior,
+  closed-state inerting, backdrop presentation, and focus restoration back to the FAB.
+- Reset drawer fullscreen state on every close path and split the composer into an explicit label,
+  textarea, and bottom-right send control wrapper.
+- Added responsive and reduced-motion refinements for the drawer, FAB tooltip, and loader so the
+  assistant surface behaves better on narrow and short viewports.
+- Added `test.todo` placeholders for the assistant UI, API route, and axe coverage that will be
+  implemented in the next pass.
+
+**Feedback Loop III Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- Focused Pulse UI assistant tests passed: 18 passing, 6 `test.todo` placeholders across 3 files.
+- `npm.cmd --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
+- `npm.cmd test -- tests/typescript/features/taxPlanCycle/routes.test.ts` was attempted, but the
+  existing route bootstrap failed before execution because the RS256 issuer configuration was not
+  available in this environment.
+
 ## caleb-latimer-jira160 - SCRUM-160
 
 **Branch:** `caleb-latimer-jira160`

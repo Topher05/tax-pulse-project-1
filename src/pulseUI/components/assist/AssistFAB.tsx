@@ -14,6 +14,8 @@ export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
   const [isAnchored, setIsAnchored] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const wasOpenRef = useRef(isOpen);
   const spinTimeoutRef = useRef<number | null>(null);
   const tooltipId = useId();
 
@@ -44,6 +46,14 @@ export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (wasOpenRef.current && !isOpen) {
+      buttonRef.current?.focus();
+    }
+
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
+
   const handleClick = () => {
     if (isOpen) {
       return;
@@ -61,7 +71,6 @@ export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
     }, 600);
   };
 
-  const tooltipPlacement = isAnchored ? styles.tooltipTop : styles.tooltipLeft;
   const boundaryClassName = [
     styles.fabTooltipBoundary,
     isAnchored ? styles.anchored : styles.fallback,
@@ -77,6 +86,7 @@ export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
       onBlur={() => setIsTooltipVisible(false)}
     >
       <button
+        ref={buttonRef}
         type="button"
         aria-label="Open RAG assistant"
         aria-pressed={isOpen}
@@ -89,7 +99,7 @@ export function AssistFAB({ isOpen, anchorElement, onOpen }: AssistFABProps) {
       </button>
       <span
         id={tooltipId}
-        className={[styles.fabTooltip, tooltipPlacement, isTooltipVisible ? styles.fabTooltipVisible : ""].join(" ")}
+        className={[styles.fabTooltip, styles.tooltipTop, isTooltipVisible ? styles.fabTooltipVisible : ""].join(" ")}
         role="tooltip"
         aria-hidden={!isTooltipVisible}
       >

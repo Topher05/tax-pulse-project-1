@@ -83,6 +83,8 @@ async function expectNoViolations(container: HTMLElement): Promise<void> {
 }
 
 describe("Pulse UI accessibility gate", () => {
+  test.todo("covers the assistant drawer open, loading, composer, error, and fullscreen states against WCAG 2.2 AA expectations");
+
   test("dashboard reports no critical axe violations", async () => {
     const { container } = render(<DashboardPage />);
 

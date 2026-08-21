@@ -1,7 +1,7 @@
 .loader {
   display: grid;
-  min-height: 28rem;
   gap: 1.5rem;
+  min-height: 0;
   padding: 0.5rem 0 1rem;
 }
 
@@ -142,5 +142,15 @@
 @media (max-width: 560px) {
   .center {
     flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner,
+  .skeletonToolbarButton,
+  .skeletonInput,
+  .skeletonDisclaimer,
+  .skeletonSend {
+    animation: none;
   }
 }

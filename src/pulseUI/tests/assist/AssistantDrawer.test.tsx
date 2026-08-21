@@ -39,6 +39,11 @@ function renderDrawer(overrides: Partial<React.ComponentProps<typeof AssistantDr
 }
 
 describe("AssistantDrawer", () => {
+  test.todo("dismisses toolbar and composer tooltips after activation and restores them on a new hover or focus");
+  test.todo("resets fullscreen mode when the drawer closes");
+  test.todo("keeps focus trapped in the open drawer and restores it to the FAB on close");
+  test.todo("keeps the send control anchored to the bottom-right across responsive layouts");
+
   test("renders four toolbar controls with accessible tooltips", () => {
     renderDrawer();
 
@@ -53,7 +58,7 @@ describe("AssistantDrawer", () => {
   test("toggles fullscreen and shows the prompt suggestion toast", () => {
     renderDrawer();
 
-    const drawer = screen.getByRole("dialog", { name: "RAG assistant" });
+    const drawer = screen.getByRole("dialog", { name: "case-001 - Q2 2026 Tax Plan" });
     fireEvent.click(screen.getByRole("button", { name: "Expand to fullscreen" }));
     expect(drawer.className).toContain("fullscreen");
     expect(screen.getByRole("button", { name: "Collapse to drawer" })).toBeInTheDocument();
@@ -101,7 +106,7 @@ describe("AssistantDrawer", () => {
     const onClose = vi.fn();
     renderDrawer({ onClose });
 
-    fireEvent.click(screen.getByRole("button", { name: "Close assistant drawer backdrop" }));
+    fireEvent.click(screen.getByRole("presentation", { hidden: true }));
 
     expect(onClose).toHaveBeenCalledOnce();
   });
