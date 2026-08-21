@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS vector;
+--> statement-breakpoint
 CREATE TABLE "ai_assist_corpus_embedding" (
 	"chunk_id" text PRIMARY KEY NOT NULL,
 	"document_id" text NOT NULL,
