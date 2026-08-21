@@ -16,6 +16,7 @@ src/pulseUI/playwright-report/
 codebase_guide/*
 .vscode/
 artifacts/
+.lambda-package/
 .terraform/
 **/.terraform/
 src/typescript/soap.d.ts

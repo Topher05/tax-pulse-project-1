@@ -2,6 +2,46 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+locals {
+  availability_zones = slice(data.aws_availability_zones.available.names, 0, 3)
+
+  public_subnet_configs = {
+    public_a = {
+      az_index = 0
+      netnum   = 1
+      suffix   = "a"
+    }
+    public_b = {
+      az_index = 1
+      netnum   = 2
+      suffix   = "b"
+    }
+    public_c = {
+      az_index = 2
+      netnum   = 3
+      suffix   = "c"
+    }
+  }
+
+  private_subnet_configs = {
+    private_a = {
+      az_index = 0
+      netnum   = 11
+      suffix   = "a"
+    }
+    private_b = {
+      az_index = 1
+      netnum   = 12
+      suffix   = "b"
+    }
+    private_c = {
+      az_index = 2
+      netnum   = 13
+      suffix   = "c"
+    }
+  }
+}
+
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
@@ -22,71 +62,39 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Public Subnets
-resource "aws_subnet" "public_1" {
+resource "aws_subnet" "public" {
+  for_each = local.public_subnet_configs
+
   #checkov:skip=CKV_AWS_130: Public subnets intentionally assign public IPs for internet-facing delivery.
   vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 1)
-  availability_zone = data.aws_availability_zones.available.names[0]
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, each.value.netnum)
+  availability_zone = local.availability_zones[each.value.az_index]
   #tfsec:ignore:aws-ec2-no-public-ip-subnet
   map_public_ip_on_launch = true
 
   tags = {
-    Name        = "taxpulse-${var.environment}-public-1"
+    Name        = "taxpulse-${var.environment}-public-${each.value.suffix}"
     Environment = var.environment
   }
 }
 
-resource "aws_subnet" "public_2" {
-  #checkov:skip=CKV_AWS_130: Public subnets intentionally assign public IPs for internet-facing delivery.
+resource "aws_subnet" "private" {
+  for_each = local.private_subnet_configs
+
   vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 2)
-  availability_zone = data.aws_availability_zones.available.names[1]
-  #tfsec:ignore:aws-ec2-no-public-ip-subnet
-  map_public_ip_on_launch = true
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, each.value.netnum)
+  availability_zone = local.availability_zones[each.value.az_index]
 
   tags = {
-    Name        = "taxpulse-${var.environment}-public-2"
-    Environment = var.environment
-  }
-}
-
-# Private Subnets
-resource "aws_subnet" "private_1" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 11)
-  availability_zone = data.aws_availability_zones.available.names[0]
-
-  tags = {
-    Name        = "taxpulse-${var.environment}-private-1"
-    Environment = var.environment
-  }
-}
-
-resource "aws_subnet" "private_2" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 12)
-  availability_zone = data.aws_availability_zones.available.names[1]
-
-  tags = {
-    Name        = "taxpulse-${var.environment}-private-2"
-    Environment = var.environment
-  }
-}
-
-# NAT Gateway for outbound traffic from private subnets
-resource "aws_eip" "nat" {
-  domain = "vpc"
-
-  tags = {
-    Name        = "taxpulse-${var.environment}-nat-eip"
+    Name        = "taxpulse-${var.environment}-private-${each.value.suffix}"
     Environment = var.environment
   }
 }
 
 resource "aws_nat_gateway" "main" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public_1.id
+  vpc_id            = aws_vpc.main.id
+  availability_mode = "regional"
+  connectivity_type = "public"
 
   tags = {
     Name        = "taxpulse-${var.environment}-nat-gw"
@@ -96,7 +104,6 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
-# Route Tables
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -125,23 +132,16 @@ resource "aws_route_table" "private" {
   }
 }
 
-# Route Table Associations
-resource "aws_route_table_association" "public_1" {
-  subnet_id      = aws_subnet.public_1.id
+resource "aws_route_table_association" "public" {
+  for_each = aws_subnet.public
+
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.public.id
 }
 
-resource "aws_route_table_association" "public_2" {
-  subnet_id      = aws_subnet.public_2.id
-  route_table_id = aws_route_table.public.id
-}
+resource "aws_route_table_association" "private" {
+  for_each = aws_subnet.private
 
-resource "aws_route_table_association" "private_1" {
-  subnet_id      = aws_subnet.private_1.id
-  route_table_id = aws_route_table.private.id
-}
-
-resource "aws_route_table_association" "private_2" {
-  subnet_id      = aws_subnet.private_2.id
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.private.id
 }
