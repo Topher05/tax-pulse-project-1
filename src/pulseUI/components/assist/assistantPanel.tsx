@@ -1,10 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { PropsWithChildren } from "react";
 
-import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
 import {
-  postTaxPlanDetailsAssistant,
   parseTaxPlanDetailsAssistantErrorMessage,
+  useTaxPlanDetailsAssistantMutation,
 } from "../../entities/taxPlanDetailsAssistant.ts";
 
 export interface AssistantCaseContext {
@@ -30,8 +29,12 @@ export interface AssistantPanelContextValue {
   errorMessage: string | null;
   isDrawerOpen: boolean;
   isLoading: boolean;
+  fabAnchorElement: HTMLElement | null;
   setAssistantCaseContext(context: AssistantCaseContext | null): void;
+  registerFabAnchor(element: HTMLElement | null): void;
   openAssistant(): Promise<void>;
+  sendMessage(message: string): Promise<void>;
+  startNewDialogue(): void;
   closeAssistant(): void;
 }
 
@@ -46,22 +49,22 @@ function createMessageId(prefix: string): string {
 }
 
 export function AssistantPanelProvider({ children }: PropsWithChildren) {
-  const authenticatedFetch = useAuthenticatedFetch();
   const requestCounter = useRef(0);
   const [assistantCaseContext, setAssistantCaseContext] = useState<AssistantCaseContext | null>(null);
+  const [fabAnchorElement, setFabAnchorElement] = useState<HTMLElement | null>(null);
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const [isLoading, setLoading] = useState(false);
+  const { isPending, mutateAsync, reset } = useTaxPlanDetailsAssistantMutation();
 
   useEffect(() => {
     if (assistantCaseContext === null) {
       setDrawerOpen(false);
-      setLoading(false);
       setMessages([]);
       setErrorMessage(null);
+      reset();
     }
-  }, [assistantCaseContext]);
+  }, [assistantCaseContext, reset]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -74,21 +77,69 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
     };
   }, [isDrawerOpen]);
 
+  const registerFabAnchor = useCallback((element: HTMLElement | null) => {
+    setFabAnchorElement(element);
+  }, []);
+
   const closeAssistant = useCallback(() => {
     requestCounter.current += 1;
     setDrawerOpen(false);
-    setLoading(false);
     setErrorMessage(null);
-  }, []);
+    reset();
+  }, [reset]);
+
+  const startNewDialogue = useCallback(() => {
+    requestCounter.current += 1;
+    setMessages([]);
+    setErrorMessage(null);
+    reset();
+  }, [reset]);
+
+  const runAssistantRequest = useCallback(
+    async (requestId: number, caseId: string): Promise<void> => {
+      try {
+        const response = await mutateAsync({ caseId });
+        if (requestCounter.current !== requestId) {
+          return;
+        }
+
+        setMessages((current) => [
+          ...current,
+          {
+            id: createMessageId("assistant"),
+            role: "assistant",
+            title: "Assistant response",
+            body: response.message,
+          },
+        ]);
+      } catch (error) {
+        if (requestCounter.current !== requestId) {
+          return;
+        }
+
+        const message = parseTaxPlanDetailsAssistantErrorMessage(error);
+        setErrorMessage(message);
+        setMessages((current) => [
+          ...current,
+          {
+            id: createMessageId("error"),
+            role: "error",
+            title: "Assistant unavailable",
+            body: message,
+          },
+        ]);
+      }
+    },
+    [mutateAsync],
+  );
 
   const openAssistant = useCallback(async () => {
-    if (assistantCaseContext === null || isLoading) {
+    if (assistantCaseContext === null || isPending) {
       return;
     }
 
     const requestId = ++requestCounter.current;
     setDrawerOpen(true);
-    setLoading(true);
     setErrorMessage(null);
     setMessages([
       {
@@ -99,43 +150,32 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
       },
     ]);
 
-    try {
-      const response = await postTaxPlanDetailsAssistant(authenticatedFetch);
-      if (requestCounter.current !== requestId) {
+    await runAssistantRequest(requestId, assistantCaseContext.caseId);
+  }, [assistantCaseContext, isPending, runAssistantRequest]);
+
+  const sendMessage = useCallback(
+    async (message: string) => {
+      const trimmedMessage = message.trim();
+      if (assistantCaseContext === null || trimmedMessage.length === 0 || isPending) {
         return;
       }
 
+      const requestId = ++requestCounter.current;
+      setErrorMessage(null);
       setMessages((current) => [
         ...current,
         {
-          id: createMessageId("assistant"),
-          role: "assistant",
-          title: "Assistant response",
-          body: response.message,
+          id: createMessageId("user"),
+          role: "user",
+          title: "Advisor prompt",
+          body: trimmedMessage,
         },
       ]);
-    } catch (error) {
-      if (requestCounter.current !== requestId) {
-        return;
-      }
 
-      const message = parseTaxPlanDetailsAssistantErrorMessage(error);
-      setErrorMessage(message);
-      setMessages((current) => [
-        ...current,
-        {
-          id: createMessageId("error"),
-          role: "error",
-          title: "Assistant unavailable",
-          body: message,
-        },
-      ]);
-    } finally {
-      if (requestCounter.current === requestId) {
-        setLoading(false);
-      }
-    }
-  }, [assistantCaseContext, authenticatedFetch, isLoading]);
+      await runAssistantRequest(requestId, assistantCaseContext.caseId);
+    },
+    [assistantCaseContext, isPending, runAssistantRequest],
+  );
 
   const value = useMemo<AssistantPanelContextValue>(
     () => ({
@@ -143,12 +183,28 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
       messages,
       errorMessage,
       isDrawerOpen,
-      isLoading,
+      isLoading: isPending,
       setAssistantCaseContext,
+      registerFabAnchor,
       openAssistant,
+      sendMessage,
+      startNewDialogue,
       closeAssistant,
+      fabAnchorElement,
     }),
-    [assistantCaseContext, closeAssistant, errorMessage, isDrawerOpen, isLoading, messages, openAssistant],
+    [
+      assistantCaseContext,
+      isPending,
+      closeAssistant,
+      errorMessage,
+      fabAnchorElement,
+      isDrawerOpen,
+      messages,
+      openAssistant,
+      registerFabAnchor,
+      sendMessage,
+      startNewDialogue,
+    ],
   );
 
   return <AssistantPanelContext.Provider value={value}>{children}</AssistantPanelContext.Provider>;

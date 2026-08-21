@@ -1,52 +1,90 @@
 .fab {
   position: relative;
   isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  overflow: hidden;
+  color: #ffffff;
+  background: #6366f1;
+  border: 0;
+  border-radius: 9999px;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 35%);
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.fallback {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 55;
+}
+
+.anchored {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 55;
 }
 
 .fab::before {
   content: "";
   position: absolute;
-  inset: -2px;
+  inset: 0;
   z-index: -1;
-  border-radius: 9999px;
-  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.18) 40%, transparent 75%);
-  transform: translateX(-140%);
-  opacity: 0;
+  background: linear-gradient(110deg, transparent 15%, rgb(255 255 255 / 48%) 50%, transparent 85%);
+  transform: translateX(-130%);
+  pointer-events: none;
+}
+
+.fab:hover {
+  transform: translateY(-0.2rem);
+  box-shadow: 0 22px 54px rgb(0 0 0 / 42%);
 }
 
 .fab:hover::before {
   animation: fabShimmer 850ms ease forwards;
 }
 
-.fabSpinning .fabIcon {
-  animation: fabSpin 840ms linear;
+.fab:focus-visible {
+  outline: 3px solid var(--pulse-accent-light);
+  outline-offset: 4px;
 }
 
 .fabIcon {
-  width: 1.75rem;
-  height: 1.75rem;
-  transition: transform 180ms ease;
+  width: 2rem;
+  height: 2rem;
+}
+
+.fabSpinning .fabIcon {
+  animation: fabPitch 600ms linear;
 }
 
 @keyframes fabShimmer {
-  0% {
-    transform: translateX(-140%);
-    opacity: 0;
+  from {
+    transform: translateX(-130%);
   }
-  30% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(140%);
-    opacity: 0;
+
+  to {
+    transform: translateX(130%);
   }
 }
 
-@keyframes fabSpin {
+@keyframes fabPitch {
   from {
-    transform: rotateY(0deg) rotateZ(0deg);
+    transform: rotateX(0deg);
   }
+
   to {
-    transform: rotateY(360deg) rotateZ(360deg);
+    transform: rotateX(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .fallback {
+    right: 1rem;
+    bottom: 1rem;
   }
 }
