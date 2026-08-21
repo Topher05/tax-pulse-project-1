@@ -1,0 +1,50 @@
+{
+  "CallerReference": "SCRUM-164_SPA_CLOUDFRONT_CALLER_REFERENCE",
+  "Comment": "TaxPulse SPA served from a private S3 origin behind CloudFront.",
+  "Enabled": true,
+  "DefaultRootObject": "index.html",
+  "Origins": [
+    {
+      "Id": "taxpulse-spa-s3-origin",
+      "DomainName": "SCRUM-164_SPA_BUCKET_REGIONAL_DOMAIN_NAME",
+      "OriginAccessControlId": "SCRUM-164_ORIGIN_ACCESS_CONTROL_ID",
+      "S3OriginConfig": {
+        "OriginAccessIdentity": ""
+      }
+    }
+  ],
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "taxpulse-spa-s3-origin",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": {
+      "Quantity": 2,
+      "Items": ["GET", "HEAD"],
+      "CachedMethods": {
+        "Quantity": 2,
+        "Items": ["GET", "HEAD"]
+      }
+    },
+    "Compress": true,
+    "CachePolicyId": "SCRUM-164_STATIC_ASSET_CACHE_POLICY_ID"
+  },
+  "CustomErrorResponses": {
+    "Quantity": 2,
+    "Items": [
+      {
+        "ErrorCode": 403,
+        "ResponsePagePath": "/index.html",
+        "ResponseCode": "200",
+        "ErrorCachingMinTTL": 0
+      },
+      {
+        "ErrorCode": 404,
+        "ResponsePagePath": "/index.html",
+        "ResponseCode": "200",
+        "ErrorCachingMinTTL": 0
+      }
+    ]
+  },
+  "PriceClass": "PriceClass_100",
+  "HttpVersion": "http2",
+  "IsIPV6Enabled": true
+}
