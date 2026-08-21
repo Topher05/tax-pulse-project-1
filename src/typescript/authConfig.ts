@@ -37,6 +37,7 @@ const jwtEnvironmentSchema = z
       .min(1, "JWT_AUDIENCE must not be empty.")
       .default("taxpulse-http-api"),
     JWT_JWKS_URL: z.string().trim().url("JWT_JWKS_URL must be a valid URL.").optional(),
+    JWT_SIGNING_SECRET: z.string().trim().min(1).optional(),
     JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce
       .number()
       .int("JWT_ACCESS_TOKEN_TTL_SECONDS must be a whole number.")
@@ -71,6 +72,7 @@ export function getJwtConfigFromEnv(
     JWT_ISSUER: env.JWT_ISSUER,
     JWT_AUDIENCE: env.JWT_AUDIENCE,
     JWT_JWKS_URL: env.JWT_JWKS_URL,
+    JWT_SIGNING_SECRET: env.JWT_SIGNING_SECRET,
     JWT_ACCESS_TOKEN_TTL_SECONDS: env.JWT_ACCESS_TOKEN_TTL_SECONDS,
     JWT_REFRESH_TOKEN_TTL_SECONDS: env.JWT_REFRESH_TOKEN_TTL_SECONDS,
   });
@@ -79,6 +81,7 @@ export function getJwtConfigFromEnv(
     issuer: parsed.JWT_ISSUER,
     audience: parsed.JWT_AUDIENCE,
     jwksUrl: parsed.JWT_JWKS_URL ?? new URL("/.well-known/jwks.json", parsed.JWT_ISSUER).toString(),
+    signingSecret: parsed.JWT_SIGNING_SECRET,
     accessTokenLifetimeSeconds: parsed.JWT_ACCESS_TOKEN_TTL_SECONDS,
     refreshTokenLifetimeSeconds: parsed.JWT_REFRESH_TOKEN_TTL_SECONDS,
   };

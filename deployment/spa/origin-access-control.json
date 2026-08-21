@@ -1,0 +1,7 @@
+{
+  "Name": "taxpulse-spa-origin-access-control",
+  "Description": "CloudFront-only access for the private TaxPulse SPA S3 origin.",
+  "SigningProtocol": "sigv4",
+  "SigningBehavior": "always",
+  "OriginAccessControlOriginType": "s3"
+}

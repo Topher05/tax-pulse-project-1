@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # TODO: CL, added runtime docker build optimization config, should help with container setup when that item is worked on
       # Future container delivery jobs can reuse the Blacksmith Docker builder helpers below.

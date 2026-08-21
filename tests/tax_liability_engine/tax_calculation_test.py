@@ -2,6 +2,7 @@ from decimal import Decimal
 
 import pytest
 from pydantic import ValidationError
+
 from tax_liability_engine import (
     TaxCalculationRequest,
     TaxCalculationResult,

@@ -1,17 +1,10 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
-
-import jwt
 import pytest
 from httpx import ASGITransport, AsyncClient
-from tax_liability_engine.api import create_app
-from tax_liability_engine.jwt_authentication import JwtValidationConfig
 
-CONFIG = JwtValidationConfig(
-    issuer="https://auth.taxpulse.example",
-    signing_secret="a-unique-test-secret-that-is-more-than-32-bytes",
-)
+from tax_liability_engine.api import create_app
+from tests.tax_liability_engine.auth_test_support import JwtTestMaterial, issue_access_token
 
 BASELINE = {
     "income": 100000,
@@ -19,27 +12,6 @@ BASELINE = {
     "state": "CA",
     "filing_status": "single",
 }
-
-
-def issue_token(
-    *,
-    role: object = "Advisor",
-    tenant_id: object = "tenant-001",
-    issuer: str = CONFIG.issuer,
-    expires_at: datetime | None = None,
-) -> str:
-    return jwt.encode(
-        {
-            "sub": "user-001",
-            "role": role,
-            "tenant_id": tenant_id,
-            "iss": issuer,
-            "iat": datetime.now(UTC),
-            "exp": expires_at or datetime.now(UTC) + timedelta(minutes=5),
-        },
-        CONFIG.signing_secret,
-        algorithm="HS256",
-    )
 
 
 def scenario(number: int) -> dict[str, object]:
@@ -77,14 +49,16 @@ def build_three_scenario_request() -> dict[str, object]:
 
 
 @pytest.mark.asyncio
-async def test_scenario_comparison_endpoint_returns_three_deltas_in_input_order() -> None:
-    app = create_app(CONFIG)
+async def test_scenario_comparison_endpoint_returns_three_deltas_in_input_order(
+    jwt_test_material: JwtTestMaterial,
+) -> None:
+    app = create_app(jwt_test_material.config)
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         response = await client.post(
             "/scenarios/comparisons",
-            headers={"Authorization": f"Bearer {issue_token()}"},
+            headers={"Authorization": f"Bearer {issue_access_token(jwt_test_material)}"},
             json=build_three_scenario_request(),
         )
 
@@ -111,14 +85,15 @@ async def test_scenario_comparison_endpoint_returns_three_deltas_in_input_order(
 @pytest.mark.asyncio
 async def test_scenario_comparison_endpoint_accepts_two_to_five_scenarios(
     count: int,
+    jwt_test_material: JwtTestMaterial,
 ) -> None:
-    app = create_app(CONFIG)
+    app = create_app(jwt_test_material.config)
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         response = await client.post(
             "/scenarios/comparisons",
-            headers={"Authorization": f"Bearer {issue_token()}"},
+            headers={"Authorization": f"Bearer {issue_access_token(jwt_test_material)}"},
             json=build_request(count),
         )
 
@@ -129,14 +104,15 @@ async def test_scenario_comparison_endpoint_accepts_two_to_five_scenarios(
 @pytest.mark.asyncio
 async def test_scenario_comparison_endpoint_rejects_out_of_range_scenario_counts(
     count: int,
+    jwt_test_material: JwtTestMaterial,
 ) -> None:
-    app = create_app(CONFIG)
+    app = create_app(jwt_test_material.config)
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         response = await client.post(
             "/scenarios/comparisons",
-            headers={"Authorization": f"Bearer {issue_token()}"},
+            headers={"Authorization": f"Bearer {issue_access_token(jwt_test_material)}"},
             json=build_request(count),
         )
 
@@ -144,8 +120,10 @@ async def test_scenario_comparison_endpoint_rejects_out_of_range_scenario_counts
 
 
 @pytest.mark.asyncio
-async def test_scenario_comparison_endpoint_rejects_missing_jwt() -> None:
-    app = create_app(CONFIG)
+async def test_scenario_comparison_endpoint_rejects_missing_jwt(
+    jwt_test_material: JwtTestMaterial,
+) -> None:
+    app = create_app(jwt_test_material.config)
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
@@ -155,15 +133,18 @@ async def test_scenario_comparison_endpoint_rejects_missing_jwt() -> None:
 
 
 @pytest.mark.asyncio
-async def test_scenario_comparison_endpoint_rejects_invalid_jwt() -> None:
-    app = create_app(CONFIG)
+async def test_scenario_comparison_endpoint_rejects_invalid_jwt(
+    jwt_test_material: JwtTestMaterial,
+) -> None:
+    app = create_app(jwt_test_material.config)
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         response = await client.post(
             "/scenarios/comparisons",
             headers={
-                "Authorization": f"Bearer {issue_token(issuer='https://other.taxpulse.example')}",
+                "Authorization": "Bearer "
+                f"{issue_access_token(jwt_test_material, issuer='https://other.taxpulse.example')}",
             },
             json=build_request(3),
         )

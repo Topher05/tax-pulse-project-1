@@ -27,6 +27,7 @@
     "aws:alb-smoke": "tsx src/typescript/shared/scripts/albSmoke.ts",
     "cloud:tap": "tsx src/typescript/shared/scripts/cloudTap.ts",
     "corpus:build": "tsx src/typescript/shared/scripts/corpusBuild.ts",
+    "corpus:embed": "tsx src/typescript/shared/scripts/corpusEmbed.ts",
     "corpus:smoke": "tsx src/typescript/shared/scripts/corpusSmoke.ts",
     "corpus:validate": "tsx src/typescript/shared/scripts/corpusValidate.ts",
     "redis:up": "docker compose -f docker-compose.redis.yml up -d",
@@ -43,7 +44,9 @@
     "test:cov": "vitest run --coverage",
     "test:smoke": "node --import tsx --test tests/typescript/smoke.test.ts",
     "test:vitest": "vitest run --config vitest.config.ts",
-    "typecheck": "node src/typescript/shared/scripts/typecheck.mjs"
+    "typecheck": "node src/typescript/shared/scripts/typecheck.mjs",
+    "typecheck:core": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "verify:pulse-ui": "npm --prefix src/pulseUI run verify"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^17.0.1",
@@ -68,6 +71,7 @@
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
     "jose": "^6.2.3",
+    "openai": "^7.5.0",
     "otplib": "^13.4.1",
     "pg": "^8.16.3",
     "pino": "^9.14.0",

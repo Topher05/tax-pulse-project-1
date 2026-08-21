@@ -104,6 +104,15 @@ export function createJwtAuthenticationMiddleware({
   config,
 }: CreateJwtAuthenticationMiddlewareOptions): RequestHandler {
   const verifyToken = (() => {
+    if (config.signingSecret) {
+      const signingKey = new TextEncoder().encode(config.signingSecret);
+      return async (token: string) => await jwtVerify(token, signingKey, {
+        algorithms: ["HS256"],
+        issuer: config.issuer,
+        requiredClaims: ["exp"],
+      });
+    }
+
     const jwks = createRemoteJWKSet(
       new URL(config.jwksUrl ?? new URL("/.well-known/jwks.json", config.issuer)),
     );

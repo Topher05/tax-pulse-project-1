@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { userRows as seededUserRows } from "../../../src/typescript/shared/database/seed.model.js";
 
 export const expectedUserColumns = [
   "id",
@@ -19,7 +20,7 @@ export const expectedUserColumnTypes = {
   last_login_at: "timestamp with time zone",
 } as const;
 
-export const userRows = [
+const legacyUserRows = [
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
     tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
@@ -66,6 +67,8 @@ export const userRows = [
     lastLoginAt: new Date("2026-07-29T16:00:00Z"),
   },
 ] as const;
+
+export const userRows = seededUserRows;
 
 export const expectedUserRows = userRows.map((row) => ({
   id: row.id,

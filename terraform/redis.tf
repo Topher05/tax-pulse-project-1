@@ -1,6 +1,6 @@
-resource "aws_elasticache_subnet_group" "redis_subnet_group" {
+resource "aws_elasticache_subnet_group" "redis" {
   name       = "taxpulse-${var.environment}-redis-subnet-group"
-  subnet_ids = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+  subnet_ids = values(aws_subnet.private)[*].id
 
   tags = {
     Name        = "taxpulse-${var.environment}-redis-subnet-group"
@@ -10,15 +10,15 @@ resource "aws_elasticache_subnet_group" "redis_subnet_group" {
 
 resource "aws_security_group" "redis" {
   name        = "taxpulse-${var.environment}-redis-sg"
-  description = "Allow inbound Redis traffic from ECS tasks"
+  description = "Allow inbound Redis traffic from ECS services"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description     = "Redis access from ECS compute layer"
+    description     = "Redis access from ECS service compute"
     from_port       = 6379
     to_port         = 6379
     protocol        = "tcp"
-    security_groups = [aws_security_group.ecs_tasks.id]
+    security_groups = [aws_security_group.ecs_service.id]
   }
 
   egress {
@@ -36,11 +36,13 @@ resource "aws_security_group" "redis" {
 
 resource "aws_elasticache_replication_group" "redis" {
   replication_group_id       = "taxpulse-${var.environment}-redis"
-  description                = "Elasticache Redis for TaxPulse"
+  description                = "ElastiCache Redis for TaxPulse"
+  engine                     = "redis"
+  engine_version             = "7.1"
   node_type                  = "cache.t4g.micro"
   port                       = 6379
   parameter_group_name       = "default.redis7"
-  subnet_group_name          = aws_elasticache_subnet_group.redis_subnet_group.name
+  subnet_group_name          = aws_elasticache_subnet_group.redis.name
   security_group_ids         = [aws_security_group.redis.id]
   automatic_failover_enabled = true
   multi_az_enabled           = true

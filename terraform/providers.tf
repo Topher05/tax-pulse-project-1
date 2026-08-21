@@ -4,19 +4,28 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.49"
     }
   }
 
   backend "s3" {
-    bucket         = "taxpulse-terraform-state"
-    key            = "dev/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "taxpulse-terraform-locks"
-    encrypt        = true
+    bucket       = "taxpulse-terraform-state"
+    key          = "dev/terraform.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 
 provider "aws" {
-  region = var.aws_region
+  region              = var.aws_region
+  profile             = "terraform-process"
+  shared_config_files = ["./aws-login-bridge.config"]
+
+  default_tags {
+    tags = {
+      env  = "sandbox"
+      user = "dylan-harle"
+    }
+  }
 }

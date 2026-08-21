@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { credentialRows as seededCredentialRows } from "../../../src/typescript/shared/database/seed.model.js";
 
 export const expectedCredentialColumns = ["id", "userId", "passwordHash"];
 export const expectedCredentialColumnTypes = {
@@ -7,7 +8,7 @@ export const expectedCredentialColumnTypes = {
   passwordHash: "character varying",
 } as const;
 
-export const credentialRows = [
+const legacyCredentialRows = [
   {
     id: "cm7zq8f4k0000a1b2c3d4e5f6",
     userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
@@ -39,6 +40,8 @@ export const credentialRows = [
       "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtNQ$YXV0aC1oYXNoLW9uZS0wNQ",
   },
 ] as const;
+
+export const credentialRows = seededCredentialRows;
 
 export const expectedCredentialRows = credentialRows.map((row) => ({
   id: row.id,

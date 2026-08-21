@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
+
 from tax_liability_engine import (
     PLAN_CYCLE_QUEUE_PROJECTION_CASE_KEY,
     PLAN_CYCLE_QUEUE_PROJECTION_TENANT_KEY,
@@ -17,11 +18,11 @@ from tax_liability_engine import (
     describe_plan_cycle_queue_projection_table,
     wait_for_plan_cycle_queue_projection_table,
 )
+from tax_liability_engine.dynamodb.plan_cycle_queue_projection import DynamoDbClient
 from tax_liability_engine.tax_plan_cycle_queue_projection import (
     TaxPlanCycleRecord,
     upsert_tax_plan_cycle_queue_projection,
 )
-from tax_liability_engine.dynamodb.plan_cycle_queue_projection import DynamoDbClient
 
 try:
     from docker.errors import DockerException as DockerError  # type: ignore[assignment]
@@ -250,17 +251,6 @@ def test_queries_projection_items_by_tenant_from_localstack(
         due_date=date(2026, 7, 24),
         is_overdue=False,
     )
-    other_tenant_item = PlanCycleQueueProjectionItem(
-        tenant_id="tenant-queue-002",
-        case_id="case-other-001",
-        client="Other Tenant Client",
-        stage="Intake",
-        owner="advisor-003",
-        priority="low",
-        due_date=date(2026, 7, 1),
-        is_overdue=True,
-    )
-
     for tenant_id, source in [
         ("tenant-queue-001", tenant_record),
         ("tenant-queue-001", future_record),

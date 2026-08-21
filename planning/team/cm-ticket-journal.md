@@ -116,6 +116,75 @@ with the RS256 token issued by the Core Case Service.
 
 
 
+## christopher-martus-jira165 - SCRUM-165
+
+**Branch:** `christopher-martus-jira165`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-165
+
+**Summary:** Add the Semgrep and Bandit SAST gate in CI/CD
+
+**Description:** Add a pull-request security gate that runs Semgrep against the
+TypeScript source and Bandit against the Python source, failing on high-severity
+findings.
+
+**Acceptance Criteria:**
+
+- A GitHub Actions workflow runs Semgrep against `src/typescript`.
+- The workflow runs Bandit against `src/tax_liability_engine`.
+- High-severity findings cause the workflow job to exit unsuccessfully.
+- The workflow runs automatically for every `pull_request`, without path filtering.
+
+**Code Connection:**
+
+- Added a Blacksmith-run GitHub Actions workflow with Python 3.13, Semgrep, and
+  Bandit installation.
+- Semgrep explicitly fails on `ERROR` findings, and Bandit explicitly fails on
+  `high` severity findings.
+- Recorded the runner and scanner decision in ADR-0036 and indexed it in `adr/README.md`.
+
+**Project Scope Connection:**
+
+This completes the repository-scoped Steps 1–2 of SCRUM-165 and establishes the
+CI/CD SAST enforcement boundary. Application code, scanner suppressions, and
+non-PR triggers are out of scope. Branch protection is the separate
+repository-administration rollout in Step 3.
+
+**Changed Files:**
+
+- `.github/workflows/sast-security-gate.yml`
+- `.github/workflows/ci.yml`
+- `adr/0036-sast-security-gate-on-blacksmith-runners.md`
+- `adr/README.md`
+- `planning/team/cm-ticket-journal.md`
+- `tests/typescript/workflows/sastSecurityGate.test.ts`
+
+**Validation Notes:**
+
+- `npx vitest run --config vitest.config.ts tests/typescript/workflows/sastSecurityGate.test.ts` passed: 2 tests.
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- `git diff --stat origin/development...HEAD` reports 5 files changed, 151 insertions, and 1 deletion.
+- Step 3 repository-administration rollout remains pending explicit authorization for push, PR creation, and branch-protection changes.
+- Added the repository-level CI workflow with parallel Python, Core TypeScript, Pulse UI, and
+  container validation jobs, plus the stable `CI / Required Gate` aggregate check. It runs on
+  pull requests and pushes to `development`, with cancellation of obsolete runs.
+- Corrected the Core TypeScript job to run only the root application and test TypeScript
+  projects. Pulse UI retains its independently installed and validated job, so the core job
+  cannot fail due to unresolved UI-only dependencies such as `zod`.
+- Updated CI checkout, Node setup, and uv setup actions to Node 24-compatible major versions,
+  removing the GitHub Actions Node 20 runtime deprecation warnings.
+- Corrected Python Quality dependency installation to include the locked `dev` extra. This
+  provides Ruff, Pyright, pytest, Pact, and Testcontainers before their CI steps run.
+- Aligned tax-engine test authentication with the RS256/JWKS contract and isolated Pact
+  provider verification from JWT cryptography, which is outside the consumer/provider payload
+  contract being verified.
+- Restored the documented test-only HMAC compatibility path while production continues to use
+  RS256/JWKS, then generated the missing users display-name index migration and aligned stale
+  database test expectations with the canonical synthetic seed.
+
 ## christopher-martus-jira200 - SCRUM-200
 
 **Branch:** `christopher-martus-jira200`
@@ -297,6 +366,191 @@ stage-change events from being lost before asynchronous delivery.
 **Validation Notes:**
 
 - `npm run db:check` passed and loaded the updated Drizzle schema successfully.
+- `git diff --check` passed.
+
+
+## christopher-martus-jira179 - SCRUM-179
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Persist pgvector embeddings for deterministic AI-Assist corpus retrieval
+
+**Description:** Store embeddings and corpus metadata for the deterministic chunks produced
+by SCRUM-178, enabling later semantic retrieval work.
+
+**Acceptance Criteria:**
+
+- Every corpus chunk has a pgvector-backed persistence record and similarity index foundation.
+- Stored records preserve stable chunk metadata, citations, content hashes, and ordering fields.
+- The database and test infrastructure support the required vector PostgreSQL extension.
+
+**Code Connection:**
+
+- Adds `ai_assist_corpus_embedding` with stable `chunk_id`, corpus metadata, citation JSON,
+  embedding model, and `vector(1536)` embedding columns.
+- Adds an HNSW index using `vector_cosine_ops` for cosine similarity queries in the later
+  embedding/retrieval step.
+- Adds `CREATE EXTENSION IF NOT EXISTS vector` to the generated migration.
+
+**Project Scope Connection:**
+
+This is Step 1 of SCRUM-179 and provides only the AI-Assist corpus persistence foundation.
+Embedding calls, deterministic rebuild logic, similarity retrieval functions, scripts, and
+acceptance-focused tests remain for later plan steps. Hybrid retrieval, reranking, APIs, and
+tenant request enforcement remain out of scope.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0017_known_gabe_jones.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0017_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `docker-compose.yml`
+- `tests/typescript/bootstrap/dockerPostgres.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen` generated the migration.
+- `npm run db:check` passed.
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+- `git diff --check` passed.
+
+### Step 3 acceptance tests
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Verify deterministic corpus embedding persistence and similarity retrieval
+
+**Description:** Add focused acceptance tests for the embedding and retrieval helpers delivered
+in the preceding implementation steps.
+
+**Acceptance Criteria:**
+
+- Rebuild tests verify stable chunk ordering and preservation of corpus metadata.
+- Validation tests reject vectors with incorrect dimensions.
+- Retrieval tests verify vector-ranked results and numeric similarity conversion.
+
+**Code Connection:**
+
+- Adds `tests/typescript/assist/embeddings.test.ts` covering deterministic rebuild behavior,
+  metadata persistence, vector validation, and similarity result mapping.
+
+**Project Scope Connection:**
+
+This completes the planned acceptance-test step for SCRUM-179. Hybrid retrieval, reranking,
+RAGAS evaluation, APIs, and tenant request enforcement remain out of scope.
+
+**Changed Files:**
+
+- `tests/typescript/assist/embeddings.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused Vitest run passed: `tests/typescript/assist/embeddings.test.ts` (3 tests).
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+
+### Step 4 acceptance-focused coverage
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Complete acceptance-focused coverage for deterministic corpus embeddings
+
+**Description:** Extend the embedding tests to cover every acceptance-focused behavior from
+the executor handoff, including provider inputs, citation preservation, query limits,
+deterministic replacement, and stale chunk removal. Add an opt-in pgvector integration test
+for the migration objects and actual similarity SQL.
+
+**Acceptance Criteria:**
+
+- Unit tests use deterministic fake vectors and never call the OpenAI API.
+- Rebuild coverage verifies stable ordering, metadata/citations, identical repeated output,
+  and removal of stale chunks.
+- Retrieval coverage verifies semantic ordering and result limits.
+- The integration test verifies the vector extension/index and real pgvector query behavior.
+
+**Code Connection:**
+
+- `tests/typescript/assist/embeddings.test.ts` covers deterministic unit-level acceptance
+  behavior with a fake database and embedding provider.
+- `tests/typescript/assist/embeddings.integration.test.ts` exercises the generated migration
+  and similarity query against a pgvector-backed PostgreSQL container.
+
+**Project Scope Connection:**
+
+This completes only SCRUM-179's acceptance-focused test step. Hybrid retrieval, reranking,
+RAGAS evaluation, APIs, UI work, and tenant request enforcement remain out of scope.
+
+**Changed Files:**
+
+- `tests/typescript/assist/embeddings.test.ts`
+- `tests/typescript/assist/embeddings.integration.test.ts`
+- `src/typescript/shared/scripts/corpusEmbed.ts`
+- `package.json`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused Vitest unit run passed: 4 tests.
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+- `git diff --check` passed.
+- The focused integration test was discovered but could not run because this environment has
+  no container runtime; CI/Docker is required for `pgvector/pgvector:pg18`.
+- Added `npm run corpus:embed` to rebuild the pgvector index from the generated chunk artifact.
+
+### Review follow-up: retrieval coverage and provider cardinality
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Strengthen semantic retrieval ranking and provider-response coverage
+
+**Description:** Address review feedback by asserting the full similarity-ranked result set and
+rejecting embedding providers that return anything other than one vector for a single query.
+
+**Acceptance Criteria:**
+
+- Retrieval tests prove that lower-similarity results follow higher-similarity results.
+- Retrieval rejects zero or multiple provider vectors for one query.
+
+**Code Connection:**
+
+- `retrieveSimilarCorpusChunks` validates the query provider response cardinality before
+  validating and sending the query vector to pgvector.
+- `embeddings.test.ts` asserts both returned ranks and covers zero/multiple query vectors.
+
+**Project Scope Connection:**
+
+This is a focused SCRUM-179 review follow-up for deterministic embedding retrieval correctness;
+hybrid retrieval, reranking, RAGAS evaluation, APIs, UI work, and tenant request enforcement
+remain out of scope.
+
+**Changed Files:**
+
+- `src/typescript/assist/embeddings.ts`
+- `tests/typescript/assist/embeddings.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm exec vitest run tests/typescript/assist/embeddings.test.ts` passed (5 tests).
+- `npm run typecheck` passed for the app, tests, and pulseUI.
 - `git diff --check` passed.
 
 ## christopher-martus-jira144 - SCRUM-144 Seed Data Follow-up

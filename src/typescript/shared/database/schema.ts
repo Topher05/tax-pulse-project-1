@@ -16,6 +16,7 @@ import {
   uniqueIndex,
   varchar,
   uuid,
+  vector,
 } from "drizzle-orm/pg-core";
 import type { ScenarioComputedResult, ScenarioTypedFigures } from "../../scenario.js";
 import { taxPlanCycleStages } from "../../features/taxPlanCycle/taxPlanCycle.js";
@@ -184,6 +185,7 @@ export const users = pgTable(
       foreignColumns: [userStatus.id],
     }),
     uniqueIndex("users_tenant_id_email_key").on(table.tenantId, table.email),
+    index("users_tenant_id_display_name_idx").on(table.tenantId, table.displayName),
   ],
 );
 
@@ -487,6 +489,27 @@ export const outboxDeadLetter = pgTable(
       name: "outbox_dead_letter_id_pk",
       columns: [table.id],
     }),
+  ],
+);
+
+export const aiAssistCorpusEmbedding = pgTable(
+  "ai_assist_corpus_embedding",
+  {
+    chunkId: text("chunk_id").primaryKey(),
+    documentId: text("document_id").notNull(),
+    documentType: text("document_type").notNull(),
+    sectionId: text("section_id").notNull(),
+    sectionPath: text("section_path").notNull(),
+    text: text("text").notNull(),
+    contentHash: text("content_hash").notNull(),
+    ordinal: integer("ordinal").notNull(),
+    citation: jsonb("citation").notNull(),
+    embeddingModel: text("embedding_model").notNull(),
+    embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+  },
+  (table) => [
+    index("ai_assist_corpus_embedding_embedding_hnsw_idx")
+      .using("hnsw", table.embedding.op("vector_cosine_ops")),
   ],
 );
 

@@ -10,15 +10,16 @@ from pathlib import Path
 import httpx
 import pytest
 import uvicorn
+
 from tax_liability_engine.api import create_app
-from tax_liability_engine.jwt_authentication import JwtValidationConfig
+from tax_liability_engine.jwt_authentication import AuthenticatedPrincipal, JwtValidationConfig
 
 pytest.importorskip("pact")
 from pact import Verifier
 
 CONFIG = JwtValidationConfig(
     issuer="https://auth.taxpulse.example",
-    signing_secret="a-unique-test-secret-that-is-more-than-32-bytes",
+    jwks_url="https://auth.taxpulse.example/.well-known/jwks.json",
 )
 PACT_FILE = (
     Path(__file__).resolve().parents[2] / "pacts" / "CoreCaseService-TaxCalculationEngine.json"
@@ -37,7 +38,7 @@ def run_tax_engine_provider() -> Iterator[str]:
     base_url = f"http://127.0.0.1:{port}"
     server = uvicorn.Server(
         uvicorn.Config(
-            create_app(CONFIG),
+            create_app(CONFIG, authentication_dependency=pact_authenticated_principal),
             host="127.0.0.1",
             port=port,
             log_level="warning",
@@ -80,3 +81,9 @@ def test_tax_calculation_engine_verifies_core_case_service_pact() -> None:
         )
 
         verifier.verify()
+
+
+async def pact_authenticated_principal() -> AuthenticatedPrincipal:
+    """Authenticate the fixed pact request separately from contract payload validation."""
+
+    return AuthenticatedPrincipal(role="Advisor", tenant_id="tenant-001")
