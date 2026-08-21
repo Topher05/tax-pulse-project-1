@@ -251,7 +251,7 @@ flowchart LR
 
 **Description:** Implement the AI-Assist drawer experience on Plan Cycle Detail, with a
 shell-level floating action button, a slide-in assistant panel, and a temporary
-feature-slice `/assist` endpoint that accepts an empty request body and returns the
+feature-slice `/tax-plan-cycles/:caseId/assist` endpoint that accepts an empty request body and returns the
 current stub response path.
 
 **Acceptance Criteria:**
@@ -259,8 +259,8 @@ current stub response path.
 - The Pulse UI shows an AI-Assist FAB on Plan Cycle Detail that opens a slide-in drawer.
 - The drawer renders a top toolbar, a message log area, and a modern AI-style input row.
 - The drawer shows a themed loader while the assistant request is in flight.
-- The UI posts an empty `{}` body to `/v1/tax-plan-cycles/assist`.
-- The tax-plan-cycle feature slice exposes a typed `/assist` endpoint stub for the UI.
+- The UI posts an empty `{}` body to `/v1/tax-plan-cycles/:caseId/assist`.
+- The tax-plan-cycle feature slice exposes a typed case-scoped assistant endpoint stub.
 
 **Code Connection:**
 
@@ -269,7 +269,7 @@ current stub response path.
 - Added `AssistFAB`, `AssistantDrawer`, and `AssitantLoader` components under
   `src/pulseUI/components/assist/` plus the assistant panel state hook.
 - Added a `taxPlanDetailsAssistant` client helper for the empty-body POST flow.
-- Added a feature-slice assistant controller and `/assist` route stub in
+- Added a feature-slice assistant controller and case-scoped `/tax-plan-cycles/:caseId/assist` route stub in
   `src/typescript/features/taxPlanCycle/`.
 - Updated Plan Cycle Detail to register the current case context with the assistant
   shell.
@@ -300,7 +300,23 @@ current stub response path.
 **Validation Notes:**
 
 - Logic-only implementation pass completed.
-- Tests and typecheck were intentionally deferred per instruction.
+- Feedback Loop I UI and API refinement completed.
+- `npm run typecheck` passed for application, tests, and Pulse UI.
+- Focused Pulse UI assist tests passed: 6 tests across 2 files.
+- Focused Core Case Service assistant route tests passed: 3 tests; the remaining route
+  tests were skipped by the assistant name filter.
+- `npm run build` passed for the Pulse UI production bundle.
+
+**Feedback Loop I Changes:**
+
+- Added CSS-module-first tooltip primitives and four-button drawer controls with
+  fullscreen, new-dialogue, prompt-toast, and close behavior.
+- Moved the FAB to the right-side Quick Actions anchor with a fixed fallback, corrected
+  its primary color, clipped shimmer, and single vertical pitch animation.
+- Reduced drawer transitions to 250ms open and 200ms close, updated case metadata,
+  moved Send into the composer, and added Enter submission behavior.
+- Migrated the assistant request to TanStack Query and changed the backend route to
+  `/v1/tax-plan-cycles/:caseId/assist` with the `hello Tax Pulse v2` 418 stub response.
 
 ## caleb-latimer-jira160 - SCRUM-160
 
