@@ -79,10 +79,10 @@ export function getJwtConfigFromEnv(
 
   return {
     issuer: parsed.JWT_ISSUER,
-    audience: parsed.JWT_AUDIENCE,
     jwksUrl: parsed.JWT_JWKS_URL ?? new URL("/.well-known/jwks.json", parsed.JWT_ISSUER).toString(),
-    signingSecret: parsed.JWT_SIGNING_SECRET,
     accessTokenLifetimeSeconds: parsed.JWT_ACCESS_TOKEN_TTL_SECONDS,
     refreshTokenLifetimeSeconds: parsed.JWT_REFRESH_TOKEN_TTL_SECONDS,
+    ...(env.JWT_AUDIENCE?.trim() ? { audience: parsed.JWT_AUDIENCE } : {}),
+    ...(parsed.JWT_SIGNING_SECRET ? { signingSecret: parsed.JWT_SIGNING_SECRET } : {}),
   };
 }
