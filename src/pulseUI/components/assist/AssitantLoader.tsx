@@ -1,42 +1,40 @@
 import styles from "./AssitantLoader.module.css";
 
-export function AssitantLoader() {
-  return (
-    <div className="grid min-h-[28rem] gap-6 py-8">
-      <div className="grid gap-3">
-        <div className="grid grid-cols-5 gap-2">
-          {Array.from({ length: 5 }, (_, index) => (
-            <div
-              key={`top-skeleton-${index}`}
-              className="h-11 rounded-2xl border border-white/10 bg-white/5"
-            />
-          ))}
+interface AssitantLoaderProps {
+  readonly variant?: "main" | "composer";
+}
+
+export function AssitantLoader({ variant = "main" }: AssitantLoaderProps) {
+  if (variant === "composer") {
+    return (
+      <div className={styles.composerSkeleton} aria-hidden="true">
+        <div className={styles.skeletonInput} />
+        <div className={styles.skeletonFooter}>
+          <div className={styles.skeletonDisclaimer} />
+          <div className={styles.skeletonSend} />
         </div>
       </div>
+    );
+  }
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-5 px-4">
+  return (
+    <div className={styles.loader} role="status" aria-label="Loading assistant">
+      <div className={styles.skeletonToolbar} aria-hidden="true">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div className={styles.skeletonToolbarButton} key={`toolbar-skeleton-${index}`} />
+        ))}
+      </div>
+
+      <div className={styles.center}>
         <div className={styles.spinner} aria-hidden="true">
           <span className={styles.spinnerCore} />
         </div>
-        <div className="text-center">
-          <p className="m-0 text-sm font-bold text-[color:var(--pulse-ink)]">
-            Preparing the assistant workspace
-          </p>
-          <p className="mt-2 m-0 text-sm text-[color:var(--pulse-muted)]">
-            Loading citations, response scaffolding, and the case context.
-          </p>
+        <div className={styles.copy}>
+          <p>Preparing the assistant workspace</p>
+          <span>Loading citations, response scaffolding, and the case context.</span>
         </div>
       </div>
 
-      <div className="grid gap-3">
-        <div className="grid gap-3 rounded-[24px] border border-white/10 bg-white/5 p-4">
-          <div className="h-12 rounded-[20px] bg-white/10" />
-          <div className="grid grid-cols-[1fr_auto] gap-3">
-            <div className="h-12 rounded-[18px] bg-white/10" />
-            <div className="h-12 w-24 rounded-full bg-white/10" />
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
