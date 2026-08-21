@@ -55,4 +55,4 @@ jobs:
         run: checkov -d . --framework terraform --hard-fail-on HIGH --compact --quiet
 
       - name: Run tfsec
-        run: docker run --rm -v "${{ github.workspace }}:/src" aquasec/tfsec-ci tfsec /src/terraform --minimum-severity HIGH --no-color
+        run: docker run --rm -w /src/terraform -v "${{ github.workspace }}:/src" aquasec/tfsec-ci tfsec . --minimum-severity HIGH --no-color

@@ -65,11 +65,9 @@ resource "aws_internet_gateway" "main" {
 resource "aws_subnet" "public" {
   for_each = local.public_subnet_configs
 
-  #checkov:skip=CKV_AWS_130: Public subnets intentionally assign public IPs for internet-facing delivery.
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, each.value.netnum)
-  availability_zone = local.availability_zones[each.value.az_index]
-  #tfsec:ignore:aws-ec2-no-public-ip-subnet
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8, each.value.netnum)
+  availability_zone       = local.availability_zones[each.value.az_index]
   map_public_ip_on_launch = true
 
   tags = {
