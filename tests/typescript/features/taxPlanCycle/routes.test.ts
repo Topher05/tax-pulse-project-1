@@ -23,6 +23,7 @@ import {
 } from "../../../../src/typescript/index.js";
 import {
   createScenarioModelingController,
+  type TaxPlanDetailsAssistantController,
   type ScenarioModelingController,
   type TaxEngineClient,
 } from "../../../../src/typescript/features/taxPlanCycle/index.js";
@@ -149,6 +150,46 @@ async function withScenarioRouteServer(
   }
 }
 
+async function withAssistantRouteServer(
+  assistantController: TaxPlanDetailsAssistantController,
+  run: (baseUrl: string) => Promise<void>,
+): Promise<void> {
+  const app = createApp({
+    logger: silentLogger,
+    registerRoutes: (app) => {
+      app.use((req, _res, next) => {
+        (req as typeof req & { tenant: { id: string } }).tenant = { id: "tenant-001" };
+        (req as typeof req & { user: { id: string; role: "Advisor" } }).user = {
+          id: "advisor-001",
+          role: "Advisor",
+        };
+        next();
+      });
+      app.use(
+        "/v1",
+        createTaxPlanCycleRouter({
+          assistantController,
+          controller: {
+            create: vi.fn(),
+            findByCaseId: vi.fn(async () => null),
+          },
+        }),
+      );
+    },
+  });
+
+  const server = app.listen(0);
+  await once(server, "listening");
+
+  try {
+    const address = server.address() as AddressInfo;
+    await run(`http://127.0.0.1:${address.port}`);
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+}
+
 async function withTransitionRouteServer(
   options: {
     controller: TaxPlanCycleCreateController;
@@ -225,6 +266,64 @@ async function withTransitionRouteServerWithoutAuth(
 }
 
 describe("createTaxPlanCycleRouter", () => {
+  test("returns the assistant stub through the case-scoped route", async () => {
+    const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
+      message: "hello Tax Pulse v2",
+    }));
+    const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
+
+    await withAssistantRouteServer({ assist }, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(418);
+      await expect(response.json()).resolves.toEqual({ message: "hello Tax Pulse v2" });
+      expect(assist).toHaveBeenCalledWith({
+        tenantId: "tenant-001",
+        actor: "advisor-001",
+        caseId,
+      });
+    });
+  });
+
+  test("rejects a non-empty assistant body", async () => {
+    const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
+      message: "hello Tax Pulse v2",
+    }));
+    const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
+
+    await withAssistantRouteServer({ assist }, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ prompt: "not supported yet" }),
+      });
+
+      expect(response.status).toBe(400);
+      expect(assist).not.toHaveBeenCalled();
+    });
+  });
+
+  test("rejects an invalid assistant case ID", async () => {
+    const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
+      message: "hello Tax Pulse v2",
+    }));
+
+    await withAssistantRouteServer({ assist }, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/not-a-uuid/assist`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(400);
+      expect(assist).not.toHaveBeenCalled();
+    });
+  });
+
   test("returns 400 Problem Details for malformed creates", async () => {
     const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
       case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",

@@ -97,7 +97,7 @@ export function DetailsPage() {
   const authenticatedFetch = useAuthenticatedFetch();
   const queryClient = useQueryClient();
   const { showNotification } = useNotificationToast();
-  const { setAssistantCaseContext } = useAssistantPanel();
+  const { registerFabAnchor, setAssistantCaseContext } = useAssistantPanel();
 
   useEffect(() => {
     setActiveTab("Overview");
@@ -117,7 +117,7 @@ export function DetailsPage() {
 
     setAssistantCaseContext({
       caseId: detailsQuery.data.caseId,
-      caseTitle: `${detailsQuery.data.client} - Q2 2026 Tax Plan`,
+      caseTitle: `${detailsQuery.data.caseId} - Q2 2026 Tax Plan`,
       clientName: detailsQuery.data.client,
       recommendation: assistantRecommendation,
       stage: detailsQuery.data.stage,
@@ -516,6 +516,7 @@ export function DetailsPage() {
               </button>
             </div>
           </PanelCard>
+          <div ref={registerFabAnchor} className={styles.assistantFabAnchor} aria-hidden="true" />
         </aside>
       </div>
     </div>

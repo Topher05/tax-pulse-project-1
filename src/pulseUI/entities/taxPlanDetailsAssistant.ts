@@ -1,17 +1,30 @@
 import { caseApiPostJson, CaseApiError } from "../shared/caseApi.ts";
+import { useMutation } from "@tanstack/react-query";
+
+import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
 
 export interface TaxPlanDetailsAssistantResponse {
   message: string;
 }
 
 export async function postTaxPlanDetailsAssistant(
+  caseId: string,
   fetcher?: typeof fetch,
 ): Promise<TaxPlanDetailsAssistantResponse> {
   return await caseApiPostJson<TaxPlanDetailsAssistantResponse>(
-    "/v1/tax-plan-cycles/assist",
+    `/v1/tax-plan-cycles/${caseId}/assist`,
     {},
     fetcher,
   );
+}
+
+export function useTaxPlanDetailsAssistantMutation() {
+  const authenticatedFetch = useAuthenticatedFetch();
+
+  return useMutation({
+    mutationFn: ({ caseId }: { caseId: string }) =>
+      postTaxPlanDetailsAssistant(caseId, authenticatedFetch),
+  });
 }
 
 export function parseTaxPlanDetailsAssistantErrorMessage(error: unknown): string {

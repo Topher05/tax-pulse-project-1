@@ -11,13 +11,14 @@ export interface TaxPlanDetailsAssistantController {
     input: {
       tenantId: string;
       actor: string;
-    } & TaxPlanDetailsAssistant,
+      caseId: string;
+    },
   ): Promise<{ message: string }> | { message: string };
 }
 
 export function createTaxPlanDetailsAssistantController(): TaxPlanDetailsAssistantController {
   return {
-    assist: () => ({ message: "Hello TaxPulse" }),
+    assist: () => ({ message: "Hello TaxPulse v2" }),
   };
 }
 

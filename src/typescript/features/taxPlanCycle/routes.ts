@@ -655,8 +655,26 @@ export function createTaxPlanCycleRouter(
   );
 
   router.post(
-    "/assist",
+    "/tax-plan-cycles/:caseId/assist",
     async (req: Request, res: Response, next: NextFunction) => {
+      const parsedParams = taxPlanCycleReadParamsSchema.safeParse(req.params);
+
+      if (!parsedParams.success) {
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Request path parameters failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: parsedParams.error.issues.map(toValidationIssue),
+            },
+          }),
+        );
+        return;
+      }
+
       const parsedBody = taxPlanDetailsAssistantRequestSchema.safeParse(req.body);
 
       if (!parsedBody.success) {
@@ -692,6 +710,7 @@ export function createTaxPlanCycleRouter(
         const response = await assistantController.assist({
           tenantId,
           actor: user.id,
+          caseId: parsedParams.data.caseId,
           ...parsedBody.data,
         });
 
