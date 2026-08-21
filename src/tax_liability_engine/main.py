@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
-from typing import Sequence
 
 from .localstack_bootstrap import (
     bootstrap_localstack_queue_projection,

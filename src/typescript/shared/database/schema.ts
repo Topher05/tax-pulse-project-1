@@ -185,6 +185,7 @@ export const users = pgTable(
       foreignColumns: [userStatus.id],
     }),
     uniqueIndex("users_tenant_id_email_key").on(table.tenantId, table.email),
+    index("users_tenant_id_display_name_idx").on(table.tenantId, table.displayName),
   ],
 );
 

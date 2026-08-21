@@ -199,6 +199,7 @@ describe("ScenarioPlannerPage", () => {
   });
 
   test("renders loading and error states around scenario calculation requests", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     let rejectRequest: (error: Error) => void = () => undefined;
     vi.spyOn(caseApi, "caseApiPostJson").mockReturnValueOnce(
       new Promise((_resolve, reject) => {

@@ -41,7 +41,9 @@
     "test:cov": "vitest run --coverage",
     "test:smoke": "node --import tsx --test tests/typescript/smoke.test.ts",
     "test:vitest": "vitest run --config vitest.config.ts",
-    "typecheck": "node src/typescript/shared/scripts/typecheck.mjs"
+    "typecheck": "node src/typescript/shared/scripts/typecheck.mjs",
+    "typecheck:core": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "verify:pulse-ui": "npm --prefix src/pulseUI run verify"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^17.0.1",

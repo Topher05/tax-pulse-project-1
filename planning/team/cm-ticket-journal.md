@@ -34,6 +34,76 @@ Add new ticket entries below using this template.
 
 -
 -->
+
+## christopher-martus-jira165 - SCRUM-165
+
+**Branch:** `christopher-martus-jira165`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-165
+
+**Summary:** Add the Semgrep and Bandit SAST gate in CI/CD
+
+**Description:** Add a pull-request security gate that runs Semgrep against the
+TypeScript source and Bandit against the Python source, failing on high-severity
+findings.
+
+**Acceptance Criteria:**
+
+- A GitHub Actions workflow runs Semgrep against `src/typescript`.
+- The workflow runs Bandit against `src/tax_liability_engine`.
+- High-severity findings cause the workflow job to exit unsuccessfully.
+- The workflow runs automatically for every `pull_request`, without path filtering.
+
+**Code Connection:**
+
+- Added a Blacksmith-run GitHub Actions workflow with Python 3.13, Semgrep, and
+  Bandit installation.
+- Semgrep explicitly fails on `ERROR` findings, and Bandit explicitly fails on
+  `high` severity findings.
+- Recorded the runner and scanner decision in ADR-0036 and indexed it in `adr/README.md`.
+
+**Project Scope Connection:**
+
+This completes the repository-scoped Steps 1–2 of SCRUM-165 and establishes the
+CI/CD SAST enforcement boundary. Application code, scanner suppressions, and
+non-PR triggers are out of scope. Branch protection is the separate
+repository-administration rollout in Step 3.
+
+**Changed Files:**
+
+- `.github/workflows/sast-security-gate.yml`
+- `.github/workflows/ci.yml`
+- `adr/0036-sast-security-gate-on-blacksmith-runners.md`
+- `adr/README.md`
+- `planning/team/cm-ticket-journal.md`
+- `tests/typescript/workflows/sastSecurityGate.test.ts`
+
+**Validation Notes:**
+
+- `npx vitest run --config vitest.config.ts tests/typescript/workflows/sastSecurityGate.test.ts` passed: 2 tests.
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- `git diff --stat origin/development...HEAD` reports 5 files changed, 151 insertions, and 1 deletion.
+- Step 3 repository-administration rollout remains pending explicit authorization for push, PR creation, and branch-protection changes.
+- Added the repository-level CI workflow with parallel Python, Core TypeScript, Pulse UI, and
+  container validation jobs, plus the stable `CI / Required Gate` aggregate check. It runs on
+  pull requests and pushes to `development`, with cancellation of obsolete runs.
+- Corrected the Core TypeScript job to run only the root application and test TypeScript
+  projects. Pulse UI retains its independently installed and validated job, so the core job
+  cannot fail due to unresolved UI-only dependencies such as `zod`.
+- Updated CI checkout, Node setup, and uv setup actions to Node 24-compatible major versions,
+  removing the GitHub Actions Node 20 runtime deprecation warnings.
+- Corrected Python Quality dependency installation to include the locked `dev` extra. This
+  provides Ruff, Pyright, pytest, Pact, and Testcontainers before their CI steps run.
+- Aligned tax-engine test authentication with the RS256/JWKS contract and isolated Pact
+  provider verification from JWT cryptography, which is outside the consumer/provider payload
+  contract being verified.
+- Restored the documented test-only HMAC compatibility path while production continues to use
+  RS256/JWKS, then generated the missing users display-name index migration and aligned stale
+  database test expectations with the canonical synthetic seed.
+
 ## christopher-martus-jira200 - SCRUM-200
 
 **Branch:** `christopher-martus-jira200`

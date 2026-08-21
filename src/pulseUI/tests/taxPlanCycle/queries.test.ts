@@ -95,7 +95,13 @@ describe("Tax Plan Cycle audit query mapping", () => {
         actor: "Maya Reed",
         action: "Updated estimated tax to [REDACTED_AMOUNT]",
         outcome: "Transition denied",
-        occurredAt: "May 12, 2026, 10:30 AM",
+        occurredAt: new Intl.DateTimeFormat("en-US", {
+          month: "short",
+          day: "2-digit",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date("2026-05-12T14:30:00.000Z")),
       },
     ]);
     expect(caseApi.caseApiGetJson).toHaveBeenCalledWith(

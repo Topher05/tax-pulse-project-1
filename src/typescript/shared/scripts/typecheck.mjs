@@ -3,18 +3,23 @@ import { spawnSync } from "node:child_process";
 const checks = [
   {
     label: "app",
-    command: "tsc",
-    args: ["-p", "tsconfig.json", "--noEmit"],
+    command: process.execPath,
+    args: ["./node_modules/typescript/bin/tsc", "-p", "tsconfig.json", "--noEmit"],
   },
   {
     label: "tests",
-    command: "tsc",
-    args: ["-p", "tsconfig.test.json", "--noEmit"],
+    command: process.execPath,
+    args: ["./node_modules/typescript/bin/tsc", "-p", "tsconfig.test.json", "--noEmit"],
   },
   {
     label: "pulseUI",
-    command: "npm",
-    args: ["--prefix", "src/pulseUI", "run", "typecheck"],
+    command: process.execPath,
+    args: [
+      "./src/pulseUI/node_modules/typescript/bin/tsc",
+      "-p",
+      "src/pulseUI/tsconfig.pulseUI.json",
+      "--noEmit",
+    ],
   },
 ];
 
@@ -23,7 +28,6 @@ function runTypeScriptCheck(label, command, args) {
 
   const result = spawnSync(command, args, {
     stdio: "inherit",
-    shell: true,
   });
 
   if (result.status !== 0) {

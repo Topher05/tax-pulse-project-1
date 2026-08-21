@@ -477,67 +477,75 @@ export const credentialRows = [
       "$argon2id$v=19$m=65536,t=3,p=4$c2FsdC1vbmUtZm9yLWF1dGgtMTA$YXV0aC1oYXNoLTEw",
   },
   {
-    id: "testclientdemo202600001",
+    id: "cm7zq8f4k0010a1b2c3d4e5f6",
     userId: userRows[10].id,
     passwordHash:
       "$argon2id$v=19$m=65536,t=3,p=4$c3ludGhldGljLXRlc3QtY2xpZW50LXNlZWQtMDE$+IPCTtDIPAJDcHuRvZpGqvDAGYJbpeiK1gKMg6SSV6E",
   },
 ] as const satisfies readonly SeedCredentialRow[];
 
+function createSyntheticTotpSecret(seed: number): string {
+  const base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+  return Array.from({ length: 32 }, (_value, index) =>
+    base32Alphabet.charAt((seed + index) % base32Alphabet.length),
+  ).join("");
+}
+
 export const mfaEnrollmentRows = [
   {
     userId: userRows[0].id,
-    totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+    totpSecret: createSyntheticTotpSecret(0),
     isEnrolled: false,
   },
   {
     userId: userRows[1].id,
-    totpSecret: "KRSXG5DSNFXGOIDSMVZXI2LOM5XXE3DE",
+    totpSecret: createSyntheticTotpSecret(1),
     isEnrolled: true,
   },
   {
     userId: userRows[2].id,
-    totpSecret: "NBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXQ",
+    totpSecret: createSyntheticTotpSecret(2),
     isEnrolled: true,
   },
   {
     userId: userRows[3].id,
-    totpSecret: "OVSWY3DPEHPK3PXPJBSWY3DPEHPK3PXR",
+    totpSecret: createSyntheticTotpSecret(3),
     isEnrolled: false,
   },
   {
     userId: userRows[4].id,
-    totpSecret: "PBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXS",
+    totpSecret: createSyntheticTotpSecret(4),
     isEnrolled: true,
   },
   {
     userId: userRows[5].id,
-    totpSecret: "QBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXT",
+    totpSecret: createSyntheticTotpSecret(5),
     isEnrolled: true,
   },
   {
     userId: userRows[6].id,
-    totpSecret: "RBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXU",
+    totpSecret: createSyntheticTotpSecret(6),
     isEnrolled: false,
   },
   {
     userId: userRows[7].id,
-    totpSecret: "SBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXV",
+    totpSecret: createSyntheticTotpSecret(7),
     isEnrolled: true,
   },
   {
     userId: userRows[8].id,
-    totpSecret: "TBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXW",
+    totpSecret: createSyntheticTotpSecret(8),
     isEnrolled: true,
   },
   {
     userId: userRows[9].id,
-    totpSecret: "UBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXX",
+    totpSecret: createSyntheticTotpSecret(9),
     isEnrolled: false,
   },
   {
     userId: userRows[10].id,
-    totpSecret: "6XF5UF2Y7SUVJ3CJ24GVE2QV7GT4UFGQ",
+    totpSecret: createSyntheticTotpSecret(10),
     isEnrolled: true,
   },
 ] as const satisfies readonly SeedMfaEnrollmentRow[];

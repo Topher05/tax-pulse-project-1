@@ -107,6 +107,7 @@ export interface CloudTapLogger {
 }
 export interface CloudTapOptions {
   redisClient?: IdempotencyGuard;
+  queueUrl?: string;
 }
 
 function buildCloudTapActionItemEvent(): ActionItemCreatedCloudEventV1 {
@@ -514,6 +515,7 @@ export async function runCloudTap(
   redisUrl: string = cloudTapRedisUrl,
   options: CloudTapOptions = {},
 ): Promise<CloudTapResult> {
+  const queueUrl = options.queueUrl ?? cloudTapQueueUrl;
   const event = buildCloudTapEvent();
   const actionItemEvent = buildCloudTapActionItemEvent();
   const idempotencyKey = buildIdempotencyKey({
@@ -547,7 +549,7 @@ export async function runCloudTap(
   const idempotencyStore = createRedisIdempotencyStore(redisClient);
   const consumer = createSqsConsumer(
     sqsClient,
-    cloudTapQueueUrl,
+    queueUrl,
     capture.logger,
     {
       waitTimeSeconds: 0,
@@ -577,7 +579,7 @@ export async function runCloudTap(
 
     return {
       mode: "redis",
-      queueUrl: cloudTapQueueUrl,
+      queueUrl,
       event,
       idempotencyKey,
       firstResult,
