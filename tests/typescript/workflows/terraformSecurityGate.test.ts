@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 
 const workflowPath = resolve(process.cwd(), ".github/workflows/terraform-security-gate.yml");
 const tfsecConfigPath = resolve(process.cwd(), "terraform/.tfsec/config.yml");
+const vpcPath = resolve(process.cwd(), "terraform/vpc.tf");
 
 describe("Terraform security gate workflow", () => {
   test("uses the Blacksmith runner and scans the seeded Terraform root", () => {
@@ -24,7 +25,7 @@ describe("Terraform security gate workflow", () => {
     expect(workflow).toContain("terraform validate");
     expect(workflow).toContain("checkov -d . --framework terraform --hard-fail-on HIGH --compact --quiet");
     expect(workflow).toContain(
-      "docker run --rm -v \"${{ github.workspace }}:/src\" aquasec/tfsec-ci tfsec /src/terraform --minimum-severity HIGH --no-color",
+      "docker run --rm -w /src/terraform -v \"${{ github.workspace }}:/src\" aquasec/tfsec-ci tfsec . --minimum-severity HIGH --no-color",
     );
   });
 
@@ -32,5 +33,13 @@ describe("Terraform security gate workflow", () => {
     const tfsecConfig = readFileSync(tfsecConfigPath, "utf8");
 
     expect(tfsecConfig).toContain("minimum_severity: HIGH");
+  });
+
+  test("scans the current VPC configuration without legacy suppressions", () => {
+    const vpc = readFileSync(vpcPath, "utf8");
+
+    expect(vpc).not.toContain("map_public_ip_on_launch");
+    expect(vpc).not.toContain("checkov:skip=CKV_AWS_130");
+    expect(vpc).not.toContain("tfsec:ignore:aws-ec2-no-public-ip-subnet");
   });
 });
