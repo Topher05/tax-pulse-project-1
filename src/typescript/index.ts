@@ -36,7 +36,7 @@ export {
   createLogger,
   createRequestLogger,
   type CreateLoggerOptions,
-} from "./logger.js";
+} from "./shared/cloud-logger/logger.js";
 export {
   defaultPasswordHashingConfig,
   hashPassword,
@@ -153,6 +153,16 @@ export {
   type CoreCaseOpenApiSchemaRegistration,
 } from "./coreCaseOpenApi.js";
 export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
+export {
+  createJwksRouter,
+  type CreateJwksRouterOptions,
+} from "./jwksRoutes.js";
+export {
+  getJwtJwksVerifierConfigFromEnv,
+  getJwtRs256IssuerConfigFromEnv,
+  type JwtJwksVerifierConfig,
+  type JwtRs256IssuerConfig,
+} from "./jwtRs256Config.js";
 export {
   clientRoster,
   auditEntry,
@@ -373,13 +383,17 @@ export {
 export {
   createTinEinValidationAcl,
   createTaxpayerIdentifierValidationRepository,
+  isTaxpayerIdentifierSoapFaultError,
   taxpayerIdentifierInputSchema,
   taxpayerIdentifierTypeSchema,
   taxpayerIdentifierTypeValues,
   taxpayerIdentifierValidationResultSchema,
   taxpayerIdentifierValidationResultValues,
   taxpayerIdentifierValidationSchema,
+  translateSoapFault,
+  TaxpayerIdentifierSoapFaultError,
   type TaxpayerIdentifierInput,
+  type TaxpayerIdentifierSoapFaultOptions,
   type TaxpayerIdentifierType,
   type TaxpayerIdentifierValidation,
   type TaxpayerIdentifierValidationOutcome,
@@ -503,7 +517,11 @@ export {
   createSnsOutboxEventPublisher,
   createRedisTaxPlanCycleCreateIdempotencyStore,
   createRedisIdempotencyStore,
+  createConsumer,
   createRedisConsumer,
+  createStageChangedProjectionUpdater,
+  createStageChangedLambdaHandler,
+  createStageChangedLambdaRuntimeHandler,
   TaxPlanCycleCreateIdempotencyInProgressError,
   TaxPlanCycleCreateIdempotencyUnavailableError,
   createTaxPlanCycleQueueDynamoDocumentClient,
@@ -556,6 +574,14 @@ export {
   type IdempotencyGuard,
   type IdempotencyInput,
   type IdempotencyStore,
+  type StageChangedLambdaBatchItemFailure,
+  type StageChangedLambdaBatchResponse,
+  type StageChangedLambdaHandlerDependencies,
+  type StageChangedLambdaRuntimeDependencies,
+  type StageChangedLambdaSqsEvent,
+  type StageChangedLambdaSqsRecord,
+  type StageChangedProjectionDynamoClient,
+  type StageChangedProjectionUpdater,
   type Writer,
   type WriterClient,
   type TaxPlanCycleQueueReadService,
@@ -588,7 +614,8 @@ import { createClient } from "redis";
 
 import { createApp } from "./app.js";
 import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
-import { createLogger } from "./logger.js";
+import { createLogger } from "./shared/cloud-logger/logger.js";
+import { createJwksRouter } from "./jwksRoutes.js";
 import { createJwtAuthenticationMiddleware, hydrateUserClaims } from "./jwtAuthentication.js";
 import { createCostAccountingMiddleware } from "./costAccounting.js";
 import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
@@ -620,6 +647,7 @@ import {
   getJwtConfigFromEnv,
   getTenantLoginBaseDomainFromEnv,
 } from "./authConfig.js";
+import { getJwtRs256IssuerConfigFromEnv } from "./jwtRs256Config.js";
 import { createAuthRouter } from "./authRoutes.js";
 import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
 import { createAuthSessionRouter } from "./authSessionRoutes.js";
@@ -690,6 +718,12 @@ export function getPortFromEnv(env: NodeJS.ProcessEnv = process.env): number {
 
 export async function main(): Promise<Server> {
   const jwtConfig = getJwtConfigFromEnv();
+  const jwtRs256IssuerConfig = process.env.JWT_SIGNING_PRIVATE_KEY?.trim()
+    ? getJwtRs256IssuerConfigFromEnv()
+    : undefined;
+  if (!jwtRs256IssuerConfig && !jwtConfig.signingSecret) {
+    throw new Error("RS256 issuer configuration is required.");
+  }
   const tenantLoginBaseDomain = getTenantLoginBaseDomainFromEnv();
   const logger = createLogger();
 
@@ -771,11 +805,13 @@ export async function main(): Promise<Server> {
   if (liabilityEngineBase) {
     const taxEngineClient = createTaxEngineClient({
       baseUrl: liabilityEngineBase,
+      telemetryLogger: logger,
     });
     scenarioModelingController = createScenarioModelingController({
       taxPlanCycleRepository,
       scenarioRepository,
       taxEngineClient,
+      telemetryLogger: logger,
     });
     logger.info("Connected to the liability engine for scenario modeling");
   }
@@ -803,12 +839,14 @@ export async function main(): Promise<Server> {
     {
       queueCacheInvalidator,
       stageChangedEventPublisher,
+      telemetryLogger: logger,
     },
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
     authenticatePasswordForMfaChallenge(input, credentialReader);
   const tokenService = createTokenService({
     config: jwtConfig,
+    rs256IssuerConfig: jwtRs256IssuerConfig,
     refreshTokenRepository,
   });
 
@@ -825,6 +863,9 @@ export async function main(): Promise<Server> {
   const app = createApp({
     logger,
     registerRoutes: (app) => {
+      if (jwtRs256IssuerConfig) {
+        app.use(createJwksRouter({ issuerConfig: jwtRs256IssuerConfig }));
+      }
       app.use(createCoreCaseOpenApiRouter());
       app.use(createMfaEnrollmentRouter({
         controller: mfaEnrollmentController,

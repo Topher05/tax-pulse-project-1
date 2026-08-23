@@ -6,6 +6,7 @@ export const taxpayerIdentifierValidationResultValues = [
   "tin_not_issued",
   "tin_not_found",
   "name_mismatch",
+  "soap_fault",
 ] as const;
 
 export const taxpayerIdentifierTypeSchema = z.enum(taxpayerIdentifierTypeValues);
@@ -38,3 +39,35 @@ export type TaxpayerIdentifierValidationResult = z.infer<
 export type TaxpayerIdentifierValidation = z.infer<
   typeof taxpayerIdentifierValidationSchema
 >;
+
+export interface TaxpayerIdentifierSoapFaultOptions {
+  faultCode: string;
+  faultReason: string;
+  detail?: string;
+  provider?: "tivs";
+  cause?: unknown;
+}
+
+export class TaxpayerIdentifierSoapFaultError extends Error {
+  readonly faultCode: string;
+  readonly faultReason: string;
+  readonly detail?: string;
+  readonly provider: "tivs";
+  readonly cause?: unknown;
+
+  constructor(options: TaxpayerIdentifierSoapFaultOptions) {
+    super(`TIVS SOAP fault [${options.faultCode}]: ${options.faultReason}`);
+    this.name = "TaxpayerIdentifierSoapFaultError";
+    this.faultCode = options.faultCode;
+    this.faultReason = options.faultReason;
+    this.detail = options.detail;
+    this.provider = options.provider ?? "tivs";
+    this.cause = options.cause;
+  }
+}
+
+export function isTaxpayerIdentifierSoapFaultError(
+  error: unknown,
+): error is TaxpayerIdentifierSoapFaultError {
+  return error instanceof TaxpayerIdentifierSoapFaultError;
+}

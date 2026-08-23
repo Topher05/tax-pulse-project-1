@@ -1,6 +1,6 @@
 import { Client } from "pg";
 import { createClient } from "redis";
-import { createLogger } from "../../logger.js";
+import { createLogger } from "../../shared/cloud-logger/logger.js";
 import { getJwtConfigFromEnv } from "../../authConfig.js";
 import { createAuditEntryWriter } from "../../auditEntryRepository.js";
 import {
@@ -77,17 +77,20 @@ async function createRuntime(
     queueCacheInvalidator,
     stageChangedEventPublisher,
     actionItemEventPublisher,
+    telemetryLogger: logger,
   });
 
   return {
     presentToClientHandler: createPresentToClientLambdaHandler({
       controller,
       auditEntryWriter,
+      telemetryLogger: logger,
       authenticator: jwtAuthenticator,
     }),
     executeHandler: createExecuteLambdaHandler({
       controller,
       auditEntryWriter,
+      telemetryLogger: logger,
       authenticator: jwtAuthenticator,
     }),
   };

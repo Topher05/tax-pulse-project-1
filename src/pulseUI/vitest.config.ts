@@ -9,7 +9,7 @@ export default defineConfig({
     testTimeout: 30_000,
     environment: "jsdom",
     exclude: ["**/dist/**", "**/node_modules/**"],
-    include: ["tests/**/*.test.tsx"],
+    include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
     setupFiles: ["./vitest.setup.ts"],
   },
 });

@@ -15,6 +15,7 @@ import {
   type ExecuteLambdaRequest,
   type ExecuteLambdaResponse,
 } from "./index.js";
+import { createLogger } from "../../cloud-logger/logger.js";
 import {
   createMutableTaxPlanCycleRepository,
   createNoopAuditEntryWriter,
@@ -38,6 +39,7 @@ export async function createExecuteLambdaRuntime(
   options: ExecuteLambdaRuntimeOptions = {},
 ): Promise<ExecuteLambdaRuntime> {
   const env = options.env ?? process.env;
+  const logger = createLogger();
   const repository =
     options.repository ?? createMutableTaxPlanCycleRepository("Client Approval");
   const auditEntryWriter = options.auditEntryWriter ?? createNoopAuditEntryWriter();
@@ -49,12 +51,14 @@ export async function createExecuteLambdaRuntime(
   );
   const controller = createTaxPlanCycleTransitionController(repository, {
     stageChangedEventPublisher,
+    telemetryLogger: logger,
   });
 
   return {
     handler: createExecuteLambdaHandler({
       controller,
       auditEntryWriter,
+      telemetryLogger: logger,
     }),
   };
 }

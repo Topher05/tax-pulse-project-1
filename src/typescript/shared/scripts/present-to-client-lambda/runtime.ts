@@ -23,6 +23,7 @@ import {
   type PresentToClientLambdaRequest,
   type PresentToClientLambdaResponse,
 } from "./index.js";
+import { createLogger } from "../../cloud-logger/logger.js";
 import {
   createMutableTaxPlanCycleRepository,
   createNoopAuditEntryWriter,
@@ -47,6 +48,7 @@ export async function createPresentToClientLambdaRuntime(
   options: PresentToClientLambdaRuntimeOptions = {},
 ): Promise<PresentToClientLambdaRuntime> {
   const env = options.env ?? process.env;
+  const logger = createLogger();
   const repository =
     options.repository ?? createMutableTaxPlanCycleRepository("Review");
   const auditEntryWriter = options.auditEntryWriter ?? createNoopAuditEntryWriter();
@@ -65,12 +67,14 @@ export async function createPresentToClientLambdaRuntime(
   const controller = createTaxPlanCycleTransitionController(repository, {
     stageChangedEventPublisher,
     actionItemEventPublisher,
+    telemetryLogger: logger,
   });
 
   return {
     handler: createPresentToClientLambdaHandler({
       controller,
       auditEntryWriter,
+      telemetryLogger: logger,
     }),
   };
 }
@@ -83,7 +87,8 @@ async function getRuntime(): Promise<PresentToClientLambdaRuntime> {
 export async function presentToClientHandler(
   event: PresentToClientLambdaRequest,
 ): Promise<PresentToClientLambdaResponse> {
-  console.info({
+  const logger = createLogger();
+  logger.info({
     message: "present-to-client lambda entrypoint invoked",
     path_parameters: event.pathParameters,
     has_body: Boolean(event.body && event.body.trim().length > 0),

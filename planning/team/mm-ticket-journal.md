@@ -5,9 +5,9 @@
 
 Add new ticket entries below using this template.
 
-## martins-okorie-jira161 - SCRUM-164
+## martins-okorie-jira164 - SCRUM-164
 
-**Branch:** `martins-okorie-jira161`
+**Branch:** `martins-okorie-jira164`
 
 **Assignee:** Martins Okorie
 
@@ -25,58 +25,63 @@ that the whole stack provisions from one root configuration.
 - A root configuration wires the modules and outputs the public URLs.
 - Module inputs are documented with required variables.
 
-**Code Connection:** Added `infra/terraform/` as the SCRUM-164 Terraform root
-with reusable modules for ECS services, Lambda consumers, and SPA delivery. The
-ECS module translates the SCRUM-157/158 JSON contracts into ECR repositories,
-IAM roles, CloudWatch log groups, ALB security groups, target groups, listener
-rules, task definitions, and Fargate services. The Lambda module translates the
-SCRUM-159/160 contracts into transition Lambdas, API Gateway routes, shared IAM
-runtime permissions, and an optional SQS event-source mapping for the
-stage-changed consumer. The SPA module translates the SCRUM-161 contract into a
-private S3 origin, CloudFront Origin Access Control, CloudFront distribution,
-SPA route fallback rewrites, and deploy outputs.
+**Code Connection:** Re-homed the SCRUM-164 delivery modules into the active
+SCRUM-163-scanned `terraform/` root after merging `development`. The ECS module
+translates the SCRUM-157/158 JSON contracts into ECR repositories, IAM roles,
+CloudWatch log groups, an internet-facing ALB, target groups, listener rules,
+task definitions, and Fargate services while reusing the SCRUM-162 VPC, private
+subnets, public subnets, and ECS service security group. The Lambda module
+translates the SCRUM-159/160 contracts into transition Lambdas, API Gateway
+routes, shared IAM runtime permissions, and an optional SQS event-source mapping
+for the stage-changed consumer. The SPA module translates the SCRUM-161 contract
+into a private KMS-encrypted S3 origin, CloudFront Origin Access Control,
+CloudFront distribution, SPA route fallback rewrites, and deploy outputs.
 
 **Project Scope Connection:** This closes the handoff from placeholder deployment
-JSON to reusable infrastructure-as-code. The JSON files remain source contracts
-with `SCRUM-164_*` placeholders, while Terraform now owns the concrete AWS
-resources and exposes the public API, transition API, SPA bucket, and CloudFront
-outputs needed by later pipeline, security, and observability tickets.
+JSON to reusable infrastructure-as-code while preserving the already-merged
+SCRUM-163 Terraform security gate and SCRUM-165 SAST gate. The JSON files remain
+source contracts with `SCRUM-164_*` placeholders, while Terraform now owns the
+concrete AWS resources and exposes the public API, transition API, SPA bucket,
+and CloudFront outputs needed by later pipeline, security, and observability
+tickets.
 
 **Changed Files:**
 
 - `.gitignore`
-- `infra/terraform/README.md`
-- `infra/terraform/.terraform.lock.hcl`
-- `infra/terraform/main.tf`
-- `infra/terraform/outputs.tf`
-- `infra/terraform/terraform.tfvars.example`
-- `infra/terraform/variables.tf`
-- `infra/terraform/versions.tf`
-- `infra/terraform/modules/ecs_services/README.md`
-- `infra/terraform/modules/ecs_services/main.tf`
-- `infra/terraform/modules/ecs_services/outputs.tf`
-- `infra/terraform/modules/ecs_services/variables.tf`
-- `infra/terraform/modules/lambda_consumers/README.md`
-- `infra/terraform/modules/lambda_consumers/main.tf`
-- `infra/terraform/modules/lambda_consumers/outputs.tf`
-- `infra/terraform/modules/lambda_consumers/variables.tf`
-- `infra/terraform/modules/spa_delivery/README.md`
-- `infra/terraform/modules/spa_delivery/main.tf`
-- `infra/terraform/modules/spa_delivery/outputs.tf`
-- `infra/terraform/modules/spa_delivery/variables.tf`
+- `terraform/README.md`
+- `terraform/delivery.tf`
+- `terraform/outputs.tf`
+- `terraform/variables.tf`
+- `terraform/modules/ecs_services/README.md`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/outputs.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/lambda_consumers/README.md`
+- `terraform/modules/lambda_consumers/main.tf`
+- `terraform/modules/lambda_consumers/outputs.tf`
+- `terraform/modules/lambda_consumers/variables.tf`
+- `terraform/modules/spa_delivery/README.md`
+- `terraform/modules/spa_delivery/main.tf`
+- `terraform/modules/spa_delivery/outputs.tf`
+- `terraform/modules/spa_delivery/variables.tf`
 - `planning/team/mm-ticket-journal.md`
 
 **Validation Notes:**
 
-- Confirmed AWS caller identity for account `814650854375`.
-- Discovered sandbox VPC `vpc-0f2c3b110a05c423a`, current ALB
-  `taxpulse-api-alb-350585859.us-east-1.elb.amazonaws.com`, stage-changed SNS
-  topic, action-item-created FIFO SNS topic, and stage-changed SQS queue.
-- Confirmed no TaxPulse CloudFront distribution currently exists; only the
-  `taxpulse-terraform-state` S3 bucket matched the TaxPulse bucket filter.
-- `terraform fmt -recursive infra/terraform` passed.
-- `terraform init -backend=false` passed and produced the AWS provider lockfile.
-- `terraform validate` passed.
+- Merged `development` into `martins-okorie-jira164` and preserved the
+  development-owned SCRUM-163/165 workflows and Terraform provider/backend root.
+- `terraform -chdir=terraform fmt -check -recursive` passed.
+- `terraform -chdir=terraform init -backend=false` passed.
+- `terraform -chdir=terraform validate` passed.
+- `npm run test:vitest -- tests/typescript/workflows/terraformSecurityGate.test.ts
+  tests/typescript/workflows/sastSecurityGate.test.ts` passed.
+- `npm run typecheck` passed after refreshing local dependencies from the merged
+  lockfile.
+- `checkov -d terraform --framework terraform --hard-fail-on HIGH --compact
+  --quiet` completed with exit code `0`; Checkov reported non-blocking lower
+  severity findings already outside the hard-fail threshold.
+- `docker run --rm -v "$PWD:/src" aquasec/tfsec-ci tfsec /src/terraform
+  --minimum-severity HIGH --no-color` passed with no problems detected.
 - Did not run `terraform apply` against the sandbox because manually-created
   SCRUM-157/158 resources already exist and should be imported into state before
   Terraform manages those exact names.
@@ -1155,6 +1160,66 @@ remain scoped to SCRUM-141.
 - `npm run db:check` passed.
 - `npm run typecheck` passed cleanly across app, tests, and pulseUI.
 - `npx vitest run tests/typescript/features/taxPlanCycle/createIdempotency.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts tests/typescript/features/taxPlanCycle/schema.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts` passed (6 files, 41 tests).
+
+## martins-okorie-jira141 - SCRUM-141
+
+**Branch:** `martins-okorie-jira141`
+
+**Assignee:** Chimaobi Martins Okorie
+
+**Jira Key:** SCRUM-141
+
+**Summary:** Translate SOAP faults to typed domain errors
+
+**Description:** As a Backend Developer, I want SOAP faults translated to domain errors,
+so that legacy failures are handled cleanly.
+
+**Acceptance Criteria:**
+
+- A SOAP fault is translated into a typed domain error.
+- The error is recorded on the case rather than crashing Intake.
+- A test asserts an injected SOAP fault produces the typed domain error.
+
+**Code Connection:** Defined the `TaxpayerIdentifierSoapFaultError` domain error type and
+implemented `translateSoapFault()` in the TIVS Anti-Corruption Layer (ACL). The ACL catches
+SOAP faults (and remote service failures) thrown during `verifyTaxpayer` and normalizes them
+into typed `TaxpayerIdentifierSoapFaultError` instances containing structured fields (`faultCode`,
+`faultReason`, `detail`, `provider: "tivs"`). In `createController.create()`, when taxpayer
+identifier validation fails with a SOAP fault during Intake, the error is handled cleanly by
+recording `validationResult: "soap_fault"` rather than throwing an uncaught exception or
+crashing the Intake stage. The case is created with its initial stage transition and validation
+audit record within the atomic database transaction, and the generated Drizzle migration
+`0016_taxpayer_identifier_validation_soap_fault.sql` updates the check constraint accordingly.
+
+**Project Scope Connection:** SCRUM-141 completes the TIVS integration sequence (SCRUM-139,
+SCRUM-140, SCRUM-141) by establishing resilient fault tolerance at the Anti-Corruption Layer
+boundary. Legacy external SOAP failures never crash internal Tax Plan Cycle creation, nor do
+raw XML/SOAP structures leak into the core domain.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/controllers/createController.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/tinEinValidationAcl.ts`
+- `src/typescript/features/taxPlanCycle/taxpayerIdentifierValidation.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/database/drizzle-migrations/0016_taxpayer_identifier_validation_soap_fault.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0016_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/scripts/awsStageChangedSmoke.ts`
+- `tests/typescript/features/taxPlanCycle/createIdempotency.test.ts`
+- `tests/typescript/features/taxPlanCycle/taxpayerIdentifierValidation.typecheck.ts`
+- `tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen -- --name taxpayer_identifier_validation_soap_fault` generated the Drizzle migration.
+- `npm run db:check` passed cleanly.
+- `npm run typecheck` passed cleanly across app, tests, and pulseUI.
+- `npx vitest run tests/typescript/features/taxPlanCycle/tinEinValidationAcl.test.ts tests/typescript/features/taxPlanCycle/createIdempotency.test.ts tests/typescript/features/taxPlanCycle/tinEinValidationSoapClient.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts tests/typescript/features/taxPlanCycle/transitionController.test.ts tests/typescript/features/taxPlanCycle/schema.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts` passed (7 files, 48 tests).
+- `.venv/bin/python -m pyright --pythonpath .venv/bin/python` passed with 0 errors.
+- `.venv/bin/python -m pytest` passed 93 tests.
 <!--
 ## martins-okorie-jiraXX - SCRUM-XX
 

@@ -5,6 +5,138 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira159 - SCRUM-159
+
+**Branch:** `dylan-harle-jira159`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-159
+
+**Summary:** Refactor the stage-event consumer to a Lambda
+
+**Description:** As a Platform Engineer, I want the Sprint 4 stage-changed consumer running as a Lambda, so that bursting events are handled serverlessly.
+
+**Acceptance Criteria:**
+
+- The consumer that was a plain service now runs as a Lambda triggered by the SQS queue.
+- The Lambda updates the Plan Cycle Queue read model on each event.
+- Messages that fail processing route to the existing DLQ.
+
+**Code Connection:**
+
+- Added a Lambda SQS batch handler for stage-changed events.
+- Reused the existing SNS-to-SQS parser and updated the DynamoDB queue projection stage directly from the CloudEvent payload so the Lambda does not require new AWS Postgres or Redis resources.
+- Returned Lambda partial batch failures by SQS message id so successful records can be deleted by Lambda while failed records retry through SQS redrive to the existing DLQ.
+- Kept the plain SQS polling consumer intact for local smoke and SCRUM-156 compatibility.
+
+**Project Scope Connection:**
+
+- Platform.
+- Builds directly on SCRUM-156 AWS SNS/SQS wiring and SCRUM-136 idempotent queue-projection behavior without changing the stage-changed CloudEvents schema or adding a separate case status.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/stageChanged/LambdaHandler.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/stageChanged/index.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/stageChangedLambdaHandler.test.ts`
+- `src/typescript/shared/scripts/awsStageChangedSmoke.ts`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- Not run yet at user request while AWS Lambda setup is still in progress.
+
+## dylan-harle-jira178 - SCRUM-178
+
+**Branch:** `dylan-harle-jira178`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-178
+
+**Summary:** Load and chunk the tax-code and playbook corpus.
+
+**Description:** As a Data Engineer, I want the tax-code and planning-playbook corpus
+chunked with citations, so that AI-Assist retrieval has a grounded source.
+
+**Acceptance Criteria:**
+
+- The corpus loader chunks the tax-code and planning-playbook documents.
+- Each chunk preserves a source citation.
+- A retrieval smoke test returns the expected rule chunk for a sample recommendation.
+
+**Code Connection:**
+
+- Added a separate AI-assist corpus bounded context that loads the generated synthetic
+  markdown corpus documents from `data/corpus`.
+- Added corpus validation, deterministic chunking, JSONL artifact writing, and lexical
+  smoke retrieval helpers without adding embeddings, vector storage, reranking, or an
+  HTTP `/assist` endpoint.
+- Added 11 clearly synthetic corpus documents generated from `data/corpus/CORPUS-SPEC.md`
+  and refactored the assist corpus tests to prove loading, validation, chunking,
+  citation preservation, and smoke retrieval against that generated corpus.
+- Added `corpus:validate`, `corpus:build`, and `corpus:smoke` scripts for the generated
+  corpus.
+
+**Project Scope Connection:**
+
+- RAG-Powered AI Assist.
+- Implements the SCRUM-178 intake and chunking frame while preserving ADR-0009 service
+  ownership boundaries: Core Case remains responsible for tenant case records and the
+  Tax Liability Engine remains focused on calculation execution.
+- Records ADR-0035 so the corpus is treated as a separate bounded context from Core
+  Case and the Tax Liability Engine.
+- Leaves embeddings and pgvector to SCRUM-179, hybrid retrieval and reranking to
+  SCRUM-180, RAGAS evaluation to SCRUM-181, and `/assist` delivery with tenant scoping
+  to SCRUM-182.
+
+**Changed Files:**
+
+- `src/typescript/assist/corpus.ts`
+- `src/typescript/shared/scripts/corpusValidate.ts`
+- `src/typescript/shared/scripts/corpusBuild.ts`
+- `src/typescript/shared/scripts/corpusSmoke.ts`
+- `src/python/retrieval/corpus_check.py`
+- `tests/typescript/assist/corpus.test.ts`
+- `data/corpus/CORPUS-SPEC.md`
+- `data/corpus/corpus-intake.json`
+- `data/corpus/syn-tc-4100-estimated-payment-triggers.md`
+- `data/corpus/syn-tc-4110-safe-harbor-thresholds.md`
+- `data/corpus/syn-tc-4120-quarterly-underpayment-exceptions.md`
+- `data/corpus/syn-tc-4200-itemized-deduction-caps.md`
+- `data/corpus/syn-tc-4210-charitable-contribution-limits.md`
+- `data/corpus/syn-tc-4300-retirement-credit-phase-outs.md`
+- `data/corpus/syn-tc-4310-superseded-retirement-credit.md`
+- `data/corpus/syn-pb-01-estimated-payment-playbook.md`
+- `data/corpus/syn-pb-02-deduction-bunching-playbook.md`
+- `data/corpus/syn-pb-03-retirement-contribution-playbook.md`
+- `data/corpus/syn-pb-04-superseded-rule-explanations.md`
+- `data/corpus/build/chunks.jsonl`
+- `data/corpus/README.md`
+- `adr/0035-ai-assist-corpus-boundary.md`
+- `adr/README.md`
+- `package.json`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/assist/corpus.test.ts`
+  passed with 10 tests against the generated `data/corpus` corpus.
+- `npm run corpus:validate` against the default `data/corpus` path passed for 11
+  documents and 44 sections.
+- `npm run corpus:build` against the default `data/corpus` path passed and wrote 45
+  chunks to `data/corpus/build/chunks.jsonl`.
+- `CORPUS_SMOKE_EXPECTED_SECTION_ID=SYN-TC-4100-b npm run corpus:smoke` passed for the
+  estimated-payment sample query.
+- `python src/python/retrieval/corpus_check.py` passed.
+- `python -m ruff check src/python/retrieval/corpus_check.py` passed.
+- `python -m pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')"
+  src/python/retrieval/corpus_check.py` passed.
+
 ## dylan-harle-jira155 - SCRUM-155
 
 **Branch:** `dylan-harle-jira155`
@@ -1183,6 +1315,58 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - `aws sts get-caller-identity --profile taxpulse-login` passed for account `814650854375`.
 - `docker compose -f docker-compose.yml -f docker-compose.redis.yml config --quiet` passed.
 - `npm run aws:stage-changed-smoke` passed against the team AWS SNS/SQS resources after using the `taxpulse-login` profile, blanking LocalStack endpoint overrides for the process, and correcting the SNS topic ARN to the topic resource rather than the subscription ARN. Latest smoke published event `stage-transition-956f813e-ae8e-4fb8-ac13-04c60f93113c`, received it from SQS, and inspected 1 message.
+
+## dylan-harle-jira162 - SCRUM-162
+
+**Branch:** `dylan-harle-jira162`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-162
+
+**Summary:** Codify the VPC and data stores in Terraform
+
+**Description:** As a Platform Engineer, I want the networking and data stores in Terraform, so that infrastructure is reproducible.
+
+**Acceptance Criteria:**
+
+- Terraform defines the VPC, PostgreSQL, DynamoDB, and Redis resources.
+- terraform plan is clean after an apply (no drift).
+- State is stored in a remote backend.
+
+**Code Connection:**
+
+- Codified a three-AZ VPC layout in `vpc.tf` with ordered public and private subnets, an Internet Gateway, a Terraform-managed regional public NAT Gateway for private-subnet egress, and route-table associations that line up with the SCRUM-158 placeholders.
+- Configured the Terraform backend in `providers.tf` to use the team S3 remote state bucket with S3 lockfiles, and added the AWS CLI credential-process bridge so teammates can authenticate through `aws login` while running Terraform locally.
+- Defined the future ECS service security group in `database.tf`, then restricted PostgreSQL and Redis ingress to that compute layer as the SCRUM-162 integration boundary for later ECS Terraform work.
+- Updated the RDS definition in `database.tf` to use PostgreSQL 18 in private subnets with encryption at rest, non-public access, and teammate-supplied credentials at apply time.
+- Corrected `dynamodb.tf` to provision the exact `taxpulse_plan_cycle_queue_projection` table name the application code already expects, keyed by `tenant_id` and `case_id`.
+- Kept Redis in `redis.tf` inside the private subnets with Multi-AZ failover and in-transit encryption so later service wiring can consume a TLS endpoint.
+- Expanded `outputs.tf` to expose the stable SCRUM-162 handoff contract for VPC ID, ordered subnet lists, ECS service security group ID, PostgreSQL connection metadata, DynamoDB identifiers, and Redis TLS connection details.
+
+**Project Scope Connection:**
+
+- Platform infrastructure as code for the network and data-store foundation only; ECS, ALB, Lambda, and SPA hosting remain out of scope for SCRUM-162 and are left for the later Terraform delivery ticket.
+
+**Changed Files:**
+
+- `terraform/providers.tf`
+- `terraform/variables.tf`
+- `terraform/vpc.tf`
+- `terraform/database.tf`
+- `terraform/dynamodb.tf`
+- `terraform/redis.tf`
+- `terraform/outputs.tf`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `terraform fmt` passed.
+- `terraform init -upgrade` passed after moving to the regional NAT Gateway-capable AWS provider.
+- `terraform validate` passed.
+- `terraform init -reconfigure` passed against the remote S3 backend bucket `taxpulse-terraform-state`.
+- `terraform apply` completed successfully against the team AWS account and created the SCRUM-162 VPC, PostgreSQL, DynamoDB, Redis, and supporting networking resources.
+- `terraform plan -input=false` returned no changes immediately after apply, confirming a clean post-apply plan with no drift.
 
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX

@@ -89,6 +89,7 @@ describe("cloud tap script", () => {
     const redisClient = createInMemoryRedisClient();
     const result = await runCloudTap(undefined, {
       redisClient,
+      queueUrl: "https://sqs.us-east-1.amazonaws.com/123456789012/taxpulse-stage-changed",
     });
 
     expect(result.mode).toBe("redis");

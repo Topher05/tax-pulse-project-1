@@ -10,6 +10,7 @@ export interface AuthenticatedPrincipal {
 
 export interface AccessTokenClaims {
   sub: string;
+  aud: string;
   role: UserRole;
   tenant_id: string;
   iss: string;

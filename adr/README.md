@@ -35,3 +35,6 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0030: Lambda + API Gateway integration for SCRUM-160](./0030-lambda-api-gateway-integration.md)
 - [ADR-0031: Add a reproducible Lighthouse performance gate for the Pulse UI dashboard](./0031-lighthouse-integration.md)
 - [ADR-0032: Back the Team & Users screen with a tenant-scoped read boundary](./0032-team-users-screen.md)
+- [ADR-0033: Terraform Security Gate on Blacksmith Runners](./0033-terraform-security-gate-on-blacksmith-runners.md)
+- [ADR-0035: AI-Assist Corpus Boundary](./0035-ai-assist-corpus-boundary.md)
+- [ADR-0036: SAST Security Gate on Blacksmith Runners](./0036-sast-security-gate-on-blacksmith-runners.md)

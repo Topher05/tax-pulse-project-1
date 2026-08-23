@@ -1,6 +1,6 @@
 import { createHash, randomBytes as nodeRandomBytes } from "node:crypto";
 
-import { SignJWT } from "jose";
+import { importPKCS8, SignJWT } from "jose";
 
 import type {
   AccessTokenClaims,
@@ -8,6 +8,7 @@ import type {
   IssuedTokenPair,
 } from "./authTypes.js";
 import type { JwtConfig } from "./authConfig.js";
+import type { JwtRs256IssuerConfig } from "./jwtRs256Config.js";
 import type { RefreshTokenRepository } from "./refreshTokenRepository.js";
 
 export interface TokenService {
@@ -18,6 +19,7 @@ export interface TokenService {
 
 export interface CreateTokenServiceOptions {
   config: JwtConfig;
+  rs256IssuerConfig?: JwtRs256IssuerConfig;
   refreshTokenRepository: RefreshTokenRepository;
   now?: () => Date;
   randomBytes?: (size: number) => Buffer;
@@ -36,9 +38,15 @@ function hashRefreshToken(rawRefreshToken: string): string {
 }
 
 export function createTokenService(options: CreateTokenServiceOptions): TokenService {
+  if (!options.rs256IssuerConfig && !options.config.signingSecret) {
+    throw new Error("RS256 issuer configuration is required.");
+  }
   const now = options.now ?? (() => new Date());
   const randomBytes = options.randomBytes ?? nodeRandomBytes;
-  const signingKey = new TextEncoder().encode(options.config.signingSecret);
+  const issuerConfig = options.rs256IssuerConfig;
+  const signingKey = issuerConfig
+    ? importPKCS8(issuerConfig.signingPrivateKeyPem, "RS256")
+    : new TextEncoder().encode(options.config.signingSecret);
 
   const service: TokenService = {
     async issue(principal) {
@@ -59,13 +67,18 @@ export function createTokenService(options: CreateTokenServiceOptions): TokenSer
       const accessToken = await new SignJWT({
         role: principal.role,
         tenant_id: principal.tenantId,
-      } satisfies Omit<AccessTokenClaims, "sub" | "iss" | "iat" | "exp">)
-        .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+      } satisfies Omit<AccessTokenClaims, "sub" | "aud" | "iss" | "iat" | "exp">)
+        .setProtectedHeader(
+          issuerConfig
+            ? { alg: "RS256", kid: issuerConfig.signingKeyId, typ: "JWT" }
+            : { alg: "HS256", typ: "JWT" },
+        )
         .setSubject(principal.userId)
         .setIssuer(options.config.issuer)
+        .setAudience(options.config.audience ?? "taxpulse-http-api")
         .setIssuedAt(issuedAtSeconds)
         .setExpirationTime(expiresAtSeconds)
-        .sign(signingKey);
+        .sign(await signingKey);
 
       await options.refreshTokenRepository.persist({
         userId: principal.userId,

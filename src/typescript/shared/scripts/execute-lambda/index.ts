@@ -6,9 +6,18 @@ import type { AuthenticatedPrincipal, UserRole } from "../../../authTypes.js";
 import { roleNameEnum } from "../../../shared/database/schema.js";
 import type { TaxPlanCycle } from "../../../features/taxPlanCycle/taxPlanCycle.js";
 import type { TaxPlanCycleTransitionController } from "../../../features/taxPlanCycle/controllers/transitionController.js";
+import {
+  emitObservabilityEvent,
+  cloudWatchObservabilityProvider,
+  type CloudWatchContext,
+  type StructuredLogger,
+} from "../../cloud-logger/observability.js";
 import { executeHandler as runtimeExecuteHandler } from "./runtime.js";
 
 export interface ExecuteApiGatewayAuthorizerContext {
+  jwt?: {
+    claims?: Record<string, unknown>;
+  };
   tenantId?: string;
   tenant_id?: string;
   userId?: string;
@@ -44,6 +53,7 @@ export interface CreateExecuteLambdaHandlerOptions {
   controller: Pick<TaxPlanCycleTransitionController, "transition" | "findByCaseId">;
   auditEntryWriter: AuditEntryWriter;
   auditLogger?: Pick<Console, "info">;
+  telemetryLogger?: StructuredLogger;
 }
 
 const jsonHeaders = {
@@ -187,6 +197,10 @@ function getAuthorizerSource(
     return null;
   }
 
+  if (authorizer.jwt?.claims && typeof authorizer.jwt.claims === "object") {
+    return authorizer.jwt.claims;
+  }
+
   if (authorizer.claims && typeof authorizer.claims === "object") {
     return authorizer.claims as Record<string, unknown>;
   }
@@ -290,17 +304,50 @@ async function handleExecuteRequest(input: {
   controller: Pick<TaxPlanCycleTransitionController, "transition" | "findByCaseId">;
   auditEntryWriter: AuditEntryWriter;
   auditLogger: Pick<Console, "info">;
+  telemetryLogger: StructuredLogger;
 }): Promise<ExecuteLambdaResponse> {
   // API Gateway owns admission and auth for this delivery path; the Lambda
   // only adapts the proxy event into the Tax Plan Cycle transition use case.
+  const startedAt = Date.now();
+  const requestContext: CloudWatchContext = {
+    service: "core-case-service",
+    layer: "lambda",
+    operation: "execute",
+    route: "/v1/tax-plan-cycles/{caseId}/execute",
+    method: "POST",
+    ...cloudWatchObservabilityProvider(input.event.headers),
+  };
+  emitObservabilityEvent(input.telemetryLogger, "info", "execute lambda request received", {
+    ...requestContext,
+    metric_name: "tax_plan_cycle.lambda.request.count",
+    metric_value: 1,
+    metric_unit: "Count",
+  });
+
   const parsedParams = transitionPathSchema.safeParse(input.event.pathParameters ?? {});
   const requestBody = parseRequestBody(input.event.body);
 
   if (!requestBody.success) {
+    emitObservabilityEvent(input.telemetryLogger, "warn", "execute lambda request rejected", {
+      ...requestContext,
+      outcome: "validation_error",
+      status_code: requestBody.error.status,
+      metric_name: "tax_plan_cycle.lambda.request.count",
+      metric_value: 1,
+      metric_unit: "Count",
+    });
     return problemDetailsToResponse(requestBody.error);
   }
 
   if (!parsedParams.success) {
+    emitObservabilityEvent(input.telemetryLogger, "warn", "execute lambda request rejected", {
+      ...requestContext,
+      outcome: "validation_error",
+      status_code: 400,
+      metric_name: "tax_plan_cycle.lambda.request.count",
+      metric_value: 1,
+      metric_unit: "Count",
+    });
     return problemDetailsToResponse(
       buildValidationProblem("Transition request failed validation.", [
         ...parsedParams.error.issues.map(toValidationIssue),
@@ -311,6 +358,14 @@ async function handleExecuteRequest(input: {
   const principal = toPrincipal(input.event.requestContext?.authorizer);
 
   if (!principal) {
+    emitObservabilityEvent(input.telemetryLogger, "warn", "execute lambda authentication failed", {
+      ...requestContext,
+      outcome: "unauthorized",
+      status_code: 401,
+      metric_name: "tax_plan_cycle.lambda.request.count",
+      metric_value: 1,
+      metric_unit: "Count",
+    });
     return problemDetailsToResponse(authenticationRequired());
   }
 
@@ -320,6 +375,16 @@ async function handleExecuteRequest(input: {
   });
 
   if (cycle === null) {
+    emitObservabilityEvent(input.telemetryLogger, "warn", "execute lambda request could not find cycle", {
+      ...requestContext,
+      tenant_id: principal.tenantId,
+      case_id: parsedParams.data.caseId,
+      outcome: "not_found",
+      status_code: 404,
+      metric_name: "tax_plan_cycle.lambda.request.count",
+      metric_value: 1,
+      metric_unit: "Count",
+    });
     return problemDetailsToResponse(
       new ProblemHttpError({
         type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
@@ -333,6 +398,17 @@ async function handleExecuteRequest(input: {
   const action = `transition ${cycle.stage} -> Executed`;
 
   if (cycle.stage !== "Client Approval") {
+    emitObservabilityEvent(input.telemetryLogger, "warn", "execute lambda request denied", {
+      ...requestContext,
+      tenant_id: principal.tenantId,
+      case_id: parsedParams.data.caseId,
+      outcome: "invalid_transition",
+      status_code: 422,
+      metric_name: "tax_plan_cycle.lambda.request.count",
+      metric_value: 1,
+      metric_unit: "Count",
+    });
+
     await writeDeniedTransitionAttempt(input.auditLogger, input.auditEntryWriter, {
       caseId: parsedParams.data.caseId,
       actor: principal.userId,
@@ -351,6 +427,17 @@ async function handleExecuteRequest(input: {
   }
 
   if (!isTransitionAuthorized(cycle.stage, principal)) {
+    emitObservabilityEvent(input.telemetryLogger, "warn", "execute lambda request denied", {
+      ...requestContext,
+      tenant_id: principal.tenantId,
+      case_id: parsedParams.data.caseId,
+      outcome: "forbidden",
+      status_code: 403,
+      metric_name: "tax_plan_cycle.lambda.request.count",
+      metric_value: 1,
+      metric_unit: "Count",
+    });
+
     await writeDeniedTransitionAttempt(input.auditLogger, input.auditEntryWriter, {
       caseId: parsedParams.data.caseId,
       actor: principal.userId,
@@ -377,6 +464,16 @@ async function handleExecuteRequest(input: {
   });
 
   if (transitioned === null) {
+    emitObservabilityEvent(input.telemetryLogger, "warn", "execute lambda request could not transition cycle", {
+      ...requestContext,
+      tenant_id: principal.tenantId,
+      case_id: parsedParams.data.caseId,
+      outcome: "not_found",
+      status_code: 404,
+      metric_name: "tax_plan_cycle.lambda.request.count",
+      metric_value: 1,
+      metric_unit: "Count",
+    });
     return problemDetailsToResponse(
       new ProblemHttpError({
         type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
@@ -387,11 +484,25 @@ async function handleExecuteRequest(input: {
     );
   }
 
+  const durationMs = Date.now() - startedAt;
+  emitObservabilityEvent(input.telemetryLogger, "info", "execute lambda request completed", {
+    ...requestContext,
+    tenant_id: principal.tenantId,
+    case_id: parsedParams.data.caseId,
+    outcome: "success",
+    status_code: 200,
+    duration_ms: durationMs,
+    metric_name: "tax_plan_cycle.lambda.request.duration_ms",
+    metric_value: durationMs,
+    metric_unit: "Milliseconds",
+  });
+
   return jsonResponse(200, transitioned);
 }
 
 export function createExecuteLambdaHandler(options: CreateExecuteLambdaHandlerOptions) {
   const auditLogger = options.auditLogger ?? console;
+  const telemetryLogger = options.telemetryLogger ?? console;
 
   return async (event: ExecuteLambdaRequest) =>
     await handleExecuteRequest({
@@ -399,6 +510,7 @@ export function createExecuteLambdaHandler(options: CreateExecuteLambdaHandlerOp
       controller: options.controller,
       auditEntryWriter: options.auditEntryWriter,
       auditLogger,
+      telemetryLogger,
     });
 }
 

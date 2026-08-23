@@ -71,7 +71,13 @@ describe("My Tax Plan page", () => {
     const stepper = screen.getByLabelText("Case stage progression");
     expect(within(stepper).getByText("Review")).toBeInTheDocument();
     expect(screen.getByText("Maya Reed")).toBeInTheDocument();
-    expect(screen.getByText("September 12, 2026 at 10:00 AM")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeStyle: "short" }).format(
+          new Date("2026-09-12T14:00:00.000Z"),
+        ),
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("$8,420")).toBeInTheDocument();
     expect(
       screen.getByText("Convert $40k from a traditional IRA to a Roth IRA."),

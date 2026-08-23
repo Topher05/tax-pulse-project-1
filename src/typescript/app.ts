@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import type { Logger } from "pino";
 
 import { problemDetailsMiddleware } from "./errors.js";
-import { createLogger, createRequestLogger } from "./logger.js";
+import { createLogger, createRequestLogger } from "./shared/cloud-logger/logger.js";
 
 export interface CreateAppOptions {
   logger?: Logger;
