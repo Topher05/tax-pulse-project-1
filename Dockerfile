@@ -1,4 +1,4 @@
-FROM node:22.0.0-bookworm-slim AS build
+FROM node:22.23.2-bookworm-slim AS build
 
 WORKDIR /app
 
@@ -8,12 +8,16 @@ RUN npm ci
 COPY src/typescript ./src/typescript
 RUN npm run build && npm prune --omit=dev
 
-FROM node:22.0.0-bookworm-slim AS runtime
+FROM node:22.23.2-bookworm-slim AS runtime
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
 WORKDIR /app
+
+RUN rm -rf /usr/local/lib/node_modules/npm \
+  /usr/local/bin/npm \
+  /usr/local/bin/npx
 
 COPY package.json ./package.json
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
