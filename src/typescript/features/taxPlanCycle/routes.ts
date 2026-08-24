@@ -34,6 +34,7 @@ import type { Scenario } from "../../scenario.js";
 import type { TaxPlanCycleRepository } from "./repositories/repository.js";
 import type { ActionItemRepository } from "./repositories/actionItems.js";
 import type { ActionItemCompletedEventPublishInput } from "./infrastructure/cloudEvents/actionItemCompleted/index.js";
+import { cloudWatchObservabilityProvider } from "../../shared/cloud-logger/observability.js";
 
 export interface ValidationErrorIssue {
   path: Array<string | number>;
@@ -733,10 +734,15 @@ export function createTaxPlanCycleRouter(
             return;
           }
 
+          const requestContext = cloudWatchObservabilityProvider(
+            req.headers,
+            (req as { id?: string }).id,
+          );
           const scenarios = await scenarioModelingController.model({
             tenantId,
             caseId: parsedParams.data.caseId,
             authorizationHeader: req.headers.authorization,
+            requestContext,
             ...parsedBody.data,
           });
 

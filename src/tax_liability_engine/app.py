@@ -15,6 +15,7 @@ from .jwt_authentication import (
 from .routers.health import create_health_router
 from .routers.scenario_comparison import create_scenario_comparison_router
 from .routers.tax_calculation import create_tax_calculation_router
+from .observability import install_observability_middleware
 
 
 def create_app(
@@ -31,6 +32,7 @@ def create_app(
     require_tenant_id = create_tenant_scope_dependency(require_authenticated_principal)
 
     app = FastAPI(title="TaxPulse Tax Calculation API")
+    install_observability_middleware(app)
     app.include_router(create_health_router())
     app.include_router(create_tax_calculation_router(require_tenant_id))
     app.include_router(create_scenario_comparison_router(require_tenant_id))

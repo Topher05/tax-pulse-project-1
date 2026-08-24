@@ -1,8 +1,14 @@
+import { randomUUID } from "node:crypto";
+
 import express, { type Express } from "express";
 import type { Logger } from "pino";
 
 import { problemDetailsMiddleware } from "./errors.js";
-import { createLogger, createRequestLogger } from "./shared/cloud-logger/logger.js";
+import {
+  createLogger,
+  createRequestLogger,
+} from "./shared/cloud-logger/logger.js";
+import { resolveRequestId } from "./shared/cloud-logger/observability.js";
 
 export interface CreateAppOptions {
   logger?: Logger;
@@ -14,6 +20,12 @@ export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
 
   app.disable("x-powered-by");
+  app.use((req, res, next) => {
+    const requestId = resolveRequestId(req.headers, (req as { id?: string }).id ?? randomUUID());
+    (req as { id?: string }).id = requestId;
+    res.setHeader("x-request-id", requestId);
+    next();
+  });
   app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,OPTIONS");
