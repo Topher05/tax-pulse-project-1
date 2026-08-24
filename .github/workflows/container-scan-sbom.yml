@@ -40,7 +40,7 @@ jobs:
         run: docker build --file ${{ matrix.dockerfile }} --tag ${{ matrix.image }}:${{ github.sha }} .
 
       - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: ${{ matrix.image }}:${{ github.sha }}
           format: table
@@ -50,7 +50,7 @@ jobs:
 
       - name: Run Trivy JSON report
         if: always()
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: ${{ matrix.image }}:${{ github.sha }}
           format: json
