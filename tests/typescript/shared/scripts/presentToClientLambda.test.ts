@@ -93,7 +93,7 @@ const clientApprovalCycle: TaxPlanCycle = {
 };
 
 describe("present-to-client Lambda boundary", () => {
-  test("transitions the cycle when API Gateway authorizer context is present", async () => {
+  test("transitions the cycle when HTTP API JWT claims are present", async () => {
     const repository = createInMemoryRepository(reviewCycle);
     const stageChangedEvents: Array<Record<string, unknown>> = [];
     const controller = createTaxPlanCycleTransitionController(repository, {
@@ -113,18 +113,28 @@ describe("present-to-client Lambda boundary", () => {
       },
     });
 
-    const response = await handler(
-      buildPresentToClientLambdaRequest({
-        tenantId: "tenant-001",
-        caseId: reviewCycle.id,
-        userId: "firm-admin-001",
-        role: "Firm Admin",
-        actionItem: {
+    const response = await handler({
+      body: JSON.stringify({
+        action_item: {
           description: "Send the client presentation packet",
           deadline: "2026-08-14",
         },
       }),
-    );
+      pathParameters: {
+        caseId: reviewCycle.id,
+      },
+      requestContext: {
+        authorizer: {
+          jwt: {
+            claims: {
+              tenant_id: "tenant-001",
+              sub: "firm-admin-001",
+              role: "Firm Admin",
+            },
+          },
+        },
+      },
+    });
 
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual(clientApprovalCycle);

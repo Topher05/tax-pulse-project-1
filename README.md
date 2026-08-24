@@ -93,11 +93,23 @@ docker run --name case-service -p 3000:3000 --env-file .env taxpulse/case-servic
 
 The container exposes the Core Case Service on `http://localhost:3000`. Make sure `.env`
 includes the runtime values the service needs, including `DATABASE_URL`, `JWT_ISSUER`,
-`JWT_SIGNING_PRIVATE_KEY`, and `JWT_SIGNING_KEY_ID`. The private key belongs only to
-the Core Case Service; it signs RS256 access tokens and publishes its public counterpart
-at `/.well-known/jwks.json`.
+`JWT_AUDIENCE`, `JWT_SIGNING_PRIVATE_KEY`, and `JWT_SIGNING_KEY_ID`. The private key
+belongs only to the Core Case Service; it signs RS256 access tokens for the configured
+audience and publishes its public counterpart at `/.well-known/jwks.json`.
+It also publishes OpenID Connect discovery at `/.well-known/openid-configuration`, so
+the HTTP API JWT authorizer can resolve that JWKS without receiving private-key material.
 When the API container connects to a database on your host machine, `DATABASE_URL` must
 use `host.docker.internal` instead of `localhost` as in the example.
+
+When no custom domain is available for a sandbox issuer, the serverless deployment creates
+a dedicated public Lambda Function URL for discovery and JWKS metadata. Deploy it with a
+public-only `JwtPublicJwk` parameter matching the Core Case Service signing key, then copy
+the `JwtIssuerUrl` stack output into the Core Case Service's `JWT_ISSUER`. The issuer
+metadata Lambda never receives the private key.
+
+To create the public deployment value from an approved local issuer-admin environment,
+run `npm run jwt:public-jwk`. The command prints a public JWK only; it must still be derived
+from the same private signing key used by the Core Case Service.
 
 To run the Tax Engine in Docker, build the Python image and start a container from the
 repository root:
@@ -532,6 +544,18 @@ present in the runtime environment:
 
 - `TAXPULSE_STAGE_CHANGED_TOPIC_ARN`
 - `TAXPULSE_ACTION_ITEM_CREATED_TOPIC_ARN`
+
+After deploying the protected HTTP API, an issuer administrator can run its JWT smoke
+test with a synthetic case, tenant, and user configured through the `TAXPULSE_HTTP_API_*`
+values in `.env`:
+
+```bash
+npm run aws:http-api-jwt-smoke
+```
+
+The command creates a valid, expired, and tampered RS256 token locally. It must run only
+from an approved issuer-admin environment because it uses the issuer signing key; it does
+not send that key to AWS or package it into either Lambda.
 
 The reference deployment template for that cutover lives in
 [`deployment/PresentToClient-Draft.template.yaml`](./deployment/PresentToClient-Draft.template.yaml).

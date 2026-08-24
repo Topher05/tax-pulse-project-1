@@ -10,7 +10,6 @@ from tax_liability_engine import (
     ScenarioComparisonResult,
     TaxCalculationResult,
     calculate_scenario_comparisons,
-    scenario_comparison,
 )
 
 BASELINE = {

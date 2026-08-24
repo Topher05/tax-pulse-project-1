@@ -21,6 +21,15 @@ export function createJwksRouter({ issuerConfig }: CreateJwksRouterOptions): Rou
   }
 
   const router = Router();
+  const jwksUrl = new URL("/.well-known/jwks.json", issuerConfig.issuer).toString();
+  router.get("/.well-known/openid-configuration", (_req, res) => {
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({
+      issuer: issuerConfig.issuer,
+      jwks_uri: jwksUrl,
+    });
+  });
+
   router.get("/.well-known/jwks.json", (_req, res) => {
     res.set("Cache-Control", "public, max-age=300");
     res.json({

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { mfaEnrollmentRows as seededMfaEnrollmentRows } from "../../../src/typescript/shared/database/seed.model.js";
 
 export const expectedMfaEnrollmentColumns = ["userId", "totpSecret", "isEnrolled"];
 export const expectedMfaEnrollmentColumnTypes = {
@@ -7,7 +8,7 @@ export const expectedMfaEnrollmentColumnTypes = {
   isEnrolled: "boolean",
 } as const;
 
-export const mfaEnrollmentRows = [
+const legacyMfaEnrollmentRows = [
   {
     userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
     totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
@@ -34,6 +35,8 @@ export const mfaEnrollmentRows = [
     isEnrolled: true,
   },
 ] as const;
+
+export const mfaEnrollmentRows = seededMfaEnrollmentRows;
 
 export const expectedMfaEnrollmentRows = mfaEnrollmentRows.map((row) => ({
   userId: row.userId,

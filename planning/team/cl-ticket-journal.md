@@ -240,7 +240,7 @@ vulnerable dependencies and committed secrets are blocked.
 - `.github/workflows/terraform-security-gate.yml` adds the PR-time Terraform gate on the Blacksmith runner and runs `terraform fmt`, `terraform init -backend=false`, `terraform validate`, Checkov, and tfsec.
 - `.github/workflows/container-build-scaffold.yml` keeps the Blacksmith Docker builder helpers on deck for the future container delivery work without changing the Terraform gate.
 - `terraform/database.tf`, `terraform/dynamodb.tf`, and `terraform/redis.tf` now tighten the security posture that the scanners were flagging.
-- `terraform/vpc.tf` documents the intentional public-subnet behavior with inline tfsec and Checkov suppressions.
+- `terraform/vpc.tf` keeps the intentional public-subnet behavior in the current Terraform root without inline scanner suppressions.
 - `terraform/.tfsec/config.yml` makes the tfsec severity threshold explicit in repo config.
 - `tests/typescript/workflows/terraformSecurityGate.test.ts` guards the workflow shape and scan requirements with a repo-local regression test.
 - `tests/typescript/workflows/containerBuildScaffold.test.ts` guards the future container scaffold text and helper references.
@@ -284,7 +284,8 @@ flowchart LR
 
 **Validation Notes:**
 
-- Repository-local workflow assertions were added to cover the Blacksmith runner label, Terraform trigger scope, and required scan commands.
+- Repository-local workflow assertions cover the Blacksmith runner label, Terraform trigger scope, required scan commands, and removal of the legacy VPC suppressions.
+- tfsec now runs from `/src/terraform`, matching the Terraform root used by formatting, initialization, validation, and Checkov.
 - No AWS credentials are required for the static gate path.
 - GitHub branch protection and required status checks still need to be configured in the repository settings.
 

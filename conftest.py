@@ -6,6 +6,8 @@ import uuid
 from pathlib import Path
 from typing import Protocol, Sequence
 
+from tests.tax_liability_engine.auth_test_support import jwt_test_material
+
 
 class _PytestOption(Protocol):
     basetemp: str | None
