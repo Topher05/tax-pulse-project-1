@@ -5,6 +5,56 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira167 - SCRUM-167
+
+**Branch:** `martins-okorie-jira167`
+**Assignee:** Martins Okorie
+**Jira Key:** SCRUM-167
+**Summary:** Scan images and produce SBOMs with Trivy and Syft
+
+**Description:** As a Security Engineer, I want Trivy and Syft in the release
+pipeline, so that images are scanned and have a machine-readable bill of
+materials. This ticket adds a GitHub Actions workflow that builds the two
+project container images (`taxpulse-core-case` and `taxpulse-tax-engine`),
+runs Trivy vulnerability scanning against each, generates SPDX-JSON SBOMs
+with Syft, and publishes all reports as build artifacts.
+
+**Acceptance Criteria:**
+- Trivy scans the container images and fails on a high-severity vulnerability.
+- Syft produces an SBOM per image.
+- The reports are published as build artifacts.
+
+**Code Connection:** Builds on the existing container image definitions in
+`Dockerfile` (Core Case Service) and `Dockerfile.tax-engine` (Tax Engine)
+already validated by the `container-validation` job in
+`build-test-quality.yml`. Follows the Blacksmith runner and workflow
+conventions established by SCRUM-163 (Terraform security gate), SCRUM-165
+(SAST gate), and SCRUM-166 (dependency/secret gate). Uses the same image
+tags (`taxpulse-core-case`, `taxpulse-tax-engine`) pinned to `$GITHUB_SHA`.
+
+**Project Scope Connection:** Part of the Sprint 5 IaC, Secure Pipeline &
+Observability epic (SCRUM-20). Sits between SCRUM-166 (OSV/Gitleaks) and
+SCRUM-168 (Cosign signing) in the security gate chain. Provides the SBOM
+contract that SCRUM-168 can reference for provenance verification.
+
+**Changed Files:**
+- `.github/workflows/container-scan-sbom.yml` — **[NEW]** release-pipeline
+  workflow that builds both container images, runs Trivy scans (table + JSON
+  reports, exit-code 1 on HIGH/CRITICAL), generates SPDX-JSON SBOMs via
+  Syft, and uploads all outputs as build artifacts with 90-day retention.
+- `planning/team/mm-ticket-journal.md` — added this journal entry.
+
+**Validation Notes:**
+- Workflow YAML passes `actionlint` or manual syntax review.
+- Trivy step uses `exit-code: "1"` to gate the pipeline on HIGH/CRITICAL
+  vulnerabilities, satisfying AC-1.
+- Syft generates one SBOM per image in SPDX-JSON format, satisfying AC-2.
+- Both Trivy reports and SBOMs are uploaded via `actions/upload-artifact@v4`
+  with 90-day retention, satisfying AC-3.
+- `if: always()` ensures JSON report, SBOM, and upload steps run even when
+  Trivy fails the build, so artifacts are always available for triage.
+
+
 ## martins-okorie-jira164 - SCRUM-164
 
 **Branch:** `martins-okorie-jira164`
