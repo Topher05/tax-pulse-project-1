@@ -1,72 +1,107 @@
 # SCRUM-171 Disposition Log Template
 
 ## Summary
-Create a planning-only artifact for the triage disposition log template and a sample
-completed entry. This ticket depends on the observability work from SCRUM-170, so the
-template should point at an existing CloudWatch metric or trace context rather than
-introducing new runtime behavior.
+This artifact is the planning and evidence template for the triage disposition log
+work in SCRUM-171. It is documentation-only, and its sample entry is written against
+the observability shape introduced for SCRUM-170:
 
-## What Needs To Exist
+- `TaxPulse` CloudWatch metrics emitted from logs
+- correlated request IDs and trace IDs
+- a scenario-modeling trace path from Core Case Service to Tax Engine
 
-### Disposition Log Template
-Each triage entry should capture:
+## Disposition Template
 
-- Ticket or incident identifier
-- Date and owner
-- Related CloudWatch metric name
-- Related trace context or X-Ray trace identifier
-- Symptom observed
-- Root cause
-- Follow-up action
-- Status or disposition
+Use one row per triaged issue.
 
-### Sample Completed Entry
-Provide one synthetic example that shows:
+| Field | Required Content |
+| --- | --- |
+| Identifier | A stable disposition ID, case ID, or incident number |
+| Timestamp | UTC date/time of the triage decision |
+| Environment | Sandbox, staging, or production |
+| Owner | Person or team responsible for the disposition |
+| Service | Primary service boundary involved |
+| Symptom | What was observed |
+| Evidence | Metric name, trace ID, log group, or permalink |
+| Root Cause | Observable cause, affected boundary, and supporting evidence |
+| Immediate Action | Containment taken now |
+| Permanent Action | Follow-up fix or backlog item |
+| Status | Open, monitoring, mitigated, resolved, or closed |
+| Validation Result | How the disposition was verified |
+| Related Ticket | Jira key for the issue or follow-up work |
 
-- A real metric name already emitted by the code path, such as
-  `tax_plan_cycle.stage_changed_publish.count`
-- A trace reference, such as a request `trace_id` or `x_amzn_trace_id`
-- A short root-cause statement
-- A concrete follow-up action
-- A closed-loop disposition label
+## Evidence Linking
 
-## Source Code Impact
+Use both CloudWatch and X-Ray coordinates when possible.
 
-No product runtime code is expected to change for SCRUM-171.
+### CloudWatch Metric Permalink
 
-If the template needs a concrete link target, reuse the observability fields already in
-the codebase:
+Capture the following fields:
 
-- `metric_name`
-- `metric_value`
-- `trace_id`
-- `trace_parent`
-- `x_amzn_trace_id`
+- Region
+- Namespace: `TaxPulse`
+- Metric name
+- Dimensions: `service`, `operation`, `outcome`
+- Statistic and time window
 
-If a future follow-up decides the sample entry needs a new signal name, that should be
-added in the observability-producing code first, not in this planning artifact.
+Example coordinate shape:
 
-## Test Plan
+```text
+Region: us-east-1
+Namespace: TaxPulse
+Metric: tax_plan_cycle.scenario_modeling.duration_ms
+Dimensions: service=core-case-service, operation=scenario_modeling, outcome=success
+Window: 2026-08-24T14:00:00Z to 2026-08-24T14:15:00Z
+Statistic: Sum
+```
 
-- Review the markdown structure manually.
-- Confirm the template section and sample entry are both present.
-- Confirm the example uses an existing metric or trace shape from SCRUM-170.
-- Confirm the root-cause and action fields are explicit and synthetic.
-- No unit, integration, or UI tests are expected unless executable code changes later.
+### X-Ray Trace Permalink
 
-## IaC / AWS
+Capture the following fields:
 
-No new IaC or AWS resources are required for this ticket.
+- Region
+- Trace ID
+- Validation window
+- Request ID used during the scenario
 
-The only AWS dependency is that SCRUM-170 already produces a metric or trace that this
-template can reference. If observability signals are still missing, SCRUM-170 must be
-finished before the sample entry can be finalized.
+Example coordinate shape:
 
-## Acceptance Criteria
+```text
+Region: us-east-1
+Trace ID: 4bf92f3577b34da6a3ce929d0e0e4736
+Request ID: req-scenario-001
+Window: 2026-08-24T14:00:00Z to 2026-08-24T14:15:00Z
+```
 
-- A new planning artifact exists under `planning/`.
-- The artifact defines a disposition log template.
-- The artifact includes one sample completed entry.
-- The sample entry references an existing observability signal shape from SCRUM-170.
-- The artifact clearly states that no runtime code, tests, or IaC changes are required
-  for this ticket.
+## Sample Entry
+
+The sample below is synthetic but uses the same structure that a live SCRUM-170
+validation should produce.
+
+| Identifier | Timestamp | Environment | Owner | Service | Symptom | Evidence | Root Cause | Immediate Action | Permanent Action | Status | Validation Result | Related Ticket |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| DISP-171-001 | 2026-08-24T14:12:00Z | sandbox | Platform Engineering | core-case-service / tax-engine | Scenario modeling completed with cross-service telemetry and a correlated request ID | CloudWatch `TaxPulse/tax_plan_cycle.scenario_modeling.duration_ms` and X-Ray trace `4bf92f3577b34da6a3ce929d0e0e4736` | Observable cause: Tax Engine returned a retryable 500 on the first attempt, but the second attempt completed successfully. Affected boundary: Core Case Service to Tax Engine HTTP call. Evidence: the metric was emitted with `service=core-case-service`, `operation=scenario_modeling`, `outcome=success`, and the trace contained both services. | Immediate containment: recorded the request ID and trace ID for review. | Permanent action: keep the request/trace correlation fields in the disposition log and retain the Terraform-defined observability path for future triage. | closed | Verified by metric coordinates and the shared trace ID across both services | SCRUM-170, SCRUM-171 |
+
+## Root Cause Format
+
+Use this order when writing the root-cause field:
+
+1. Observable cause
+2. Affected boundary
+3. Evidence supporting the conclusion
+
+## Action Format
+
+Use this order when writing action fields:
+
+1. Immediate containment
+2. Permanent follow-up
+3. Owner
+4. Verification condition
+
+## Ticket Scope
+
+- SCRUM-171 stays documentation-only.
+- SCRUM-170 supplies the live metric and trace identifiers that the disposition log
+  references.
+- No workflow, stage, tax-calculation, persistence, or UI behavior is introduced by
+  this artifact.

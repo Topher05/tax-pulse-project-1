@@ -43,47 +43,101 @@ Add new ticket entries below using this template.
 
 **Jira Key:** SCRUM-171
 
-**Summary:** Add a disposition log for triaged issues
+**Summary:** Complete the disposition log template and the shared observability path it references
 
-**Description:** As a Platform Engineer, I want a disposition log template, so that
-triaged issues are recorded with their root cause and action. The deliverable is a
-planning artifact under `planning/` that references an existing observability signal
-from SCRUM-170.
+**Description:** As a Platform Engineer, I want a disposition log template and the
+supporting observability plumbing, so that triaged issues can be tied back to a real
+metric and trace boundary. This branch now combines the SCRUM-170 telemetry updates
+with the SCRUM-171 planning artifact.
 
 **Acceptance Criteria:**
 
-- A new markdown planning artifact exists under `planning/`.
-- The artifact defines the disposition log template fields.
-- The artifact includes one synthetic sample disposition entry.
-- The sample entry links to an existing CloudWatch metric or trace context from the
-  observability work.
-- The artifact explicitly states that no runtime source code, tests, or IaC changes are
-  required for this ticket.
+- A reusable markdown disposition template exists under `planning/`.
+- The template defines the log fields, evidence-link format, root-cause format, and
+  action format.
+- The template includes one synthetic completed entry that references the TaxPulse
+  observability shape.
+- The shared runtime now emits request IDs, trace context, and EMF-shaped metrics for
+  the scenario-modeling path.
+- The sandbox ECS task definitions include the ADOT collector sidecars and X-Ray
+  permissions needed to validate the evidence path.
 
 **Code Connection:**
 
-- `planning/scrum-171-disposition-log-template.md`
 - `src/typescript/shared/cloud-logger/observability.ts`
-- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/shared/cloud-logger/logger.ts`
+- `src/typescript/app.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/controllers/scenarios.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts`
+- `src/tax_liability_engine/app.py`
+- `src/tax_liability_engine/observability.py`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/ecs_services/outputs.tf`
+- `terraform/delivery.tf`
+- `planning/scrum-171-disposition-log-template.md`
+- `tests/typescript/shared/cloud-logger.test.ts`
+- `tests/typescript/features/taxPlanCycle/engineClient.test.ts`
+- `tests/typescript/features/taxPlanCycle/engineClient.pact.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/ecsTaskDefinitions.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `tests/tax_liability_engine/tax_calculation_api_test.py`
 - `planning/team/cl-ticket-journal.md`
 
 **Project Scope Connection:**
 
 - IaC, Secure Pipeline & Observability
+- Cross-service scenario-modeling telemetry
 - Triage evidence and release-readiness documentation
-- Follow-on work from SCRUM-170 observability outputs
+- Sandbox validation evidence for SCRUM-170 and SCRUM-171
 
 **Changed Files:**
 
 - `planning/scrum-171-disposition-log-template.md`
 - `planning/team/cl-ticket-journal.md`
+- `src/typescript/app.ts`
+- `src/typescript/features/taxPlanCycle/controllers/scenarios.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/shared/cloud-logger/logger.ts`
+- `src/typescript/shared/cloud-logger/observability.ts`
+- `src/tax_liability_engine/app.py`
+- `src/tax_liability_engine/observability.py`
+- `terraform/delivery.tf`
+- `terraform/modules/ecs_services/README.md`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/outputs.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/variables.tf`
+- `deployment/ecs/core-case-service.task-definition.json`
+- `deployment/ecs/tax-engine.task-definition.json`
+- `pacts/CoreCaseService-TaxCalculationEngine.json`
+- `tests/tax_liability_engine/tax_calculation_api_test.py`
+- `tests/typescript/ecsTaskDefinitions.test.ts`
+- `tests/typescript/features/taxPlanCycle/engineClient.pact.test.ts`
+- `tests/typescript/features/taxPlanCycle/engineClient.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/httpApp.test.ts`
+- `tests/typescript/shared/cloud-logger.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
 
 **Validation Notes:**
 
-- Reviewed the existing observability field names and metric names so the plan can
-  reference real outputs.
-- No executable tests were required because this is a docs-only planning artifact.
-- No IaC or AWS changes were made for this ticket.
+- The planning artifact was rewritten into a fielded template with a synthetic sample
+  entry and explicit CloudWatch/X-Ray coordinate guidance.
+- Focused Vitest coverage passed for the touched TypeScript files.
+- `terraform fmt -check -recursive` passed after formatting `terraform/delivery.tf`.
+- `py_compile` passed for the new Python observability module, but `pytest` is blocked
+  in this shell because the Python dependency environment is incomplete (`jwt` is
+  missing).
+- `terraform validate` is still blocked until the local modules are initialized, and
+  `terraform init -backend=false` could not reach the Terraform registry from this
+  shell.
+- `npm run typecheck` still reports the preexisting `src/typescript/assist/embeddings.ts`
+  OpenAI dependency issue.
+- No live AWS evidence was captured from the sandbox in this shell.
 
 ## caleb-latimer-jira170 - SCRUM-170
 
@@ -96,62 +150,92 @@ from SCRUM-170.
 **Summary:** Emit CloudWatch metrics and X-Ray traces across services
 
 **Description:** As a Platform Engineer, I want CloudWatch metrics and X-Ray traces, so
-that I can observe the deployed stack. SCRUM-164 infrastructure is intentionally not
-available yet, so this work is landing as far as it can go with structured telemetry,
-explicit trace-context capture, and deferred deployment wiring.
+that I can observe the deployed stack. This branch now carries the Core Case request
+correlation, Tax Engine observability middleware, EMF metric emission, and the ECS
+delivery changes needed for the sandbox evidence path.
 
 **Acceptance Criteria:**
 
-- Services emit structured logs and metric-shaped telemetry for the workflow and Tax
-  Engine boundaries.
-- Trace context is captured from incoming HTTP and Lambda requests and carried into the
-  emitted observability records.
-- Outbound Tax Engine requests log start, retry, failure, and success outcomes with
-  duration fields.
-- The PR descriptor calls out the deferred SCRUM-164 mock/suppression/stub block.
+- Services emit structured observability records that include request IDs, trace IDs,
+  span IDs, and full traceparent values.
+- Scenario modeling emits valid CloudWatch EMF data with `TaxPulse` namespace metrics
+  and low-cardinality dimensions.
+- Outbound Tax Engine requests propagate trace context and request IDs through retries
+  without logging authorization headers or response bodies.
+- ECS task definitions include the ADOT collector sidecars, OTLP env vars, and X-Ray
+  task-role permissions required for sandbox validation.
 - No stage, audit, or domain behavior changes are introduced.
 
 **Code Connection:**
 
-- `src/typescript/observability.ts`
-- `src/typescript/logger.ts`
-- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
-- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
+- `src/typescript/shared/cloud-logger/observability.ts`
+- `src/typescript/shared/cloud-logger/logger.ts`
+- `src/typescript/app.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
 - `src/typescript/features/taxPlanCycle/controllers/scenarios.ts`
 - `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts`
-- `src/typescript/features/taxPlanCycle/lambdaRuntime.ts`
-- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts`
-- `src/typescript/shared/scripts/execute-lambda/runtime.ts`
-- `src/typescript/index.ts`
-- `.github/pull_request_template.md`
+- `src/tax_liability_engine/app.py`
+- `src/tax_liability_engine/observability.py`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/ecs_services/outputs.tf`
+- `terraform/delivery.tf`
+- `deployment/ecs/core-case-service.task-definition.json`
+- `deployment/ecs/tax-engine.task-definition.json`
 
 **Project Scope Connection:**
 
 - IaC, Secure Pipeline & Observability
 - Cross-service request tracing and CloudWatch-ready structured telemetry
-- Deferred AWS resource wiring until SCRUM-164 is available
+- Sandbox validation for the Tax Plan Cycle scenario-modeling path
 
 **Changed Files:**
 
-- `.github/pull_request_template.md`
-- `planning/team/cl-ticket-journal.md`
+- `src/typescript/app.ts`
 - `src/typescript/features/taxPlanCycle/controllers/scenarios.ts`
-- `src/typescript/features/taxPlanCycle/controllers/transitionController.ts`
 - `src/typescript/features/taxPlanCycle/infrastructure/engineClient.ts`
-- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
-- `src/typescript/features/taxPlanCycle/lambdaRuntime.ts`
-- `src/typescript/index.ts`
-- `src/typescript/logger.ts`
-- `src/typescript/observability.ts`
-- `src/typescript/shared/scripts/execute-lambda/runtime.ts`
-- `src/typescript/shared/scripts/present-to-client-lambda/runtime.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/shared/cloud-logger/logger.ts`
+- `src/typescript/shared/cloud-logger/observability.ts`
+- `src/tax_liability_engine/app.py`
+- `src/tax_liability_engine/observability.py`
+- `terraform/delivery.tf`
+- `terraform/modules/ecs_services/README.md`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/outputs.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/variables.tf`
+- `deployment/ecs/core-case-service.task-definition.json`
+- `deployment/ecs/tax-engine.task-definition.json`
+- `pacts/CoreCaseService-TaxCalculationEngine.json`
+- `planning/scrum-171-disposition-log-template.md`
+- `planning/team/cl-ticket-journal.md`
+- `tests/tax_liability_engine/tax_calculation_api_test.py`
+- `tests/typescript/ecsTaskDefinitions.test.ts`
+- `tests/typescript/features/taxPlanCycle/engineClient.pact.test.ts`
+- `tests/typescript/features/taxPlanCycle/engineClient.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/httpApp.test.ts`
+- `tests/typescript/shared/cloud-logger.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
 
 **Validation Notes:**
 
-- Tests were intentionally suspended per instruction.
-- The current pass focused on code-path telemetry and PR-descriptor updates only.
-- Follow-up review still needs to confirm the final AWS-side resource plan once SCRUM-164
-  becomes available.
+- The runtime work is now wired for correlation and EMF, but the branch still needs the
+  remaining Python dependency installation and full Terraform provider validation
+  outside this shell.
+- The earlier "tests suspended" note is no longer accurate.
+- Focused Vitest coverage passed for the touched TypeScript files.
+- `terraform fmt -check -recursive` passed after formatting `terraform/delivery.tf`.
+- `py_compile` passed for the new Python observability module, but `pytest` is blocked
+  in this shell because the Python dependency environment is incomplete (`jwt` is
+  missing).
+- `terraform validate` is still blocked until the local modules are initialized, and
+  `terraform init -backend=false` could not reach the Terraform registry from this
+  shell.
+- `npm run typecheck` still reports the preexisting `src/typescript/assist/embeddings.ts`
+  OpenAI dependency issue.
+- No live AWS trace or metric permalink was captured from the sandbox in this shell.
 
 ## caleb-latimer-jira166 - SCRUM-166
 
