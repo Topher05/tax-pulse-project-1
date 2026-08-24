@@ -12,13 +12,16 @@ locals {
 module "ecs_services" {
   source = "./modules/ecs_services"
 
-  aws_region                    = var.aws_region
-  environment                   = var.environment
-  name_prefix                   = var.name_prefix
-  vpc_id                        = aws_vpc.main.id
-  public_subnet_ids             = local.ordered_public_subnet_ids
-  private_subnet_ids            = local.ordered_private_subnet_ids
-  ecs_service_security_group_id = aws_security_group.ecs_service.id
+  aws_region                         = var.aws_region
+  environment                        = var.environment
+  name_prefix                        = var.name_prefix
+  vpc_id                             = aws_vpc.main.id
+  public_subnet_ids                  = local.ordered_public_subnet_ids
+  private_subnet_ids                 = local.ordered_private_subnet_ids
+  ecs_service_security_group_id      = aws_security_group.ecs_service.id
+  collector_image                    = "public.ecr.aws/aws-observability/aws-otel-collector:v0.30.0"
+  log_retention_days                 = var.log_retention_days
+  observability_trace_sampling_ratio = var.observability_trace_sampling_ratio
 
   core_case_image_tag  = var.core_case_image_tag
   tax_engine_image_tag = var.tax_engine_image_tag

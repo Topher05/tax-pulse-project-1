@@ -46,6 +46,18 @@ variable "core_case_image_tag" {
   default     = "v1.0.0.0"
 }
 
+variable "log_retention_days" {
+  type        = number
+  description = "CloudWatch log retention in days for sandbox ECS services."
+  default     = 30
+}
+
+variable "observability_trace_sampling_ratio" {
+  type        = number
+  description = "Trace sampling ratio used by the sandbox ECS services."
+  default     = 1
+}
+
 variable "tax_engine_image_tag" {
   type        = string
   description = "Immutable ECR image tag for the Tax Engine task definition."

@@ -37,3 +37,13 @@ output "tax_engine_service_name" {
   description = "Tax Engine ECS service name."
   value       = aws_ecs_service.tax_engine.name
 }
+
+output "core_case_log_group_name" {
+  description = "CloudWatch log group name for the Core Case Service and collector sidecar."
+  value       = aws_cloudwatch_log_group.core_case.name
+}
+
+output "tax_engine_log_group_name" {
+  description = "CloudWatch log group name for the Tax Engine and collector sidecar."
+  value       = aws_cloudwatch_log_group.tax_engine.name
+}

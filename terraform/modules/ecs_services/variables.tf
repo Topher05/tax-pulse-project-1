@@ -13,6 +13,24 @@ variable "name_prefix" {
   type        = string
 }
 
+variable "collector_image" {
+  description = "Pinned ADOT collector image used as the ECS sidecar."
+  type        = string
+  default     = "public.ecr.aws/aws-observability/aws-otel-collector:v0.30.0"
+}
+
+variable "log_retention_days" {
+  description = "CloudWatch log retention for the service log groups."
+  type        = number
+  default     = 30
+}
+
+variable "observability_trace_sampling_ratio" {
+  description = "Parent-based trace sampling ratio used by the application containers."
+  type        = number
+  default     = 1
+}
+
 variable "vpc_id" {
   description = "VPC ID for the ALB target groups and security groups."
   type        = string

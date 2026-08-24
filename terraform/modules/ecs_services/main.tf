@@ -6,6 +6,8 @@ locals {
   tax_engine_family            = "${var.name_prefix}-tax-engine"
   core_case_container_name     = "core-case-service"
   tax_engine_container_name    = "tax-engine"
+  collector_container_name     = "aws-otel-collector"
+  collector_command            = "--config=/etc/ecs/ecs-default-config.yaml"
   core_case_repository_name    = "${var.name_prefix}/core-case-service"
   tax_engine_repository_name   = "${var.name_prefix}/tax-engine"
   core_case_log_group_name     = "Case-Service"
@@ -49,12 +51,12 @@ resource "aws_ecr_lifecycle_policy" "tax_engine" {
 
 resource "aws_cloudwatch_log_group" "core_case" {
   name              = local.core_case_log_group_name
-  retention_in_days = 30
+  retention_in_days = var.log_retention_days
 }
 
 resource "aws_cloudwatch_log_group" "tax_engine" {
   name              = local.tax_engine_log_group_name
-  retention_in_days = 30
+  retention_in_days = var.log_retention_days
 }
 
 data "aws_iam_policy_document" "ecs_tasks_assume_role" {
@@ -74,9 +76,44 @@ resource "aws_iam_role" "execution" {
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
 }
 
-resource "aws_iam_role_policy_attachment" "execution_managed" {
-  role       = aws_iam_role.execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+data "aws_iam_policy_document" "execution_runtime_access" {
+  statement {
+    sid       = "GetEcrAuthorizationToken"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "ReadImageLayers"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:BatchGetImage",
+    ]
+    resources = [
+      aws_ecr_repository.core_case.arn,
+      aws_ecr_repository.tax_engine.arn,
+    ]
+  }
+
+  statement {
+    sid = "WriteServiceLogs"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogStreams",
+    ]
+    resources = [
+      "${aws_cloudwatch_log_group.core_case.arn}:*",
+      "${aws_cloudwatch_log_group.tax_engine.arn}:*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "execution_runtime_access" {
+  name   = "${var.name_prefix}-ecs-task-runtime-access"
+  role   = aws_iam_role.execution.id
+  policy = data.aws_iam_policy_document.execution_runtime_access.json
 }
 
 data "aws_iam_policy_document" "execution_secret_access" {
@@ -117,6 +154,32 @@ resource "aws_iam_role_policy" "core_case_runtime_access" {
   name   = "${var.name_prefix}-core-case-runtime-access"
   role   = aws_iam_role.core_case_task.id
   policy = data.aws_iam_policy_document.core_case_runtime_access.json
+}
+
+data "aws_iam_policy_document" "xray_publish_access" {
+  statement {
+    sid = "WriteXRaySegments"
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+      "xray:GetSamplingRules",
+      "xray:GetSamplingTargets",
+      "xray:GetSamplingStatisticSummaries",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "core_case_xray_access" {
+  name   = "${var.name_prefix}-core-case-xray-access"
+  role   = aws_iam_role.core_case_task.id
+  policy = data.aws_iam_policy_document.xray_publish_access.json
+}
+
+resource "aws_iam_role_policy" "tax_engine_xray_access" {
+  name   = "${var.name_prefix}-tax-engine-xray-access"
+  role   = aws_iam_role.tax_engine_task.id
+  policy = data.aws_iam_policy_document.xray_publish_access.json
 }
 
 resource "aws_security_group" "alb" {
@@ -323,6 +386,25 @@ resource "aws_ecs_task_definition" "core_case" {
         { name = "AWS_REGION", value = var.aws_region },
         { name = "TAXPULSE_STAGE_CHANGED_TOPIC_ARN", value = var.stage_changed_topic_arn },
         { name = "TAXPULSE_STAGE_CHANGED_QUEUE_URL", value = var.stage_changed_queue_url },
+        { name = "OTEL_SERVICE_NAME", value = "core-case-service" },
+        { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "http://127.0.0.1:4318" },
+        { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
+        { name = "OTEL_PROPAGATORS", value = "tracecontext,baggage,xray" },
+        {
+          name  = "OTEL_RESOURCE_ATTRIBUTES"
+          value = "deployment.environment=${var.environment},service.namespace=taxpulse"
+        },
+        { name = "OTEL_TRACES_SAMPLER", value = "parentbased_traceidratio" },
+        {
+          name  = "OTEL_TRACES_SAMPLER_ARG"
+          value = tostring(var.observability_trace_sampling_ratio)
+        },
+      ]
+      dependsOn = [
+        {
+          containerName = local.collector_container_name
+          condition     = "START"
+        }
       ]
       secrets = [
         {
@@ -350,6 +432,35 @@ resource "aws_ecs_task_definition" "core_case" {
           awslogs-group         = aws_cloudwatch_log_group.core_case.name
           awslogs-region        = var.aws_region
           awslogs-stream-prefix = "ecs"
+        }
+      }
+    },
+    {
+      name      = local.collector_container_name
+      image     = var.collector_image
+      essential = true
+      command   = [local.collector_command]
+      portMappings = [
+        {
+          containerPort = 4317
+          hostPort      = 4317
+          protocol      = "tcp"
+        },
+        {
+          containerPort = 4318
+          hostPort      = 4318
+          protocol      = "tcp"
+        }
+      ]
+      environment = [
+        { name = "AWS_REGION", value = var.aws_region },
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.core_case.name
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "otel"
         }
       }
     }
@@ -387,6 +498,25 @@ resource "aws_ecs_task_definition" "tax_engine" {
       environment = [
         { name = "PORT", value = "8000" },
         { name = "JWT_ISSUER", value = var.jwt_issuer },
+        { name = "OTEL_SERVICE_NAME", value = "tax-engine" },
+        { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "http://127.0.0.1:4318" },
+        { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
+        { name = "OTEL_PROPAGATORS", value = "tracecontext,baggage,xray" },
+        {
+          name  = "OTEL_RESOURCE_ATTRIBUTES"
+          value = "deployment.environment=${var.environment},service.namespace=taxpulse"
+        },
+        { name = "OTEL_TRACES_SAMPLER", value = "parentbased_traceidratio" },
+        {
+          name  = "OTEL_TRACES_SAMPLER_ARG"
+          value = tostring(var.observability_trace_sampling_ratio)
+        },
+      ]
+      dependsOn = [
+        {
+          containerName = local.collector_container_name
+          condition     = "START"
+        }
       ]
       secrets = [
         {
@@ -410,6 +540,35 @@ resource "aws_ecs_task_definition" "tax_engine" {
           awslogs-group         = aws_cloudwatch_log_group.tax_engine.name
           awslogs-region        = var.aws_region
           awslogs-stream-prefix = "ecs"
+        }
+      }
+    },
+    {
+      name      = local.collector_container_name
+      image     = var.collector_image
+      essential = true
+      command   = [local.collector_command]
+      portMappings = [
+        {
+          containerPort = 4317
+          hostPort      = 4317
+          protocol      = "tcp"
+        },
+        {
+          containerPort = 4318
+          hostPort      = 4318
+          protocol      = "tcp"
+        }
+      ]
+      environment = [
+        { name = "AWS_REGION", value = var.aws_region },
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.tax_engine.name
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "otel"
         }
       }
     }
