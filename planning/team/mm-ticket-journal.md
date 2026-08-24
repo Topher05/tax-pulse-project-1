@@ -35,7 +35,8 @@ translates the SCRUM-159/160 contracts into transition Lambdas, API Gateway
 routes, shared IAM runtime permissions, and an optional SQS event-source mapping
 for the stage-changed consumer. The SPA module translates the SCRUM-161 contract
 into a private KMS-encrypted S3 origin, CloudFront Origin Access Control,
-CloudFront distribution, SPA route fallback rewrites, and deploy outputs.
+CloudFront distribution, SPA route fallback rewrites, scoped KMS decrypt/data-key
+permissions for the CloudFront distribution, and deploy outputs.
 
 **Project Scope Connection:** This closes the handoff from placeholder deployment
 JSON to reusable infrastructure-as-code while preserving the already-merged
@@ -93,6 +94,11 @@ tickets.
   name, made the optional stage-changed consumer SQS ARN optional unless that
   consumer is enabled, and reshaped the NAT gateway prerequisite to use an EIP
   plus public subnet.
+- Follow-up review pass added a scoped SPA KMS key policy that grants
+  `cloudfront.amazonaws.com` `kms:Decrypt` and `kms:GenerateDataKey` only when
+  `AWS:SourceArn` matches the Terraform-managed CloudFront distribution ARN, and
+  clarified that `stage_changed_queue_arn` is required only when the optional
+  stage-changed consumer Lambda is enabled.
 - Added `tests/typescript/workflows/terraformDeliveryModules.test.ts` to guard
   the SCRUM-164 Terraform wiring for Lambda env names, service discovery,
   optional SQS permissions, and NAT gateway shape.
@@ -106,6 +112,13 @@ tickets.
   applying changes or initializing the remote backend, but `terraform
   -chdir=terraform validate` is currently blocked by the local cached AWS
   provider failing its plugin schema handshake.
+- Review-fix `terraform fmt -recursive terraform` passed.
+- Review-fix `terraform -chdir=terraform fmt -check -recursive` passed.
+- Review-fix `npm test -- tests/typescript/workflows/terraformDeliveryModules.test.ts`
+  passed after TypeScript typecheck and 5 Vitest assertions.
+- Review-fix `terraform -chdir=terraform validate` remains blocked by the local
+  cached AWS provider schema handshake failure for
+  `.terraform/providers/registry.terraform.io/hashicorp/aws/6.61.0/darwin_arm64/terraform-provider-aws_v6.61.0_x5`.
 
 ## martins-okorie-jira161 - SCRUM-161
 
