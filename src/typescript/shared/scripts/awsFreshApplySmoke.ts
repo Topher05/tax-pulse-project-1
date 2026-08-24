@@ -9,7 +9,7 @@ loadEnv({ quiet: true });
 const defaultPollAttempts = 12;
 const defaultPollDelayMs = 2_000;
 
-interface SmokeConfiguration {
+export interface SmokeConfiguration {
   albBaseUrl: string;
   transitionApiUrl: string;
   bearerToken: string;
@@ -19,15 +19,15 @@ interface SmokeConfiguration {
   awsRegion: string;
 }
 
-interface FreshApplySmokeResult {
+export interface FreshApplySmokeResult {
   albStatus: number;
   transitionStatus: number;
   projectedStage: string;
   pollAttempts: number;
 }
 
-function required(name: string): string {
-  const value = process.env[name]?.trim();
+function required(name: string, env: NodeJS.ProcessEnv): string {
+  const value = env[name]?.trim();
 
   if (!value) {
     throw new Error(`${name} is required for the fresh-apply smoke.`);
@@ -36,15 +36,15 @@ function required(name: string): string {
   return value;
 }
 
-function getConfiguration(): SmokeConfiguration {
+function getConfiguration(env: NodeJS.ProcessEnv = process.env): SmokeConfiguration {
   return {
-    albBaseUrl: required("TAXPULSE_ALB_BASE_URL").replace(/\/$/, ""),
-    transitionApiUrl: required("TAXPULSE_TRANSITION_API_URL").replace(/\/$/, ""),
-    bearerToken: required("TAXPULSE_SMOKE_BEARER_TOKEN"),
-    tenantId: required("TAXPULSE_SMOKE_TENANT_ID"),
-    caseId: required("TAXPULSE_SMOKE_CASE_ID"),
-    projectionTableName: required("TAXPULSE_PROJECTION_TABLE_NAME"),
-    awsRegion: process.env.AWS_REGION?.trim() || "us-east-1",
+    albBaseUrl: required("TAXPULSE_ALB_BASE_URL", env).replace(/\/$/, ""),
+    transitionApiUrl: required("TAXPULSE_TRANSITION_API_URL", env).replace(/\/$/, ""),
+    bearerToken: required("TAXPULSE_SMOKE_BEARER_TOKEN", env),
+    tenantId: required("TAXPULSE_SMOKE_TENANT_ID", env),
+    caseId: required("TAXPULSE_SMOKE_CASE_ID", env),
+    projectionTableName: required("TAXPULSE_PROJECTION_TABLE_NAME", env),
+    awsRegion: env.AWS_REGION?.trim() || "us-east-1",
   };
 }
 
@@ -70,8 +70,11 @@ function assertSuccess(phase: string, response: Response, body: unknown): void {
   throw new Error(`${phase} returned HTTP ${response.status}: ${JSON.stringify(body)}`);
 }
 
-async function runAlbCalculation(config: SmokeConfiguration): Promise<number> {
-  const response = await fetch(`${config.albBaseUrl}/tax-calculations`, {
+async function runAlbCalculation(
+  config: SmokeConfiguration,
+  fetchImpl: typeof fetch,
+): Promise<number> {
+  const response = await fetchImpl(`${config.albBaseUrl}/tax-calculations`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.bearerToken}`,
@@ -90,8 +93,11 @@ async function runAlbCalculation(config: SmokeConfiguration): Promise<number> {
   return response.status;
 }
 
-async function runPresentToClient(config: SmokeConfiguration): Promise<number> {
-  const response = await fetch(
+async function runPresentToClient(
+  config: SmokeConfiguration,
+  fetchImpl: typeof fetch,
+): Promise<number> {
+  const response = await fetchImpl(
     `${config.transitionApiUrl}/v1/tax-plan-cycles/${encodeURIComponent(config.caseId)}/present-to-client`,
     {
       method: "POST",
@@ -112,25 +118,25 @@ async function runPresentToClient(config: SmokeConfiguration): Promise<number> {
   return response.status;
 }
 
-async function waitForProjection(config: SmokeConfiguration): Promise<{
+async function waitForProjection(
+  config: SmokeConfiguration,
+  getProjectionStage: (input: {
+    tableName: string;
+    tenantId: string;
+    caseId: string;
+  }) => Promise<string | undefined>,
+  attempts: number,
+  delayMs: number,
+): Promise<{
   stage: string;
   attempts: number;
 }> {
-  const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: config.awsRegion }));
-  const attempts = Number(process.env.TAXPULSE_PROJECTION_POLL_ATTEMPTS ?? defaultPollAttempts);
-  const delayMs = Number(process.env.TAXPULSE_PROJECTION_POLL_DELAY_MS ?? defaultPollDelayMs);
-
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const response = await client.send(
-      new GetCommand({
-        TableName: config.projectionTableName,
-        Key: {
-          tenant_id: config.tenantId,
-          case_id: config.caseId,
-        },
-      }),
-    );
-    const stage = typeof response.Item?.stage === "string" ? response.Item.stage : undefined;
+    const stage = await getProjectionStage({
+      tableName: config.projectionTableName,
+      tenantId: config.tenantId,
+      caseId: config.caseId,
+    });
 
     if (stage === "Client Approval") {
       return { stage, attempts: attempt };
@@ -147,25 +153,61 @@ async function waitForProjection(config: SmokeConfiguration): Promise<{
   );
 }
 
-export async function runAwsFreshApplySmoke(): Promise<FreshApplySmokeResult> {
-  const config = getConfiguration();
+export interface AwsFreshApplySmokeOptions {
+  env?: NodeJS.ProcessEnv;
+  fetchImpl?: typeof fetch;
+  getProjectionStage?: (input: {
+    tableName: string;
+    tenantId: string;
+    caseId: string;
+  }) => Promise<string | undefined>;
+  pollAttempts?: number;
+  pollDelayMs?: number;
+}
+
+export async function runAwsFreshApplySmoke(
+  options: AwsFreshApplySmokeOptions = {},
+): Promise<FreshApplySmokeResult> {
+  const env = options.env ?? process.env;
+  const config = getConfiguration(env);
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const pollAttempts = options.pollAttempts
+    ?? Number(env.TAXPULSE_PROJECTION_POLL_ATTEMPTS ?? defaultPollAttempts);
+  const pollDelayMs = options.pollDelayMs
+    ?? Number(env.TAXPULSE_PROJECTION_POLL_DELAY_MS ?? defaultPollDelayMs);
+  const getProjectionStage = options.getProjectionStage ?? (async (input) => {
+    const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: config.awsRegion }));
+    const response = await client.send(new GetCommand({
+      TableName: input.tableName,
+      Key: {
+        tenant_id: input.tenantId,
+        case_id: input.caseId,
+      },
+    }));
+    return typeof response.Item?.stage === "string" ? response.Item.stage : undefined;
+  });
 
   let albStatus: number;
   try {
-    albStatus = await runAlbCalculation(config);
+    albStatus = await runAlbCalculation(config, fetchImpl);
   } catch (error) {
     throw new Error(`Fresh-apply smoke failed during ALB calculation: ${String(error)}`);
   }
 
   let transitionStatus: number;
   try {
-    transitionStatus = await runPresentToClient(config);
+    transitionStatus = await runPresentToClient(config, fetchImpl);
   } catch (error) {
     throw new Error(`Fresh-apply smoke failed during present-to-client: ${String(error)}`);
   }
 
   try {
-    const projection = await waitForProjection(config);
+    const projection = await waitForProjection(
+      config,
+      getProjectionStage,
+      pollAttempts,
+      pollDelayMs,
+    );
     return {
       albStatus,
       transitionStatus,
