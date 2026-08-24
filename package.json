@@ -24,6 +24,7 @@
     "dev:web": "npm --prefix src/pulseUI run dev",
     "jwt:public-jwk": "tsx src/typescript/shared/scripts/printJwtPublicJwk.ts",
     "aws:stage-changed-smoke": "tsx src/typescript/shared/scripts/awsStageChangedSmoke.ts",
+    "aws:fresh-apply-smoke": "tsx src/typescript/shared/scripts/awsFreshApplySmoke.ts",
     "aws:http-api-jwt-smoke": "tsx src/typescript/shared/scripts/httpApiJwtSmoke.ts",
     "aws:alb-smoke": "tsx src/typescript/shared/scripts/albSmoke.ts",
     "cloud:tap": "tsx src/typescript/shared/scripts/cloudTap.ts",
