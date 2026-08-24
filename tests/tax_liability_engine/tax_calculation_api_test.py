@@ -67,6 +67,27 @@ async def test_tax_calculation_endpoint_returns_expected_liability(
 
 
 @pytest.mark.asyncio
+async def test_tax_calculation_endpoint_echoes_the_request_id_header(
+    jwt_test_material: JwtTestMaterial,
+) -> None:
+    app = create_app(jwt_test_material.config)
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await client.post(
+            "/tax-calculations",
+            headers={
+                "Authorization": f"Bearer {issue_access_token(jwt_test_material)}",
+                "x-request-id": "req-tax-001",
+            },
+            json=SAMPLE_REQUEST,
+        )
+
+    assert response.status_code == 200
+    assert response.headers["x-request-id"] == "req-tax-001"
+
+
+@pytest.mark.asyncio
 async def test_tax_calculation_endpoint_calls_calculate_tax_and_uses_tenant_claim(
     monkeypatch: pytest.MonkeyPatch,
     jwt_test_material: JwtTestMaterial,

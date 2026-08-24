@@ -25,6 +25,11 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(ecsServices).toContain('resource "aws_service_discovery_service" "tax_engine"');
     expect(ecsServices).toContain("service_registries");
     expect(ecsServices).toContain("aws_service_discovery_service.tax_engine.arn");
+    expect(ecsServices).toContain("aws-otel-collector");
+    expect(ecsServices).toContain("OTEL_EXPORTER_OTLP_ENDPOINT");
+    expect(ecsServices).toContain("OTEL_TRACES_SAMPLER_ARG");
+    expect(ecsServices).toContain("ecs-default-config.yaml");
+    expect(ecsServices).toContain("xray:PutTraceSegments");
   });
 
   test("keeps optional stage-changed consumer SQS permissions behind the feature flag", () => {
