@@ -35,9 +35,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # TODO: CL, added runtime docker build optimization config, should help with container setup when that item is worked on
+      - name: Set up Docker builder
+        uses: useblacksmith/setup-docker-builder@v1
+
       - name: Build container image
-        run: docker build --file ${{ matrix.dockerfile }} --tag ${{ matrix.image }}:${{ github.sha }} .
+        uses: useblacksmith/build-push-action@v2
+        with:
+          context: .
+          file: ./${{ matrix.dockerfile }}
+          push: false
+          load: true
+          tags: ${{ matrix.image }}:${{ github.sha }}
 
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@0.36.0
