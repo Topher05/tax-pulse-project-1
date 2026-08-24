@@ -64,6 +64,8 @@ tickets.
 - `terraform/modules/spa_delivery/main.tf`
 - `terraform/modules/spa_delivery/outputs.tf`
 - `terraform/modules/spa_delivery/variables.tf`
+- `terraform/vpc.tf`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
 - `planning/team/mm-ticket-journal.md`
 
 **Validation Notes:**
@@ -85,6 +87,25 @@ tickets.
 - Did not run `terraform apply` against the sandbox because manually-created
   SCRUM-157/158 resources already exist and should be imported into state before
   Terraform manages those exact names.
+- Follow-up correctness pass aligned the Lambda action-item-created topic
+  environment variable with the runtime, added Cloud Map private DNS so the Core
+  Case `LIABILITY_ENGINE_BASE` points at a Terraform-managed Tax Engine service
+  name, made the optional stage-changed consumer SQS ARN optional unless that
+  consumer is enabled, and reshaped the NAT gateway prerequisite to use an EIP
+  plus public subnet.
+- Added `tests/typescript/workflows/terraformDeliveryModules.test.ts` to guard
+  the SCRUM-164 Terraform wiring for Lambda env names, service discovery,
+  optional SQS permissions, and NAT gateway shape.
+- Follow-up `terraform -chdir=terraform fmt -check -recursive` passed.
+- Follow-up `npm test --
+  tests/typescript/workflows/terraformDeliveryModules.test.ts
+  tests/typescript/spaDeliveryDefinitions.test.ts
+  tests/typescript/ecsTaskDefinitions.test.ts
+  tests/typescript/albJsonDefinitions.test.ts` passed.
+- Follow-up `terraform -chdir=terraform init -backend=false` passed without
+  applying changes or initializing the remote backend, but `terraform
+  -chdir=terraform validate` is currently blocked by the local cached AWS
+  provider failing its plugin schema handshake.
 
 ## martins-okorie-jira161 - SCRUM-161
 

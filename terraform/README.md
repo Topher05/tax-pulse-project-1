@@ -23,11 +23,11 @@ Provide these values through uncommitted tfvars or CI variables:
 - `shared_config_secret_arn`
 - `stage_changed_topic_arn`
 - `stage_changed_queue_url`
-- `stage_changed_queue_arn`
 - `action_item_created_topic_arn`
 
 Optional delivery inputs include immutable image tags, Lambda zip artifact paths,
-`spa_bucket_name`, and `redis_url`. If `redis_url` is omitted, the ECS task
+`spa_bucket_name`, `redis_url`, and `stage_changed_queue_arn` when the optional
+stage-changed consumer Lambda is enabled. If `redis_url` is omitted, the ECS task
 configuration uses the SCRUM-162 ElastiCache TLS endpoint.
 
 The JSON files under `deployment/` remain source contracts with placeholders;

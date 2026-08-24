@@ -39,8 +39,9 @@ variable "stage_changed_consumer_lambda_zip_path" {
 }
 
 variable "stage_changed_queue_arn" {
-  description = "SQS queue ARN that triggers the optional stage-changed consumer Lambda."
+  description = "Optional SQS queue ARN that triggers the stage-changed consumer Lambda."
   type        = string
+  default     = null
 }
 
 variable "stage_changed_topic_arn" {

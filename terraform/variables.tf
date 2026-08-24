@@ -87,7 +87,8 @@ variable "stage_changed_queue_url" {
 
 variable "stage_changed_queue_arn" {
   type        = string
-  description = "SQS queue ARN used by the optional stage-changed Lambda event source mapping."
+  description = "Optional SQS queue ARN used by the stage-changed Lambda event source mapping."
+  default     = null
 }
 
 variable "action_item_created_topic_arn" {

@@ -16,6 +16,7 @@ locals {
   alb_name                     = "${var.name_prefix}-api-alb"
   core_case_target_group_name  = "${var.name_prefix}-core-case"
   tax_engine_target_group_name = "${var.name_prefix}-tax-engine"
+  service_discovery_namespace  = "service.taxpulse.internal"
 }
 
 resource "aws_ecr_repository" "core_case" {
@@ -257,6 +258,27 @@ resource "aws_lb_listener_rule" "tax_engine" {
   }
 }
 
+resource "aws_service_discovery_private_dns_namespace" "service" {
+  name        = local.service_discovery_namespace
+  description = "Private DNS namespace for TaxPulse ECS service-to-service calls."
+  vpc         = var.vpc_id
+}
+
+resource "aws_service_discovery_service" "tax_engine" {
+  name = "tax-engine"
+
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.service.id
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+
+    routing_policy = "MULTIVALUE"
+  }
+}
+
 resource "aws_ecs_cluster" "api" {
   name = local.cluster_name
 }
@@ -441,6 +463,10 @@ resource "aws_ecs_service" "tax_engine" {
     target_group_arn = aws_lb_target_group.tax_engine.arn
     container_name   = local.tax_engine_container_name
     container_port   = 8000
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.tax_engine.arn
   }
 
   depends_on = [aws_lb_listener_rule.tax_engine]

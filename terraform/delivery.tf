@@ -53,10 +53,10 @@ module "lambda_consumers" {
 
   runtime_environment = merge(
     {
-      AWS_REGION                       = var.aws_region
-      JWT_ISSUER                       = var.jwt_issuer
-      TAXPULSE_STAGE_CHANGED_TOPIC_ARN = var.stage_changed_topic_arn
-      TAXPULSE_ACTION_ITEM_TOPIC_ARN   = var.action_item_created_topic_arn
+      AWS_REGION                             = var.aws_region
+      JWT_ISSUER                             = var.jwt_issuer
+      TAXPULSE_STAGE_CHANGED_TOPIC_ARN       = var.stage_changed_topic_arn
+      TAXPULSE_ACTION_ITEM_CREATED_TOPIC_ARN = var.action_item_created_topic_arn
     },
     var.lambda_runtime_environment,
   )

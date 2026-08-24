@@ -41,15 +41,19 @@ data "aws_iam_policy_document" "runtime_access" {
     resources = [var.shared_config_secret_arn]
   }
 
-  statement {
-    sid = "ConsumeStageChangedQueue"
-    actions = [
-      "sqs:ChangeMessageVisibility",
-      "sqs:DeleteMessage",
-      "sqs:GetQueueAttributes",
-      "sqs:ReceiveMessage",
-    ]
-    resources = [var.stage_changed_queue_arn]
+  dynamic "statement" {
+    for_each = var.enable_stage_changed_consumer_lambda ? [var.stage_changed_queue_arn] : []
+
+    content {
+      sid = "ConsumeStageChangedQueue"
+      actions = [
+        "sqs:ChangeMessageVisibility",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes",
+        "sqs:ReceiveMessage",
+      ]
+      resources = [statement.value]
+    }
   }
 }
 
