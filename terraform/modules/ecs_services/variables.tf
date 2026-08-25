@@ -56,9 +56,33 @@ variable "core_case_image_tag" {
   type        = string
 }
 
+variable "core_case_image_uri" {
+  description = "Optional full immutable image URI for the Core Case Service."
+  type        = string
+  default     = null
+}
+
+variable "core_case_image_repository_arn" {
+  description = "Optional ECR repository ARN for an externally supplied Core Case Service image."
+  type        = string
+  default     = null
+}
+
 variable "tax_engine_image_tag" {
   description = "Immutable ECR image tag for the Tax Engine."
   type        = string
+}
+
+variable "tax_engine_image_uri" {
+  description = "Optional full immutable image URI for the Tax Engine."
+  type        = string
+  default     = null
+}
+
+variable "tax_engine_image_repository_arn" {
+  description = "Optional ECR repository ARN for an externally supplied Tax Engine image."
+  type        = string
+  default     = null
 }
 
 variable "shared_config_secret_arn" {

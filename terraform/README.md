@@ -22,12 +22,34 @@ This creates the exact paths used by the root defaults:
 The build uses the repository-pinned `esbuild` and direct `archiver` dependencies. The
 generated `dist/` directory is ignored and must not be committed.
 
+### Clean-environment prerequisites
+
+Terraform uses the standard AWS credential chain. Select credentials outside Terraform
+with AWS environment variables, shared credentials/configuration, or an explicitly
+selected AWS CLI profile. The old developer-specific profile and bridge file are not
+required.
+
+Before applying, confirm the AWS account, region, expected cost, and a clean/disposable
+account or a unique `name_prefix` and `environment` that cannot collide with existing
+resources. A unique S3 backend key isolates Terraform state only; it does not isolate
+AWS resources with globally shared names or prevent collisions in the same account.
+
+The target environment must also provide:
+
+- `db_password` and `shared_config_secret_arn` for the database and runtime secret.
+- A reachable `jwt_issuer`, matching `jwt_audience`, and a valid synthetic bearer token.
+- The three Lambda ZIP artifacts described above.
+- Immutable, ARM64-compatible Core Case Service and Tax Engine images. By default these
+  are pulled from the Terraform-created ECR repositories using `*_image_tag`. For a clean
+  environment using already published images, set `core_case_image_uri` and
+  `tax_engine_image_uri`; for private external ECR repositories also set the matching
+  `*_image_repository_arn` values.
+
 ### Isolated apply procedure
 
-Before applying, prepare an uncommitted `terraform/terraform.tfvars` containing at least
-`db_password` and `shared_config_secret_arn`, plus the target account's immutable image
-tags and any environment-specific values. Do not commit that file, credentials, tokens,
-or taxpayer data.
+Prepare an uncommitted `terraform/terraform.tfvars` containing the required secret values,
+immutable image inputs, and any environment-specific values. Do not commit that file,
+credentials, tokens, or taxpayer data.
 
 Use a unique S3 backend key for the smoke environment. For example, from PowerShell:
 

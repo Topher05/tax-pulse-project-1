@@ -46,6 +46,18 @@ variable "core_case_image_tag" {
   default     = "v1.0.0.0"
 }
 
+variable "core_case_image_uri" {
+  type        = string
+  description = "Optional full immutable image URI for the Core Case Service. When null, use the managed ECR repository and image tag."
+  default     = null
+}
+
+variable "core_case_image_repository_arn" {
+  type        = string
+  description = "Optional ECR repository ARN used to pull an externally supplied Core Case Service image."
+  default     = null
+}
+
 variable "log_retention_days" {
   type        = number
   description = "CloudWatch log retention in days for sandbox ECS services."
@@ -62,6 +74,18 @@ variable "tax_engine_image_tag" {
   type        = string
   description = "Immutable ECR image tag for the Tax Engine task definition."
   default     = "v1.0.0.0"
+}
+
+variable "tax_engine_image_uri" {
+  type        = string
+  description = "Optional full immutable image URI for the Tax Engine. When null, use the managed ECR repository and image tag."
+  default     = null
+}
+
+variable "tax_engine_image_repository_arn" {
+  type        = string
+  description = "Optional ECR repository ARN used to pull an externally supplied Tax Engine image."
+  default     = null
 }
 
 variable "shared_config_secret_arn" {

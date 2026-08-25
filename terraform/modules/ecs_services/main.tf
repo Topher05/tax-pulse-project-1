@@ -1,24 +1,28 @@
 data "aws_caller_identity" "current" {}
 
 locals {
-  cluster_name                 = "${var.name_prefix}-api"
-  core_case_family             = "${var.name_prefix}-core-case-service"
-  tax_engine_family            = "${var.name_prefix}-tax-engine"
-  core_case_container_name     = "core-case-service"
-  tax_engine_container_name    = "tax-engine"
-  collector_container_name     = "aws-otel-collector"
-  collector_command            = "--config=/etc/ecs/ecs-default-config.yaml"
-  core_case_repository_name    = "${var.name_prefix}/core-case-service"
-  tax_engine_repository_name   = "${var.name_prefix}/tax-engine"
-  core_case_log_group_name     = "Case-Service"
-  tax_engine_log_group_name    = "Tax-Engine"
-  execution_role_name          = "${var.name_prefix}-ecs-task-execution-role"
-  core_case_task_role_name     = "${var.name_prefix}-core-case-task-role"
-  tax_engine_task_role_name    = "${var.name_prefix}-tax-engine-task-role"
-  alb_name                     = "${var.name_prefix}-api-alb"
-  core_case_target_group_name  = "${var.name_prefix}-core-case"
-  tax_engine_target_group_name = "${var.name_prefix}-tax-engine"
-  service_discovery_namespace  = "service.taxpulse.internal"
+  cluster_name                   = "${var.name_prefix}-api"
+  core_case_family               = "${var.name_prefix}-core-case-service"
+  tax_engine_family              = "${var.name_prefix}-tax-engine"
+  core_case_container_name       = "core-case-service"
+  tax_engine_container_name      = "tax-engine"
+  collector_container_name       = "aws-otel-collector"
+  collector_command              = "--config=/etc/ecs/ecs-default-config.yaml"
+  core_case_repository_name      = "${var.name_prefix}/core-case-service"
+  tax_engine_repository_name     = "${var.name_prefix}/tax-engine"
+  core_case_log_group_name       = "Case-Service"
+  tax_engine_log_group_name      = "Tax-Engine"
+  execution_role_name            = "${var.name_prefix}-ecs-task-execution-role"
+  core_case_task_role_name       = "${var.name_prefix}-core-case-task-role"
+  tax_engine_task_role_name      = "${var.name_prefix}-tax-engine-task-role"
+  alb_name                       = "${var.name_prefix}-api-alb"
+  core_case_target_group_name    = "${var.name_prefix}-core-case"
+  tax_engine_target_group_name   = "${var.name_prefix}-tax-engine"
+  service_discovery_namespace    = "service.taxpulse.internal"
+  core_case_image                = coalesce(var.core_case_image_uri, "${aws_ecr_repository.core_case.repository_url}:${var.core_case_image_tag}")
+  tax_engine_image               = coalesce(var.tax_engine_image_uri, "${aws_ecr_repository.tax_engine.repository_url}:${var.tax_engine_image_tag}")
+  core_case_pull_repository_arn  = coalesce(var.core_case_image_repository_arn, aws_ecr_repository.core_case.arn)
+  tax_engine_pull_repository_arn = coalesce(var.tax_engine_image_repository_arn, aws_ecr_repository.tax_engine.arn)
 }
 
 resource "aws_ecr_repository" "core_case" {
@@ -91,8 +95,8 @@ data "aws_iam_policy_document" "execution_runtime_access" {
       "ecr:BatchGetImage",
     ]
     resources = [
-      aws_ecr_repository.core_case.arn,
-      aws_ecr_repository.tax_engine.arn,
+      local.core_case_pull_repository_arn,
+      local.tax_engine_pull_repository_arn,
     ]
   }
 
@@ -364,7 +368,7 @@ resource "aws_ecs_task_definition" "core_case" {
   container_definitions = jsonencode([
     {
       name      = local.core_case_container_name
-      image     = "${aws_ecr_repository.core_case.repository_url}:${var.core_case_image_tag}"
+      image     = local.core_case_image
       essential = true
       portMappings = [
         {
@@ -485,7 +489,7 @@ resource "aws_ecs_task_definition" "tax_engine" {
   container_definitions = jsonencode([
     {
       name      = local.tax_engine_container_name
-      image     = "${aws_ecr_repository.tax_engine.repository_url}:${var.tax_engine_image_tag}"
+      image     = local.tax_engine_image
       essential = true
       portMappings = [
         {

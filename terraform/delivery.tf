@@ -30,8 +30,12 @@ module "ecs_services" {
   log_retention_days                 = var.log_retention_days
   observability_trace_sampling_ratio = var.observability_trace_sampling_ratio
 
-  core_case_image_tag  = var.core_case_image_tag
-  tax_engine_image_tag = var.tax_engine_image_tag
+  core_case_image_tag             = var.core_case_image_tag
+  tax_engine_image_tag            = var.tax_engine_image_tag
+  core_case_image_uri             = var.core_case_image_uri
+  tax_engine_image_uri            = var.tax_engine_image_uri
+  core_case_image_repository_arn  = var.core_case_image_repository_arn
+  tax_engine_image_repository_arn = var.tax_engine_image_repository_arn
 
   shared_config_secret_arn = var.shared_config_secret_arn
   jwt_issuer               = var.jwt_issuer

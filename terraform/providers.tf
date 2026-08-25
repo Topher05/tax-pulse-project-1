@@ -18,9 +18,7 @@ terraform {
 }
 
 provider "aws" {
-  region              = var.aws_region
-  profile             = "terraform-process"
-  shared_config_files = ["./aws-login-bridge.config"]
+  region = var.aws_region
 
   default_tags {
     tags = {

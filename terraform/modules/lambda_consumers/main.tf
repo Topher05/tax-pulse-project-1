@@ -21,19 +21,33 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
-resource "aws_iam_role" "lambda" {
-  name               = "${var.name_prefix}-lambda-consumer-role"
-  description        = "Runtime role for TaxPulse transition and event consumer Lambdas."
+resource "aws_iam_role" "transition" {
+  name               = "${var.name_prefix}-lambda-transition-role"
+  description        = "Runtime role for TaxPulse transition Lambdas."
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
   tags               = local.tags
 }
 
-resource "aws_iam_role_policy_attachment" "basic_execution" {
-  role       = aws_iam_role.lambda.name
+resource "aws_iam_role" "projection" {
+  count              = var.enable_stage_changed_consumer_lambda ? 1 : 0
+  name               = "${var.name_prefix}-lambda-projection-role"
+  description        = "Runtime role for the TaxPulse stage-changed projection consumer."
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags               = local.tags
+}
+
+resource "aws_iam_role_policy_attachment" "transition_basic_execution" {
+  role       = aws_iam_role.transition.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-data "aws_iam_policy_document" "runtime_access" {
+resource "aws_iam_role_policy_attachment" "projection_basic_execution" {
+  count      = var.enable_stage_changed_consumer_lambda ? 1 : 0
+  role       = aws_iam_role.projection[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+data "aws_iam_policy_document" "transition_access" {
   statement {
     sid       = "PublishWorkflowEvents"
     actions   = ["sns:Publish"]
@@ -46,36 +60,40 @@ data "aws_iam_policy_document" "runtime_access" {
     resources = [var.shared_config_secret_arn]
   }
 
-  dynamic "statement" {
-    for_each = var.enable_stage_changed_consumer_lambda ? [var.stage_changed_queue_arn] : []
+}
 
-    content {
-      sid = "ConsumeStageChangedQueue"
-      actions = [
-        "sqs:ChangeMessageVisibility",
-        "sqs:DeleteMessage",
-        "sqs:GetQueueAttributes",
-        "sqs:ReceiveMessage",
-      ]
-      resources = [statement.value]
-    }
+resource "aws_iam_role_policy" "transition_access" {
+  name   = "${var.name_prefix}-lambda-transition-access"
+  role   = aws_iam_role.transition.id
+  policy = data.aws_iam_policy_document.transition_access.json
+}
+
+data "aws_iam_policy_document" "projection_access" {
+  count = var.enable_stage_changed_consumer_lambda ? 1 : 0
+
+  statement {
+    sid = "ConsumeStageChangedQueue"
+    actions = [
+      "sqs:ChangeMessageVisibility",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes",
+      "sqs:ReceiveMessage",
+    ]
+    resources = [var.stage_changed_queue_arn]
   }
 
-  dynamic "statement" {
-    for_each = var.enable_stage_changed_consumer_lambda ? [var.projection_table_arn] : []
-
-    content {
-      sid       = "UpdateProjectionTable"
-      actions   = ["dynamodb:UpdateItem"]
-      resources = [statement.value]
-    }
+  statement {
+    sid       = "UpdateProjectionTable"
+    actions   = ["dynamodb:UpdateItem"]
+    resources = [var.projection_table_arn]
   }
 }
 
-resource "aws_iam_role_policy" "runtime_access" {
-  name   = "${var.name_prefix}-lambda-runtime-access"
-  role   = aws_iam_role.lambda.id
-  policy = data.aws_iam_policy_document.runtime_access.json
+resource "aws_iam_role_policy" "projection_access" {
+  count  = var.enable_stage_changed_consumer_lambda ? 1 : 0
+  name   = "${var.name_prefix}-lambda-projection-access"
+  role   = aws_iam_role.projection[0].id
+  policy = data.aws_iam_policy_document.projection_access[0].json
 }
 
 resource "aws_cloudwatch_log_group" "present_to_client" {
@@ -106,7 +124,7 @@ resource "aws_cloudwatch_log_group" "transition_api_access" {
 resource "aws_lambda_function" "present_to_client" {
   function_name    = local.present_to_client_name
   description      = "Transition a Tax Plan Cycle from Review to Client Approval."
-  role             = aws_iam_role.lambda.arn
+  role             = aws_iam_role.transition.arn
   runtime          = local.runtime
   handler          = "index.presentToClientHandler"
   architectures    = ["arm64"]
@@ -126,7 +144,7 @@ resource "aws_lambda_function" "present_to_client" {
 resource "aws_lambda_function" "execute" {
   function_name    = local.execute_name
   description      = "Transition a Tax Plan Cycle from Client Approval to Executed."
-  role             = aws_iam_role.lambda.arn
+  role             = aws_iam_role.transition.arn
   runtime          = local.runtime
   handler          = "index.handler"
   architectures    = ["arm64"]
@@ -147,7 +165,7 @@ resource "aws_lambda_function" "stage_changed_consumer" {
   count            = var.enable_stage_changed_consumer_lambda ? 1 : 0
   function_name    = local.stage_changed_consumer_name
   description      = "Consume stage-changed SQS events and update the Plan Cycle Queue projection."
-  role             = aws_iam_role.lambda.arn
+  role             = aws_iam_role.projection[0].arn
   runtime          = local.runtime
   handler          = "index.handler"
   architectures    = ["arm64"]
