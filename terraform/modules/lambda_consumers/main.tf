@@ -108,7 +108,7 @@ resource "aws_lambda_function" "present_to_client" {
   description      = "Transition a Tax Plan Cycle from Review to Client Approval."
   role             = aws_iam_role.lambda.arn
   runtime          = local.runtime
-  handler          = "present-to-client-lambda/index.presentToClientHandler"
+  handler          = "index.presentToClientHandler"
   architectures    = ["arm64"]
   timeout          = 30
   memory_size      = 512
@@ -128,7 +128,7 @@ resource "aws_lambda_function" "execute" {
   description      = "Transition a Tax Plan Cycle from Client Approval to Executed."
   role             = aws_iam_role.lambda.arn
   runtime          = local.runtime
-  handler          = "execute-lambda/index.handler"
+  handler          = "index.handler"
   architectures    = ["arm64"]
   timeout          = 30
   memory_size      = 512
@@ -149,7 +149,7 @@ resource "aws_lambda_function" "stage_changed_consumer" {
   description      = "Consume stage-changed SQS events and update the Plan Cycle Queue projection."
   role             = aws_iam_role.lambda.arn
   runtime          = local.runtime
-  handler          = "stage-changed-consumer/index.handler"
+  handler          = "index.handler"
   architectures    = ["arm64"]
   timeout          = 60
   memory_size      = 512

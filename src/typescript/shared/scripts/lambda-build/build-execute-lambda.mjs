@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { build } from "esbuild";
@@ -6,7 +6,9 @@ import { packageLambda } from "./package-lambda.mjs";
 
 const outfile = resolve("dist/execute-lambda/index.js");
 
-await mkdir(resolve("dist/execute-lambda"), { recursive: true });
+const stagingDirectory = resolve("dist/execute-lambda");
+await rm(stagingDirectory, { force: true, recursive: true });
+await mkdir(stagingDirectory, { recursive: true });
 
 await build({
   entryPoints: [resolve("src/typescript/shared/scripts/execute-lambda/index.ts")],
