@@ -515,6 +515,46 @@ different capacity or latency tradeoffs:
 - `TAXPULSE_ARGON2_HASH_LENGTH`
 - `TAXPULSE_ARGON2_SALT_LENGTH`
 
+## AI-Assist Evaluation
+
+The Jira-181 evaluation pipeline is offline and file-driven. It uses the checked-in
+synthetic questions in `data/corpus/evaluation/` and writes generated artifacts under
+`artifacts/assist-evaluation/`.
+
+Available commands:
+
+```powershell
+npm run assist:evaluation:collect
+npm run assist:evaluation:score
+npm run assist:evaluation
+```
+
+Environment variables:
+
+- `OPENAI_API_KEY` is required for the Python scorer.
+- `RAGAS_EVALUATOR_MODEL` overrides the default `gpt-4o-mini` evaluator model.
+- `RAGAS_EVALUATOR_TEMPERATURE` overrides the default `0` temperature.
+- `ASSIST_EVALUATION_QUESTIONS_PATH` overrides the checked-in question set.
+- `ASSIST_EVALUATION_THRESHOLDS_PATH` overrides the checked-in thresholds file.
+- `ASSIST_RAGAS_INPUT_PATH` overrides the collected input artifact path.
+- `ASSIST_EVALUATION_RESULT_LIMIT` overrides the retriever result limit.
+
+Report output:
+
+- `artifacts/assist-evaluation/ragas-input.json` stores the collected questions,
+  retrieved chunks, retrieved contexts, and citation metadata.
+- `artifacts/assist-evaluation/ragas-report.json` stores per-question scores, aggregate
+  means, threshold values, pass/fail status, retrieved chunk IDs, and citations.
+- The gate passes only when the mean `context_relevance` and mean `faithfulness` both
+  meet or exceed `0.80`.
+
+Blocker note:
+
+- The combined command intentionally stops at the Jira-180 retriever scaffold until the
+  concrete hybrid keyword/vector retriever plus reranking implementation is available.
+- Context collection still requires a pgvector-capable PostgreSQL instance once Jira 180
+  lands, but the backend API itself does not need to run for the evaluation workflow.
+
 ## Migration Commands
 
 The PostgreSQL migration workflow keeps typed Drizzle schema definitions in

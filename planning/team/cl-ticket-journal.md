@@ -5,6 +5,58 @@
 
 Add new ticket entries below using this template.
 
+## caleb-latimer-jira181 - SCRUM-181
+
+**Branch:** `caleb-latimer-jira181`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-181
+
+**Summary:** Gate retrieval quality with RAGAS
+
+**Description:** As a Data Engineer, I want a RAGAS evaluation, so that AI-Assist retrieval meets a documented quality bar. Jira 180 remains blocked and is intentionally left as the concrete retriever scaffold point for this ticket.
+
+**Acceptance Criteria:**
+
+- Ten synthetic evaluation questions are checked in under `data/corpus/evaluation/`.
+- Thresholds are checked in separately for mean `context_relevance >= 0.80` and mean `faithfulness >= 0.80`.
+- TypeScript evaluation contracts, collection scripts, and the Jira 180 retriever scaffold are added without changing the `/assist` HTTP surface.
+- A Python scorer writes the offline RAGAS report and exits nonzero when thresholds fail or inputs are malformed.
+- Documentation explains setup, commands, environment variables, report interpretation, threshold rationale, the pgvector requirement, and the Jira 180 blocker.
+
+**Code Connection:**
+
+- Added the shared AI-Assist evaluation contract layer in `src/typescript/assist/evaluation.ts`.
+- Added checked-in synthetic evaluation inputs in `data/corpus/evaluation/questions.json` and `data/corpus/evaluation/thresholds.json`.
+- Added collection and combined evaluation commands in `src/typescript/shared/scripts/assistEvaluationCollect.ts` and `src/typescript/shared/scripts/assistEvaluation.ts`.
+- Added the offline RAGAS scorer in `src/python/retrieval/ragas_evaluation.py` using the collections API `ContextRelevance` and `Faithfulness` metrics.
+- Added the Jira 180 retriever factory scaffold with the exact `TODO: Jira 180 imp incoming` marker and a clear retrieval contract failure message.
+- Added the `eval` optional dependency group in `pyproject.toml` for `openai` and `ragas`.
+
+**Project Scope Connection:**
+
+- RAG-Powered AI Assist.
+- Lives in the assist corpus and evaluation pipeline rather than Core Case, Tax Engine, Pulse UI, or the `/assist` endpoint.
+- Depends on Jira 180 for the real ranked chunk retriever and contributes evaluation evidence for Jira 182 and Jira 189.
+
+**Changed Files:**
+
+- `data/corpus/evaluation/questions.json`
+- `data/corpus/evaluation/thresholds.json`
+- `package.json`
+- `planning/team/cl-ticket-journal.md`
+- `pyproject.toml`
+- `src/python/retrieval/ragas_evaluation.py`
+- `src/typescript/assist/evaluation.ts`
+- `src/typescript/shared/scripts/assistEvaluation.ts`
+- `src/typescript/shared/scripts/assistEvaluationCollect.ts`
+
+**Validation Notes:**
+
+- Non-test validation has not been run yet.
+- Jira 180 remains blocked by design, so the combined evaluation command is expected to stop at the retriever scaffold until the concrete ranked-context factory lands.
+
 <!--
 ## caleb-latimer-jiraXX - SCRUM-XX
 
