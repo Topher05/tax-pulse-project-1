@@ -11,7 +11,7 @@ import {
   readCorpusChunkArtifact,
 } from "../../assist/corpus.js";
 
-loadEnv();
+loadEnv({ override: true });
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 if (!databaseUrl) {

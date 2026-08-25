@@ -6,7 +6,7 @@ import {
 
 import { config as loadEnv } from "dotenv";
 
-loadEnv();
+loadEnv({ override: true });
 
 const chunksPath = process.env.CORPUS_CHUNKS_PATH?.trim();
 if (!chunksPath) {

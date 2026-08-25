@@ -5,7 +5,7 @@ import { retrieveHybridCorpusChunks } from "../../assist/retrieval.js";
 import { createOpenAIEmbeddingProvider } from "../../assist/embeddings.js";
 
 async function main() {
-  loadEnv();
+  loadEnv({ override: true });
   console.log("Starting hybrid retrieval smoke test...");
 
   if (!process.env.OPENAI_API_KEY) {

@@ -8,7 +8,7 @@ import {
 
 import { config as loadEnv } from "dotenv";
 
-loadEnv();
+loadEnv({ override: true });
 
 const inputDirectory = process.env.CORPUS_INPUT_DIR?.trim();
 if (!inputDirectory) {
