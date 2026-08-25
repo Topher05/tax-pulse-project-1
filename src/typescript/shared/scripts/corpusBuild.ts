@@ -6,9 +6,25 @@ import {
   loadCorpusIntakeConfig,
 } from "../../assist/corpus.js";
 
-const inputDirectory = process.env.CORPUS_INPUT_DIR?.trim() || defaultCorpusInputDirectory;
-const outputPath = process.env.CORPUS_CHUNKS_PATH?.trim() || defaultCorpusChunkArtifactPath;
-const configPath = process.env.CORPUS_INTAKE_CONFIG?.trim() || `${inputDirectory}/corpus-intake.json`;
+import { config as loadEnv } from "dotenv";
+
+loadEnv();
+
+const inputDirectory = process.env.CORPUS_INPUT_DIR?.trim();
+if (!inputDirectory) {
+  throw new Error("CORPUS_INPUT_DIR is required");
+}
+
+const outputPath = process.env.CORPUS_CHUNKS_PATH?.trim();
+if (!outputPath) {
+  throw new Error("CORPUS_CHUNKS_PATH is required");
+}
+
+const configPath = process.env.CORPUS_INTAKE_CONFIG?.trim();
+if (!configPath) {
+  throw new Error("CORPUS_INTAKE_CONFIG is required");
+}
+
 
 try {
   const config = await loadCorpusIntakeConfig(configPath);

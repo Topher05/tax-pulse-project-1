@@ -4,12 +4,24 @@ import {
   retrieveCorpusChunksForSmoke,
 } from "../../assist/corpus.js";
 
-const chunksPath = process.env.CORPUS_CHUNKS_PATH?.trim() || defaultCorpusChunkArtifactPath;
-const query =
-  process.env.CORPUS_SMOKE_QUERY?.trim() ||
-  "quarterly estimated payment review for dividend and self-employment income not subject to withholding";
-const expectedSectionId =
-  process.env.CORPUS_SMOKE_EXPECTED_SECTION_ID?.trim() || "SYN-TC-4100-b";
+import { config as loadEnv } from "dotenv";
+
+loadEnv();
+
+const chunksPath = process.env.CORPUS_CHUNKS_PATH?.trim();
+if (!chunksPath) {
+  throw new Error("CORPUS_CHUNKS_PATH is required");
+}
+
+const query = process.env.CORPUS_SMOKE_QUERY?.trim();
+if (!query) {
+  throw new Error("CORPUS_SMOKE_QUERY is required");
+}
+
+const expectedSectionId = process.env.CORPUS_SMOKE_EXPECTED_SECTION_ID?.trim();
+if (!expectedSectionId) {
+  throw new Error("CORPUS_SMOKE_EXPECTED_SECTION_ID is required");
+}
 
 const chunks = await readCorpusChunkArtifact(chunksPath);
 const results = retrieveCorpusChunksForSmoke(chunks, query, 3);

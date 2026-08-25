@@ -9,14 +9,12 @@ async function main() {
   console.log("Starting hybrid retrieval smoke test...");
 
   if (!process.env.OPENAI_API_KEY) {
-    console.error("Skipping: OPENAI_API_KEY not set");
-    return;
+    throw new Error("OPENAI_API_KEY is required");
   }
   
   const databaseUrl = process.env.DATABASE_URL?.trim();
   if (!databaseUrl) {
-    console.error("Skipping: DATABASE_URL not set");
-    return;
+    throw new Error("DATABASE_URL is required");
   }
 
   const client = new Client({ connectionString: databaseUrl });
