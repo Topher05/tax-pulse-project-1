@@ -93,27 +93,6 @@ variable "redis_url" {
   default     = null
 }
 
-variable "stage_changed_topic_arn" {
-  type        = string
-  description = "SNS topic ARN for stage-changed CloudEvents."
-}
-
-variable "stage_changed_queue_url" {
-  type        = string
-  description = "SQS queue URL subscribed to the stage-changed topic."
-}
-
-variable "stage_changed_queue_arn" {
-  type        = string
-  description = "Optional SQS queue ARN used by the stage-changed Lambda event source mapping."
-  default     = null
-}
-
-variable "action_item_created_topic_arn" {
-  type        = string
-  description = "SNS topic ARN for action-item-created CloudEvents emitted by the present-to-client saga."
-}
-
 variable "lambda_runtime_environment" {
   type        = map(string)
   description = "Non-secret and environment-specific variables for the transition Lambdas."
@@ -136,7 +115,7 @@ variable "execute_lambda_zip_path" {
 variable "enable_stage_changed_consumer_lambda" {
   type        = bool
   description = "Whether to create the SCRUM-159 SQS-triggered stage-changed queue projection Lambda."
-  default     = false
+  default     = true
 }
 
 variable "stage_changed_consumer_lambda_zip_path" {

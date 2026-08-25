@@ -104,15 +104,15 @@ resource "aws_cloudwatch_log_group" "transition_api_access" {
 }
 
 resource "aws_lambda_function" "present_to_client" {
-  function_name = local.present_to_client_name
-  description   = "Transition a Tax Plan Cycle from Review to Client Approval."
-  role          = aws_iam_role.lambda.arn
-  runtime       = local.runtime
-  handler       = "present-to-client-lambda/index.presentToClientHandler"
-  architectures = ["arm64"]
-  timeout       = 30
-  memory_size   = 512
-  filename      = var.present_to_client_lambda_zip_path
+  function_name    = local.present_to_client_name
+  description      = "Transition a Tax Plan Cycle from Review to Client Approval."
+  role             = aws_iam_role.lambda.arn
+  runtime          = local.runtime
+  handler          = "present-to-client-lambda/index.presentToClientHandler"
+  architectures    = ["arm64"]
+  timeout          = 30
+  memory_size      = 512
+  filename         = var.present_to_client_lambda_zip_path
   source_code_hash = filebase64sha256(var.present_to_client_lambda_zip_path)
   tags             = local.tags
 
@@ -124,15 +124,15 @@ resource "aws_lambda_function" "present_to_client" {
 }
 
 resource "aws_lambda_function" "execute" {
-  function_name = local.execute_name
-  description   = "Transition a Tax Plan Cycle from Client Approval to Executed."
-  role          = aws_iam_role.lambda.arn
-  runtime       = local.runtime
-  handler       = "execute-lambda/index.handler"
-  architectures = ["arm64"]
-  timeout       = 30
-  memory_size   = 512
-  filename      = var.execute_lambda_zip_path
+  function_name    = local.execute_name
+  description      = "Transition a Tax Plan Cycle from Client Approval to Executed."
+  role             = aws_iam_role.lambda.arn
+  runtime          = local.runtime
+  handler          = "execute-lambda/index.handler"
+  architectures    = ["arm64"]
+  timeout          = 30
+  memory_size      = 512
+  filename         = var.execute_lambda_zip_path
   source_code_hash = filebase64sha256(var.execute_lambda_zip_path)
   tags             = local.tags
 
@@ -144,16 +144,16 @@ resource "aws_lambda_function" "execute" {
 }
 
 resource "aws_lambda_function" "stage_changed_consumer" {
-  count         = var.enable_stage_changed_consumer_lambda ? 1 : 0
-  function_name = local.stage_changed_consumer_name
-  description   = "Consume stage-changed SQS events and update the Plan Cycle Queue projection."
-  role          = aws_iam_role.lambda.arn
-  runtime       = local.runtime
-  handler       = "stage-changed-consumer/index.handler"
-  architectures = ["arm64"]
-  timeout       = 60
-  memory_size   = 512
-  filename      = var.stage_changed_consumer_lambda_zip_path
+  count            = var.enable_stage_changed_consumer_lambda ? 1 : 0
+  function_name    = local.stage_changed_consumer_name
+  description      = "Consume stage-changed SQS events and update the Plan Cycle Queue projection."
+  role             = aws_iam_role.lambda.arn
+  runtime          = local.runtime
+  handler          = "stage-changed-consumer/index.handler"
+  architectures    = ["arm64"]
+  timeout          = 60
+  memory_size      = 512
+  filename         = var.stage_changed_consumer_lambda_zip_path
   source_code_hash = filebase64sha256(var.stage_changed_consumer_lambda_zip_path)
   tags             = local.tags
 
@@ -165,12 +165,12 @@ resource "aws_lambda_function" "stage_changed_consumer" {
 }
 
 resource "aws_lambda_event_source_mapping" "stage_changed_consumer" {
-  count            = var.enable_stage_changed_consumer_lambda ? 1 : 0
-  event_source_arn = var.stage_changed_queue_arn
-  function_name    = aws_lambda_function.stage_changed_consumer[0].arn
-  batch_size       = 10
+  count                   = var.enable_stage_changed_consumer_lambda ? 1 : 0
+  event_source_arn        = var.stage_changed_queue_arn
+  function_name           = aws_lambda_function.stage_changed_consumer[0].arn
+  batch_size              = 10
   function_response_types = ["ReportBatchItemFailures"]
-  enabled          = true
+  enabled                 = true
 }
 
 resource "aws_apigatewayv2_api" "transition" {

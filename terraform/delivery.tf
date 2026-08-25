@@ -9,6 +9,13 @@ locals {
   )
 }
 
+module "events" {
+  source = "./modules/events"
+
+  environment = var.environment
+  name_prefix = var.name_prefix
+}
+
 module "ecs_services" {
   source = "./modules/ecs_services"
 
@@ -31,9 +38,9 @@ module "ecs_services" {
   login_base_domain        = var.login_base_domain
   redis_url                = local.delivery_redis_url
 
-  stage_changed_topic_arn       = var.stage_changed_topic_arn
-  stage_changed_queue_url       = var.stage_changed_queue_url
-  action_item_created_topic_arn = var.action_item_created_topic_arn
+  stage_changed_topic_arn       = module.events.stage_changed_topic_arn
+  stage_changed_queue_url       = module.events.stage_changed_queue_url
+  action_item_created_topic_arn = module.events.action_item_created_topic_arn
 }
 
 module "lambda_consumers" {
@@ -49,12 +56,12 @@ module "lambda_consumers" {
 
   enable_stage_changed_consumer_lambda   = var.enable_stage_changed_consumer_lambda
   stage_changed_consumer_lambda_zip_path = var.stage_changed_consumer_lambda_zip_path
-  stage_changed_queue_arn                = var.stage_changed_queue_arn
+  stage_changed_queue_arn                = module.events.stage_changed_queue_arn
   projection_table_arn                   = aws_dynamodb_table.plan_cycle_queue_projection.arn
   projection_table_name                  = aws_dynamodb_table.plan_cycle_queue_projection.name
 
-  stage_changed_topic_arn       = var.stage_changed_topic_arn
-  action_item_created_topic_arn = var.action_item_created_topic_arn
+  stage_changed_topic_arn       = module.events.stage_changed_topic_arn
+  action_item_created_topic_arn = module.events.action_item_created_topic_arn
   jwt_issuer                    = var.jwt_issuer
   jwt_audience                  = var.jwt_audience
 
@@ -62,8 +69,8 @@ module "lambda_consumers" {
     {
       AWS_REGION                                 = var.aws_region
       JWT_ISSUER                                 = var.jwt_issuer
-      TAXPULSE_STAGE_CHANGED_TOPIC_ARN           = var.stage_changed_topic_arn
-      TAXPULSE_ACTION_ITEM_CREATED_TOPIC_ARN     = var.action_item_created_topic_arn
+      TAXPULSE_STAGE_CHANGED_TOPIC_ARN           = module.events.stage_changed_topic_arn
+      TAXPULSE_ACTION_ITEM_CREATED_TOPIC_ARN     = module.events.action_item_created_topic_arn
       TAXPULSE_PLAN_CYCLE_QUEUE_PROJECTION_TABLE = aws_dynamodb_table.plan_cycle_queue_projection.name
     },
     var.lambda_runtime_environment,
