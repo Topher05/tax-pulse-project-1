@@ -14,6 +14,13 @@ function readTerraformRoot(fileName: string): string {
   return readFileSync(resolve(process.cwd(), "terraform", fileName), "utf8");
 }
 
+function readLambdaBuildScript(fileName: string): string {
+  return readFileSync(
+    resolve(process.cwd(), "src", "typescript", "shared", "scripts", "lambda-build", fileName),
+    "utf8",
+  );
+}
+
 function readDeploymentTemplate(): string {
   return readFileSync(
     resolve(process.cwd(), "deployment", "PresentToClient-Draft.template.yaml"),
@@ -78,6 +85,84 @@ describe("Sprint 5 Terraform module contracts", () => {
     expect(main).toContain('actions   = ["dynamodb:UpdateItem"]');
     expect(main).toContain("user = var.user");
     expect(main).toContain("env  = var.environment");
+  });
+
+  test("Lambda handlers and builders use the ZIP-root module contract", () => {
+    const main = readTerraformModule("lambda_consumers", "main.tf");
+    const builders = [
+      ["build-present-to-client-lambda.mjs", "dist/present-to-client-lambda"],
+      ["build-execute-lambda.mjs", "dist/execute-lambda"],
+      ["build-stage-changed-consumer-lambda.mjs", "dist/stage-changed-consumer"],
+    ] as const;
+
+    expect(main).toContain('handler          = "index.presentToClientHandler"');
+    expect(main).toContain('handler          = "index.handler"');
+    expect(main).not.toContain("present-to-client-lambda/index.presentToClientHandler");
+    expect(main).not.toContain("execute-lambda/index.handler");
+    expect(main).not.toContain("stage-changed-consumer/index.handler");
+
+    for (const [fileName, stagingDirectory] of builders) {
+      const script = readLambdaBuildScript(fileName);
+
+      expect(script).toContain("rm(stagingDirectory, { force: true, recursive: true })");
+      expect(script).toContain(`packageLambda("${stagingDirectory}", "${stagingDirectory}.zip")`);
+    }
+
+    expect(readFileSync(resolve(process.cwd(), "package.json"), "utf8")).toContain(
+      '"build:lambdas": "npm run build:present-to-client-lambda && npm run build:execute-lambda && npm run build:stage-changed-consumer-lambda"',
+    );
+  });
+
+  test("ECS task definitions support immutable external images with managed-ECR fallbacks", () => {
+    const rootVariables = readTerraformRoot("variables.tf");
+    const delivery = readTerraformRoot("delivery.tf");
+    const ecsVariables = readTerraformModule("ecs_services", "variables.tf");
+    const ecsMain = readTerraformModule("ecs_services", "main.tf");
+    const normalizedDelivery = delivery.replace(/\s+/g, " ");
+
+    for (const variable of [
+      "core_case_image_uri",
+      "tax_engine_image_uri",
+      "core_case_image_repository_arn",
+      "tax_engine_image_repository_arn",
+    ]) {
+      expect(rootVariables).toContain(`variable "${variable}"`);
+      expect(ecsVariables).toContain(`variable "${variable}"`);
+      expect(normalizedDelivery).toContain(`${variable} = var.${variable}`);
+    }
+
+    expect(ecsMain).toContain("coalesce(var.core_case_image_uri");
+    expect(ecsMain).toContain("coalesce(var.tax_engine_image_uri");
+    expect(ecsMain).toContain("image     = local.core_case_image");
+    expect(ecsMain).toContain("image     = local.tax_engine_image");
+    expect(ecsMain).toContain("local.core_case_pull_repository_arn");
+    expect(ecsMain).toContain("local.tax_engine_pull_repository_arn");
+  });
+
+  test("transition and projection Lambdas use separate least-privilege roles", () => {
+    const main = readTerraformModule("lambda_consumers", "main.tf");
+
+    expect(main).toContain('resource "aws_iam_role" "transition"');
+    expect(main).toContain('resource "aws_iam_role" "projection"');
+    expect(main).toContain("role             = aws_iam_role.transition.arn");
+    expect(main).toContain("role             = aws_iam_role.projection[0].arn");
+    expect(main).toContain('data "aws_iam_policy_document" "transition_access"');
+    expect(main).toContain('data "aws_iam_policy_document" "projection_access"');
+
+    const projectionPolicy = main.slice(main.indexOf('data "aws_iam_policy_document" "projection_access"'));
+    expect(projectionPolicy).toContain("sqs:ReceiveMessage");
+    expect(projectionPolicy).toContain('actions   = ["dynamodb:UpdateItem"]');
+    expect(projectionPolicy).not.toContain("sns:Publish");
+    expect(projectionPolicy).not.toContain("secretsmanager:GetSecretValue");
+
+    const transitionPolicy = main.slice(
+      main.indexOf('data "aws_iam_policy_document" "transition_access"'),
+      main.indexOf('resource "aws_iam_role_policy" "transition_access"'),
+    );
+    expect(transitionPolicy).toContain("sns:Publish");
+    expect(transitionPolicy).toContain("secretsmanager:GetSecretValue");
+    expect(transitionPolicy).not.toContain("sqs:ReceiveMessage");
+    expect(transitionPolicy).not.toContain("dynamodb:UpdateItem");
   });
 
   test("SAM transition API records access-log context without token data", () => {
