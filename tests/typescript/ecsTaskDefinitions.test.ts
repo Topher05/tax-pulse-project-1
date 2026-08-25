@@ -14,6 +14,11 @@ type ContainerDefinition = {
     containerPort: number;
     appProtocol?: string;
   }>;
+  command?: string[];
+  dependsOn?: Array<{
+    containerName: string;
+    condition: string;
+  }>;
   environment?: NamedValue[];
   secrets?: NamedValue[];
   healthCheck?: {
@@ -55,25 +60,28 @@ function expectFargateTask(task: TaskDefinition): void {
   expect(task.requiresCompatibilities).toContain("FARGATE");
   expect(task.cpu).toBe("512");
   expect(task.memory).toBe("1024");
-  expect(task.containerDefinitions).toHaveLength(1);
+  expect(task.containerDefinitions).toHaveLength(2);
 }
 
-function getOnlyContainer(task: TaskDefinition): ContainerDefinition {
-  expect(task.containerDefinitions).toHaveLength(1);
-  const container = task.containerDefinitions[0];
+function getContainer(task: TaskDefinition, name: string): ContainerDefinition {
+  const container = task.containerDefinitions.find((definition) => definition.name === name);
 
   if (!container) {
-    throw new Error("Expected one container definition.");
+    throw new Error(`Expected a container definition named ${name}.`);
   }
 
   return container;
 }
 
-function expectCloudWatchLogs(container: ContainerDefinition, logGroup: string): void {
+function expectCloudWatchLogs(
+  container: ContainerDefinition,
+  logGroup: string,
+  streamPrefix = "ecs",
+): void {
   expect(container.logConfiguration?.logDriver).toBe("awslogs");
   expect(container.logConfiguration?.options["awslogs-group"]).toBe(logGroup);
   expect(container.logConfiguration?.options["awslogs-region"]).toBe("us-east-1");
-  expect(container.logConfiguration?.options["awslogs-stream-prefix"]).toBe("ecs");
+  expect(container.logConfiguration?.options["awslogs-stream-prefix"]).toBe(streamPrefix);
 }
 
 function expectEcrImage(container: ContainerDefinition, repositoryName: string): void {
@@ -90,7 +98,8 @@ describe("ECS Fargate task definitions", () => {
     const task = readTaskDefinition("core-case-service.task-definition.json");
     expectFargateTask(task);
 
-    const container = getOnlyContainer(task);
+    const container = getContainer(task, "core-case-service");
+    const collector = getContainer(task, "aws-otel-collector");
     expect(task.family).toBe("taxpulse-core-case-service");
     expect(container.name).toBe("core-case-service");
     expectEcrImage(container, "core-case-service");
@@ -114,8 +123,36 @@ describe("ECS Fargate task definitions", () => {
         "AWS_REGION",
         "TAXPULSE_STAGE_CHANGED_TOPIC_ARN",
         "TAXPULSE_STAGE_CHANGED_QUEUE_URL",
+        "OTEL_SERVICE_NAME",
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "OTEL_EXPORTER_OTLP_PROTOCOL",
+        "OTEL_PROPAGATORS",
+        "OTEL_RESOURCE_ATTRIBUTES",
+        "OTEL_TRACES_SAMPLER",
+        "OTEL_TRACES_SAMPLER_ARG",
       ]),
     );
+    expect(container.dependsOn).toContainEqual({
+      containerName: "aws-otel-collector",
+      condition: "START",
+    });
+    expect(names(collector.environment)).toEqual(expect.arrayContaining(["AWS_REGION"]));
+    expect(collector.command).toEqual(["--config=/etc/ecs/ecs-default-config.yaml"]);
+    expect(collector.portMappings).toEqual(
+      expect.arrayContaining([
+        {
+          containerPort: 4317,
+          hostPort: 4317,
+          protocol: "tcp",
+        },
+        {
+          containerPort: 4318,
+          hostPort: 4318,
+          protocol: "tcp",
+        },
+      ]),
+    );
+    expectCloudWatchLogs(collector, "Case-Service", "otel");
     expect(valueByName(container.environment, "LIABILITY_ENGINE_BASE")).toBe(
       "http://tax-engine.service.taxpulse.internal:8000",
     );
@@ -131,7 +168,8 @@ describe("ECS Fargate task definitions", () => {
     const task = readTaskDefinition("tax-engine.task-definition.json");
     expectFargateTask(task);
 
-    const container = getOnlyContainer(task);
+    const container = getContainer(task, "tax-engine");
+    const collector = getContainer(task, "aws-otel-collector");
     expect(task.family).toBe("taxpulse-tax-engine");
     expect(container.name).toBe("tax-engine");
     expectEcrImage(container, "tax-engine");
@@ -142,9 +180,41 @@ describe("ECS Fargate task definitions", () => {
       protocol: "tcp",
       appProtocol: "http",
     });
-    expect(names(container.environment)).toEqual(expect.arrayContaining(["PORT", "JWT_ISSUER"]));
+    expect(names(container.environment)).toEqual(
+      expect.arrayContaining([
+        "PORT",
+        "JWT_ISSUER",
+        "OTEL_SERVICE_NAME",
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "OTEL_EXPORTER_OTLP_PROTOCOL",
+        "OTEL_PROPAGATORS",
+        "OTEL_RESOURCE_ATTRIBUTES",
+        "OTEL_TRACES_SAMPLER",
+        "OTEL_TRACES_SAMPLER_ARG",
+      ]),
+    );
+    expect(container.dependsOn).toContainEqual({
+      containerName: "aws-otel-collector",
+      condition: "START",
+    });
     expect(names(container.secrets)).toEqual(expect.arrayContaining(["JWT_SIGNING_SECRET"]));
     expect(container.healthCheck?.command.join(" ")).toContain("/health");
+    expect(collector.command).toEqual(["--config=/etc/ecs/ecs-default-config.yaml"]);
+    expect(collector.portMappings).toEqual(
+      expect.arrayContaining([
+        {
+          containerPort: 4317,
+          hostPort: 4317,
+          protocol: "tcp",
+        },
+        {
+          containerPort: 4318,
+          hostPort: 4318,
+          protocol: "tcp",
+        },
+      ]),
+    );
     expectCloudWatchLogs(container, "Tax-Engine");
+    expectCloudWatchLogs(collector, "Tax-Engine", "otel");
   });
 });
