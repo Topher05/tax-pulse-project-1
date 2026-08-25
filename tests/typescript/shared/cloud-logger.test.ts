@@ -70,7 +70,8 @@ describe("shared cloud logger", () => {
     expect(context).toEqual({
       request_id: "request-123",
       trace_id: "4bf92f3577b34da6a3ce929d0e0e4736",
-      trace_parent: "00f067aa0ba902b7",
+      span_id: "00f067aa0ba902b7",
+      traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
     });
   });
 
@@ -80,9 +81,70 @@ describe("shared cloud logger", () => {
     });
 
     expect(context).toEqual({
-      trace_id: "1-67891233-abcdef012345678912345678",
-      trace_parent: "53995c3f42cd8ad8",
+      request_id: expect.any(String),
+      trace_id: "67891233abcdef012345678912345678",
+      span_id: "53995c3f42cd8ad8",
+      traceparent: "00-67891233abcdef012345678912345678-53995c3f42cd8ad8-01",
       x_amzn_trace_id: "Root=1-67891233-abcdef012345678912345678;Parent=53995c3f42cd8ad8;Sampled=1",
+    });
+  });
+
+  test("adds EMF metadata when metric fields are present", () => {
+    const calls: Array<{ level: "info" | "warn" | "error"; entry: Record<string, unknown> }> = [];
+    const logger: StructuredLogger = {
+      info(...args: unknown[]): void {
+        calls.push({ level: "info", entry: args[0] as Record<string, unknown> });
+      },
+      warn(...args: unknown[]): void {
+        calls.push({ level: "warn", entry: args[0] as Record<string, unknown> });
+      },
+      error(...args: unknown[]): void {
+        calls.push({ level: "error", entry: args[0] as Record<string, unknown> });
+      },
+    };
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-17T12:34:56.000Z"));
+
+    try {
+      emitObservabilityEvent(logger, "info", "scenario modeling completed", {
+        service: "core-case-service",
+        layer: "controller",
+        operation: "scenario_modeling",
+        outcome: "success",
+        metric_name: "tax_plan_cycle.scenario_modeling.duration_ms",
+        metric_value: 123,
+        metric_unit: "Milliseconds",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(calls[0]?.entry).toMatchObject({
+      telemetry: "observability",
+      message: "scenario modeling completed",
+      emitted_at: "2026-08-17T12:34:56.000Z",
+      service: "core-case-service",
+      operation: "scenario_modeling",
+      outcome: "success",
+      metric_name: "tax_plan_cycle.scenario_modeling.duration_ms",
+      metric_value: 123,
+      metric_unit: "Milliseconds",
+      _aws: {
+        Timestamp: expect.any(Number),
+        CloudWatchMetrics: [
+          {
+            Namespace: "TaxPulse",
+            Dimensions: [["core-case-service", "scenario_modeling", "success"]],
+            Metrics: [
+              {
+                Name: "tax_plan_cycle.scenario_modeling.duration_ms",
+                Unit: "Milliseconds",
+              },
+            ],
+          },
+        ],
+      },
     });
   });
 
@@ -173,7 +235,7 @@ describe("shared cloud logger", () => {
       .map((line) => JSON.parse(line) as Record<string, unknown>);
     const requestCompletedLog = logEntries.find((entry) => entry.msg === "request completed");
 
-    expect(requestCompletedLog).toBeDefined();
+      expect(requestCompletedLog).toBeDefined();
     expect(requestCompletedLog).toMatchObject({
       service: "core-case-service",
       layer: "http",
@@ -181,7 +243,8 @@ describe("shared cloud logger", () => {
       route: "/logger-check",
       request_id: "req-abc",
       trace_id: "4bf92f3577b34da6a3ce929d0e0e4736",
-      trace_parent: "00f067aa0ba902b7",
+      span_id: "00f067aa0ba902b7",
+      traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
     });
   });
 });

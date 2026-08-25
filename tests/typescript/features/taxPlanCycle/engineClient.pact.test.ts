@@ -27,6 +27,13 @@ const pact = new Pact({
 const calculationRequest = {
   tenantId,
   authorizationHeader,
+  requestContext: {
+    request_id: "req-calculation-001",
+    trace_id: "4bf92f3577b34da6a3ce929d0e0e4736",
+    span_id: "00f067aa0ba902b7",
+    traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+    x_amzn_trace_id: "Root=1-67891233-abcdef012345678912345678;Parent=53995c3f42cd8ad8;Sampled=1",
+  },
   income: 100000,
   deductions: 12000,
   withholding: 24500,
@@ -59,6 +66,13 @@ const calculationResponse = {
 const scenarioComparisonRequest = {
   tenantId,
   authorizationHeader,
+  requestContext: {
+    request_id: "req-scenario-001",
+    trace_id: "4bf92f3577b34da6a3ce929d0e0e4736",
+    span_id: "00f067aa0ba902b7",
+    traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+    x_amzn_trace_id: "Root=1-67891233-abcdef012345678912345678;Parent=53995c3f42cd8ad8;Sampled=1",
+  },
   baseline: {
     income: 100000,
     deductions: 12000,
@@ -134,6 +148,9 @@ describe("Tax Engine consumer pact", () => {
         builder.headers({
           authorization: authorizationHeader,
           "x-taxpulse-tenant-id": tenantId,
+          "x-request-id": "req-calculation-001",
+          traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          "x-amzn-trace-id": "Root=1-67891233-abcdef012345678912345678;Parent=53995c3f42cd8ad8;Sampled=1",
         });
         builder.jsonBody(calculationRequestBody);
       })
@@ -163,6 +180,9 @@ describe("Tax Engine consumer pact", () => {
         builder.headers({
           authorization: authorizationHeader,
           "x-taxpulse-tenant-id": tenantId,
+          "x-request-id": "req-scenario-001",
+          traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          "x-amzn-trace-id": "Root=1-67891233-abcdef012345678912345678;Parent=53995c3f42cd8ad8;Sampled=1",
         });
         builder.jsonBody(scenarioComparisonRequestBody);
       })

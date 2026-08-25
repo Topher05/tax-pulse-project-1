@@ -539,6 +539,8 @@ describe("createTaxPlanCycleRouter", () => {
             headers: {
               authorization: "Bearer test-token",
               "content-type": "application/json",
+              "x-request-id": "req-scenario-001",
+              traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
             },
             body: JSON.stringify({
               baseline: {
@@ -576,12 +578,25 @@ describe("createTaxPlanCycleRouter", () => {
         expect(response.headers.get("content-type")).toContain(
           "application/problem+json",
         );
+        expect(response.headers.get("x-request-id")).toBe("req-scenario-001");
         expect(body).toMatchObject({
           type: "https://taxpulse.example/problems/tax-engine-unavailable",
           title: "Tax Engine Unavailable",
           status: 502,
           detail: "The liability engine request failed after retries.",
         });
+        expect(taxEngineClient.compareScenarios).toHaveBeenCalledWith(
+          expect.objectContaining({
+            tenantId: "tenant-001",
+            authorizationHeader: "Bearer test-token",
+            requestContext: expect.objectContaining({
+              request_id: "req-scenario-001",
+              trace_id: "4bf92f3577b34da6a3ce929d0e0e4736",
+              span_id: "00f067aa0ba902b7",
+              traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+            }),
+          }),
+        );
         expect(scenarioRepository.createMany).not.toHaveBeenCalled();
         expect(scenarioRepository.listByCaseId).not.toHaveBeenCalled();
         expect(create).not.toHaveBeenCalled();

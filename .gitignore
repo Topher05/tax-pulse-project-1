@@ -21,3 +21,8 @@ artifacts/
 **/.terraform/
 src/typescript/soap.d.ts
 backend-cov*
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+terraform.tfvars.json
+*.tfplan
