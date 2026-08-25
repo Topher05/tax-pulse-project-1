@@ -5,6 +5,121 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira164 - SCRUM-164
+
+**Branch:** `martins-okorie-jira164`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-164
+
+**Summary:** Modularize ECS, Lambda, and SPA delivery in Terraform
+
+**Description:** As a Platform Engineer, I want reusable Terraform modules, so
+that the whole stack provisions from one root configuration.
+
+**Acceptance Criteria:**
+
+- Separate modules exist for the ECS services, the Lambda consumers, and the SPA
+  delivery.
+- A root configuration wires the modules and outputs the public URLs.
+- Module inputs are documented with required variables.
+
+**Code Connection:** Re-homed the SCRUM-164 delivery modules into the active
+SCRUM-163-scanned `terraform/` root after merging `development`. The ECS module
+translates the SCRUM-157/158 JSON contracts into ECR repositories, IAM roles,
+CloudWatch log groups, an internet-facing ALB, target groups, listener rules,
+task definitions, and Fargate services while reusing the SCRUM-162 VPC, private
+subnets, public subnets, and ECS service security group. The Lambda module
+translates the SCRUM-159/160 contracts into transition Lambdas, API Gateway
+routes, shared IAM runtime permissions, and an optional SQS event-source mapping
+for the stage-changed consumer. The SPA module translates the SCRUM-161 contract
+into a private KMS-encrypted S3 origin, CloudFront Origin Access Control,
+CloudFront distribution, SPA route fallback rewrites, scoped KMS decrypt/data-key
+permissions for the CloudFront distribution, and deploy outputs.
+
+**Project Scope Connection:** This closes the handoff from placeholder deployment
+JSON to reusable infrastructure-as-code while preserving the already-merged
+SCRUM-163 Terraform security gate and SCRUM-165 SAST gate. The JSON files remain
+source contracts with `SCRUM-164_*` placeholders, while Terraform now owns the
+concrete AWS resources and exposes the public API, transition API, SPA bucket,
+and CloudFront outputs needed by later pipeline, security, and observability
+tickets.
+
+**Changed Files:**
+
+- `.gitignore`
+- `terraform/README.md`
+- `terraform/delivery.tf`
+- `terraform/outputs.tf`
+- `terraform/variables.tf`
+- `terraform/modules/ecs_services/README.md`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/outputs.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/lambda_consumers/README.md`
+- `terraform/modules/lambda_consumers/main.tf`
+- `terraform/modules/lambda_consumers/outputs.tf`
+- `terraform/modules/lambda_consumers/variables.tf`
+- `terraform/modules/spa_delivery/README.md`
+- `terraform/modules/spa_delivery/main.tf`
+- `terraform/modules/spa_delivery/outputs.tf`
+- `terraform/modules/spa_delivery/variables.tf`
+- `terraform/vpc.tf`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Merged `development` into `martins-okorie-jira164` and preserved the
+  development-owned SCRUM-163/165 workflows and Terraform provider/backend root.
+- `terraform -chdir=terraform fmt -check -recursive` passed.
+- `terraform -chdir=terraform init -backend=false` passed.
+- `terraform -chdir=terraform validate` passed.
+- `npm run test:vitest -- tests/typescript/workflows/terraformSecurityGate.test.ts
+  tests/typescript/workflows/sastSecurityGate.test.ts` passed.
+- `npm run typecheck` passed after refreshing local dependencies from the merged
+  lockfile.
+- `checkov -d terraform --framework terraform --hard-fail-on HIGH --compact
+  --quiet` completed with exit code `0`; Checkov reported non-blocking lower
+  severity findings already outside the hard-fail threshold.
+- `docker run --rm -v "$PWD:/src" aquasec/tfsec-ci tfsec /src/terraform
+  --minimum-severity HIGH --no-color` passed with no problems detected.
+- Did not run `terraform apply` against the sandbox because manually-created
+  SCRUM-157/158 resources already exist and should be imported into state before
+  Terraform manages those exact names.
+- Follow-up correctness pass aligned the Lambda action-item-created topic
+  environment variable with the runtime, added Cloud Map private DNS so the Core
+  Case `LIABILITY_ENGINE_BASE` points at a Terraform-managed Tax Engine service
+  name, made the optional stage-changed consumer SQS ARN optional unless that
+  consumer is enabled, and reshaped the NAT gateway prerequisite to use an EIP
+  plus public subnet.
+- Follow-up review pass added a scoped SPA KMS key policy that grants
+  `cloudfront.amazonaws.com` `kms:Decrypt` and `kms:GenerateDataKey` only when
+  `AWS:SourceArn` matches the Terraform-managed CloudFront distribution ARN, and
+  clarified that `stage_changed_queue_arn` is required only when the optional
+  stage-changed consumer Lambda is enabled.
+- Added `tests/typescript/workflows/terraformDeliveryModules.test.ts` to guard
+  the SCRUM-164 Terraform wiring for Lambda env names, service discovery,
+  optional SQS permissions, and NAT gateway shape.
+- Follow-up `terraform -chdir=terraform fmt -check -recursive` passed.
+- Follow-up `npm test --
+  tests/typescript/workflows/terraformDeliveryModules.test.ts
+  tests/typescript/spaDeliveryDefinitions.test.ts
+  tests/typescript/ecsTaskDefinitions.test.ts
+  tests/typescript/albJsonDefinitions.test.ts` passed.
+- Follow-up `terraform -chdir=terraform init -backend=false` passed without
+  applying changes or initializing the remote backend, but `terraform
+  -chdir=terraform validate` is currently blocked by the local cached AWS
+  provider failing its plugin schema handshake.
+- Review-fix `terraform fmt -recursive terraform` passed.
+- Review-fix `terraform -chdir=terraform fmt -check -recursive` passed.
+- Review-fix `npm test -- tests/typescript/workflows/terraformDeliveryModules.test.ts`
+  passed after TypeScript typecheck and 5 Vitest assertions.
+- Review-fix `terraform -chdir=terraform validate` remains blocked by the local
+  cached AWS provider schema handshake failure for
+  `.terraform/providers/registry.terraform.io/hashicorp/aws/6.61.0/darwin_arm64/terraform-provider-aws_v6.61.0_x5`.
+
 ## martins-okorie-jira161 - SCRUM-161
 
 **Branch:** `martins-okorie-jira161`
@@ -1168,4 +1283,3 @@ raw XML/SOAP structures leak into the core domain.
 
 -
 -->
-

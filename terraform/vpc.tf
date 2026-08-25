@@ -65,12 +65,9 @@ resource "aws_internet_gateway" "main" {
 resource "aws_subnet" "public" {
   for_each = local.public_subnet_configs
 
-  #checkov:skip=CKV_AWS_130: Public subnets intentionally assign public IPs for internet-facing delivery.
   vpc_id            = aws_vpc.main.id
   cidr_block        = cidrsubnet(var.vpc_cidr, 8, each.value.netnum)
   availability_zone = local.availability_zones[each.value.az_index]
-  #tfsec:ignore:aws-ec2-no-public-ip-subnet
-  map_public_ip_on_launch = true
 
   tags = {
     Name        = "taxpulse-${var.environment}-public-${each.value.suffix}"
@@ -91,10 +88,18 @@ resource "aws_subnet" "private" {
   }
 }
 
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = {
+    Name        = "taxpulse-${var.environment}-nat-eip"
+    Environment = var.environment
+  }
+}
+
 resource "aws_nat_gateway" "main" {
-  vpc_id            = aws_vpc.main.id
-  availability_mode = "regional"
-  connectivity_type = "public"
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public["public_a"].id
 
   tags = {
     Name        = "taxpulse-${var.environment}-nat-gw"

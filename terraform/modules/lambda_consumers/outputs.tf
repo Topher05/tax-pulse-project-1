@@ -1,11 +1,6 @@
 output "transition_api_url" {
-  description = "Base invoke URL for the authenticated transition HTTP API."
+  description = "Base invoke URL for the transition HTTP API."
   value       = aws_apigatewayv2_stage.default.invoke_url
-}
-
-output "transition_api_id" {
-  description = "HTTP API identifier for the transition API."
-  value       = aws_apigatewayv2_api.transition.id
 }
 
 output "present_to_client_lambda_arn" {
@@ -19,6 +14,6 @@ output "execute_lambda_arn" {
 }
 
 output "stage_changed_consumer_lambda_arn" {
-  description = "Stage-changed projection Lambda function ARN."
-  value       = aws_lambda_function.stage_changed_consumer.arn
+  description = "Optional stage-changed consumer Lambda ARN."
+  value       = var.enable_stage_changed_consumer_lambda ? aws_lambda_function.stage_changed_consumer[0].arn : null
 }

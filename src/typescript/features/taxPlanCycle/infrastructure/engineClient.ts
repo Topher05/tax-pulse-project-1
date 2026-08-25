@@ -6,6 +6,8 @@ import {
 import { z } from "zod";
 import {
   emitObservabilityEvent,
+  createTracePropagationHeaders,
+  type TraceContext,
   type StructuredLogger,
 } from "../../../shared/cloud-logger/observability.js";
 
@@ -28,6 +30,7 @@ export interface TaxCalculationEngineRequest
   extends TaxCalculationEngineInput {
   tenantId: string;
   authorizationHeader: string;
+  requestContext?: Partial<TraceContext>;
 }
 
 const taxCalculationEngineResultSchema = z.strictObject({
@@ -58,6 +61,7 @@ export interface ScenarioComparisonEngineRequest
   extends ScenarioComparisonEngineInput {
   tenantId: string;
   authorizationHeader: string;
+  requestContext?: Partial<TraceContext>;
 }
 
 export type TaxEngineComparisonRequest = ScenarioComparisonEngineRequest;
@@ -161,6 +165,7 @@ export function createTaxEngineClient(
     input: {
       tenantId: string;
       authorizationHeader: string;
+      requestContext?: Partial<TraceContext>;
     },
     body: string,
   ): Promise<unknown> {
@@ -168,6 +173,7 @@ export function createTaxEngineClient(
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       const startedAt = Date.now();
+      const traceHeaders = createTracePropagationHeaders(input.requestContext);
       emitObservabilityEvent(telemetryLogger, "info", "tax engine request started", {
         service: "core-case-service",
         layer: "tax-engine-client",
@@ -176,6 +182,7 @@ export function createTaxEngineClient(
         tenant_id: input.tenantId,
         attempt,
         route: path,
+        ...input.requestContext,
         metric_name: "tax_plan_cycle.tax_engine_request.count",
         metric_value: 1,
         metric_unit: "Count",
@@ -190,6 +197,7 @@ export function createTaxEngineClient(
               authorization: input.authorizationHeader,
               "content-type": "application/json",
               "x-taxpulse-tenant-id": input.tenantId,
+              ...traceHeaders,
             },
             body,
           },
@@ -210,6 +218,8 @@ export function createTaxEngineClient(
               status_code: response.status,
               duration_ms: Date.now() - startedAt,
               outcome: "retrying",
+              error_class: "TaxEngineHttpError",
+              ...input.requestContext,
               metric_name: "tax_plan_cycle.tax_engine_request.count",
               metric_value: 1,
               metric_unit: "Count",
@@ -228,7 +238,8 @@ export function createTaxEngineClient(
             status_code: response.status,
             duration_ms: Date.now() - startedAt,
             outcome: "failed",
-            error: errorBody.slice(0, 120),
+            error_class: "TaxEngineHttpError",
+            ...input.requestContext,
             metric_name: "tax_plan_cycle.tax_engine_request.count",
             metric_value: 1,
             metric_unit: "Count",
@@ -246,6 +257,7 @@ export function createTaxEngineClient(
           status_code: response.status,
           duration_ms: Date.now() - startedAt,
           outcome: "success",
+          ...input.requestContext,
           metric_name: "tax_plan_cycle.tax_engine_request.duration_ms",
           metric_value: Date.now() - startedAt,
           metric_unit: "Milliseconds",
@@ -262,7 +274,9 @@ export function createTaxEngineClient(
             attempt,
             duration_ms: Date.now() - startedAt,
             outcome: "failed",
+            error_class: error instanceof Error ? error.name : "Error",
             error: error instanceof Error ? error.message : String(error),
+            ...input.requestContext,
             metric_name: "tax_plan_cycle.tax_engine_request.count",
             metric_value: 1,
             metric_unit: "Count",
@@ -287,7 +301,9 @@ export function createTaxEngineClient(
             attempt,
             duration_ms: Date.now() - startedAt,
             outcome: "retrying",
+            error_class: error.name,
             error: error.message,
+            ...input.requestContext,
             metric_name: "tax_plan_cycle.tax_engine_request.count",
             metric_value: 1,
             metric_unit: "Count",
@@ -305,7 +321,9 @@ export function createTaxEngineClient(
           attempt,
           duration_ms: Date.now() - startedAt,
           outcome: "retrying",
+          error_class: error instanceof Error ? error.name : "Error",
           error: error instanceof Error ? error.message : String(error),
+          ...input.requestContext,
           metric_name: "tax_plan_cycle.tax_engine_request.count",
           metric_value: 1,
           metric_unit: "Count",

@@ -1,22 +1,42 @@
-# TaxPulse Terraform fresh-apply smoke
+# TaxPulse Terraform
 
-Run the unified smoke command after applying an isolated Terraform state:
+## Fresh-apply smoke
 
-```bash
-npm run aws:fresh-apply-smoke
-```
+Run `npm run aws:fresh-apply-smoke` after applying an isolated Terraform state. It requires
+synthetic-environment inputs for the ALB and transition API URLs, bearer token, tenant and
+case IDs, projection table name, and (optionally) `AWS_REGION`. The command performs an
+authenticated tax calculation, an authorized present-to-client transition, and bounded
+projection polling; it exits non-zero when a phase fails.
 
-The command requires explicit, synthetic-environment inputs:
+This is the active Terraform root for SCRUM-162, SCRUM-163, and SCRUM-164.
+SCRUM-163's security gate scans this `terraform/` directory with `terraform fmt`,
+`terraform validate`, Checkov, and tfsec.
 
-- `TAXPULSE_ALB_BASE_URL` — deployed ALB base URL.
-- `TAXPULSE_TRANSITION_API_URL` — deployed transition HTTP API URL.
-- `TAXPULSE_SMOKE_BEARER_TOKEN` — valid JWT for the smoke tenant and user.
-- `TAXPULSE_SMOKE_TENANT_ID` — synthetic tenant UUID.
-- `TAXPULSE_SMOKE_CASE_ID` — synthetic case UUID already present in the environment.
-- `TAXPULSE_PROJECTION_TABLE_NAME` — DynamoDB projection table name.
-- `AWS_REGION` — optional AWS region, defaulting to `us-east-1`.
+## SCRUM-164 Modules
 
-The command performs one authenticated ALB tax calculation, one authorized
-present-to-client transition, and bounded DynamoDB polling until the projection reaches
-`Client Approval`. It exits non-zero and identifies the failed phase if any operation
-does not succeed.
+SCRUM-164 keeps delivery resources modular under `terraform/modules/`:
+
+- `ecs_services` creates the ECR, IAM, CloudWatch, ALB, target group, task
+  definition, and ECS service resources for the Core Case Service and Tax Engine.
+- `lambda_consumers` creates the present-to-client and execute Lambdas behind API
+  Gateway, with optional stage-changed SQS consumer wiring.
+- `spa_delivery` creates the private S3 origin and CloudFront distribution for
+  the SPA.
+
+## Required Delivery Inputs
+
+Provide these values through uncommitted tfvars or CI variables:
+
+- `db_password`
+- `shared_config_secret_arn`
+- `stage_changed_topic_arn`
+- `stage_changed_queue_url`
+- `action_item_created_topic_arn`
+
+Optional delivery inputs include immutable image tags, Lambda zip artifact paths,
+`spa_bucket_name`, `redis_url`, and `stage_changed_queue_arn` when the optional
+stage-changed consumer Lambda is enabled. If `redis_url` is omitted, the ECS task
+configuration uses the SCRUM-162 ElastiCache TLS endpoint.
+
+The JSON files under `deployment/` remain source contracts with placeholders;
+Terraform owns the real resource IDs and emits deploy-time outputs.

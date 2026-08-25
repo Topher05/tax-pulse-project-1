@@ -11,7 +11,7 @@ import {
   readCorpusChunkArtifact,
 } from "../../assist/corpus.js";
 
-loadEnv();
+loadEnv({ override: true });
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 if (!databaseUrl) {
@@ -20,8 +20,10 @@ if (!databaseUrl) {
   );
 }
 
-const chunksPath =
-  process.env.CORPUS_CHUNKS_PATH?.trim() || defaultCorpusChunkArtifactPath;
+const chunksPath = process.env.CORPUS_CHUNKS_PATH?.trim();
+if (!chunksPath) {
+  throw new Error("CORPUS_CHUNKS_PATH is required");
+}
 const chunks = await readCorpusChunkArtifact(chunksPath);
 const provider = createOpenAIEmbeddingProvider();
 const client = new Client({ connectionString: databaseUrl });
