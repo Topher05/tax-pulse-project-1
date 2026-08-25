@@ -12,10 +12,10 @@ from .jwt_authentication import (
     JwtValidationConfig,
     create_jwt_authentication_dependency,
 )
+from .observability import install_observability_middleware
 from .routers.health import create_health_router
 from .routers.scenario_comparison import create_scenario_comparison_router
 from .routers.tax_calculation import create_tax_calculation_router
-from .observability import install_observability_middleware
 
 
 def create_app(

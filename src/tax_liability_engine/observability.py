@@ -6,9 +6,9 @@ import json
 import logging
 import time
 import uuid
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 
 _observability_logger = logging.getLogger("tax_liability_engine.observability")
 _observability_logger.setLevel(logging.INFO)
@@ -110,7 +110,10 @@ def install_observability_middleware(app: FastAPI) -> None:
     """Install request correlation and allowlisted JSON logging."""
 
     @app.middleware("http")
-    async def observability_middleware(request: Request, call_next):
+    async def observability_middleware(
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         request_id = resolve_request_id(request.headers, getattr(request.state, "request_id", None))
         request.state.request_id = request_id
         request.state.trace_context = resolve_trace_context(request.headers)
