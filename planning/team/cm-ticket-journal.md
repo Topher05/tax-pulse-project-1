@@ -166,6 +166,57 @@ repository-administration rollout in Step 3.
 - `npx vitest run --config vitest.config.ts tests/typescript/workflows/sastSecurityGate.test.ts` passed: 2 tests.
 - `npm run typecheck` passed.
 - `git diff --check` passed.
+
+
+## christopher-martus-jira202 - SCRUM-202
+
+**Branch:** `christopher-martus-jira202`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-202
+
+**Summary:** Provision the Sprint 5 event path and validate the fresh Terraform root
+
+**Description:** Complete the active Terraform root wiring, reproducible Lambda artifacts,
+focused root regression coverage, and fresh-apply smoke evidence for the SNS/SQS projection
+and transition API path.
+
+**Acceptance Criteria:**
+
+- Terraform provisions the stage-changed and action-item-created SNS topics, stage-changed
+  SQS queue, DLQ, redrive policy, subscription, and queue policy.
+- Terraform provisions the HTTP API, shared JWT authorizer, protected transition routes,
+  proxy integrations, and Lambda invocation permissions.
+- The active root connects the events, ECS, Lambda, and SPA modules without externally
+  supplied messaging identifiers and exposes the ALB, transition API, and SPA URLs.
+- An isolated fresh apply and smoke sequence succeeds through ALB calculation,
+  present-to-client transition, SNS/SQS delivery, and Client Approval projection.
+
+**Code Connection:** Added root event wiring, reproducible Lambda ZIP packaging, apply
+documentation, and focused assertions covering root event/module output connections,
+projection inputs, and public URL outputs.
+
+**Project Scope Connection:** Completes the repository-side Sprint 5 delivery contract while
+preserving tenant-scoped projection behavior and JWT-protected transition access.
+
+**Changed Files:**
+
+- `tests/typescript/terraformSprint5Stack.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused Terraform and smoke suites passed: 8 tests.
+- `terraform fmt -check -recursive terraform` passed.
+- `terraform -chdir=terraform validate` passed.
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- `npm test` ran 420 tests: 353 passed and 67 database-backed tests failed because no
+  Docker-compatible container runtime is available locally.
+- Fresh AWS apply and `npm run aws:fresh-apply-smoke` were not run. The configured
+  `terraform-process` AWS profile is absent, no uncommitted `terraform.tfvars` or secret
+  ARN is present, and no smoke bearer token, tenant, or case inputs are available.
 - `git diff --stat origin/development...HEAD` reports 5 files changed, 151 insertions, and 1 deletion.
 - Step 3 repository-administration rollout remains pending explicit authorization for push, PR creation, and branch-protection changes.
 - Added the repository-level CI workflow with parallel Python, Core TypeScript, Pulse UI, and

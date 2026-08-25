@@ -10,6 +10,10 @@ function readTerraformModule(moduleName: string, fileName: string): string {
   );
 }
 
+function readTerraformRoot(fileName: string): string {
+  return readFileSync(resolve(process.cwd(), "terraform", fileName), "utf8");
+}
+
 function readDeploymentTemplate(): string {
   return readFileSync(
     resolve(process.cwd(), "deployment", "PresentToClient-Draft.template.yaml"),
@@ -18,6 +22,35 @@ function readDeploymentTemplate(): string {
 }
 
 describe("Sprint 5 Terraform module contracts", () => {
+  test("root provisions events and connects their outputs to delivery modules", () => {
+    const delivery = readTerraformRoot("delivery.tf");
+
+    expect(delivery).toContain('module "events"');
+    expect(delivery).toContain('source = "./modules/events"');
+    expect(delivery).toContain("module.events.stage_changed_topic_arn");
+    expect(delivery).toContain("module.events.stage_changed_queue_url");
+    expect(delivery).toContain("module.events.stage_changed_queue_arn");
+    expect(delivery).toContain("module.events.action_item_created_topic_arn");
+    expect(delivery).toContain("projection_table_arn");
+    expect(delivery).toContain("projection_table_name");
+    expect(delivery).toContain("enable_stage_changed_consumer_lambda");
+    expect(delivery).not.toContain("var.stage_changed_topic_arn");
+    expect(delivery).not.toContain("var.stage_changed_queue_url");
+    expect(delivery).not.toContain("var.stage_changed_queue_arn");
+    expect(delivery).not.toContain("var.action_item_created_topic_arn");
+  });
+
+  test("root retains the public ALB, transition API, and SPA outputs", () => {
+    const outputs = readTerraformRoot("outputs.tf");
+
+    expect(outputs).toContain('output "api_base_url"');
+    expect(outputs).toContain('output "transition_api_url"');
+    expect(outputs).toContain('output "spa_url"');
+    expect(outputs).toContain("module.ecs_services.api_base_url");
+    expect(outputs).toContain("module.lambda_consumers.transition_api_url");
+    expect(outputs).toContain("module.spa_delivery.spa_url");
+  });
+
   test("events module declares managed topics, queue, DLQ, policy, and redrive", () => {
     const main = readTerraformModule("events", "main.tf");
 
