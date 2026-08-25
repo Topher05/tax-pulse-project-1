@@ -2,11 +2,65 @@
 
 ## Fresh-apply smoke
 
-Run `npm run aws:fresh-apply-smoke` after applying an isolated Terraform state. It requires
-synthetic-environment inputs for the ALB and transition API URLs, bearer token, tenant and
-case IDs, projection table name, and (optionally) `AWS_REGION`. The command performs an
-authenticated tax calculation, an authorized present-to-client transition, and bounded
-projection polling; it exits non-zero when a phase fails.
+The active root creates its SNS topics, SQS queue and DLQ, transition HTTP API, Lambda
+functions, ECS services, and SPA delivery resources. Lambda ZIPs must exist before
+`terraform apply` because Terraform calculates their source hashes during planning.
+
+Build all three deployable Lambda artifacts from a clean checkout with:
+
+```text
+npm ci
+npm run build:lambdas
+```
+
+This creates the exact paths used by the root defaults:
+
+- `dist/present-to-client-lambda.zip`
+- `dist/execute-lambda.zip`
+- `dist/stage-changed-consumer.zip`
+
+The build uses the repository-pinned `esbuild` and direct `archiver` dependencies. The
+generated `dist/` directory is ignored and must not be committed.
+
+### Isolated apply procedure
+
+Before applying, prepare an uncommitted `terraform/terraform.tfvars` containing at least
+`db_password` and `shared_config_secret_arn`, plus the target account's immutable image
+tags and any environment-specific values. Do not commit that file, credentials, tokens,
+or taxpayer data.
+
+Use a unique S3 backend key for the smoke environment. For example, from PowerShell:
+
+```powershell
+$env:TAXPULSE_STATE_KEY = "scrum-202-step2/<unique-run>/terraform.tfstate"
+terraform -chdir=terraform init -reconfigure `
+  -backend-config="key=$env:TAXPULSE_STATE_KEY"
+terraform -chdir=terraform validate
+terraform -chdir=terraform apply -var-file=terraform.tfvars
+```
+
+The target AWS account and region, backend key, expected resource cost, deployable ECS
+images, Secrets Manager ARN, reachable JWT issuer, and valid JWT must be confirmed before
+apply. The JWT must represent a clearly synthetic tenant and case prepared in the target
+environment; never place the bearer token in committed files or logs.
+
+After apply, derive the smoke endpoints and projection table from Terraform outputs:
+
+```powershell
+$env:TAXPULSE_ALB_BASE_URL = terraform -chdir=terraform output -raw api_base_url
+$env:TAXPULSE_TRANSITION_API_URL = terraform -chdir=terraform output -raw transition_api_url
+$env:TAXPULSE_PROJECTION_TABLE_NAME = terraform -chdir=terraform output -raw dynamodb_table_name
+$env:AWS_REGION = "<the configured aws_region>"
+$env:TAXPULSE_SMOKE_BEARER_TOKEN = "<set-in-memory-only>"
+$env:TAXPULSE_SMOKE_TENANT_ID = "synthetic-tenant"
+$env:TAXPULSE_SMOKE_CASE_ID = "synthetic-case"
+npm run aws:fresh-apply-smoke
+```
+
+The smoke command performs an authenticated ALB tax calculation, an authorized
+present-to-client transition, and bounded DynamoDB projection polling. It must report
+successful HTTP statuses and `projectedStage: "Client Approval"`. Replace the placeholder
+token and IDs with synthetic values for the target environment; do not record the token.
 
 This is the active Terraform root for SCRUM-162, SCRUM-163, and SCRUM-164.
 SCRUM-163's security gate scans this `terraform/` directory with `terraform fmt`,
@@ -29,13 +83,10 @@ Provide these values through uncommitted tfvars or CI variables:
 
 - `db_password`
 - `shared_config_secret_arn`
-- `stage_changed_topic_arn`
-- `stage_changed_queue_url`
-- `action_item_created_topic_arn`
 
 Optional delivery inputs include immutable image tags, Lambda zip artifact paths,
-`spa_bucket_name`, `redis_url`, and `stage_changed_queue_arn` when the optional
-stage-changed consumer Lambda is enabled. If `redis_url` is omitted, the ECS task
+`spa_bucket_name`, and `redis_url`. The root creates the event resources and enables the
+stage-changed projection consumer by default. If `redis_url` is omitted, the ECS task
 configuration uses the SCRUM-162 ElastiCache TLS endpoint.
 
 The JSON files under `deployment/` remain source contracts with placeholders;

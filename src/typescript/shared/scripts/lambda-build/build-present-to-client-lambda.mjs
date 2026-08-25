@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { build } from "esbuild";
+import { packageLambda } from "./package-lambda.mjs";
 
 const outfile = resolve("dist/present-to-client-lambda/index.js");
 
@@ -17,4 +18,6 @@ await build({
   sourcemap: true,
   logLevel: "info",
 });
+
+await packageLambda("dist/present-to-client-lambda", "dist/present-to-client-lambda.zip");
 

@@ -102,13 +102,13 @@ variable "lambda_runtime_environment" {
 
 variable "present_to_client_lambda_zip_path" {
   type        = string
-  description = "Path to the zipped present-to-client Lambda artifact built from dist/present-to-client-lambda."
+  description = "Path to the zipped present-to-client Lambda artifact produced by npm run build:lambdas."
   default     = "../dist/present-to-client-lambda.zip"
 }
 
 variable "execute_lambda_zip_path" {
   type        = string
-  description = "Path to the zipped execute Lambda artifact built from dist/execute-lambda."
+  description = "Path to the zipped execute Lambda artifact produced by npm run build:lambdas."
   default     = "../dist/execute-lambda.zip"
 }
 
@@ -120,7 +120,7 @@ variable "enable_stage_changed_consumer_lambda" {
 
 variable "stage_changed_consumer_lambda_zip_path" {
   type        = string
-  description = "Path to the zipped stage-changed consumer Lambda artifact when enable_stage_changed_consumer_lambda is true."
+  description = "Path to the zipped stage-changed consumer Lambda artifact produced by npm run build:lambdas."
   default     = "../dist/stage-changed-consumer.zip"
 }
 
