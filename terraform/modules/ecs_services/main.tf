@@ -103,9 +103,7 @@ data "aws_iam_policy_document" "execution_runtime_access" {
       "logs:PutLogEvents",
       "logs:DescribeLogStreams",
     ]
-    #tfsec:ignore:aws-iam-no-policy-wildcards ECS awslogs requires stream-level ARNs
-    # for the two service log groups; this keeps the execution role scoped to the
-    # managed CloudWatch Logs destinations instead of granting broad log access.
+    #tfsec:ignore:aws-iam-no-policy-wildcards ECS awslogs requires stream-level ARNs for the two service log groups.
     resources = [
       "${aws_cloudwatch_log_group.core_case.arn}:*",
       "${aws_cloudwatch_log_group.tax_engine.arn}:*",
