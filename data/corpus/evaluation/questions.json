@@ -1,0 +1,72 @@
+[
+  {
+    "id": "q-001",
+    "question": "For a joint filer, what safe-harbor threshold should an advisor cite when projected payments are being reviewed?",
+    "response": "The advisor should cite the joint-filer safe-harbor threshold and keep the recommendation aligned to the joint filing status and its invented payment amount.",
+    "expectedSectionIds": ["SYN-TC-4110-a"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-002",
+    "question": "For a single filer, which safe-harbor section should be used instead of the joint-filer version?",
+    "response": "The advisor should use the single-filer safe-harbor section because the filing status is the material difference and the payment threshold is scaled for the single-filer scenario.",
+    "expectedSectionIds": ["SYN-TC-4110-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-003",
+    "question": "When a household has seasonal income concentrated in one quarter, what exception should be cited first?",
+    "response": "The seasonal income exception should be cited first because the timing of income is the central planning fact and the recommendation turns on the quarter concentration.",
+    "expectedSectionIds": ["SYN-TC-4120-a"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-004",
+    "question": "If the remaining payment gap is small, which exception is appropriate for a de minimis underpayment review?",
+    "response": "The de minimis underpayment exception should be used when the recommendation centers on a small remaining gap rather than timing, because the shortfall and percentage threshold are the relevant facts.",
+    "expectedSectionIds": ["SYN-TC-4120-c"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-005",
+    "question": "Which retirement credit section should be used when projected income falls inside the phase-out range?",
+    "response": "The retirement credit phase-out provision should be cited because the recommendation depends on whether the household is below, inside, or above the invented phase-out range.",
+    "expectedSectionIds": ["SYN-TC-4300-a"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-006",
+    "question": "For a retirement contribution checklist, which playbook section should direct the advisor to the correct rule citation?",
+    "response": "The retirement planning contribution limit checklist should be cited because it maps the planning profile to the correct rule citation and distinguishes phase-out review from replacement-credit review.",
+    "expectedSectionIds": ["SYN-PB-03-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-007",
+    "question": "After the 2026-01-01 replacement date, which retirement credit rule should be cited instead of the superseded one?",
+    "response": "The replacement credit rule should be cited after the effective date because the superseded rule should not be used once the replacement provision applies.",
+    "expectedSectionIds": ["SYN-TC-4310-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-008",
+    "question": "When a recommendation depends on filing-status differences, what nearby threshold section is the correct retrieval target?",
+    "response": "The filing-status-specific safe-harbor threshold section should be retrieved, with the filing status being the material difference rather than the surrounding wording.",
+    "expectedSectionIds": ["SYN-TC-4110-a", "SYN-TC-4110-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-009",
+    "question": "If the question is about a tax year before the replacement policy changes, which section should be preferred over the later-year version?",
+    "response": "The earlier-year section should be cited because the tax year difference is material and the later-year version should not replace the pre-change rule.",
+    "expectedSectionIds": ["SYN-TC-4200-a", "SYN-TC-4200-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-010",
+    "question": "What playbook guidance should be cited when a recommendation is about superseded-rule explanations and date-sensitive citations?",
+    "response": "The superseded-rule explanations playbook should be cited because it tells the advisor to match the recommendation date to the correct rule and avoid citing the superseded provision after the replacement date.",
+    "expectedSectionIds": ["SYN-PB-04-a"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  }
+]
