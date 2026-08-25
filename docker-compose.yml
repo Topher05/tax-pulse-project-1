@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: ${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}
       POSTGRES_PASSWORD: ${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}
     ports:
-      - "54318:5432"
+      - "55432:5432"
     volumes:
       - taxpulse-postgres-18-data:/var/lib/postgresql
     healthcheck:
