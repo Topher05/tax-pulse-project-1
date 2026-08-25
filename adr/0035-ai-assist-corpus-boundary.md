@@ -21,9 +21,9 @@ shape, chunks valid documents deterministically, and preserves citation metadata
 every chunk. The generated chunk artifact is a handoff format for later retrieval work,
 not a tenant case record and not a tax calculation result.
 
-SCRUM-178 creates the synthetic markdown source corpus and deterministic chunks, but it
-does not add embeddings, create a pgvector index, add reranking, run retrieval quality
-evaluation, or expose an `/assist` endpoint.
+SCRUM-178 creates the synthetic markdown source corpus and deterministic chunks. Building on this foundation, SCRUM-179 adds a deterministic pgvector-backed similarity index for semantic search using `vector(1536)` and cosine similarity, while SCRUM-180 orchestrates a hybrid retrieval pipeline combining semantic search with keyword matching, culminating in a reranking step to order candidate chunks by relevance.
+
+None of these foundational steps expose an `/assist` endpoint or integrate live tenant requests (reserved for SCRUM-182).
 
 ## Consequences
 * Core Case Service ownership of case data remains unchanged.
@@ -34,6 +34,7 @@ evaluation, or expose an `/assist` endpoint.
   source parsing and citation preservation.
 * Generated source documents must remain clearly labelled as synthetic training content
   with invented rates and limits.
+* The embedding vectors (SCRUM-179) and hybrid retrieval algorithms (SCRUM-180) are deterministic and isolated to this bounded context, ensuring robust offline evaluations.
 
 ## Alternatives considered
 * Put corpus ingestion in the Core Case Service. Rejected because corpus processing is

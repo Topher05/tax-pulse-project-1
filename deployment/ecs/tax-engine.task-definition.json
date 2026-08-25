@@ -32,6 +32,40 @@
         {
           "name": "JWT_ISSUER",
           "value": "https://auth.taxpulse.example"
+        },
+        {
+          "name": "OTEL_SERVICE_NAME",
+          "value": "tax-engine"
+        },
+        {
+          "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+          "value": "http://127.0.0.1:4318"
+        },
+        {
+          "name": "OTEL_EXPORTER_OTLP_PROTOCOL",
+          "value": "http/protobuf"
+        },
+        {
+          "name": "OTEL_PROPAGATORS",
+          "value": "tracecontext,baggage,xray"
+        },
+        {
+          "name": "OTEL_RESOURCE_ATTRIBUTES",
+          "value": "deployment.environment=dev,service.namespace=taxpulse"
+        },
+        {
+          "name": "OTEL_TRACES_SAMPLER",
+          "value": "parentbased_traceidratio"
+        },
+        {
+          "name": "OTEL_TRACES_SAMPLER_ARG",
+          "value": "1"
+        }
+      ],
+      "dependsOn": [
+        {
+          "containerName": "aws-otel-collector",
+          "condition": "START"
         }
       ],
       "secrets": [
@@ -56,6 +90,40 @@
           "awslogs-group": "Tax-Engine",
           "awslogs-region": "us-east-1",
           "awslogs-stream-prefix": "ecs"
+        }
+      }
+    },
+    {
+      "name": "aws-otel-collector",
+      "image": "public.ecr.aws/aws-observability/aws-otel-collector:v0.30.0",
+      "essential": true,
+      "command": [
+        "--config=/etc/ecs/ecs-default-config.yaml"
+      ],
+      "portMappings": [
+        {
+          "containerPort": 4317,
+          "hostPort": 4317,
+          "protocol": "tcp"
+        },
+        {
+          "containerPort": 4318,
+          "hostPort": 4318,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "AWS_REGION",
+          "value": "us-east-1"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "Tax-Engine",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "otel"
         }
       }
     }

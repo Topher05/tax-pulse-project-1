@@ -8,7 +8,7 @@ import type { TaxPlanCycleRepository } from "../repositories/repository.js";
 import type { ScenarioModelingScenarioInput } from "../scenarioModeling.js";
 import {
   emitObservabilityEvent,
-  type CloudWatchContext,
+  type TraceContext,
   type StructuredLogger,
 } from "../../../shared/cloud-logger/observability.js";
 
@@ -16,6 +16,7 @@ export interface ScenarioModelingControllerInput extends TaxPlanCycleReadInput {
   authorizationHeader: string;
   baseline: ScenarioTypedFigures;
   scenarios: ReadonlyArray<ScenarioModelingScenarioInput>;
+  requestContext?: Partial<TraceContext>;
 }
 
 export interface ScenarioModelingController {
@@ -57,17 +58,16 @@ export function createScenarioModelingController(
   return {
     async model(input) {
       const startedAt = Date.now();
-      const requestContext: CloudWatchContext = {
+      const traceContext = input.requestContext ?? {};
+
+      emitObservabilityEvent(telemetryLogger, "info", "scenario modeling started", {
         service: "core-case-service",
         layer: "controller",
         operation: "scenario_modeling",
+        outcome: "started",
         tenant_id: input.tenantId,
         case_id: input.caseId,
-      };
-
-      emitObservabilityEvent(telemetryLogger, "info", "scenario modeling started", {
-        ...requestContext,
-        outcome: "started",
+        ...traceContext,
         metric_name: "tax_plan_cycle.scenario_modeling.count",
         metric_value: 1,
         metric_unit: "Count",
@@ -99,6 +99,7 @@ export function createScenarioModelingController(
           authorizationHeader: input.authorizationHeader,
           baseline: input.baseline,
           scenarios: [...input.scenarios],
+          requestContext: input.requestContext,
         });
       } catch (error) {
         emitObservabilityEvent(telemetryLogger, "error", "scenario modeling failed", {
@@ -110,7 +111,9 @@ export function createScenarioModelingController(
           case_id: input.caseId,
           outcome: "failed",
           duration_ms: Date.now() - startedAt,
+          error_class: error instanceof Error ? error.name : "Error",
           error: error instanceof Error ? error.message : String(error),
+          ...traceContext,
           metric_name: "tax_plan_cycle.scenario_modeling.count",
           metric_value: 1,
           metric_unit: "Count",
@@ -128,6 +131,7 @@ export function createScenarioModelingController(
           case_id: input.caseId,
           outcome: "failed",
           duration_ms: Date.now() - startedAt,
+          ...traceContext,
           metric_name: "tax_plan_cycle.scenario_modeling.count",
           metric_value: 1,
           metric_unit: "Count",
@@ -144,6 +148,7 @@ export function createScenarioModelingController(
         case_id: input.caseId,
         outcome: "success",
         duration_ms: Date.now() - startedAt,
+        ...traceContext,
         metric_name: "tax_plan_cycle.scenario_modeling.duration_ms",
         metric_value: Date.now() - startedAt,
         metric_unit: "Milliseconds",

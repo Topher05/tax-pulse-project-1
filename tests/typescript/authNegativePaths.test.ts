@@ -54,9 +54,10 @@ function tamperToken(token: string): string {
   }
 
   const signature = parts[2] ?? "";
-  const replacement = signature.endsWith("a") ? "b" : "a";
+  const middleIndex = Math.floor(signature.length / 2);
+  const replacement = signature[middleIndex] === "a" ? "b" : "a";
 
-  return `${parts[0]}.${parts[1]}.${signature.slice(0, -1)}${replacement}`;
+  return `${parts[0]}.${parts[1]}.${signature.slice(0, middleIndex)}${replacement}${signature.slice(middleIndex + 1)}`;
 }
 
 async function withAuthNegativePathServer(

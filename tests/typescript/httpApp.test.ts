@@ -86,6 +86,7 @@ describe("createApp", () => {
     expect(response.headers.get("content-type")).toContain(
       "application/json",
     );
+    expect(response.headers.get("x-request-id")).toMatch(/\S+/);
     expect(await response.json()).toEqual({ status: "ok" });
   });
 
