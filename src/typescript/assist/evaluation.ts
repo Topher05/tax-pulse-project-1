@@ -1,0 +1,201 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+export const defaultAssistEvaluationDirectory = "data/corpus/evaluation";
+export const defaultAssistEvaluationArtifactsDirectory = "artifacts/assist-evaluation";
+export const defaultAssistEvaluationQuestionsPath = path.join(
+  defaultAssistEvaluationDirectory,
+  "questions.json",
+);
+export const defaultAssistEvaluationThresholdsPath = path.join(
+  defaultAssistEvaluationDirectory,
+  "thresholds.json",
+);
+export const defaultRagasInputArtifactPath = path.join(
+  defaultAssistEvaluationArtifactsDirectory,
+  "ragas-input.json",
+);
+export const defaultRagasReportArtifactPath = path.join(
+  defaultAssistEvaluationArtifactsDirectory,
+  "ragas-report.json",
+);
+
+export interface EvaluationQuestion {
+  id: string;
+  question: string;
+  response: string;
+  expectedSectionIds: string[];
+  syntheticNotice: string;
+}
+
+export interface EvaluationThreshold {
+  name: string;
+  minimumMean: number;
+}
+
+export interface EvaluationThresholdSet {
+  metrics: EvaluationThreshold[];
+}
+
+export interface RetrievedCitation {
+  documentTitle: string;
+  documentType: string;
+  fictionalIssuer: string;
+  tenantId: string;
+  sectionId: string;
+  sectionPath: string;
+  syntheticNotice: string;
+}
+
+export interface RetrievedRankedChunk {
+  rank: number;
+  chunkId: string;
+  documentId: string;
+  documentType: string;
+  sectionId: string;
+  sectionPath: string;
+  text: string;
+  citation: RetrievedCitation;
+  score?: number;
+}
+
+export interface AssistRetriever {
+  retrieve(question: string, resultLimit: number): Promise<RetrievedRankedChunk[]>;
+}
+
+export interface AssistRetrieverFactory {
+  create(): AssistRetriever;
+}
+
+export interface RagasInputSample {
+  id: string;
+  userInput: string;
+  response: string;
+  retrievedContexts: string[];
+  retrievedChunks: RetrievedRankedChunk[];
+  citations: RetrievedCitation[];
+}
+
+export interface RagasInputArtifact {
+  generatedAt: string;
+  questions: EvaluationQuestion[];
+  samples: RagasInputSample[];
+}
+
+export interface MetricScore {
+  value: number;
+  reason?: string;
+}
+
+export interface RagasQuestionScore {
+  id: string;
+  contextRelevance: MetricScore;
+  faithfulness: MetricScore;
+  retrievedChunkIds: string[];
+  citations: RetrievedCitation[];
+}
+
+export interface RagasReportArtifact {
+  generatedAt: string;
+  evaluator: {
+    model: string;
+    temperature: number;
+  };
+  thresholds: EvaluationThresholdSet;
+  questionCount: number;
+  questions: RagasQuestionScore[];
+  aggregate: {
+    contextRelevance: number;
+    faithfulness: number;
+  };
+  pass: boolean;
+}
+
+export function createJira180RetrieverFactory(): AssistRetrieverFactory {
+  return {
+    create(): AssistRetriever {
+      // TODO: Jira 180 imp incoming
+      throw new Error(
+        "Jira 180 must provide hybrid keyword/vector retrieval plus reranking and return ranked corpus chunks with text and citation metadata.",
+      );
+    },
+  };
+}
+
+export async function loadEvaluationQuestions(
+  questionsPath = defaultAssistEvaluationQuestionsPath,
+): Promise<EvaluationQuestion[]> {
+  const raw = JSON.parse(await readFile(questionsPath, "utf8")) as unknown;
+  if (!Array.isArray(raw)) {
+    throw new Error(`Expected ${questionsPath} to contain a JSON array of questions.`);
+  }
+
+  return raw.map((item, index) => validateQuestion(item, `${questionsPath}[${index}]`));
+}
+
+export async function loadEvaluationThresholds(
+  thresholdsPath = defaultAssistEvaluationThresholdsPath,
+): Promise<EvaluationThresholdSet> {
+  const raw = JSON.parse(await readFile(thresholdsPath, "utf8")) as unknown;
+  if (!isRecord(raw) || !Array.isArray(raw.metrics)) {
+    throw new Error(`Expected ${thresholdsPath} to contain { metrics: [...] }.`);
+  }
+
+  return {
+    metrics: raw.metrics.map((metric, index) => validateThreshold(metric, `${thresholdsPath}.metrics[${index}]`)),
+  };
+}
+
+export async function writeJsonArtifact(
+  artifactPath: string,
+  payload: unknown,
+): Promise<void> {
+  await mkdir(path.dirname(artifactPath), { recursive: true });
+  await writeFile(artifactPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+}
+
+function validateQuestion(value: unknown, label: string): EvaluationQuestion {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object.`);
+  }
+
+  const expectedSectionIds = Array.isArray(value.expectedSectionIds)
+    ? value.expectedSectionIds.filter((item): item is string => typeof item === "string")
+    : [];
+
+  return {
+    id: requireString(value.id, `${label}.id`),
+    question: requireString(value.question, `${label}.question`),
+    response: requireString(value.response, `${label}.response`),
+    expectedSectionIds,
+    syntheticNotice: requireString(value.syntheticNotice, `${label}.syntheticNotice`),
+  };
+}
+
+function validateThreshold(value: unknown, label: string): EvaluationThreshold {
+  if (!isRecord(value)) {
+    throw new Error(`${label} must be an object.`);
+  }
+
+  const minimumMean = Number(value.minimumMean);
+  if (!Number.isFinite(minimumMean)) {
+    throw new Error(`${label}.minimumMean must be a finite number.`);
+  }
+
+  return {
+    name: requireString(value.name, `${label}.name`),
+    minimumMean,
+  };
+}
+
+function requireString(value: unknown, label: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`${label} must be a non-empty string.`);
+  }
+
+  return value.trim();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
