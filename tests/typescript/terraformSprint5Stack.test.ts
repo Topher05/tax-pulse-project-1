@@ -10,6 +10,13 @@ function readTerraformModule(moduleName: string, fileName: string): string {
   );
 }
 
+function readDeploymentTemplate(): string {
+  return readFileSync(
+    resolve(process.cwd(), "deployment", "PresentToClient-Draft.template.yaml"),
+    "utf8",
+  );
+}
+
 describe("Sprint 5 Terraform module contracts", () => {
   test("events module declares managed topics, queue, DLQ, policy, and redrive", () => {
     const main = readTerraformModule("events", "main.tf");
@@ -29,11 +36,25 @@ describe("Sprint 5 Terraform module contracts", () => {
 
     expect(main).toContain('resource "aws_apigatewayv2_authorizer" "jwt"');
     expect(main).toContain('authorization_type = "JWT"');
+    expect(main).toContain('resource "aws_cloudwatch_log_group" "transition_api_access"');
+    expect(main).toContain("access_log_settings {");
+    expect(main).toContain('authorizer_error = "$context.authorizer.error"');
     expect(main).toContain("POST /v1/tax-plan-cycles/{caseId}/present-to-client");
     expect(main).toContain("POST /v1/tax-plan-cycles/{caseId}/execute");
     expect(main).toContain('function_response_types = ["ReportBatchItemFailures"]');
     expect(main).toContain('actions   = ["dynamodb:UpdateItem"]');
     expect(main).toContain("user = var.user");
     expect(main).toContain("env  = var.environment");
+  });
+
+  test("SAM transition API records access-log context without token data", () => {
+    const template = readDeploymentTemplate();
+
+    expect(template).toContain("TaxPulseHttpApiAccessLogs:");
+    expect(template).toContain("AccessLogSettings:");
+    expect(template).toContain('"authorizer_error":"$context.authorizer.error"');
+    expect(template).toContain('"request_id":"$context.requestId"');
+    expect(template).not.toContain("$context.identity.sourceIp");
+    expect(template).not.toContain("$context.authorizer.claims");
   });
 });

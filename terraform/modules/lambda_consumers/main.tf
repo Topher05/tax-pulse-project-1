@@ -88,6 +88,12 @@ resource "aws_cloudwatch_log_group" "stage_changed_consumer" {
   tags              = local.tags
 }
 
+resource "aws_cloudwatch_log_group" "transition_api_access" {
+  name              = "/aws/apigateway/${local.api_name}"
+  retention_in_days = 30
+  tags              = local.tags
+}
+
 resource "aws_lambda_function" "present_to_client" {
   function_name    = local.present_name
   description      = "Transition a Tax Plan Cycle from Review to Client Approval."
@@ -179,6 +185,18 @@ resource "aws_apigatewayv2_stage" "default" {
   name        = "$default"
   auto_deploy = true
   tags        = local.tags
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.transition_api_access.arn
+    format = jsonencode({
+      request_id       = "$context.requestId"
+      route_key        = "$context.routeKey"
+      status           = "$context.status"
+      response_latency = "$context.responseLatency"
+      authorizer_error = "$context.authorizer.error"
+      error_message    = "$context.error.message"
+    })
+  }
 }
 
 resource "aws_apigatewayv2_integration" "present_to_client" {
