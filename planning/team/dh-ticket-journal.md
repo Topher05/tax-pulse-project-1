@@ -5,6 +5,52 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira180 - SCRUM-180
+
+**Branch:** `dylan-harle-jira180`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-180
+
+**Summary:** Add hybrid retrieval and reranking.
+
+**Description:** As a Data Engineer, I want hybrid retrieval with reranking, so that the most relevant rule chunks surface for each recommendation.
+
+**Acceptance Criteria:**
+
+- Retrieval combines vector similarity with keyword matching.
+- A reranking step orders candidate chunks by relevance.
+- A test asserts the expected chunk ranks first for a sample query.
+
+**Code Connection:**
+
+- Added hybrid retrieval logic to `src/typescript/assist/retrieval.ts` that combines cosine similarity from pgvector with basic lexical keyword scoring.
+- Added a simple reranker to `src/typescript/assist/retrieval.ts` that boosts results matching query tokens in the section path or ID.
+- Hooked up `retrieveHybridCorpusChunks` using Drizzle, pg, and OpenAI to provide candidates for the reranker.
+- Created `corpusHybridSmoke.ts` to perform integration tests on the new retrieval method.
+- Updated ADR-0035 to track the hybrid retrieval process implementation details.
+
+**Project Scope Connection:**
+
+- RAG-Powered AI Assist.
+- Preserves the AI Assist corpus boundary defined in ADR-0035.
+- Builds directly off of SCRUM-179 vector embeddings by providing a combined keyword/vector retrieval and reranking layer.
+
+**Changed Files:**
+
+- `src/typescript/assist/retrieval.ts`
+- `tests/typescript/assist/retrieval.test.ts`
+- `src/typescript/shared/scripts/corpusHybridSmoke.ts`
+- `package.json`
+- `adr/0035-ai-assist-corpus-boundary.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm run test:vitest` passed.
+
 ## dylan-harle-jira159 - SCRUM-159
 
 **Branch:** `dylan-harle-jira159`

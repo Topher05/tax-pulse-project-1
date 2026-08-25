@@ -5,8 +5,19 @@ import {
   validateCorpusDirectory,
 } from "../../assist/corpus.js";
 
-const inputDirectory = process.env.CORPUS_INPUT_DIR?.trim() || defaultCorpusInputDirectory;
-const configPath = process.env.CORPUS_INTAKE_CONFIG?.trim() || `${inputDirectory}/corpus-intake.json`;
+import { config as loadEnv } from "dotenv";
+
+loadEnv({ override: true });
+
+const inputDirectory = process.env.CORPUS_INPUT_DIR?.trim();
+if (!inputDirectory) {
+  throw new Error("CORPUS_INPUT_DIR is required");
+}
+
+const configPath = process.env.CORPUS_INTAKE_CONFIG?.trim();
+if (!configPath) {
+  throw new Error("CORPUS_INTAKE_CONFIG is required");
+}
 
 try {
   const config = await loadCorpusIntakeConfig(configPath);
