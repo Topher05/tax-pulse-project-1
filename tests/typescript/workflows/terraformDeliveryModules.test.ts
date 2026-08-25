@@ -35,11 +35,26 @@ describe("SCRUM-164 Terraform delivery modules", () => {
   test("keeps optional stage-changed consumer SQS permissions behind the feature flag", () => {
     const lambdaConsumers = readTerraform("terraform/modules/lambda_consumers/main.tf");
     const lambdaVariables = readTerraform("terraform/modules/lambda_consumers/variables.tf");
+    const lambdaReadme = readTerraform("terraform/modules/lambda_consumers/README.md");
 
     expect(lambdaVariables).toContain('variable "stage_changed_queue_arn"');
     expect(lambdaVariables).toContain("default     = null");
     expect(lambdaConsumers).toContain("dynamic \"statement\"");
     expect(lambdaConsumers).toContain("var.enable_stage_changed_consumer_lambda ? [var.stage_changed_queue_arn] : []");
+    expect(lambdaReadme).toMatch(
+      /optional\s+unless\s+`enable_stage_changed_consumer_lambda`\s+is\s+true/,
+    );
+  });
+
+  test("allows CloudFront OAC to decrypt the KMS-encrypted SPA origin", () => {
+    const spaDelivery = readTerraform("terraform/modules/spa_delivery/main.tf");
+
+    expect(spaDelivery).toContain('resource "aws_kms_key_policy" "spa"');
+    expect(spaDelivery).toContain('sid    = "AllowCloudFrontOriginAccessControlDecrypt"');
+    expect(spaDelivery).toContain('"kms:Decrypt"');
+    expect(spaDelivery).toContain('"kms:GenerateDataKey"');
+    expect(spaDelivery).toContain('identifiers = ["cloudfront.amazonaws.com"]');
+    expect(spaDelivery).toContain("values   = [aws_cloudfront_distribution.spa.arn]");
   });
 
   test("uses a public-subnet NAT gateway shape for private subnet egress", () => {

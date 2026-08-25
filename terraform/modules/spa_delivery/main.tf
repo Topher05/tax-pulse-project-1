@@ -1,4 +1,5 @@
 data "aws_caller_identity" "current" {}
+data "aws_partition" "current" {}
 
 locals {
   bucket_name = coalesce(
@@ -12,6 +13,46 @@ resource "aws_kms_key" "spa" {
   description             = "KMS key for TaxPulse SPA S3 origin encryption."
   deletion_window_in_days = 7
   enable_key_rotation     = true
+}
+
+data "aws_iam_policy_document" "spa_kms" {
+  statement {
+    sid       = "AllowAccountAdministration"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  statement {
+    sid    = "AllowCloudFrontOriginAccessControlDecrypt"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey",
+    ]
+    resources = ["*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.spa.arn]
+    }
+  }
+}
+
+resource "aws_kms_key_policy" "spa" {
+  key_id = aws_kms_key.spa.id
+  policy = data.aws_iam_policy_document.spa_kms.json
 }
 
 resource "aws_kms_alias" "spa" {
