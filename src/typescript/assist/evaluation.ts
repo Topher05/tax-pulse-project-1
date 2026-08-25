@@ -1,5 +1,13 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+
+import { createOpenAIEmbeddingProvider } from "./embeddings.js";
+import {
+  defaultReranker,
+  retrieveHybridCorpusChunks,
+  type Reranker,
+} from "./retrieval.js";
 
 export const defaultAssistEvaluationDirectory = "data/corpus/evaluation";
 export const defaultAssistEvaluationArtifactsDirectory = "artifacts/assist-evaluation";
@@ -67,6 +75,13 @@ export interface AssistRetrieverFactory {
   create(): AssistRetriever;
 }
 
+export interface AssistRetrieverFactoryOptions {
+  db: NodePgDatabase<Record<string, unknown>>;
+  embeddingProvider?: ReturnType<typeof createOpenAIEmbeddingProvider>;
+  reranker?: Reranker;
+  resultLimit?: number;
+}
+
 export interface RagasInputSample {
   id: string;
   userInput: string;
@@ -111,13 +126,39 @@ export interface RagasReportArtifact {
   pass: boolean;
 }
 
-export function createJira180RetrieverFactory(): AssistRetrieverFactory {
+export function createAssistRetrieverFactory(
+  options: AssistRetrieverFactoryOptions,
+): AssistRetrieverFactory {
+  // TODO: Jira 180 imp incoming
+  const embeddingProvider = options.embeddingProvider ?? createOpenAIEmbeddingProvider();
+  const reranker = options.reranker ?? defaultReranker();
+  const defaultLimit = Math.max(1, Math.floor(options.resultLimit ?? 5));
+
   return {
     create(): AssistRetriever {
-      // TODO: Jira 180 imp incoming
-      throw new Error(
-        "Jira 180 must provide hybrid keyword/vector retrieval plus reranking and return ranked corpus chunks with text and citation metadata.",
-      );
+      return {
+        async retrieve(question: string, resultLimit: number): Promise<RetrievedRankedChunk[]> {
+          const chunks = await retrieveHybridCorpusChunks(
+            options.db,
+            question,
+            { limit: Math.max(1, Math.floor(resultLimit || defaultLimit)) },
+            embeddingProvider,
+            reranker,
+          );
+
+          return chunks.map((chunk, index) => ({
+            rank: index + 1,
+            chunkId: chunk.chunkId,
+            documentId: chunk.documentId,
+            documentType: chunk.documentType,
+            sectionId: chunk.sectionId,
+            sectionPath: chunk.sectionPath,
+            text: chunk.text,
+            citation: chunk.citation,
+            score: chunk.rerankScore,
+          }));
+        },
+      };
     },
   };
 }
