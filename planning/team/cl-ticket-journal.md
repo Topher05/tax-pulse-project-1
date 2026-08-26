@@ -15,15 +15,15 @@ Add new ticket entries below using this template.
 
 **Summary:** Gate retrieval quality with RAGAS
 
-**Description:** As a Data Engineer, I want a RAGAS evaluation, so that AI-Assist retrieval meets a documented quality bar. Jira 180 remains blocked and is intentionally left as the concrete retriever scaffold point for this ticket.
+**Description:** As a Data Engineer, I want a RAGAS evaluation, so that AI-Assist retrieval meets a documented quality bar. Jira 180 is merged and supplies the concrete hybrid retriever used to collect ranked contexts.
 
 **Acceptance Criteria:**
 
 - Thirty synthetic evaluation questions are checked in under `data/corpus/evaluation/`. This is a user-approved expansion of the original minimum set of ten.
 - Thresholds are checked in separately for mean `context_relevance >= 0.80` and mean `faithfulness >= 0.80`.
-- TypeScript evaluation contracts, collection scripts, and the Jira 180 retriever scaffold are added without changing the `/assist` HTTP surface.
+- TypeScript evaluation contracts and collection scripts use the Jira 180 retriever without changing the `/assist` HTTP surface.
 - A Python scorer writes the offline RAGAS report and exits nonzero when thresholds fail or inputs are malformed.
-- Documentation explains setup, commands, environment variables, report interpretation, threshold rationale, the pgvector requirement, and the Jira 180 blocker.
+- Documentation explains setup, commands, environment variables, report interpretation, threshold rationale, the pgvector requirement, and the Jira 180 dependency.
 
 **Code Connection:**
 
@@ -31,7 +31,7 @@ Add new ticket entries below using this template.
 - Added checked-in synthetic evaluation inputs in `data/corpus/evaluation/questions.json` and `data/corpus/evaluation/thresholds.json`.
 - Added collection and combined evaluation commands in `src/typescript/shared/scripts/assistEvaluationCollect.ts` and `src/typescript/shared/scripts/assistEvaluation.ts`.
 - Added the offline RAGAS scorer in `src/python/retrieval/ragas_evaluation.py` using the collections API `ContextRelevance` and `Faithfulness` metrics.
-- Added the Jira 180 retriever factory scaffold with the exact `TODO: Jira 180 imp incoming` marker and a clear retrieval contract failure message.
+- Integrated the Jira 180 hybrid keyword/vector retriever and relevance reranker through the narrow evaluation retriever factory.
 - Added the `eval` optional dependency group in `pyproject.toml` for `openai` and `ragas`.
 - Expanded the checked-in evaluation bank to 30 corpus-grounded Advisor and Firm Admin scenarios, covering every synthetic rule document and advisory playbook without changing the corpus, retrieval, scoring, or API boundaries.
 
@@ -39,7 +39,7 @@ Add new ticket entries below using this template.
 
 - RAG-Powered AI Assist.
 - Lives in the assist corpus and evaluation pipeline rather than Core Case, Tax Engine, Pulse UI, or the `/assist` endpoint.
-- Depends on Jira 180 for the real ranked chunk retriever and contributes evaluation evidence for Jira 182 and Jira 189.
+- Builds on Jira 180's ranked chunk retriever and contributes evaluation evidence for Jira 182 and Jira 189.
 
 **Changed Files:**
 
@@ -48,17 +48,30 @@ Add new ticket entries below using this template.
 - `package.json`
 - `planning/team/cl-ticket-journal.md`
 - `pyproject.toml`
+- `src/python/retrieval/evaluation_validation.py`
 - `src/python/retrieval/ragas_evaluation.py`
 - `src/typescript/assist/evaluation.ts`
 - `src/typescript/shared/scripts/assistEvaluation.ts`
 - `src/typescript/shared/scripts/assistEvaluationCollect.ts`
 - `src/typescript/assist/retrieval.ts`
+- `tests/tax_liability_engine/ragas_evaluation_test.py`
+- `tests/typescript/assist/embeddings.integration.test.ts`
+- `tests/typescript/assist/evaluation.test.ts`
+- `tests/typescript/assist/retrieval.test.ts`
+- `tests/typescript/bootstrap/migrationTestUtils.ts`
+- `tests/typescript/features/deductions/repository.test.ts`
+- `tests/typescript/features/deductions/routes.test.ts`
+- `tests/typescript/tenantLoginResolver.test.ts`
 
 **Validation Notes:**
 
 - Question-bank integrity validation passed: 30 unique question IDs, non-empty contract fields, 58 expected-section references, and coverage across all 11 corpus documents.
 - `npm run typecheck` passed.
-- Tests were intentionally not modified or run for this pass. Before PR generation, add the deferred unit, malformed-input/failure-path, and Docker-backed retrieval integration coverage.
+- AI-Assist and Compose pgvector-backed case-service validation passed: 5 files and 24 tests.
+- The focused Docker pgvector hybrid retrieval integration passed: 1 file and 1 test.
+- The broader case-service run excluding only tests that directly start Docker PostgreSQL containers passed: 79 files and 359 tests. Docker startup timeout failures from the unfiltered run were ignored as directed.
+- The tax-liability suite passed: 106 tests passed and 2 were skipped.
+- Python Ruff format/lint and Pyright checks passed for the retrieval evaluation implementation and tests.
 - Collection uses the concrete hybrid retriever and requires the Compose pgvector database for live ranked-context evaluation.
 - Corrected the Jira 180 reranker so it no longer rewards inherited parent headings or generic token overlap from section IDs; it now uses leaf headings and exact section-ID matching for top-1 ranking.
 

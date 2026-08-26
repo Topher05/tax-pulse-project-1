@@ -170,7 +170,14 @@ export async function loadEvaluationQuestions(
     throw new Error(`Expected ${questionsPath} to contain a JSON array of questions.`);
   }
 
-  return raw.map((item, index) => validateQuestion(item, `${questionsPath}[${index}]`));
+  const questions = raw.map((item, index) =>
+    validateQuestion(item, `${questionsPath}[${index}]`),
+  );
+  assertUniqueNames(
+    questions.map((question) => question.id),
+    `${questionsPath} question IDs`,
+  );
+  return questions;
 }
 
 export async function loadEvaluationThresholds(
@@ -181,9 +188,22 @@ export async function loadEvaluationThresholds(
     throw new Error(`Expected ${thresholdsPath} to contain { metrics: [...] }.`);
   }
 
-  return {
-    metrics: raw.metrics.map((metric, index) => validateThreshold(metric, `${thresholdsPath}.metrics[${index}]`)),
-  };
+  const metrics = raw.metrics.map((metric, index) =>
+    validateThreshold(metric, `${thresholdsPath}.metrics[${index}]`),
+  );
+  assertUniqueNames(
+    metrics.map((metric) => metric.name),
+    `${thresholdsPath} metric names`,
+  );
+
+  const requiredMetrics = ["context_relevance", "faithfulness"];
+  for (const requiredMetric of requiredMetrics) {
+    if (!metrics.some((metric) => metric.name === requiredMetric)) {
+      throw new Error(`${thresholdsPath} must define ${requiredMetric}.`);
+    }
+  }
+
+  return { metrics };
 }
 
 export async function writeJsonArtifact(
@@ -199,9 +219,12 @@ function validateQuestion(value: unknown, label: string): EvaluationQuestion {
     throw new Error(`${label} must be an object.`);
   }
 
-  const expectedSectionIds = Array.isArray(value.expectedSectionIds)
-    ? value.expectedSectionIds.filter((item): item is string => typeof item === "string")
-    : [];
+  if (!Array.isArray(value.expectedSectionIds) || value.expectedSectionIds.length === 0) {
+    throw new Error(`${label}.expectedSectionIds must be a non-empty string array.`);
+  }
+  const expectedSectionIds = value.expectedSectionIds.map((item, index) =>
+    requireString(item, `${label}.expectedSectionIds[${index}]`),
+  );
 
   return {
     id: requireString(value.id, `${label}.id`),
@@ -218,8 +241,8 @@ function validateThreshold(value: unknown, label: string): EvaluationThreshold {
   }
 
   const minimumMean = Number(value.minimumMean);
-  if (!Number.isFinite(minimumMean)) {
-    throw new Error(`${label}.minimumMean must be a finite number.`);
+  if (!Number.isFinite(minimumMean) || minimumMean < 0 || minimumMean > 1) {
+    throw new Error(`${label}.minimumMean must be a finite number between 0 and 1.`);
   }
 
   return {
@@ -234,6 +257,13 @@ function requireString(value: unknown, label: string): string {
   }
 
   return value.trim();
+}
+
+function assertUniqueNames(values: readonly string[], label: string): void {
+  const duplicate = values.find((value, index) => values.indexOf(value) !== index);
+  if (duplicate) {
+    throw new Error(`${label} must be unique; duplicate ${duplicate}.`);
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

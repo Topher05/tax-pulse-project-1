@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import os
 import sys
 from collections.abc import Mapping
@@ -15,6 +16,12 @@ from typing import cast
 from openai import AsyncOpenAI
 from ragas.llms import llm_factory
 from ragas.metrics.collections import ContextRelevance, Faithfulness
+
+from python.retrieval.evaluation_validation import (
+    environment_path,
+    load_thresholds,
+    numeric_value,
+)
 
 INPUT_PATH = Path("artifacts/assist-evaluation/ragas-input.json")
 THRESHOLDS_PATH = Path("data/corpus/evaluation/thresholds.json")
@@ -30,17 +37,6 @@ class SampleScore:
     faithfulness: float
     retrieved_chunk_ids: list[str]
     citations: list[dict[str, object]]
-
-
-@dataclass(frozen=True)
-class ThresholdMetric:
-    name: str
-    minimum_mean: float
-
-
-@dataclass(frozen=True)
-class EvaluationThresholds:
-    metrics: list[ThresholdMetric]
 
 
 @dataclass(frozen=True)
@@ -62,10 +58,17 @@ async def main() -> int:
     model = os.environ.get("RAGAS_EVALUATOR_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
     temperature = float(os.environ.get("RAGAS_EVALUATOR_TEMPERATURE", str(DEFAULT_TEMPERATURE)))
 
-    payload = json.loads(INPUT_PATH.read_text(encoding="utf-8"))
-    thresholds = load_thresholds(json.loads(THRESHOLDS_PATH.read_text(encoding="utf-8")))
+    input_path = environment_path("ASSIST_RAGAS_INPUT_PATH", INPUT_PATH)
+    thresholds_path = environment_path(
+        "ASSIST_EVALUATION_THRESHOLDS_PATH",
+        THRESHOLDS_PATH,
+    )
+    payload = json.loads(input_path.read_text(encoding="utf-8"))
+    thresholds = load_thresholds(json.loads(thresholds_path.read_text(encoding="utf-8")))
     llm = llm_factory(model, client=AsyncOpenAI(api_key=api_key), temperature=temperature)
 
+    if not isinstance(payload, dict):
+        raise RuntimeError("Collected ragas input must be a JSON object.")
     samples = cast(list[Mapping[str, object]], payload.get("samples", []))
     if not isinstance(samples, list):
         raise RuntimeError("Collected ragas input must contain a samples array.")
@@ -112,8 +115,8 @@ async def main() -> int:
             "faithfulness": aggregate_faithfulness,
         },
         "pass": (
-            aggregate_context_relevance >= threshold_map.get("context_relevance", 0.8)
-            and aggregate_faithfulness >= threshold_map.get("faithfulness", 0.8)
+            aggregate_context_relevance >= threshold_map["context_relevance"]
+            and aggregate_faithfulness >= threshold_map["faithfulness"]
         ),
     }
 
@@ -126,10 +129,7 @@ async def main() -> int:
             "RAGAS gate failed: aggregate means did not meet the configured thresholds."
         )
 
-    print(
-        "PASS RAGAS evaluation wrote "
-        f"{len(scored_questions)} question score(s) to {REPORT_PATH}"
-    )
+    print(f"PASS RAGAS evaluation wrote {len(scored_questions)} question score(s) to {REPORT_PATH}")
     return 0
 
 
@@ -141,7 +141,9 @@ async def score_sample(
 ) -> dict[str, object]:
     user_input = require_string(sample.get("userInput"), "sample.userInput")
     response = require_string(sample.get("response"), "sample.response")
-    retrieved_contexts = require_string_list(sample.get("retrievedContexts"), "sample.retrievedContexts")
+    retrieved_contexts = require_string_list(
+        sample.get("retrievedContexts"), "sample.retrievedContexts"
+    )
     retrieved_chunks = cast(list[Mapping[str, object]], sample.get("retrievedChunks", []))
     citations = cast(list[Mapping[str, object]], sample.get("citations", []))
 
@@ -187,22 +189,6 @@ async def score_sample(
     }
 
 
-def load_thresholds(raw: Mapping[str, object]) -> EvaluationThresholds:
-    metrics = raw.get("metrics")
-    if not isinstance(metrics, list):
-        raise RuntimeError("thresholds.json must contain a metrics array.")
-
-    threshold_metrics: list[ThresholdMetric] = []
-    for metric in metrics:
-        if not isinstance(metric, dict):
-            raise RuntimeError("Each threshold metric must be an object.")
-        name = require_string(metric.get("name"), "threshold.name")
-        minimum_mean = numeric_value(metric.get("minimumMean"), f"{name}.minimumMean")
-        threshold_metrics.append(ThresholdMetric(name=name, minimum_mean=minimum_mean))
-
-    return EvaluationThresholds(metrics=threshold_metrics)
-
-
 def ensure_gate_inputs(
     report: dict[str, object],
     scores: list[dict[str, object]],
@@ -218,7 +204,7 @@ def ensure_gate_inputs(
         for metric_name in ("contextRelevance", "faithfulness"):
             metric = cast(dict[str, object], score[metric_name])
             value = metric["value"]
-            if not isinstance(value, (int, float)) or not (value == value):
+            if not isinstance(value, (int, float)) or not math.isfinite(value):
                 raise RuntimeError(f"{score['id']}: {metric_name} did not return a numeric score.")
 
     aggregate = cast(dict[str, float], report["aggregate"])
@@ -238,21 +224,6 @@ def require_string_list(value: object, label: str) -> list[str]:
     if not isinstance(value, list):
         raise RuntimeError(f"{label} must be a list of strings.")
     return [require_string(item, label) for item in value]
-
-
-def numeric_value(value: object, label: str) -> float:
-    try:
-        if isinstance(value, (int, float)):
-            numeric = float(value)
-        elif isinstance(value, str):
-            numeric = float(value)
-        else:
-            raise TypeError(label)
-    except (TypeError, ValueError) as error:
-        raise RuntimeError(f"{label} must be numeric.") from error
-    if not (numeric == numeric):
-        raise RuntimeError(f"{label} must not be NaN.")
-    return numeric
 
 
 def mean(values: list[float]) -> float:
