@@ -2,6 +2,7 @@ import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
 import type { RequestHandler } from "express";
+import { exportPKCS8, generateKeyPair } from "jose";
 
 import {
   createApp,
@@ -32,6 +33,11 @@ interface BootstrapPrincipal extends AuthenticatedPrincipal {
 interface BootstrapOptions {
   config: JwtConfig;
   principal: BootstrapPrincipal;
+  rs256IssuerConfig?: {
+    issuer: string;
+    signingKeyId: string;
+    signingPrivateKeyPem: string;
+  };
 }
 
 interface BootstrapLoginChallenge {
@@ -119,8 +125,18 @@ async function withBootstrapAuthServer(
   options: BootstrapOptions,
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
+  const generatedKeyPair = options.rs256IssuerConfig
+    ? null
+    : await generateKeyPair("RS256", { extractable: true });
   const tokenService = createTokenService({
     config: options.config,
+    rs256IssuerConfig:
+      options.rs256IssuerConfig ??
+      {
+        issuer: options.config.issuer,
+        signingKeyId: "bootstrap-test-rs256-key",
+        signingPrivateKeyPem: await exportPKCS8(generatedKeyPair!.privateKey),
+      },
     refreshTokenRepository: createNoopRefreshTokenRepository(),
   });
   const controller = createAuthMfaLoginController({
