@@ -39,16 +39,23 @@ describe("STRIDE threat model document", () => {
     expect(document.toLowerCase()).toContain("audit-trail tampering");
   });
 
-  test("links only to existing local implementation files", () => {
+  test("links every mitigation to existing local implementation files", () => {
     const document = readFileSync(documentPath, "utf8");
-    const localLinks = [...document.matchAll(/\]\((?!https?:\/\/|#)([^)]+)\)/g)].map(
-      ([, target]) => target,
-    );
 
-    expect(localLinks.length).toBeGreaterThan(0);
+    for (const category of strideCategories) {
+      const section = sectionFor(document, category);
+      const localLinks = [...section.matchAll(/\]\((?!https?:\/\/|#)([^)]+)\)/g)].map(
+        ([, target]) => target,
+      );
 
-    for (const target of localLinks) {
-      expect(existsSync(resolve(repositoryRoot, "docs", target!)), target).toBe(true);
+      expect(
+        localLinks.length,
+        `Missing implementation link in STRIDE section: ${category}`,
+      ).toBeGreaterThan(0);
+
+      for (const target of localLinks) {
+        expect(existsSync(resolve(repositoryRoot, "docs", target!)), target).toBe(true);
+      }
     }
   });
 });
