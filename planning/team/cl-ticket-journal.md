@@ -52,6 +52,7 @@ Add new ticket entries below using this template.
 - `src/typescript/assist/evaluation.ts`
 - `src/typescript/shared/scripts/assistEvaluation.ts`
 - `src/typescript/shared/scripts/assistEvaluationCollect.ts`
+- `src/typescript/assist/retrieval.ts`
 
 **Validation Notes:**
 
@@ -59,6 +60,7 @@ Add new ticket entries below using this template.
 - `npm run typecheck` passed.
 - Tests were intentionally not modified or run for this pass. Before PR generation, add the deferred unit, malformed-input/failure-path, and Docker-backed retrieval integration coverage.
 - Collection uses the concrete hybrid retriever and requires the Compose pgvector database for live ranked-context evaluation.
+- Corrected the Jira 180 reranker so it no longer rewards inherited parent headings or generic token overlap from section IDs; it now uses leaf headings and exact section-ID matching for top-1 ranking.
 
 <!--
 ## caleb-latimer-jiraXX - SCRUM-XX
