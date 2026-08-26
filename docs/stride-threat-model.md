@@ -9,9 +9,9 @@ firms. The primary trust boundaries are the client or advisor to API boundary, t
 API to database boundary, and the platform-administration boundary.
 
 The register describes controls present in this repository; it is not a claim that
-the controls eliminate the listed risks. The SCRUM-185 data-flow diagram is a
-predecessor artifact and is not present on this branch, so this document does not
-create or link to that diagram.
+the controls eliminate the listed risks. The JIRA-185 data-flow diagram now lives
+in [`taxPulse_dataFlow.md`](taxPulse_dataFlow.md), & this document relies on that
+artifact for the system-wide flow picture instead of duplicating it here.
 
 ## Spoofing
 
