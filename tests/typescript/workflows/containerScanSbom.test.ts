@@ -35,6 +35,7 @@ describe("SCRUM-168 container release workflow", () => {
     expect(workflow).toContain('RELEASE_WORKFLOW_IDENTITY="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/container-scan-sbom.yml@${GITHUB_REF}"');
     expect(workflow).toContain('--certificate-identity "${RELEASE_WORKFLOW_IDENTITY}"');
     expect(workflow).toContain('--certificate-oidc-issuer "${{ env.RELEASE_WORKFLOW_ISSUER }}"');
+    expect(workflow).toContain("aws-actions/amazon-ecr-login@v2");
     expect(workflow).toContain("aws-actions/amazon-ecs-render-task-definition@v1");
     expect(workflow).toContain("aws-actions/amazon-ecs-deploy-task-definition@v2");
     expect(workflow).toContain("core-case-service.task-definition.json");
