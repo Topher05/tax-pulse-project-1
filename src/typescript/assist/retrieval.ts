@@ -14,6 +14,10 @@ export interface HybridRetrievalOptions {
   keywordWeight?: number;
 }
 
+const chunkTextWeight = 1;
+const leafHeadingWeight = 3;
+const documentTitleWeight = 1;
+
 export interface ScoredChunk extends SimilarCorpusChunk {
   vectorScore: number;
   keywordScore: number;
@@ -123,17 +127,18 @@ export async function retrieveHybridCorpusChunks(
     let keywordRawScore = 0;
     for (const token of meaningfulQueryTokens) {
       if (textTokens.has(token)) {
-        keywordRawScore += 1;
+        keywordRawScore += chunkTextWeight;
       }
       if (leafHeadingTokens.has(token)) {
-        keywordRawScore += 2;
+        keywordRawScore += leafHeadingWeight;
       }
       if (titleTokens.has(token)) {
-        keywordRawScore += 2;
+        keywordRawScore += documentTitleWeight;
       }
     }
 
-    const maxPossibleKeywordScore = meaningfulQueryTokens.size * 5;
+    const maxPossibleKeywordScore =
+      meaningfulQueryTokens.size * (chunkTextWeight + leafHeadingWeight + documentTitleWeight);
     const keywordScore = maxPossibleKeywordScore > 0 ? keywordRawScore / maxPossibleKeywordScore : 0;
     const vectorScore = Math.max(0, Math.min(1, candidate.vectorScore));
     const hybridScore = vectorScore * vectorWeight + keywordScore * keywordWeight;
@@ -171,13 +176,13 @@ async function retrieveLexicalCorpusChunks(
     let keywordRawScore = 0;
     for (const token of meaningfulQueryTokens) {
       if (textTokens.has(token)) {
-        keywordRawScore += 1;
+        keywordRawScore += chunkTextWeight;
       }
       if (leafHeadingTokens.has(token)) {
-        keywordRawScore += 2;
+        keywordRawScore += leafHeadingWeight;
       }
       if (titleTokens.has(token)) {
-        keywordRawScore += 2;
+        keywordRawScore += documentTitleWeight;
       }
     }
 
@@ -185,7 +190,14 @@ async function retrieveLexicalCorpusChunks(
       ...row,
       documentType: row.documentType as CorpusDocumentType,
       citation,
-      similarity: Math.max(0, Math.min(1, keywordRawScore / Math.max(1, queryTokens.size * 5))),
+      similarity: Math.max(
+        0,
+        Math.min(
+          1,
+          keywordRawScore /
+            Math.max(1, queryTokens.size * (chunkTextWeight + leafHeadingWeight + documentTitleWeight)),
+        ),
+      ),
     } satisfies SimilarCorpusChunk;
   });
 

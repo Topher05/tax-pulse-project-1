@@ -39,3 +39,8 @@ def test_numeric_value_rejects_malformed_metric_scores(value: object) -> None:
 @pytest.mark.parametrize("value", [0, 0.8, 1, "0.85"])
 def test_numeric_value_accepts_finite_unit_interval_scores(value: object) -> None:
     assert 0 <= evaluation_validation.numeric_value(value, "metric") <= 1
+
+
+def test_numeric_value_rejects_boolean_values() -> None:
+    with pytest.raises(RuntimeError, match="must be numeric"):
+        evaluation_validation.numeric_value(True, "metric")

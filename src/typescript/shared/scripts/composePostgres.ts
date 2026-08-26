@@ -33,7 +33,12 @@ export function assertComposePostgresReady(): ComposePostgresConnection {
   const connection = createComposePostgresConnection();
   const inspectResult = spawnSync(
     "docker",
-    ["inspect", composePostgresContainerName, "--format", "{{json .NetworkSettings.Ports}}"],
+    [
+      "inspect",
+      composePostgresContainerName,
+      "--format",
+      "{{json .State}}|{{json .NetworkSettings.Ports}}",
+    ],
     {
       encoding: "utf8",
     },
@@ -48,19 +53,40 @@ export function assertComposePostgresReady(): ComposePostgresConnection {
   const stdout = inspectResult.stdout.trim();
   if (!stdout) {
     throw new Error(
-      `Docker Compose Postgres container ${composePostgresContainerName} is missing port metadata. Start the stack with npm run stack:up first.`,
+      `Docker Compose Postgres container ${composePostgresContainerName} is missing inspection metadata. Start the stack with npm run stack:up first.`,
     );
   }
 
+  const [stateJson, portsJson] = stdout.split("|", 2);
+  if (!stateJson || !portsJson) {
+    throw new Error(
+      `Docker Compose Postgres container ${composePostgresContainerName} returned incomplete inspection metadata. Start the stack with npm run stack:up first.`,
+    );
+  }
+
+  let parsedState: { Running?: boolean; Health?: { Status?: string } };
   let parsedPorts: Record<string, Array<{ HostIp?: string; HostPort?: string }> | null>;
   try {
-    parsedPorts = JSON.parse(stdout) as Record<
+    parsedState = JSON.parse(stateJson) as { Running?: boolean; Health?: { Status?: string } };
+    parsedPorts = JSON.parse(portsJson) as Record<
       string,
       Array<{ HostIp?: string; HostPort?: string }> | null
     >;
   } catch {
     throw new Error(
       `Docker Compose Postgres container ${composePostgresContainerName} returned unreadable port metadata. Start the stack with npm run stack:up first.`,
+    );
+  }
+
+  if (parsedState.Running !== true) {
+    throw new Error(
+      `Docker Compose Postgres container ${composePostgresContainerName} is not running. Start the stack with npm run stack:up first.`,
+    );
+  }
+
+  if (parsedState.Health?.Status !== "healthy") {
+    throw new Error(
+      `Docker Compose Postgres container ${composePostgresContainerName} is not healthy. Start the stack with npm run stack:up first.`,
     );
   }
 

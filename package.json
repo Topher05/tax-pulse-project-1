@@ -27,7 +27,7 @@
     "aws:alb-smoke": "tsx src/typescript/shared/scripts/albSmoke.ts",
     "cloud:tap": "tsx src/typescript/shared/scripts/cloudTap.ts",
     "assist:evaluation:collect": "tsx src/typescript/shared/scripts/assistEvaluationCollect.ts",
-    "assist:evaluation:score": "py -3.13 src/python/retrieval/ragas_evaluation.py",
+    "assist:evaluation:score": "uv run --locked --extra eval python src/python/retrieval/ragas_evaluation.py",
     "assist:evaluation": "tsx src/typescript/shared/scripts/assistEvaluation.ts",
     "corpus:build": "tsx src/typescript/shared/scripts/corpusBuild.ts",
     "corpus:embed": "tsx src/typescript/shared/scripts/corpusEmbed.ts",

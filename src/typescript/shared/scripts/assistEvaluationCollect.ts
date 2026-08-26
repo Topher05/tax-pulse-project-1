@@ -12,6 +12,7 @@ import {
   writeJsonArtifact,
 } from "../../assist/evaluation.js";
 import { createOpenAIEmbeddingProvider } from "../../assist/embeddings.js";
+import { assertComposePostgresReady } from "./composePostgres.js";
 
 loadEnv();
 
@@ -19,11 +20,6 @@ const questionsPath = process.env.ASSIST_EVALUATION_QUESTIONS_PATH?.trim() || de
 const thresholdsPath = process.env.ASSIST_EVALUATION_THRESHOLDS_PATH?.trim() || defaultAssistEvaluationThresholdsPath;
 const outputPath = process.env.ASSIST_RAGAS_INPUT_PATH?.trim() || `${defaultAssistEvaluationArtifactsDirectory}/ragas-input.json`;
 const resultLimit = Number(process.env.ASSIST_EVALUATION_RESULT_LIMIT?.trim() || "5");
-const databaseUrl = process.env.DATABASE_URL?.trim();
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required for assist evaluation collection.");
-}
 
 if (!process.env.OPENAI_API_KEY?.trim()) {
   throw new Error("OPENAI_API_KEY is required for assist evaluation collection.");
@@ -31,6 +27,7 @@ if (!process.env.OPENAI_API_KEY?.trim()) {
 
 const questions = await loadEvaluationQuestions(questionsPath);
 const thresholds = await loadEvaluationThresholds(thresholdsPath);
+const { connectionString: databaseUrl, endpoint } = assertComposePostgresReady();
 const client = new Client({ connectionString: databaseUrl });
 const embeddingProvider = createOpenAIEmbeddingProvider();
 
@@ -66,7 +63,7 @@ try {
     samples,
   });
 
-  console.log(`PASS Wrote ${samples.length} collected sample(s) to ${outputPath}.`);
+  console.log(`PASS Wrote ${samples.length} collected sample(s) to ${outputPath} using ${endpoint}.`);
 } finally {
   await client.end();
 }

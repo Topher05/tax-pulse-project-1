@@ -44,6 +44,8 @@ def load_thresholds(raw: Mapping[str, object]) -> EvaluationThresholds:
 
 def numeric_value(value: object, label: str) -> float:
     try:
+        if isinstance(value, bool):
+            raise TypeError(label)
         if isinstance(value, (int, float)):
             numeric = float(value)
         elif isinstance(value, str):

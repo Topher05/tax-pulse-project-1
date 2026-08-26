@@ -216,7 +216,7 @@ python -m pip install -e ".[dev]"
 If you have `uv` installed, you can use that instead:
 
 ```powershell
-uv sync --extra dev
+uv sync --locked --extra dev
 ```
 
 Start Docker Desktop first, then run the Python bootstrap from the repository root:
@@ -564,10 +564,10 @@ Report output:
 
 Blocker note:
 
-- The combined command intentionally stops at the Jira-180 retriever scaffold until the
-  concrete hybrid keyword/vector retriever plus reranking implementation is available.
-- Context collection still requires a pgvector-capable PostgreSQL instance once Jira 180
-  lands, but the backend API itself does not need to run for the evaluation workflow.
+- The combined command now runs collection and scoring through the checked-in Compose
+  PostgreSQL stack and the `uv` evaluation environment.
+- Context collection still requires a pgvector-capable PostgreSQL instance, but the
+  backend API itself does not need to run for the evaluation workflow.
 
 ## Migration Commands
 

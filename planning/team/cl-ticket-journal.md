@@ -32,6 +32,7 @@ Add new ticket entries below using this template.
 - Added collection and combined evaluation commands in `src/typescript/shared/scripts/assistEvaluationCollect.ts` and `src/typescript/shared/scripts/assistEvaluation.ts`.
 - Added the offline RAGAS scorer in `src/python/retrieval/ragas_evaluation.py` using the collections API `ContextRelevance` and `Faithfulness` metrics.
 - Integrated the Jira 180 hybrid keyword/vector retriever and relevance reranker through the narrow evaluation retriever factory.
+- Switched the combined evaluation path to `uv run --locked --extra eval python src/python/retrieval/ragas_evaluation.py` and made collection hardwire the Compose PostgreSQL stack through `assertComposePostgresReady()`.
 - Added the `eval` optional dependency group in `pyproject.toml` for `openai` and `ragas`.
 - Expanded the checked-in evaluation bank to 30 corpus-grounded Advisor and Firm Admin scenarios, covering every synthetic rule document and advisory playbook without changing the corpus, retrieval, scoring, or API boundaries.
 
@@ -53,8 +54,11 @@ Add new ticket entries below using this template.
 - `src/typescript/assist/evaluation.ts`
 - `src/typescript/shared/scripts/assistEvaluation.ts`
 - `src/typescript/shared/scripts/assistEvaluationCollect.ts`
+- `src/typescript/shared/scripts/composePostgres.ts`
 - `src/typescript/assist/retrieval.ts`
 - `tests/tax_liability_engine/ragas_evaluation_test.py`
+- `tests/typescript/shared/scripts/assistEvaluation.test.ts`
+- `tests/typescript/shared/scripts/composePostgres.test.ts`
 - `tests/typescript/assist/embeddings.integration.test.ts`
 - `tests/typescript/assist/evaluation.test.ts`
 - `tests/typescript/assist/retrieval.test.ts`
