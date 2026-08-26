@@ -38,3 +38,4 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0033: Terraform Security Gate on Blacksmith Runners](./0033-terraform-security-gate-on-blacksmith-runners.md)
 - [ADR-0035: AI-Assist Corpus Boundary](./0035-ai-assist-corpus-boundary.md)
 - [ADR-0036: SAST Security Gate on Blacksmith Runners](./0036-sast-security-gate-on-blacksmith-runners.md)
+- [ADR-0037: RAGAS Docker Hardwiring for pgvector-backed Retrieval](./0037-ragas-docker-hardwiring.md)

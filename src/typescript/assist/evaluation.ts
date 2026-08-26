@@ -129,7 +129,6 @@ export interface RagasReportArtifact {
 export function createAssistRetrieverFactory(
   options: AssistRetrieverFactoryOptions,
 ): AssistRetrieverFactory {
-  // TODO: Jira 180 imp incoming
   const embeddingProvider = options.embeddingProvider ?? createOpenAIEmbeddingProvider();
   const reranker = options.reranker ?? defaultReranker();
   const defaultLimit = Math.max(1, Math.floor(options.resultLimit ?? 5));

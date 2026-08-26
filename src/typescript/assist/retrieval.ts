@@ -1,9 +1,11 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { aiAssistCorpusEmbedding } from "../shared/database/schema.js";
 import {
   type SimilarCorpusChunk,
   retrieveSimilarCorpusChunks,
   type EmbeddingProvider,
 } from "./embeddings.js";
+import type { CorpusCitation, CorpusDocumentType } from "./corpus.js";
 
 export interface HybridRetrievalOptions {
   limit: number;
@@ -84,9 +86,29 @@ export async function retrieveHybridCorpusChunks(
   const keywordWeight = options.keywordWeight ?? 0.3;
 
   const vectorCandidates = await retrieveSimilarCorpusChunks(db, query, candidateLimit, provider);
+  const lexicalCandidates = await retrieveLexicalCorpusChunks(db, query, candidateLimit);
   const queryTokens = tokenize(query);
+  const candidatesById = new Map<string, SimilarCorpusChunk & { vectorScore: number; keywordScore: number }>();
 
-  const scoredCandidates: ScoredChunk[] = vectorCandidates.map((candidate) => {
+  for (const candidate of vectorCandidates) {
+    candidatesById.set(candidate.chunkId, {
+      ...candidate,
+      vectorScore: candidate.similarity,
+      keywordScore: 0,
+    });
+  }
+
+  for (const candidate of lexicalCandidates) {
+    if (!candidatesById.has(candidate.chunkId)) {
+      candidatesById.set(candidate.chunkId, {
+        ...candidate,
+        vectorScore: 0,
+        keywordScore: 0,
+      });
+    }
+  }
+
+  const scoredCandidates: ScoredChunk[] = Array.from(candidatesById.values()).map((candidate) => {
     const textTokens = tokenize(candidate.text);
     const pathTokens = tokenize(candidate.sectionPath);
     const titleTokens = tokenize(candidate.citation.documentTitle);
@@ -106,7 +128,7 @@ export async function retrieveHybridCorpusChunks(
 
     const maxPossibleKeywordScore = queryTokens.size * 5;
     const keywordScore = maxPossibleKeywordScore > 0 ? keywordRawScore / maxPossibleKeywordScore : 0;
-    const vectorScore = Math.max(0, Math.min(1, candidate.similarity));
+    const vectorScore = Math.max(0, Math.min(1, candidate.vectorScore));
     const hybridScore = vectorScore * vectorWeight + keywordScore * keywordWeight;
 
     return {
@@ -119,6 +141,55 @@ export async function retrieveHybridCorpusChunks(
 
   const rankedCandidates = await reranker.rerank(query, scoredCandidates);
   return rankedCandidates.slice(0, limit);
+}
+
+async function retrieveLexicalCorpusChunks(
+  db: NodePgDatabase<Record<string, unknown>>,
+  query: string,
+  limit: number,
+): Promise<SimilarCorpusChunk[]> {
+  const queryTokens = tokenize(query);
+  if (queryTokens.size === 0) {
+    return [];
+  }
+
+  const rows = await db.select().from(aiAssistCorpusEmbedding).limit(Math.max(0, limit) * 10);
+  const scoredRows = rows.map((row) => {
+    const textTokens = tokenize(row.text);
+    const pathTokens = tokenize(row.sectionPath);
+    const citation = row.citation as CorpusCitation;
+    const titleTokens = tokenize(citation.documentTitle ?? "");
+
+    let keywordRawScore = 0;
+    for (const token of queryTokens) {
+      if (textTokens.has(token)) {
+        keywordRawScore += 1;
+      }
+      if (pathTokens.has(token)) {
+        keywordRawScore += 2;
+      }
+      if (titleTokens.has(token)) {
+        keywordRawScore += 2;
+      }
+    }
+
+    return {
+      ...row,
+      documentType: row.documentType as CorpusDocumentType,
+      citation,
+      similarity: Math.max(0, Math.min(1, keywordRawScore / Math.max(1, queryTokens.size * 5))),
+    } satisfies SimilarCorpusChunk;
+  });
+
+  return scoredRows
+    .filter((candidate) => candidate.similarity > 0)
+    .sort((left, right) => {
+      if (right.similarity !== left.similarity) {
+        return right.similarity - left.similarity;
+      }
+      return left.chunkId.localeCompare(right.chunkId);
+    })
+    .slice(0, limit);
 }
 
 function tokenize(text: string): Set<string> {
