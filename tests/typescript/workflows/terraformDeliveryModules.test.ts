@@ -20,7 +20,9 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     const ecsServices = readTerraform("terraform/modules/ecs_services/main.tf");
 
     expect(ecsServices).toContain('LIABILITY_ENGINE_BASE", value = "http://tax-engine.service.taxpulse.internal:8000"');
-    expect(ecsServices).toContain('service_discovery_namespace  = "service.taxpulse.internal"');
+    expect(ecsServices).toMatch(
+      /service_discovery_namespace\s+=\s+"service\.taxpulse\.internal"/,
+    );
     expect(ecsServices).toContain('resource "aws_service_discovery_private_dns_namespace" "service"');
     expect(ecsServices).toContain('resource "aws_service_discovery_service" "tax_engine"');
     expect(ecsServices).toContain("service_registries");
@@ -39,8 +41,11 @@ describe("SCRUM-164 Terraform delivery modules", () => {
 
     expect(lambdaVariables).toContain('variable "stage_changed_queue_arn"');
     expect(lambdaVariables).toContain("default     = null");
-    expect(lambdaConsumers).toContain("dynamic \"statement\"");
-    expect(lambdaConsumers).toContain("var.enable_stage_changed_consumer_lambda ? [var.stage_changed_queue_arn] : []");
+    expect(lambdaConsumers).toContain(
+      "count = var.enable_stage_changed_consumer_lambda ? 1 : 0",
+    );
+    expect(lambdaConsumers).toContain("resources = [var.stage_changed_queue_arn]");
+    expect(lambdaConsumers).toContain("event_source_arn        = var.stage_changed_queue_arn");
     expect(lambdaReadme).toMatch(
       /optional\s+unless\s+`enable_stage_changed_consumer_lambda`\s+is\s+true/,
     );
