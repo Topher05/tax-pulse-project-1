@@ -109,7 +109,7 @@ privileged database administrator can still undermine attribution.
 
 **Threat scenario:** A principal supplies another tenant's case identifier or audit
 query and reads that tenant's tax-plan cycles, client portal data, or audit records.
-This is a tenant-isolation threat: cross-tenant access or disclosure must not be
+This is a tenant isolation threat: cross-tenant access or disclosure must not be
 possible through an identifier alone.
 
 **Affected asset or trust boundary:** Tenant-scoped tax-plan-cycle, portal, and audit

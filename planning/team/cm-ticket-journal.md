@@ -166,6 +166,58 @@ repository-administration rollout in Step 3.
 - `npx vitest run --config vitest.config.ts tests/typescript/workflows/sastSecurityGate.test.ts` passed: 2 tests.
 - `npm run typecheck` passed.
 - `git diff --check` passed.
+
+## christopher-martus-jira186 - SCRUM-186
+
+**Branch:** `christopher-martus-jira186`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-186
+
+**Summary:** Document STRIDE threats and mitigations
+
+**Description:** Create a checked-in TaxPulse STRIDE threat register covering all six
+STRIDE categories, explicitly addressing tenant isolation and audit-trail tampering,
+with every mitigation linked to its implementation.
+
+**Acceptance Criteria:**
+
+- Each STRIDE category lists at least one concrete threat and mitigation.
+- Cross-tenant access or disclosure is explicitly identified as a tenant-isolation threat.
+- Audit-entry modification or deletion is explicitly identified as an audit-trail-tampering threat.
+- Every mitigation links to an existing repository file describing the implemented control.
+
+**Code Connection:**
+
+- Added the STRIDE register with threat scenarios, affected assets or trust boundaries,
+  priorities, mitigations, implementation references, and residual limitations for
+  authentication, workflow authorization, tenant-scoped repositories, audit storage,
+  platform administration, and tenant rate limiting.
+- Added a semantic contract test that verifies all six sections, required fields,
+  explicit tenant-isolation and audit-trail-tampering coverage, and existing local links.
+
+**Project Scope Connection:**
+
+This completes the repository documentation and validation slice for the TaxPulse
+security hardening scope. It does not create the SCRUM-185 data-flow diagram, modify
+security controls, change schemas or migrations, or claim distributed DoS protection
+or protection from privileged database tampering.
+
+**Changed Files:**
+
+- `docs/stride-threat-model.md`
+- `tests/typescript/strideThreatModel.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run tests/typescript/strideThreatModel.test.ts` passed: 2 tests.
+- `npm run typecheck` passed.
+- `npm test` completed with 76 test files and 345 tests passing; 20 test files and 67
+  tests failed because the environment could not find a working container runtime for
+  Docker-backed integration tests. The new STRIDE contract test passed in the full run.
+- `git diff --check` passed.
 - `git diff --stat origin/development...HEAD` reports 5 files changed, 151 insertions, and 1 deletion.
 - Step 3 repository-administration rollout remains pending explicit authorization for push, PR creation, and branch-protection changes.
 - Added the repository-level CI workflow with parallel Python, Core TypeScript, Pulse UI, and
