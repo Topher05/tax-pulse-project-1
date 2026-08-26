@@ -1,13 +1,31 @@
 import { randomUUID } from "node:crypto";
 
 import { Client } from "pg";
+import { afterAll } from "vitest";
 
 import { applySeed } from "../../../src/typescript/shared/database/seed.js";
 import { migrateDatabase } from "../../../src/typescript/shared/database/migrate.js";
-import { startDockerPostgresContainer } from "./dockerPostgres.js";
+import {
+  startDockerPostgresContainer,
+  type DockerPostgresContainer,
+} from "./dockerPostgres.js";
 
-const databaseUrl = process.env.DATABASE_URL?.trim();
 const drizzlePublicSchemaLockId = 20_300_801;
+let migrationTestContainerPromise: Promise<DockerPostgresContainer> | undefined;
+
+function getMigrationTestContainer(): Promise<DockerPostgresContainer> {
+  migrationTestContainerPromise ??= startDockerPostgresContainer();
+  return migrationTestContainerPromise;
+}
+
+afterAll(async () => {
+  if (!migrationTestContainerPromise) {
+    return;
+  }
+
+  const container = await migrationTestContainerPromise.catch(() => null);
+  await container?.stop().catch(() => undefined);
+});
 
 export const drizzleEnumTypeNames = [
   "deduction_category",
@@ -34,11 +52,8 @@ export async function dropDrizzlePublicTypes(client: Client): Promise<void> {
 export async function withDrizzleTestSchema<T>(
   callback: (client: Client) => Promise<T>,
 ): Promise<T> {
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required for migration tests.");
-  }
-
-  const client = new Client({ connectionString: databaseUrl });
+  const container = await getMigrationTestContainer();
+  const client = new Client({ connectionString: container.connectionUri });
   await client.connect();
   const schemaName = createTestSchemaName("taxpulse_drizzle_migration");
   const quotedSchemaName = quoteIdentifier(schemaName);

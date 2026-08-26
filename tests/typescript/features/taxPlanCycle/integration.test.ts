@@ -44,6 +44,10 @@ import {
   hydrateUserClaims,
   obtainAccessTokenViaLoginAndMfa,
 } from "../../bootstrap/authFlow.js";
+import {
+  createTestJwtFixture,
+  withJwksServer,
+} from "../../bootstrap/jwtTestUtils.js";
 import { expectPgError, getTableStructure } from "../../bootstrap/tableTestUtils.js";
 import {
   expectedStageTransitionColumns,
@@ -95,10 +99,10 @@ const repositoryQueueClientIds = {
 const silentLogger = createLogger({ level: "silent" });
 const authConfig: JwtConfig = {
   issuer: "https://auth.taxpulse.example",
-  signingSecret: "a-unique-test-secret-that-is-more-than-32-bytes",
   accessTokenLifetimeSeconds: 900,
   refreshTokenLifetimeSeconds: 2_592_000,
 };
+const jwtFixturePromise = createTestJwtFixture(authConfig.issuer);
 const advisorEditPermissions = { Advisor: ["EDIT"] } as const;
 const briannaAuthPrincipal = {
   tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02",
@@ -158,8 +162,14 @@ async function createAccessToken(input: {
   totpSecret: string;
   totpCode: string;
 }): Promise<string> {
+  const jwtFixture = await jwtFixturePromise;
   const result = await obtainAccessTokenViaLoginAndMfa({
     config: authConfig,
+    rs256IssuerConfig: {
+      issuer: jwtFixture.issuer,
+      signingKeyId: jwtFixture.signingKeyId,
+      signingPrivateKeyPem: jwtFixture.privateKeyPem,
+    },
     principal: {
       tenantId: input.tenantId,
       userId: input.userId,
@@ -233,37 +243,45 @@ async function withTransitionRouteServer(
   >,
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
-  const app = createApp({
-    logger: silentLogger,
-    registerRoutes: (app) => {
-      app.use(createJwtAuthenticationMiddleware({ config: authConfig }));
-      app.use(hydrateUserClaims(permissionsForRole));
-      app.use(
-        createTaxPlanCycleRouter({
-          controller: createTaxPlanCycleCreateController(repository, {
-            idempotencyStore: createRedisTaxPlanCycleCreateIdempotencyStore(
-              createInMemoryCreateIdempotencyClient(),
-            ),
+  const jwtFixture = await jwtFixturePromise;
+
+  await withJwksServer(jwtFixture.jwks, async (jwksUrl) => {
+    const app = createApp({
+      logger: silentLogger,
+      registerRoutes: (app) => {
+        app.use(
+          createJwtAuthenticationMiddleware({
+            config: { ...authConfig, jwksUrl },
           }),
-          transitionController: createTaxPlanCycleTransitionController(
-            repository,
-          ),
-          auditEntryWriter,
-        }),
-      );
-    },
+        );
+        app.use(hydrateUserClaims(permissionsForRole));
+        app.use(
+          createTaxPlanCycleRouter({
+            controller: createTaxPlanCycleCreateController(repository, {
+              idempotencyStore: createRedisTaxPlanCycleCreateIdempotencyStore(
+                createInMemoryCreateIdempotencyClient(),
+              ),
+            }),
+            transitionController: createTaxPlanCycleTransitionController(
+              repository,
+            ),
+            auditEntryWriter,
+          }),
+        );
+      },
+    });
+
+    const server = app.listen(0, "127.0.0.1");
+    await once(server, "listening");
+
+    try {
+      const address = server.address() as AddressInfo;
+      await run(`http://127.0.0.1:${address.port}`);
+    } finally {
+      server.close();
+      await once(server, "close");
+    }
   });
-
-  const server = app.listen(0);
-  await once(server, "listening");
-
-  try {
-    const address = server.address() as AddressInfo;
-    await run(`http://127.0.0.1:${address.port}`);
-  } finally {
-    server.close();
-    await once(server, "close");
-  }
 }
 
 async function withTaxPlanCycleIntegrationDatabase<T>(

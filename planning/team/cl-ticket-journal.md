@@ -552,6 +552,42 @@ current stub response path.
   database/integration suites, which are outside this SCRUM-184 test pass per the instruction to
   ignore docker-based runtime failures.
 
+**Merge Feedback Test Fix:**
+
+- Fixed the post-merge Tax Plan Cycle integration fixture so login/MFA access tokens and protected
+  transition routes share the same RS256 signing key and local JWKS endpoint.
+- Preserved real JWT verification and the end-to-end login/MFA flow instead of bypassing auth in
+  the integration suite.
+- Updated `tests/typescript/bootstrap/authFlow.ts` and
+  `tests/typescript/features/taxPlanCycle/integration.test.ts`.
+- `npm.cmd --prefix src/pulseUI run test -- --reporter=dot` passed: 236 tests across 47 files.
+- `npm.cmd run typecheck` passed for app, tests, and Pulse UI.
+- Focused Tax Plan Cycle integration validation passed: four PATCH authorization/transition tests
+  and the Brianna login/MFA bearer-auth flow.
+- The complete root Vitest run passed 392 of 416 tests before the fixture fix. The five genuine JWT
+  failures from that run now pass in focused reruns. The remaining 19 failures are excluded Docker
+  and PostgreSQL environment failures: container port binding, database timeouts, or a PostgreSQL
+  image without the `vector` extension.
+
+**Pgvector Testcontainers Follow-up:**
+
+- Corrected `.env.example` so `DOCKER_POSTGRES_IMAGE` uses `pgvector/pgvector:pg18` instead of a
+  plain PostgreSQL image that cannot run migration `0018_mute_lila_cheney.sql`.
+- Added an early pgvector capability check to the shared Testcontainers bootstrap. A custom image
+  without the `vector` extension now fails with a direct configuration message before seeding.
+- Moved `withDrizzleTestSchema` from the ambient `DATABASE_URL` database to one lazily shared
+  pgvector Testcontainer per Vitest file, with teardown in `afterAll`.
+- Updated `.env.example`, `tests/typescript/bootstrap/dockerPostgres.ts`, and
+  `tests/typescript/bootstrap/migrationTestUtils.ts`.
+- `npm.cmd run test:integration -- tests/typescript/assist/embeddings.integration.test.ts --reporter=dot`
+  passed, validating migration, seed, HNSW index creation, and pgvector similarity retrieval.
+- The deductions repository/routes and tenant login resolver suites passed together: 11 tests
+  across 3 files.
+- `npm.cmd run typecheck` passed for app, tests, and Pulse UI.
+- The complete CaseService Vitest run passed 405 of 416 tests. Its only 11 failures were 60-second
+  Docker/database contention timeouts, which remain excluded under the ticket validation scope;
+  no pgvector, seed, JWT, assertion, or other deterministic failures remained.
+
 ## caleb-latimer-jira160 - SCRUM-160
 
 **Branch:** `caleb-latimer-jira160`
