@@ -14,22 +14,24 @@ concurrency:
 
 permissions:
   contents: read
+  id-token: write
   security-events: write
 
+env:
+  AWS_REGION: us-east-1
+  CORE_CASE_REPOSITORY: taxpulse/core-case-service
+  TAX_ENGINE_REPOSITORY: taxpulse/tax-engine
+  RELEASE_WORKFLOW_ISSUER: https://token.actions.githubusercontent.com
+
 jobs:
-  build-scan-sbom:
-    name: Build, Scan & SBOM
+  build-core-case:
+    name: Build, Scan, SBOM & Sign Core Case
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image: taxpulse-core-case
-            dockerfile: Dockerfile
-          - image: taxpulse-tax-engine
-            dockerfile: Dockerfile.tax-engine
+    outputs:
+      image_ref: ${{ steps.release-metadata.outputs.image_ref || steps.local-metadata.outputs.image_ref }}
+      digest: ${{ steps.release-build.outputs.digest || steps.local-metadata.outputs.digest }}
+      repository: ${{ steps.release-metadata.outputs.repository || steps.local-metadata.outputs.repository }}
 
     steps:
       - name: Checkout repository
@@ -38,21 +40,65 @@ jobs:
       - name: Set up Docker builder
         uses: useblacksmith/setup-docker-builder@v1
 
-      - name: Build container image
+      - name: Configure AWS release credentials
+        if: github.ref == 'refs/heads/development'
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}
+
+      - name: Log in to Amazon ECR
+        if: github.ref == 'refs/heads/development'
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Record release image metadata
+        if: github.ref == 'refs/heads/development'
+        id: release-metadata
+        shell: bash
+        run: |
+          IMAGE_REF="${{ steps.ecr-login.outputs.registry }}/${{ env.CORE_CASE_REPOSITORY }}:${GITHUB_SHA}"
+          echo "image_ref=${IMAGE_REF}" >> "$GITHUB_OUTPUT"
+          echo "repository=${{ steps.ecr-login.outputs.registry }}/${{ env.CORE_CASE_REPOSITORY }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push release image
+        if: github.ref == 'refs/heads/development'
+        id: release-build
         uses: useblacksmith/build-push-action@v2
         with:
           context: .
-          file: ./${{ matrix.dockerfile }}
+          file: ./Dockerfile
+          push: true
+          provenance: false
+          platforms: linux/arm64
+          tags: ${{ steps.release-metadata.outputs.image_ref }}
+
+      - name: Record local image metadata
+        if: github.ref != 'refs/heads/development'
+        id: local-metadata
+        shell: bash
+        run: |
+          IMAGE_REF="taxpulse-core-case:${GITHUB_SHA}"
+          echo "image_ref=${IMAGE_REF}" >> "$GITHUB_OUTPUT"
+          echo "digest=local-only" >> "$GITHUB_OUTPUT"
+          echo "repository=taxpulse-core-case" >> "$GITHUB_OUTPUT"
+
+      - name: Build local scan image
+        if: github.ref != 'refs/heads/development'
+        uses: useblacksmith/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
           push: false
           load: true
-          tags: ${{ matrix.image }}:${{ github.sha }}
+          tags: ${{ steps.local-metadata.outputs.image_ref }}
 
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ${{ matrix.image }}:${{ github.sha }}
+          image-ref: ${{ steps.release-build.outputs.digest && format('{0}@{1}', steps.release-metadata.outputs.repository, steps.release-build.outputs.digest) || steps.local-metadata.outputs.image_ref }}
           format: table
-          output: trivy-report-${{ matrix.image }}.txt
+          output: trivy-report-taxpulse-core-case.txt
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
@@ -61,9 +107,9 @@ jobs:
         if: always()
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ${{ matrix.image }}:${{ github.sha }}
+          image-ref: ${{ steps.release-build.outputs.digest && format('{0}@{1}', steps.release-metadata.outputs.repository, steps.release-build.outputs.digest) || steps.local-metadata.outputs.image_ref }}
           format: json
-          output: trivy-report-${{ matrix.image }}.json
+          output: trivy-report-taxpulse-core-case.json
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "0"
@@ -72,25 +118,257 @@ jobs:
         if: always()
         uses: anchore/sbom-action@v0
         with:
-          image: ${{ matrix.image }}:${{ github.sha }}
+          image: ${{ steps.release-build.outputs.digest && format('{0}@{1}', steps.release-metadata.outputs.repository, steps.release-build.outputs.digest) || steps.local-metadata.outputs.image_ref }}
           format: spdx-json
-          output-file: sbom-${{ matrix.image }}.spdx.json
+          output-file: sbom-taxpulse-core-case.spdx.json
           upload-artifact: false
+
+      - name: Install Cosign
+        if: github.ref == 'refs/heads/development'
+        uses: sigstore/cosign-installer@v4.1.0
+        with:
+          cosign-release: v3.0.6
+
+      - name: Sign release image with Cosign
+        if: github.ref == 'refs/heads/development'
+        env:
+          COSIGN_YES: "true"
+        shell: bash
+        run: |
+          cosign sign "${{ steps.release-metadata.outputs.repository }}@${{ steps.release-build.outputs.digest }}"
 
       - name: Upload Trivy scan reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-report-${{ matrix.image }}
+          name: trivy-report-taxpulse-core-case
           path: |
-            trivy-report-${{ matrix.image }}.txt
-            trivy-report-${{ matrix.image }}.json
+            trivy-report-taxpulse-core-case.txt
+            trivy-report-taxpulse-core-case.json
           retention-days: 90
 
       - name: Upload SBOM
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-${{ matrix.image }}
-          path: sbom-${{ matrix.image }}.spdx.json
+          name: sbom-taxpulse-core-case
+          path: sbom-taxpulse-core-case.spdx.json
           retention-days: 90
+
+  build-tax-engine:
+    name: Build, Scan, SBOM & Sign Tax Engine
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 30
+    outputs:
+      image_ref: ${{ steps.release-metadata.outputs.image_ref || steps.local-metadata.outputs.image_ref }}
+      digest: ${{ steps.release-build.outputs.digest || steps.local-metadata.outputs.digest }}
+      repository: ${{ steps.release-metadata.outputs.repository || steps.local-metadata.outputs.repository }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Docker builder
+        uses: useblacksmith/setup-docker-builder@v1
+
+      - name: Configure AWS release credentials
+        if: github.ref == 'refs/heads/development'
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}
+
+      - name: Log in to Amazon ECR
+        if: github.ref == 'refs/heads/development'
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Record release image metadata
+        if: github.ref == 'refs/heads/development'
+        id: release-metadata
+        shell: bash
+        run: |
+          IMAGE_REF="${{ steps.ecr-login.outputs.registry }}/${{ env.TAX_ENGINE_REPOSITORY }}:${GITHUB_SHA}"
+          echo "image_ref=${IMAGE_REF}" >> "$GITHUB_OUTPUT"
+          echo "repository=${{ steps.ecr-login.outputs.registry }}/${{ env.TAX_ENGINE_REPOSITORY }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push release image
+        if: github.ref == 'refs/heads/development'
+        id: release-build
+        uses: useblacksmith/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile.tax-engine
+          push: true
+          provenance: false
+          platforms: linux/arm64
+          tags: ${{ steps.release-metadata.outputs.image_ref }}
+
+      - name: Record local image metadata
+        if: github.ref != 'refs/heads/development'
+        id: local-metadata
+        shell: bash
+        run: |
+          IMAGE_REF="taxpulse-tax-engine:${GITHUB_SHA}"
+          echo "image_ref=${IMAGE_REF}" >> "$GITHUB_OUTPUT"
+          echo "digest=local-only" >> "$GITHUB_OUTPUT"
+          echo "repository=taxpulse-tax-engine" >> "$GITHUB_OUTPUT"
+
+      - name: Build local scan image
+        if: github.ref != 'refs/heads/development'
+        uses: useblacksmith/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile.tax-engine
+          push: false
+          load: true
+          tags: ${{ steps.local-metadata.outputs.image_ref }}
+
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.release-build.outputs.digest && format('{0}@{1}', steps.release-metadata.outputs.repository, steps.release-build.outputs.digest) || steps.local-metadata.outputs.image_ref }}
+          format: table
+          output: trivy-report-taxpulse-tax-engine.txt
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Run Trivy JSON report
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.release-build.outputs.digest && format('{0}@{1}', steps.release-metadata.outputs.repository, steps.release-build.outputs.digest) || steps.local-metadata.outputs.image_ref }}
+          format: json
+          output: trivy-report-taxpulse-tax-engine.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
+
+      - name: Generate SBOM with Syft
+        if: always()
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.release-build.outputs.digest && format('{0}@{1}', steps.release-metadata.outputs.repository, steps.release-build.outputs.digest) || steps.local-metadata.outputs.image_ref }}
+          format: spdx-json
+          output-file: sbom-taxpulse-tax-engine.spdx.json
+          upload-artifact: false
+
+      - name: Install Cosign
+        if: github.ref == 'refs/heads/development'
+        uses: sigstore/cosign-installer@v4.1.0
+        with:
+          cosign-release: v3.0.6
+
+      - name: Sign release image with Cosign
+        if: github.ref == 'refs/heads/development'
+        env:
+          COSIGN_YES: "true"
+        shell: bash
+        run: |
+          cosign sign "${{ steps.release-metadata.outputs.repository }}@${{ steps.release-build.outputs.digest }}"
+
+      - name: Upload Trivy scan reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report-taxpulse-tax-engine
+          path: |
+            trivy-report-taxpulse-tax-engine.txt
+            trivy-report-taxpulse-tax-engine.json
+          retention-days: 90
+
+      - name: Upload SBOM
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-taxpulse-tax-engine
+          path: sbom-taxpulse-tax-engine.spdx.json
+          retention-days: 90
+
+  verify-and-deploy:
+    name: Verify Signatures & Deploy ECS
+    if: github.ref == 'refs/heads/development'
+    needs:
+      - build-core-case
+      - build-tax-engine
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Configure AWS release credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v4.1.0
+        with:
+          cosign-release: v3.0.6
+
+      - name: Verify Core Case signature
+        shell: bash
+        run: |
+          IMAGE_REF="${{ needs.build-core-case.outputs.repository }}@${{ needs.build-core-case.outputs.digest }}"
+          RELEASE_WORKFLOW_IDENTITY="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/container-scan-sbom.yml@${GITHUB_REF}"
+          test "${{ needs.build-core-case.outputs.digest }}" != "local-only"
+          cosign verify \
+            --certificate-identity "${RELEASE_WORKFLOW_IDENTITY}" \
+            --certificate-oidc-issuer "${{ env.RELEASE_WORKFLOW_ISSUER }}" \
+            "${IMAGE_REF}"
+
+      - name: Verify Tax Engine signature
+        shell: bash
+        run: |
+          IMAGE_REF="${{ needs.build-tax-engine.outputs.repository }}@${{ needs.build-tax-engine.outputs.digest }}"
+          RELEASE_WORKFLOW_IDENTITY="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/container-scan-sbom.yml@${GITHUB_REF}"
+          test "${{ needs.build-tax-engine.outputs.digest }}" != "local-only"
+          cosign verify \
+            --certificate-identity "${RELEASE_WORKFLOW_IDENTITY}" \
+            --certificate-oidc-issuer "${{ env.RELEASE_WORKFLOW_ISSUER }}" \
+            "${IMAGE_REF}"
+
+      - name: Validate release digests differ from mutable tags
+        shell: bash
+        run: |
+          test "${{ needs.build-core-case.outputs.repository }}@${{ needs.build-core-case.outputs.digest }}" != "${{ needs.build-core-case.outputs.image_ref }}"
+          test "${{ needs.build-tax-engine.outputs.repository }}@${{ needs.build-tax-engine.outputs.digest }}" != "${{ needs.build-tax-engine.outputs.image_ref }}"
+
+      - name: Render Core Case task definition
+        id: render-core-case
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: deployment/ecs/core-case-service.task-definition.json
+          container-name: core-case-service
+          image: ${{ needs.build-core-case.outputs.repository }}@${{ needs.build-core-case.outputs.digest }}
+
+      - name: Render Tax Engine task definition
+        id: render-tax-engine
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: deployment/ecs/tax-engine.task-definition.json
+          container-name: tax-engine
+          image: ${{ needs.build-tax-engine.outputs.repository }}@${{ needs.build-tax-engine.outputs.digest }}
+
+      - name: Deploy Core Case service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          cluster: taxpulse-api
+          service: core-case-service
+          task-definition: ${{ steps.render-core-case.outputs.task-definition }}
+          wait-for-service-stability: true
+
+      - name: Deploy Tax Engine service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          cluster: taxpulse-api
+          service: tax-engine
+          task-definition: ${{ steps.render-tax-engine.outputs.task-definition }}
+          wait-for-service-stability: true

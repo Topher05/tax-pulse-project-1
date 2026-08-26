@@ -26,3 +26,4 @@ backend-cov*
 terraform.tfvars
 terraform.tfvars.json
 *.tfplan
+terraform/*.auto.tfvars
