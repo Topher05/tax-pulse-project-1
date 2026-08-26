@@ -193,48 +193,62 @@ and transition API path.
 - An isolated fresh apply and smoke sequence succeeds through ALB calculation,
   present-to-client transition, SNS/SQS delivery, and Client Approval projection.
 
-**Code Connection:** Added root event wiring, reproducible Lambda ZIP packaging, apply
-documentation, and focused assertions covering root event/module output connections,
-projection inputs, and public URL outputs.
+**Code Connection:** Added the active root event wiring, reproducible Lambda ZIP packaging,
+portable clean-environment ECS image inputs, separate transition/projection IAM roles,
+deployment documentation, and focused assertions covering event/module connections,
+Lambda artifacts, image sourcing, IAM boundaries, smoke ordering, and public outputs.
 
 **Project Scope Connection:** Completes the repository-side Sprint 5 delivery contract while
 preserving tenant-scoped projection behavior and JWT-protected transition access.
 
 **Changed Files:**
 
+- `deployment/PresentToClient-Draft.template.yaml`
+- `package-lock.json`
+- `package.json`
+- `src/typescript/shared/scripts/awsFreshApplySmoke.ts`
+- `src/typescript/shared/scripts/httpApiJwtSmoke.ts`
+- `src/typescript/shared/scripts/lambda-build/build-execute-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/build-present-to-client-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/build-stage-changed-consumer-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/package-lambda.mjs`
+- `terraform/README.md`
+- `terraform/delivery.tf`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/events/main.tf`
+- `terraform/modules/events/outputs.tf`
+- `terraform/modules/events/variables.tf`
+- `terraform/modules/lambda_consumers/main.tf`
+- `terraform/modules/lambda_consumers/variables.tf`
+- `terraform/providers.tf`
+- `terraform/variables.tf`
+- `tests/typescript/shared/scripts/awsFreshApplySmoke.test.ts`
+- `tests/typescript/shared/scripts/httpApiJwtSmoke.test.ts`
 - `tests/typescript/terraformSprint5Stack.test.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
-- Focused Terraform and smoke suites passed: 8 tests.
+- `npm run build:lambdas` passed and rebuilt all three ZIP artifacts.
+- Focused Terraform contract suite passed: 8 tests.
 - `terraform fmt -check -recursive terraform` passed.
 - `terraform -chdir=terraform validate` passed.
 - `npm run typecheck` passed.
 - `git diff --check` passed.
-- `npm test` ran 420 tests: 353 passed and 67 database-backed tests failed because no
-  Docker-compatible container runtime is available locally.
-- Fresh AWS apply and `npm run aws:fresh-apply-smoke` were not run. The configured
-  `terraform-process` AWS profile is absent, no uncommitted `terraform.tfvars` or secret
-  ARN is present, and no smoke bearer token, tenant, or case inputs are available.
-- `git diff --stat origin/development...HEAD` reports 5 files changed, 151 insertions, and 1 deletion.
-- Step 3 repository-administration rollout remains pending explicit authorization for push, PR creation, and branch-protection changes.
-- Added the repository-level CI workflow with parallel Python, Core TypeScript, Pulse UI, and
-  container validation jobs, plus the stable `CI / Required Gate` aggregate check. It runs on
-  pull requests and pushes to `development`, with cancellation of obsolete runs.
-- Corrected the Core TypeScript job to run only the root application and test TypeScript
-  projects. Pulse UI retains its independently installed and validated job, so the core job
-  cannot fail due to unresolved UI-only dependencies such as `zod`.
-- Updated CI checkout, Node setup, and uv setup actions to Node 24-compatible major versions,
-  removing the GitHub Actions Node 20 runtime deprecation warnings.
-- Corrected Python Quality dependency installation to include the locked `dev` extra. This
-  provides Ruff, Pyright, pytest, Pact, and Testcontainers before their CI steps run.
-- Aligned tax-engine test authentication with the RS256/JWKS contract and isolated Pact
-  provider verification from JWT cryptography, which is outside the consumer/provider payload
-  contract being verified.
-- Restored the documented test-only HMAC compatibility path while production continues to use
-  RS256/JWKS, then generated the missing users display-name index migration and aligned stale
-  database test expectations with the canonical synthetic seed.
+- `npm test` ran 423 tests: 354 passed and 69 database-backed tests failed because no
+  Docker-compatible container runtime or vector extension database is available locally.
+- AWS login and read-only preflight succeeded for account `814650854375` in `us-east-1`.
+  The backend bucket exists and has no `scrum-202-step4/` state prefix; both managed ECR
+  repositories contain immutable `v1.0.0.0` images, and the three Lambda ZIPs rebuilt locally.
+- Apply remains blocked before backend initialization: the available `TAX_PULSE_CONFIG` secret
+  contains the expected key names but its `DATABASE_URL` host is `localhost`, so it cannot
+  bootstrap ECS tasks in AWS. It also lacks the documented JWT audience/private-key fields.
+  No secret values were printed, no shared secret was modified, and no AWS resources were
+  created. A valid AWS-reachable runtime secret, synthetic bearer token, and prepared tenant/case
+  are required before applying the isolated stack.
+- `git diff --name-only origin/development...HEAD` reports 24 changed files, including this
+  journal entry; no credentials, tokens, tfvars, or taxpayer data were added.
 
 ## christopher-martus-jira200 - SCRUM-200
 
