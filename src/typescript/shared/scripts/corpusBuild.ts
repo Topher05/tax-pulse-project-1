@@ -7,8 +7,11 @@ import {
 } from "../../assist/corpus.js";
 
 import { config as loadEnv } from "dotenv";
+import { assertComposePostgresReady } from "./composePostgres.js";
 
 loadEnv({ override: true });
+
+assertComposePostgresReady();
 
 const inputDirectory = process.env.CORPUS_INPUT_DIR?.trim();
 if (!inputDirectory) {
@@ -24,7 +27,6 @@ const configPath = process.env.CORPUS_INTAKE_CONFIG?.trim();
 if (!configPath) {
   throw new Error("CORPUS_INTAKE_CONFIG is required");
 }
-
 
 try {
   const config = await loadCorpusIntakeConfig(configPath);
