@@ -35,6 +35,60 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira189 - SCRUM-189
+
+**Branch:** `caleb-latimer-jira189`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-189
+
+**Summary:** Assemble the reproducible evidence packet
+
+**Description:** As a Platform Engineer, I want an evidence packet, so that the build
+is reproducible and auditable by reviewers. This packet is now captured as a checked-in
+release evidence document that links the available CI, scan, SBOM, and deployment
+reproduction artifacts while leaving explicit TODO markers for the missing Jira-169 and
+Jira-181 inputs.
+
+**Acceptance Criteria:**
+
+- The packet links CI test results, security scan reports, and SBOMs for the released
+  images.
+- The packet includes exact steps to reproduce the deploy from a clean checkout.
+- A reviewer can follow the packet to a running stack without tribal knowledge.
+- Missing Jira-169 and Jira-181 inputs remain called out with `TODO: Depending on
+  Jira-XXX` comments instead of being implied as complete.
+
+**Code Connection:**
+
+- `docs/release-evidence-packet.md`
+- `.github/workflows/build-test-quality.yml`
+- `.github/workflows/container-scan-sbom.yml`
+- `docs/stride-threat-model.md`
+- `docs/trivy-suppressions.md`
+- `README.md`
+- `deployment/ecs/README.md`
+- `deployment/spa/README.md`
+- `terraform/README.md`
+
+**Project Scope Connection:**
+
+- Hardening, Evidence & Final Demo
+- Release-readiness documentation
+- CI, scan, SBOM, and deployment traceability
+
+**Changed Files:**
+
+- `docs/release-evidence-packet.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- Documentation-only change; no automated tests were run.
+- The packet intentionally leaves TODO markers for Jira-169 and Jira-181 because those
+  upstream artifacts are not available yet.
+
 ## caleb-latimer-jira171 - SCRUM-171
 
 **Branch:** `caleb-latimer-jira171`
