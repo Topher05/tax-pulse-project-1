@@ -98,6 +98,11 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(releasePipeline).toContain('actions = ["sts:AssumeRoleWithWebIdentity"]');
     expect(releasePipeline).toContain('"ecr:PutImage"');
     expect(releasePipeline).toContain('"ecr:UploadLayerPart"');
+    expect(releasePipeline).toContain('data "aws_caller_identity" "current" {}');
+    expect(releasePipeline).toContain('arn:aws:ecs:%s:%s:service/%s/%s');
+    expect(releasePipeline).toContain("module.ecs_services.cluster_name");
+    expect(releasePipeline).toContain("module.ecs_services.core_case_service_name");
+    expect(releasePipeline).toContain("module.ecs_services.tax_engine_service_name");
     expect(releasePipeline).toContain('"ecs:RegisterTaskDefinition"');
     expect(releasePipeline).toContain('"ecs:UpdateService"');
     expect(releasePipeline).toContain('"iam:PassRole"');

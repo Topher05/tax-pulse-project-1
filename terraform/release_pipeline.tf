@@ -4,7 +4,25 @@ locals {
   github_actions_development_subject      = "repo:${var.github_actions_repository}:ref:refs/heads/${var.github_actions_release_branch}"
   github_actions_release_role_name        = "${var.name_prefix}-github-actions-release-role"
   github_actions_release_role_description = "Short-lived GitHub Actions release role for ECR publication, Cosign verification, and ECS deployment."
+  github_actions_release_service_arns = [
+    format(
+      "arn:aws:ecs:%s:%s:service/%s/%s",
+      var.aws_region,
+      data.aws_caller_identity.current.account_id,
+      module.ecs_services.cluster_name,
+      module.ecs_services.core_case_service_name,
+    ),
+    format(
+      "arn:aws:ecs:%s:%s:service/%s/%s",
+      var.aws_region,
+      data.aws_caller_identity.current.account_id,
+      module.ecs_services.cluster_name,
+      module.ecs_services.tax_engine_service_name,
+    ),
+  ]
 }
+
+data "aws_caller_identity" "current" {}
 
 resource "aws_iam_openid_connect_provider" "github_actions" {
   url             = local.github_actions_oidc_provider_url
@@ -76,12 +94,19 @@ data "aws_iam_policy_document" "github_actions_release" {
   }
 
   statement {
-    sid = "DescribeAndDeployEcsServices"
+    sid = "DescribeAndUpdateEcsServices"
     actions = [
       "ecs:DescribeServices",
+      "ecs:UpdateService",
+    ]
+    resources = local.github_actions_release_service_arns
+  }
+
+  statement {
+    sid = "RegisterAndDescribeTaskDefinitions"
+    actions = [
       "ecs:DescribeTaskDefinition",
       "ecs:RegisterTaskDefinition",
-      "ecs:UpdateService",
     ]
     resources = ["*"]
   }
