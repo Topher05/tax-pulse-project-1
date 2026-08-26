@@ -1,0 +1,96 @@
+name: Container Scan & SBOM
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: release-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  build-scan-sbom:
+    name: Build, Scan & SBOM
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: taxpulse-core-case
+            dockerfile: Dockerfile
+          - image: taxpulse-tax-engine
+            dockerfile: Dockerfile.tax-engine
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Docker builder
+        uses: useblacksmith/setup-docker-builder@v1
+
+      - name: Build container image
+        uses: useblacksmith/build-push-action@v2
+        with:
+          context: .
+          file: ./${{ matrix.dockerfile }}
+          push: false
+          load: true
+          tags: ${{ matrix.image }}:${{ github.sha }}
+
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ matrix.image }}:${{ github.sha }}
+          format: table
+          output: trivy-report-${{ matrix.image }}.txt
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Run Trivy JSON report
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ matrix.image }}:${{ github.sha }}
+          format: json
+          output: trivy-report-${{ matrix.image }}.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
+
+      - name: Generate SBOM with Syft
+        if: always()
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ matrix.image }}:${{ github.sha }}
+          format: spdx-json
+          output-file: sbom-${{ matrix.image }}.spdx.json
+          upload-artifact: false
+
+      - name: Upload Trivy scan reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report-${{ matrix.image }}
+          path: |
+            trivy-report-${{ matrix.image }}.txt
+            trivy-report-${{ matrix.image }}.json
+          retention-days: 90
+
+      - name: Upload SBOM
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.image }}
+          path: sbom-${{ matrix.image }}.spdx.json
+          retention-days: 90
