@@ -39,10 +39,11 @@ module "ecs_services" {
 module "lambda_consumers" {
   source = "./modules/lambda_consumers"
 
-  aws_region               = var.aws_region
-  environment              = var.environment
-  name_prefix              = var.name_prefix
-  shared_config_secret_arn = var.shared_config_secret_arn
+  aws_region                = var.aws_region
+  environment               = var.environment
+  name_prefix               = var.name_prefix
+  lambda_consumer_role_name = var.lambda_consumer_role_name
+  shared_config_secret_arn  = var.shared_config_secret_arn
 
   present_to_client_lambda_zip_path = var.present_to_client_lambda_zip_path
   execute_lambda_zip_path           = var.execute_lambda_zip_path

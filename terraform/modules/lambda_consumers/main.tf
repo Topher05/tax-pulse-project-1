@@ -18,7 +18,7 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 }
 
 resource "aws_iam_role" "lambda" {
-  name               = "${var.name_prefix}-lambda-consumer-role"
+  name               = var.lambda_consumer_role_name
   description        = "Runtime role for TaxPulse transition and event consumer Lambdas."
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }

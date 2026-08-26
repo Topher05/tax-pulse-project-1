@@ -449,6 +449,233 @@ flowchart LR
 - No AWS credentials are required for the static gate path.
 - GitHub branch protection and required status checks still need to be configured in the repository settings.
 
+## caleb-latimer-jira184 - SCRUM-184
+
+**Branch:** `caleb-latimer-jira184`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-184
+
+**Summary:** Add the AI-Assist drawer to Plan Cycle Detail
+
+**Description:** Implement the AI-Assist drawer experience on Plan Cycle Detail, with a
+shell-level floating action button, a slide-in assistant panel, and a temporary
+feature-slice `/tax-plan-cycles/:caseId/assist` endpoint that accepts an empty request body and returns the
+current stub response path.
+
+**Acceptance Criteria:**
+
+- The Pulse UI shows an AI-Assist FAB on Plan Cycle Detail that opens a slide-in drawer.
+- The drawer renders a top toolbar, a message log area, and a modern AI-style input row.
+- The drawer shows a themed loader while the assistant request is in flight.
+- The UI posts an empty `{}` body to `/v1/tax-plan-cycles/:caseId/assist`.
+- The tax-plan-cycle feature slice exposes a typed case-scoped assistant endpoint stub.
+
+**Code Connection:**
+
+- Added app-shell assistant state and drawer wiring so the assistant overlays routed views
+  instead of living inside the detail page.
+- Added `AssistFAB`, `AssistantDrawer`, and `AssitantLoader` components under
+  `src/pulseUI/components/assist/` plus the assistant panel state hook.
+- Added a `taxPlanDetailsAssistant` client helper for the empty-body POST flow.
+- Added a feature-slice assistant controller and case-scoped `/tax-plan-cycles/:caseId/assist` route stub in
+  `src/typescript/features/taxPlanCycle/`.
+- Updated Plan Cycle Detail to register the current case context with the assistant
+  shell.
+
+**Project Scope Connection:**
+
+- Extends the Plan Cycle Detail experience with a reusable RAG-assistant shell surface.
+- Keeps the first pass focused on UI orchestration and the backend stub contract rather
+  than the full assist pipeline.
+- Preserves the existing Plan Cycle Detail route, stage workflow, and audit history flow.
+
+**Changed Files:**
+
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.module.css`
+- `src/pulseUI/components/assist/AssistFAB.tsx`
+- `src/pulseUI/components/assist/AssistFAB.module.css`
+- `src/pulseUI/components/assist/AssitantLoader.tsx`
+- `src/pulseUI/components/assist/AssitantLoader.module.css`
+- `src/pulseUI/components/assist/assistantPanel.tsx`
+- `src/pulseUI/entities/taxPlanDetailsAssistant.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/typescript/features/taxPlanCycle/controllers/assistantController.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+
+**Validation Notes:**
+
+- Logic-only implementation pass completed.
+- Feedback Loop I UI and API refinement completed.
+- `npm run typecheck` passed for application, tests, and Pulse UI.
+- Focused Pulse UI assist tests passed: 6 tests across 2 files.
+- Focused Core Case Service assistant route tests passed: 3 tests; the remaining route
+  tests were skipped by the assistant name filter.
+- `npm run build` passed for the Pulse UI production bundle.
+
+**Feedback Loop I Changes:**
+
+- Added CSS-module-first tooltip primitives and four-button drawer controls with
+  fullscreen, new-dialogue, prompt-toast, and close behavior.
+- Moved the FAB to the right-side Quick Actions anchor with a fixed fallback, corrected
+  its primary color, clipped shimmer, and single vertical pitch animation.
+- Reduced drawer transitions to 250ms open and 200ms close, updated case metadata,
+  moved Send into the composer, and added Enter submission behavior.
+- Migrated the assistant request to TanStack Query and changed the backend route to
+  `/v1/tax-plan-cycles/:caseId/assist` with the `hello Tax Pulse v2` 418 stub response.
+
+**Feedback Loop II Changes:**
+
+- Moved FAB fixed/anchored positioning to the parent tooltip boundary so the tooltip
+  shares the visible button coordinate system in both scroll states.
+- Changed the FAB open animation to a Y-axis flip, and slide the full FAB boundary below
+  the viewport with disabled pointer, keyboard, and assistive-technology access while
+  the drawer is open.
+- Removed the hidden attribute from the Plan Cycle Detail FAB anchor so the portaled FAB
+  remains accessible before the drawer opens.
+- Restored pointer events on the open drawer above the backdrop so toolbar, message, and
+  composer interactions no longer click through and close the assistant.
+- API contract intentionally unchanged for Feedback Loop II.
+
+**Feedback Loop II Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- Focused Pulse UI assistant tests passed: 15 tests across 3 files.
+- `npm.cmd --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
+
+**Feedback Loop III Changes:**
+
+- Reworked the shared tooltip primitive to use explicit hover, focus, and dismiss state instead of
+  `:focus-within`, and connected tooltips to their controls with `aria-describedby`.
+- Turned the assistant drawer into a modal dialog with focus trapping, Escape-to-close behavior,
+  closed-state inerting, backdrop presentation, and focus restoration back to the FAB.
+- Reset drawer fullscreen state on every close path and split the composer into an explicit label,
+  textarea, and bottom-right send control wrapper.
+- Added responsive and reduced-motion refinements for the drawer, FAB tooltip, and loader so the
+  assistant surface behaves better on narrow and short viewports.
+- Added `test.todo` placeholders for the assistant UI, API route, and axe coverage that will be
+  implemented in the next pass.
+
+**Feedback Loop III Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- Focused Pulse UI assistant tests passed: 18 passing, 6 `test.todo` placeholders across 3 files.
+- `npm.cmd --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
+- `npm.cmd test -- tests/typescript/features/taxPlanCycle/routes.test.ts` was attempted, but the
+  existing route bootstrap failed before execution because the RS256 issuer configuration was not
+  available in this environment.
+
+**Test Coverage Pass Changes:**
+
+- Replaced SCRUM-184 `test.todo` placeholders with focused assistant coverage for `AssistFAB`,
+  `AssistantDrawer`, `Tooltips`, `AssitantLoader`, the `taxPlanDetailsAssistant` client helper,
+  and the Pulse UI axe accessibility gate.
+- Added FAB tooltip regression coverage for the post-click stale-tooltip behavior and focus restore
+  path after the drawer closes.
+- Added Core Case Service assistant controller coverage for the strict empty-body schema and
+  temporary `Hello TaxPulse v2` stub response.
+- Expanded tax-plan-cycle route coverage for `/v1/tax-plan-cycles/:caseId/assist`, including
+  successful controller wiring, strict `{}` body validation, invalid case ID handling,
+  missing tenant/user auth context, and client-role rejection.
+- Updated the route test harness to decode generated bootstrap JWT claims locally for route-unit
+  tests, keeping real RS256/JWKS verification in the dedicated JWT protected route suites.
+- Added RS256 issuer configuration to the bootstrap auth helper so test token generation stays
+  aligned with the current JWT service contract.
+- Added a reusable RS256/JWKS test fixture for protected route and main composition tests that
+  need real JWT verification without depending on an external JWKS host.
+- Updated the SignIn page test harness to include `QueryClientProvider`, matching the production
+  app bootstrap now that the authenticated shell mounts the assistant query mutation provider.
+
+**Test Coverage Pass Changed Files:**
+
+- `src/pulseUI/components/assist/AssistantDrawer.tsx`
+- `src/pulseUI/components/assist/AssistFAB.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/tests/assist/AssitantLoader.test.tsx`
+- `src/pulseUI/tests/assist/AssistFAB.test.tsx`
+- `src/pulseUI/tests/assist/AssistantDrawer.test.tsx`
+- `src/pulseUI/tests/assist/Tooltips.test.tsx`
+- `src/pulseUI/tests/assist/taxPlanDetailsAssistant.test.ts`
+- `src/pulseUI/tests/auth/SignInPage.test.tsx`
+- `tests/typescript/bootstrap/jwtTestUtils.ts`
+- `tests/typescript/bootstrap/authFlow.ts`
+- `tests/typescript/features/taxPlanCycle/assistantController.test.ts`
+- `tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+
+**Test Coverage Pass Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI test -- tests/assist/AssistFAB.test.tsx tests/assist/AssistantDrawer.test.tsx tests/assist/Tooltips.test.tsx tests/assist/AssitantLoader.test.tsx tests/assist/taxPlanDetailsAssistant.test.ts tests/accessibility/axeGate.test.tsx`
+  passed: 37 tests across 6 files. Axe emitted jsdom pseudo-element `getComputedStyle` warnings,
+  but all tested assistant states passed with zero reported violations.
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- `npm.cmd --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
+- `npm.cmd --prefix src/pulseUI run test` passed: 236 tests across 47 files. The run still emits
+  expected jsdom warnings for unimplemented scroll, canvas, and pseudo-element APIs.
+- `npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/assistantController.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts`
+  passed: 27 tests across 2 files. The existing scenario-modeling failure-path test logged the
+  expected local tax-engine `ECONNREFUSED 127.0.0.1:8000` error while asserting the 502 behavior.
+- `npm.cmd run test:vitest -- tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+  passed: 10 tests across 2 files.
+- `npm.cmd run typecheck` passed for app, tests, and Pulse UI.
+- `npm.cmd test` and a full root `npm.cmd run test:vitest -- --reporter=dot` were attempted. The
+  first timed out and hit reporter `EPIPE`; the second still reported failures in docker-backed
+  database/integration suites, which are outside this SCRUM-184 test pass per the instruction to
+  ignore docker-based runtime failures.
+
+**Merge Feedback Test Fix:**
+
+- Fixed the post-merge Tax Plan Cycle integration fixture so login/MFA access tokens and protected
+  transition routes share the same RS256 signing key and local JWKS endpoint.
+- Preserved real JWT verification and the end-to-end login/MFA flow instead of bypassing auth in
+  the integration suite.
+- Updated `tests/typescript/bootstrap/authFlow.ts` and
+  `tests/typescript/features/taxPlanCycle/integration.test.ts`.
+- `npm.cmd --prefix src/pulseUI run test -- --reporter=dot` passed: 236 tests across 47 files.
+- `npm.cmd run typecheck` passed for app, tests, and Pulse UI.
+- Focused Tax Plan Cycle integration validation passed: four PATCH authorization/transition tests
+  and the Brianna login/MFA bearer-auth flow.
+- The complete root Vitest run passed 392 of 416 tests before the fixture fix. The five genuine JWT
+  failures from that run now pass in focused reruns. The remaining 19 failures are excluded Docker
+  and PostgreSQL environment failures: container port binding, database timeouts, or a PostgreSQL
+  image without the `vector` extension.
+
+**Pgvector Testcontainers Follow-up:**
+
+- Corrected `.env.example` so `DOCKER_POSTGRES_IMAGE` uses `pgvector/pgvector:pg18` instead of a
+  plain PostgreSQL image that cannot run migration `0018_mute_lila_cheney.sql`.
+- Added an early pgvector capability check to the shared Testcontainers bootstrap. A custom image
+  without the `vector` extension now fails with a direct configuration message before seeding.
+- Moved `withDrizzleTestSchema` from the ambient `DATABASE_URL` database to one lazily shared
+  pgvector Testcontainer per Vitest file, with teardown in `afterAll`.
+- Updated `.env.example`, `tests/typescript/bootstrap/dockerPostgres.ts`, and
+  `tests/typescript/bootstrap/migrationTestUtils.ts`.
+- `npm.cmd run test:integration -- tests/typescript/assist/embeddings.integration.test.ts --reporter=dot`
+  passed, validating migration, seed, HNSW index creation, and pgvector similarity retrieval.
+- The deductions repository/routes and tenant login resolver suites passed together: 11 tests
+  across 3 files.
+- `npm.cmd run typecheck` passed for app, tests, and Pulse UI.
+- The complete CaseService Vitest run passed 405 of 416 tests. Its only 11 failures were 60-second
+  Docker/database contention timeouts, which remain excluded under the ticket validation scope;
+  no pgvector, seed, JWT, assertion, or other deterministic failures remained.
+
+**CI Security Gate Follow-up:**
+
+- Reviewed the Core TypeScript, Required Gate, and Gitleaks logs from the prior PR merge SHA.
+- Confirmed the five Core TypeScript failures were the JWT integration fixture failures corrected
+  in commit `4d19477`; Required Gate requires no independent change because it only reflected the
+  failed Core TypeScript dependency.
+- Added `.gitleaksignore` entries for the two exact historical false-positive fingerprints: the
+  synthetic idempotency key in `mainComposition.test.ts` and the placeholder PEM example formerly
+  in `.env.example`. All scanner rules remain enabled for every other finding.
+- Local Gitleaks execution was unavailable because the binary is not installed; the exact
+  fingerprints were copied from the CI scan output for validation on the next workflow run.
+
 ## caleb-latimer-jira160 - SCRUM-160
 
 **Branch:** `caleb-latimer-jira160`

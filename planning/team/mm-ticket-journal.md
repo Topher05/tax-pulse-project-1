@@ -5,6 +5,56 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira167 - SCRUM-167
+
+**Branch:** `martins-okorie-jira167`
+**Assignee:** Martins Okorie
+**Jira Key:** SCRUM-167
+**Summary:** Scan images and produce SBOMs with Trivy and Syft
+
+**Description:** As a Security Engineer, I want Trivy and Syft in the release
+pipeline, so that images are scanned and have a machine-readable bill of
+materials. This ticket adds a GitHub Actions workflow that builds the two
+project container images (`taxpulse-core-case` and `taxpulse-tax-engine`),
+runs Trivy vulnerability scanning against each, generates SPDX-JSON SBOMs
+with Syft, and publishes all reports as build artifacts.
+
+**Acceptance Criteria:**
+- Trivy scans the container images and fails on a high-severity vulnerability.
+- Syft produces an SBOM per image.
+- The reports are published as build artifacts.
+
+**Code Connection:** Builds on the existing container image definitions in
+`Dockerfile` (Core Case Service) and `Dockerfile.tax-engine` (Tax Engine)
+already validated by the `container-validation` job in
+`build-test-quality.yml`. Follows the Blacksmith runner and workflow
+conventions established by SCRUM-163 (Terraform security gate), SCRUM-165
+(SAST gate), and SCRUM-166 (dependency/secret gate). Uses the same image
+tags (`taxpulse-core-case`, `taxpulse-tax-engine`) pinned to `$GITHUB_SHA`.
+
+**Project Scope Connection:** Part of the Sprint 5 IaC, Secure Pipeline &
+Observability epic (SCRUM-20). Sits between SCRUM-166 (OSV/Gitleaks) and
+SCRUM-168 (Cosign signing) in the security gate chain. Provides the SBOM
+contract that SCRUM-168 can reference for provenance verification.
+
+**Changed Files:**
+- `.github/workflows/container-scan-sbom.yml` — **[NEW]** release-pipeline
+  workflow that builds both container images, runs Trivy scans (table + JSON
+  reports, exit-code 1 on HIGH/CRITICAL), generates SPDX-JSON SBOMs via
+  Syft, and uploads all outputs as build artifacts with 90-day retention.
+- `planning/team/mm-ticket-journal.md` — added this journal entry.
+
+**Validation Notes:**
+- Workflow YAML passes `actionlint` or manual syntax review.
+- Trivy step uses `exit-code: "1"` to gate the pipeline on HIGH/CRITICAL
+  vulnerabilities, satisfying AC-1.
+- Syft generates one SBOM per image in SPDX-JSON format, satisfying AC-2.
+- Both Trivy reports and SBOMs are uploaded via `actions/upload-artifact@v4`
+  with 90-day retention, satisfying AC-3.
+- `if: always()` ensures JSON report, SBOM, and upload steps run even when
+  Trivy fails the build, so artifacts are always available for triage.
+
+
 ## martins-okorie-jira164 - SCRUM-164
 
 **Branch:** `martins-okorie-jira164`
@@ -35,7 +85,8 @@ translates the SCRUM-159/160 contracts into transition Lambdas, API Gateway
 routes, shared IAM runtime permissions, and an optional SQS event-source mapping
 for the stage-changed consumer. The SPA module translates the SCRUM-161 contract
 into a private KMS-encrypted S3 origin, CloudFront Origin Access Control,
-CloudFront distribution, SPA route fallback rewrites, and deploy outputs.
+CloudFront distribution, SPA route fallback rewrites, scoped KMS decrypt/data-key
+permissions for the CloudFront distribution, and deploy outputs.
 
 **Project Scope Connection:** This closes the handoff from placeholder deployment
 JSON to reusable infrastructure-as-code while preserving the already-merged
@@ -93,6 +144,11 @@ tickets.
   name, made the optional stage-changed consumer SQS ARN optional unless that
   consumer is enabled, and reshaped the NAT gateway prerequisite to use an EIP
   plus public subnet.
+- Follow-up review pass added a scoped SPA KMS key policy that grants
+  `cloudfront.amazonaws.com` `kms:Decrypt` and `kms:GenerateDataKey` only when
+  `AWS:SourceArn` matches the Terraform-managed CloudFront distribution ARN, and
+  clarified that `stage_changed_queue_arn` is required only when the optional
+  stage-changed consumer Lambda is enabled.
 - Added `tests/typescript/workflows/terraformDeliveryModules.test.ts` to guard
   the SCRUM-164 Terraform wiring for Lambda env names, service discovery,
   optional SQS permissions, and NAT gateway shape.
@@ -106,6 +162,13 @@ tickets.
   applying changes or initializing the remote backend, but `terraform
   -chdir=terraform validate` is currently blocked by the local cached AWS
   provider failing its plugin schema handshake.
+- Review-fix `terraform fmt -recursive terraform` passed.
+- Review-fix `terraform -chdir=terraform fmt -check -recursive` passed.
+- Review-fix `npm test -- tests/typescript/workflows/terraformDeliveryModules.test.ts`
+  passed after TypeScript typecheck and 5 Vitest assertions.
+- Review-fix `terraform -chdir=terraform validate` remains blocked by the local
+  cached AWS provider schema handshake failure for
+  `.terraform/providers/registry.terraform.io/hashicorp/aws/6.61.0/darwin_arm64/terraform-provider-aws_v6.61.0_x5`.
 
 ## martins-okorie-jira161 - SCRUM-161
 
