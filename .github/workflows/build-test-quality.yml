@@ -36,7 +36,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --locked --extra dev
+        run: uv sync --locked --extra dev --extra eval
 
       - name: Check Python formatting
         run: uv run ruff format --check src tests
@@ -45,7 +45,7 @@ jobs:
         run: uv run ruff check src tests
 
       - name: Run Pyright
-        run: uv run pyright
+        run: uv run --extra eval pyright
 
       - name: Run Pytest
         run: uv run pytest

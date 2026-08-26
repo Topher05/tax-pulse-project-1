@@ -18,7 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 eval = [
-  "openai>=1,<2",
+  "openai>=2.26.0,<3",
   "ragas>=0.4.3,<0.5",
 ]
 dev = [
