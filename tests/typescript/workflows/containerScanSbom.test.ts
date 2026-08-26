@@ -6,16 +6,18 @@ import { describe, expect, test } from "vitest";
 const workflowPath = resolve(process.cwd(), ".github/workflows/container-scan-sbom.yml");
 
 describe("SCRUM-168 container release workflow", () => {
-  test("keeps release actions scoped to development and preserves scan coverage elsewhere", () => {
+  test("keeps release actions scoped to the approved release branches and preserves scan coverage elsewhere", () => {
     const workflow = readFileSync(workflowPath, "utf8");
 
     expect(workflow).toContain("branches:");
     expect(workflow).toContain("- main");
     expect(workflow).toContain("- development");
+    expect(workflow).toContain("- development-scrum168-test");
     expect(workflow).toContain("pull_request:");
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).toContain("if: github.ref == 'refs/heads/development'");
-    expect(workflow).toContain("if: github.ref != 'refs/heads/development'");
+    expect(workflow).toContain("github.ref == 'refs/heads/development-scrum168-test'");
+    expect(workflow).toContain("github.ref != 'refs/heads/development' && github.ref != 'refs/heads/development-scrum168-test'");
     expect(workflow).toContain("aws-actions/configure-aws-credentials@v5");
     expect(workflow).toContain("role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}");
   });
@@ -30,7 +32,8 @@ describe("SCRUM-168 container release workflow", () => {
     expect(workflow).toContain('cosign sign "${{ steps.release-metadata.outputs.repository }}@${{ steps.release-build.outputs.digest }}"');
     expect(workflow).toContain("Verify Core Case signature");
     expect(workflow).toContain("Verify Tax Engine signature");
-    expect(workflow).toContain('--certificate-identity "${{ env.RELEASE_WORKFLOW_IDENTITY }}"');
+    expect(workflow).toContain('RELEASE_WORKFLOW_IDENTITY="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/container-scan-sbom.yml@${GITHUB_REF}"');
+    expect(workflow).toContain('--certificate-identity "${RELEASE_WORKFLOW_IDENTITY}"');
     expect(workflow).toContain('--certificate-oidc-issuer "${{ env.RELEASE_WORKFLOW_ISSUER }}"');
     expect(workflow).toContain("aws-actions/amazon-ecs-render-task-definition@v1");
     expect(workflow).toContain("aws-actions/amazon-ecs-deploy-task-definition@v2");

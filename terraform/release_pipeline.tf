@@ -1,7 +1,10 @@
 locals {
-  github_actions_oidc_provider_url        = "https://token.actions.githubusercontent.com"
-  github_actions_oidc_provider_host       = "token.actions.githubusercontent.com"
-  github_actions_development_subject      = "repo:${var.github_actions_repository}:ref:refs/heads/${var.github_actions_release_branch}"
+  github_actions_oidc_provider_url  = "https://token.actions.githubusercontent.com"
+  github_actions_oidc_provider_host = "token.actions.githubusercontent.com"
+  github_actions_release_subjects = [
+    for branch in var.github_actions_release_branches :
+    "repo:${var.github_actions_repository}:ref:refs/heads/${branch}"
+  ]
   github_actions_release_role_name        = "${var.name_prefix}-github-actions-release-role"
   github_actions_release_role_description = "Short-lived GitHub Actions release role for ECR publication, Cosign verification, and ECS deployment."
 }
@@ -34,7 +37,7 @@ data "aws_iam_policy_document" "github_actions_release_assume_role" {
     condition {
       test     = "StringEquals"
       variable = "${local.github_actions_oidc_provider_host}:sub"
-      values   = [local.github_actions_development_subject]
+      values   = local.github_actions_release_subjects
     }
   }
 }

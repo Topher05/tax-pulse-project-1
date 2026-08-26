@@ -157,8 +157,8 @@ variable "github_actions_repository" {
   default     = "AI-Native-2026-06-22-FedStack/tax-pulse-project-team-1"
 }
 
-variable "github_actions_release_branch" {
-  type        = string
-  description = "Git ref branch name allowed to assume the SCRUM-168 release role."
-  default     = "development"
+variable "github_actions_release_branches" {
+  type        = list(string)
+  description = "Git ref branch names allowed to assume the SCRUM-168 release role."
+  default     = ["development", "development-scrum168-test"]
 }

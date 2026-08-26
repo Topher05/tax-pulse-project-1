@@ -25,10 +25,10 @@ Add new ticket entries below using this template.
 
 **Code Connection:**
 
-- Extended `.github/workflows/container-scan-sbom.yml` from the SCRUM-167 local build/scan flow into a development release pipeline that still scans both application images on PR and `main`, but only publishes, signs, verifies, and deploys from `refs/heads/development`.
+- Extended `.github/workflows/container-scan-sbom.yml` from the SCRUM-167 local build/scan flow into a development release pipeline that still scans both application images on PR and `main`, and currently allows publish/sign/verify/deploy from `refs/heads/development` plus the temporary duplicate branch `refs/heads/development-scrum168-test` for ticket validation.
 - Built the Core Case Service and Tax Engine release images for `linux/arm64`, pushed them to the Terraform-managed ECR repositories under immutable commit-derived tags, scanned the pushed digests, generated SBOM artifacts, and signed each digest with Cosign keyless GitHub OIDC identity.
 - Added a fail-closed deployment job that verifies both signatures against the exact `container-scan-sbom.yml` workflow identity and `https://token.actions.githubusercontent.com` issuer before rendering digest-qualified ECS task definitions and deploying the `core-case-service` and `tax-engine` ECS services.
-- Added Terraform-managed GitHub Actions OIDC trust and a least-privilege release role for ECR publication, Cosign verification, ECS deployment, and scoped `iam:PassRole`, exposing the role ARN for the repository variable `AWS_RELEASE_ROLE_ARN`.
+- Added Terraform-managed GitHub Actions OIDC trust and a least-privilege release role for ECR publication, Cosign verification, ECS deployment, and scoped `iam:PassRole`, exposing the role ARN for the repository variable `AWS_RELEASE_ROLE_ARN` and temporarily allowing both `development` and `development-scrum168-test` branch identities for SCRUM-168 validation.
 - Configured the Lambda consumer module to use the existing imported `FirstLambdaRole`, avoiding replacement under the previously generated `taxpulse-lambda-consumer-role` name.
 - Recorded ADR-0038 so the signing identity, digest deployment rule, and fail-closed release behavior are documented as the SCRUM-168 architecture decision.
 
