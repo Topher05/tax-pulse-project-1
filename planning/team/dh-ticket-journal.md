@@ -5,6 +5,71 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira168 - SCRUM-168
+
+**Branch:** `dylan-harle-jira168`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-168
+
+**Summary:** Sign images with Cosign and verify before deploy
+
+**Description:** As a Security Engineer, I want Cosign signing with pre-deploy verification, so that only signed artifacts deploy.
+
+**Acceptance Criteria:**
+
+- Released images are signed with Cosign.
+- The signature is verified before deploy and an unsigned image is rejected.
+- The verification step runs in the release pipeline.
+
+**Code Connection:**
+
+- Extended `.github/workflows/container-scan-sbom.yml` from the SCRUM-167 local build/scan flow into a development release pipeline that still scans both application images on PR and `main`, but only publishes, signs, verifies, and deploys from `refs/heads/development`.
+- Built the Core Case Service and Tax Engine release images for `linux/arm64`, pushed them to the Terraform-managed ECR repositories under immutable commit-derived tags, scanned the pushed digests, generated SBOM artifacts, and signed each digest with Cosign keyless GitHub OIDC identity.
+- Added a fail-closed deployment job that verifies both signatures against the exact `container-scan-sbom.yml` workflow identity and `https://token.actions.githubusercontent.com` issuer before rendering digest-qualified ECS task definitions and deploying the `core-case-service` and `tax-engine` ECS services.
+- Added Terraform-managed GitHub Actions OIDC trust and a least-privilege release role for ECR publication, Cosign verification, ECS deployment, and scoped `iam:PassRole`, exposing the role ARN for the repository variable `AWS_RELEASE_ROLE_ARN`.
+- Configured the Lambda consumer module to use the existing imported `FirstLambdaRole`, avoiding replacement under the previously generated `taxpulse-lambda-consumer-role` name.
+- Recorded ADR-0038 so the signing identity, digest deployment rule, and fail-closed release behavior are documented as the SCRUM-168 architecture decision.
+
+**Project Scope Connection:**
+
+- Platform.
+- Builds directly on SCRUM-167’s Trivy scan and Syft SBOM workflow for the two container artifacts.
+- Preserves the existing `.trivyignore` handling documented in `docs/trivy-suppressions.md` rather than widening or removing the Node 22.0.0 suppressions.
+- Establishes the signed-artifact deployment gate that SCRUM-169 can rely on before adding post-deploy ZAP coverage.
+
+**Changed Files:**
+
+- `.github/workflows/container-scan-sbom.yml`
+- `terraform/release_pipeline.tf`
+- `terraform/delivery.tf`
+- `terraform/variables.tf`
+- `terraform/outputs.tf`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/outputs.tf`
+- `terraform/modules/lambda_consumers/main.tf`
+- `terraform/modules/lambda_consumers/variables.tf`
+- `tests/typescript/workflows/containerScanSbom.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `adr/0038-cosign-signed-ecs-release-pipeline.md`
+- `adr/README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `aws sts get-caller-identity --profile default --region us-east-1` and `--profile taxpulse-login` both resolved to AWS account `814650854375`, confirming the local AWS CLI profile bridge was usable for Terraform.
+- `npm test -- --run tests/typescript/workflows/terraformDeliveryModules.test.ts tests/typescript/workflows/containerScanSbom.test.ts` passed with 2 files and 10 tests after the final Terraform alignment pass.
+- `terraform fmt -check` passed after formatting `terraform/delivery.tf`.
+- `terraform state list` confirmed the existing shared resources, including the imported `module.lambda_consumers.aws_iam_role.lambda`, Terraform-managed ECR repositories, and the GitHub OIDC provider, were already present in remote state.
+- `terraform state show module.lambda_consumers.aws_iam_role.lambda` confirmed the imported Lambda execution role resolves to `FirstLambdaRole`.
+- `terraform plan -no-color -input=false -var db_password=Temporary168Plan! -target=aws_iam_openid_connect_provider.github_actions -target=aws_iam_role.github_actions_release -target=aws_iam_role_policy.github_actions_release` first produced a clean targeted SCRUM-168 plan with only the GitHub Actions release role and inline policy to add.
+- `terraform apply -auto-approve -input=false -var db_password=Temporary168Plan! -target=aws_iam_openid_connect_provider.github_actions -target=aws_iam_role.github_actions_release -target=aws_iam_role_policy.github_actions_release` failed under `dylan.harle@fedstack.com` because AWS denied `iam:CreateRole`, after which the role and matching inline policy were created manually in AWS and imported into the shared remote Terraform state.
+- `terraform import -var db_password=Temporary168Plan! aws_iam_role.github_actions_release taxpulse-github-actions-release-role` and `terraform import -var db_password=Temporary168Plan! aws_iam_role_policy.github_actions_release taxpulse-github-actions-release-role:taxpulse-github-actions-release-rolePolicy` both succeeded.
+- `terraform output -raw github_actions_release_role_arn` returned `arn:aws:iam::814650854375:role/taxpulse-github-actions-release-role`.
+- After importing the manually created role and policy, `terraform plan -no-color -input=false -var db_password=Temporary168Plan! -target=aws_iam_openid_connect_provider.github_actions -target=aws_iam_role.github_actions_release -target=aws_iam_role_policy.github_actions_release` returned `No changes. Your infrastructure matches the configuration.`
+- GitHub Actions release execution, Cosign verification output, repository variable creation, and live ECS deployment were not run from this implementation session.
+
 ## dylan-harle-jira180 - SCRUM-180
 
 **Branch:** `dylan-harle-jira180`

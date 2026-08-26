@@ -126,3 +126,8 @@ output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID used by SPA deploy invalidations."
   value       = module.spa_delivery.cloudfront_distribution_id
 }
+
+output "github_actions_release_role_arn" {
+  description = "IAM role ARN assumed by the development release workflow for ECR publish, verify, and ECS deploy."
+  value       = aws_iam_role.github_actions_release.arn
+}

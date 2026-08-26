@@ -40,6 +40,12 @@ variable "name_prefix" {
   default     = "taxpulse"
 }
 
+variable "lambda_consumer_role_name" {
+  type        = string
+  description = "Name of the existing IAM execution role used by the transition Lambdas."
+  default     = "FirstLambdaRole"
+}
+
 variable "core_case_image_tag" {
   type        = string
   description = "Immutable ECR image tag for the Core Case Service task definition."
@@ -152,4 +158,16 @@ variable "spa_bucket_name" {
   type        = string
   description = "Optional globally unique S3 bucket name for the private SPA origin."
   default     = null
+}
+
+variable "github_actions_repository" {
+  type        = string
+  description = "GitHub owner/repository allowed to assume the SCRUM-168 release role."
+  default     = "AI-Native-2026-06-22-FedStack/tax-pulse-project-team-1"
+}
+
+variable "github_actions_release_branch" {
+  type        = string
+  description = "Git ref branch name allowed to assume the SCRUM-168 release role."
+  default     = "development"
 }

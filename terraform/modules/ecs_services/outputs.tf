@@ -47,3 +47,38 @@ output "tax_engine_log_group_name" {
   description = "CloudWatch log group name for the Tax Engine and collector sidecar."
   value       = aws_cloudwatch_log_group.tax_engine.name
 }
+
+output "core_case_repository_arn" {
+  description = "ECR repository ARN for the Core Case Service image."
+  value       = aws_ecr_repository.core_case.arn
+}
+
+output "core_case_repository_url" {
+  description = "ECR repository URL for the Core Case Service image."
+  value       = aws_ecr_repository.core_case.repository_url
+}
+
+output "tax_engine_repository_arn" {
+  description = "ECR repository ARN for the Tax Engine image."
+  value       = aws_ecr_repository.tax_engine.arn
+}
+
+output "tax_engine_repository_url" {
+  description = "ECR repository URL for the Tax Engine image."
+  value       = aws_ecr_repository.tax_engine.repository_url
+}
+
+output "execution_role_arn" {
+  description = "ECS task execution role ARN."
+  value       = aws_iam_role.execution.arn
+}
+
+output "core_case_task_role_arn" {
+  description = "Core Case Service ECS task role ARN."
+  value       = aws_iam_role.core_case_task.arn
+}
+
+output "tax_engine_task_role_arn" {
+  description = "Tax Engine ECS task role ARN."
+  value       = aws_iam_role.tax_engine_task.arn
+}

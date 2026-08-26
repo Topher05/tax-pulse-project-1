@@ -72,4 +72,50 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(natGatewayBlock).not.toContain("availability_mode");
     expect(natGatewayBlock).not.toContain("vpc_id");
   });
+
+  test("configures the imported FirstLambdaRole for transition Lambda execution", () => {
+    const delivery = readTerraform("terraform/delivery.tf");
+    const rootVariables = readTerraform("terraform/variables.tf");
+    const lambdaConsumers = readTerraform("terraform/modules/lambda_consumers/main.tf");
+    const lambdaVariables = readTerraform("terraform/modules/lambda_consumers/variables.tf");
+
+    expect(rootVariables).toContain('variable "lambda_consumer_role_name"');
+    expect(rootVariables).toContain('default     = "FirstLambdaRole"');
+    expect(delivery).toContain("lambda_consumer_role_name = var.lambda_consumer_role_name");
+    expect(lambdaVariables).toContain('variable "lambda_consumer_role_name"');
+    expect(lambdaConsumers).toContain("name               = var.lambda_consumer_role_name");
+    expect(lambdaConsumers).not.toContain('${var.name_prefix}-lambda-consumer-role');
+  });
+
+  test("creates a branch-scoped GitHub Actions release role with least-privilege ECR and ECS access", () => {
+    const releasePipeline = readTerraform("terraform/release_pipeline.tf");
+    const variables = readTerraform("terraform/variables.tf");
+    const outputs = readTerraform("terraform/outputs.tf");
+    const ecsOutputs = readTerraform("terraform/modules/ecs_services/outputs.tf");
+
+    expect(variables).toContain('variable "github_actions_repository"');
+    expect(variables).toContain('default     = "AI-Native-2026-06-22-FedStack/tax-pulse-project-team-1"');
+    expect(variables).toContain('variable "github_actions_release_branch"');
+    expect(variables).toContain('default     = "development"');
+    expect(releasePipeline).toContain('resource "aws_iam_openid_connect_provider" "github_actions"');
+    expect(releasePipeline).toContain('thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]');
+    expect(releasePipeline).toContain('repo:${var.github_actions_repository}:ref:refs/heads/${var.github_actions_release_branch}');
+    expect(releasePipeline).toContain('actions = ["sts:AssumeRoleWithWebIdentity"]');
+    expect(releasePipeline).toContain('"ecr:PutImage"');
+    expect(releasePipeline).toContain('"ecr:UploadLayerPart"');
+    expect(releasePipeline).toContain('data "aws_caller_identity" "current" {}');
+    expect(releasePipeline).toContain('arn:aws:ecs:%s:%s:service/%s/%s');
+    expect(releasePipeline).toContain("module.ecs_services.cluster_name");
+    expect(releasePipeline).toContain("module.ecs_services.core_case_service_name");
+    expect(releasePipeline).toContain("module.ecs_services.tax_engine_service_name");
+    expect(releasePipeline).toContain('"ecs:RegisterTaskDefinition"');
+    expect(releasePipeline).toContain('"ecs:UpdateService"');
+    expect(releasePipeline).toContain('"iam:PassRole"');
+    expect(releasePipeline).not.toContain('"ecr:*"');
+    expect(releasePipeline).not.toContain('"ecs:*"');
+    expect(outputs).toContain('output "github_actions_release_role_arn"');
+    expect(ecsOutputs).toContain('output "core_case_repository_arn"');
+    expect(ecsOutputs).toContain('output "tax_engine_repository_arn"');
+    expect(ecsOutputs).toContain('output "execution_role_arn"');
+  });
 });

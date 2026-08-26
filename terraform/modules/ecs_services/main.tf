@@ -32,6 +32,10 @@ resource "aws_ecr_repository" "core_case" {
   image_scanning_configuration {
     scan_on_push = true
   }
+
+  lifecycle {
+    ignore_changes = [image_scanning_configuration, tags, tags_all]
+  }
 }
 
 resource "aws_ecr_repository" "tax_engine" {
@@ -40,6 +44,10 @@ resource "aws_ecr_repository" "tax_engine" {
 
   image_scanning_configuration {
     scan_on_push = true
+  }
+
+  lifecycle {
+    ignore_changes = [image_scanning_configuration, tags, tags_all]
   }
 }
 
@@ -78,6 +86,10 @@ resource "aws_iam_role" "execution" {
   name               = local.execution_role_name
   description        = "Launch-time ECS/Fargate execution role for pulling images, fetching secrets, and writing logs."
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+
+  lifecycle {
+    ignore_changes = [permissions_boundary, tags, tags_all]
+  }
 }
 
 data "aws_iam_policy_document" "execution_runtime_access" {
@@ -139,12 +151,20 @@ resource "aws_iam_role" "core_case_task" {
   name               = local.core_case_task_role_name
   description        = "Runtime task role for the Core Case Service application code."
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+
+  lifecycle {
+    ignore_changes = [permissions_boundary, tags, tags_all]
+  }
 }
 
 resource "aws_iam_role" "tax_engine_task" {
   name               = local.tax_engine_task_role_name
-  description        = "Runtime task role for the Tax Engine application code."
+  description        = "Runtime task role for the Tax Engine application code. No app-domain AWS grants are required yet."
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+
+  lifecycle {
+    ignore_changes = [permissions_boundary, tags, tags_all]
+  }
 }
 
 data "aws_iam_policy_document" "core_case_runtime_access" {
