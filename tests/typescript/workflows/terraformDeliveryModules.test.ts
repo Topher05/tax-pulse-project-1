@@ -90,12 +90,11 @@ describe("SCRUM-164 Terraform delivery modules", () => {
 
     expect(variables).toContain('variable "github_actions_repository"');
     expect(variables).toContain('default     = "AI-Native-2026-06-22-FedStack/tax-pulse-project-team-1"');
-    expect(variables).toContain('variable "github_actions_release_branches"');
-    expect(variables).toContain('default     = ["development", "development-scrum168-test"]');
+    expect(variables).toContain('variable "github_actions_release_branch"');
+    expect(variables).toContain('default     = "development"');
     expect(releasePipeline).toContain('resource "aws_iam_openid_connect_provider" "github_actions"');
     expect(releasePipeline).toContain('thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]');
-    expect(releasePipeline).toContain('for branch in var.github_actions_release_branches');
-    expect(releasePipeline).toContain('"repo:${var.github_actions_repository}:ref:refs/heads/${branch}"');
+    expect(releasePipeline).toContain('repo:${var.github_actions_repository}:ref:refs/heads/${var.github_actions_release_branch}');
     expect(releasePipeline).toContain('actions = ["sts:AssumeRoleWithWebIdentity"]');
     expect(releasePipeline).toContain('"ecr:PutImage"');
     expect(releasePipeline).toContain('"ecr:UploadLayerPart"');

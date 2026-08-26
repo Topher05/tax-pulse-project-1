@@ -6,18 +6,16 @@ import { describe, expect, test } from "vitest";
 const workflowPath = resolve(process.cwd(), ".github/workflows/container-scan-sbom.yml");
 
 describe("SCRUM-168 container release workflow", () => {
-  test("keeps release actions scoped to the approved release branches and preserves scan coverage elsewhere", () => {
+  test("keeps release actions scoped to development and preserves scan coverage elsewhere", () => {
     const workflow = readFileSync(workflowPath, "utf8");
 
     expect(workflow).toContain("branches:");
     expect(workflow).toContain("- main");
     expect(workflow).toContain("- development");
-    expect(workflow).toContain("- development-scrum168-test");
     expect(workflow).toContain("pull_request:");
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).toContain("if: github.ref == 'refs/heads/development'");
-    expect(workflow).toContain("github.ref == 'refs/heads/development-scrum168-test'");
-    expect(workflow).toContain("github.ref != 'refs/heads/development' && github.ref != 'refs/heads/development-scrum168-test'");
+    expect(workflow).toContain("if: github.ref != 'refs/heads/development'");
     expect(workflow).toContain("aws-actions/configure-aws-credentials@v5");
     expect(workflow).toContain("role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}");
   });

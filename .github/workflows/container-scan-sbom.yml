@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - development
-      - development-scrum168-test
   pull_request:
   workflow_dispatch:
 
@@ -42,19 +41,19 @@ jobs:
         uses: useblacksmith/setup-docker-builder@v1
 
       - name: Configure AWS release credentials
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}
 
       - name: Log in to Amazon ECR
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Record release image metadata
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         id: release-metadata
         shell: bash
         run: |
@@ -63,7 +62,7 @@ jobs:
           echo "repository=${{ steps.ecr-login.outputs.registry }}/${{ env.CORE_CASE_REPOSITORY }}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push release image
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         id: release-build
         uses: useblacksmith/build-push-action@v2
         with:
@@ -75,7 +74,7 @@ jobs:
           tags: ${{ steps.release-metadata.outputs.image_ref }}
 
       - name: Record local image metadata
-        if: github.ref != 'refs/heads/development' && github.ref != 'refs/heads/development-scrum168-test'
+        if: github.ref != 'refs/heads/development'
         id: local-metadata
         shell: bash
         run: |
@@ -85,7 +84,7 @@ jobs:
           echo "repository=taxpulse-core-case" >> "$GITHUB_OUTPUT"
 
       - name: Build local scan image
-        if: github.ref != 'refs/heads/development' && github.ref != 'refs/heads/development-scrum168-test'
+        if: github.ref != 'refs/heads/development'
         uses: useblacksmith/build-push-action@v2
         with:
           context: .
@@ -125,13 +124,13 @@ jobs:
           upload-artifact: false
 
       - name: Install Cosign
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         uses: sigstore/cosign-installer@v4.1.0
         with:
           cosign-release: v3.0.6
 
       - name: Sign release image with Cosign
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         env:
           COSIGN_YES: "true"
         shell: bash
@@ -173,19 +172,19 @@ jobs:
         uses: useblacksmith/setup-docker-builder@v1
 
       - name: Configure AWS release credentials
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}
 
       - name: Log in to Amazon ECR
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Record release image metadata
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         id: release-metadata
         shell: bash
         run: |
@@ -194,7 +193,7 @@ jobs:
           echo "repository=${{ steps.ecr-login.outputs.registry }}/${{ env.TAX_ENGINE_REPOSITORY }}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push release image
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         id: release-build
         uses: useblacksmith/build-push-action@v2
         with:
@@ -206,7 +205,7 @@ jobs:
           tags: ${{ steps.release-metadata.outputs.image_ref }}
 
       - name: Record local image metadata
-        if: github.ref != 'refs/heads/development' && github.ref != 'refs/heads/development-scrum168-test'
+        if: github.ref != 'refs/heads/development'
         id: local-metadata
         shell: bash
         run: |
@@ -216,7 +215,7 @@ jobs:
           echo "repository=taxpulse-tax-engine" >> "$GITHUB_OUTPUT"
 
       - name: Build local scan image
-        if: github.ref != 'refs/heads/development' && github.ref != 'refs/heads/development-scrum168-test'
+        if: github.ref != 'refs/heads/development'
         uses: useblacksmith/build-push-action@v2
         with:
           context: .
@@ -256,13 +255,13 @@ jobs:
           upload-artifact: false
 
       - name: Install Cosign
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         uses: sigstore/cosign-installer@v4.1.0
         with:
           cosign-release: v3.0.6
 
       - name: Sign release image with Cosign
-        if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+        if: github.ref == 'refs/heads/development'
         env:
           COSIGN_YES: "true"
         shell: bash
@@ -289,7 +288,7 @@ jobs:
 
   verify-and-deploy:
     name: Verify Signatures & Deploy ECS
-    if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
+    if: github.ref == 'refs/heads/development'
     needs:
       - build-core-case
       - build-tax-engine
