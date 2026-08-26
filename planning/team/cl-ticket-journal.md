@@ -19,7 +19,7 @@ Add new ticket entries below using this template.
 
 **Acceptance Criteria:**
 
-- Ten synthetic evaluation questions are checked in under `data/corpus/evaluation/`.
+- Thirty synthetic evaluation questions are checked in under `data/corpus/evaluation/`. This is a user-approved expansion of the original minimum set of ten.
 - Thresholds are checked in separately for mean `context_relevance >= 0.80` and mean `faithfulness >= 0.80`.
 - TypeScript evaluation contracts, collection scripts, and the Jira 180 retriever scaffold are added without changing the `/assist` HTTP surface.
 - A Python scorer writes the offline RAGAS report and exits nonzero when thresholds fail or inputs are malformed.
@@ -33,6 +33,7 @@ Add new ticket entries below using this template.
 - Added the offline RAGAS scorer in `src/python/retrieval/ragas_evaluation.py` using the collections API `ContextRelevance` and `Faithfulness` metrics.
 - Added the Jira 180 retriever factory scaffold with the exact `TODO: Jira 180 imp incoming` marker and a clear retrieval contract failure message.
 - Added the `eval` optional dependency group in `pyproject.toml` for `openai` and `ragas`.
+- Expanded the checked-in evaluation bank to 30 corpus-grounded Advisor and Firm Admin scenarios, covering every synthetic rule document and advisory playbook without changing the corpus, retrieval, scoring, or API boundaries.
 
 **Project Scope Connection:**
 
@@ -54,8 +55,10 @@ Add new ticket entries below using this template.
 
 **Validation Notes:**
 
-- Non-test validation has not been run yet.
-- Jira 180 remains blocked by design, so the combined evaluation command is expected to stop at the retriever scaffold until the concrete ranked-context factory lands.
+- Question-bank integrity validation passed: 30 unique question IDs, non-empty contract fields, 58 expected-section references, and coverage across all 11 corpus documents.
+- `npm run typecheck` passed.
+- Tests were intentionally not modified or run for this pass. Before PR generation, add the deferred unit, malformed-input/failure-path, and Docker-backed retrieval integration coverage.
+- Collection uses the concrete hybrid retriever and requires the Compose pgvector database for live ranked-context evaluation.
 
 <!--
 ## caleb-latimer-jiraXX - SCRUM-XX
