@@ -539,6 +539,20 @@ Environment variables:
 - `ASSIST_RAGAS_INPUT_PATH` overrides the collected input artifact path.
 - `ASSIST_EVALUATION_RESULT_LIMIT` overrides the retriever result limit.
 
+Hybrid smoke success and failure examples:
+
+```powershell
+# Success case
+$env:CORPUS_HYBRID_SMOKE_QUERY = "For a single filer, what safe-harbor threshold should be cited?"
+$env:CORPUS_HYBRID_SMOKE_EXPECTED_SECTION_ID = "SYN-TC-4110-b"
+npm run corpus:smoke:hybrid
+
+# Failure case
+$env:CORPUS_HYBRID_SMOKE_QUERY = "For a single filer, what safe-harbor threshold should be cited?"
+$env:CORPUS_HYBRID_SMOKE_EXPECTED_SECTION_ID = "SYN-TC-4110-a"
+npm run corpus:smoke:hybrid
+```
+
 Report output:
 
 - `artifacts/assist-evaluation/ragas-input.json` stores the collected questions,

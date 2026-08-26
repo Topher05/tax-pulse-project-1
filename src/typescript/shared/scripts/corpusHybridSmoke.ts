@@ -29,39 +29,45 @@ async function main() {
   console.log(`Query: "${query}"`);
   console.log(`Compose Postgres endpoint: ${endpoint}`);
 
-  const candidates = await retrieveHybridCorpusChunks(
-    db,
-    query,
-    { limit: 3 },
-    provider,
-  );
-
-  console.log(`\nRetrieved top ${candidates.length} candidates:\n`);
-
-  if (candidates.length === 0) {
-    throw new Error("Hybrid smoke returned no candidates.");
-  }
-
-  candidates.forEach((chunk, i) => {
-    console.log(`Rank ${i + 1}: ${chunk.chunkId}`);
-    console.log(`Section Path: ${chunk.sectionPath}`);
-    console.log(`Hybrid Score: ${chunk.hybridScore.toFixed(4)}`);
-    console.log(`Rerank Score: ${chunk.rerankScore.toFixed(4)}`);
-    console.log(`Vector Score: ${chunk.vectorScore.toFixed(4)}`);
-    console.log(`Keyword Score: ${chunk.keywordScore.toFixed(4)}`);
-    console.log(`Text snippet: ${chunk.text.substring(0, 100)}...`);
-    console.log("---");
-  });
-
-  const topResult = candidates[0];
-  if (!topResult || topResult.sectionId !== expectedSectionId) {
-    throw new Error(
-      `Hybrid smoke expected ${expectedSectionId} first, received ${topResult?.sectionId ?? "none"}.`,
+  try {
+    const candidates = await retrieveHybridCorpusChunks(
+      db,
+      query,
+      { limit: 3 },
+      provider,
     );
-  }
 
-  console.log("Smoke test completed.");
-  await client.end();
+    console.log(`\nRetrieved top ${candidates.length} candidates:\n`);
+
+    if (candidates.length === 0) {
+      throw new Error("Hybrid smoke returned no candidates.");
+    }
+
+    candidates.forEach((chunk, i) => {
+      console.log(`Rank ${i + 1}: ${chunk.chunkId}`);
+      console.log(`Section Path: ${chunk.sectionPath}`);
+      console.log(`Hybrid Score: ${chunk.hybridScore.toFixed(4)}`);
+      console.log(`Rerank Score: ${chunk.rerankScore.toFixed(4)}`);
+      console.log(`Vector Score: ${chunk.vectorScore.toFixed(4)}`);
+      console.log(`Keyword Score: ${chunk.keywordScore.toFixed(4)}`);
+      console.log(`Text snippet: ${chunk.text.substring(0, 100)}...`);
+      console.log("---");
+    });
+
+    const topResult = candidates[0];
+    console.log(
+      `Expected top section: ${expectedSectionId}; returned top section: ${topResult?.sectionId ?? "none"}`,
+    );
+    if (!topResult || topResult.sectionId !== expectedSectionId) {
+      throw new Error(
+        `Hybrid smoke expected ${expectedSectionId} first, received ${topResult?.sectionId ?? "none"}.`,
+      );
+    }
+
+    console.log("Smoke test completed.");
+  } finally {
+    await client.end();
+  }
   process.exit(0);
 }
 

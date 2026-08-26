@@ -153,7 +153,7 @@ async function retrieveLexicalCorpusChunks(
     return [];
   }
 
-  const rows = await db.select().from(aiAssistCorpusEmbedding).limit(Math.max(0, limit) * 10);
+  const rows = await db.select().from(aiAssistCorpusEmbedding);
   const scoredRows = rows.map((row) => {
     const textTokens = tokenize(row.text);
     const pathTokens = tokenize(row.sectionPath);
@@ -189,7 +189,7 @@ async function retrieveLexicalCorpusChunks(
       }
       return left.chunkId.localeCompare(right.chunkId);
     })
-    .slice(0, limit);
+    .slice(0, Math.max(0, limit));
 }
 
 function tokenize(text: string): Set<string> {
