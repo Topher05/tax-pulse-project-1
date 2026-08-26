@@ -126,7 +126,7 @@ jobs:
 
       - name: Install Cosign
         if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
-        uses: sigstore/cosign-installer@v3.8.1
+        uses: sigstore/cosign-installer@v4.1.0
         with:
           cosign-release: v3.0.6
 
@@ -257,7 +257,7 @@ jobs:
 
       - name: Install Cosign
         if: github.ref == 'refs/heads/development' || github.ref == 'refs/heads/development-scrum168-test'
-        uses: sigstore/cosign-installer@v3.8.1
+        uses: sigstore/cosign-installer@v4.1.0
         with:
           cosign-release: v3.0.6
 
@@ -307,7 +307,7 @@ jobs:
           role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v3.8.1
+        uses: sigstore/cosign-installer@v4.1.0
         with:
           cosign-release: v3.0.6
 

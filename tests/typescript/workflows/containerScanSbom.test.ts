@@ -27,7 +27,7 @@ describe("SCRUM-168 container release workflow", () => {
 
     expect(workflow).toContain("platforms: linux/arm64");
     expect(workflow).toContain("push: true");
-    expect(workflow).toContain("sigstore/cosign-installer@v3.8.1");
+    expect(workflow).toContain("sigstore/cosign-installer@v4.1.0");
     expect(workflow).toContain("cosign-release: v3.0.6");
     expect(workflow).toContain('cosign sign "${{ steps.release-metadata.outputs.repository }}@${{ steps.release-build.outputs.digest }}"');
     expect(workflow).toContain("Verify Core Case signature");
