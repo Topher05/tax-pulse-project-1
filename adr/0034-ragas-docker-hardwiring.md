@@ -1,4 +1,4 @@
-# ADR-0037: RAGAS Docker Hardwiring for pgvector-backed Retrieval
+# ADR-0034: RAGAS Docker Hardwiring for pgvector-backed Retrieval
 
 ## Context
 The AI-Assist retrieval and evaluation pipeline depends on PostgreSQL with the `vector`
