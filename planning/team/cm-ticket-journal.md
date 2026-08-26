@@ -34,6 +34,53 @@ Add new ticket entries below using this template.
 
 -
 -->
+## christopher-martus-jira169 - SCRUM-169
+
+**Branch:** `christopher-martus-jira169`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-169
+
+**Summary:** Run an OWASP ZAP baseline scan against the deployed app
+
+**Description:** Add a release-compatible OWASP ZAP baseline scan that scans a deployed
+TaxPulse URL, publishes findings, and fails closed on High-severity alerts or scan failures.
+
+**Acceptance Criteria:**
+
+- An OWASP ZAP baseline scan runs against the deployed app.
+- The scan reports findings as a build artifact.
+- High-severity findings fail the release.
+
+**Code Connection:**
+
+- Added a reusable and manually dispatchable ZAP baseline workflow accepting a deployed
+  application URL.
+- The workflow runs on the repository's Blacksmith Ubuntu runner, disables GitHub issue
+  creation, and preserves HTML, Markdown, and JSON reports as an artifact.
+- The workflow validates the JSON report and fails for ZAP High-risk alerts (`riskcode: "3"`),
+  scan failures, unreachable targets, or missing/malformed reports.
+
+**Project Scope Connection:**
+
+This establishes the repository-side web security scanning boundary for the release process.
+The release/deployment dependency graph remains pending SCRUM-168, which is not present on
+this branch and was intentionally not recreated or modified.
+
+**Changed Files:**
+
+- `.github/workflows/zap-baseline.yml`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `actionlint` was unavailable in the local environment and was not run.
+- Release workflow integration and an authorized deployed-target dispatch remain pending
+  until SCRUM-168 lands.
+
+
 ## christopher-martus-jira201 - SCRUM-201
 
 **Branch:** `christopher-martus-jira201`
