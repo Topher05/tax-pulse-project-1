@@ -588,6 +588,18 @@ current stub response path.
   Docker/database contention timeouts, which remain excluded under the ticket validation scope;
   no pgvector, seed, JWT, assertion, or other deterministic failures remained.
 
+**CI Security Gate Follow-up:**
+
+- Reviewed the Core TypeScript, Required Gate, and Gitleaks logs from the prior PR merge SHA.
+- Confirmed the five Core TypeScript failures were the JWT integration fixture failures corrected
+  in commit `4d19477`; Required Gate requires no independent change because it only reflected the
+  failed Core TypeScript dependency.
+- Added `.gitleaksignore` entries for the two exact historical false-positive fingerprints: the
+  synthetic idempotency key in `mainComposition.test.ts` and the placeholder PEM example formerly
+  in `.env.example`. All scanner rules remain enabled for every other finding.
+- Local Gitleaks execution was unavailable because the binary is not installed; the exact
+  fingerprints were copied from the CI scan output for validation on the next workflow run.
+
 ## caleb-latimer-jira160 - SCRUM-160
 
 **Branch:** `caleb-latimer-jira160`
