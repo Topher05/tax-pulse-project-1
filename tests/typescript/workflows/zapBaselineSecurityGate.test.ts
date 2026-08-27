@@ -1,10 +1,25 @@
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import { describe, expect, test } from "vitest";
 
 const zapWorkflowPath = resolve(process.cwd(), ".github/workflows/zap-baseline.yml");
 const releaseWorkflowPath = resolve(process.cwd(), ".github/workflows/container-scan-sbom.yml");
+const zapGatePath = resolve(process.cwd(), ".github/scripts/enforce-zap-high-severity.mjs");
+
+function runZapGate(report: unknown): void {
+  const fixtureDirectory = mkdtempSync(resolve(tmpdir(), "zap-gate-"));
+  const reportPath = resolve(fixtureDirectory, "report_json.json");
+
+  try {
+    writeFileSync(reportPath, typeof report === "string" ? report : JSON.stringify(report));
+    execFileSync(process.execPath, [zapGatePath, reportPath], { stdio: "pipe" });
+  } finally {
+    rmSync(fixtureDirectory, { force: true, recursive: true });
+  }
+}
 
 describe("ZAP baseline security gate workflow", () => {
   test("accepts a target URL for reusable and manual runs", () => {
@@ -34,16 +49,27 @@ describe("ZAP baseline security gate workflow", () => {
     expect(workflow).toContain("report_json.json");
   });
 
-  test("fails closed only for High alerts or invalid scan output", () => {
+  test("fails closed on unsuccessful scans or missing reports", () => {
     const workflow = readFileSync(zapWorkflowPath, "utf8");
 
     expect(workflow).toContain("continue-on-error: true");
     expect(workflow).toContain('ZAP_OUTCOME: ${{ steps.zap.outcome }}');
     expect(workflow).toContain('if [[ "$ZAP_OUTCOME" != "success" ]]');
     expect(workflow).toContain('if [[ ! -s report_json.json ]]');
-    expect(workflow).toContain('jq \'[.site[]?.alerts[]? | select(.riskcode == "3")] | length\' report_json.json');
-    expect(workflow).toContain('if [[ "$high_alerts" -gt 0 ]]');
+    expect(workflow).toContain("node .github/scripts/enforce-zap-high-severity.mjs report_json.json");
     expect(workflow).toContain("set -euo pipefail");
+  });
+
+  test("allows reports without High alerts", () => {
+    expect(() => runZapGate({ site: [{ alerts: [{ riskcode: "2" }] }] })).not.toThrow();
+  });
+
+  test("fails reports containing High alerts", () => {
+    expect(() => runZapGate({ site: [{ alerts: [{ riskcode: "3" }] }] })).toThrow();
+  });
+
+  test("fails malformed ZAP reports", () => {
+    expect(() => runZapGate("not json")).toThrow();
   });
 });
 

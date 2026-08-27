@@ -69,10 +69,4 @@ jobs:
             exit 1
           fi
 
-          high_alerts=$(jq '[.site[]?.alerts[]? | select(.riskcode == "3")] | length' report_json.json)
-          if [[ "$high_alerts" -gt 0 ]]; then
-            echo "ZAP reported $high_alerts High-severity alert(s)"
-            exit 1
-          fi
-
-          echo "ZAP reported no High-severity alerts"
+          node .github/scripts/enforce-zap-high-severity.mjs report_json.json

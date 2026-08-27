@@ -64,6 +64,7 @@ TaxPulse URL, publishes findings, and fails closed on High-severity alerts or sc
   creation, and preserves HTML, Markdown, and JSON reports as an artifact.
 - The workflow validates the JSON report and fails for ZAP High-risk alerts (`riskcode: "3"`),
   scan failures, unreachable targets, or missing/malformed reports.
+- A repository-local gate script makes the High-severity decision independently testable.
 
 **Project Scope Connection:**
 
@@ -74,6 +75,7 @@ image verification and ECS deployment boundary.
 **Changed Files:**
 
 - `.github/workflows/zap-baseline.yml`
+- `.github/scripts/enforce-zap-high-severity.mjs`
 - `.github/workflows/container-scan-sbom.yml`
 - `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
 - `planning/team/cm-ticket-journal.md`
@@ -84,7 +86,7 @@ image verification and ECS deployment boundary.
 - `actionlint` was unavailable in the local environment and was not run.
 - Added the ZAP job after the existing ECS deployment and passed the authorized deployed
   CloudFront SPA URL through the deployment job output.
-- `npx vitest run --config vitest.config.ts tests/typescript/workflows/zapBaselineSecurityGate.test.ts` passed: 4 tests.
+- `npx vitest run --config vitest.config.ts tests/typescript/workflows/zapBaselineSecurityGate.test.ts` passed: 7 tests, including clean, High-alert, and malformed-report gate cases.
 - `npm run typecheck` passed.
 - `git diff --check` passed.
 ## christopher-martus-jira186 - SCRUM-186
@@ -128,6 +130,7 @@ or protection from privileged database tampering.
 
 - `docs/stride-threat-model.md`
 - `tests/typescript/strideThreatModel.test.ts`
+- `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
