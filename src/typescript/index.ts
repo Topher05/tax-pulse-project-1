@@ -609,6 +609,7 @@ export {
 
 // Feature export block separation for runtime startup safety
 import { config as loadEnv } from "dotenv";
+import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { createClient } from "redis";
 
@@ -684,6 +685,11 @@ import {
   createPlatformAdministrationRouter,
 } from "./features/platformAdministration/index.js";
 import { createIncomeEventsRouter } from "./features/incomeEvents/index.js";
+import { createOpenAIEmbeddingProvider } from "./assist/embeddings.js";
+import { createOpenAIAssistExplanationProvider } from "./assist/explanation.js";
+import { retrieveHybridCorpusChunks } from "./assist/retrieval.js";
+import { parseAssistTenantCorpusScopeMap } from "./assist/tenantScopes.js";
+import { createTaxPlanDetailsAssistantController } from "./features/taxPlanCycle/controllers/assistantController.js";
 
 loadEnv();
 const { Client } = pg;
@@ -734,6 +740,7 @@ export async function main(): Promise<Server> {
 
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
+  const db = drizzle(client);
 
   const credentialReader = createPasswordCredentialStore(client);
   const tenantLoginResolver = createTenantLoginResolver(client);
@@ -749,6 +756,9 @@ export async function main(): Promise<Server> {
   const platformAdministrationRepository = createPlatformAdministrationRepository(client);
   const scenarioRepository = createScenarioRepository(client);
   const deductionRepository = createDeductionRepository(client);
+  const assistTenantScopeMap = parseAssistTenantCorpusScopeMap();
+  const assistEmbeddingProvider = createOpenAIEmbeddingProvider();
+  const assistExplanationProvider = createOpenAIAssistExplanationProvider();
   const taxpayerIdentifierValidationRepository =
     createTaxpayerIdentifierValidationRepository(client);
   const queueRedisUrl = process.env.TAXPULSE_REDIS_URL?.trim();
@@ -844,6 +854,24 @@ export async function main(): Promise<Server> {
   );
   const authenticatePassword = (input: Parameters<typeof authenticatePasswordForMfaChallenge>[0]) =>
     authenticatePasswordForMfaChallenge(input, credentialReader);
+  const assistantController = createTaxPlanDetailsAssistantController({
+    taxPlanCycleRepository,
+    tenantScopeMap: assistTenantScopeMap,
+    retriever: {
+      async retrieve(input) {
+        return await retrieveHybridCorpusChunks(
+          db as never,
+          input.query,
+          {
+            limit: input.limit,
+            tenantScopes: input.tenantScopes,
+          },
+          assistEmbeddingProvider,
+        );
+      },
+    },
+    explanationProvider: assistExplanationProvider,
+  });
   const tokenService = createTokenService({
     config: jwtConfig,
     rs256IssuerConfig: jwtRs256IssuerConfig,
@@ -883,6 +911,7 @@ export async function main(): Promise<Server> {
         createTaxPlanCycleRouter({
           auditEntryReader: auditEntryRepository,
           auditEntryWriter,
+          assistantController,
           clientPortalReadRepository: taxPlanCycleRepository,
           actionItemRepository,
           actionItemCompletedEventPublisher,

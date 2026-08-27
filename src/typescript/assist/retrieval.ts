@@ -1,3 +1,4 @@
+import { inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { aiAssistCorpusEmbedding } from "../shared/database/schema.js";
 import {
@@ -6,12 +7,14 @@ import {
   type EmbeddingProvider,
 } from "./embeddings.js";
 import type { CorpusCitation, CorpusDocumentType } from "./corpus.js";
+import type { AssistTenantCorpusScope } from "./tenantScopes.js";
 
 export interface HybridRetrievalOptions {
   limit: number;
   candidateLimit?: number;
   vectorWeight?: number;
   keywordWeight?: number;
+  tenantScopes: readonly AssistTenantCorpusScope[];
 }
 
 const chunkTextWeight = 1;
@@ -94,9 +97,18 @@ export async function retrieveHybridCorpusChunks(
   const candidateLimit = options.candidateLimit ?? Math.max(10, limit * 5);
   const vectorWeight = options.vectorWeight ?? 0.7;
   const keywordWeight = options.keywordWeight ?? 0.3;
+  if (options.tenantScopes.length === 0) {
+    throw new Error("At least one tenant scope is required for hybrid retrieval.");
+  }
 
-  const vectorCandidates = await retrieveSimilarCorpusChunks(db, query, candidateLimit, provider);
-  const lexicalCandidates = await retrieveLexicalCorpusChunks(db, query, candidateLimit);
+  const vectorCandidates = await retrieveSimilarCorpusChunks(
+    db,
+    query,
+    candidateLimit,
+    provider,
+    options.tenantScopes,
+  );
+  const lexicalCandidates = await retrieveLexicalCorpusChunks(db, query, candidateLimit, options.tenantScopes);
   const queryTokens = tokenize(query);
   const meaningfulQueryTokens = removeStopWords(queryTokens);
   const candidatesById = new Map<string, SimilarCorpusChunk & { vectorScore: number; keywordScore: number }>();
@@ -159,6 +171,7 @@ async function retrieveLexicalCorpusChunks(
   db: NodePgDatabase<Record<string, unknown>>,
   query: string,
   limit: number,
+  tenantScopes: readonly AssistTenantCorpusScope[],
 ): Promise<SimilarCorpusChunk[]> {
   const queryTokens = tokenize(query);
   const meaningfulQueryTokens = removeStopWords(queryTokens);
@@ -166,7 +179,10 @@ async function retrieveLexicalCorpusChunks(
     return [];
   }
 
-  const rows = await db.select().from(aiAssistCorpusEmbedding);
+  const rows = await db
+    .select()
+    .from(aiAssistCorpusEmbedding)
+    .where(inArray(sql<string>`${aiAssistCorpusEmbedding.citation}->>'tenantId'`, [...tenantScopes]));
   const scoredRows = rows.map((row) => {
     const textTokens = tokenize(row.text);
     const leafHeadingTokens = tokenize(extractLeafSectionHeading(row.sectionPath, row.sectionId));

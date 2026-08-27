@@ -1,11 +1,12 @@
 import OpenAI from "openai";
-import { asc, sql } from "drizzle-orm";
+import { asc, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import {
   aiAssistCorpusEmbedding,
 } from "../shared/database/schema.js";
 import type { CorpusChunk, CorpusCitation } from "./corpus.js";
+import type { AssistTenantCorpusScope } from "./tenantScopes.js";
 
 export const corpusEmbeddingModel = "text-embedding-3-small";
 export const corpusEmbeddingDimensions = 1536;
@@ -106,6 +107,7 @@ export async function retrieveSimilarCorpusChunks(
   query: string,
   limit: number,
   provider: EmbeddingProvider,
+  tenantScopes: readonly AssistTenantCorpusScope[],
 ): Promise<SimilarCorpusChunk[]> {
   if (!query.trim()) {
     throw new Error("A non-empty query is required for corpus retrieval.");
@@ -114,6 +116,9 @@ export async function retrieveSimilarCorpusChunks(
   const resultLimit = Math.max(0, Math.floor(limit));
   if (resultLimit === 0) {
     return [];
+  }
+  if (tenantScopes.length === 0) {
+    throw new Error("At least one tenant scope is required for corpus retrieval.");
   }
 
   const queryEmbeddings = await provider.embed([query]);
@@ -127,6 +132,7 @@ export async function retrieveSimilarCorpusChunks(
   validateEmbedding(vector, "query");
   const vectorParameter = vectorToSqlParameter(vector);
   const distance = sql<number>`${aiAssistCorpusEmbedding.embedding} <=> ${vectorParameter}::vector`;
+  const citationTenantScope = sql<string>`${aiAssistCorpusEmbedding.citation}->>'tenantId'`;
 
   const rows = await db
     .select({
@@ -144,6 +150,7 @@ export async function retrieveSimilarCorpusChunks(
       similarity: sql<number>`1 - (${distance})`,
     })
     .from(aiAssistCorpusEmbedding)
+    .where(inArray(citationTenantScope, [...tenantScopes]))
     .orderBy(asc(distance), asc(aiAssistCorpusEmbedding.chunkId))
     .limit(resultLimit);
 
