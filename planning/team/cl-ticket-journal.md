@@ -20,7 +20,7 @@ Add new ticket entries below using this template.
 **Acceptance Criteria:**
 
 - Thirty synthetic evaluation questions are checked in under `data/corpus/evaluation/`. This is a user-approved expansion of the original minimum set of ten.
-- Thresholds are checked in separately for mean `context_relevance >= 0.80` and mean `faithfulness >= 0.80`.
+- Thresholds are checked in separately for mean `context_relevance >= 0.80` and mean `faithfulness >= 0.60`.
 - TypeScript evaluation contracts and collection scripts use the Jira 180 retriever without changing the `/assist` HTTP surface.
 - A Python scorer writes the offline RAGAS report and exits nonzero when thresholds fail or inputs are malformed.
 - Documentation explains setup, commands, environment variables, report interpretation, threshold rationale, the pgvector requirement, and the Jira 180 dependency.

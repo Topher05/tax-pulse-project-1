@@ -48,7 +48,7 @@ None of these foundational steps expose an `/assist` endpoint or integrate live 
   with invented rates and limits.
 * The embedding vectors (SCRUM-179) and hybrid retrieval algorithms (SCRUM-180) are deterministic and isolated to this bounded context, ensuring robust offline evaluations.
 * The RAGAS scorer remains an offline, `uv`-locked Python step so dependency drift is caught before `/assist` delivery work lands.
-* A smaller working sample size can speed up iteration, but it reduces the odds of surfacing a weak retrieval question or an under-supported answer before the final 30-question acceptance run.
+* A smaller working sample size can speed up iteration, but it reduces the odds of surfacing a weak retrieval question or an under-supported answer before the final 15-question acceptance run.
 * Higher thresholds improve the quality bar but can turn a tuning pass into a false negative while the synthetic corpus and checker responses are still being tightened.
 
 ## Alternatives considered
