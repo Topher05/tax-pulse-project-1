@@ -9,7 +9,8 @@ SCRUM-163's security gate scans this `terraform/` directory with `terraform fmt`
 SCRUM-164 keeps delivery resources modular under `terraform/modules/`:
 
 - `ecs_services` creates the ECR, IAM, CloudWatch, ALB, target group, task
-  definition, and ECS service resources for the Core Case Service and Tax Engine.
+  definition, ECS service resources, SCRUM-187 SLO alarms, and the dedicated
+  SLO alarm SNS topic for the Core Case Service and Tax Engine.
 - `lambda_consumers` creates the present-to-client and execute Lambdas behind API
   Gateway, with optional stage-changed SQS consumer wiring.
 - `spa_delivery` creates the private S3 origin and CloudFront distribution for
@@ -29,6 +30,10 @@ Optional delivery inputs include immutable image tags, Lambda zip artifact paths
 `spa_bucket_name`, `redis_url`, and `stage_changed_queue_arn` when the optional
 stage-changed consumer Lambda is enabled. If `redis_url` is omitted, the ECS task
 configuration uses the SCRUM-162 ElastiCache TLS endpoint.
+
+SCRUM-187's alarm topic is named from the current Terraform root defaults as
+`${name_prefix}-${environment}-slo-alarms` and can be imported if the team
+creates it manually before apply.
 
 The JSON files under `deployment/` remain source contracts with placeholders;
 Terraform owns the real resource IDs and emits deploy-time outputs.

@@ -1480,6 +1480,61 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - `terraform plan -input=false` returned no changes immediately after apply, confirming a clean post-apply plan with no drift.
 
 <!--
+## development - SCRUM-187
+
+**Branch:** `development`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-187
+
+**Summary:** Define SLOs and CloudWatch alarms
+
+**Description:** As a Platform Engineer, I want SLOs with alarms, so that on-call can detect and respond to degradation.
+
+**Acceptance Criteria:**
+
+- SLOs are defined for calculation latency and case-API availability with error budgets.
+- CloudWatch alarms fire when an SLO is at risk.
+- The SLOs and alarms are documented together.
+
+**Code Connection:**
+
+- Corrected the Embedded Metric Format metadata emitted by the shared observability logger so CloudWatch receives dimension keys instead of raw dimension values, and added a service-only rollup dimension set that supports aggregate latency alarms.
+- Added a focused Tax Engine telemetry test to prove successful requests emit the rollup metric shape required by the latency SLO.
+- Extended the Terraform ECS services module with a dedicated SCRUM-187 SNS topic and policy for CloudWatch notifications, a p95 latency alarm for Tax Engine-backed requests, a Core Case API error-budget burn alarm based on ALB metric math, a backing healthy-host alarm, and a composite availability alarm.
+- Threaded the generated SLO topic name through the Terraform delivery root, exported the alarm/topic outputs for later operational handoff, and documented the exact SLO formulas, error budgets, exclusions, and alarm rules in a dedicated service-level-objectives document.
+
+**Project Scope Connection:**
+
+- Platform.
+- Builds directly on SCRUM-170's CloudWatch observability work and SCRUM-157/SCRUM-164's Terraform-managed ECS, ALB, and CloudWatch ownership boundaries.
+- Preserves the existing split where Terraform owns live AWS resource identifiers while source JSON and application code continue to supply the observability contracts.
+- Leaves SNS topic subscription endpoints outside repository scope so each environment can bind its own operator destinations without changing the Terraform module shape.
+
+**Changed Files:**
+
+- `src/typescript/shared/cloud-logger/observability.ts`
+- `tests/typescript/shared/cloud-logger.test.ts`
+- `tests/typescript/features/taxPlanCycle/engineClient.test.ts`
+- `terraform/delivery.tf`
+- `terraform/outputs.tf`
+- `terraform/README.md`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/ecs_services/outputs.tf`
+- `terraform/modules/ecs_services/README.md`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `docs/service-level-objectives.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm test -- --run tests/typescript/shared/cloud-logger.test.ts tests/typescript/features/taxPlanCycle/engineClient.test.ts tests/typescript/workflows/terraformDeliveryModules.test.ts` is the focused verification set for the observability and Terraform wiring touched by SCRUM-187.
+- `npm run typecheck`, `npm test`, `terraform fmt`, and `terraform validate` should be run after the manual SNS topic is created or imported in the target AWS account.
+- The SNS topic itself was not created from this implementation because the environment owner requested manual creation first.
+
+<!--
 ## dylan-harle-jiraXX - SCRUM-XX
 
 **Branch:** `dylan-harle-jiraXX`
