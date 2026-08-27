@@ -135,7 +135,10 @@ describe("shared cloud logger", () => {
         CloudWatchMetrics: [
           {
             Namespace: "TaxPulse",
-            Dimensions: [["core-case-service", "scenario_modeling", "success"]],
+            Dimensions: [
+              ["service", "operation", "outcome"],
+              ["service"],
+            ],
             Metrics: [
               {
                 Name: "tax_plan_cycle.scenario_modeling.duration_ms",
