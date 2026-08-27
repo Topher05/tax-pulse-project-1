@@ -292,6 +292,8 @@ jobs:
     needs:
       - build-core-case
       - build-tax-engine
+    outputs:
+      spa_url: ${{ steps.deployed-spa.outputs.spa_url }}
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
 
@@ -372,3 +374,15 @@ jobs:
           service: tax-engine
           task-definition: ${{ steps.render-tax-engine.outputs.task-definition }}
           wait-for-service-stability: true
+
+      - name: Record deployed SPA URL
+        id: deployed-spa
+        shell: bash
+        run: echo "spa_url=https://d2x67vhqhb7oh.cloudfront.net" >> "$GITHUB_OUTPUT"
+
+  zap-baseline:
+    name: OWASP ZAP Baseline Scan
+    needs: verify-and-deploy
+    uses: ./.github/workflows/zap-baseline.yml
+    with:
+      target_url: ${{ needs.verify-and-deploy.outputs.spa_url }}

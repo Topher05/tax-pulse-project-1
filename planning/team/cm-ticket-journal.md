@@ -74,14 +74,16 @@ this branch and was intentionally not recreated or modified.
 **Changed Files:**
 
 - `.github/workflows/zap-baseline.yml`
+- `.github/workflows/container-scan-sbom.yml`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
 
 - `git diff --check` passed.
 - `actionlint` was unavailable in the local environment and was not run.
-- Release workflow integration and an authorized deployed-target dispatch remain pending
-  until SCRUM-168 lands.
+- Added the ZAP job after the existing ECS deployment and passed the authorized deployed
+  CloudFront SPA URL through the deployment job output.
+- Release workflow dispatch against the deployed target remains pending.
 ## christopher-martus-jira186 - SCRUM-186
 
 **Branch:** `christopher-martus-jira186`
