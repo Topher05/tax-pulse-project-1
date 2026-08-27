@@ -5,32 +5,35 @@ import {
   type ScoredChunk,
 } from "../../../src/typescript/assist/retrieval.js";
 import type { EmbeddingProvider } from "../../../src/typescript/assist/embeddings.js";
+import { allAssistTenantCorpusScopes } from "../../../src/typescript/assist/tenantScopes.js";
 
 const mockDb = {
   select: vi.fn(() => ({
-    from: vi.fn(async () => [
-      {
-        chunkId: "lexical-only",
-        documentId: "d2",
-        documentType: "tax_code",
-        sectionId: "lexical-only-section",
-        sectionPath: "Tax Code > Estimate > Lexical Only",
-        text: "This row should only match through lexical scoring for estimated payments.",
-        contentHash: "hash-lexical",
-        ordinal: 1,
-        citation: {
-          documentTitle: "Estimated Payment Lexical Match",
+    from: vi.fn(() => ({
+      where: vi.fn(async () => [
+        {
+          chunkId: "lexical-only",
+          documentId: "d2",
           documentType: "tax_code",
-          fictionalIssuer: "Northstar Synthetic Tax Planning Authority",
-          tenantId: "tenant-alpha",
           sectionId: "lexical-only-section",
           sectionPath: "Tax Code > Estimate > Lexical Only",
-          syntheticNotice: "Synthetic training content only.",
+          text: "This row should only match through lexical scoring for estimated payments.",
+          contentHash: "hash-lexical",
+          ordinal: 1,
+          citation: {
+            documentTitle: "Estimated Payment Lexical Match",
+            documentType: "tax_code",
+            fictionalIssuer: "Northstar Synthetic Tax Planning Authority",
+            tenantId: "tenant-alpha",
+            sectionId: "lexical-only-section",
+            sectionPath: "Tax Code > Estimate > Lexical Only",
+            syntheticNotice: "Synthetic training content only.",
+          },
+          embeddingModel: "text-embedding-3-small",
+          embedding: Array.from({ length: 1536 }, () => 0.01),
         },
-        embeddingModel: "text-embedding-3-small",
-        embedding: Array.from({ length: 1536 }, () => 0.01),
-      },
-    ]),
+      ]),
+    })),
   })),
 } as any;
 
@@ -76,7 +79,7 @@ describe("retrieveHybridCorpusChunks", () => {
     const result = await retrieveHybridCorpusChunks(
       mockDb,
       "income tax",
-      { limit: 2, vectorWeight: 0.5, keywordWeight: 0.5 },
+      { limit: 2, vectorWeight: 0.5, keywordWeight: 0.5, tenantScopes: allAssistTenantCorpusScopes() },
       mockProvider,
     );
 
@@ -116,7 +119,13 @@ describe("retrieveHybridCorpusChunks", () => {
     const result = await retrieveHybridCorpusChunks(
       mockDb,
       "estimated payment lexical only",
-      { limit: 2, vectorWeight: 0.2, keywordWeight: 0.8, candidateLimit: 1 },
+      {
+        limit: 2,
+        vectorWeight: 0.2,
+        keywordWeight: 0.8,
+        candidateLimit: 1,
+        tenantScopes: allAssistTenantCorpusScopes(),
+      },
       mockProvider,
     );
 
@@ -126,7 +135,12 @@ describe("retrieveHybridCorpusChunks", () => {
 
   it("throws on empty query", async () => {
     await expect(
-      retrieveHybridCorpusChunks(mockDb, "   ", { limit: 1 }, mockProvider),
+      retrieveHybridCorpusChunks(
+        mockDb,
+        "   ",
+        { limit: 1, tenantScopes: allAssistTenantCorpusScopes() },
+        mockProvider,
+      ),
     ).rejects.toThrow("A non-empty query is required for hybrid retrieval.");
   });
 });

@@ -327,9 +327,21 @@ async function withTransitionRouteServerWithoutAuth(
 }
 
 describe("createTaxPlanCycleRouter", () => {
-  test("returns the assistant stub through the case-scoped route", async () => {
+  test("returns the assistant explanation through the case-scoped route", async () => {
     const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
-      message: "hello Tax Pulse v2",
+      explanation: "The recommendation is grounded in the retrieved tax-code chunk.",
+      citations: [
+        {
+          chunk_id: "chunk-1",
+          document_id: "doc-1",
+          document_title: "Synthetic Estimated Payment Rules",
+          document_type: "tax_code",
+          fictional_issuer: "Training Revenue Authority",
+          section_id: "SYN-TC-4100-b",
+          section_path: "Tax Code > Estimated Payments > Thresholds",
+          synthetic_notice: "Synthetic training content; rates and limits are invented.",
+        },
+      ],
     }));
     const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
 
@@ -337,22 +349,40 @@ describe("createTaxPlanCycleRouter", () => {
       const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          recommendation_context: {
+            recommendation: "Convert $40k traditional to Roth",
+            question: "Why is this recommended?",
+          },
+        }),
       });
 
-      expect(response.status).toBe(418);
-      await expect(response.json()).resolves.toEqual({ message: "hello Tax Pulse v2" });
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({
+        explanation: "The recommendation is grounded in the retrieved tax-code chunk.",
+        citations: [
+          expect.objectContaining({
+            chunk_id: "chunk-1",
+            document_id: "doc-1",
+          }),
+        ],
+      });
       expect(assist).toHaveBeenCalledWith({
         tenantId: "tenant-001",
         actor: "advisor-001",
         caseId,
+        recommendation_context: {
+          recommendation: "Convert $40k traditional to Roth",
+          question: "Why is this recommended?",
+        },
       });
     });
   });
 
   test("rejects assistant requests without tenant or user context", async () => {
     const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
-      message: "hello Tax Pulse v2",
+      explanation: "unused",
+      citations: [],
     }));
     const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
 
@@ -362,7 +392,11 @@ describe("createTaxPlanCycleRouter", () => {
         const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify({
+            recommendation_context: {
+              recommendation: "Convert $40k traditional to Roth",
+            },
+          }),
         });
 
         expect(response.status).toBe(401);
@@ -378,7 +412,8 @@ describe("createTaxPlanCycleRouter", () => {
 
   test("rejects client assistant access before invoking the controller", async () => {
     const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
-      message: "hello Tax Pulse v2",
+      explanation: "unused",
+      citations: [],
     }));
     const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
 
@@ -388,7 +423,11 @@ describe("createTaxPlanCycleRouter", () => {
         const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify({
+            recommendation_context: {
+              recommendation: "Convert $40k traditional to Roth",
+            },
+          }),
         });
 
         expect(response.status).toBe(403);
@@ -407,16 +446,17 @@ describe("createTaxPlanCycleRouter", () => {
 
   test("rejects a non-empty assistant body", async () => {
     const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
-      message: "hello Tax Pulse v2",
+      explanation: "unused",
+      citations: [],
     }));
     const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
 
     await withAssistantRouteServer({ assist }, async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ prompt: "not supported yet" }),
-      });
+        const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ recommendation_context: { recommendation: "" } }),
+        });
 
       expect(response.status).toBe(400);
       expect(assist).not.toHaveBeenCalled();
@@ -425,14 +465,19 @@ describe("createTaxPlanCycleRouter", () => {
 
   test("rejects an invalid assistant case ID", async () => {
     const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
-      message: "hello Tax Pulse v2",
+      explanation: "unused",
+      citations: [],
     }));
 
     await withAssistantRouteServer({ assist }, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/not-a-uuid/assist`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          recommendation_context: {
+            recommendation: "Convert $40k traditional to Roth",
+          },
+        }),
       });
 
       expect(response.status).toBe(400);

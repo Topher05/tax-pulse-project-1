@@ -8,6 +8,7 @@ import {
   type EmbeddingProvider,
 } from "../../../src/typescript/assist/embeddings.js";
 import type { CorpusChunk } from "../../../src/typescript/assist/corpus.js";
+import { allAssistTenantCorpusScopes } from "../../../src/typescript/assist/tenantScopes.js";
 
 const embedding = (value: number): number[] =>
   Array.from({ length: corpusEmbeddingDimensions }, (_, index) =>
@@ -60,11 +61,13 @@ function fakeDatabase() {
       }),
     select: () => ({
       from: () => ({
-        orderBy: () => ({
-          limit: async (limit: number) => {
-            requestedLimit = limit;
-            return rows.slice(0, limit);
-          },
+        where: () => ({
+          orderBy: () => ({
+            limit: async (limit: number) => {
+              requestedLimit = limit;
+              return rows.slice(0, limit);
+            },
+          }),
         }),
       }),
     }),
@@ -157,6 +160,7 @@ describe("assist corpus embeddings", () => {
       "quarterly estimated payments",
       2,
       provider,
+      allAssistTenantCorpusScopes(),
     );
 
     expect(results.map(({ chunkId, similarity }) => ({ chunkId, similarity }))).toEqual([
@@ -181,7 +185,13 @@ describe("assist corpus embeddings", () => {
       };
 
       await expect(
-        retrieveSimilarCorpusChunks(fakeDatabase() as never, "estimated payments", 1, provider),
+        retrieveSimilarCorpusChunks(
+          fakeDatabase() as never,
+          "estimated payments",
+          1,
+          provider,
+          allAssistTenantCorpusScopes(),
+        ),
       ).rejects.toThrow(
         `Embedding provider returned ${queryEmbeddings.length} vectors for 1 query.`,
       );
