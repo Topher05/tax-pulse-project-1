@@ -7,14 +7,16 @@ locals {
 }
 
 resource "aws_sns_topic" "stage_changed" {
-  name = "${local.resource_prefix}-stage-changed"
-  tags = local.tags
+  name              = "${local.resource_prefix}-stage-changed"
+  kms_master_key_id = "alias/aws/sns"
+  tags              = local.tags
 }
 
 resource "aws_sns_topic" "action_item_created" {
   name                        = "${local.resource_prefix}-action-item-created.fifo"
   fifo_topic                  = true
   content_based_deduplication = true
+  kms_master_key_id           = "alias/aws/sns"
   tags                        = local.tags
 }
 

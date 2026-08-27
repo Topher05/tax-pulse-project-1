@@ -10,6 +10,7 @@ resource "aws_security_group" "ecs_service" {
     cidr_blocks = [var.vpc_cidr]
   }
 
+  #tfsec:ignore:aws-ec2-no-public-egress-sgr Public HTTPS is temporarily required for external JWKS retrieval through the NAT gateway.
   egress {
     description = "HTTPS egress through the private-subnet NAT gateway for ECR, CloudWatch, Secrets Manager, and JWKS."
     from_port   = 443

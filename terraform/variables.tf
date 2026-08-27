@@ -61,7 +61,7 @@ variable "lambda_consumer_role_name" {
 variable "core_case_image_tag" {
   type        = string
   description = "Verified immutable ECR image tag for the Core Case Service task definition."
-  default     = "2c85d3cd929ae2389553265760170f019afd1f84"
+  default     = "seedfix-arm64-v2-20260827"
 }
 
 variable "core_case_image_uri" {
