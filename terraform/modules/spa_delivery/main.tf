@@ -166,7 +166,7 @@ resource "aws_cloudfront_function" "spa_route_rewrite" {
   name    = "${var.name_prefix}-${var.environment}-spa-route-rewrite"
   runtime = "cloudfront-js-2.0"
   publish = true
-  code = <<-EOT
+  code    = <<-EOT
     function handler(event) {
       var request = event.request;
       var uri = request.uri;
@@ -214,13 +214,13 @@ resource "aws_cloudfront_distribution" "spa" {
     ]
 
     content {
-      path_pattern           = ordered_cache_behavior.value
-      target_origin_id       = "${var.name_prefix}-api-origin"
-      viewer_protocol_policy = "redirect-to-https"
-      allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-      cached_methods         = ["GET", "HEAD"]
-      compress               = true
-      cache_policy_id        = local.api_cache_policy_id
+      path_pattern             = ordered_cache_behavior.value
+      target_origin_id         = "${var.name_prefix}-api-origin"
+      viewer_protocol_policy   = "redirect-to-https"
+      allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods           = ["GET", "HEAD"]
+      compress                 = true
+      cache_policy_id          = local.api_cache_policy_id
       origin_request_policy_id = aws_cloudfront_origin_request_policy.api.id
     }
   }
