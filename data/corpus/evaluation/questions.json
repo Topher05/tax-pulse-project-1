@@ -1,0 +1,107 @@
+[
+  {
+    "id": "q-001",
+    "question": "For a joint-filer Tax Plan Cycle, which synthetic safe-harbor provision should the Advisor cite when reviewing projected estimated payments?",
+    "response": "The Advisor should cite the joint-filer safe-harbor provision because filing status controls the invented payment threshold for this Tax Plan Cycle.",
+    "expectedSectionIds": ["SYN-TC-4110-a"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-002",
+    "question": "For a single-filer Tax Plan Cycle, which safe-harbor provision should replace the joint-filer version in the Advisor recommendation?",
+    "response": "The Advisor should cite the single-filer safe-harbor provision because the filing status and its invented threshold differ from the joint-filer scenario.",
+    "expectedSectionIds": ["SYN-TC-4110-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-003",
+    "question": "A client expects most non-withheld income in one quarter. Which exception should the Advisor evaluate first for the Tax Plan Cycle?",
+    "response": "The Advisor should evaluate the seasonal-income exception first because income timing, rather than the payment amount alone, is the central planning fact.",
+    "expectedSectionIds": ["SYN-TC-4120-a"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-004",
+    "question": "When the modeled scenario shows a small remaining underpayment gap, which synthetic exception should support the Advisor recommendation?",
+    "response": "The Advisor should evaluate the de minimis underpayment exception because the recommendation depends on a small projected shortfall and percentage tolerance.",
+    "expectedSectionIds": ["SYN-TC-4120-c"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-005",
+    "question": "Which provision should an Advisor use when projected income falls inside the synthetic retirement-credit phase-out range?",
+    "response": "The Advisor should cite the retirement-credit phase-out provision because the recommendation depends on whether projected income is below, inside, or above the invented range.",
+    "expectedSectionIds": ["SYN-TC-4300-a"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-006",
+    "question": "Which playbook checklist should guide an Advisor reviewing a retirement contribution amount before adding an action item to the Tax Plan Cycle?",
+    "response": "The Advisor should use the retirement planning contribution-limit checklist because it maps the planning profile to the appropriate synthetic rule citation.",
+    "expectedSectionIds": ["SYN-PB-03-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-007",
+    "question": "For a recommendation dated on or after 2026-01-01, which retirement-credit provision should the Firm Admin expect at review sign-off?",
+    "response": "The Firm Admin should expect the replacement retirement-credit provision because it applies to current synthetic planning after the effective date.",
+    "expectedSectionIds": ["SYN-TC-4310-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-008",
+    "question": "An Advisor has not yet confirmed filing status for an estimated-payment recommendation. Which nearby safe-harbor provisions define the choice that still needs clarification?",
+    "response": "The Advisor should confirm filing status before choosing between the joint-filer and single-filer safe-harbor provisions because their invented thresholds are not interchangeable.",
+    "expectedSectionIds": ["SYN-TC-4110-a", "SYN-TC-4110-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-009",
+    "question": "Before a deduction-bunching recommendation is finalized, which near-duplicate cap provisions must the Advisor distinguish by planning year?",
+    "response": "The Advisor should distinguish the 2026 and 2027 itemized-deduction cap provisions because the planning year controls the correct synthetic citation.",
+    "expectedSectionIds": ["SYN-TC-4200-a", "SYN-TC-4200-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-010",
+    "question": "What client-facing playbook guidance applies when an Advisor needs to explain that a retrieved retirement-credit rule has been superseded?",
+    "response": "The explanation should say that the historical and replacement provisions are synthetic and that the recommendation must use the provision effective for the scenario date.",
+    "expectedSectionIds": ["SYN-PB-04-a", "SYN-TC-4310-a", "SYN-TC-4310-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-011",
+    "question": "A Tax Plan Cycle includes consulting receipts and concentrated equity proceeds outside wage withholding. What should trigger the Advisor's estimated-payment review?",
+    "response": "The Advisor should treat the presence of material non-withheld income as a planning trigger and then perform projection and payment-timing analysis before recording a recommendation.",
+    "expectedSectionIds": ["SYN-TC-4100-a"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-012",
+    "question": "Which synthetic materiality threshold should an Advisor consult when non-withheld income is identified but filing status is not part of the question?",
+    "response": "The Advisor should consult the materiality threshold for non-withheld income because it determines whether estimated-payment review is deferred or compared before the next payment window.",
+    "expectedSectionIds": ["SYN-TC-4100-b"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-013",
+    "question": "How should an Advisor treat verified wage withholding and a one-time reimbursement when identifying income for an estimated-payment recommendation?",
+    "response": "The Advisor should exclude verified wage withholding and the one-time reimbursement from the non-withheld-income trigger unless the reimbursement changed the projection.",
+    "expectedSectionIds": ["SYN-TC-4100-c"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-014",
+    "question": "What must an Advisor preserve in a citation note and intake workpapers when a Tax Plan Cycle recommendation relies on an estimated-payment trigger?",
+    "response": "The Advisor should retain the synthetic section identifier and document title in the citation note, then record the non-withheld income source, timing, and whether it is recurring or one-time in the planning workpapers.",
+    "expectedSectionIds": ["SYN-TC-4100-d", "SYN-PB-01-a"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  },
+  {
+    "id": "q-015",
+    "question": "A joint filer has income concentrated late in the planning period. What documentation should support the Advisor recommendation before Firm Admin review?",
+    "response": "The Advisor should document the projection source, payment timing, and reliance on the joint-filer threshold, then compare the seasonal-income exception because the income is concentrated in a later quarter.",
+    "expectedSectionIds": ["SYN-TC-4110-c", "SYN-TC-4120-a"],
+    "syntheticNotice": "Synthetic training content only; rates, limits, and thresholds are invented."
+  }
+]

@@ -83,6 +83,11 @@ export function getJwtConfigFromEnv(
     accessTokenLifetimeSeconds: parsed.JWT_ACCESS_TOKEN_TTL_SECONDS,
     refreshTokenLifetimeSeconds: parsed.JWT_REFRESH_TOKEN_TTL_SECONDS,
     ...(env.JWT_AUDIENCE?.trim() ? { audience: parsed.JWT_AUDIENCE } : {}),
-    ...(parsed.JWT_SIGNING_SECRET ? { signingSecret: parsed.JWT_SIGNING_SECRET } : {}),
+    // Production services receive an explicit JWKS URL and must validate the
+    // RS256 tokens issued by the signing private key. Retain HS256 only for
+    // legacy local/test configurations that provide no JWKS URL.
+    ...(!parsed.JWT_JWKS_URL && parsed.JWT_SIGNING_SECRET
+      ? { signingSecret: parsed.JWT_SIGNING_SECRET }
+      : {}),
   };
 }

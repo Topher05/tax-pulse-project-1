@@ -112,6 +112,11 @@ output "transition_api_url" {
   value       = module.lambda_consumers.transition_api_url
 }
 
+output "jwt_issuer_url" {
+  description = "Public OIDC discovery and JWKS issuer URL used by the HTTP API and services."
+  value       = module.lambda_consumers.jwt_issuer
+}
+
 output "spa_url" {
   description = "CloudFront URL for the TaxPulse SPA."
   value       = module.spa_delivery.spa_url

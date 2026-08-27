@@ -1,18 +1,38 @@
 import { fileURLToPath } from "node:url";
 
 import { config as loadEnv } from "dotenv";
-import { importPKCS8, SignJWT } from "jose";
+import {
+  decodeJwt,
+  decodeProtectedHeader,
+  importPKCS8,
+  SignJWT,
+} from "jose";
 
 import { getJwtConfigFromEnv } from "../../authConfig.js";
 import { getJwtRs256IssuerConfigFromEnv } from "../../jwtRs256Config.js";
 
 loadEnv({ quiet: true });
 
+export const smokeTokenIssuedAtLeewaySeconds = 60;
+
 interface HttpApiJwtSmokeConfiguration {
   apiUrl: URL;
   caseId: string;
   tenantId: string;
   userId: string;
+}
+
+export interface ValidJwtRejectionDiagnostic {
+  responseStatus: number;
+  responseHeaders: Record<string, string>;
+  token: {
+    algorithm: string | undefined;
+    keyId: string | undefined;
+    issuer: string | undefined;
+    audience: string | string[] | undefined;
+    issuedAt: number | undefined;
+    expiresAt: number | undefined;
+  };
 }
 
 function requireEnvironmentValue(name: string): string {
@@ -38,12 +58,12 @@ function getSmokeConfiguration(): HttpApiJwtSmokeConfiguration {
 
 async function issueSmokeToken(input: {
   expiresAt: number;
+  issuedAt: number;
   tenantId: string;
   userId: string;
 }): Promise<string> {
   const config = getJwtConfigFromEnv();
   const issuerConfig = getJwtRs256IssuerConfigFromEnv();
-  const now = Math.floor(Date.now() / 1000);
 
   return await new SignJWT({
     role: "Firm Admin",
@@ -57,9 +77,13 @@ async function issueSmokeToken(input: {
     .setSubject(input.userId)
     .setIssuer(config.issuer)
     .setAudience(config.audience ?? "taxpulse-http-api")
-    .setIssuedAt(now)
+    .setIssuedAt(input.issuedAt)
     .setExpirationTime(input.expiresAt)
     .sign(await importPKCS8(issuerConfig.signingPrivateKeyPem, "RS256"));
+}
+
+export function getSmokeTokenIssuedAt(now: number): number {
+  return now - smokeTokenIssuedAtLeewaySeconds;
 }
 
 function tamperToken(token: string): string {
@@ -113,16 +137,54 @@ function assertStatus(input: { label: string; actual: number; expected: number }
   }
 }
 
+/**
+ * Produces safe diagnostics for a gateway-side rejection. The raw token, its
+ * signature, subject, tenant, role, and any response body are intentionally
+ * excluded from output.
+ */
+export function getValidJwtRejectionDiagnostic(input: {
+  token: string;
+  response: Response;
+}): ValidJwtRejectionDiagnostic {
+  const header = decodeProtectedHeader(input.token);
+  const payload = decodeJwt(input.token);
+  const responseHeaders = Object.fromEntries(
+    ["date", "www-authenticate", "x-amzn-errortype", "x-amzn-requestid"]
+      .flatMap((name) => {
+        const value = input.response.headers.get(name);
+        return value ? [[name, value] as const] : [];
+      }),
+  );
+
+  return {
+    responseStatus: input.response.status,
+    responseHeaders,
+    token: {
+      algorithm: typeof header.alg === "string" ? header.alg : undefined,
+      keyId: typeof header.kid === "string" ? header.kid : undefined,
+      issuer: typeof payload.iss === "string" ? payload.iss : undefined,
+      audience: typeof payload.aud === "string" || Array.isArray(payload.aud)
+        ? payload.aud
+        : undefined,
+      issuedAt: typeof payload.iat === "number" ? payload.iat : undefined,
+      expiresAt: typeof payload.exp === "number" ? payload.exp : undefined,
+    },
+  };
+}
+
 export async function runHttpApiJwtSmoke(): Promise<{ validTokenStatus: number }> {
   const smoke = getSmokeConfiguration();
   const now = Math.floor(Date.now() / 1000);
+  const issuedAt = getSmokeTokenIssuedAt(now);
   const validToken = await issueSmokeToken({
     expiresAt: now + 300,
+    issuedAt,
     tenantId: smoke.tenantId,
     userId: smoke.userId,
   });
   const expiredToken = await issueSmokeToken({
     expiresAt: now - 60,
+    issuedAt,
     tenantId: smoke.tenantId,
     userId: smoke.userId,
   });
@@ -133,7 +195,13 @@ export async function runHttpApiJwtSmoke(): Promise<{ validTokenStatus: number }
   });
 
   if (validResponse.status === 401) {
-    throw new Error("The HTTP API gateway rejected the valid JWT.");
+    throw new Error(
+      "The HTTP API gateway rejected the valid JWT. Safe diagnostic: "
+        + JSON.stringify(getValidJwtRejectionDiagnostic({
+          token: validToken,
+          response: validResponse,
+        })),
+    );
   }
 
   const [expiredResponse, tamperedResponse, missingResponse] = await Promise.all([

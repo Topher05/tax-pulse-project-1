@@ -54,10 +54,20 @@ Resources:
       InvokedViaFunctionUrl: true
       Principal: "*"
 
+  TaxPulseHttpApiAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-taxpulse-http-api"
+      RetentionInDays: 30
+
   TaxPulseHttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
       StageName: Prod
+      AccessLogSettings:
+        DestinationArn: !GetAtt TaxPulseHttpApiAccessLogs.Arn
+        Format: >-
+          {"request_id":"$context.requestId","route_key":"$context.routeKey","status":"$context.status","response_latency":"$context.responseLatency","authorizer_error":"$context.authorizer.error","error_message":"$context.error.message"}
       Auth:
         Authorizers:
           SharedJwt:

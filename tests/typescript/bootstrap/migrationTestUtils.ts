@@ -1,31 +1,18 @@
 import { randomUUID } from "node:crypto";
 
 import { Client } from "pg";
-import { afterAll } from "vitest";
 
 import { applySeed } from "../../../src/typescript/shared/database/seed.js";
 import { migrateDatabase } from "../../../src/typescript/shared/database/migrate.js";
 import {
-  startDockerPostgresContainer,
-  type DockerPostgresContainer,
-} from "./dockerPostgres.js";
+  assertComposePostgresReady,
+  createComposePostgresConnection,
+} from "../../../src/typescript/shared/scripts/composePostgres.js";
+import { startDockerPostgresContainer } from "./dockerPostgres.js";
 
 const drizzlePublicSchemaLockId = 20_300_801;
-let migrationTestContainerPromise: Promise<DockerPostgresContainer> | undefined;
-
-function getMigrationTestContainer(): Promise<DockerPostgresContainer> {
-  migrationTestContainerPromise ??= startDockerPostgresContainer();
-  return migrationTestContainerPromise;
-}
-
-afterAll(async () => {
-  if (!migrationTestContainerPromise) {
-    return;
-  }
-
-  const container = await migrationTestContainerPromise.catch(() => null);
-  await container?.stop().catch(() => undefined);
-});
+const drizzleTestDatabaseLockId = 20_300_802;
+let resolvedDatabaseUrl: Promise<string> | undefined;
 
 export const drizzleEnumTypeNames = [
   "deduction_category",
@@ -41,6 +28,10 @@ export function quoteIdentifier(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
 }
 
+export function hasDrizzleTestDatabaseConfig(): boolean {
+  return hasComposePostgresConfig() || Boolean(process.env.DATABASE_URL?.trim());
+}
+
 export async function dropDrizzlePublicTypes(client: Client): Promise<void> {
   for (const typeName of drizzleEnumTypeNames) {
     await client.query(
@@ -52,8 +43,9 @@ export async function dropDrizzlePublicTypes(client: Client): Promise<void> {
 export async function withDrizzleTestSchema<T>(
   callback: (client: Client) => Promise<T>,
 ): Promise<T> {
-  const container = await getMigrationTestContainer();
-  const client = new Client({ connectionString: container.connectionUri });
+  const databaseUrl = await resolveDrizzleTestDatabaseUrl();
+
+  const client = new Client({ connectionString: databaseUrl });
   await client.connect();
   const schemaName = createTestSchemaName("taxpulse_drizzle_migration");
   const quotedSchemaName = quoteIdentifier(schemaName);
@@ -82,6 +74,58 @@ export async function withDrizzleTestSchema<T>(
       .catch(() => undefined);
     await client.end();
   }
+}
+
+async function resolveDrizzleTestDatabaseUrl(): Promise<string> {
+  resolvedDatabaseUrl ??= createDrizzleTestDatabaseUrl();
+  return resolvedDatabaseUrl;
+}
+
+async function createDrizzleTestDatabaseUrl(): Promise<string> {
+  if (!hasComposePostgresConfig()) {
+    const databaseUrl = process.env.DATABASE_URL?.trim();
+    if (!databaseUrl) {
+      throw new Error(
+        "DATABASE_URL or TAXPULSE_COMPOSE_POSTGRES_* is required for migration tests.",
+      );
+    }
+    return databaseUrl;
+  }
+
+  assertComposePostgresReady();
+  const composeConnection = createComposePostgresConnection();
+  const testDatabaseName = `${composeConnection.databaseName}_test`;
+  const adminClient = new Client({ connectionString: composeConnection.connectionString });
+
+  await adminClient.connect();
+  await adminClient.query("SELECT pg_advisory_lock($1)", [drizzleTestDatabaseLockId]);
+
+  try {
+    const existing = await adminClient.query<{ exists: boolean }>(
+      "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1) AS exists",
+      [testDatabaseName],
+    );
+    if (!existing.rows[0]?.exists) {
+      await adminClient.query(`CREATE DATABASE ${quoteIdentifier(testDatabaseName)}`);
+    }
+  } finally {
+    await adminClient
+      .query("SELECT pg_advisory_unlock($1)", [drizzleTestDatabaseLockId])
+      .catch(() => undefined);
+    await adminClient.end();
+  }
+
+  const testDatabaseUrl = new URL(composeConnection.connectionString);
+  testDatabaseUrl.pathname = `/${testDatabaseName}`;
+  return testDatabaseUrl.toString();
+}
+
+function hasComposePostgresConfig(): boolean {
+  return [
+    "TAXPULSE_COMPOSE_POSTGRES_DB",
+    "TAXPULSE_COMPOSE_POSTGRES_USER",
+    "TAXPULSE_COMPOSE_POSTGRES_PASSWORD",
+  ].every((name) => Boolean(process.env[name]?.trim()));
 }
 
 export async function withDockerDrizzleSeededDatabase<T>(

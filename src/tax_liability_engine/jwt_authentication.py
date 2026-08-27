@@ -90,6 +90,7 @@ class JwtValidationConfig:
 
     issuer: str
     jwks_url: str
+    audience: str | None = None
 
     @classmethod
     def from_environment(cls, environment: Mapping[str, str] | None = None) -> JwtValidationConfig:
@@ -98,12 +99,13 @@ class JwtValidationConfig:
         values = os.environ if environment is None else environment
         issuer = values.get("JWT_ISSUER", "").strip()
         jwks_url = values.get("JWT_JWKS_URL", "").strip()
+        audience = values.get("JWT_AUDIENCE", "").strip() or None
 
         if not issuer:
             raise ValueError("JWT_ISSUER is required.")
         if not jwks_url:
             raise ValueError("JWT_JWKS_URL is required.")
-        return cls(issuer=issuer, jwks_url=jwks_url)
+        return cls(issuer=issuer, jwks_url=jwks_url, audience=audience)
 
 
 @dataclass(frozen=True)
@@ -157,7 +159,8 @@ def create_jwt_authentication_dependency(
                 signing_key,
                 algorithms=algorithms,
                 issuer=config.issuer,
-                options={"require": ["exp"]},
+                audience=config.audience,
+                options={"require": ["exp"], "verify_aud": config.audience is not None},
             )
         except (OSError, ValueError, _JwksKeyNotFoundError, jwt.PyJWTError):
             raise _authentication_required() from None
