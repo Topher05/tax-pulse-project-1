@@ -23,6 +23,7 @@ import {
 } from "../../../../src/typescript/index.js";
 import {
   createScenarioModelingController,
+  TaxPlanDetailsAssistantUnsupportedRecommendationError,
   type TaxPlanDetailsAssistantController,
   type ScenarioModelingController,
   type TaxEngineClient,
@@ -349,12 +350,12 @@ describe("createTaxPlanCycleRouter", () => {
       const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          recommendation_context: {
-            recommendation: "Convert $40k traditional to Roth",
-            question: "Why is this recommended?",
-          },
-        }),
+          body: JSON.stringify({
+            recommendation_context: {
+              recommendation: "Apply the estimated-payment safe-harbor threshold for non-withheld income",
+              question: "Why is this recommended?",
+            },
+          }),
       });
 
       expect(response.status).toBe(200);
@@ -367,17 +368,17 @@ describe("createTaxPlanCycleRouter", () => {
           }),
         ],
       });
-      expect(assist).toHaveBeenCalledWith({
-        tenantId: "tenant-001",
-        actor: "advisor-001",
-        caseId,
-        recommendation_context: {
-          recommendation: "Convert $40k traditional to Roth",
-          question: "Why is this recommended?",
-        },
+        expect(assist).toHaveBeenCalledWith({
+          tenantId: "tenant-001",
+          actor: "advisor-001",
+          caseId,
+          recommendation_context: {
+            recommendation: "Apply the estimated-payment safe-harbor threshold for non-withheld income",
+            question: "Why is this recommended?",
+          },
+        });
       });
     });
-  });
 
   test("rejects assistant requests without tenant or user context", async () => {
     const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(() => ({
@@ -482,6 +483,31 @@ describe("createTaxPlanCycleRouter", () => {
 
       expect(response.status).toBe(400);
       expect(assist).not.toHaveBeenCalled();
+    });
+  });
+
+  test("returns 422 when the recommendation context is not grounded in tenant-scoped sources", async () => {
+    const assist = vi.fn<TaxPlanDetailsAssistantController["assist"]>(async () => {
+      throw new TaxPlanDetailsAssistantUnsupportedRecommendationError();
+    });
+    const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
+
+    await withAssistantRouteServer({ assist }, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${caseId}/assist`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          recommendation_context: {
+            recommendation: "Convert $40k traditional to Roth",
+          },
+        }),
+      });
+
+      expect(response.status).toBe(422);
+      await expect(response.json()).resolves.toMatchObject({
+        title: "Recommendation Context Not Grounded",
+        detail: "The recommendation context is not supported by tenant-scoped assist sources.",
+      });
     });
   });
 

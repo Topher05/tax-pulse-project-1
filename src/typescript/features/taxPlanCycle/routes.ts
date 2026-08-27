@@ -8,6 +8,7 @@ import {
 } from "./controllers/createController.js";
 import {
   TaxPlanDetailsAssistantCaseNotFoundError,
+  TaxPlanDetailsAssistantUnsupportedRecommendationError,
   TaxPlanDetailsAssistantUnavailableError,
   taxPlanDetailsAssistantController,
   taxPlanDetailsAssistantRequestSchema,
@@ -751,6 +752,18 @@ export function createTaxPlanCycleRouter(
               title: "Assistant Unavailable",
               status: 503,
               detail: error.message,
+            }),
+          );
+          return;
+        }
+
+        if (error instanceof TaxPlanDetailsAssistantUnsupportedRecommendationError) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/assistant-unsupported-recommendation-context",
+              title: "Recommendation Context Not Grounded",
+              status: 422,
+              detail: "The recommendation context is not supported by tenant-scoped assist sources.",
             }),
           );
           return;

@@ -45,7 +45,7 @@ const sampleScenarios = [
   },
 ] as const;
 
-const assistantRecommendation = "Convert $40k traditional to Roth";
+const assistantRecommendation = "Apply the estimated-payment safe-harbor threshold for non-withheld income";
 
 function priorityTone(priority: string): "danger" | "warning" | "info" {
   const normalized = priority.toLowerCase();

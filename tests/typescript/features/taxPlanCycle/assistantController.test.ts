@@ -4,6 +4,7 @@ import {
   createTaxPlanDetailsAssistantController,
   taxPlanDetailsAssistantRequestSchema,
   TaxPlanDetailsAssistantCaseNotFoundError,
+  TaxPlanDetailsAssistantUnsupportedRecommendationError,
 } from "../../../../src/typescript/features/taxPlanCycle/index.js";
 import type { RankedCorpusChunk } from "../../../../src/typescript/assist/retrieval.js";
 
@@ -85,7 +86,7 @@ describe("tax plan details assistant controller", () => {
         actor: "advisor-001",
         caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
         recommendation_context: {
-          recommendation: "Convert $40k traditional to Roth",
+          recommendation: "Apply the estimated-payment safe-harbor threshold for non-withheld income",
           question: "Why is this recommended?",
         },
       }),
@@ -138,5 +139,72 @@ describe("tax plan details assistant controller", () => {
         },
       }),
     ).rejects.toBeInstanceOf(TaxPlanDetailsAssistantCaseNotFoundError);
+  });
+
+  test("fails closed when the recommendation is not supported by retrieved chunks", async () => {
+    let explanationInvoked = false;
+    const controller = createTaxPlanDetailsAssistantController({
+      taxPlanCycleRepository: {
+        async findByCaseId() {
+          return { id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12" };
+        },
+      },
+      tenantScopeMap: new Map([
+        ["018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01", "tenant-alpha"],
+      ]),
+      retriever: {
+        async retrieve() {
+          return [
+            {
+              chunkId: "chunk-1",
+              documentId: "doc-1",
+              documentType: "tax_code",
+              sectionId: "SYN-TC-4100-b",
+              sectionPath: "Tax Code > Estimated Payments > Thresholds",
+              text: "Estimated payments may apply above the safe-harbor threshold.",
+              contentHash: "hash-1",
+              ordinal: 1,
+              embeddingModel: "text-embedding-3-small",
+              embedding: [],
+              similarity: 0.9,
+              vectorScore: 0.9,
+              keywordScore: 0.8,
+              hybridScore: 0.87,
+              rerankScore: 0.92,
+              citation: {
+                documentTitle: "Synthetic Estimated Payment Rules",
+                documentType: "tax_code",
+                fictionalIssuer: "Training Revenue Authority",
+                tenantId: "tenant-alpha",
+                sectionId: "SYN-TC-4100-b",
+                sectionPath: "Tax Code > Estimated Payments > Thresholds",
+                syntheticNotice: "Synthetic training content; rates and limits are invented.",
+              },
+            },
+          ];
+        },
+      },
+      explanationProvider: {
+        async explain() {
+          explanationInvoked = true;
+          return {
+            explanation: "unused",
+            citedChunkIds: ["chunk-1"],
+          };
+        },
+      },
+    });
+
+    await expect(
+      controller.assist({
+        tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+        actor: "advisor-001",
+        caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+        recommendation_context: {
+          recommendation: "Convert $40k traditional to Roth",
+        },
+      }),
+    ).rejects.toBeInstanceOf(TaxPlanDetailsAssistantUnsupportedRecommendationError);
+    expect(explanationInvoked).toBe(false);
   });
 });

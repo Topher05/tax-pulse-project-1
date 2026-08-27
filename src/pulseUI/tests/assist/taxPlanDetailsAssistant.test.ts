@@ -14,7 +14,7 @@ describe("tax plan details assistant API", () => {
       expect(init?.body).toBe(
         JSON.stringify({
           recommendation_context: {
-            recommendation: "Convert $40k traditional to Roth",
+            recommendation: "Apply the estimated-payment safe-harbor threshold for non-withheld income",
             question: "Why is this recommended?",
           },
         }),
@@ -45,7 +45,7 @@ describe("tax plan details assistant API", () => {
         "case-001",
         {
           recommendation_context: {
-            recommendation: "Convert $40k traditional to Roth",
+            recommendation: "Apply the estimated-payment safe-harbor threshold for non-withheld income",
             question: "Why is this recommended?",
           },
         },

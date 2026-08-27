@@ -65,7 +65,9 @@ export function createOpenAIAssistExplanationProvider(
           "You explain a tax recommendation using only the retrieved context chunks provided.",
           "Cite only chunk IDs from the retrieved context.",
           "Do not invent legal support, sources, or facts beyond the provided chunks.",
-          "If the chunks do not support the recommendation, say so plainly and cite the most relevant chunk IDs.",
+          "Treat the retrieved chunks as the only allowed source of truth.",
+          "Never add generic tax advice, likely benefits, or background knowledge unless those facts are explicitly stated in the retrieved chunks.",
+          "If the chunks do not explicitly support the recommendation, say only that the recommendation is not supported by the retrieved context.",
         ].join(" "),
         input: [
           {
@@ -109,6 +111,7 @@ function renderExplanationPrompt(input: {
           `Document: ${chunk.citation.documentTitle} (${chunk.documentType})`,
           `Section: ${chunk.sectionId}`,
           `Path: ${chunk.sectionPath}`,
+          `Relevance score: ${chunk.rerankScore.toFixed(4)}`,
           `Text: ${chunk.text}`,
         ].join("\n"),
       ),

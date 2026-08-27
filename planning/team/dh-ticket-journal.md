@@ -160,6 +160,7 @@ Add new ticket entries below using this template.
 - `src/typescript/features/taxPlanCycle/controllers/assistantController.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/shared/scripts/corpusBootstrap.ts`
 - `tests/typescript/assist/explanation.test.ts`
 - `tests/typescript/assist/tenantScopes.test.ts`
 - `tests/typescript/assist/embeddings.test.ts`
@@ -174,12 +175,18 @@ Add new ticket entries below using this template.
 - `src/pulseUI/tests/assist/taxPlanDetailsAssistant.test.ts`
 - `src/pulseUI/tests/assist/AssistantDrawer.test.tsx`
 - `.env.example`
+- `Dockerfile`
+- `docker-compose.yml`
 - `adr/0035-ai-assist-corpus-boundary.md`
 - `planning/team/dh-ticket-journal.md`
 
 **Validation Notes:**
 
-- `npm run typecheck` in progress while implementing SCRUM-182 on top of the in-development SCRUM-181 branch state.
+- `npm run typecheck` passed.
+- Focused `/assist` Vitest coverage continued to pass before the Docker rebuild; a later sandbox-only Vitest config resolution failure did not indicate an application regression.
+- `npm run stack:up` rebuilt the local Compose stack, auto-bootstrapped `45` tenant-scoped assist embeddings, and returned a healthy `core-case-service`.
+- A live `POST /v1/tax-plan-cycles/:caseId/assist` request with a supported estimated-payment safe-harbor recommendation returned `200` with relevant tax-code citations.
+- A live `POST /v1/tax-plan-cycles/:caseId/assist` request with the unsupported Roth-conversion sample returned `422 Recommendation Context Not Grounded` instead of a weakly grounded answer.
 
 ## dylan-harle-jira159 - SCRUM-159
 
