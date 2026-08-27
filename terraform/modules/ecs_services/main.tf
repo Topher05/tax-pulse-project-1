@@ -19,6 +19,7 @@ locals {
   core_case_target_group_name  = "${var.name_prefix}-core-case"
   tax_engine_target_group_name = "${var.name_prefix}-tax-engine"
   service_discovery_namespace  = "service.taxpulse.internal"
+  slo_alarm_prefix             = "${var.name_prefix}-${var.environment}-slo"
 }
 
 resource "aws_ecr_repository" "core_case" {
@@ -65,6 +66,30 @@ resource "aws_cloudwatch_log_group" "core_case" {
 resource "aws_cloudwatch_log_group" "tax_engine" {
   name              = local.tax_engine_log_group_name
   retention_in_days = var.log_retention_days
+}
+
+resource "aws_sns_topic" "slo_alarms" {
+  name = var.slo_alarm_topic_name
+}
+
+data "aws_iam_policy_document" "slo_alarm_topic" {
+  statement {
+    sid     = "AllowCloudWatchAlarmsPublish"
+    actions = ["sns:Publish"]
+    resources = [
+      aws_sns_topic.slo_alarms.arn,
+    ]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudwatch.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_sns_topic_policy" "slo_alarms" {
+  arn    = aws_sns_topic.slo_alarms.arn
+  policy = data.aws_iam_policy_document.slo_alarm_topic.json
 }
 
 data "aws_iam_policy_document" "ecs_tasks_assume_role" {
@@ -650,4 +675,107 @@ resource "aws_ecs_service" "tax_engine" {
   }
 
   depends_on = [aws_lb_listener_rule.tax_engine]
+}
+
+resource "aws_cloudwatch_metric_alarm" "tax_engine_latency_slo_risk" {
+  alarm_name          = "${local.slo_alarm_prefix}-tax-engine-latency-risk"
+  alarm_description   = "SCRUM-187 SLO risk: successful tax-engine requests exceed the 2 second p95 latency objective."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 5
+  datapoints_to_alarm = 3
+  evaluate_low_sample_count_percentiles = "ignore"
+  threshold           = 2000
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.slo_alarms.arn]
+  ok_actions          = [aws_sns_topic.slo_alarms.arn]
+  namespace           = "TaxPulse"
+  metric_name         = "tax_plan_cycle.tax_engine_request.duration_ms"
+  extended_statistic  = "p95"
+  period              = 300
+
+  dimensions = {
+    service = "core-case-service"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "core_case_availability_error_budget_burn" {
+  alarm_name          = "${local.slo_alarm_prefix}-core-case-availability-error-budget-burn"
+  alarm_description   = "SCRUM-187 SLO risk: Core Case ALB target 5xx rate exceeds the 0.1 percent error budget."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 5
+  datapoints_to_alarm = 3
+  threshold           = 0.001
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.slo_alarms.arn]
+  ok_actions          = [aws_sns_topic.slo_alarms.arn]
+
+  metric_query {
+    id          = "error_rate"
+    label       = "Core Case target 5xx error rate"
+    expression  = "IF(requests > 0, errors / requests, 0)"
+    return_data = true
+  }
+
+  metric_query {
+    id = "errors"
+
+    metric {
+      namespace   = "AWS/ApplicationELB"
+      metric_name = "HTTPCode_Target_5XX_Count"
+      period      = 300
+      stat        = "Sum"
+      dimensions = {
+        LoadBalancer = aws_lb.api.arn_suffix
+        TargetGroup  = aws_lb_target_group.core_case.arn_suffix
+      }
+    }
+  }
+
+  metric_query {
+    id = "requests"
+
+    metric {
+      namespace   = "AWS/ApplicationELB"
+      metric_name = "RequestCount"
+      period      = 300
+      stat        = "Sum"
+      dimensions = {
+        LoadBalancer = aws_lb.api.arn_suffix
+        TargetGroup  = aws_lb_target_group.core_case.arn_suffix
+      }
+    }
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "core_case_unhealthy_hosts" {
+  alarm_name          = "${local.slo_alarm_prefix}-core-case-unhealthy-hosts"
+  alarm_description   = "SCRUM-187 backing health alarm: the Core Case target group has no healthy targets."
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  datapoints_to_alarm = 2
+  threshold           = 1
+  treat_missing_data  = "breaching"
+  namespace           = "AWS/ApplicationELB"
+  metric_name         = "HealthyHostCount"
+  statistic           = "Average"
+  period              = 60
+
+  dimensions = {
+    LoadBalancer = aws_lb.api.arn_suffix
+    TargetGroup  = aws_lb_target_group.core_case.arn_suffix
+  }
+}
+
+resource "aws_cloudwatch_composite_alarm" "core_case_availability_slo_risk" {
+  alarm_name        = "${local.slo_alarm_prefix}-core-case-availability-risk"
+  alarm_description = "SCRUM-187 SLO risk: Core Case availability is burning error budget or has no healthy targets."
+  alarm_actions     = [aws_sns_topic.slo_alarms.arn]
+  ok_actions        = [aws_sns_topic.slo_alarms.arn]
+  alarm_rule = join(
+    " OR ",
+    [
+      "ALARM(${aws_cloudwatch_metric_alarm.core_case_availability_error_budget_burn.alarm_name})",
+      "ALARM(${aws_cloudwatch_metric_alarm.core_case_unhealthy_hosts.alarm_name})",
+    ],
+  )
 }

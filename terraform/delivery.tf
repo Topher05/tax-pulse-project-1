@@ -34,6 +34,7 @@ module "ecs_services" {
   stage_changed_topic_arn       = var.stage_changed_topic_arn
   stage_changed_queue_url       = var.stage_changed_queue_url
   action_item_created_topic_arn = var.action_item_created_topic_arn
+  slo_alarm_topic_name          = "${var.name_prefix}-${var.environment}-slo-alarms"
 }
 
 module "lambda_consumers" {

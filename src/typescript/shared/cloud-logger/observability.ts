@@ -161,16 +161,15 @@ function inferMetricUnit(metricName: string): string {
   return "Count";
 }
 
+const defaultMetricDimensions = ["service", "operation", "outcome"] as const;
+const serviceRollupMetricDimensions = ["service"] as const;
+
 function buildEmfMetadata(context: CloudWatchContext): Record<string, unknown> | undefined {
   if (context.metric_name === undefined || context.metric_value === undefined) {
     return undefined;
   }
 
-  const dimensions = [[
-    context.service,
-    context.operation,
-    context.outcome ?? "unknown",
-  ]];
+  const normalizedOutcome = context.outcome ?? "unknown";
 
   return {
     _aws: {
@@ -178,7 +177,7 @@ function buildEmfMetadata(context: CloudWatchContext): Record<string, unknown> |
       CloudWatchMetrics: [
         {
           Namespace: "TaxPulse",
-          Dimensions: dimensions,
+          Dimensions: [defaultMetricDimensions, serviceRollupMetricDimensions],
           Metrics: [
             {
               Name: context.metric_name,
@@ -188,6 +187,9 @@ function buildEmfMetadata(context: CloudWatchContext): Record<string, unknown> |
         },
       ],
     },
+    service: context.service,
+    operation: context.operation,
+    outcome: normalizedOutcome,
   };
 }
 
