@@ -36,6 +36,7 @@ Add new ticket entries below using this template.
 - Added the `eval` optional dependency group in `pyproject.toml` for `openai` and `ragas`.
 - Added a root `osv-scanner.toml` with explicit eval-advisory ignores for the locked `diskcache`, `langchain-openai`, and `ragas` findings so the security gate can remain strict without blocking the branch on known accepted eval-only packages.
 - Expanded the checked-in evaluation bank to 30 corpus-grounded Advisor and Firm Admin scenarios, covering every synthetic rule document and advisory playbook without changing the corpus, retrieval, scoring, or API boundaries.
+- Repaired the RAGAS import path mismatch by installing a minimal compatibility shim for the legacy `langchain_community.chat_models.vertexai` import and by invoking `uv` through `py -3.12 -m uv` on Windows so the combined evaluation command does not depend on a bare PATH entry.
 
 **Project Scope Connection:**
 
