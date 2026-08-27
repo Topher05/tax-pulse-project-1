@@ -6,6 +6,7 @@ import {
 } from "../../auth/authClient.ts";
 
 const credentials = {
+  workspaceSlug: "summit-ridge-tax",
   email: "advisor@example.test",
   password: "synthetic-password",
 };
@@ -43,6 +44,7 @@ describe("browser auth client", () => {
         method: "POST",
         credentials: "include",
         body: JSON.stringify({
+          workspace_slug: credentials.workspaceSlug,
           email: credentials.email,
           password: credentials.password,
         }),

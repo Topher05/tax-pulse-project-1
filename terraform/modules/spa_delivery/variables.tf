@@ -8,6 +8,11 @@ variable "name_prefix" {
   type        = string
 }
 
+variable "api_origin_domain_name" {
+  description = "ALB DNS name for API requests routed through CloudFront."
+  type        = string
+}
+
 variable "bucket_name" {
   description = "Optional globally-unique S3 bucket name for the private SPA origin."
   type        = string
