@@ -223,6 +223,35 @@ describe("auth route integration", () => {
     expect(authenticatePassword).not.toHaveBeenCalled();
   });
 
+  test("resolves a tenant from workspace_slug on a shared host", async () => {
+    const authenticatePassword = vi.fn<PasswordAuthenticator>(async () => ({
+      status: "mfa_challenge_required",
+      tenantId: authTenantId,
+      email: authEmail,
+      userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+    }));
+
+    await withAuthServer(authenticatePassword, async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/auth/login`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          workspace_slug: tenantLoginSlug,
+          email: authEmail,
+          password: "correct-password",
+        }),
+      });
+
+      expect(response.status).toBe(202);
+    });
+
+    expect(authenticatePassword).toHaveBeenCalledWith({
+      tenantId: authTenantId,
+      email: authEmail,
+      plaintextPassword: "correct-password",
+    });
+  });
+
   test("does not authenticate a tenant user's credentials through another tenant host", async () => {
     const authenticatePassword = vi.fn<PasswordAuthenticator>(async (input) => {
       if (

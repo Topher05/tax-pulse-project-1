@@ -13,7 +13,7 @@
   "containerDefinitions": [
     {
       "name": "core-case-service",
-      "image": "814650854375.dkr.ecr.us-east-1.amazonaws.com/taxpulse/core-case-service:v1.0.0.0",
+      "image": "814650854375.dkr.ecr.us-east-1.amazonaws.com/taxpulse/core-case-service:2c85d3cd929ae2389553265760170f019afd1f84",
       "essential": true,
       "portMappings": [
         {

@@ -298,7 +298,7 @@ describe("Core Case Service OpenAPI document", () => {
     });
   });
 
-  test("documents hostname-scoped password login without tenant_id", () => {
+  test("documents workspace- or hostname-scoped password login without tenant_id", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
     const loginOperation = requiredRecord(
@@ -320,7 +320,9 @@ describe("Core Case Service OpenAPI document", () => {
     expect(loginOperation.operationId).toBe("startPasswordLogin");
     expect(loginOperation.tags).toEqual(["Authentication"]);
     expect(loginOperation.description).toContain("hostname");
+    expect(loginOperation.description).toContain("workspace_slug");
     expect(requestProperties).toMatchObject({
+      workspace_slug: expect.any(Object),
       email: expect.any(Object),
       password: expect.any(Object),
     });

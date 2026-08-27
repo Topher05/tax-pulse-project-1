@@ -20,6 +20,10 @@ import type { TenantLoginResolver } from "./tenantLoginResolver.js";
 
 export const passwordLoginRequestSchema = z
   .object({
+    workspace_slug: z
+      .string()
+      .regex(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/)
+      .optional(),
     email: z.string().email(),
     password: z.string().min(1),
   })
@@ -33,6 +37,7 @@ export const mfaChallengeResponseSchema = z.object({
 });
 
 export interface PasswordLoginRequest {
+  workspace_slug?: string;
   email: string;
   password: string;
 }
@@ -170,10 +175,11 @@ export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router 
         }
 
         try {
-          const loginSlug = parseTenantLoginHostname(req.hostname, {
+          const hostnameLoginSlug = parseTenantLoginHostname(req.hostname, {
             baseDomain: options.tenantLoginBaseDomain,
           });
-          if (!loginSlug) {
+          const loginSlug = parsedBody.data.workspace_slug ?? hostnameLoginSlug;
+          if (!loginSlug || (parsedBody.data.workspace_slug && hostnameLoginSlug && parsedBody.data.workspace_slug !== hostnameLoginSlug)) {
             next(unknownTenantLoginError());
             return;
           }
