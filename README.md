@@ -216,7 +216,7 @@ python -m pip install -e ".[dev]"
 If you have `uv` installed, you can use that instead:
 
 ```powershell
-uv sync --extra dev
+uv sync --locked --extra dev
 ```
 
 Start Docker Desktop first, then run the Python bootstrap from the repository root:
@@ -514,6 +514,72 @@ different capacity or latency tradeoffs:
 - `TAXPULSE_ARGON2_PARALLELISM`
 - `TAXPULSE_ARGON2_HASH_LENGTH`
 - `TAXPULSE_ARGON2_SALT_LENGTH`
+
+## AI-Assist Evaluation
+
+The Jira-181 evaluation pipeline is offline and file-driven. It uses the checked-in
+synthetic questions in `data/corpus/evaluation/` and writes generated artifacts under
+`artifacts/assist-evaluation/`.
+
+Available commands:
+
+```powershell
+npm run assist:evaluation:collect
+npm run assist:evaluation:score
+npm run assist:evaluation
+```
+
+Environment variables:
+
+- `OPENAI_API_KEY` is required for the Python scorer.
+- `RAGAS_EVALUATOR_MODEL` overrides the default `gpt-4o-mini` evaluator model.
+- `RAGAS_EVALUATOR_TEMPERATURE` overrides the default `0` temperature.
+- `ASSIST_EVALUATION_QUESTIONS_PATH` overrides the checked-in question set.
+- `ASSIST_EVALUATION_THRESHOLDS_PATH` overrides the checked-in thresholds file.
+- `ASSIST_RAGAS_INPUT_PATH` overrides the collected input artifact path.
+- `ASSIST_EVALUATION_RESULT_LIMIT` overrides the retriever result limit.
+
+If you need to use the `.env` file in a PowerShell session before running the direct
+score command, load the OpenAI key into the shell first:
+
+```powershell
+Get-Content .env | ForEach-Object {
+if ($_ -match '^\s*OPENAI_API_KEY\s*=\s*(.+)\s*$') { $env:OPENAI_API_KEY = $Matches[1].Trim('"') } }
+```
+
+Hybrid smoke success and failure examples:
+
+```powershell
+# Success case
+$env:CORPUS_HYBRID_SMOKE_QUERY = "For a single filer, what safe-harbor threshold should be cited?"
+$env:CORPUS_HYBRID_SMOKE_EXPECTED_SECTION_ID = "SYN-TC-4110-b"
+npm run corpus:smoke:hybrid
+
+# Failure case
+$env:CORPUS_HYBRID_SMOKE_QUERY = "For a single filer, what safe-harbor threshold should be cited?"
+$env:CORPUS_HYBRID_SMOKE_EXPECTED_SECTION_ID = "SYN-TC-4110-a"
+npm run corpus:smoke:hybrid
+```
+
+Report output:
+
+- `artifacts/assist-evaluation/ragas-input.json` stores the collected questions,
+  retrieved chunks, retrieved contexts, and citation metadata.
+- `artifacts/assist-evaluation/ragas-report.json` stores per-question scores, aggregate
+  means, threshold values, pass/fail status, retrieved chunk IDs, and citations.
+- The gate passes only when mean `context_relevance >= 0.80` and mean
+  `faithfulness >= 0.60`.
+- The accepted benchmark uses 15 questions. Adding more questions increases corpus
+  coverage, but slows the LLM-backed scorer and makes each local run more expensive.
+- Raising either threshold makes the gate stricter, but it also increases the chance of
+  failing on a synthetic wording mismatch rather than a true retrieval defect.
+
+Blocker note:
+
+- The combined command now runs collection and scoring through the checked-in Compose
+  PostgreSQL stack and the `uv` evaluation environment.
+- Context collection still requires a pgvector-capable PostgreSQL instance, but the
+  backend API itself does not need to run for the evaluation workflow.
 
 ## Migration Commands
 

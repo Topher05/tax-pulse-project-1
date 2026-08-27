@@ -13,14 +13,14 @@ if (!chunksPath) {
   throw new Error("CORPUS_CHUNKS_PATH is required");
 }
 
-const query = process.env.CORPUS_SMOKE_QUERY?.trim();
+const query = process.env.CORPUS_HYBRID_SMOKE_QUERY?.trim();
 if (!query) {
-  throw new Error("CORPUS_SMOKE_QUERY is required");
+  throw new Error("CORPUS_HYBRID_SMOKE_QUERY is required");
 }
 
-const expectedSectionId = process.env.CORPUS_SMOKE_EXPECTED_SECTION_ID?.trim();
+const expectedSectionId = process.env.CORPUS_HYBRID_SMOKE_EXPECTED_SECTION_ID?.trim();
 if (!expectedSectionId) {
-  throw new Error("CORPUS_SMOKE_EXPECTED_SECTION_ID is required");
+  throw new Error("CORPUS_HYBRID_SMOKE_EXPECTED_SECTION_ID is required");
 }
 
 const chunks = await readCorpusChunkArtifact(chunksPath);

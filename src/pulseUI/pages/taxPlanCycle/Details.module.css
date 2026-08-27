@@ -271,6 +271,17 @@
   gap: 0.85rem;
 }
 
+.assistantFabAnchor {
+  position: relative;
+  display: flex;
+  min-height: 5.5rem;
+  align-items: flex-start;
+  justify-content: flex-end;
+  overflow: visible;
+  padding-top: 1rem;
+  z-index: 30;
+}
+
 .scenarioCard {
   padding: 1rem 1.05rem;
   border: 1px solid var(--pulse-border);

@@ -2,7 +2,6 @@ import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
 import type { RequestHandler } from "express";
-import { SignJWT } from "jose";
 import { describe, expect, test, vi } from "vitest";
 
 import {
@@ -23,10 +22,14 @@ import {
   type TaxPlanCycleCreateInput,
   type TaxPlanCycleRepository,
 } from "../../../../src/typescript/index.js";
+import {
+  createTestJwtFixture,
+  signTestAccessToken,
+  withJwksServer,
+} from "../../bootstrap/jwtTestUtils.js";
 
 const config: JwtConfig = {
   issuer: "https://auth.taxpulse.example",
-  signingSecret: "a-unique-test-secret-that-is-more-than-32-bytes",
   accessTokenLifetimeSeconds: 900,
   refreshTokenLifetimeSeconds: 2_592_000,
 };
@@ -48,6 +51,8 @@ const cycle: TaxPlanCycle = {
   on_hold: false,
 };
 
+const jwtFixturePromise = createTestJwtFixture(config.issuer);
+
 async function createAccessToken({
   tenantId = "tenant-from-jwt",
   userId = "user-from-jwt",
@@ -57,15 +62,11 @@ async function createAccessToken({
   userId?: string;
   role?: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
 } = {}): Promise<string> {
-  return await new SignJWT({
+  return await signTestAccessToken(await jwtFixturePromise, {
     role,
-    tenant_id: tenantId,
-  })
-    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-    .setSubject(userId)
-    .setIssuer(config.issuer)
-    .setExpirationTime("15m")
-    .sign(new TextEncoder().encode(config.signingSecret));
+    tenantId,
+    userId,
+  });
 }
 
 async function withProtectedTaxPlanCycleServer(
@@ -88,46 +89,50 @@ async function withProtectedTaxPlanCycleServer(
     rateLimitMiddleware?: RequestHandler;
   } = {},
 ): Promise<void> {
-  const app = createApp({
-    logger: silentLogger,
-    registerRoutes: (server) => {
-      server.use(
-        "/v1",
-        createJwtAuthenticationMiddleware({ config }),
-      );
-      server.use(
-        "/v1",
-        hydrateUserClaims(),
-      );
-      if (options.costAccountingMiddleware) {
-        server.use("/v1/tax-plan-cycles", options.costAccountingMiddleware);
-      }
-      if (options.rateLimitMiddleware) {
-        server.use("/v1/tax-plan-cycles", options.rateLimitMiddleware);
-      }
-      server.use(
-        "/v1",
-        createTaxPlanCycleRouter({
-          auditEntryReader: options.auditEntryReader,
-          clientPortalReadRepository: options.clientPortalReadRepository,
-          scenarioRepository: options.scenarioRepository,
-          actionItemRepository: options.actionItemRepository,
-          actionItemCompletedEventPublisher: options.actionItemCompletedEventPublisher,
-          controller,
-        }),
-      );
-    },
-  });
-  const server = app.listen(0, "127.0.0.1");
-  await once(server, "listening");
+  const jwtFixture = await jwtFixturePromise;
 
-  try {
-    const address = server.address() as AddressInfo;
-    await run(`http://127.0.0.1:${address.port}`);
-  } finally {
-    server.close();
-    await once(server, "close");
-  }
+  await withJwksServer(jwtFixture.jwks, async (jwksUrl) => {
+    const app = createApp({
+      logger: silentLogger,
+      registerRoutes: (server) => {
+        server.use(
+          "/v1",
+          createJwtAuthenticationMiddleware({ config: { ...config, jwksUrl } }),
+        );
+        server.use(
+          "/v1",
+          hydrateUserClaims(),
+        );
+        if (options.costAccountingMiddleware) {
+          server.use("/v1/tax-plan-cycles", options.costAccountingMiddleware);
+        }
+        if (options.rateLimitMiddleware) {
+          server.use("/v1/tax-plan-cycles", options.rateLimitMiddleware);
+        }
+        server.use(
+          "/v1",
+          createTaxPlanCycleRouter({
+            auditEntryReader: options.auditEntryReader,
+            clientPortalReadRepository: options.clientPortalReadRepository,
+            scenarioRepository: options.scenarioRepository,
+            actionItemRepository: options.actionItemRepository,
+            actionItemCompletedEventPublisher: options.actionItemCompletedEventPublisher,
+            controller,
+          }),
+        );
+      },
+    });
+    const server = app.listen(0, "127.0.0.1");
+    await once(server, "listening");
+
+    try {
+      const address = server.address() as AddressInfo;
+      await run(`http://127.0.0.1:${address.port}`);
+    } finally {
+      server.close();
+      await once(server, "close");
+    }
+  });
 }
 
 describe("JWT-protected Tax Plan Cycle routes", () => {

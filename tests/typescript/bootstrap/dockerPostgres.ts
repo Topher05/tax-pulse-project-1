@@ -80,6 +80,34 @@ async function waitForConnection(connectionUri: string): Promise<void> {
   );
 }
 
+async function assertPgvectorAvailable(
+  connectionUri: string,
+  image: string,
+): Promise<void> {
+  const client = new Client({ connectionString: connectionUri });
+
+  await client.connect();
+
+  try {
+    const result = await client.query<{ available: boolean }>(
+      `SELECT EXISTS (
+        SELECT 1
+        FROM pg_available_extensions
+        WHERE name = 'vector'
+      ) AS available`,
+    );
+
+    if (!result.rows[0]?.available) {
+      throw new Error(
+        `PostgreSQL test image "${image}" does not provide pgvector. ` +
+          `Set DOCKER_POSTGRES_IMAGE=${defaultDockerPostgresImage}.`,
+      );
+    }
+  } finally {
+    await client.end().catch(() => undefined);
+  }
+}
+
 function createPostgresContainer(
   image: string,
   database: string,
@@ -119,6 +147,7 @@ export async function startDockerPostgresContainer(
 
   try {
     await waitForConnection(connectionUri);
+    await assertPgvectorAvailable(connectionUri, config.image);
     await options.bootstrap?.(connectionUri);
   } catch (error) {
     await startedContainer.stop().catch(() => undefined);

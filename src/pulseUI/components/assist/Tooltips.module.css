@@ -1,0 +1,64 @@
+.root {
+  position: relative;
+  z-index: 70;
+  display: inline-flex;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 80;
+  width: max-content;
+  max-width: 220px;
+  padding: 0.45rem 0.65rem;
+  color: #f8fafc;
+  background: #111827;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 24%);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  max-width: min(220px, calc(100vw - 1rem));
+  overflow-wrap: anywhere;
+  transform: translateY(0.25rem);
+  transition: opacity 140ms ease, transform 140ms ease;
+  visibility: hidden;
+}
+
+.tooltip[data-visible="true"] {
+  opacity: 1;
+  transform: translate(0);
+  visibility: visible;
+}
+
+.top .tooltip {
+  right: 0;
+  bottom: calc(100% + 0.55rem);
+  transform: translateY(0.25rem);
+}
+
+.bottom .tooltip {
+  top: calc(100% + 0.55rem);
+  left: 50%;
+  transform: translate(-50%, -0.25rem);
+}
+
+.left .tooltip {
+  top: 50%;
+  right: calc(100% + 0.55rem);
+  transform: translate(0.25rem, -50%);
+}
+
+.right .tooltip {
+  top: 50%;
+  left: calc(100% + 0.55rem);
+  transform: translate(0, -50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    transition: none;
+  }
+}

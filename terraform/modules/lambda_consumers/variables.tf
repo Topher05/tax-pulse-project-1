@@ -13,6 +13,11 @@ variable "name_prefix" {
   type        = string
 }
 
+variable "lambda_consumer_role_name" {
+  description = "Name of the existing IAM execution role used by the transition Lambdas."
+  type        = string
+}
+
 variable "shared_config_secret_arn" {
   description = "Secrets Manager ARN that transition Lambdas are allowed to read."
   type        = string

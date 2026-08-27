@@ -32,23 +32,26 @@ jobs:
         # v9.0.0; setup-uv uses immutable release tags and does not publish a v9 tag.
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
         with:
-          version: latest
+          version: "0.12.6"
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --locked --extra dev
+        run: uv sync --locked --extra dev --extra eval
+
+      - name: Check RAGAS imports
+        run: uv run --no-sync python -c "from ragas.llms import llm_factory; from ragas.metrics.collections import ContextRelevance, Faithfulness"
 
       - name: Check Python formatting
-        run: uv run ruff format --check src tests
+        run: uv run --no-sync ruff format --check src tests
 
       - name: Run Python lint
-        run: uv run ruff check src tests
+        run: uv run --no-sync ruff check src tests
 
       - name: Run Pyright
-        run: uv run pyright
+        run: uv run --no-sync pyright
 
       - name: Run Pytest
-        run: uv run pytest
+        run: uv run --no-sync pytest
 
   core-typescript:
     name: Core TypeScript
