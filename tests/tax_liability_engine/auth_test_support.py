@@ -76,10 +76,9 @@ def issue_access_token(
         "iat": int(datetime.now(UTC).timestamp()),
         "exp": int((expires_at or datetime.now(UTC) + timedelta(minutes=5)).timestamp()),
     }
-    signing_input = ".".join(
-        _base64url_json(part)
-        for part in (header, payload)
-    ).encode("ascii")
+    signing_input = ".".join(_base64url_json(part) for part in (header, payload)).encode(
+        "ascii"
+    )
     signature = material.private_key.sign(
         signing_input,
         padding.PKCS1v15(),
@@ -95,7 +94,9 @@ def issue_access_token(
 
 
 def _base64url_json(value: object) -> str:
-    return _base64url_bytes(json.dumps(value, separators=(",", ":"), sort_keys=True).encode("utf-8"))
+    return _base64url_bytes(
+        json.dumps(value, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    )
 
 
 def _base64url_bytes(value: bytes) -> str:
