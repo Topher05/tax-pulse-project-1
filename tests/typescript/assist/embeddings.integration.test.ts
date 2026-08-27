@@ -12,6 +12,7 @@ import {
   readCorpusChunkArtifact,
 } from "../../../src/typescript/assist/corpus.js";
 import { retrieveHybridCorpusChunks } from "../../../src/typescript/assist/retrieval.js";
+import { allAssistTenantCorpusScopes } from "../../../src/typescript/assist/tenantScopes.js";
 import { withDockerDrizzleSeededDatabase } from "../bootstrap/migrationTestUtils.js";
 
 const vector = (value: number): number[] =>
@@ -77,6 +78,7 @@ describe("assist corpus embeddings against pgvector", () => {
         "quarterly estimated payments",
         1,
         provider,
+        allAssistTenantCorpusScopes(),
       );
 
       expect(results).toHaveLength(1);
@@ -87,7 +89,7 @@ describe("assist corpus embeddings against pgvector", () => {
       const hybridResults = await retrieveHybridCorpusChunks(
         database as never,
         "For retrieval testing, which materiality threshold applies to non-withheld income?",
-        { limit: 3 },
+        { limit: 3, tenantScopes: allAssistTenantCorpusScopes() },
         provider,
       );
 

@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { retrieveHybridCorpusChunks } from "../../assist/retrieval.js";
 import { createOpenAIEmbeddingProvider } from "../../assist/embeddings.js";
+import { allAssistTenantCorpusScopes } from "../../assist/tenantScopes.js";
 import { assertComposePostgresReady } from "./composePostgres.js";
 
 async function main() {
@@ -33,7 +34,7 @@ async function main() {
     const candidates = await retrieveHybridCorpusChunks(
       db,
       query,
-      { limit: 3 },
+      { limit: 3, tenantScopes: allAssistTenantCorpusScopes() },
       provider,
     );
 

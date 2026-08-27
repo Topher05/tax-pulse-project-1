@@ -7,26 +7,67 @@ import {
 } from "../../entities/taxPlanDetailsAssistant.ts";
 
 describe("tax plan details assistant API", () => {
-  test("posts an empty body to the case-scoped assistant route", async () => {
+  test("posts recommendation context to the case-scoped assistant route", async () => {
     const fetcher = vi.fn<typeof fetch>(async (input, init) => {
       expect(input).toBe("/v1/tax-plan-cycles/case-001/assist");
       expect(init?.method).toBe("POST");
-      expect(init?.body).toBe("{}");
+      expect(init?.body).toBe(
+        JSON.stringify({
+          recommendation_context: {
+            recommendation: "Apply the estimated-payment safe-harbor threshold for non-withheld income",
+            question: "Why is this recommended?",
+          },
+        }),
+      );
 
-      return new Response(JSON.stringify({ message: "hello Tax Pulse v2" }), { status: 200 });
+      return new Response(
+        JSON.stringify({
+          explanation: "The recommendation is grounded in the retrieved tax-code chunk.",
+          citations: [
+            {
+              chunk_id: "chunk-1",
+              document_id: "doc-1",
+              document_title: "Synthetic Estimated Payment Rules",
+              document_type: "tax_code",
+              fictional_issuer: "Training Revenue Authority",
+              section_id: "SYN-TC-4100-b",
+              section_path: "Tax Code > Estimated Payments > Thresholds",
+              synthetic_notice: "Synthetic training content; rates and limits are invented.",
+            },
+          ],
+        }),
+        { status: 200 },
+      );
     });
 
-    await expect(postTaxPlanDetailsAssistant("case-001", fetcher)).resolves.toEqual({
-      message: "hello Tax Pulse v2",
+    await expect(
+      postTaxPlanDetailsAssistant(
+        "case-001",
+        {
+          recommendation_context: {
+            recommendation: "Apply the estimated-payment safe-harbor threshold for non-withheld income",
+            question: "Why is this recommended?",
+          },
+        },
+        fetcher,
+      ),
+    ).resolves.toEqual({
+      explanation: "The recommendation is grounded in the retrieved tax-code chunk.",
+      citations: [
+        expect.objectContaining({
+          chunk_id: "chunk-1",
+          document_id: "doc-1",
+        }),
+      ],
     });
   });
 
-  test("uses the server message for a stub error response", () => {
+  test("uses the server message for an assistant error response", () => {
     expect(
       parseTaxPlanDetailsAssistantErrorMessage(
-        new CaseApiError(418, JSON.stringify({ message: "hello Tax Pulse v2" })),
+        new CaseApiError(503, JSON.stringify({ message: "Assistant temporarily unavailable" })),
       ),
-    ).toBe("hello Tax Pulse v2");
+    ).toBe("Assistant temporarily unavailable");
   });
 
   test("falls back to Problem Details detail text for assistant errors", () => {

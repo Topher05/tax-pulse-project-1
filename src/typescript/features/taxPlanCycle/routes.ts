@@ -7,10 +7,14 @@ import {
   type TaxPlanCycleCreateController,
 } from "./controllers/createController.js";
 import {
+  TaxPlanDetailsAssistantCaseNotFoundError,
+  TaxPlanDetailsAssistantUnsupportedRecommendationError,
+  TaxPlanDetailsAssistantUnavailableError,
   taxPlanDetailsAssistantController,
   taxPlanDetailsAssistantRequestSchema,
   type TaxPlanDetailsAssistantController,
 } from "./controllers/assistantController.js";
+import { AssistTenantScopeUnavailableError } from "../../assist/tenantScopes.js";
 import type {
   AuditEntryReader,
   AuditEntryWriter,
@@ -715,8 +719,56 @@ export function createTaxPlanCycleRouter(
           ...parsedBody.data,
         });
 
-        res.status(418).json(response);
+        res.status(200).json(response);
       } catch (error) {
+        if (error instanceof TaxPlanDetailsAssistantCaseNotFoundError) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Cycle Not Found",
+              status: 404,
+              detail: "No tax plan cycle was found for the requested case ID.",
+            }),
+          );
+          return;
+        }
+
+        if (error instanceof AssistTenantScopeUnavailableError) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/assistant-configuration-unavailable",
+              title: "Assistant Unavailable",
+              status: 503,
+              detail: "The assistant tenant scope configuration is unavailable for this tenant.",
+            }),
+          );
+          return;
+        }
+
+        if (error instanceof TaxPlanDetailsAssistantUnavailableError) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/assistant-unavailable",
+              title: "Assistant Unavailable",
+              status: 503,
+              detail: error.message,
+            }),
+          );
+          return;
+        }
+
+        if (error instanceof TaxPlanDetailsAssistantUnsupportedRecommendationError) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/assistant-unsupported-recommendation-context",
+              title: "Recommendation Context Not Grounded",
+              status: 422,
+              detail: "The recommendation context is not supported by tenant-scoped assist sources.",
+            }),
+          );
+          return;
+        }
+
         next(error);
       }
     },

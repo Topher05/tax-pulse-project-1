@@ -8,6 +8,7 @@ import {
   retrieveHybridCorpusChunks,
   type Reranker,
 } from "./retrieval.js";
+import { allAssistTenantCorpusScopes } from "./tenantScopes.js";
 
 export const defaultAssistEvaluationDirectory = "data/corpus/evaluation";
 export const defaultAssistEvaluationArtifactsDirectory = "artifacts/assist-evaluation";
@@ -143,7 +144,10 @@ export function createAssistRetrieverFactory(
           const chunks = await retrieveHybridCorpusChunks(
             options.db,
             question,
-            { limit: Math.max(1, Math.floor(resultLimit || defaultLimit)) },
+            {
+              limit: Math.max(1, Math.floor(resultLimit || defaultLimit)),
+              tenantScopes: allAssistTenantCorpusScopes(),
+            },
             embeddingProvider,
             reranker,
           );

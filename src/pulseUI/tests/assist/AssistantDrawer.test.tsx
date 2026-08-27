@@ -48,7 +48,7 @@ describe("AssistantDrawer", () => {
     expect(screen.getByRole("button", { name: "Expand to fullscreen" })).toBeInTheDocument();
     expect(screen.getByRole("tooltip", { name: "Start new dialogue" })).toBeInTheDocument();
     expect(screen.getByText("case-001 - Q2 2026 Tax Plan")).toBeInTheDocument();
-    expect(screen.getByText(/Advisor 001.*Jun 30, 2026.*Archived/)).toBeInTheDocument();
+    expect(screen.getByText("Advisor 001 | Jun 30, 2026 | Archived")).toBeInTheDocument();
   });
 
   test("dismisses toolbar tooltips after activation and restores them on new hover", () => {
@@ -174,14 +174,33 @@ describe("AssistantDrawer", () => {
       errorMessage: "Assistant unavailable.",
       messages: [
         { id: "message-1", role: "user", title: "Advisor prompt", body: "Explain this." },
-        { id: "message-2", role: "error", title: "Assistant unavailable", body: "Assistant unavailable." },
+        {
+          id: "message-2",
+          role: "assistant",
+          title: "Assistant response",
+          body: "Assistant explanation.",
+          citations: [
+            {
+              chunk_id: "chunk-1",
+              document_id: "doc-1",
+              document_title: "Synthetic Estimated Payment Rules",
+              document_type: "tax_code",
+              fictional_issuer: "Training Revenue Authority",
+              section_id: "SYN-TC-4100-b",
+              section_path: "Tax Code > Estimated Payments > Thresholds",
+              synthetic_notice: "Synthetic training content; rates and limits are invented.",
+            },
+          ],
+        },
       ],
     });
 
     expect(screen.getByRole("log")).toBeInTheDocument();
     expect(screen.getByText("Assistant request failed")).toBeInTheDocument();
     expect(screen.getByText("Advisor prompt")).toBeInTheDocument();
-    expect(screen.getAllByText("Assistant unavailable.")).toHaveLength(2);
+    expect(screen.getByText("Assistant explanation.")).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Assistant citations" })).toBeInTheDocument();
+    expect(screen.getByText("Synthetic Estimated Payment Rules | SYN-TC-4100-b")).toBeInTheDocument();
   });
 
   test("keeps drawer interactions from closing through the backdrop", () => {

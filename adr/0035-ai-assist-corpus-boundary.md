@@ -33,9 +33,21 @@ Get-Content .env | ForEach-Object {
 if ($_ -match '^\s*OPENAI_API_KEY\s*=\s*(.+)\s*$') { $env:OPENAI_API_KEY = $Matches[1].Trim('"') } }
 ```
 
-The established thresholds are mean `context_relevance >= 0.80` and mean `faithfulness >= 0.60`. The evaluation benchmark is intentionally bounded. The accepted sample size is __15__ questions, which is large enough to exercise the retrieval path but small enough to keep the score loop usable while the bank is being tuned. More questions increase coverage and confidence but slow the LLM-backed scorer and make each iteration more expensive. Raising the acceptance thresholds would make the gate stricter, but it also increases the chance that the benchmark fails for wording or grounding issues that are acceptable during early corpus tuning rather than indicating a structural retrieval defect.
+The established thresholds are mean `context_relevance >= 0.80` and mean
+`faithfulness >= 0.60`. The accepted benchmark contains 15 synthetic questions, which
+exercise the retrieval path while keeping the LLM-backed scoring loop practical for
+local iteration. This follows an earlier 30-question tuning pass that provided broader
+coverage but proved too slow and expensive for the working quality gate. Raising the
+thresholds would make the gate stricter, but it could also reject acceptable early
+corpus-tuning changes because of evaluator wording or grounding variance rather than a
+structural retrieval defect.
 
-None of these foundational steps expose an `/assist` endpoint or integrate live tenant requests (reserved for SCRUM-182).
+## Jira 182 Additions
+SCRUM-182 ships the case-scoped `POST /v1/tax-plan-cycles/:caseId/assist` endpoint from the Core Case Service. The route accepts a recommendation plus an optional advisor question, verifies the target case inside the authenticated tenant, retrieves only corpus chunks whose citation `tenantId` is in the allowed scope list for that tenant, and returns an explanation with public citations derived from the retrieved chunks.
+
+Tenant scoping is fail-closed. The runtime reads `ASSIST_TENANT_CORPUS_SCOPE_MAP` as a JSON map from application tenant UUID to corpus scope (`tenant-alpha` or `tenant-beta`) and automatically adds `tenant-shared` to the allowed retrieval set. If a tenant is unmapped, the endpoint returns `503` before retrieval begins rather than broadening scope. Both semantic retrieval and lexical retrieval apply the scope predicate in PostgreSQL so cross-tenant chunks are never retrieved and then filtered later in memory.
+
+Explanation generation is also grounded and fail-closed. The runtime uses the OpenAI Responses API with structured output under `ASSIST_RESPONSE_MODEL` (default `gpt-4o-mini`) to produce `{ explanation, cited_chunk_ids[] }`, validates that every cited chunk ID belongs to the retrieved set, and only then materializes response citations. The public response intentionally excludes tenant metadata while preserving source identity through chunk ID, document ID/title/type, fictional issuer, section ID/path, and synthetic notice.
 
 ## Consequences
 * Core Case Service ownership of case data remains unchanged.
@@ -48,7 +60,9 @@ None of these foundational steps expose an `/assist` endpoint or integrate live 
   with invented rates and limits.
 * The embedding vectors (SCRUM-179) and hybrid retrieval algorithms (SCRUM-180) are deterministic and isolated to this bounded context, ensuring robust offline evaluations.
 * The RAGAS scorer remains an offline, `uv`-locked Python step so dependency drift is caught before `/assist` delivery work lands.
-* A smaller working sample size can speed up iteration, but it reduces the odds of surfacing a weak retrieval question or an under-supported answer before the final 15-question acceptance run.
+* Tenant-to-corpus scope mapping becomes a required runtime dependency for live `/assist` traffic, and unmapped tenants fail closed instead of silently broadening access.
+* Public `/assist` citations are derived strictly from retrieved chunks, which keeps explanation text auditable and prevents uncited or cross-tenant grounding from leaking into the response.
+* The 15-question accepted benchmark keeps local evaluation practical, while expanding it would improve coverage at the cost of slower and more expensive scoring runs.
 * Higher thresholds improve the quality bar but can turn a tuning pass into a false negative while the synthetic corpus and checker responses are still being tightened.
 
 ## Alternatives considered

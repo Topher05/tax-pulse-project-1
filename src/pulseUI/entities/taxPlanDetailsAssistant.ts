@@ -4,16 +4,36 @@ import { useMutation } from "@tanstack/react-query";
 import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
 
 export interface TaxPlanDetailsAssistantResponse {
-  message: string;
+  explanation: string;
+  citations: readonly TaxPlanDetailsAssistantCitation[];
+}
+
+export interface TaxPlanDetailsAssistantCitation {
+  chunk_id: string;
+  document_id: string;
+  document_title: string;
+  document_type: "tax_code" | "playbook";
+  fictional_issuer: string;
+  section_id: string;
+  section_path: string;
+  synthetic_notice: string;
+}
+
+export interface TaxPlanDetailsAssistantRequest {
+  recommendation_context: {
+    recommendation: string;
+    question?: string;
+  };
 }
 
 export async function postTaxPlanDetailsAssistant(
   caseId: string,
+  request: TaxPlanDetailsAssistantRequest,
   fetcher?: typeof fetch,
 ): Promise<TaxPlanDetailsAssistantResponse> {
   return await caseApiPostJson<TaxPlanDetailsAssistantResponse>(
     `/v1/tax-plan-cycles/${caseId}/assist`,
-    {},
+    request,
     fetcher,
   );
 }
@@ -22,8 +42,8 @@ export function useTaxPlanDetailsAssistantMutation() {
   const authenticatedFetch = useAuthenticatedFetch();
 
   return useMutation({
-    mutationFn: ({ caseId }: { caseId: string }) =>
-      postTaxPlanDetailsAssistant(caseId, authenticatedFetch),
+    mutationFn: ({ caseId, request }: { caseId: string; request: TaxPlanDetailsAssistantRequest }) =>
+      postTaxPlanDetailsAssistant(caseId, request, authenticatedFetch),
   });
 }
 

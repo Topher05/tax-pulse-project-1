@@ -116,6 +116,78 @@ Add new ticket entries below using this template.
 - `npm run typecheck` passed.
 - `npm run test:vitest` passed.
 
+## dylan-harle-jira182 - SCRUM-182
+
+**Branch:** `dylan-harle-jira182`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-182
+
+**Summary:** Ship the `/assist` endpoint with citations and tenant scoping
+
+**Description:** As an Advisor, I want an `/assist` endpoint that explains and cites a recommendation, so that I can justify the plan to a client.
+
+**Acceptance Criteria:**
+
+- POST `/assist` takes a recommendation context and returns an explanation grounded in retrieved chunks.
+- The response includes citations identifying the tax-code or playbook source.
+- The endpoint enforces tenant scoping so retrieval never crosses tenants.
+
+**Code Connection:**
+
+- Replaced the temporary case-scoped assistant stub with a real `POST /v1/tax-plan-cycles/:caseId/assist` controller that validates `recommendation_context`, verifies the case in-tenant, retrieves tenant-scoped corpus chunks, and returns a grounded explanation plus public citations.
+- Added fail-closed tenant-scope parsing from `ASSIST_TENANT_CORPUS_SCOPE_MAP`, automatically including `tenant-shared` and returning service-unavailable behavior for unmapped tenants instead of widening retrieval scope.
+- Added an OpenAI Responses structured-output explanation provider driven by `ASSIST_RESPONSE_MODEL`, with chunk-id validation so every returned citation must correspond to a retrieved chunk.
+- Updated both semantic and lexical retrieval paths, the runtime composition, the smoke/evaluation helpers, and the Pulse UI assistant drawer so advisors send recommendation context and see rendered citations in the existing UI flow.
+- Extended assistant-focused tests plus retrieval/environment coverage and updated ADR-0035 plus `.env.example` to document the live endpoint contract.
+
+**Project Scope Connection:**
+
+- RAG-Powered AI Assist.
+- Builds directly on SCRUM-181's retrieval evaluation work while preserving the offline RAGAS path as a separate quality gate from live request servicing.
+- Preserves Core Case tenant isolation by enforcing retrieval scoping in PostgreSQL rather than retrieving broadly and filtering later in memory.
+
+**Changed Files:**
+
+- `src/typescript/assist/explanation.ts`
+- `src/typescript/assist/tenantScopes.ts`
+- `src/typescript/assist/embeddings.ts`
+- `src/typescript/assist/retrieval.ts`
+- `src/typescript/assist/evaluation.ts`
+- `src/typescript/shared/scripts/corpusHybridSmoke.ts`
+- `src/typescript/index.ts`
+- `src/typescript/features/taxPlanCycle/controllers/assistantController.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/shared/scripts/corpusBootstrap.ts`
+- `tests/typescript/assist/explanation.test.ts`
+- `tests/typescript/assist/tenantScopes.test.ts`
+- `tests/typescript/assist/embeddings.test.ts`
+- `tests/typescript/assist/embeddings.integration.test.ts`
+- `tests/typescript/assist/retrieval.test.ts`
+- `tests/typescript/features/taxPlanCycle/assistantController.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `src/pulseUI/entities/taxPlanDetailsAssistant.ts`
+- `src/pulseUI/components/assist/assistantPanel.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.module.css`
+- `src/pulseUI/tests/assist/taxPlanDetailsAssistant.test.ts`
+- `src/pulseUI/tests/assist/AssistantDrawer.test.tsx`
+- `.env.example`
+- `Dockerfile`
+- `docker-compose.yml`
+- `adr/0035-ai-assist-corpus-boundary.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- Focused `/assist` Vitest coverage continued to pass before the Docker rebuild; a later sandbox-only Vitest config resolution failure did not indicate an application regression.
+- `npm run stack:up` rebuilt the local Compose stack, auto-bootstrapped `45` tenant-scoped assist embeddings, and returned a healthy `core-case-service`.
+- A live `POST /v1/tax-plan-cycles/:caseId/assist` request with a supported estimated-payment safe-harbor recommendation returned `200` with relevant tax-code citations.
+- A live `POST /v1/tax-plan-cycles/:caseId/assist` request with the unsupported Roth-conversion sample returned `422 Recommendation Context Not Grounded` instead of a weakly grounded answer.
+
 ## dylan-harle-jira159 - SCRUM-159
 
 **Branch:** `dylan-harle-jira159`
