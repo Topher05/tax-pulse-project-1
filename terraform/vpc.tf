@@ -3,7 +3,11 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  availability_zones = slice(data.aws_availability_zones.available.names, 0, 3)
+  resource_name_prefix = "${var.name_prefix}-${var.environment}"
+  # The existing dev foundation predates the environment suffix convention. Keep
+  # its physical names stable while allowing isolated environments to be unique.
+  uses_legacy_dev_names = var.name_prefix == "taxpulse" && var.environment == "dev"
+  availability_zones    = slice(data.aws_availability_zones.available.names, 0, 3)
 
   public_subnet_configs = {
     public_a = {
@@ -48,7 +52,7 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
 
   tags = {
-    Name        = "taxpulse-${var.environment}-vpc"
+    Name        = "${local.resource_name_prefix}-vpc"
     Environment = var.environment
   }
 }
@@ -57,7 +61,7 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name        = "taxpulse-${var.environment}-igw"
+    Name        = "${local.resource_name_prefix}-igw"
     Environment = var.environment
   }
 }
@@ -70,7 +74,7 @@ resource "aws_subnet" "public" {
   availability_zone = local.availability_zones[each.value.az_index]
 
   tags = {
-    Name        = "taxpulse-${var.environment}-public-${each.value.suffix}"
+    Name        = "${local.resource_name_prefix}-public-${each.value.suffix}"
     Environment = var.environment
   }
 }
@@ -83,30 +87,9 @@ resource "aws_subnet" "private" {
   availability_zone = local.availability_zones[each.value.az_index]
 
   tags = {
-    Name        = "taxpulse-${var.environment}-private-${each.value.suffix}"
+    Name        = "${local.resource_name_prefix}-private-${each.value.suffix}"
     Environment = var.environment
   }
-}
-
-resource "aws_eip" "nat" {
-  domain = "vpc"
-
-  tags = {
-    Name        = "taxpulse-${var.environment}-nat-eip"
-    Environment = var.environment
-  }
-}
-
-resource "aws_nat_gateway" "main" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public["public_a"].id
-
-  tags = {
-    Name        = "taxpulse-${var.environment}-nat-gw"
-    Environment = var.environment
-  }
-
-  depends_on = [aws_internet_gateway.main]
 }
 
 resource "aws_route_table" "public" {
@@ -118,7 +101,7 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name        = "taxpulse-${var.environment}-public-rt"
+    Name        = "${local.resource_name_prefix}-public-rt"
     Environment = var.environment
   }
 }
@@ -126,13 +109,8 @@ resource "aws_route_table" "public" {
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main.id
-  }
-
   tags = {
-    Name        = "taxpulse-${var.environment}-private-rt"
+    Name        = "${local.resource_name_prefix}-private-rt"
     Environment = var.environment
   }
 }

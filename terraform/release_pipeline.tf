@@ -58,9 +58,10 @@ data "aws_iam_policy_document" "github_actions_release_assume_role" {
 }
 
 resource "aws_iam_role" "github_actions_release" {
-  name               = local.github_actions_release_role_name
-  description        = local.github_actions_release_role_description
-  assume_role_policy = data.aws_iam_policy_document.github_actions_release_assume_role.json
+  name                 = local.github_actions_release_role_name
+  description          = local.github_actions_release_role_description
+  assume_role_policy   = data.aws_iam_policy_document.github_actions_release_assume_role.json
+  permissions_boundary = var.iam_permissions_boundary_arn
 
   lifecycle {
     ignore_changes = [permissions_boundary, tags, tags_all]

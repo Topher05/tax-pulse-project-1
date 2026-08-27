@@ -69,6 +69,9 @@ test("signs in through MFA, reaches the dashboard, and returns to sign-in after 
     "/password-reset",
   );
 
+  fireEvent.change(await screen.findByRole("textbox", { name: "Firm workspace" }), {
+    target: { value: "summit-ridge-tax" },
+  });
   fireEvent.change(await screen.findByRole("textbox", { name: "Email address" }), {
     target: { value: challenge.email },
   });
@@ -78,6 +81,7 @@ test("signs in through MFA, reaches the dashboard, and returns to sign-in after 
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
   await vi.waitFor(() => expect(client.login).toHaveBeenCalledWith({
+    workspaceSlug: "summit-ridge-tax",
     email: challenge.email,
     password: "synthetic-password",
   }));
@@ -115,6 +119,9 @@ test("shows an error and stays on sign-in when credentials are rejected", async 
 
   renderAuthRoute(client, "/sign-in");
 
+  fireEvent.change(await screen.findByRole("textbox", { name: "Firm workspace" }), {
+    target: { value: "summit-ridge-tax" },
+  });
   fireEvent.change(await screen.findByRole("textbox", { name: "Email address" }), {
     target: { value: challenge.email },
   });
@@ -127,6 +134,7 @@ test("shows an error and stays on sign-in when credentials are rejected", async 
     await screen.findByRole("alert"),
   ).toHaveTextContent("Unable to sign in. Check your credentials and try again.");
   expect(client.login).toHaveBeenCalledWith({
+    workspaceSlug: "summit-ridge-tax",
     email: challenge.email,
     password: "incorrect-synthetic-password",
   });
@@ -150,6 +158,9 @@ test("shows an error and does not establish a session when MFA verification fail
 
   renderAuthRoute(client, "/sign-in");
 
+  fireEvent.change(await screen.findByRole("textbox", { name: "Firm workspace" }), {
+    target: { value: "summit-ridge-tax" },
+  });
   fireEvent.change(await screen.findByRole("textbox", { name: "Email address" }), {
     target: { value: challenge.email },
   });

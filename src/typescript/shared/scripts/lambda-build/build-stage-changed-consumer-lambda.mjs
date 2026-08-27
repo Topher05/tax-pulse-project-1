@@ -1,0 +1,24 @@
+import { mkdir, rm } from "node:fs/promises";
+import { resolve } from "node:path";
+
+import { build } from "esbuild";
+import { packageLambda } from "./package-lambda.mjs";
+
+const outfile = resolve("dist/stage-changed-consumer/index.js");
+
+const stagingDirectory = resolve("dist/stage-changed-consumer");
+await rm(stagingDirectory, { force: true, recursive: true });
+await mkdir(stagingDirectory, { recursive: true });
+
+await build({
+  entryPoints: [resolve("src/typescript/features/taxPlanCycle/infrastructure/cloudEvents/stageChanged/LambdaHandler.ts")],
+  bundle: true,
+  platform: "node",
+  target: "node22",
+  format: "cjs",
+  outfile,
+  sourcemap: true,
+  logLevel: "info",
+});
+
+await packageLambda("dist/stage-changed-consumer", "dist/stage-changed-consumer.zip");
