@@ -93,7 +93,7 @@ def _install_vertexai_module(
     shim_class = _build_vertexai_placeholder(export_name)
     setattr(module, export_name, shim_class)
     module.__all__ = [export_name]
-    setattr(parent, "vertexai", module)
+    parent.vertexai = module
     setattr(parent, export_name, shim_class)
 
 
@@ -113,8 +113,9 @@ def _build_vertexai_placeholder(export_name: str) -> type:
 
 _install_langchain_community_vertexai_shim()
 
-from ragas.llms import llm_factory
-from ragas.metrics.collections import ContextRelevance, Faithfulness
+# These imports must follow the compatibility shim above.
+from ragas.llms import llm_factory  # noqa: E402
+from ragas.metrics.collections import ContextRelevance, Faithfulness  # noqa: E402
 
 
 @dataclass(frozen=True)
