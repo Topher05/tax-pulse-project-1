@@ -13,9 +13,17 @@ if (collectResult.status !== 0) {
   fail("collect", collectResult.status, collectResult.signal);
 }
 
-const scoreCommand = process.platform === "win32"
-  ? { command: "py", args: ["-3.12", "-m", "uv", "run", "--locked", "--extra", "eval", "python", "src/python/retrieval/ragas_evaluation.py"] }
-  : { command: "uv", args: ["run", "--locked", "--extra", "eval", "python", "src/python/retrieval/ragas_evaluation.py"] };
+const scoreCommand = {
+  command: "uv",
+  args: [
+    "run",
+    "--locked",
+    "--extra",
+    "eval",
+    "python",
+    "src/python/retrieval/ragas_evaluation.py",
+  ],
+};
 
 const scoreResult = spawnSync(scoreCommand.command, scoreCommand.args, {
   stdio: "inherit",
@@ -25,9 +33,17 @@ if (scoreResult.status !== 0) {
   fail("score", scoreResult.status, scoreResult.signal);
 }
 
-function fail(stage: "collect" | "score", status: number | null, signal: NodeJS.Signals | null): never {
+function fail(
+  stage: "collect" | "score",
+  status: number | null,
+  signal: NodeJS.Signals | null,
+): never {
   if (status === null) {
-    throw new Error(`assist:evaluation ${stage} stage failed before completion${signal ? ` with signal ${signal}` : ""}.`);
+    throw new Error(
+      `assist:evaluation ${stage} stage failed before completion${
+        signal ? ` with signal ${signal}` : ""
+      }.`,
+    );
   }
 
   process.exit(status);

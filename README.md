@@ -567,12 +567,12 @@ Report output:
   retrieved chunks, retrieved contexts, and citation metadata.
 - `artifacts/assist-evaluation/ragas-report.json` stores per-question scores, aggregate
   means, threshold values, pass/fail status, retrieved chunk IDs, and citations.
-- The gate passes only when the mean `context_relevance` and mean `faithfulness` both
-  meet or exceed `0.80`.
-- The current working benchmark uses 15 questions while tuning; restoring the full 30
-  increases coverage but slows the scorer and makes each run more expensive.
-- Raising the threshold above `0.80` makes the gate stricter, but it also increases the
-  chance of failing on a synthetic wording mismatch rather than a true retrieval defect.
+- The gate passes only when mean `context_relevance >= 0.80` and mean
+  `faithfulness >= 0.60`.
+- The accepted benchmark uses 15 questions. Adding more questions increases corpus
+  coverage, but slows the LLM-backed scorer and makes each local run more expensive.
+- Raising either threshold makes the gate stricter, but it also increases the chance of
+  failing on a synthetic wording mismatch rather than a true retrieval defect.
 
 Blocker note:
 

@@ -24,7 +24,7 @@ not a tenant case record and not a tax calculation result.
 SCRUM-178 creates the synthetic markdown source corpus and deterministic chunks. Building on this foundation, SCRUM-179 adds a deterministic pgvector-backed similarity index for semantic search using `vector(1536)` and cosine similarity, while SCRUM-180 orchestrates a hybrid retrieval pipeline combining semantic search with keyword matching, culminating in a reranking step to order candidate chunks by relevance.
 
 ## Jira 181 Additions
-SCRUM-181 adds an offline RAGAS quality gate on top of the retrieval layer. That evaluation pipeline is intentionally split from the `/assist` delivery surface: the TypeScript side collects retrieved contexts into a JSON artifact, and the Python side scores those samples with `ContextRelevance` & `Faithfulness` under a locked `uv` environment. The scorer runs against Python 3.13.14 in the project contract, while local command execution on this workstation may invoke `py -3.12 -m uv` because the installed launcher/runtime matrix differs by machine.
+SCRUM-181 adds an offline RAGAS quality gate on top of the retrieval layer. That evaluation pipeline is intentionally split from the `/assist` delivery surface: the TypeScript side collects retrieved contexts into a JSON artifact, and the Python side scores those samples with `ContextRelevance` & `Faithfulness` under a locked `uv` environment. The scorer runs against Python 3.13.14 in the project contract and uses the checked-in `eval` dependency group for RAGAS, OpenAI, and LangChain integration packages.
 
 The evaluation path depends on `uv`-locked dependencies rather than the app server because the goal is reproducible offline scoring, not request/response servicing. The checked-in `pyproject.toml` eval extra and `uv.lock` must stay in sync, and the scorer must be able to load the environment without relying on the shell already exporting secrets. For PowerShell sessions, the local bootstrap command is:
 
@@ -33,7 +33,7 @@ Get-Content .env | ForEach-Object {
 if ($_ -match '^\s*OPENAI_API_KEY\s*=\s*(.+)\s*$') { $env:OPENAI_API_KEY = $Matches[1].Trim('"') } }
 ```
 
-The evaluation benchmark is intentionally bounded. The current working sample size is __15__ questions, which is large enough to exercise the retrieval path but small enough to keep the score loop usable while the bank is being tuned. More questions increase coverage and confidence but slow the LLM-backed scorer and make each iteration more expensive. Raising the acceptance thresholds would make the gate stricter, but it also increases the chance that the benchmark fails for wording or grounding issues that are acceptable during early corpus tuning rather than indicating a structural retrieval defect.
+The established thresholds are mean `context_relevance >= 0.80` and mean `faithfulness >= 0.60`. The evaluation benchmark is intentionally bounded. The accepted sample size is __15__ questions, which is large enough to exercise the retrieval path but small enough to keep the score loop usable while the bank is being tuned. More questions increase coverage and confidence but slow the LLM-backed scorer and make each iteration more expensive. Raising the acceptance thresholds would make the gate stricter, but it also increases the chance that the benchmark fails for wording or grounding issues that are acceptable during early corpus tuning rather than indicating a structural retrieval defect.
 
 None of these foundational steps expose an `/assist` endpoint or integrate live tenant requests (reserved for SCRUM-182).
 

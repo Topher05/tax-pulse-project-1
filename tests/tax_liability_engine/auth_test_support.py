@@ -11,16 +11,10 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import pytest
+from tax_liability_engine.jwt_authentication import JwtValidationConfig
 
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric import rsa
-
-
-@dataclass(frozen=True)
-class JwtValidationConfig:
-    issuer: str
-    jwks_url: str
 
 
 @dataclass(frozen=True)
@@ -31,8 +25,7 @@ class JwtTestMaterial:
     private_key: rsa.RSAPrivateKey
 
 
-@pytest.fixture
-def jwt_test_material(tmp_path: Path) -> JwtTestMaterial:
+def create_jwt_test_material(tmp_path: Path) -> JwtTestMaterial:
     """Create a disposable RS256 signing key and its JWKS document."""
 
     from cryptography.hazmat.primitives.asymmetric import rsa

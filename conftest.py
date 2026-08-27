@@ -3,8 +3,17 @@ from __future__ import annotations
 import os
 import tempfile
 import uuid
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Protocol, Sequence
+from typing import Protocol
+
+import pytest
+
+from tests.tax_liability_engine.auth_test_support import (
+    JwtTestMaterial,
+    create_jwt_test_material,
+)
+
 
 class _PytestOption(Protocol):
     basetemp: str | None
@@ -65,3 +74,8 @@ tempfile.tempdir = str(WORKSPACE_TEMP_ROOT)
 def pytest_configure(config: _PytestConfig) -> None:
     if getattr(config.option, "basetemp", None) is None:
         config.option.basetemp = str(WORKSPACE_TEMP_ROOT)
+
+
+@pytest.fixture
+def jwt_test_material(tmp_path: Path) -> JwtTestMaterial:
+    return create_jwt_test_material(tmp_path)

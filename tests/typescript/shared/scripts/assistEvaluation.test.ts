@@ -25,10 +25,7 @@ describe("assist evaluation launcher", () => {
       if (command === process.execPath) {
         return { status: 0, stdout: "", stderr: "" };
       }
-      if (process.platform === "win32" && command === "py") {
-        return { status: 0, stdout: "", stderr: "" };
-      }
-      if (process.platform !== "win32" && command === "uv") {
+      if (command === "uv") {
         return { status: 0, stdout: "", stderr: "" };
       }
       return { status: 1, stdout: "", stderr: "unexpected command" };
@@ -37,22 +34,15 @@ describe("assist evaluation launcher", () => {
     await import("../../../../src/typescript/shared/scripts/assistEvaluation.js");
 
     expect(loadEnv).toHaveBeenCalledTimes(1);
-    const expectedCommand =
-      process.platform === "win32" ? "py" : "uv";
-    const expectedArgs =
-      process.platform === "win32"
-        ? [
-            "-3.12",
-            "-m",
-            "uv",
-            "run",
-            "--locked",
-            "--extra",
-            "eval",
-            "python",
-            "src/python/retrieval/ragas_evaluation.py",
-          ]
-        : ["run", "--locked", "--extra", "eval", "python", "src/python/retrieval/ragas_evaluation.py"];
+    const expectedCommand = "uv";
+    const expectedArgs = [
+      "run",
+      "--locked",
+      "--extra",
+      "eval",
+      "python",
+      "src/python/retrieval/ragas_evaluation.py",
+    ];
 
     expect(spawnSync).toHaveBeenCalledWith(expectedCommand, expectedArgs, { stdio: "inherit" });
   });
@@ -70,10 +60,7 @@ describe("assist evaluation launcher", () => {
         if (command === process.execPath) {
           return { status: 0, stdout: "", stderr: "" };
         }
-        if (process.platform === "win32" && command === "py") {
-          return { status: 2, stdout: "", stderr: "scorer failed" };
-        }
-        if (process.platform !== "win32" && command === "uv") {
+        if (command === "uv") {
           return { status: 2, stdout: "", stderr: "scorer failed" };
         }
         return { status: 1, stdout: "", stderr: "unexpected command" };
