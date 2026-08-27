@@ -62,6 +62,20 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(spaDelivery).toContain("values   = [aws_cloudfront_distribution.spa.arn]");
   });
 
+  test("routes uncached API traffic to the ALB and rewrites only SPA routes", () => {
+    const spaDelivery = readTerraform("terraform/modules/spa_delivery/main.tf");
+    const delivery = readTerraform("terraform/delivery.tf");
+
+    expect(spaDelivery).toContain("api_cache_policy_id = \"4135ea2d-6df8-44a3-9df3-4b5a84be39ad\"");
+    expect(spaDelivery).toContain('resource "aws_cloudfront_origin_request_policy" "api"');
+    expect(spaDelivery).toContain('resource "aws_cloudfront_function" "spa_route_rewrite"');
+    expect(spaDelivery).toContain('"/auth/*"');
+    expect(spaDelivery).toContain('"/v1/*"');
+    expect(spaDelivery).toContain("origin_protocol_policy = \"http-only\"");
+    expect(spaDelivery).not.toContain("response_page_path = \"/index.html\"");
+    expect(delivery).toContain("api_origin_domain_name = module.ecs_services.api_origin_domain_name");
+  });
+
   test("uses public-IP ECS tasks when the sandbox policy forbids NAT gateways", () => {
     const vpc = readTerraform("terraform/vpc.tf");
     const ecsServices = readTerraform("terraform/modules/ecs_services/main.tf");

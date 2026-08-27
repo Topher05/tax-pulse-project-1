@@ -90,7 +90,8 @@ module "lambda_consumers" {
 module "spa_delivery" {
   source = "./modules/spa_delivery"
 
-  environment = var.environment
-  name_prefix = var.name_prefix
-  bucket_name = var.spa_bucket_name
+  environment            = var.environment
+  name_prefix            = var.name_prefix
+  bucket_name            = var.spa_bucket_name
+  api_origin_domain_name = module.ecs_services.api_origin_domain_name
 }

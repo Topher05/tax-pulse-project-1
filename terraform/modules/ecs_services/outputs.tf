@@ -3,6 +3,11 @@ output "api_base_url" {
   value       = "http://${aws_lb.api.dns_name}"
 }
 
+output "api_origin_domain_name" {
+  description = "ALB DNS name used as a CloudFront API origin."
+  value       = aws_lb.api.dns_name
+}
+
 output "alb_arn" {
   description = "Application Load Balancer ARN."
   value       = aws_lb.api.arn
