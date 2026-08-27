@@ -1551,6 +1551,68 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - `terraform apply` completed successfully against the team AWS account and created the SCRUM-162 VPC, PostgreSQL, DynamoDB, Redis, and supporting networking resources.
 - `terraform plan -input=false` returned no changes immediately after apply, confirming a clean post-apply plan with no drift.
 
+## dylan-harle-jira183 - SCRUM-183
+
+**Branch:** `dylan-harle-jira183`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-183
+
+**Summary:** Add a prompt-injection defense test set
+
+**Description:** As a Security Engineer, I want a prompt-injection test set against `/assist`, so that the assistant resists adversarial inputs.
+
+**Acceptance Criteria:**
+
+- A test set submits prompt-injection attempts to `/assist`.
+- The endpoint refuses to leak system instructions or cross-tenant data.
+- The set runs as part of the AI-Assist test suite.
+
+**Code Connection:**
+
+- Added a dedicated AI-Assist prompt-safety module that normalizes recommendation and question text, detects direct instruction overrides, hidden-prompt exfiltration attempts, role spoofing, encoded payloads, and cross-tenant requests, then rejects those requests before retrieval begins.
+- Hardened the `/assist` explanation flow so the model receives structured JSON with explicitly untrusted user input, a hidden policy canary, and a fail-closed post-response validation that rejects leaked canaries or unknown chunk citations.
+- Added a second tenant-scope guard in the assistant controller so retrieved chunks must still belong to the resolved tenant scopes before citations are materialized, preventing a faulty retriever from leaking cross-tenant grounding.
+- Added a checked-in prompt-injection fixture set plus controller, route, provider, and smoke coverage, including a live stack smoke script that proves a grounded request returns `200` while a prompt-injection request returns `422 Assistant Request Rejected`.
+
+**Project Scope Connection:**
+
+- Platform.
+- Builds directly on SCRUM-182's live `/assist` endpoint, citations, and tenant scoping contract.
+- Preserves tenant isolation by refusing adversarial requests before retrieval and by failing closed if retrieval or generation attempts to cross the tenant corpus boundary.
+- Provides the checked-in `/assist` security regression set that later AI-Assist tickets can rely on while expanding the advisor-facing workflow.
+
+**Changed Files:**
+
+- `data/corpus/security/prompt-injection-cases.json`
+- `src/typescript/assist/promptSafety.ts`
+- `src/typescript/assist/explanation.ts`
+- `src/typescript/shared/scripts/assistSmoke.ts`
+- `src/typescript/features/taxPlanCycle/controllers/assistantController.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/assist/promptSafety.test.ts`
+- `tests/typescript/assist/explanation.test.ts`
+- `tests/typescript/shared/scripts/assistSmoke.test.ts`
+- `tests/typescript/features/taxPlanCycle/assistantController.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `package.json`
+- `adr/0035-ai-assist-corpus-boundary.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run test:vitest -- tests/typescript/assist/promptSafety.test.ts tests/typescript/assist/explanation.test.ts tests/typescript/shared/scripts/assistSmoke.test.ts tests/typescript/features/taxPlanCycle/assistantController.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts` passed with `5` files and `41` tests after the prompt-safety detection fix for Base64 payloads.
+- `npm run typecheck` passed.
+- An initial `npm test` run before Compose startup surfaced preexisting stack-dependent deduction coverage that expects the local Postgres container; this was an environment precondition, not an application regression.
+- `npm run stack:up` rebuilt and started the local stack successfully on August 27, 2026.
+- `npm run stack:smoke` passed against the running Compose stack with healthy Core Case, Tax Engine, Redis, and synthetic registration flow.
+- `npm run assist:smoke` passed against the live `/assist` route with a grounded request returning `200` and the prompt-injection request returning `422`.
+- `npm run test:vitest -- tests/typescript/features/deductions/routes.test.ts tests/typescript/features/deductions/repository.test.ts` passed once the stack-backed Postgres dependency was available.
+- `npm test` passed on August 27, 2026 with `105` test files and `456` tests after the stack-backed rerun.
+
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
 

@@ -29,6 +29,7 @@
     "assist:evaluation:collect": "tsx src/typescript/shared/scripts/assistEvaluationCollect.ts",
     "assist:evaluation:score": "uv run --locked --extra eval python src/python/retrieval/ragas_evaluation.py",
     "assist:evaluation": "tsx src/typescript/shared/scripts/assistEvaluation.ts",
+    "assist:smoke": "tsx src/typescript/shared/scripts/assistSmoke.ts",
     "corpus:build": "tsx src/typescript/shared/scripts/corpusBuild.ts",
     "corpus:embed": "tsx src/typescript/shared/scripts/corpusEmbed.ts",
     "corpus:smoke": "tsx src/typescript/shared/scripts/corpusSmoke.ts",
