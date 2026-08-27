@@ -540,6 +540,7 @@ export {
   createTaxPlanCycleCreateController,
   taxPlanCycleCreateController,
   taxPlanCycleCreateResultSchema,
+  TaxPlanDetailsAssistantUnsafePromptError,
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
   createTaxPlanCycleRouter,
