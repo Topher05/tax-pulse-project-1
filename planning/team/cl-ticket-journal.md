@@ -2604,3 +2604,55 @@ This ticket keeps ADR-0014 cache-aside behavior separate from the idempotency le
 
 - Validation has not been run yet after the final cleanup.
 - The new `cloud-tap` script is intended to run locally with synthetic events and can optionally use `TAXPULSE_REDIS_URL` if Redis is available.
+
+## caleb-latimer-jira185 - SCRUM-185
+
+**Branch:** `caleb-latimer-jira185`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-185
+
+**Summary:** Draw the TaxPulse data-flow diagram
+
+**Description:** As a Security Engineer, I want a data-flow diagram of TaxPulse, so that the threat model has a clear system picture. This branch adds the detailed architecture markdown for the full TaxPulse data flow and keeps it aligned with the existing ADR-style documentation pattern.
+
+**Acceptance Criteria:**
+
+- A detailed TaxPulse data-flow document exists under `docs/`.
+- The document uses Mermaid heavily enough to show the full system flow, not just a single overview graphic.
+- The document covers authentication, the Core Case Service, the Tax Engine, the portal, storage, and event-driven side effects.
+- Trust boundaries between tenants and between internal and external users are visible in the diagram set.
+- The document name follows the `taxPulse_dataFlow.md` naming convention.
+
+**Code Connection:**
+
+- `docs/taxPulse_dataFlow.md`
+- `adr/0011-versioned-tax-plan-cycle-api.md`
+- `adr/0014-redis-cache-aside-queue-reads.md`
+- `adr/0016-fastapi-startup-convention.md`
+- `adr/0020-pulse-ui-layered-application-structure.md`
+- `adr/0022-tenant-login-hostname-resolution.md`
+- `adr/0023-tanstack-query-for-pulse-ui-server-state.md`
+- `adr/0026-route-driven-case-context.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `docs/stride-threat-model.md`
+- `docs/storage-decision-matrix.md`
+
+**Project Scope Connection:**
+
+- Security architecture and threat-model support
+- Core Case Service and Tax Engine boundary documentation
+- Tenant isolation and trust-boundary documentation
+- ADR-aligned design documentation under `docs/`
+
+**Changed Files:**
+
+- `docs/taxPulse_dataFlow.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- The document uses Mermaid flowcharts, sequence diagrams, and an ER diagram to cover the full flow.
+- The scope sections explicitly call out conditional routing and trust boundaries.
+- The naming convention matches the requested `taxPulse_dataFlow.md` form.
