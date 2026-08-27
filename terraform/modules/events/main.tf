@@ -6,9 +6,60 @@ locals {
   })
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "sns" {
+  statement {
+    sid       = "AllowAccountAdministration"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  statement {
+    sid       = "AllowSnsTopicEncryption"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey*"]
+    resources = ["*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["sns.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+}
+
+resource "aws_kms_key" "sns" {
+  description             = "Customer-managed key for TaxPulse SNS topic encryption."
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+  tags                    = local.tags
+}
+
+resource "aws_kms_key_policy" "sns" {
+  key_id = aws_kms_key.sns.id
+  policy = data.aws_iam_policy_document.sns.json
+}
+
+resource "aws_kms_alias" "sns" {
+  name          = "alias/${local.resource_prefix}-sns"
+  target_key_id = aws_kms_key.sns.key_id
+}
+
 resource "aws_sns_topic" "stage_changed" {
   name              = "${local.resource_prefix}-stage-changed"
-  kms_master_key_id = "alias/aws/sns"
+  kms_master_key_id = aws_kms_key.sns.arn
   tags              = local.tags
 }
 
@@ -16,7 +67,7 @@ resource "aws_sns_topic" "action_item_created" {
   name                        = "${local.resource_prefix}-action-item-created.fifo"
   fifo_topic                  = true
   content_based_deduplication = true
-  kms_master_key_id           = "alias/aws/sns"
+  kms_master_key_id           = aws_kms_key.sns.arn
   tags                        = local.tags
 }
 
