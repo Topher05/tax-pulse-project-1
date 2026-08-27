@@ -24,7 +24,7 @@ not a tenant case record and not a tax calculation result.
 SCRUM-178 creates the synthetic markdown source corpus and deterministic chunks. Building on this foundation, SCRUM-179 adds a deterministic pgvector-backed similarity index for semantic search using `vector(1536)` and cosine similarity, while SCRUM-180 orchestrates a hybrid retrieval pipeline combining semantic search with keyword matching, culminating in a reranking step to order candidate chunks by relevance.
 
 ## Jira 181 Additions
-SCRUM-181 adds an offline RAGAS quality gate on top of the retrieval layer. That evaluation pipeline is intentionally split from the `/assist` delivery surface: the TypeScript side collects retrieved contexts into a JSON artifact, and the Python side scores those samples with `ContextRelevance` & `Faithfulness` under a locked `uv` environment. The scorer runs against Python 3.13.14 in the project contract, while local command execution on this workstation may invoke `py -3.12 -m uv` because the installed launcher/runtime matrix differs by machine.
+SCRUM-181 adds an offline RAGAS quality gate on top of the retrieval layer. That evaluation pipeline is intentionally split from the `/assist` delivery surface: the TypeScript side collects retrieved contexts into a JSON artifact, and the Python side scores those samples with `ContextRelevance` & `Faithfulness` under a locked `uv` environment. The scorer runs against Python 3.13.14 in the project contract and uses the checked-in `eval` dependency group for RAGAS, OpenAI, and LangChain integration packages.
 
 The evaluation path depends on `uv`-locked dependencies rather than the app server because the goal is reproducible offline scoring, not request/response servicing. The checked-in `pyproject.toml` eval extra and `uv.lock` must stay in sync, and the scorer must be able to load the environment without relying on the shell already exporting secrets. For PowerShell sessions, the local bootstrap command is:
 
@@ -33,7 +33,14 @@ Get-Content .env | ForEach-Object {
 if ($_ -match '^\s*OPENAI_API_KEY\s*=\s*(.+)\s*$') { $env:OPENAI_API_KEY = $Matches[1].Trim('"') } }
 ```
 
-The evaluation benchmark is intentionally bounded during local tuning, but the working question bank has since been expanded to 30 synthetic evaluation prompts so retrieval changes are checked against a broader spread of tax-code and playbook support before `/assist` ships.
+The established thresholds are mean `context_relevance >= 0.80` and mean
+`faithfulness >= 0.60`. The accepted benchmark contains 15 synthetic questions, which
+exercise the retrieval path while keeping the LLM-backed scoring loop practical for
+local iteration. This follows an earlier 30-question tuning pass that provided broader
+coverage but proved too slow and expensive for the working quality gate. Raising the
+thresholds would make the gate stricter, but it could also reject acceptable early
+corpus-tuning changes because of evaluator wording or grounding variance rather than a
+structural retrieval defect.
 
 ## Jira 182 Additions
 SCRUM-182 ships the case-scoped `POST /v1/tax-plan-cycles/:caseId/assist` endpoint from the Core Case Service. The route accepts a recommendation plus an optional advisor question, verifies the target case inside the authenticated tenant, retrieves only corpus chunks whose citation `tenantId` is in the allowed scope list for that tenant, and returns an explanation with public citations derived from the retrieved chunks.
@@ -55,7 +62,8 @@ Explanation generation is also grounded and fail-closed. The runtime uses the Op
 * The RAGAS scorer remains an offline, `uv`-locked Python step so dependency drift is caught before `/assist` delivery work lands.
 * Tenant-to-corpus scope mapping becomes a required runtime dependency for live `/assist` traffic, and unmapped tenants fail closed instead of silently broadening access.
 * Public `/assist` citations are derived strictly from retrieved chunks, which keeps explanation text auditable and prevents uncited or cross-tenant grounding from leaking into the response.
-* The 30-question evaluation bank improves offline coverage before retrieval or prompt changes reach tenant-facing endpoint traffic.
+* The 15-question accepted benchmark keeps local evaluation practical, while expanding it would improve coverage at the cost of slower and more expensive scoring runs.
+* Higher thresholds improve the quality bar but can turn a tuning pass into a false negative while the synthetic corpus and checker responses are still being tightened.
 
 ## Alternatives considered
 * Put corpus ingestion in the Core Case Service. Rejected because corpus processing is

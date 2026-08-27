@@ -90,17 +90,20 @@ export interface RagasInputSample {
   retrievedContexts: string[];
   retrievedChunks: RetrievedRankedChunk[];
   citations: RetrievedCitation[];
+  expectedSectionIds: string[];
+  syntheticNotice: string;
 }
 
 export interface RagasInputArtifact {
   generatedAt: string;
   questions: EvaluationQuestion[];
+  thresholds: EvaluationThresholdSet;
   samples: RagasInputSample[];
 }
 
 export interface MetricScore {
   value: number;
-  reason?: string;
+  reason?: string | null;
 }
 
 export interface RagasQuestionScore {

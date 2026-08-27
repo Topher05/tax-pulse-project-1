@@ -7,14 +7,14 @@ import json
 import math
 import os
 import sys
-import types
 from collections.abc import Mapping
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
 from openai import AsyncOpenAI
+from ragas.llms import llm_factory
+from ragas.metrics.collections import ContextRelevance, Faithfulness
 
 from python.retrieval.evaluation_validation import (
     environment_path,
@@ -27,114 +27,6 @@ THRESHOLDS_PATH = Path("data/corpus/evaluation/thresholds.json")
 REPORT_PATH = Path("artifacts/assist-evaluation/ragas-report.json")
 DEFAULT_MODEL = "gpt-4o-mini"
 DEFAULT_TEMPERATURE = 0
-
-
-def _install_langchain_community_vertexai_shim() -> None:
-    """Install broad compatibility shims for legacy RAGAS langchain-community imports."""
-
-    root_module = _ensure_package("langchain_community")
-    llms_module = _ensure_package("langchain_community.llms", parent=root_module, attr="llms")
-    chat_models_module = _ensure_package(
-        "langchain_community.chat_models",
-        parent=root_module,
-        attr="chat_models",
-    )
-    embeddings_module = _ensure_package(
-        "langchain_community.embeddings",
-        parent=root_module,
-        attr="embeddings",
-    )
-
-    _install_vertexai_module(
-        "langchain_community.llms.vertexai",
-        llms_module,
-        "VertexAI",
-    )
-    _install_vertexai_module(
-        "langchain_community.chat_models.vertexai",
-        chat_models_module,
-        "ChatVertexAI",
-    )
-    _install_vertexai_module(
-        "langchain_community.embeddings.vertexai",
-        embeddings_module,
-        "VertexAIEmbeddings",
-    )
-
-
-def _ensure_package(
-    module_name: str,
-    *,
-    parent: types.ModuleType | None = None,
-    attr: str | None = None,
-) -> types.ModuleType:
-    module = sys.modules.get(module_name)
-    if module is None:
-        module = types.ModuleType(module_name)
-        module.__path__ = []  # type: ignore[attr-defined]
-        sys.modules[module_name] = module
-
-    if parent is not None and attr is not None:
-        setattr(parent, attr, module)
-
-    return module
-
-
-def _install_vertexai_module(
-    module_name: str,
-    parent: types.ModuleType,
-    export_name: str,
-) -> None:
-    module = sys.modules.get(module_name)
-    if module is None:
-        module = types.ModuleType(module_name)
-        sys.modules[module_name] = module
-
-    shim_class = _build_vertexai_placeholder(export_name)
-    setattr(module, export_name, shim_class)
-    module.__all__ = [export_name]
-    setattr(parent, "vertexai", module)
-    setattr(parent, export_name, shim_class)
-
-
-def _build_vertexai_placeholder(export_name: str) -> type:
-    class VertexAIPlaceholder:  # pragma: no cover - import compatibility only
-        """Placeholder used only so ragas can finish importing in this eval stack."""
-
-        def __init__(self, *_args: object, **_kwargs: object) -> None:
-            raise RuntimeError(
-                f"{export_name} is not available in this offline eval stack. "
-                "The scorer uses the OpenAI path only."
-            )
-
-    VertexAIPlaceholder.__name__ = export_name
-    return VertexAIPlaceholder
-
-
-_install_langchain_community_vertexai_shim()
-
-from ragas.llms import llm_factory
-from ragas.metrics.collections import ContextRelevance, Faithfulness
-
-
-@dataclass(frozen=True)
-class SampleScore:
-    id: str
-    context_relevance: float
-    faithfulness: float
-    retrieved_chunk_ids: list[str]
-    citations: list[dict[str, object]]
-
-
-@dataclass(frozen=True)
-class Report:
-    generated_at: str
-    evaluator: dict[str, object]
-    thresholds: dict[str, object]
-    question_count: int
-    questions: list[dict[str, object]]
-    aggregate: dict[str, float]
-    pass_: bool
 
 
 async def main() -> int:

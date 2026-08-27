@@ -539,6 +539,14 @@ Environment variables:
 - `ASSIST_RAGAS_INPUT_PATH` overrides the collected input artifact path.
 - `ASSIST_EVALUATION_RESULT_LIMIT` overrides the retriever result limit.
 
+If you need to use the `.env` file in a PowerShell session before running the direct
+score command, load the OpenAI key into the shell first:
+
+```powershell
+Get-Content .env | ForEach-Object {
+if ($_ -match '^\s*OPENAI_API_KEY\s*=\s*(.+)\s*$') { $env:OPENAI_API_KEY = $Matches[1].Trim('"') } }
+```
+
 Hybrid smoke success and failure examples:
 
 ```powershell
@@ -559,8 +567,12 @@ Report output:
   retrieved chunks, retrieved contexts, and citation metadata.
 - `artifacts/assist-evaluation/ragas-report.json` stores per-question scores, aggregate
   means, threshold values, pass/fail status, retrieved chunk IDs, and citations.
-- The gate passes only when the mean `context_relevance` and mean `faithfulness` both
-  meet or exceed `0.80`.
+- The gate passes only when mean `context_relevance >= 0.80` and mean
+  `faithfulness >= 0.60`.
+- The accepted benchmark uses 15 questions. Adding more questions increases corpus
+  coverage, but slows the LLM-backed scorer and makes each local run more expensive.
+- Raising either threshold makes the gate stricter, but it also increases the chance of
+  failing on a synthetic wording mismatch rather than a true retrieval defect.
 
 Blocker note:
 

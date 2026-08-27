@@ -20,7 +20,7 @@ describe("assist evaluation launcher", () => {
     delete process.env.ASSIST_EVALUATION_RESULT_LIMIT;
   });
 
-  it("loads the environment once and uses uv for scoring", async () => {
+  it("loads the environment once and invokes the locked scorer", async () => {
     spawnSync.mockImplementation((command: string, args: string[]) => {
       if (command === process.execPath) {
         return { status: 0, stdout: "", stderr: "" };
@@ -34,11 +34,17 @@ describe("assist evaluation launcher", () => {
     await import("../../../../src/typescript/shared/scripts/assistEvaluation.js");
 
     expect(loadEnv).toHaveBeenCalledTimes(1);
-    expect(spawnSync).toHaveBeenCalledWith(
-      "uv",
-      ["run", "--locked", "--extra", "eval", "python", "src/python/retrieval/ragas_evaluation.py"],
-      { stdio: "inherit" },
-    );
+    const expectedCommand = "uv";
+    const expectedArgs = [
+      "run",
+      "--locked",
+      "--extra",
+      "eval",
+      "python",
+      "src/python/retrieval/ragas_evaluation.py",
+    ];
+
+    expect(spawnSync).toHaveBeenCalledWith(expectedCommand, expectedArgs, { stdio: "inherit" });
   });
 
   it("reports a scoring-stage failure", async () => {

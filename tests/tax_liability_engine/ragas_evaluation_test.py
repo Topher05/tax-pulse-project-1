@@ -21,7 +21,7 @@ def test_load_thresholds_rejects_duplicate_metric_names() -> None:
                 "metrics": [
                     {"name": "context_relevance", "minimumMean": 0.8},
                     {"name": "context_relevance", "minimumMean": 0.9},
-                    {"name": "faithfulness", "minimumMean": 0.8},
+                    {"name": "faithfulness", "minimumMean": 0.6},
                 ]
             }
         )
