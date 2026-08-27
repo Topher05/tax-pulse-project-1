@@ -68,13 +68,14 @@ TaxPulse URL, publishes findings, and fails closed on High-severity alerts or sc
 **Project Scope Connection:**
 
 This establishes the repository-side web security scanning boundary for the release process.
-The release/deployment dependency graph remains pending SCRUM-168, which is not present on
-this branch and was intentionally not recreated or modified.
+The release/deployment dependency graph now runs the deployed SPA scan after SCRUM-168's
+image verification and ECS deployment boundary.
 
 **Changed Files:**
 
 - `.github/workflows/zap-baseline.yml`
 - `.github/workflows/container-scan-sbom.yml`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
 - `planning/team/cm-ticket-journal.md`
 
 **Validation Notes:**
@@ -83,7 +84,9 @@ this branch and was intentionally not recreated or modified.
 - `actionlint` was unavailable in the local environment and was not run.
 - Added the ZAP job after the existing ECS deployment and passed the authorized deployed
   CloudFront SPA URL through the deployment job output.
-- Release workflow dispatch against the deployed target remains pending.
+- `npx vitest run --config vitest.config.ts tests/typescript/workflows/zapBaselineSecurityGate.test.ts` passed: 4 tests.
+- `npm run typecheck` passed.
+- `git diff --check` passed.
 ## christopher-martus-jira186 - SCRUM-186
 
 **Branch:** `christopher-martus-jira186`
