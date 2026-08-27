@@ -13,7 +13,11 @@ if (collectResult.status !== 0) {
   fail("collect", collectResult.status, collectResult.signal);
 }
 
-const scoreResult = spawnSync("uv", ["run", "--locked", "--extra", "eval", "python", "src/python/retrieval/ragas_evaluation.py"], {
+const scoreCommand = process.platform === "win32"
+  ? { command: "py", args: ["-3.12", "-m", "uv", "run", "--locked", "--extra", "eval", "python", "src/python/retrieval/ragas_evaluation.py"] }
+  : { command: "uv", args: ["run", "--locked", "--extra", "eval", "python", "src/python/retrieval/ragas_evaluation.py"] };
+
+const scoreResult = spawnSync(scoreCommand.command, scoreCommand.args, {
   stdio: "inherit",
 });
 
