@@ -1,10 +1,12 @@
 import { describe, expect, test } from "vitest";
 
 import { createTenantLoginResolver } from "../../src/typescript/tenantLoginResolver.js";
-import { withDrizzleTestSchema } from "./bootstrap/migrationTestUtils.js";
+import {
+  hasDrizzleTestDatabaseConfig,
+  withDrizzleTestSchema,
+} from "./bootstrap/migrationTestUtils.js";
 
-const databaseUrl = process.env.DATABASE_URL?.trim();
-const describeResolver = databaseUrl ? describe : describe.skip;
+const describeResolver = hasDrizzleTestDatabaseConfig() ? describe : describe.skip;
 
 describeResolver("tenant login resolver", () => {
   test("resolves only the matching active tenant", async () => {
