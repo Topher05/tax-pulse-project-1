@@ -35,7 +35,7 @@ function formatCaseSummary(context: AssistantCaseContext | null): string {
     return "No plan cycle selected.";
   }
 
-  return `${context.advisor} · ${context.dueDate} · ${context.stage}`;
+  return [context.advisor, context.dueDate, context.stage].join(" | ");
 }
 
 function StickyNotePlusIcon() {
@@ -266,6 +266,18 @@ export function AssistantDrawer({
                   >
                     <p className={styles.messageTitle}>{message.title}</p>
                     <p className={styles.messageBody}>{message.body}</p>
+                    {message.role === "assistant" && message.citations && message.citations.length > 0 ? (
+                      <ul className={styles.citationList} aria-label="Assistant citations">
+                        {message.citations.map((citation) => (
+                          <li key={`${message.id}-${citation.chunk_id}`} className={styles.citationItem}>
+                            <p className={styles.citationTitle}>
+                              {citation.document_title} | {citation.section_id}
+                            </p>
+                            <p className={styles.citationMeta}>{citation.section_path}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                   </article>
                 ))}
               </div>

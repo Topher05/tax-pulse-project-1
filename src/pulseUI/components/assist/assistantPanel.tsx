@@ -3,6 +3,7 @@ import type { PropsWithChildren } from "react";
 
 import {
   parseTaxPlanDetailsAssistantErrorMessage,
+  type TaxPlanDetailsAssistantCitation,
   useTaxPlanDetailsAssistantMutation,
 } from "../../entities/taxPlanDetailsAssistant.ts";
 
@@ -21,6 +22,7 @@ export interface AssistantMessage {
   role: "user" | "assistant" | "error";
   title: string;
   body: string;
+  citations?: readonly TaxPlanDetailsAssistantCitation[];
 }
 
 export interface AssistantPanelContextValue {
@@ -96,9 +98,22 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
   }, [reset]);
 
   const runAssistantRequest = useCallback(
-    async (requestId: number, caseId: string): Promise<void> => {
+    async (
+      requestId: number,
+      caseId: string,
+      recommendation: string,
+      question?: string,
+    ): Promise<void> => {
       try {
-        const response = await mutateAsync({ caseId });
+        const response = await mutateAsync({
+          caseId,
+          request: {
+            recommendation_context: {
+              recommendation,
+              ...(question?.trim() ? { question: question.trim() } : {}),
+            },
+          },
+        });
         if (requestCounter.current !== requestId) {
           return;
         }
@@ -109,7 +124,8 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
             id: createMessageId("assistant"),
             role: "assistant",
             title: "Assistant response",
-            body: response.message,
+            body: response.explanation,
+            citations: response.citations,
           },
         ]);
       } catch (error) {
@@ -150,7 +166,12 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
       },
     ]);
 
-    await runAssistantRequest(requestId, assistantCaseContext.caseId);
+    await runAssistantRequest(
+      requestId,
+      assistantCaseContext.caseId,
+      assistantCaseContext.recommendation,
+      toPrompt(assistantCaseContext),
+    );
   }, [assistantCaseContext, isPending, runAssistantRequest]);
 
   const sendMessage = useCallback(
@@ -172,7 +193,12 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
         },
       ]);
 
-      await runAssistantRequest(requestId, assistantCaseContext.caseId);
+      await runAssistantRequest(
+        requestId,
+        assistantCaseContext.caseId,
+        assistantCaseContext.recommendation,
+        trimmedMessage,
+      );
     },
     [assistantCaseContext, isPending, runAssistantRequest],
   );

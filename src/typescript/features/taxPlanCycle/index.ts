@@ -240,7 +240,12 @@ export {
   createTaxPlanDetailsAssistantController,
   taxPlanDetailsAssistantController,
   taxPlanDetailsAssistantRequestSchema,
+  taxPlanDetailsAssistantResponseSchema,
+  TaxPlanDetailsAssistantCaseNotFoundError,
+  TaxPlanDetailsAssistantUnavailableError,
   type TaxPlanDetailsAssistant,
+  type TaxPlanDetailsAssistantResponse,
+  type CreateTaxPlanDetailsAssistantControllerOptions,
   type TaxPlanDetailsAssistantController,
 } from "./controllers/assistantController.js";
 export {

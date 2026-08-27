@@ -223,6 +223,39 @@
   line-height: 1.55;
 }
 
+.citationList {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.citationItem {
+  padding: 0.7rem 0.8rem;
+  background: rgb(15 23 42 / 45%);
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 14px;
+}
+
+.citationTitle,
+.citationMeta {
+  margin: 0;
+}
+
+.citationTitle {
+  color: var(--pulse-accent-light);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.citationMeta {
+  margin-top: 0.2rem;
+  color: var(--pulse-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
 .footer {
   flex: 0 0 auto;
   padding: 1rem;
