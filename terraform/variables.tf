@@ -91,7 +91,7 @@ variable "observability_trace_sampling_ratio" {
 variable "tax_engine_image_tag" {
   type        = string
   description = "Verified immutable ECR image tag for the Tax Engine task definition."
-  default     = "2c85d3cd929ae2389553265760170f019afd1f84"
+  default     = "scrum-202-rs256-aud-20260827"
 }
 
 variable "tax_engine_image_uri" {

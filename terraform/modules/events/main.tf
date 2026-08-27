@@ -26,8 +26,10 @@ resource "aws_sqs_queue" "stage_changed_dlq" {
 }
 
 resource "aws_sqs_queue" "stage_changed" {
-  name                    = "${local.resource_prefix}-stage-changed"
-  sqs_managed_sse_enabled = true
+  name                       = "${local.resource_prefix}-stage-changed"
+  sqs_managed_sse_enabled    = true
+  # Lambda requires the source queue visibility timeout to exceed its 60-second timeout.
+  visibility_timeout_seconds = 360
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.stage_changed_dlq.arn
@@ -41,7 +43,8 @@ resource "aws_sns_topic_subscription" "stage_changed_to_queue" {
   topic_arn            = aws_sns_topic.stage_changed.arn
   protocol             = "sqs"
   endpoint             = aws_sqs_queue.stage_changed.arn
-  raw_message_delivery = true
+  # The SQS projection consumer validates the standard SNS notification envelope.
+  raw_message_delivery = false
 }
 
 data "aws_iam_policy_document" "stage_changed_queue" {

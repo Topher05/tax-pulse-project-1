@@ -366,6 +366,52 @@ while leaving the existing shared `dev` resources untouched.
   plan of 108 adds, 0 changes, and 0 destroys using only synthetic preflight values. No AWS
   resources, secret values, credentials, or real keys were created or printed.
 
+### Deployed sandbox completion
+
+**Branch:** `christopher-martus-jira202`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-202
+
+**Summary:** Complete the canonical sandbox deployment and acceptance smoke test.
+
+**Description:** Corrected the deployed Tax Engine image/runtime compatibility and completed
+the SNS-to-SQS-to-Lambda projection path in the Terraform-managed sandbox.
+
+**Acceptance Criteria:**
+
+- SNS topics, SQS queue, DLQ, queue policy, and Lambda projection mapping are provisioned.
+- The JWT-protected HTTP API and both stub routes remain deployed.
+- Root public outputs expose the ALB, API Gateway, and SPA URLs.
+- The deployed smoke test returns 200 for the ALB calculation and authorized transition, then
+  observes the `Client Approval` DynamoDB projection.
+
+**Code Connection:** The Tax Engine now validates the shared JWT audience and runs the
+published x86_64-compatible image. The event queue visibility timeout exceeds the Lambda
+timeout, and the SNS subscription retains the standard notification envelope required by the
+projection consumer.
+
+**Project Scope Connection:** Resolves the final live deployment blockers for SCRUM-202 while
+keeping all application infrastructure under the canonical Terraform state.
+
+**Changed Files:**
+
+- `deployment/ecs/tax-engine.task-definition.json`
+- `src/tax_liability_engine/jwt_authentication.py`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/events/main.tf`
+- `terraform/variables.tf`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused JWT authentication tests passed: 17 tests.
+- `terraform -chdir=terraform fmt -check` and `git diff --check` passed.
+- A final Terraform plan reported 0 adds and 0 destroys; its 22 in-place updates were applied.
+- The final AWS smoke passed with ALB calculation `200`, authorized transition `200`, and
+  DynamoDB projected stage `Client Approval` on the first poll.
+
 
 
 ## christopher-martus-jira200 - SCRUM-200

@@ -20,10 +20,10 @@ terraform {
 provider "aws" {
   region = var.aws_region
 
-  # Existing sandbox resources may have a valid user tag belonging to the
-  # developer who created them. Preserve that attribution during reconciliation.
+  # Preserve unrelated ownership labels during reconciliation; the required user tag
+  # remains Terraform-managed so every resource is attributable.
   ignore_tags {
-    keys = ["user", "owner", "stack"]
+    keys = ["owner", "stack"]
   }
 
   default_tags {

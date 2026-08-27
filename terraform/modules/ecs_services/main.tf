@@ -533,7 +533,7 @@ resource "aws_ecs_task_definition" "tax_engine" {
   memory                   = "1024"
 
   runtime_platform {
-    cpu_architecture        = "ARM64"
+    cpu_architecture        = "X86_64"
     operating_system_family = "LINUX"
   }
 
@@ -555,6 +555,7 @@ resource "aws_ecs_task_definition" "tax_engine" {
         { name = "PORT", value = "8000" },
         { name = "JWT_ISSUER", value = var.jwt_issuer },
         { name = "JWT_JWKS_URL", value = "${var.jwt_issuer}/.well-known/jwks.json" },
+        { name = "JWT_AUDIENCE", value = "taxpulse-http-api" },
         { name = "OTEL_SERVICE_NAME", value = "tax-engine" },
         { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "http://127.0.0.1:4318" },
         { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
