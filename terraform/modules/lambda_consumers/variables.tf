@@ -25,13 +25,13 @@ variable "tags" {
   default     = {}
 }
 
-variable "lambda_consumer_role_name" {
-  description = "Name of the existing IAM execution role used by the transition Lambdas."
+variable "permissions_boundary_arn" {
+  description = "Permissions boundary applied to every IAM role created by this module."
   type        = string
 }
 
-variable "shared_config_secret_arn" {
-  description = "Secrets Manager ARN that transition Lambdas are allowed to read."
+variable "lambda_consumer_role_name" {
+  description = "Name of the existing IAM execution role used by the transition Lambdas."
   type        = string
 }
 
@@ -52,6 +52,11 @@ variable "enable_stage_changed_consumer_lambda" {
 
 variable "stage_changed_consumer_lambda_zip_path" {
   description = "Path to the stage-changed consumer Lambda zip artifact."
+  type        = string
+}
+
+variable "issuer_metadata_lambda_zip_path" {
+  description = "Path to the issuer-metadata Lambda zip artifact."
   type        = string
 }
 
@@ -83,14 +88,15 @@ variable "action_item_created_topic_arn" {
   type        = string
 }
 
-variable "jwt_issuer" {
-  description = "JWT issuer URL configured on the HTTP API authorizer."
-  type        = string
-}
-
 variable "jwt_audience" {
   description = "JWT audience values accepted by the HTTP API authorizer."
   type        = list(string)
+}
+
+variable "jwt_public_jwk" {
+  description = "Public RSA JWK JSON exposed by the issuer metadata Lambda."
+  type        = string
+  sensitive   = true
 }
 
 variable "runtime_environment" {

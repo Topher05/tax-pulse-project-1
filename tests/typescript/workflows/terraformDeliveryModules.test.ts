@@ -62,28 +62,28 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(spaDelivery).toContain("values   = [aws_cloudfront_distribution.spa.arn]");
   });
 
-  test("uses a public-subnet NAT gateway shape for private subnet egress", () => {
+  test("uses public-IP ECS tasks when the sandbox policy forbids NAT gateways", () => {
     const vpc = readTerraform("terraform/vpc.tf");
-    const natGatewayBlock = vpc.match(/resource "aws_nat_gateway" "main" \{[\s\S]*?\n\}/)?.[0] ?? "";
+    const ecsServices = readTerraform("terraform/modules/ecs_services/main.tf");
 
-    expect(vpc).toContain('resource "aws_eip" "nat"');
-    expect(natGatewayBlock).toContain("allocation_id = aws_eip.nat.id");
-    expect(natGatewayBlock).toContain('subnet_id     = aws_subnet.public["public_a"].id');
-    expect(natGatewayBlock).not.toContain("availability_mode");
-    expect(natGatewayBlock).not.toContain("vpc_id");
+    expect(vpc).not.toContain('resource "aws_nat_gateway" "main"');
+    expect(vpc).not.toContain('resource "aws_eip" "nat"');
+    expect(ecsServices).toContain("subnets          = var.public_subnet_ids");
+    expect(ecsServices).toContain("assign_public_ip = true");
   });
 
-  test("configures the imported FirstLambdaRole for transition Lambda execution", () => {
+  test("generates an isolated transition Lambda role name unless explicitly overridden", () => {
     const delivery = readTerraform("terraform/delivery.tf");
     const rootVariables = readTerraform("terraform/variables.tf");
     const lambdaConsumers = readTerraform("terraform/modules/lambda_consumers/main.tf");
     const lambdaVariables = readTerraform("terraform/modules/lambda_consumers/variables.tf");
 
     expect(rootVariables).toContain('variable "lambda_consumer_role_name"');
-    expect(rootVariables).toContain('default     = "FirstLambdaRole"');
-    expect(delivery).toContain("lambda_consumer_role_name = var.lambda_consumer_role_name");
+    expect(rootVariables).toContain("default     = null");
+    expect(delivery).toContain("local.resource_name_prefix}-transition-lambda-role");
     expect(lambdaVariables).toContain('variable "lambda_consumer_role_name"');
-    expect(lambdaConsumers).toContain("name               = var.lambda_consumer_role_name");
+    expect(lambdaConsumers).toContain("name                 = var.lambda_consumer_role_name");
+    expect(lambdaConsumers).toContain("permissions_boundary = var.permissions_boundary_arn");
     expect(lambdaConsumers).not.toContain('${var.name_prefix}-lambda-consumer-role');
   });
 

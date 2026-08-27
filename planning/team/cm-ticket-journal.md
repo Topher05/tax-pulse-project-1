@@ -308,6 +308,64 @@ preserving tenant-scoped projection behavior and JWT-protected transition access
 - `git diff --name-only origin/development...HEAD` reports 24 changed files, including this
   journal entry; no credentials, tokens, tfvars, or taxpayer data were added.
 
+### Fresh-apply repair follow-up
+
+**Branch:** `christopher-martus-jira202`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-202
+
+**Summary:** Repair the Terraform root for an isolated, RS256-capable fresh apply.
+
+**Description:** Reconciled the code with the live AWS inventory without mutating shared
+resources. The `dev` state is incomplete and mixed with manually created infrastructure,
+so this follow-up makes a new stack safe to create under its own backend key, prefix, and
+environment.
+
+**Acceptance Criteria:**
+
+- An isolated root provisions the event path, transition HTTP API, JWT authorizer, and
+  projection consumer without relying on the shared `dev` state.
+- The root exposes public endpoints and configures a public RS256 issuer/JWKS source for
+  API Gateway and both ECS services.
+- A fresh plan is non-destructive and can be applied after approved signing-key inputs are
+  supplied.
+
+**Code Connection:** Added stack-scoped names and tags, managed runtime-secret wiring from
+the new RDS endpoint, HTTPS egress for private ECS tasks, issuer-metadata Lambda packaging
+and Terraform resources, current RS256 environment keys, least-privilege transition Lambda
+IAM, and opt-in account-global GitHub release-pipeline resources.
+
+**Project Scope Connection:** Removes the live blockers to SCRUM-202's isolated fresh apply
+while leaving the existing shared `dev` resources untouched.
+
+**Changed Files:**
+
+- `package.json`
+- `src/typescript/shared/scripts/lambda-build/build-issuer-metadata-lambda.mjs`
+- `terraform/README.md`
+- `terraform/runtime_config.tf`
+- `terraform/{database,delivery,dynamodb,outputs,providers,redis,release_pipeline,variables,vpc}.tf`
+- `terraform/modules/ecs_services/{main,variables}.tf`
+- `terraform/modules/lambda_consumers/{main,outputs,variables}.tf`
+- `tests/typescript/terraformSprint5Stack.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- AWS read-only inventory authenticated as account `814650854375` in `us-east-1`.
+- The shared `dev` state plan was not applied; it proposed 47 adds, 12 changes, and 3
+  destroys, including target-group replacements and deletion of the legacy Lambda role.
+- `npm run build:lambdas` passed and now produces all four ZIP artifacts.
+- `terraform -chdir=terraform fmt -recursive` and `terraform -chdir=terraform validate` passed.
+- Focused Terraform and issuer tests passed: 17 tests across 3 files.
+- `npm run typecheck` and `git diff --check` passed.
+- A separate state key, `scrum-202/codex-preflight/terraform.tfstate`, produced an isolated
+  plan of 108 adds, 0 changes, and 0 destroys using only synthetic preflight values. No AWS
+  resources, secret values, credentials, or real keys were created or printed.
+
 
 
 ## christopher-martus-jira200 - SCRUM-200

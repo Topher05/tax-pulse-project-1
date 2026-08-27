@@ -75,6 +75,8 @@ describe("Sprint 5 Terraform module contracts", () => {
     const main = readTerraformModule("lambda_consumers", "main.tf");
 
     expect(main).toContain('resource "aws_apigatewayv2_authorizer" "jwt"');
+    expect(main).toContain('resource "aws_lambda_function" "issuer_metadata"');
+    expect(main).toContain('resource "aws_lambda_function_url" "issuer_metadata"');
     expect(main).toContain('authorization_type = "JWT"');
     expect(main).toContain('resource "aws_cloudwatch_log_group" "transition_api_access"');
     expect(main).toContain("access_log_settings {");
@@ -84,7 +86,8 @@ describe("Sprint 5 Terraform module contracts", () => {
     expect(main).toContain('function_response_types = ["ReportBatchItemFailures"]');
     expect(main).toContain('actions   = ["dynamodb:UpdateItem"]');
     expect(main).toContain("user = var.user");
-    expect(main).toContain("env  = var.environment");
+    expect(main).toContain('env  = "sandbox"');
+    expect(main).toContain("permissions_boundary = var.permissions_boundary_arn");
   });
 
   test("Lambda handlers and builders use the ZIP-root module contract", () => {
@@ -93,6 +96,7 @@ describe("Sprint 5 Terraform module contracts", () => {
       ["build-present-to-client-lambda.mjs", "dist/present-to-client-lambda"],
       ["build-execute-lambda.mjs", "dist/execute-lambda"],
       ["build-stage-changed-consumer-lambda.mjs", "dist/stage-changed-consumer"],
+      ["build-issuer-metadata-lambda.mjs", "dist/issuer-metadata-lambda"],
     ] as const;
 
     expect(main).toContain('handler          = "index.presentToClientHandler"');
@@ -109,7 +113,7 @@ describe("Sprint 5 Terraform module contracts", () => {
     }
 
     expect(readFileSync(resolve(process.cwd(), "package.json"), "utf8")).toContain(
-      '"build:lambdas": "npm run build:present-to-client-lambda && npm run build:execute-lambda && npm run build:stage-changed-consumer-lambda"',
+      '"build:lambdas": "npm run build:present-to-client-lambda && npm run build:execute-lambda && npm run build:stage-changed-consumer-lambda && npm run build:issuer-metadata-lambda"',
     );
   });
 
@@ -160,7 +164,7 @@ describe("Sprint 5 Terraform module contracts", () => {
       main.indexOf('resource "aws_iam_role_policy" "transition_access"'),
     );
     expect(transitionPolicy).toContain("sns:Publish");
-    expect(transitionPolicy).toContain("secretsmanager:GetSecretValue");
+    expect(transitionPolicy).not.toContain("secretsmanager:GetSecretValue");
     expect(transitionPolicy).not.toContain("sqs:ReceiveMessage");
     expect(transitionPolicy).not.toContain("dynamodb:UpdateItem");
   });

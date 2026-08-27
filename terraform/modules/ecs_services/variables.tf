@@ -3,6 +3,11 @@ variable "aws_region" {
   type        = string
 }
 
+variable "permissions_boundary_arn" {
+  description = "Permissions boundary applied to every IAM role created by this module."
+  type        = string
+}
+
 variable "environment" {
   description = "Environment label for tags and generated names."
   type        = string
@@ -86,7 +91,7 @@ variable "tax_engine_image_repository_arn" {
 }
 
 variable "shared_config_secret_arn" {
-  description = "Secrets Manager ARN with DATABASE_URL and JWT_SIGNING_SECRET keys."
+  description = "Secrets Manager ARN with DATABASE_URL, JWT_SIGNING_PRIVATE_KEY, and JWT_SIGNING_KEY_ID keys."
   type        = string
 }
 

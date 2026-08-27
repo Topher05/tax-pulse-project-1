@@ -12,7 +12,7 @@
     "build:present-to-client-lambda": "node src/typescript/shared/scripts/lambda-build/build-present-to-client-lambda.mjs",
     "build:execute-lambda": "node src/typescript/shared/scripts/lambda-build/build-execute-lambda.mjs",
     "build:stage-changed-consumer-lambda": "node src/typescript/shared/scripts/lambda-build/build-stage-changed-consumer-lambda.mjs",
-    "build:lambdas": "npm run build:present-to-client-lambda && npm run build:execute-lambda && npm run build:stage-changed-consumer-lambda",
+    "build:lambdas": "npm run build:present-to-client-lambda && npm run build:execute-lambda && npm run build:stage-changed-consumer-lambda && npm run build:issuer-metadata-lambda",
     "build:issuer-metadata-lambda": "node src/typescript/shared/scripts/lambda-build/build-issuer-metadata-lambda.mjs",
     "build:web": "npm --prefix src/pulseUI run build",
     "db:check": "drizzle-kit check",

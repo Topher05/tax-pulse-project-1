@@ -1,7 +1,7 @@
 locals {
   resource_prefix = "${var.name_prefix}-${var.environment}"
   tags = merge(var.tags, {
-    env  = var.environment
+    env  = "sandbox"
     user = var.user
   })
 }

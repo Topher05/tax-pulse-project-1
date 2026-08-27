@@ -1,23 +1,30 @@
 data "aws_caller_identity" "current" {}
 
 locals {
-  cluster_name                   = "${var.name_prefix}-api"
-  core_case_family               = "${var.name_prefix}-core-case-service"
-  tax_engine_family              = "${var.name_prefix}-tax-engine"
-  core_case_container_name       = "core-case-service"
-  tax_engine_container_name      = "tax-engine"
-  collector_container_name       = "aws-otel-collector"
-  collector_command              = "--config=/etc/ecs/ecs-default-config.yaml"
-  core_case_repository_name      = "${var.name_prefix}/core-case-service"
-  tax_engine_repository_name     = "${var.name_prefix}/tax-engine"
-  core_case_log_group_name       = "Case-Service"
-  tax_engine_log_group_name      = "Tax-Engine"
-  execution_role_name            = "${var.name_prefix}-ecs-task-execution-role"
-  core_case_task_role_name       = "${var.name_prefix}-core-case-task-role"
-  tax_engine_task_role_name      = "${var.name_prefix}-tax-engine-task-role"
-  alb_name                       = "${var.name_prefix}-api-alb"
-  core_case_target_group_name    = "${var.name_prefix}-core-case"
-  tax_engine_target_group_name   = "${var.name_prefix}-tax-engine"
+  resource_name_prefix       = "${var.name_prefix}-${var.environment}"
+  uses_legacy_dev_names      = var.name_prefix == "taxpulse" && var.environment == "dev"
+  cluster_name               = local.uses_legacy_dev_names ? "taxpulse-api" : "${local.resource_name_prefix}-api"
+  core_case_family           = local.uses_legacy_dev_names ? "taxpulse-core-case-service" : "${local.resource_name_prefix}-core-case-service"
+  tax_engine_family          = local.uses_legacy_dev_names ? "taxpulse-tax-engine" : "${local.resource_name_prefix}-tax-engine"
+  core_case_service_name     = local.uses_legacy_dev_names ? "core-case-service" : "${local.resource_name_prefix}-core-case-service"
+  tax_engine_service_name    = local.uses_legacy_dev_names ? "tax-engine" : "${local.resource_name_prefix}-tax-engine"
+  core_case_container_name   = "core-case-service"
+  tax_engine_container_name  = "tax-engine"
+  collector_container_name   = "aws-otel-collector"
+  collector_command          = "--config=/etc/ecs/ecs-default-config.yaml"
+  core_case_repository_name  = "${var.name_prefix}/core-case-service"
+  tax_engine_repository_name = "${var.name_prefix}/tax-engine"
+  core_case_log_group_name   = local.uses_legacy_dev_names ? "Case-Service" : "/ecs/${local.resource_name_prefix}-core-case-service"
+  tax_engine_log_group_name  = local.uses_legacy_dev_names ? "Tax-Engine" : "/ecs/${local.resource_name_prefix}-tax-engine"
+  execution_role_name        = "${var.name_prefix}-ecs-task-execution-role"
+  core_case_task_role_name   = "${var.name_prefix}-core-case-task-role"
+  tax_engine_task_role_name  = "${var.name_prefix}-tax-engine-task-role"
+  # The original dev ALB and target groups are in the account default VPC.
+  # These names intentionally create a replacement ingress path in the
+  # Terraform-managed VPC before the legacy path is retired.
+  alb_name                       = "${local.resource_name_prefix}-api-alb"
+  core_case_target_group_name    = "${local.resource_name_prefix}-core-case"
+  tax_engine_target_group_name   = "${local.resource_name_prefix}-tax-engine"
   service_discovery_namespace    = "service.taxpulse.internal"
   core_case_image                = coalesce(var.core_case_image_uri, "${aws_ecr_repository.core_case.repository_url}:${var.core_case_image_tag}")
   tax_engine_image               = coalesce(var.tax_engine_image_uri, "${aws_ecr_repository.tax_engine.repository_url}:${var.tax_engine_image_tag}")
@@ -83,9 +90,10 @@ data "aws_iam_policy_document" "ecs_tasks_assume_role" {
 }
 
 resource "aws_iam_role" "execution" {
-  name               = local.execution_role_name
-  description        = "Launch-time ECS/Fargate execution role for pulling images, fetching secrets, and writing logs."
-  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  name                 = local.execution_role_name
+  description          = "Launch-time ECS/Fargate execution role for pulling images, fetching secrets, and writing logs."
+  assume_role_policy   = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
 
   lifecycle {
     ignore_changes = [permissions_boundary, tags, tags_all]
@@ -148,9 +156,10 @@ resource "aws_iam_role_policy" "execution_secret_access" {
 }
 
 resource "aws_iam_role" "core_case_task" {
-  name               = local.core_case_task_role_name
-  description        = "Runtime task role for the Core Case Service application code."
-  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  name                 = local.core_case_task_role_name
+  description          = "Runtime task role for the Core Case Service application code."
+  assume_role_policy   = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
 
   lifecycle {
     ignore_changes = [permissions_boundary, tags, tags_all]
@@ -158,9 +167,10 @@ resource "aws_iam_role" "core_case_task" {
 }
 
 resource "aws_iam_role" "tax_engine_task" {
-  name               = local.tax_engine_task_role_name
-  description        = "Runtime task role for the Tax Engine application code. No app-domain AWS grants are required yet."
-  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  name                 = local.tax_engine_task_role_name
+  description          = "Runtime task role for the Tax Engine application code. No app-domain AWS grants are required yet."
+  assume_role_policy   = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
 
   lifecycle {
     ignore_changes = [permissions_boundary, tags, tags_all]
@@ -252,6 +262,10 @@ resource "aws_lb" "api" {
   subnets                    = var.public_subnet_ids
   ip_address_type            = "ipv4"
   drop_invalid_header_fields = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_target_group" "core_case" {
@@ -271,6 +285,10 @@ resource "aws_lb_target_group" "core_case" {
     unhealthy_threshold = 2
     matcher             = "200"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_target_group" "tax_engine" {
@@ -289,6 +307,10 @@ resource "aws_lb_target_group" "tax_engine" {
     healthy_threshold   = 2
     unhealthy_threshold = 2
     matcher             = "200"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -320,7 +342,7 @@ resource "aws_lb_listener_rule" "core_case" {
 
   condition {
     path_pattern {
-      values = ["/v1/*"]
+      values = ["/v1/*", "/auth/*"]
     }
   }
 }
@@ -403,6 +425,7 @@ resource "aws_ecs_task_definition" "core_case" {
         { name = "NODE_ENV", value = "production" },
         { name = "PORT", value = "3000" },
         { name = "JWT_ISSUER", value = var.jwt_issuer },
+        { name = "JWT_JWKS_URL", value = "${var.jwt_issuer}/.well-known/jwks.json" },
         { name = "JWT_ACCESS_TOKEN_TTL_SECONDS", value = "900" },
         { name = "JWT_REFRESH_TOKEN_TTL_SECONDS", value = "2592000" },
         { name = "LIABILITY_ENGINE_BASE", value = "http://tax-engine.service.taxpulse.internal:8000" },
@@ -435,6 +458,14 @@ resource "aws_ecs_task_definition" "core_case" {
         {
           name      = "DATABASE_URL"
           valueFrom = "${var.shared_config_secret_arn}:DATABASE_URL::"
+        },
+        {
+          name      = "JWT_SIGNING_PRIVATE_KEY"
+          valueFrom = "${var.shared_config_secret_arn}:JWT_SIGNING_PRIVATE_KEY::"
+        },
+        {
+          name      = "JWT_SIGNING_KEY_ID"
+          valueFrom = "${var.shared_config_secret_arn}:JWT_SIGNING_KEY_ID::"
         },
         {
           name      = "JWT_SIGNING_SECRET"
@@ -523,6 +554,7 @@ resource "aws_ecs_task_definition" "tax_engine" {
       environment = [
         { name = "PORT", value = "8000" },
         { name = "JWT_ISSUER", value = var.jwt_issuer },
+        { name = "JWT_JWKS_URL", value = "${var.jwt_issuer}/.well-known/jwks.json" },
         { name = "OTEL_SERVICE_NAME", value = "tax-engine" },
         { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "http://127.0.0.1:4318" },
         { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
@@ -601,7 +633,7 @@ resource "aws_ecs_task_definition" "tax_engine" {
 }
 
 resource "aws_ecs_service" "core_case" {
-  name                              = "core-case-service"
+  name                              = local.core_case_service_name
   cluster                           = aws_ecs_cluster.api.id
   task_definition                   = aws_ecs_task_definition.core_case.arn
   desired_count                     = 1
@@ -612,9 +644,12 @@ resource "aws_ecs_service" "core_case" {
   deployment_maximum_percent         = 200
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    # The sandbox SCP forbids NAT gateways. Fargate tasks therefore use public
+    # subnets and public IPs for AWS service egress; inbound application traffic
+    # remains restricted to the ALB security group.
+    subnets          = var.public_subnet_ids
     security_groups  = [var.ecs_service_security_group_id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {
@@ -627,7 +662,7 @@ resource "aws_ecs_service" "core_case" {
 }
 
 resource "aws_ecs_service" "tax_engine" {
-  name                              = "tax-engine"
+  name                              = local.tax_engine_service_name
   cluster                           = aws_ecs_cluster.api.id
   task_definition                   = aws_ecs_task_definition.tax_engine.arn
   desired_count                     = 1
@@ -638,9 +673,9 @@ resource "aws_ecs_service" "tax_engine" {
   deployment_maximum_percent         = 200
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    subnets          = var.public_subnet_ids
     security_groups  = [var.ecs_service_security_group_id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {

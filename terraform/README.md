@@ -6,7 +6,7 @@ The active root creates its SNS topics, SQS queue and DLQ, transition HTTP API, 
 functions, ECS services, and SPA delivery resources. Lambda ZIPs must exist before
 `terraform apply` because Terraform calculates their source hashes during planning.
 
-Build all three deployable Lambda artifacts from a clean checkout with:
+Build all four deployable Lambda artifacts from a clean checkout with:
 
 ```text
 npm ci
@@ -18,6 +18,7 @@ This creates the exact paths used by the root defaults:
 - `dist/present-to-client-lambda.zip`
 - `dist/execute-lambda.zip`
 - `dist/stage-changed-consumer.zip`
+- `dist/issuer-metadata-lambda.zip`
 
 The build uses the repository-pinned `esbuild` and direct `archiver` dependencies. The
 generated `dist/` directory is ignored and must not be committed.
@@ -31,19 +32,47 @@ required.
 
 Before applying, confirm the AWS account, region, expected cost, and a clean/disposable
 account or a unique `name_prefix` and `environment` that cannot collide with existing
-resources. A unique S3 backend key isolates Terraform state only; it does not isolate
-AWS resources with globally shared names or prevent collisions in the same account.
+resources. Use both a unique S3 backend key and unique name inputs. Do not apply against
+the shared `dev` state until its separately managed resources are imported and reconciled.
 
 The target environment must also provide:
 
-- `db_password` and `shared_config_secret_arn` for the database and runtime secret.
-- A reachable `jwt_issuer`, matching `jwt_audience`, and a valid synthetic bearer token.
-- The three Lambda ZIP artifacts described above.
+- `db_password`, `jwt_signing_private_key`, `jwt_signing_key_id`, and `jwt_public_jwk`.
+  The root creates a stack-scoped runtime secret containing the newly created RDS endpoint.
+  To use an externally managed secret instead, set `shared_config_secret_arn` with
+  `DATABASE_URL`, `JWT_SIGNING_PRIVATE_KEY`, and `JWT_SIGNING_KEY_ID` JSON keys.
+- A public JWK derived from the signing key. `npm run jwt:public-jwk` prints it when run
+  in an approved issuer-admin environment.
+- A valid synthetic bearer token after apply. The root provisions its own issuer metadata
+  Lambda and configures the HTTP API authorizer from that public issuer URL.
+- The four Lambda ZIP artifacts described above.
 - Immutable, ARM64-compatible Core Case Service and Tax Engine images. By default these
   are pulled from the Terraform-created ECR repositories using `*_image_tag`. For a clean
   environment using already published images, set `core_case_image_uri` and
   `tax_engine_image_uri`; for private external ECR repositories also set the matching
   `*_image_repository_arn` values.
+
+### Canonical dev migration procedure
+
+The shared `dev` state is the canonical application stack. It deliberately
+replaces the legacy ALB and target groups that were created in the AWS default
+VPC, then redeploys the Terraform-managed ECS services into the managed VPC.
+Do not use `-target` for this migration and do not delete the old manual API,
+Lambda, SNS, or SQS resources until the post-apply smoke test passes.
+
+Before the first canonical apply, import the pre-existing ECS services once:
+
+```powershell
+terraform -chdir=terraform import `
+  'module.ecs_services.aws_ecs_service.core_case' `
+  'taxpulse-api/core-case-service'
+terraform -chdir=terraform import `
+  'module.ecs_services.aws_ecs_service.tax_engine' `
+  'taxpulse-api/tax-engine'
+```
+
+Review the plan carefully. The expected replacements are the legacy ALB and
+its two default-VPC target groups; all named ECS services are updated in place.
 
 ### Isolated apply procedure
 
@@ -54,23 +83,26 @@ credentials, tokens, or taxpayer data.
 Use a unique S3 backend key for the smoke environment. For example, from PowerShell:
 
 ```powershell
-$env:TAXPULSE_STATE_KEY = "scrum-202-step2/<unique-run>/terraform.tfstate"
+$env:TAXPULSE_STATE_KEY = "scrum-202/<unique-run>/terraform.tfstate"
 terraform -chdir=terraform init -reconfigure `
   -backend-config="key=$env:TAXPULSE_STATE_KEY"
 terraform -chdir=terraform validate
-terraform -chdir=terraform apply -var-file=terraform.tfvars
+terraform -chdir=terraform apply -var-file=terraform.tfvars `
+  -var="name_prefix=tp202" `
+  -var="environment=s202"
 ```
 
 The target AWS account and region, backend key, expected resource cost, deployable ECS
-images, Secrets Manager ARN, reachable JWT issuer, and valid JWT must be confirmed before
-apply. The JWT must represent a clearly synthetic tenant and case prepared in the target
-environment; never place the bearer token in committed files or logs.
+image digests, signing-key inputs, and valid JWT must be confirmed before apply. The JWT
+must represent a clearly synthetic tenant and case prepared in the target environment;
+never place the private key, bearer token, or tfvars in committed files or logs.
 
 After apply, derive the smoke endpoints and projection table from Terraform outputs:
 
 ```powershell
 $env:TAXPULSE_ALB_BASE_URL = terraform -chdir=terraform output -raw api_base_url
 $env:TAXPULSE_TRANSITION_API_URL = terraform -chdir=terraform output -raw transition_api_url
+$env:JWT_ISSUER = terraform -chdir=terraform output -raw jwt_issuer_url
 $env:TAXPULSE_PROJECTION_TABLE_NAME = terraform -chdir=terraform output -raw dynamodb_table_name
 $env:AWS_REGION = "<the configured aws_region>"
 $env:TAXPULSE_SMOKE_BEARER_TOKEN = "<set-in-memory-only>"
@@ -104,12 +136,18 @@ SCRUM-164 keeps delivery resources modular under `terraform/modules/`:
 Provide these values through uncommitted tfvars or CI variables:
 
 - `db_password`
-- `shared_config_secret_arn`
+- `jwt_signing_private_key`
+- `jwt_signing_key_id`
+- `jwt_public_jwk`
 
 Optional delivery inputs include immutable image tags, Lambda zip artifact paths,
-`spa_bucket_name`, and `redis_url`. The root creates the event resources and enables the
+`shared_config_secret_arn`, `spa_bucket_name`, and `redis_url`. The root creates the event resources and enables the
 stage-changed projection consumer by default. If `redis_url` is omitted, the ECS task
 configuration uses the SCRUM-162 ElastiCache TLS endpoint.
+
+The GitHub Actions OIDC provider and release role are account-level resources. This root
+is intended for the account's canonical stack; use a separate backend/account for an
+isolated disposable apply when those account-level resources already exist elsewhere.
 
 The JSON files under `deployment/` remain source contracts with placeholders;
 Terraform owns the real resource IDs and emits deploy-time outputs.

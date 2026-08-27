@@ -3,9 +3,10 @@ locals {
   present_to_client_name      = "${var.name_prefix}-present-to-client"
   execute_name                = "${var.name_prefix}-execute"
   stage_changed_consumer_name = "${var.name_prefix}-stage-changed-consumer"
+  issuer_metadata_name        = "${var.name_prefix}-jwt-issuer-metadata"
   runtime                     = "nodejs22.x"
   tags = merge(var.tags, {
-    env  = var.environment
+    env  = "sandbox"
     user = var.user
   })
 }
@@ -22,18 +23,28 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 }
 
 resource "aws_iam_role" "transition" {
-  name               = var.lambda_consumer_role_name
-  description        = "Runtime role for TaxPulse transition Lambdas."
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
-  tags               = local.tags
+  name                 = var.lambda_consumer_role_name
+  description          = "Runtime role for TaxPulse transition Lambdas."
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = local.tags
 }
 
 resource "aws_iam_role" "projection" {
-  count              = var.enable_stage_changed_consumer_lambda ? 1 : 0
-  name               = "${var.name_prefix}-lambda-projection-role"
-  description        = "Runtime role for the TaxPulse stage-changed projection consumer."
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
-  tags               = local.tags
+  count                = var.enable_stage_changed_consumer_lambda ? 1 : 0
+  name                 = "${var.name_prefix}-lambda-projection-role"
+  description          = "Runtime role for the TaxPulse stage-changed projection consumer."
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = local.tags
+}
+
+resource "aws_iam_role" "issuer_metadata" {
+  name                 = "${var.name_prefix}-${var.environment}-issuer-metadata-role"
+  description          = "Runtime role for the public TaxPulse JWT issuer metadata Lambda."
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = local.tags
 }
 
 resource "aws_iam_role_policy_attachment" "transition_basic_execution" {
@@ -47,17 +58,16 @@ resource "aws_iam_role_policy_attachment" "projection_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+resource "aws_iam_role_policy_attachment" "issuer_metadata_basic_execution" {
+  role       = aws_iam_role.issuer_metadata.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
 data "aws_iam_policy_document" "transition_access" {
   statement {
     sid       = "PublishWorkflowEvents"
     actions   = ["sns:Publish"]
     resources = [var.stage_changed_topic_arn, var.action_item_created_topic_arn]
-  }
-
-  statement {
-    sid       = "ReadRuntimeSecret"
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = [var.shared_config_secret_arn]
   }
 
 }
@@ -119,6 +129,55 @@ resource "aws_cloudwatch_log_group" "transition_api_access" {
   name              = "/aws/apigateway/${local.api_name}"
   retention_in_days = 30
   tags              = local.tags
+}
+
+resource "aws_cloudwatch_log_group" "issuer_metadata" {
+  name              = "/aws/lambda/${local.issuer_metadata_name}"
+  retention_in_days = 30
+  tags              = local.tags
+}
+
+resource "aws_lambda_function" "issuer_metadata" {
+  function_name    = local.issuer_metadata_name
+  description      = "Serves public OIDC discovery and JWKS metadata for TaxPulse RS256 tokens."
+  role             = aws_iam_role.issuer_metadata.arn
+  runtime          = local.runtime
+  handler          = "index.handler"
+  architectures    = ["arm64"]
+  timeout          = 30
+  memory_size      = 256
+  filename         = var.issuer_metadata_lambda_zip_path
+  source_code_hash = filebase64sha256(var.issuer_metadata_lambda_zip_path)
+  tags             = local.tags
+
+  environment {
+    variables = {
+      JWT_PUBLIC_JWK = var.jwt_public_jwk
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.issuer_metadata]
+}
+
+resource "aws_lambda_function_url" "issuer_metadata" {
+  function_name      = aws_lambda_function.issuer_metadata.function_name
+  authorization_type = "NONE"
+}
+
+resource "aws_lambda_permission" "issuer_metadata_function_url" {
+  statement_id           = "AllowPublicIssuerMetadataFunctionUrl"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.issuer_metadata.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
+
+resource "aws_lambda_permission" "issuer_metadata_invoke" {
+  statement_id             = "AllowPublicIssuerMetadataInvoke"
+  action                   = "lambda:InvokeFunction"
+  function_name            = aws_lambda_function.issuer_metadata.function_name
+  principal                = "*"
+  invoked_via_function_url = true
 }
 
 resource "aws_lambda_function" "present_to_client" {
@@ -213,7 +272,7 @@ resource "aws_apigatewayv2_authorizer" "jwt" {
 
   jwt_configuration {
     audience = var.jwt_audience
-    issuer   = var.jwt_issuer
+    issuer   = trimsuffix(aws_lambda_function_url.issuer_metadata.function_url, "/")
   }
 
 }
