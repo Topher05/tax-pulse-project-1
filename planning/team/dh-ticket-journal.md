@@ -1504,6 +1504,7 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - Added a focused Tax Engine telemetry test to prove successful requests emit the rollup metric shape required by the latency SLO.
 - Extended the Terraform ECS services module with a dedicated SCRUM-187 SNS topic and policy for CloudWatch notifications, a p95 latency alarm for Tax Engine-backed requests, a Core Case API error-budget burn alarm based on ALB metric math, a backing healthy-host alarm, and a composite availability alarm.
 - Threaded the generated SLO topic name through the Terraform delivery root, exported the alarm/topic outputs for later operational handoff, and documented the exact SLO formulas, error budgets, exclusions, and alarm rules in a dedicated service-level-objectives document.
+- Normalized the Terraform-managed JWT private key to Unix line endings before JSON serialization, preventing Windows workstation formatting from creating an unnecessary Secrets Manager version during the SCRUM-187 apply.
 
 **Project Scope Connection:**
 
@@ -1519,11 +1520,13 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - `tests/typescript/features/taxPlanCycle/engineClient.test.ts`
 - `terraform/delivery.tf`
 - `terraform/outputs.tf`
+- `terraform/runtime_config.tf`
 - `terraform/README.md`
 - `terraform/modules/ecs_services/main.tf`
 - `terraform/modules/ecs_services/variables.tf`
 - `terraform/modules/ecs_services/outputs.tf`
 - `terraform/modules/ecs_services/README.md`
+- `terraform/modules/spa_delivery/main.tf`
 - `tests/typescript/workflows/terraformDeliveryModules.test.ts`
 - `docs/service-level-objectives.md`
 - `planning/team/dh-ticket-journal.md`
@@ -1533,6 +1536,8 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - `npm test -- --run tests/typescript/shared/cloud-logger.test.ts tests/typescript/features/taxPlanCycle/engineClient.test.ts tests/typescript/workflows/terraformDeliveryModules.test.ts` is the focused verification set for the observability and Terraform wiring touched by SCRUM-187.
 - `npm run typecheck`, `npm test`, `terraform fmt`, and `terraform validate` should be run after the manual SNS topic is created or imported in the target AWS account.
 - The SNS topic itself was not created from this implementation because the environment owner requested manual creation first.
+- Compared the existing AWS runtime secret with Terraform inputs using SHA-256 fingerprints only; all four managed values match after PEM line-ending normalization, and no AWS secret value was changed.
+- Applied the deployment successfully with 6 resources added, 5 updated, and none destroyed; reconciled the existing CloudFront default-certificate protocol setting afterward so its dependent KMS and S3 policies do not produce perpetual plan drift.
 
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
