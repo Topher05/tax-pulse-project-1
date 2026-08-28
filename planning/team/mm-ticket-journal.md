@@ -5,6 +5,57 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira209 - SCRUM-209
+
+**Branch:** `martins-okorie-jira209`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-209
+
+**Summary:** Case ID harness refinement: adjust to user name
+
+**Description:** Case ID harness currently allowed advisors to select a
+client's case by UUID because that was the only identifier available when the
+selector was implemented. With friendly client naming now available from the
+cycle payload or client roster, the selector should show a human-readable client
+case label while preserving UUID mapping under the hood.
+
+**Acceptance Criteria:**
+
+- The current case selector renders a user-friendly client case label instead
+  of exposing the full UUID as the primary option text.
+- The selector still submits and routes with the full UUID value.
+- Duplicate-name disambiguation is preserved with a short case identifier.
+
+**Code Connection:** Refines the `CurrentCaseSelector` used by plan tools such
+as Income, Deductions, Scenarios, and Quarterly Payments. The selector now
+formats options as `Client Name (last4)` when a name is present, consults the
+client roster as an under-the-hood ID-to-name mapping, and keeps the full case
+UUID as the option value for existing route/query behavior.
+
+**Project Scope Connection:** Supports the React SPA operator experience by
+making case selection easier for advisors without weakening scoped access,
+tenant isolation, or the Tax Plan Cycle UUID contract used by backend APIs.
+
+**Changed Files:**
+
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/entities/taxPlanCycle.ts`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/tests/components/CurrentCaseSelector.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm run typecheck` from `src/pulseUI` passed.
+- `npm run test:vitest -- tests/components/CurrentCaseSelector.test.tsx
+  tests/taxPlanCycle/Queue.test.tsx tests/taxPlanCycle/Queue.helpers.test.tsx
+  tests/taxPlanCycle/queries.test.ts` from `src/pulseUI` passed: 4 files, 19
+  tests.
+
 ## martins-okorie-jira167 - SCRUM-167
 
 **Branch:** `martins-okorie-jira167`

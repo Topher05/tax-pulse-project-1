@@ -9,10 +9,14 @@ import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { CurrentCaseSelector } from "../../components/CurrentCaseSelector.tsx";
 import * as caseApi from "../../shared/caseApi.ts";
 import { isUuid, type Uuid } from "../../shared/planToolCase.ts";
-import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
+import {
+  clientRosterRows,
+  taxPlanCycleRows,
+} from "../../../typescript/shared/database/seed.model.ts";
 import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 const seededCaseId = taxPlanCycleRows[1].id;
+const seededClientName = clientRosterRows[2].clientName;
 
 if (!isUuid(seededCaseId)) {
   throw new Error("CurrentCaseSelector test fixture must use a UUID-shaped case ID.");
@@ -33,6 +37,17 @@ function buildTaxPlanCycleQueuePayload() {
   }));
 }
 
+function buildClientRosterPayload() {
+  return clientRosterRows.map((row) => ({
+    id: row.id,
+    clientName: row.clientName,
+    filingStatus: row.filingStatus,
+    ytdIncome: Number(row.ytdIncome),
+    estimatedTax: Number(row.estimatedTax),
+    quarterlyStatus: row.quarterlyStatus,
+  }));
+}
+
 function renderSelector({
   caseId = null,
   onCaseIdChange = vi.fn(),
@@ -40,7 +55,13 @@ function renderSelector({
   caseId?: Uuid | null;
   onCaseIdChange?: (caseId: Uuid) => void;
 } = {}) {
-  vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValue(buildTaxPlanCycleQueuePayload() as never);
+  vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path) => {
+    if (path === "/v1/clients") {
+      return Promise.resolve(buildClientRosterPayload()) as never;
+    }
+
+    return Promise.resolve(buildTaxPlanCycleQueuePayload()) as never;
+  });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={createPulseQueryClient()}>
@@ -65,11 +86,11 @@ describe("CurrentCaseSelector", () => {
   test("renders the accessible case ID selector and default option", async () => {
     renderSelector();
 
-    const selector = await screen.findByRole("combobox", { name: "Case ID" });
+    const selector = await screen.findByRole("combobox", { name: "Client case" });
 
-    expect(screen.getByText("Case ID")).toBeInTheDocument();
+    expect(screen.getByText("Client case")).toBeInTheDocument();
     expect(selector).toHaveValue("");
-    expect(await screen.findByRole("option", { name: "Select a Case ID" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "Select a client case" })).toBeInTheDocument();
     expect(selector).toHaveClass("opacity-80");
     expect(selector).toHaveStyle({ padding: "18px 2px 10px 5px" });
     expect(selector.closest("label")).toHaveClass("min-[1031px]:w-[22rem]");
@@ -85,15 +106,76 @@ describe("CurrentCaseSelector", () => {
       );
     });
 
-    expect(await screen.findByRole("option", { name: seededCaseId })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "Case 9d12" })).toBeInTheDocument();
+  });
+
+  test("uses friendly client names when the queue payload includes them", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path) => {
+      if (path === "/v1/clients") {
+        return Promise.resolve([]) as never;
+      }
+
+      return Promise.resolve([
+        {
+          ...buildTaxPlanCycleQueuePayload()[1],
+          client_name: seededClientName,
+        },
+      ]) as never;
+    });
+
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={createPulseQueryClient()}>
+        <TestSessionProvider>{children}</TestSessionProvider>
+      </QueryClientProvider>
+    );
+
+    render(
+      <CurrentCaseSelector caseId={null} onCaseIdChange={vi.fn()} />,
+      { wrapper },
+    );
+
+    expect(
+      await screen.findByRole("option", { name: `${seededClientName} (9d12)` }),
+    ).toBeInTheDocument();
+  });
+
+  test("maps client roster names under the hood while preserving UUID values", async () => {
+    const clientId = clientRosterRows[2].id;
+    vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path) => {
+      if (path === "/v1/clients") {
+        return Promise.resolve(buildClientRosterPayload()) as never;
+      }
+
+      return Promise.resolve([
+        {
+          ...buildTaxPlanCycleQueuePayload()[1],
+          client_id: clientId,
+        },
+      ]) as never;
+    });
+
+    const onCaseIdChange = vi.fn();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={createPulseQueryClient()}>
+        <TestSessionProvider>{children}</TestSessionProvider>
+      </QueryClientProvider>
+    );
+
+    render(
+      <CurrentCaseSelector caseId={null} onCaseIdChange={onCaseIdChange} />,
+      { wrapper },
+    );
+
+    const option = await screen.findByRole("option", { name: `${seededClientName} (9d12)` });
+    expect(option).toHaveValue(seededCaseId);
   });
 
   test("emits selected case IDs only when they are UUID-shaped", async () => {
     const onCaseIdChange = vi.fn();
     renderSelector({ onCaseIdChange });
 
-    const selector = await screen.findByRole("combobox", { name: "Case ID" });
-    await screen.findByRole("option", { name: seededCaseId });
+    const selector = await screen.findByRole("combobox", { name: "Client case" });
+    await screen.findByRole("option", { name: "Case 9d12" });
 
     fireEvent.change(selector, { target: { value: "" } });
     fireEvent.change(selector, { target: { value: "not-a-uuid" } });
@@ -106,6 +188,6 @@ describe("CurrentCaseSelector", () => {
   test("uses full opacity when a real case is selected", async () => {
     renderSelector({ caseId: seededCaseId });
 
-    expect(await screen.findByRole("combobox", { name: "Case ID" })).toHaveClass("opacity-100");
+    expect(await screen.findByRole("combobox", { name: "Client case" })).toHaveClass("opacity-100");
   });
 });

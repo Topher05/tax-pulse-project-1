@@ -4,6 +4,8 @@ import type { PlanCycleQueueRow } from "./taxPlanCycle.ts";
 export interface TaxPlanCycleQueueApiRow {
   id: string;
   client_id: string;
+  client_name?: string | null;
+  clientName?: string | null;
   stage: string;
   owner: string;
   priority: "low" | "medium" | "high";
@@ -124,7 +126,8 @@ function formatAuditDateTime(isoDateTime: string): string {
 function toQueueRow(row: TaxPlanCycleQueueApiRow): PlanCycleQueueRow {
   return {
     caseId: row.id,
-    client: row.client_id,
+    client: row.client_name ?? row.clientName ?? row.client_id,
+    clientId: row.client_id,
     stage: row.stage,
     owner: row.owner,
     priority: row.priority.charAt(0).toUpperCase() + row.priority.slice(1),
