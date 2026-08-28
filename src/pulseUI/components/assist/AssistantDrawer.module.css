@@ -31,8 +31,9 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
-  width: min(42rem, calc(100vw - 2rem));
+  width: min(42rem, calc(100% - 2rem));
   min-width: 20rem;
+  max-width: calc(100% - 2rem);
   height: calc(100dvh - max(2rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
   max-height: calc(100dvh - max(2rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
   overflow: hidden;
@@ -54,9 +55,10 @@
   transition-duration: 250ms;
 }
 
-.fullscreen {
+.drawer.fullscreen {
   inset: 0;
-  width: 100vw;
+  width: 100%;
+  max-width: 100%;
   height: 100dvh;
   max-height: 100dvh;
   border-radius: 0;
@@ -87,26 +89,24 @@
 .headerTitle h2 {
   min-width: 0;
   margin: 0;
-  overflow: hidden;
   color: var(--pulse-ink);
   font-size: 1rem;
   font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .summary {
   margin: 0.45rem 0 0;
-  overflow: hidden;
   color: var(--pulse-muted);
   font-size: 0.78rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .toolbar {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 1rem;
 }
@@ -115,7 +115,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 2.75rem;
   height: 2.75rem;
   color: var(--pulse-ink);
   background: rgb(255 255 255 / 5%);
@@ -200,8 +200,7 @@
   background: linear-gradient(135deg, rgb(16 185 129 / 14%), rgb(6 182 212 / 12%));
 }
 
-.messageError,
-.errorCard {
+.messageError {
   background: linear-gradient(135deg, rgb(239 68 68 / 16%), rgb(248 113 113 / 10%));
   border-color: rgb(239 68 68 / 25%);
 }
@@ -215,12 +214,12 @@
   text-transform: uppercase;
 }
 
-.messageBody,
-.errorMessage {
+.messageBody {
   margin: 0;
   color: var(--pulse-ink);
   font-size: 0.94rem;
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .citationList {
@@ -247,6 +246,7 @@
   color: var(--pulse-accent-light);
   font-size: 0.8rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .citationMeta {
@@ -254,6 +254,7 @@
   color: var(--pulse-muted);
   font-size: 0.76rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .footer {
@@ -338,6 +339,25 @@
   line-height: 1.4;
 }
 
+.validationMessage {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.drawer.fullscreen .header {
+  padding-top: max(1.25rem, env(safe-area-inset-top));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+}
+
+.drawer.fullscreen .footer {
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+}
+
 .sendAction {
   position: absolute;
   right: 0.75rem;
@@ -359,8 +379,9 @@
     top: max(0.5rem, env(safe-area-inset-top));
     right: max(0.5rem, env(safe-area-inset-right));
     bottom: max(0.5rem, env(safe-area-inset-bottom));
-    width: calc(100vw - 1rem);
+    width: calc(100% - 1rem);
     min-width: 0;
+    max-width: calc(100% - 1rem);
     height: calc(100dvh - max(1rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
     max-height: calc(100dvh - max(1rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
     border-radius: 20px;
@@ -378,10 +399,42 @@
 
 @media (max-width: 420px) {
   .drawer {
-    width: calc(100vw - 0.75rem);
+    width: calc(100% - 0.75rem);
+    max-width: calc(100% - 0.75rem);
+  }
+}
+
+@media (max-height: 560px) {
+  .header {
+    padding: 0.75rem 1rem;
+  }
+
+  .summary {
+    margin-top: 0.2rem;
   }
 
   .toolbar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 0.5rem;
+  }
+
+  .messageViewport,
+  .footer {
+    padding: 0.75rem;
+  }
+
+  .composerInput {
+    min-height: 4.75rem;
+  }
+
+  .drawer.fullscreen .header {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .drawer.fullscreen .footer {
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
   }
 }

@@ -106,7 +106,6 @@ describe("Pulse UI accessibility gate", () => {
       <NotificationToastProvider>
         <AssistantDrawer
           {...baseProps}
-          errorMessage={null}
           isLoading={false}
           messages={[
             {
@@ -125,7 +124,7 @@ describe("Pulse UI accessibility gate", () => {
 
     rerender(
       <NotificationToastProvider>
-        <AssistantDrawer {...baseProps} errorMessage={null} isLoading messages={[]} />
+        <AssistantDrawer {...baseProps} isLoading messages={[]} />
       </NotificationToastProvider>,
     );
     expect(screen.getByRole("status", { name: "Loading assistant" })).toBeInTheDocument();
@@ -135,7 +134,6 @@ describe("Pulse UI accessibility gate", () => {
       <NotificationToastProvider>
         <AssistantDrawer
           {...baseProps}
-          errorMessage="Assistant unavailable."
           isLoading={false}
           messages={[
             {

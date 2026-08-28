@@ -83,6 +83,50 @@ image verification and ECS deployment boundary.
 **Validation Notes:**
 
 - `git diff --check` passed.
+
+## christopher-martus-jira188 - SCRUM-188
+
+**Branch:** `christopher-martus-jira188`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-188
+
+**Summary:** Add a documentation-only incident runbook for on-call response to TaxPulse degradation
+
+**Description:** Create and review an operator runbook for the two SCRUM-187 SLO-backed failure modes: Tax Engine calculation latency degradation and Core Case API availability degradation. The implementation remains documentation-only and uses a synthetic tabletop with no live infrastructure changes.
+
+**Acceptance Criteria:**
+
+- A checked-in runbook identifies exactly the two SLO-backed failure modes and provides actionable triage, evidence collection, containment/escalation, and recovery-verification steps for each.
+- Every numbered triage step includes a relative link to the applicable alarm documentation, a relative link to the SCRUM-171 disposition-log template, and the exact CloudWatch alarm name.
+- A synthetic tabletop scenario exercises both failure-mode paths, records expected responder decisions and evidence, identifies gaps, and states a review outcome without changing live infrastructure.
+
+**Code Connection:**
+
+- `docs/incident-runbook.md` documents the Tax Engine latency alarm, EMF metric evidence, request/trace correlation, service logs, ECS events, deployment evidence, safe containment, escalation, and recovery verification.
+- The Core Case availability procedure distinguishes the composite alarm's target-side 5xx error-budget child alarm from the zero-healthy-targets child alarm and records child-specific recovery criteria.
+- The synthetic tabletop records both alarm paths, expected disposition evidence, decisions, escalation conditions, recovery signals, a runbook gap, its correction, and the review outcome.
+
+**Project Scope Connection:**
+
+- Reliability, observability, and incident readiness for the TaxPulse ECS service boundary.
+- Documentation-only support for SCRUM-187 SLO operations and SCRUM-171 disposition evidence.
+- No application, workflow, UI, Terraform, alarm, dashboard, paging, or live infrastructure behavior was changed.
+
+**Changed Files:**
+
+- `docs/incident-runbook.md`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Synthetic tabletop completed on 2026-08-28 with reviewer role `Platform on-call documentation reviewer`; no live AWS resources were queried or changed.
+- Both failure-mode paths were exercised, including the Core Case target 5xx and zero-healthy-targets branches.
+- Confirmed all 12 numbered triage rows retain the required alarm documentation and SCRUM-171 disposition-template links.
+- Confirmed all four SCRUM-187 default alarm names are present and the environment-derived naming pattern is documented.
+- `git diff --check` passed.
+
 - `actionlint` was unavailable in the local environment and was not run.
 - Added the ZAP job after the existing ECS deployment and passed the authorized deployed
   CloudFront SPA URL through the deployment job output.
