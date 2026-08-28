@@ -729,6 +729,20 @@ current stub response path.
 - Corrected the actual desktop Case tabs height regression by preventing the main detail column and
   its tab row from stretching to match the taller Case Properties and Quick Actions sidebar.
 
+**Final Pipeline Safety Validation:**
+
+- `npm.cmd --prefix src/pulseUI run verify` passed: Pulse UI typecheck, 255 tests across 48 files,
+  6 dedicated axe tests, and the production build. Vite reported only the existing chunk-size
+  advisory.
+- `npm.cmd run typecheck:core` and `npm.cmd run build` passed for Core Case Service.
+- Core Case Service passed 469 tests across 107 files when run with one worker. The parallel run's
+  11 failures were all exact 60-second Testcontainers/database timeouts; the same contracts passed
+  serially without code changes.
+- `py -3.12 -m uv run --no-sync ruff format --check src tests` reported all 42 Python files already
+  formatted, and `ruff check src tests` passed.
+- Locked-environment Pyright validation passed with 0 errors and 0 warnings.
+- `git diff --check` passed before the final journal update.
+
 **CI Security Gate Follow-up:**
 
 - Reviewed the Core TypeScript, Required Gate, and Gitleaks logs from the prior PR merge SHA.
