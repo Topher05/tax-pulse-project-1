@@ -128,10 +128,10 @@ Add new ticket entries below using this template.
 **Summary:** Assemble the reproducible evidence packet
 
 **Description:** As a Platform Engineer, I want an evidence packet, so that the build
-is reproducible and auditable by reviewers. This packet is now captured as a checked-in
-release evidence document that links the available CI, scan, SBOM, and deployment
-reproduction artifacts while leaving explicit TODO markers for the missing Jira-169 and
-Jira-181 inputs.
+is reproducible and auditable by reviewers. This branch now carries the Jira-169 gate
+corrections, Terraform-backed SPA targeting for the release ZAP scan, a release
+evidence manifest artifact, and a rewritten evidence packet that preserves the required
+TODO markers while documenting the now-available Jira-169 and Jira-181 evidence paths.
 
 **Acceptance Criteria:**
 
@@ -141,12 +141,18 @@ Jira-181 inputs.
 - A reviewer can follow the packet to a running stack without tribal knowledge.
 - Missing Jira-169 and Jira-181 inputs remain called out with `TODO: Depending on
   Jira-XXX` comments instead of being implied as complete.
+- The ZAP release gate fails closed for malformed reports and scans the Terraform-backed
+  deployed SPA URL instead of a hardcoded hostname.
+- One release manifest artifact ties the release SHA, commit checks page, Actions run,
+  deployed SPA URL, immutable image digests, and uploaded artifact names together.
 
 **Code Connection:**
 
 - `docs/release-evidence-packet.md`
-- `.github/workflows/build-test-quality.yml`
+- `.github/scripts/enforce-zap-high-severity.mjs`
 - `.github/workflows/container-scan-sbom.yml`
+- `.github/workflows/zap-baseline.yml`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
 - `docs/stride-threat-model.md`
 - `docs/trivy-suppressions.md`
 - `README.md`
@@ -158,18 +164,30 @@ Jira-181 inputs.
 
 - Hardening, Evidence & Final Demo
 - Release-readiness documentation
-- CI, scan, SBOM, and deployment traceability
+- Release security gate correctness
+- CI, scan, SBOM, deployment, and evidence traceability
 
 **Changed Files:**
 
+- `.github/scripts/enforce-zap-high-severity.mjs`
+- `.github/workflows/container-scan-sbom.yml`
 - `docs/release-evidence-packet.md`
 - `planning/team/cl-ticket-journal.md`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
 
 **Validation Notes:**
 
-- Documentation-only change; no automated tests were run.
-- The packet intentionally leaves TODO markers for Jira-169 and Jira-181 because those
-  upstream artifacts are not available yet.
+- `development` was already an ancestor of `caleb-latimer-jira189`, so no merge was
+  required before implementation.
+- The ZAP gate tests were expanded to cover malformed roots, invalid site/alert
+  containers, invalid risk codes, valid empty alerts, and valid informational/low/
+  medium reports.
+- The release workflow test now verifies Terraform-backed `spa_url` resolution, the
+  absence of a hardcoded CloudFront hostname, pre-ZAP invalid output checks, and the
+  release evidence manifest contents.
+- Local validation still depends on the repository Node/Python environments and any
+  available workflow linters in this shell; see the implementation report for the exact
+  commands and outcomes.
 
 ## caleb-latimer-jira171 - SCRUM-171
 
