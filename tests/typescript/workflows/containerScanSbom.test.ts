@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 
 const workflowPath = resolve(process.cwd(), ".github/workflows/container-scan-sbom.yml");
+const coreCaseDockerfilePath = resolve(process.cwd(), "Dockerfile");
 
 describe("SCRUM-168 container release workflow", () => {
   test("keeps release actions scoped to development and preserves scan coverage elsewhere", () => {
@@ -55,5 +56,18 @@ describe("SCRUM-168 container release workflow", () => {
     expect(verifyIndex).toBeGreaterThan(-1);
     expect(renderIndex).toBeGreaterThan(verifyIndex);
     expect(deployIndex).toBeGreaterThan(renderIndex);
+  });
+
+  test("removes build-only npm tooling from the Core Case runtime image", () => {
+    const dockerfile = readFileSync(coreCaseDockerfilePath, "utf8");
+    const removeNpmIndex = dockerfile.indexOf("/usr/local/lib/node_modules/npm");
+    const nonRootUserIndex = dockerfile.indexOf("USER node");
+
+    expect(dockerfile).toContain("FROM node:22.0.0-bookworm-slim AS runtime");
+    expect(dockerfile).toContain("/usr/local/bin/npm");
+    expect(dockerfile).toContain("/usr/local/bin/npx");
+    expect(removeNpmIndex).toBeGreaterThan(-1);
+    expect(nonRootUserIndex).toBeGreaterThan(removeNpmIndex);
+    expect(dockerfile).toContain('CMD ["node", "dist/typescript/index.js"]');
   });
 });

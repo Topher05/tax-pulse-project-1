@@ -67,6 +67,9 @@ export function SignInPage() {
         <Link className="authTextLink" to="/password-reset">
           Forgot your password?
         </Link>
+        <Link className="authTextLink" to="/register">
+          Create an account
+        </Link>
       </section>
     </main>
   );

@@ -13,13 +13,13 @@ afterEach(() => {
 describe("Tooltip", () => {
   test("connects the tooltip to its control and shows it on hover", () => {
     render(
-      <Tooltip content="Open prompt suggestions" placement="bottom">
-        <button type="button">Prompts</button>
+      <Tooltip content="Close Assistant" placement="bottom">
+        <button type="button">Close</button>
       </Tooltip>,
     );
 
-    const button = screen.getByRole("button", { name: "Prompts" });
-    const tooltip = screen.getByRole("tooltip", { name: "Open prompt suggestions" });
+    const button = screen.getByRole("button", { name: "Close" });
+    const tooltip = screen.getByRole("tooltip", { name: "Close Assistant" });
 
     expect(button).toHaveAttribute("aria-describedby", tooltip.id);
     expect(tooltip).toHaveAttribute("data-visible", "false");

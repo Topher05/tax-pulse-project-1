@@ -2,9 +2,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { PropsWithChildren } from "react";
 
 import {
-  parseTaxPlanDetailsAssistantErrorMessage,
+  parseTaxPlanDetailsAssistantError,
   type TaxPlanDetailsAssistantCitation,
   useTaxPlanDetailsAssistantMutation,
+  validateTaxPlanDetailsAssistantQuestion,
 } from "../../entities/taxPlanDetailsAssistant.ts";
 
 export interface AssistantCaseContext {
@@ -28,7 +29,6 @@ export interface AssistantMessage {
 export interface AssistantPanelContextValue {
   assistantCaseContext: AssistantCaseContext | null;
   messages: readonly AssistantMessage[];
-  errorMessage: string | null;
   isDrawerOpen: boolean;
   isLoading: boolean;
   fabAnchorElement: HTMLElement | null;
@@ -42,10 +42,6 @@ export interface AssistantPanelContextValue {
 
 const AssistantPanelContext = createContext<AssistantPanelContextValue | null>(null);
 
-function toPrompt(context: AssistantCaseContext): string {
-  return `Explain why ${context.recommendation} is recommended for ${context.clientName} and cite the basis in context.`;
-}
-
 function createMessageId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -55,7 +51,6 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
   const [assistantCaseContext, setAssistantCaseContext] = useState<AssistantCaseContext | null>(null);
   const [fabAnchorElement, setFabAnchorElement] = useState<HTMLElement | null>(null);
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const { isPending, mutateAsync, reset } = useTaxPlanDetailsAssistantMutation();
 
@@ -63,7 +58,6 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
     if (assistantCaseContext === null) {
       setDrawerOpen(false);
       setMessages([]);
-      setErrorMessage(null);
       reset();
     }
   }, [assistantCaseContext, reset]);
@@ -86,14 +80,12 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
   const closeAssistant = useCallback(() => {
     requestCounter.current += 1;
     setDrawerOpen(false);
-    setErrorMessage(null);
     reset();
   }, [reset]);
 
   const startNewDialogue = useCallback(() => {
     requestCounter.current += 1;
     setMessages([]);
-    setErrorMessage(null);
     reset();
   }, [reset]);
 
@@ -133,15 +125,14 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
           return;
         }
 
-        const message = parseTaxPlanDetailsAssistantErrorMessage(error);
-        setErrorMessage(message);
+        const parsedError = parseTaxPlanDetailsAssistantError(error);
         setMessages((current) => [
           ...current,
           {
             id: createMessageId("error"),
             role: "error",
-            title: "Assistant unavailable",
-            body: message,
+            title: parsedError.title,
+            body: parsedError.detail,
           },
         ]);
       }
@@ -156,40 +147,30 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
 
     const requestId = ++requestCounter.current;
     setDrawerOpen(true);
-    setErrorMessage(null);
-    setMessages([
-      {
-        id: createMessageId("user"),
-        role: "user",
-        title: "Advisor prompt",
-        body: toPrompt(assistantCaseContext),
-      },
-    ]);
+    setMessages([]);
 
     await runAssistantRequest(
       requestId,
       assistantCaseContext.caseId,
       assistantCaseContext.recommendation,
-      toPrompt(assistantCaseContext),
     );
   }, [assistantCaseContext, isPending, runAssistantRequest]);
 
   const sendMessage = useCallback(
     async (message: string) => {
-      const trimmedMessage = message.trim();
-      if (assistantCaseContext === null || trimmedMessage.length === 0 || isPending) {
+      const validation = validateTaxPlanDetailsAssistantQuestion(message);
+      if (assistantCaseContext === null || !validation.isValid || isPending) {
         return;
       }
 
       const requestId = ++requestCounter.current;
-      setErrorMessage(null);
       setMessages((current) => [
         ...current,
         {
           id: createMessageId("user"),
           role: "user",
           title: "Advisor prompt",
-          body: trimmedMessage,
+          body: validation.question,
         },
       ]);
 
@@ -197,7 +178,7 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
         requestId,
         assistantCaseContext.caseId,
         assistantCaseContext.recommendation,
-        trimmedMessage,
+        validation.question,
       );
     },
     [assistantCaseContext, isPending, runAssistantRequest],
@@ -207,7 +188,6 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
     () => ({
       assistantCaseContext,
       messages,
-      errorMessage,
       isDrawerOpen,
       isLoading: isPending,
       setAssistantCaseContext,
@@ -222,7 +202,6 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
       assistantCaseContext,
       isPending,
       closeAssistant,
-      errorMessage,
       fabAnchorElement,
       isDrawerOpen,
       messages,
