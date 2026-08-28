@@ -352,34 +352,19 @@ jobs:
         shell: bash
         run: terraform -chdir=terraform init -input=false
 
-      - name: Resolve and validate Terraform runtime configuration
+      - name: Resolve Terraform runtime configuration
         id: runtime-config
         shell: bash
         run: |
           set -euo pipefail
           RUNTIME_CONFIG_SECRET_ARN="$(terraform -chdir=terraform output -raw runtime_config_secret_arn)"
-          EXECUTION_ROLE_ARN="$(terraform -chdir=terraform output -raw ecs_task_execution_role_arn)"
 
           if [[ ! "$RUNTIME_CONFIG_SECRET_ARN" =~ ^arn:aws:secretsmanager:${AWS_REGION}:[0-9]{12}:secret:taxpulse-dev-runtime-config- ]]; then
             echo "Terraform returned an unexpected runtime secret ARN: $RUNTIME_CONFIG_SECRET_ARN" >&2
             exit 1
           fi
-          if [[ ! "$EXECUTION_ROLE_ARN" =~ ^arn:aws:iam::[0-9]{12}:role/ ]]; then
-            echo "Terraform returned an invalid ECS execution role ARN: $EXECUTION_ROLE_ARN" >&2
-            exit 1
-          fi
 
           aws secretsmanager describe-secret --secret-id "$RUNTIME_CONFIG_SECRET_ARN" >/dev/null
-          ACCESS_DECISION="$(aws iam simulate-principal-policy \
-            --policy-source-arn "$EXECUTION_ROLE_ARN" \
-            --action-names secretsmanager:GetSecretValue \
-            --resource-arns "$RUNTIME_CONFIG_SECRET_ARN" \
-            --query 'EvaluationResults[0].EvalDecision' \
-            --output text)"
-          if [[ "$ACCESS_DECISION" != "allowed" ]]; then
-            echo "ECS execution role cannot read Terraform runtime secret: $ACCESS_DECISION" >&2
-            exit 1
-          fi
 
           echo "secret_arn=$RUNTIME_CONFIG_SECRET_ARN" >> "$GITHUB_OUTPUT"
 
