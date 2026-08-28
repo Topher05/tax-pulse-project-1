@@ -37,6 +37,58 @@ Add new ticket entries below using this template.
 
 
 
+## christopher-martus-jira169 - SCRUM-169
+
+**Branch:** `christopher-martus-jira169`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-169
+
+**Summary:** Run an OWASP ZAP baseline scan against the deployed app
+
+**Description:** Add a release-compatible OWASP ZAP baseline scan that scans a deployed
+TaxPulse URL, publishes findings, and fails closed on High-severity alerts or scan failures.
+
+**Acceptance Criteria:**
+
+- An OWASP ZAP baseline scan runs against the deployed app.
+- The scan reports findings as a build artifact.
+- High-severity findings fail the release.
+
+**Code Connection:**
+
+- Added a reusable and manually dispatchable ZAP baseline workflow accepting a deployed
+  application URL.
+- The workflow runs on the repository's Blacksmith Ubuntu runner, disables GitHub issue
+  creation, and preserves HTML, Markdown, and JSON reports as an artifact.
+- The workflow validates the JSON report and fails for ZAP High-risk alerts (`riskcode: "3"`),
+  scan failures, unreachable targets, or missing/malformed reports.
+- A repository-local gate script makes the High-severity decision independently testable.
+
+**Project Scope Connection:**
+
+This establishes the repository-side web security scanning boundary for the release process.
+The release/deployment dependency graph now runs the deployed SPA scan after SCRUM-168's
+image verification and ECS deployment boundary.
+
+**Changed Files:**
+
+- `.github/workflows/zap-baseline.yml`
+- `.github/scripts/enforce-zap-high-severity.mjs`
+- `.github/workflows/container-scan-sbom.yml`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `actionlint` was unavailable in the local environment and was not run.
+- Added the ZAP job after the existing ECS deployment and passed the authorized deployed
+  CloudFront SPA URL through the deployment job output.
+- `npx vitest run --config vitest.config.ts tests/typescript/workflows/zapBaselineSecurityGate.test.ts` passed: 7 tests, including clean, High-alert, and malformed-report gate cases.
+- `npm run typecheck` passed.
+- `git diff --check` passed.
 ## christopher-martus-jira186 - SCRUM-186
 
 **Branch:** `christopher-martus-jira186`

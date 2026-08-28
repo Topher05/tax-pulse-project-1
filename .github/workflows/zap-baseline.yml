@@ -1,0 +1,72 @@
+name: ZAP Baseline Security Gate
+
+on:
+  workflow_call:
+    inputs:
+      target_url:
+        description: URL of the deployed application to scan
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: URL of the deployed application to scan
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  zap-baseline:
+    name: OWASP ZAP Baseline Scan
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Initialize report files
+        run: touch report_html.html report_md.md report_json.json
+
+      - name: Run OWASP ZAP baseline scan
+        id: zap
+        continue-on-error: true
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: ${{ inputs.target_url }}
+          allow_issue_writing: false
+          fail_action: false
+          artifact_name: zap-baseline-action-reports
+          cmd_options: -I
+
+      - name: Upload ZAP reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-reports
+          path: |
+            report_html.html
+            report_md.md
+            report_json.json
+          if-no-files-found: error
+
+      - name: Enforce ZAP High-severity gate
+        if: ${{ always() }}
+        env:
+          ZAP_OUTCOME: ${{ steps.zap.outcome }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$ZAP_OUTCOME" != "success" ]]; then
+            echo "ZAP baseline scan did not complete successfully: $ZAP_OUTCOME"
+            exit 1
+          fi
+
+          if [[ ! -s report_json.json ]]; then
+            echo "ZAP JSON report is missing or empty"
+            exit 1
+          fi
+
+          node .github/scripts/enforce-zap-high-severity.mjs report_json.json
