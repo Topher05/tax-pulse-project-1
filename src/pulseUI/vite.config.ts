@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   server: {
     proxy: {
-      "^/auth/(login(?:/mfa)?|refresh|logout)$": {
+      "^/auth/(login(?:/mfa)?|register|refresh|logout)$": {
         target: "http://127.0.0.1:3000",
         // Preserve the tenant subdomain used by the BFF to resolve the login workspace.
         changeOrigin: false,
