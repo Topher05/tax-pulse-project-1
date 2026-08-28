@@ -755,6 +755,20 @@ current stub response path.
 - Local Gitleaks execution was unavailable because the binary is not installed; the exact
   fingerprints were copied from the CI scan output for validation on the next workflow run.
 
+**Trivy Runtime Image Follow-up:**
+
+- Reproduced the Core Case container gate with Trivy 0.70.0 and identified the unsuppressed finding
+  as HIGH-severity `CVE-2026-9496` in `pacote@17.0.6`, bundled with the base image's global npm.
+- Removed npm and npx only from the Core Case runtime stage. The build stage retains npm for locked
+  dependency installation, TypeScript compilation, and production dependency pruning.
+- Added a container workflow regression test that requires the package-manager removal to happen
+  before the runtime switches to the non-root `node` user and preserves direct `node` startup.
+- The focused container workflow suite passed: 4 tests in 1 file.
+- `npm.cmd run typecheck:core` passed.
+- The rebuilt runtime retained Node.js 22.0.0 while confirming npm and npx were absent.
+- A socketless Trivy 0.70.0 image-tar scan passed with 0 unsuppressed HIGH/CRITICAL findings; no
+  vulnerability suppression was added.
+
 ## caleb-latimer-jira160 - SCRUM-160
 
 **Branch:** `caleb-latimer-jira160`
