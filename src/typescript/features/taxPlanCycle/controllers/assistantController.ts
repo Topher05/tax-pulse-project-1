@@ -7,6 +7,7 @@ import {
   resolveAssistTenantCorpusScopes,
   type AssistTenantCorpusScope,
 } from "../../../assist/tenantScopes.js";
+import { detectAssistPromptInjection } from "../../../assist/promptSafety.js";
 import type { RankedCorpusChunk } from "../../../assist/retrieval.js";
 
 export const taxPlanDetailsAssistantRequestSchema = z.strictObject({
@@ -60,6 +61,13 @@ export class TaxPlanDetailsAssistantUnsupportedRecommendationError extends Error
   }
 }
 
+export class TaxPlanDetailsAssistantUnsafePromptError extends Error {
+  constructor(message = "The assistant request could not be processed safely.") {
+    super(message);
+    this.name = "TaxPlanDetailsAssistantUnsafePromptError";
+  }
+}
+
 export interface CreateTaxPlanDetailsAssistantControllerOptions {
   taxPlanCycleRepository: {
     findByCaseId(input: { tenantId: string; caseId: string }): Promise<{ id: string } | null> | { id: string } | null;
@@ -105,6 +113,15 @@ export function createTaxPlanDetailsAssistantController(
       const tenantScopes = resolveAssistTenantCorpusScopes(options.tenantScopeMap, input.tenantId);
       const recommendation = input.recommendation_context.recommendation.trim();
       const question = input.recommendation_context.question?.trim();
+      const promptSafetyResult = detectAssistPromptInjection({
+        recommendation,
+        question,
+      });
+
+      if (!promptSafetyResult.safe) {
+        throw new TaxPlanDetailsAssistantUnsafePromptError();
+      }
+
       const retrievalQuery = recommendation;
 
       const chunks = await options.retriever.retrieve({
@@ -115,6 +132,8 @@ export function createTaxPlanDetailsAssistantController(
       if (chunks.length === 0) {
         throw new TaxPlanDetailsAssistantUnavailableError("No grounded assist context was available.");
       }
+
+      validateRetrievedChunkScopes(chunks, tenantScopes);
 
       const supportedChunks = selectRecommendationSupportedChunks(recommendation, chunks);
       if (supportedChunks.length === 0) {
@@ -153,6 +172,19 @@ export function createTaxPlanDetailsAssistantController(
       });
     },
   };
+}
+
+function validateRetrievedChunkScopes(
+  chunks: readonly RankedCorpusChunk[],
+  tenantScopes: readonly AssistTenantCorpusScope[],
+): void {
+  const allowedScopes = new Set(tenantScopes);
+
+  for (const chunk of chunks) {
+    if (!allowedScopes.has(chunk.citation.tenantId as AssistTenantCorpusScope)) {
+      throw new TaxPlanDetailsAssistantUnavailableError("The assistant is not available.");
+    }
+  }
 }
 
 export const taxPlanDetailsAssistantController: TaxPlanDetailsAssistantController = {
