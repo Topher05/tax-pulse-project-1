@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
+import { readFileSync } from "node:fs";
 import {
   cleanup,
   fireEvent,
@@ -59,6 +60,10 @@ function renderDetails({
         scenarioCount: 2,
         onHold: false,
         overdue: true,
+        taxpayerIdentifierValidation: {
+          verifiedName: "North Shore Family Office",
+          provider: "tivs",
+        },
       },
     ];
 
@@ -90,6 +95,10 @@ function renderDetails({
     ]),
   );
   const patchSpy = vi.spyOn(caseApi, "caseApiPatchJson");
+  const assistSpy = vi.spyOn(caseApi, "caseApiPostJson").mockResolvedValue({
+    explanation: "Grounded explanation.",
+    citations: [],
+  });
 
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
@@ -99,7 +108,7 @@ function renderDetails({
     </QueryClientProvider>,
   );
 
-  return { detailsMock, patchSpy };
+  return { assistSpy, detailsMock, patchSpy };
 }
 
 describe("Tax Plan Cycle details page", () => {
@@ -120,6 +129,7 @@ describe("Tax Plan Cycle details page", () => {
     );
 
     const stageStepper = screen.getByLabelText("Case stage progression");
+    expect(stageStepper).toHaveAttribute("tabindex", "0");
     expect(within(stageStepper).getByText("Review").closest("[aria-current='step']")).toBe(
       stageStepper.querySelector("[aria-current='step']"),
     );
@@ -133,6 +143,27 @@ describe("Tax Plan Cycle details page", () => {
     expect(await screen.findByText("Q2 2026 (April-June)")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Case Properties" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Run new scenario" })).toBeInTheDocument();
+  });
+
+  test("opens the assistant with derived case context and no initial question", async () => {
+    const { assistSpy } = renderDetails();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Open RAG assistant" }));
+
+    await waitFor(() => {
+      expect(assistSpy).toHaveBeenCalledWith(
+        "/v1/tax-plan-cycles/TP-24018/assist",
+        {
+          recommendation_context: {
+            recommendation:
+              "Tax Plan Cycle in Review case owned by Maya Reed with a High priority for the taxpayer North Shore Family Office from tivs",
+          },
+        },
+        expect.any(Function),
+      );
+    });
+    expect(await screen.findByText("Grounded explanation.")).toBeInTheDocument();
+    expect(screen.queryByText("Advisor prompt")).not.toBeInTheDocument();
   });
 
   test("switches tabs and preserves the comment draft when returning to Comments", async () => {
@@ -213,6 +244,22 @@ describe("Tax Plan Cycle details page", () => {
     );
     expect(within(stageStepper).queryByRole("button", { name: /Modeling/ })).not.toBeInTheDocument();
     expect(within(stageStepper).getByText("Modeling")).toBeInTheDocument();
+
+    const css = readFileSync("pages/taxPlanCycle/Details.module.css", "utf8");
+    expect(css).toContain("grid-auto-flow: column");
+    expect(css).toContain("overflow-x: auto");
+    expect(css).toContain("scroll-snap-type: inline proximity");
+  });
+
+  test("keeps the desktop case tabs at their intrinsic content height", async () => {
+    renderDetails();
+
+    expect(await screen.findByRole("tablist", { name: "Case tabs" })).toBeInTheDocument();
+
+    const css = readFileSync("pages/taxPlanCycle/Details.module.css", "utf8");
+    expect(css).toMatch(/\.mainColumn\s*{[^}]*align-content: start;/s);
+    expect(css).toMatch(/\.mainColumn\s*{[^}]*align-self: start;/s);
+    expect(css).toMatch(/\.tabBar\s*{[^}]*align-self: start;/s);
   });
 
   test("shows an error toast for the reassign placeholder action", async () => {
