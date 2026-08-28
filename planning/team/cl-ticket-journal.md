@@ -717,6 +717,17 @@ current stub response path.
   three-button toolbar while preserving 44px pointer targets and accessible tooltips.
 - Updated the loading skeleton to mirror the same three-button count, right alignment, square
   dimensions, spacing, and corner radius as the live toolbar.
+- Hardened drawer and loader accessibility with atomic polite loading announcements, labeled
+  conversation logs, toggle pressed-state semantics, hidden decorative skeletons, and retained
+  focus, keyboard, tooltip, and reduced-motion behavior.
+- Hardened responsive reflow with bounded resize widths, wrapping metadata and messages, fullscreen
+  safe-area padding, compact short-viewport layouts, dynamic loader sizing, and matching 44px
+  live/loading controls.
+- Replaced the three-row responsive case-stage grid with a single keyboard-focusable horizontal
+  progression below 1100px, eliminating the roughly 340px case-header expansion while keeping all
+  seven backend stages available through native scrolling and scroll snapping.
+- Corrected the actual desktop Case tabs height regression by preventing the main detail column and
+  its tab row from stretching to match the taller Case Properties and Quick Actions sidebar.
 
 **CI Security Gate Follow-up:**
 
