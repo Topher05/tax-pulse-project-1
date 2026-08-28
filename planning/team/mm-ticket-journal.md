@@ -5,6 +5,58 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira207 - SCRUM-207
+
+**Branch:** `martins-okorie-jira207`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-207
+
+**Summary:** Reset Password
+
+**Description:** As a registered user, I want to reset my password through the React application so that I can regain access to my account without administrator assistance.
+
+**Acceptance Criteria:**
+
+- The application provides a forgot-password form that accepts an email address and submits a request to the existing password-reset backend endpoint.
+- The reset-password page accepts the reset token and a valid new password, then submits them to the existing backend endpoint without implementing new password-reset service logic.
+- Successful and unsuccessful reset attempts display clear user-facing messages without revealing whether an account exists or exposing tokens, passwords, or sensitive authentication details.
+
+**Code Connection:** Added the backend password reset domain (`passwordReset.ts`, `passwordResetService.ts`, `passwordResetRepository.ts`, `passwordResetRoutes.ts`) including a `password_reset_token` database table with migration generated via `drizzle-kit generate`. Wired the forgot-password and reset-password endpoints (`POST /auth/forgot-password` and `POST /auth/reset-password`). Integrated a console-logged `ResetTokenNotifier` as the development email alternative. Implemented Pulse UI `PasswordResetPage` form submission, `NewPasswordPage` token and new password reset submission, `authClient` API helpers, and route configuration in `routeTree.tsx`.
+
+**Project Scope Connection:** Completes the user self-service password recovery flow for tenant-scoped users, maintaining least-privilege tenant isolation and secure Argon2id password hashing while ensuring anonymous requests cannot enumerate registered accounts.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0019_fantastic_sinister_six.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0019_snapshot.json`
+- `src/typescript/passwordReset.ts`
+- `src/typescript/passwordResetService.ts`
+- `src/typescript/passwordResetRepository.ts`
+- `src/typescript/passwordResetRoutes.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/auth/authClient.ts`
+- `src/pulseUI/pages/auth/PasswordResetPage.tsx`
+- `src/pulseUI/pages/auth/NewPasswordPage.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/vite.config.ts`
+- `tests/typescript/passwordReset.test.ts`
+- `tests/typescript/passwordResetRoutes.test.ts`
+- `src/pulseUI/tests/auth/PasswordResetPage.test.tsx`
+- `src/pulseUI/tests/auth/NewPasswordPage.test.tsx`
+- `src/pulseUI/tests/auth/authClient.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed for app, tests, and pulseUI.
+- Vitest unit & route integration tests passed: `tests/typescript/passwordReset.test.ts` (8 tests), `tests/typescript/passwordResetRoutes.test.ts` (5 tests).
+- Pulse UI React component tests passed: `src/pulseUI/tests/auth/PasswordResetPage.test.tsx` (2 tests), `src/pulseUI/tests/auth/NewPasswordPage.test.tsx` (4 tests), `src/pulseUI/tests/auth/authClient.test.tsx` (10 tests).
+- `drizzle-kit generate` created migration `0019_fantastic_sinister_six.sql`.
+
 ## martins-okorie-jira197 - SCRUM-197
 
 **Branch:** `martins-okorie-jira197`

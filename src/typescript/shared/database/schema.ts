@@ -243,6 +243,26 @@ export const refreshToken = pgTable(
   ],
 );
 
+export const passwordResetToken = pgTable(
+  "password_reset_token",
+  {
+    id: uuid("id").default(sql`uuidv7()`).primaryKey(),
+    userId: uuid("user_id").notNull(),
+    tokenHash: varchar("token_hash", { length: 64 }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      name: "password_reset_token_user_id_fk",
+      columns: [table.userId],
+      foreignColumns: [users.id],
+    }),
+    uniqueIndex("password_reset_token_token_hash_key").on(table.tokenHash),
+    index("password_reset_token_user_id_idx").on(table.userId),
+  ],
+);
+
 export const taxPlanCycle = pgTable(
   "tax_plan_cycle",
   {
