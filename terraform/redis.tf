@@ -1,15 +1,15 @@
 resource "aws_elasticache_subnet_group" "redis" {
-  name       = "taxpulse-${var.environment}-redis-subnet-group"
+  name       = "${local.resource_name_prefix}-redis-subnet-group"
   subnet_ids = values(aws_subnet.private)[*].id
 
   tags = {
-    Name        = "taxpulse-${var.environment}-redis-subnet-group"
+    Name        = "${local.resource_name_prefix}-redis-subnet-group"
     Environment = var.environment
   }
 }
 
 resource "aws_security_group" "redis" {
-  name        = "taxpulse-${var.environment}-redis-sg"
+  name        = "${local.resource_name_prefix}-redis-sg"
   description = "Allow inbound Redis traffic from ECS services"
   vpc_id      = aws_vpc.main.id
 
@@ -29,13 +29,13 @@ resource "aws_security_group" "redis" {
   }
 
   tags = {
-    Name        = "taxpulse-${var.environment}-redis-sg"
+    Name        = "${local.resource_name_prefix}-redis-sg"
     Environment = var.environment
   }
 }
 
 resource "aws_elasticache_replication_group" "redis" {
-  replication_group_id       = "taxpulse-${var.environment}-redis"
+  replication_group_id       = "${local.resource_name_prefix}-redis"
   description                = "ElastiCache Redis for TaxPulse"
   engine                     = "redis"
   engine_version             = "7.1"
@@ -51,7 +51,7 @@ resource "aws_elasticache_replication_group" "redis" {
   transit_encryption_enabled = true
 
   tags = {
-    Name        = "taxpulse-${var.environment}-redis"
+    Name        = "${local.resource_name_prefix}-redis"
     Environment = var.environment
   }
 }

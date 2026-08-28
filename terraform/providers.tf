@@ -18,14 +18,18 @@ terraform {
 }
 
 provider "aws" {
-  region              = var.aws_region
-  profile             = "terraform-process"
-  shared_config_files = ["./aws-login-bridge.config"]
+  region = var.aws_region
+
+  # Preserve unrelated ownership labels during reconciliation; the required user tag
+  # remains Terraform-managed so every resource is attributable.
+  ignore_tags {
+    keys = ["owner", "stack"]
+  }
 
   default_tags {
     tags = {
       env  = "sandbox"
-      user = "dylan-harle"
+      user = var.resource_owner
     }
   }
 }

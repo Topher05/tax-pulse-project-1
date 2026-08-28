@@ -3,9 +3,11 @@ import { describe, expect, test, vi } from "vitest";
 import {
   AuthRequestError,
   createBrowserAuthClient,
+  registerAccount,
 } from "../../auth/authClient.ts";
 
 const credentials = {
+  workspaceSlug: "summit-ridge-tax",
   email: "advisor@example.test",
   password: "synthetic-password",
 };
@@ -20,6 +22,75 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 describe("browser auth client", () => {
+  test("posts registration details to create an account", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      jsonResponse({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+        email: "new-client@example.test",
+        role: "Client",
+        status: "invited",
+      }, 201),
+    );
+
+    await expect(
+      registerAccount(
+        {
+          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          email: "new-client@example.test",
+          password: "synthetic-password",
+        },
+        fetcher,
+      ),
+    ).resolves.toEqual({
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+      email: "new-client@example.test",
+      role: "Client",
+      status: "invited",
+    });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/auth/register",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          email: "new-client@example.test",
+          password: "synthetic-password",
+        }),
+      }),
+    );
+  });
+
+  test("surfaces duplicate registration details from Problem Details", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      jsonResponse({
+        type: "https://taxpulse.example/problems/email-already-registered",
+        title: "Email Already Registered",
+        status: 409,
+        detail: "An account with this email is already registered for this tenant.",
+        code: "EMAIL_ALREADY_REGISTERED",
+      }, 409),
+    );
+
+    await expect(
+      registerAccount(
+        {
+          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          email: "existing-client@example.test",
+          password: "synthetic-password",
+        },
+        fetcher,
+      ),
+    ).rejects.toMatchObject({
+      name: "AuthRequestError",
+      status: 409,
+      message: "An account with this email is already registered for this tenant.",
+    } satisfies Partial<AuthRequestError>);
+  });
+
   test("posts credentials to begin the MFA login flow", async () => {
     const fetcher = vi.fn<typeof fetch>(async () =>
       jsonResponse({
@@ -43,6 +114,7 @@ describe("browser auth client", () => {
         method: "POST",
         credentials: "include",
         body: JSON.stringify({
+          workspace_slug: credentials.workspaceSlug,
           email: credentials.email,
           password: credentials.password,
         }),

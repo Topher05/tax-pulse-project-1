@@ -7,6 +7,8 @@ locals {
     "${var.name_prefix}-${var.environment}-${data.aws_caller_identity.current.account_id}-spa",
   )
   origin_id = "${var.name_prefix}-spa-s3-origin"
+  # AWS-managed CloudFront policy; avoids creating a custom no-cache policy.
+  api_cache_policy_id = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
 }
 
 resource "aws_kms_key" "spa" {
@@ -133,6 +135,49 @@ resource "aws_cloudfront_cache_policy" "static_assets" {
   }
 }
 
+resource "aws_cloudfront_origin_request_policy" "api" {
+  name    = "${var.name_prefix}-${var.environment}-api"
+  comment = "Forward authentication and request metadata to the ALB API origin."
+
+  cookies_config {
+    cookie_behavior = "all"
+  }
+
+  headers_config {
+    header_behavior = "whitelist"
+    headers {
+      items = [
+        "Accept",
+        "Authorization",
+        "Content-Type",
+        "Origin",
+        "Access-Control-Request-Headers",
+        "Access-Control-Request-Method",
+      ]
+    }
+  }
+
+  query_strings_config {
+    query_string_behavior = "all"
+  }
+}
+
+resource "aws_cloudfront_function" "spa_route_rewrite" {
+  name    = "${var.name_prefix}-${var.environment}-spa-route-rewrite"
+  runtime = "cloudfront-js-2.0"
+  publish = true
+  code    = <<-EOT
+    function handler(event) {
+      var request = event.request;
+      var uri = request.uri;
+      if (uri.endsWith('/') || !uri.includes('.')) {
+        request.uri = '/index.html';
+      }
+      return request;
+    }
+  EOT
+}
+
 #tfsec:ignore:aws-cloudfront-enable-waf WAF policy is owned by a later hardening ticket; SCRUM-161 only requires private S3 behind CloudFront.
 resource "aws_cloudfront_distribution" "spa" {
   enabled             = true
@@ -148,6 +193,38 @@ resource "aws_cloudfront_distribution" "spa" {
     origin_access_control_id = aws_cloudfront_origin_access_control.spa.id
   }
 
+  origin {
+    origin_id   = "${var.name_prefix}-api-origin"
+    domain_name = var.api_origin_domain_name
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  dynamic "ordered_cache_behavior" {
+    for_each = [
+      "/auth/*",
+      "/v1/*",
+      "/tax-calculations*",
+      "/scenarios/comparisons*",
+    ]
+
+    content {
+      path_pattern             = ordered_cache_behavior.value
+      target_origin_id         = "${var.name_prefix}-api-origin"
+      viewer_protocol_policy   = "redirect-to-https"
+      allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods           = ["GET", "HEAD"]
+      compress                 = true
+      cache_policy_id          = local.api_cache_policy_id
+      origin_request_policy_id = aws_cloudfront_origin_request_policy.api.id
+    }
+  }
+
   default_cache_behavior {
     target_origin_id       = local.origin_id
     viewer_protocol_policy = "redirect-to-https"
@@ -155,20 +232,11 @@ resource "aws_cloudfront_distribution" "spa" {
     cached_methods         = ["GET", "HEAD"]
     compress               = true
     cache_policy_id        = aws_cloudfront_cache_policy.static_assets.id
-  }
 
-  custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 0
-  }
-
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 0
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.spa_route_rewrite.arn
+    }
   }
 
   restrictions {
@@ -179,7 +247,10 @@ resource "aws_cloudfront_distribution" "spa" {
 
   viewer_certificate {
     cloudfront_default_certificate = true
-    minimum_protocol_version       = "TLSv1.2_2021"
+    # CloudFront fixes this value to TLSv1 when using its default certificate.
+    # Enforcing TLSv1.2_2021 requires an ACM certificate and distribution aliases.
+    #tfsec:ignore:aws-cloudfront-use-secure-tls-policy Default-certificate protocol is fixed by CloudFront; see the preceding explanation.
+    minimum_protocol_version = "TLSv1"
   }
 }
 

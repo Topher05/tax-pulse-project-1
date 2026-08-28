@@ -3,6 +3,11 @@ output "api_base_url" {
   value       = "http://${aws_lb.api.dns_name}"
 }
 
+output "api_origin_domain_name" {
+  description = "ALB DNS name used as a CloudFront API origin."
+  value       = aws_lb.api.dns_name
+}
+
 output "alb_arn" {
   description = "Application Load Balancer ARN."
   value       = aws_lb.api.arn
@@ -81,4 +86,24 @@ output "core_case_task_role_arn" {
 output "tax_engine_task_role_arn" {
   description = "Tax Engine ECS task role ARN."
   value       = aws_iam_role.tax_engine_task.arn
+}
+
+output "slo_alarm_topic_arn" {
+  description = "SNS topic ARN used by SCRUM-187 SLO alarms."
+  value       = aws_sns_topic.slo_alarms.arn
+}
+
+output "slo_alarm_topic_name" {
+  description = "SNS topic name used by SCRUM-187 SLO alarms."
+  value       = aws_sns_topic.slo_alarms.name
+}
+
+output "slo_alarm_names" {
+  description = "CloudWatch alarm names for the SCRUM-187 latency and availability SLOs."
+  value = {
+    tax_engine_latency_risk               = aws_cloudwatch_metric_alarm.tax_engine_latency_slo_risk.alarm_name
+    core_case_availability_error_budget   = aws_cloudwatch_metric_alarm.core_case_availability_error_budget_burn.alarm_name
+    core_case_unhealthy_hosts             = aws_cloudwatch_metric_alarm.core_case_unhealthy_hosts.alarm_name
+    core_case_availability_risk_composite = aws_cloudwatch_composite_alarm.core_case_availability_slo_risk.alarm_name
+  }
 }

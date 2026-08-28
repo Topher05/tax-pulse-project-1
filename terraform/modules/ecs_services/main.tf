@@ -1,24 +1,37 @@
 data "aws_caller_identity" "current" {}
+data "aws_partition" "current" {}
 
 locals {
-  cluster_name                 = "${var.name_prefix}-api"
-  core_case_family             = "${var.name_prefix}-core-case-service"
-  tax_engine_family            = "${var.name_prefix}-tax-engine"
-  core_case_container_name     = "core-case-service"
-  tax_engine_container_name    = "tax-engine"
-  collector_container_name     = "aws-otel-collector"
-  collector_command            = "--config=/etc/ecs/ecs-default-config.yaml"
-  core_case_repository_name    = "${var.name_prefix}/core-case-service"
-  tax_engine_repository_name   = "${var.name_prefix}/tax-engine"
-  core_case_log_group_name     = "Case-Service"
-  tax_engine_log_group_name    = "Tax-Engine"
-  execution_role_name          = "${var.name_prefix}-ecs-task-execution-role"
-  core_case_task_role_name     = "${var.name_prefix}-core-case-task-role"
-  tax_engine_task_role_name    = "${var.name_prefix}-tax-engine-task-role"
-  alb_name                     = "${var.name_prefix}-api-alb"
-  core_case_target_group_name  = "${var.name_prefix}-core-case"
-  tax_engine_target_group_name = "${var.name_prefix}-tax-engine"
-  service_discovery_namespace  = "service.taxpulse.internal"
+  resource_name_prefix       = "${var.name_prefix}-${var.environment}"
+  uses_legacy_dev_names      = var.name_prefix == "taxpulse" && var.environment == "dev"
+  cluster_name               = local.uses_legacy_dev_names ? "taxpulse-api" : "${local.resource_name_prefix}-api"
+  core_case_family           = local.uses_legacy_dev_names ? "taxpulse-core-case-service" : "${local.resource_name_prefix}-core-case-service"
+  tax_engine_family          = local.uses_legacy_dev_names ? "taxpulse-tax-engine" : "${local.resource_name_prefix}-tax-engine"
+  core_case_service_name     = local.uses_legacy_dev_names ? "core-case-service" : "${local.resource_name_prefix}-core-case-service"
+  tax_engine_service_name    = local.uses_legacy_dev_names ? "tax-engine" : "${local.resource_name_prefix}-tax-engine"
+  core_case_container_name   = "core-case-service"
+  tax_engine_container_name  = "tax-engine"
+  collector_container_name   = "aws-otel-collector"
+  collector_command          = "--config=/etc/ecs/ecs-default-config.yaml"
+  core_case_repository_name  = "${var.name_prefix}/core-case-service"
+  tax_engine_repository_name = "${var.name_prefix}/tax-engine"
+  core_case_log_group_name   = local.uses_legacy_dev_names ? "Case-Service" : "/ecs/${local.resource_name_prefix}-core-case-service"
+  tax_engine_log_group_name  = local.uses_legacy_dev_names ? "Tax-Engine" : "/ecs/${local.resource_name_prefix}-tax-engine"
+  execution_role_name        = "${var.name_prefix}-ecs-task-execution-role"
+  core_case_task_role_name   = "${var.name_prefix}-core-case-task-role"
+  tax_engine_task_role_name  = "${var.name_prefix}-tax-engine-task-role"
+  # The original dev ALB and target groups are in the account default VPC.
+  # These names intentionally create a replacement ingress path in the
+  # Terraform-managed VPC before the legacy path is retired.
+  alb_name                       = "${local.resource_name_prefix}-api-alb"
+  core_case_target_group_name    = "${local.resource_name_prefix}-core-case"
+  tax_engine_target_group_name   = "${local.resource_name_prefix}-tax-engine"
+  service_discovery_namespace    = "service.taxpulse.internal"
+  core_case_image                = coalesce(var.core_case_image_uri, "${aws_ecr_repository.core_case.repository_url}:${var.core_case_image_tag}")
+  tax_engine_image               = coalesce(var.tax_engine_image_uri, "${aws_ecr_repository.tax_engine.repository_url}:${var.tax_engine_image_tag}")
+  core_case_pull_repository_arn  = coalesce(var.core_case_image_repository_arn, aws_ecr_repository.core_case.arn)
+  tax_engine_pull_repository_arn = coalesce(var.tax_engine_image_repository_arn, aws_ecr_repository.tax_engine.arn)
+  slo_alarm_prefix               = "${local.resource_name_prefix}-slo"
 }
 
 resource "aws_ecr_repository" "core_case" {
@@ -67,6 +80,83 @@ resource "aws_cloudwatch_log_group" "tax_engine" {
   retention_in_days = var.log_retention_days
 }
 
+data "aws_iam_policy_document" "slo_alarm_key" {
+  statement {
+    sid       = "AllowAccountAdministration"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  statement {
+    sid    = "AllowCloudWatchAlarmEncryption"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey*",
+    ]
+    resources = ["*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudwatch.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+}
+
+resource "aws_kms_key" "slo_alarms" {
+  description             = "KMS key for TaxPulse SLO alarm notification encryption."
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+  policy                  = data.aws_iam_policy_document.slo_alarm_key.json
+
+  tags = {
+    Name        = "${local.resource_name_prefix}-slo-alarms"
+    Environment = var.environment
+  }
+}
+
+resource "aws_kms_alias" "slo_alarms" {
+  name          = "alias/${local.resource_name_prefix}-slo-alarms"
+  target_key_id = aws_kms_key.slo_alarms.key_id
+}
+
+resource "aws_sns_topic" "slo_alarms" {
+  name              = var.slo_alarm_topic_name
+  kms_master_key_id = aws_kms_key.slo_alarms.arn
+}
+
+data "aws_iam_policy_document" "slo_alarm_topic" {
+  statement {
+    sid     = "AllowCloudWatchAlarmsPublish"
+    actions = ["sns:Publish"]
+    resources = [
+      aws_sns_topic.slo_alarms.arn,
+    ]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudwatch.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_sns_topic_policy" "slo_alarms" {
+  arn    = aws_sns_topic.slo_alarms.arn
+  policy = data.aws_iam_policy_document.slo_alarm_topic.json
+}
+
 data "aws_iam_policy_document" "ecs_tasks_assume_role" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -79,9 +169,10 @@ data "aws_iam_policy_document" "ecs_tasks_assume_role" {
 }
 
 resource "aws_iam_role" "execution" {
-  name               = local.execution_role_name
-  description        = "Launch-time ECS/Fargate execution role for pulling images, fetching secrets, and writing logs."
-  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  name                 = local.execution_role_name
+  description          = "Launch-time ECS/Fargate execution role for pulling images, fetching secrets, and writing logs."
+  assume_role_policy   = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
 
   lifecycle {
     ignore_changes = [permissions_boundary, tags, tags_all]
@@ -103,8 +194,8 @@ data "aws_iam_policy_document" "execution_runtime_access" {
       "ecr:BatchGetImage",
     ]
     resources = [
-      aws_ecr_repository.core_case.arn,
-      aws_ecr_repository.tax_engine.arn,
+      local.core_case_pull_repository_arn,
+      local.tax_engine_pull_repository_arn,
     ]
   }
 
@@ -144,9 +235,10 @@ resource "aws_iam_role_policy" "execution_secret_access" {
 }
 
 resource "aws_iam_role" "core_case_task" {
-  name               = local.core_case_task_role_name
-  description        = "Runtime task role for the Core Case Service application code."
-  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  name                 = local.core_case_task_role_name
+  description          = "Runtime task role for the Core Case Service application code."
+  assume_role_policy   = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
 
   lifecycle {
     ignore_changes = [permissions_boundary, tags, tags_all]
@@ -154,9 +246,10 @@ resource "aws_iam_role" "core_case_task" {
 }
 
 resource "aws_iam_role" "tax_engine_task" {
-  name               = local.tax_engine_task_role_name
-  description        = "Runtime task role for the Tax Engine application code. No app-domain AWS grants are required yet."
-  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  name                 = local.tax_engine_task_role_name
+  description          = "Runtime task role for the Tax Engine application code. No app-domain AWS grants are required yet."
+  assume_role_policy   = data.aws_iam_policy_document.ecs_tasks_assume_role.json
+  permissions_boundary = var.permissions_boundary_arn
 
   lifecycle {
     ignore_changes = [permissions_boundary, tags, tags_all]
@@ -248,6 +341,10 @@ resource "aws_lb" "api" {
   subnets                    = var.public_subnet_ids
   ip_address_type            = "ipv4"
   drop_invalid_header_fields = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_target_group" "core_case" {
@@ -267,6 +364,10 @@ resource "aws_lb_target_group" "core_case" {
     unhealthy_threshold = 2
     matcher             = "200"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_target_group" "tax_engine" {
@@ -285,6 +386,10 @@ resource "aws_lb_target_group" "tax_engine" {
     healthy_threshold   = 2
     unhealthy_threshold = 2
     matcher             = "200"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -316,7 +421,7 @@ resource "aws_lb_listener_rule" "core_case" {
 
   condition {
     path_pattern {
-      values = ["/v1/*"]
+      values = ["/v1/*", "/auth/*"]
     }
   }
 }
@@ -384,7 +489,7 @@ resource "aws_ecs_task_definition" "core_case" {
   container_definitions = jsonencode([
     {
       name      = local.core_case_container_name
-      image     = "${aws_ecr_repository.core_case.repository_url}:${var.core_case_image_tag}"
+      image     = local.core_case_image
       essential = true
       portMappings = [
         {
@@ -399,6 +504,7 @@ resource "aws_ecs_task_definition" "core_case" {
         { name = "NODE_ENV", value = "production" },
         { name = "PORT", value = "3000" },
         { name = "JWT_ISSUER", value = var.jwt_issuer },
+        { name = "JWT_JWKS_URL", value = "${var.jwt_issuer}/.well-known/jwks.json" },
         { name = "JWT_ACCESS_TOKEN_TTL_SECONDS", value = "900" },
         { name = "JWT_REFRESH_TOKEN_TTL_SECONDS", value = "2592000" },
         { name = "LIABILITY_ENGINE_BASE", value = "http://tax-engine.service.taxpulse.internal:8000" },
@@ -431,6 +537,14 @@ resource "aws_ecs_task_definition" "core_case" {
         {
           name      = "DATABASE_URL"
           valueFrom = "${var.shared_config_secret_arn}:DATABASE_URL::"
+        },
+        {
+          name      = "JWT_SIGNING_PRIVATE_KEY"
+          valueFrom = "${var.shared_config_secret_arn}:JWT_SIGNING_PRIVATE_KEY::"
+        },
+        {
+          name      = "JWT_SIGNING_KEY_ID"
+          valueFrom = "${var.shared_config_secret_arn}:JWT_SIGNING_KEY_ID::"
         },
         {
           name      = "JWT_SIGNING_SECRET"
@@ -498,14 +612,14 @@ resource "aws_ecs_task_definition" "tax_engine" {
   memory                   = "1024"
 
   runtime_platform {
-    cpu_architecture        = "ARM64"
+    cpu_architecture        = "X86_64"
     operating_system_family = "LINUX"
   }
 
   container_definitions = jsonencode([
     {
       name      = local.tax_engine_container_name
-      image     = "${aws_ecr_repository.tax_engine.repository_url}:${var.tax_engine_image_tag}"
+      image     = local.tax_engine_image
       essential = true
       portMappings = [
         {
@@ -519,6 +633,8 @@ resource "aws_ecs_task_definition" "tax_engine" {
       environment = [
         { name = "PORT", value = "8000" },
         { name = "JWT_ISSUER", value = var.jwt_issuer },
+        { name = "JWT_JWKS_URL", value = "${var.jwt_issuer}/.well-known/jwks.json" },
+        { name = "JWT_AUDIENCE", value = "taxpulse-http-api" },
         { name = "OTEL_SERVICE_NAME", value = "tax-engine" },
         { name = "OTEL_EXPORTER_OTLP_ENDPOINT", value = "http://127.0.0.1:4318" },
         { name = "OTEL_EXPORTER_OTLP_PROTOCOL", value = "http/protobuf" },
@@ -597,7 +713,7 @@ resource "aws_ecs_task_definition" "tax_engine" {
 }
 
 resource "aws_ecs_service" "core_case" {
-  name                              = "core-case-service"
+  name                              = local.core_case_service_name
   cluster                           = aws_ecs_cluster.api.id
   task_definition                   = aws_ecs_task_definition.core_case.arn
   desired_count                     = 1
@@ -608,9 +724,12 @@ resource "aws_ecs_service" "core_case" {
   deployment_maximum_percent         = 200
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    # The sandbox SCP forbids NAT gateways. Fargate tasks therefore use public
+    # subnets and public IPs for AWS service egress; inbound application traffic
+    # remains restricted to the ALB security group.
+    subnets          = var.public_subnet_ids
     security_groups  = [var.ecs_service_security_group_id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {
@@ -619,11 +738,16 @@ resource "aws_ecs_service" "core_case" {
     container_port   = 3000
   }
 
+  lifecycle {
+    # The GitHub Actions release role deploys newer task definition revisions.
+    ignore_changes = [task_definition]
+  }
+
   depends_on = [aws_lb_listener_rule.core_case]
 }
 
 resource "aws_ecs_service" "tax_engine" {
-  name                              = "tax-engine"
+  name                              = local.tax_engine_service_name
   cluster                           = aws_ecs_cluster.api.id
   task_definition                   = aws_ecs_task_definition.tax_engine.arn
   desired_count                     = 1
@@ -634,9 +758,9 @@ resource "aws_ecs_service" "tax_engine" {
   deployment_maximum_percent         = 200
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    subnets          = var.public_subnet_ids
     security_groups  = [var.ecs_service_security_group_id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {
@@ -649,5 +773,113 @@ resource "aws_ecs_service" "tax_engine" {
     registry_arn = aws_service_discovery_service.tax_engine.arn
   }
 
+  lifecycle {
+    # The GitHub Actions release role deploys newer task definition revisions.
+    ignore_changes = [task_definition]
+  }
+
   depends_on = [aws_lb_listener_rule.tax_engine]
+}
+
+resource "aws_cloudwatch_metric_alarm" "tax_engine_latency_slo_risk" {
+  alarm_name                            = "${local.slo_alarm_prefix}-tax-engine-latency-risk"
+  alarm_description                     = "SCRUM-187 SLO risk: successful tax-engine requests exceed the 2 second p95 latency objective."
+  comparison_operator                   = "GreaterThanThreshold"
+  evaluation_periods                    = 5
+  datapoints_to_alarm                   = 3
+  evaluate_low_sample_count_percentiles = "ignore"
+  threshold                             = 2000
+  treat_missing_data                    = "notBreaching"
+  alarm_actions                         = [aws_sns_topic.slo_alarms.arn]
+  ok_actions                            = [aws_sns_topic.slo_alarms.arn]
+  namespace                             = "TaxPulse"
+  metric_name                           = "tax_plan_cycle.tax_engine_request.duration_ms"
+  extended_statistic                    = "p95"
+  period                                = 300
+
+  dimensions = {
+    service = "core-case-service"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "core_case_availability_error_budget_burn" {
+  alarm_name          = "${local.slo_alarm_prefix}-core-case-availability-error-budget-burn"
+  alarm_description   = "SCRUM-187 SLO risk: Core Case ALB target 5xx rate exceeds the 0.1 percent error budget."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 5
+  datapoints_to_alarm = 3
+  threshold           = 0.001
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.slo_alarms.arn]
+  ok_actions          = [aws_sns_topic.slo_alarms.arn]
+
+  metric_query {
+    id          = "error_rate"
+    label       = "Core Case target 5xx error rate"
+    expression  = "IF(requests > 0, errors / requests, 0)"
+    return_data = true
+  }
+
+  metric_query {
+    id = "errors"
+
+    metric {
+      namespace   = "AWS/ApplicationELB"
+      metric_name = "HTTPCode_Target_5XX_Count"
+      period      = 300
+      stat        = "Sum"
+      dimensions = {
+        LoadBalancer = aws_lb.api.arn_suffix
+        TargetGroup  = aws_lb_target_group.core_case.arn_suffix
+      }
+    }
+  }
+
+  metric_query {
+    id = "requests"
+
+    metric {
+      namespace   = "AWS/ApplicationELB"
+      metric_name = "RequestCount"
+      period      = 300
+      stat        = "Sum"
+      dimensions = {
+        LoadBalancer = aws_lb.api.arn_suffix
+        TargetGroup  = aws_lb_target_group.core_case.arn_suffix
+      }
+    }
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "core_case_unhealthy_hosts" {
+  alarm_name          = "${local.slo_alarm_prefix}-core-case-unhealthy-hosts"
+  alarm_description   = "SCRUM-187 backing health alarm: the Core Case target group has no healthy targets."
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  datapoints_to_alarm = 2
+  threshold           = 1
+  treat_missing_data  = "breaching"
+  namespace           = "AWS/ApplicationELB"
+  metric_name         = "HealthyHostCount"
+  statistic           = "Average"
+  period              = 60
+
+  dimensions = {
+    LoadBalancer = aws_lb.api.arn_suffix
+    TargetGroup  = aws_lb_target_group.core_case.arn_suffix
+  }
+}
+
+resource "aws_cloudwatch_composite_alarm" "core_case_availability_slo_risk" {
+  alarm_name        = "${local.slo_alarm_prefix}-core-case-availability-risk"
+  alarm_description = "SCRUM-187 SLO risk: Core Case availability is burning error budget or has no healthy targets."
+  alarm_actions     = [aws_sns_topic.slo_alarms.arn]
+  ok_actions        = [aws_sns_topic.slo_alarms.arn]
+  alarm_rule = join(
+    " OR ",
+    [
+      "ALARM(${aws_cloudwatch_metric_alarm.core_case_availability_error_budget_burn.alarm_name})",
+      "ALARM(${aws_cloudwatch_metric_alarm.core_case_unhealthy_hosts.alarm_name})",
+    ],
+  )
 }

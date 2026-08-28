@@ -3,6 +3,11 @@ variable "aws_region" {
   type        = string
 }
 
+variable "permissions_boundary_arn" {
+  description = "Permissions boundary applied to every IAM role created by this module."
+  type        = string
+}
+
 variable "environment" {
   description = "Environment label for tags and generated names."
   type        = string
@@ -56,13 +61,37 @@ variable "core_case_image_tag" {
   type        = string
 }
 
+variable "core_case_image_uri" {
+  description = "Optional full immutable image URI for the Core Case Service."
+  type        = string
+  default     = null
+}
+
+variable "core_case_image_repository_arn" {
+  description = "Optional ECR repository ARN for an externally supplied Core Case Service image."
+  type        = string
+  default     = null
+}
+
 variable "tax_engine_image_tag" {
   description = "Immutable ECR image tag for the Tax Engine."
   type        = string
 }
 
+variable "tax_engine_image_uri" {
+  description = "Optional full immutable image URI for the Tax Engine."
+  type        = string
+  default     = null
+}
+
+variable "tax_engine_image_repository_arn" {
+  description = "Optional ECR repository ARN for an externally supplied Tax Engine image."
+  type        = string
+  default     = null
+}
+
 variable "shared_config_secret_arn" {
-  description = "Secrets Manager ARN with DATABASE_URL and JWT_SIGNING_SECRET keys."
+  description = "Secrets Manager ARN with DATABASE_URL, JWT_SIGNING_PRIVATE_KEY, and JWT_SIGNING_KEY_ID keys."
   type        = string
 }
 
@@ -93,5 +122,10 @@ variable "stage_changed_queue_url" {
 
 variable "action_item_created_topic_arn" {
   description = "SNS topic ARN for action-item-created event publishing."
+  type        = string
+}
+
+variable "slo_alarm_topic_name" {
+  description = "SNS topic name used by CloudWatch SLO alarms."
   type        = string
 }

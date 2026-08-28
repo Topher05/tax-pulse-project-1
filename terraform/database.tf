@@ -1,5 +1,5 @@
 resource "aws_security_group" "ecs_service" {
-  name        = "taxpulse-${var.environment}-ecs-service-sg"
+  name        = "${local.resource_name_prefix}-ecs-service-sg"
   description = "Access control for the future ECS service compute layer"
   vpc_id      = aws_vpc.main.id
 
@@ -10,24 +10,33 @@ resource "aws_security_group" "ecs_service" {
     cidr_blocks = [var.vpc_cidr]
   }
 
+  #tfsec:ignore:aws-ec2-no-public-egress-sgr Public HTTPS is temporarily required for external JWKS retrieval through the NAT gateway.
+  egress {
+    description = "HTTPS egress through the private-subnet NAT gateway for ECR, CloudWatch, Secrets Manager, and JWKS."
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = {
-    Name        = "taxpulse-${var.environment}-ecs-service-sg"
+    Name        = "${local.resource_name_prefix}-ecs-service-sg"
     Environment = var.environment
   }
 }
 
 resource "aws_db_subnet_group" "db" {
-  name       = "taxpulse-${var.environment}-db-subnet-group"
+  name       = "${local.resource_name_prefix}-db-subnet-group"
   subnet_ids = values(aws_subnet.private)[*].id
 
   tags = {
-    Name        = "taxpulse-${var.environment}-db-subnet-group"
+    Name        = "${local.resource_name_prefix}-db-subnet-group"
     Environment = var.environment
   }
 }
 
 resource "aws_security_group" "db" {
-  name        = "taxpulse-${var.environment}-db-sg"
+  name        = "${local.resource_name_prefix}-db-sg"
   description = "Allow inbound PostgreSQL traffic from ECS services"
   vpc_id      = aws_vpc.main.id
 
@@ -47,13 +56,13 @@ resource "aws_security_group" "db" {
   }
 
   tags = {
-    Name        = "taxpulse-${var.environment}-db-sg"
+    Name        = "${local.resource_name_prefix}-db-sg"
     Environment = var.environment
   }
 }
 
 resource "aws_db_instance" "postgres" {
-  identifier                  = "taxpulse-${var.environment}-db"
+  identifier                  = "${local.resource_name_prefix}-db"
   allocated_storage           = 20
   max_allocated_storage       = 100
   engine                      = "postgres"
@@ -73,7 +82,7 @@ resource "aws_db_instance" "postgres" {
   allow_major_version_upgrade = false
 
   tags = {
-    Name        = "taxpulse-${var.environment}-postgres"
+    Name        = "${local.resource_name_prefix}-postgres"
     Environment = var.environment
   }
 }

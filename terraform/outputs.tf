@@ -112,6 +112,11 @@ output "transition_api_url" {
   value       = module.lambda_consumers.transition_api_url
 }
 
+output "jwt_issuer_url" {
+  description = "Public OIDC discovery and JWKS issuer URL used by the HTTP API and services."
+  value       = module.lambda_consumers.jwt_issuer
+}
+
 output "spa_url" {
   description = "CloudFront URL for the TaxPulse SPA."
   value       = module.spa_delivery.spa_url
@@ -130,4 +135,19 @@ output "cloudfront_distribution_id" {
 output "github_actions_release_role_arn" {
   description = "IAM role ARN assumed by the development release workflow for ECR publish, verify, and ECS deploy."
   value       = aws_iam_role.github_actions_release.arn
+}
+
+output "slo_alarm_topic_arn" {
+  description = "SNS topic ARN used by the SCRUM-187 CloudWatch SLO alarms."
+  value       = module.ecs_services.slo_alarm_topic_arn
+}
+
+output "slo_alarm_topic_name" {
+  description = "SNS topic name used by the SCRUM-187 CloudWatch SLO alarms."
+  value       = module.ecs_services.slo_alarm_topic_name
+}
+
+output "slo_alarm_names" {
+  description = "CloudWatch alarm names emitted by the SCRUM-187 ECS services module."
+  value       = module.ecs_services.slo_alarm_names
 }

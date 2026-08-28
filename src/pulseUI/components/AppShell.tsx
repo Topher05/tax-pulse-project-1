@@ -22,7 +22,6 @@ function AppShellLayout() {
     assistantCaseContext,
     fabAnchorElement,
     closeAssistant,
-    errorMessage,
     isDrawerOpen,
     isLoading,
     messages,
@@ -161,7 +160,6 @@ function AppShellLayout() {
 
           <AssistantDrawer
             assistantCaseContext={assistantCaseContext}
-            errorMessage={errorMessage}
             isLoading={isLoading}
             isOpen={isDrawerOpen}
             messages={messages}

@@ -117,6 +117,78 @@ Add new ticket entries below using this template.
 -
 -->
 
+## caleb-latimer-jira189 - SCRUM-189
+
+**Branch:** `caleb-latimer-jira189`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-189
+
+**Summary:** Assemble the reproducible evidence packet
+
+**Description:** As a Platform Engineer, I want an evidence packet, so that the build
+is reproducible and auditable by reviewers. This branch now carries the Jira-169 gate
+corrections, Terraform-backed SPA targeting for the release ZAP scan, a release
+evidence manifest artifact, and a rewritten evidence packet that preserves the required
+TODO markers while documenting the now-available Jira-169 and Jira-181 evidence paths.
+
+**Acceptance Criteria:**
+
+- The packet links CI test results, security scan reports, and SBOMs for the released
+  images.
+- The packet includes exact steps to reproduce the deploy from a clean checkout.
+- A reviewer can follow the packet to a running stack without tribal knowledge.
+- Missing Jira-169 and Jira-181 inputs remain called out with `TODO: Depending on
+  Jira-XXX` comments instead of being implied as complete.
+- The ZAP release gate fails closed for malformed reports and scans the Terraform-backed
+  deployed SPA URL instead of a hardcoded hostname.
+- One release manifest artifact ties the release SHA, commit checks page, Actions run,
+  deployed SPA URL, immutable image digests, and uploaded artifact names together.
+
+**Code Connection:**
+
+- `docs/release-evidence-packet.md`
+- `.github/scripts/enforce-zap-high-severity.mjs`
+- `.github/workflows/container-scan-sbom.yml`
+- `.github/workflows/zap-baseline.yml`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
+- `docs/stride-threat-model.md`
+- `docs/trivy-suppressions.md`
+- `README.md`
+- `deployment/ecs/README.md`
+- `deployment/spa/README.md`
+- `terraform/README.md`
+
+**Project Scope Connection:**
+
+- Hardening, Evidence & Final Demo
+- Release-readiness documentation
+- Release security gate correctness
+- CI, scan, SBOM, deployment, and evidence traceability
+
+**Changed Files:**
+
+- `.github/scripts/enforce-zap-high-severity.mjs`
+- `.github/workflows/container-scan-sbom.yml`
+- `docs/release-evidence-packet.md`
+- `planning/team/cl-ticket-journal.md`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
+
+**Validation Notes:**
+
+- `development` was already an ancestor of `caleb-latimer-jira189`, so no merge was
+  required before implementation.
+- The ZAP gate tests were expanded to cover malformed roots, invalid site/alert
+  containers, invalid risk codes, valid empty alerts, and valid informational/low/
+  medium reports.
+- The release workflow test now verifies Terraform-backed `spa_url` resolution, the
+  absence of a hardcoded CloudFront hostname, pre-ZAP invalid output checks, and the
+  release evidence manifest contents.
+- Local validation still depends on the repository Node/Python environments and any
+  available workflow linters in this shell; see the implementation report for the exact
+  commands and outcomes.
+
 ## caleb-latimer-jira171 - SCRUM-171
 
 **Branch:** `caleb-latimer-jira171`
@@ -670,6 +742,79 @@ current stub response path.
   Docker/database contention timeouts, which remain excluded under the ticket validation scope;
   no pgvector, seed, JWT, assertion, or other deterministic failures remained.
 
+**RAG API Integration Pass:**
+
+- Connected the existing drawer mutation to the merged RAG request contract. Opening the drawer
+  now sends recommendation context without a fabricated question, while follow-up prompts send the
+  same recommendation plus the trimmed advisor question.
+- Extended Plan Cycle Detail mapping with optional taxpayer identifier validation and derived the
+  page-scoped recommendation from stage, owner, priority, verified taxpayer name, and provider.
+  Missing or blank values use the required `...` placeholder, and route cleanup clears the context.
+- Added shared 2,000-character question validation with whitespace and unsupported-control-character
+  rejection. The composer exposes validation through `aria-invalid` and `aria-describedby`.
+- Replaced duplicate banner and transcript failures with one structured error message. Problem
+  Details title/code and message/detail fields are handled consistently across assistant failures.
+- Preserved successful explanation and citation rendering, request sequencing, authenticated-fetch
+  refresh behavior, responsive drawer behavior, and existing dialog accessibility.
+
+**RAG API Integration Changed Files:**
+
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.module.css`
+- `src/pulseUI/components/assist/assistantPanel.tsx`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/entities/taxPlanDetailsAssistant.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/tests/assist/AssistantDrawer.test.tsx`
+- `src/pulseUI/tests/assist/assistantPanel.test.tsx`
+- `src/pulseUI/tests/assist/taxPlanDetailsAssistant.test.ts`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**RAG API Integration Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- Focused assistant, details, query-mapping, and axe validation passed: 58 tests across 6 files.
+- `npm.cmd --prefix src/pulseUI run test` passed: 253 tests across 48 files.
+- `npm.cmd --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
+- The backend route and schema were not changed in this pass.
+
+**Assistant Toolbar Refinement:**
+
+- Removed the prompt-suggestions placeholder action and its toast behavior.
+- Right-aligned the remaining expand/collapse, new-dialogue, and close controls in a compact
+  three-button toolbar while preserving 44px pointer targets and accessible tooltips.
+- Updated the loading skeleton to mirror the same three-button count, right alignment, square
+  dimensions, spacing, and corner radius as the live toolbar.
+- Hardened drawer and loader accessibility with atomic polite loading announcements, labeled
+  conversation logs, toggle pressed-state semantics, hidden decorative skeletons, and retained
+  focus, keyboard, tooltip, and reduced-motion behavior.
+- Hardened responsive reflow with bounded resize widths, wrapping metadata and messages, fullscreen
+  safe-area padding, compact short-viewport layouts, dynamic loader sizing, and matching 44px
+  live/loading controls.
+- Replaced the three-row responsive case-stage grid with a single keyboard-focusable horizontal
+  progression below 1100px, eliminating the roughly 340px case-header expansion while keeping all
+  seven backend stages available through native scrolling and scroll snapping.
+- Corrected the actual desktop Case tabs height regression by preventing the main detail column and
+  its tab row from stretching to match the taller Case Properties and Quick Actions sidebar.
+
+**Final Pipeline Safety Validation:**
+
+- `npm.cmd --prefix src/pulseUI run verify` passed: Pulse UI typecheck, 255 tests across 48 files,
+  6 dedicated axe tests, and the production build. Vite reported only the existing chunk-size
+  advisory.
+- `npm.cmd run typecheck:core` and `npm.cmd run build` passed for Core Case Service.
+- Core Case Service passed 469 tests across 107 files when run with one worker. The parallel run's
+  11 failures were all exact 60-second Testcontainers/database timeouts; the same contracts passed
+  serially without code changes.
+- `py -3.12 -m uv run --no-sync ruff format --check src tests` reported all 42 Python files already
+  formatted, and `ruff check src tests` passed.
+- Locked-environment Pyright validation passed with 0 errors and 0 warnings.
+- `git diff --check` passed before the final journal update.
+
 **CI Security Gate Follow-up:**
 
 - Reviewed the Core TypeScript, Required Gate, and Gitleaks logs from the prior PR merge SHA.
@@ -681,6 +826,20 @@ current stub response path.
   in `.env.example`. All scanner rules remain enabled for every other finding.
 - Local Gitleaks execution was unavailable because the binary is not installed; the exact
   fingerprints were copied from the CI scan output for validation on the next workflow run.
+
+**Trivy Runtime Image Follow-up:**
+
+- Reproduced the Core Case container gate with Trivy 0.70.0 and identified the unsuppressed finding
+  as HIGH-severity `CVE-2026-9496` in `pacote@17.0.6`, bundled with the base image's global npm.
+- Removed npm and npx only from the Core Case runtime stage. The build stage retains npm for locked
+  dependency installation, TypeScript compilation, and production dependency pruning.
+- Added a container workflow regression test that requires the package-manager removal to happen
+  before the runtime switches to the non-root `node` user and preserves direct `node` startup.
+- The focused container workflow suite passed: 4 tests in 1 file.
+- `npm.cmd run typecheck:core` passed.
+- The rebuilt runtime retained Node.js 22.0.0 while confirming npm and npx were absent.
+- A socketless Trivy 0.70.0 image-tar scan passed with 0 unsuppressed HIGH/CRITICAL findings; no
+  vulnerability suppression was added.
 
 ## caleb-latimer-jira160 - SCRUM-160
 
@@ -2604,3 +2763,55 @@ This ticket keeps ADR-0014 cache-aside behavior separate from the idempotency le
 
 - Validation has not been run yet after the final cleanup.
 - The new `cloud-tap` script is intended to run locally with synthetic events and can optionally use `TAXPULSE_REDIS_URL` if Redis is available.
+
+## caleb-latimer-jira185 - SCRUM-185
+
+**Branch:** `caleb-latimer-jira185`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-185
+
+**Summary:** Draw the TaxPulse data-flow diagram
+
+**Description:** As a Security Engineer, I want a data-flow diagram of TaxPulse, so that the threat model has a clear system picture. This branch adds the detailed architecture markdown for the full TaxPulse data flow and keeps it aligned with the existing ADR-style documentation pattern.
+
+**Acceptance Criteria:**
+
+- A detailed TaxPulse data-flow document exists under `docs/`.
+- The document uses Mermaid heavily enough to show the full system flow, not just a single overview graphic.
+- The document covers authentication, the Core Case Service, the Tax Engine, the portal, storage, and event-driven side effects.
+- Trust boundaries between tenants and between internal and external users are visible in the diagram set.
+- The document name follows the `taxPulse_dataFlow.md` naming convention.
+
+**Code Connection:**
+
+- `docs/taxPulse_dataFlow.md`
+- `adr/0011-versioned-tax-plan-cycle-api.md`
+- `adr/0014-redis-cache-aside-queue-reads.md`
+- `adr/0016-fastapi-startup-convention.md`
+- `adr/0020-pulse-ui-layered-application-structure.md`
+- `adr/0022-tenant-login-hostname-resolution.md`
+- `adr/0023-tanstack-query-for-pulse-ui-server-state.md`
+- `adr/0026-route-driven-case-context.md`
+- `adr/0028-stage-changed-cloudevents-schema.md`
+- `docs/stride-threat-model.md`
+- `docs/storage-decision-matrix.md`
+
+**Project Scope Connection:**
+
+- Security architecture and threat-model support
+- Core Case Service and Tax Engine boundary documentation
+- Tenant isolation and trust-boundary documentation
+- ADR-aligned design documentation under `docs/`
+
+**Changed Files:**
+
+- `docs/taxPulse_dataFlow.md`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- The document uses Mermaid flowcharts, sequence diagrams, and an ER diagram to cover the full flow.
+- The scope sections explicitly call out conditional routing and trust boundaries.
+- The naming convention matches the requested `taxPulse_dataFlow.md` form.

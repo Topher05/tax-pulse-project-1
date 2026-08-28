@@ -24,6 +24,7 @@ export function SignInPage() {
             setError(null);
             setIsSubmitting(true);
             void login({
+              workspaceSlug: String(formData.get("workspace_slug") ?? "").trim().toLowerCase(),
               email: String(formData.get("email") ?? ""),
               password: String(formData.get("password") ?? ""),
             })
@@ -38,6 +39,16 @@ export function SignInPage() {
               });
           }}
         >
+          <label>
+            Firm workspace
+            <input
+              autoComplete="organization"
+              name="workspace_slug"
+              placeholder="summit-ridge-tax"
+              required
+              type="text"
+            />
+          </label>
           <label>
             Email address
             <input autoComplete="email" name="email" required type="email" />
@@ -55,6 +66,9 @@ export function SignInPage() {
         </form>
         <Link className="authTextLink" to="/password-reset">
           Forgot your password?
+        </Link>
+        <Link className="authTextLink" to="/register">
+          Create an account
         </Link>
       </section>
     </main>

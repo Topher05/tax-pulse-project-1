@@ -667,8 +667,9 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
           tags: ["Authentication"],
           summary: "Verify a password and start an MFA challenge",
           description:
-            "Resolves the tenant from the firm-specific login hostname. " +
-            "The request body accepts only email and password; clients must not send tenant_id.",
+            "Resolves the tenant from workspace_slug for shared-host deployments, " +
+            "or from the firm-specific login hostname when workspace_slug is omitted. " +
+            "Clients must not send tenant_id.",
           requestBody: {
             required: true,
             content: {
