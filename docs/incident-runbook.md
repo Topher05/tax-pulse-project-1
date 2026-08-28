@@ -119,3 +119,57 @@ root-cause confidence, immediate containment, permanent follow-up, status, and
 validation result. Record unknowns as unknowns. A runbook walkthrough or incident
 is complete only after the responder has documented the recovery signal and the
 owner has accepted any follow-up ticket.
+
+## Synthetic tabletop review
+
+This tabletop was conducted on 2026-08-28 using synthetic identifiers only. No
+CloudWatch, ECS, ALB, or other live infrastructure was queried or changed.
+
+**Review metadata**
+
+- Incident identifier: `SYN-188-TABLETOP-001`
+- Environment: `sandbox-tabletop`
+- Reviewer role: Platform on-call documentation reviewer
+- Review date: 2026-08-28
+- Outcome: **PASS with documented follow-up**
+
+### Inject A — Tax Engine calculation latency
+
+At 14:00 UTC, the synthetic alarm
+`taxpulse-dev-slo-tax-engine-latency-risk` enters `ALARM`. Synthetic p95 for
+`tax_plan_cycle.tax_engine_request.duration_ms` is 2,450 ms for successful
+requests with `service=core-case-service`.
+
+| Review point | Expected tabletop response |
+| --- | --- |
+| Alarm and action | Acknowledge the alarm, assign the incident owner, and record the state transition and UTC time in `SYN-188-TABLETOP-001`. |
+| Evidence in disposition format | Record the `TaxPulse` namespace, metric and dimensions, p95 window, synthetic request ID `req-syn-188-latency-001`, trace ID `trace-syn-188-latency-001`, Core Case and Tax Engine log coordinates, ECS events, and recent deployment evidence in the [SCRUM-171 disposition format](../planning/scrum-171-disposition-log-template.md). |
+| Decision and escalation | Correlate the request and trace IDs, then decide whether the delay is in Core Case, the inter-service call, Tax Engine, or a visible dependency. Escalate to Platform and Tax Engine owners if the breach persists or no approved reversible containment exists. |
+| Recovery criterion | Keep monitoring until the same p95 signal is below 2,000 ms through a complete evaluation window, the alarm is `OK`, and synthetic successful-request logs show normal completion. |
+
+### Inject B — Core Case API availability
+
+At 14:08 UTC, while Inject A is under investigation, the synthetic composite
+alarm `taxpulse-dev-slo-core-case-availability-risk` enters `ALARM`. The
+responder must inspect both child alarms. The tabletop first presents target-side
+5xx error-budget burn, then presents zero healthy targets as a separate branch.
+
+| Review point | Expected tabletop response |
+| --- | --- |
+| Alarm and action | Acknowledge the composite, record its state and child states, and preserve the synthetic timeline in `SYN-188-TABLETOP-001`. |
+| 5xx branch evidence | For `taxpulse-dev-slo-core-case-availability-error-budget-burn`, record synthetic ALB `RequestCount`, `HTTPCode_Target_5XX_Count`, the calculated ratio, Core Case request/trace IDs `req-syn-188-api-001` and `trace-syn-188-api-001`, route, log coordinates, and ECS events in the [SCRUM-171 disposition format](../planning/scrum-171-disposition-log-template.md). Exclude fixed 404s and client 4xxs. |
+| 5xx branch decision | Treat the branch as target-side availability degradation when the ratio exceeds 0.1%; escalate to the Core Case owner for sustained customer impact or rising errors. |
+| Unhealthy-target branch evidence | For `taxpulse-dev-slo-core-case-unhealthy-hosts`, record synthetic desired/running task counts, target health reasons, ECS task events, deployment state, and `GET /health` results in the [SCRUM-171 disposition format](../planning/scrum-171-disposition-log-template.md). |
+| Unhealthy-target branch decision | Treat zero healthy targets as a distinct health/deployment boundary. Escalate to Core Case and Platform owners and use only an approved reversible rollout or rollback/scale decision. |
+| Recovery criterion | Confirm the relevant child alarm clears: target-side 5xx ratio is below 0.1% or healthy target count is at least 1, respectively. Then confirm both child and composite alarms are `OK`, successful request evidence exists, and the owner accepts the closeout. |
+
+### Tabletop gaps and review result
+
+The walkthrough identified one clarity gap: a responder could initially treat the
+availability composite as a single cause and miss the distinction between target
+5xxs and zero healthy targets. The runbook correction is the explicit child-alarm
+branch in the availability triage table, including separate evidence and recovery
+criteria. The latency procedure was also checked for request/trace correlation,
+deployment evidence, and a complete-window recovery signal. Both failure-mode
+paths were executable from the documented procedure, so the review outcome is
+**PASS with follow-up to repeat the tabletop after SCRUM-187 alarm deployment**.
