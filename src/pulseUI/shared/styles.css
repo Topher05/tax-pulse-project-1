@@ -188,6 +188,14 @@ body::before {
   border-radius: 8px;
 }
 
+.authSuccess {
+  padding: 10px 12px;
+  color: #16603f;
+  background: #edfdf5;
+  border: 1px solid #91d8b3;
+  border-radius: 8px;
+}
+
 /* Keep the shared modal shell easy to tune if sizing or card treatment changes later. */
 .modalOverlay {
   position: fixed;
