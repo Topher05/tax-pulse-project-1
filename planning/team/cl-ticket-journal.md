@@ -670,6 +670,54 @@ current stub response path.
   Docker/database contention timeouts, which remain excluded under the ticket validation scope;
   no pgvector, seed, JWT, assertion, or other deterministic failures remained.
 
+**RAG API Integration Pass:**
+
+- Connected the existing drawer mutation to the merged RAG request contract. Opening the drawer
+  now sends recommendation context without a fabricated question, while follow-up prompts send the
+  same recommendation plus the trimmed advisor question.
+- Extended Plan Cycle Detail mapping with optional taxpayer identifier validation and derived the
+  page-scoped recommendation from stage, owner, priority, verified taxpayer name, and provider.
+  Missing or blank values use the required `...` placeholder, and route cleanup clears the context.
+- Added shared 2,000-character question validation with whitespace and unsupported-control-character
+  rejection. The composer exposes validation through `aria-invalid` and `aria-describedby`.
+- Replaced duplicate banner and transcript failures with one structured error message. Problem
+  Details title/code and message/detail fields are handled consistently across assistant failures.
+- Preserved successful explanation and citation rendering, request sequencing, authenticated-fetch
+  refresh behavior, responsive drawer behavior, and existing dialog accessibility.
+
+**RAG API Integration Changed Files:**
+
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.module.css`
+- `src/pulseUI/components/assist/assistantPanel.tsx`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/entities/taxPlanDetailsAssistant.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/tests/assist/AssistantDrawer.test.tsx`
+- `src/pulseUI/tests/assist/assistantPanel.test.tsx`
+- `src/pulseUI/tests/assist/taxPlanDetailsAssistant.test.ts`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**RAG API Integration Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- Focused assistant, details, query-mapping, and axe validation passed: 58 tests across 6 files.
+- `npm.cmd --prefix src/pulseUI run test` passed: 253 tests across 48 files.
+- `npm.cmd --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
+- The backend route and schema were not changed in this pass.
+
+**Assistant Toolbar Refinement:**
+
+- Removed the prompt-suggestions placeholder action and its toast behavior.
+- Right-aligned the remaining expand/collapse, new-dialogue, and close controls in a compact
+  three-button toolbar while preserving 44px pointer targets and accessible tooltips.
+- Updated the loading skeleton to mirror the same three-button count, right alignment, square
+  dimensions, spacing, and corner radius as the live toolbar.
+
 **CI Security Gate Follow-up:**
 
 - Reviewed the Core TypeScript, Required Gate, and Gitleaks logs from the prior PR merge SHA.
