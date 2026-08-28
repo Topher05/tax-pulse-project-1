@@ -33,6 +33,7 @@ export interface SessionTokenResponse {
 }
 
 export interface LoginCredentials {
+  readonly workspaceSlug?: string;
   readonly email: string;
   readonly password: string;
 }

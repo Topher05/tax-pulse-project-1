@@ -8,6 +8,7 @@ import { EmptyState } from "../../components/EmptyState.tsx";
 import { useNotificationToast } from "../../components/NotificationToast.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
+import { useAssistantPanel } from "../../components/assist/assistantPanel.tsx";
 import {
   createErrorNotificationMessage,
   createInfoNotificationMessage,
@@ -43,6 +44,8 @@ const sampleScenarios = [
     result: "No change from baseline",
   },
 ] as const;
+
+const assistantRecommendation = "Apply the estimated-payment safe-harbor threshold for non-withheld income";
 
 function priorityTone(priority: string): "danger" | "warning" | "info" {
   const normalized = priority.toLowerCase();
@@ -94,6 +97,7 @@ export function DetailsPage() {
   const authenticatedFetch = useAuthenticatedFetch();
   const queryClient = useQueryClient();
   const { showNotification } = useNotificationToast();
+  const { registerFabAnchor, setAssistantCaseContext } = useAssistantPanel();
 
   useEffect(() => {
     setActiveTab("Overview");
@@ -105,6 +109,26 @@ export function DetailsPage() {
     queryFn: () => fetchTaxPlanCycleDetails(caseId, authenticatedFetch),
     enabled: caseId.length > 0,
   });
+
+  useEffect(() => {
+    if (detailsQuery.data === undefined) {
+      return;
+    }
+
+    setAssistantCaseContext({
+      caseId: detailsQuery.data.caseId,
+      caseTitle: `${detailsQuery.data.caseId} - Q2 2026 Tax Plan`,
+      clientName: detailsQuery.data.client,
+      recommendation: assistantRecommendation,
+      stage: detailsQuery.data.stage,
+      advisor: detailsQuery.data.owner,
+      dueDate: detailsQuery.data.dueDate,
+    });
+
+    return () => {
+      setAssistantCaseContext(null);
+    };
+  }, [detailsQuery.data, setAssistantCaseContext]);
   const auditEntriesQuery = useQuery({
     queryKey: taxPlanCycleAuditEntriesQueryKey(caseId),
     queryFn: () => fetchTaxPlanCycleAuditEntries(caseId, authenticatedFetch),
@@ -228,7 +252,7 @@ export function DetailsPage() {
               </div>
               <div>
                 <p className={styles.fieldLabel}>Recommendation</p>
-                <p className={styles.fieldValue}>Convert $40k traditional to Roth</p>
+                <p className={styles.fieldValue}>{assistantRecommendation}</p>
               </div>
               <div>
                 <p className={styles.fieldLabel}>Projected Savings</p>
@@ -492,6 +516,7 @@ export function DetailsPage() {
               </button>
             </div>
           </PanelCard>
+          <div ref={registerFabAnchor} className={styles.assistantFabAnchor} />
         </aside>
       </div>
     </div>

@@ -26,9 +26,11 @@ Pull Request: release-v3.11.2
 -->
 <!-- List checks, tests, and manual verification. -->
 
+
 ## Risk Notes
 
-<!-- Call out migrations, rollout concerns, and any reviewer attention points. -->
+<!-- Call out migrations, rollout concerns, mocked or stubbed infrastructure boundaries,
+and any scan suppressions or exceptions that reviewers need to track. -->
 
 ## AI Review Checklist
 

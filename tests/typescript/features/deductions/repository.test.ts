@@ -9,10 +9,12 @@ import {
   tenantRows,
 } from "../../../../src/typescript/shared/database/seed.model.js";
 import { applySeed } from "../../../../src/typescript/shared/database/seed.js";
-import { withDrizzleTestSchema } from "../../bootstrap/migrationTestUtils.js";
+import {
+  hasDrizzleTestDatabaseConfig,
+  withDrizzleTestSchema,
+} from "../../bootstrap/migrationTestUtils.js";
 
-const databaseUrl = process.env.DATABASE_URL?.trim();
-const describeDatabase = databaseUrl ? describe : describe.skip;
+const describeDatabase = hasDrizzleTestDatabaseConfig() ? describe : describe.skip;
 
 describeDatabase("createDeductionRepository", () => {
   test(

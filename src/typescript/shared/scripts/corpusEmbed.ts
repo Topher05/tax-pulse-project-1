@@ -10,15 +10,11 @@ import {
   defaultCorpusChunkArtifactPath,
   readCorpusChunkArtifact,
 } from "../../assist/corpus.js";
+import { assertComposePostgresReady } from "./composePostgres.js";
 
 loadEnv({ override: true });
 
-const databaseUrl = process.env.DATABASE_URL?.trim();
-if (!databaseUrl) {
-  throw new Error(
-    "DATABASE_URL is required. Copy .env.example to .env and set DATABASE_URL.",
-  );
-}
+const { connectionString: databaseUrl, endpoint } = assertComposePostgresReady();
 
 const chunksPath = process.env.CORPUS_CHUNKS_PATH?.trim();
 if (!chunksPath) {
@@ -32,7 +28,7 @@ try {
   await client.connect();
   const records = await rebuildCorpusEmbeddings(drizzle(client) as never, chunks, provider);
   console.log(
-    `PASS Embedded ${records.length} corpus chunk(s) from ${chunksPath} using ${records[0]?.embeddingModel ?? "no model"}.`,
+    `PASS Embedded ${records.length} corpus chunk(s) from ${chunksPath} into ${endpoint} using ${records[0]?.embeddingModel ?? "no model"}.`,
   );
 } finally {
   await client.end();

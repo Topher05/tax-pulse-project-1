@@ -237,6 +237,19 @@ export {
   type TaxPlanCycleCreateResult,
 } from "./controllers/createController.js";
 export {
+  createTaxPlanDetailsAssistantController,
+  taxPlanDetailsAssistantController,
+  taxPlanDetailsAssistantRequestSchema,
+  taxPlanDetailsAssistantResponseSchema,
+  TaxPlanDetailsAssistantCaseNotFoundError,
+  TaxPlanDetailsAssistantUnsupportedRecommendationError,
+  TaxPlanDetailsAssistantUnavailableError,
+  type TaxPlanDetailsAssistant,
+  type TaxPlanDetailsAssistantResponse,
+  type CreateTaxPlanDetailsAssistantControllerOptions,
+  type TaxPlanDetailsAssistantController,
+} from "./controllers/assistantController.js";
+export {
   createTaxPlanCycleTransitionController,
   taxPlanCycleTransitionController,
   type ActionItemCreatedEventPublisher,

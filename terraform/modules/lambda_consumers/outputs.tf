@@ -3,6 +3,11 @@ output "transition_api_url" {
   value       = aws_apigatewayv2_stage.default.invoke_url
 }
 
+output "jwt_issuer" {
+  description = "Public issuer URL served by the issuer metadata Lambda."
+  value       = trimsuffix(aws_lambda_function_url.issuer_metadata.function_url, "/")
+}
+
 output "present_to_client_lambda_arn" {
   description = "Present-to-client Lambda function ARN."
   value       = aws_lambda_function.present_to_client.arn

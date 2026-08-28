@@ -37,6 +37,58 @@ Add new ticket entries below using this template.
 
 
 
+## christopher-martus-jira169 - SCRUM-169
+
+**Branch:** `christopher-martus-jira169`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-169
+
+**Summary:** Run an OWASP ZAP baseline scan against the deployed app
+
+**Description:** Add a release-compatible OWASP ZAP baseline scan that scans a deployed
+TaxPulse URL, publishes findings, and fails closed on High-severity alerts or scan failures.
+
+**Acceptance Criteria:**
+
+- An OWASP ZAP baseline scan runs against the deployed app.
+- The scan reports findings as a build artifact.
+- High-severity findings fail the release.
+
+**Code Connection:**
+
+- Added a reusable and manually dispatchable ZAP baseline workflow accepting a deployed
+  application URL.
+- The workflow runs on the repository's Blacksmith Ubuntu runner, disables GitHub issue
+  creation, and preserves HTML, Markdown, and JSON reports as an artifact.
+- The workflow validates the JSON report and fails for ZAP High-risk alerts (`riskcode: "3"`),
+  scan failures, unreachable targets, or missing/malformed reports.
+- A repository-local gate script makes the High-severity decision independently testable.
+
+**Project Scope Connection:**
+
+This establishes the repository-side web security scanning boundary for the release process.
+The release/deployment dependency graph now runs the deployed SPA scan after SCRUM-168's
+image verification and ECS deployment boundary.
+
+**Changed Files:**
+
+- `.github/workflows/zap-baseline.yml`
+- `.github/scripts/enforce-zap-high-severity.mjs`
+- `.github/workflows/container-scan-sbom.yml`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `actionlint` was unavailable in the local environment and was not run.
+- Added the ZAP job after the existing ECS deployment and passed the authorized deployed
+  CloudFront SPA URL through the deployment job output.
+- `npx vitest run --config vitest.config.ts tests/typescript/workflows/zapBaselineSecurityGate.test.ts` passed: 7 tests, including clean, High-alert, and malformed-report gate cases.
+- `npm run typecheck` passed.
+- `git diff --check` passed.
 ## christopher-martus-jira186 - SCRUM-186
 
 **Branch:** `christopher-martus-jira186`
@@ -224,24 +276,193 @@ repository-administration rollout in Step 3.
 - `npx vitest run --config vitest.config.ts tests/typescript/workflows/sastSecurityGate.test.ts` passed: 2 tests.
 - `npm run typecheck` passed.
 - `git diff --check` passed.
-- `git diff --stat origin/development...HEAD` reports 5 files changed, 151 insertions, and 1 deletion.
-- Step 3 repository-administration rollout remains pending explicit authorization for push, PR creation, and branch-protection changes.
-- Added the repository-level CI workflow with parallel Python, Core TypeScript, Pulse UI, and
-  container validation jobs, plus the stable `CI / Required Gate` aggregate check. It runs on
-  pull requests and pushes to `development`, with cancellation of obsolete runs.
-- Corrected the Core TypeScript job to run only the root application and test TypeScript
-  projects. Pulse UI retains its independently installed and validated job, so the core job
-  cannot fail due to unresolved UI-only dependencies such as `zod`.
-- Updated CI checkout, Node setup, and uv setup actions to Node 24-compatible major versions,
-  removing the GitHub Actions Node 20 runtime deprecation warnings.
-- Corrected Python Quality dependency installation to include the locked `dev` extra. This
-  provides Ruff, Pyright, pytest, Pact, and Testcontainers before their CI steps run.
-- Aligned tax-engine test authentication with the RS256/JWKS contract and isolated Pact
-  provider verification from JWT cryptography, which is outside the consumer/provider payload
-  contract being verified.
-- Restored the documented test-only HMAC compatibility path while production continues to use
-  RS256/JWKS, then generated the missing users display-name index migration and aligned stale
-  database test expectations with the canonical synthetic seed.
+
+
+## christopher-martus-jira202 - SCRUM-202
+
+**Branch:** `christopher-martus-jira202`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-202
+
+**Summary:** Provision the Sprint 5 event path and validate the fresh Terraform root
+
+**Description:** Complete the active Terraform root wiring, reproducible Lambda artifacts,
+focused root regression coverage, and fresh-apply smoke evidence for the SNS/SQS projection
+and transition API path.
+
+**Acceptance Criteria:**
+
+- Terraform provisions the stage-changed and action-item-created SNS topics, stage-changed
+  SQS queue, DLQ, redrive policy, subscription, and queue policy.
+- Terraform provisions the HTTP API, shared JWT authorizer, protected transition routes,
+  proxy integrations, and Lambda invocation permissions.
+- The active root connects the events, ECS, Lambda, and SPA modules without externally
+  supplied messaging identifiers and exposes the ALB, transition API, and SPA URLs.
+- An isolated fresh apply and smoke sequence succeeds through ALB calculation,
+  present-to-client transition, SNS/SQS delivery, and Client Approval projection.
+
+**Code Connection:** Added the active root event wiring, reproducible Lambda ZIP packaging,
+portable clean-environment ECS image inputs, separate transition/projection IAM roles,
+deployment documentation, and focused assertions covering event/module connections,
+Lambda artifacts, image sourcing, IAM boundaries, smoke ordering, and public outputs.
+
+**Project Scope Connection:** Completes the repository-side Sprint 5 delivery contract while
+preserving tenant-scoped projection behavior and JWT-protected transition access.
+
+**Changed Files:**
+
+- `deployment/PresentToClient-Draft.template.yaml`
+- `package-lock.json`
+- `package.json`
+- `src/typescript/shared/scripts/awsFreshApplySmoke.ts`
+- `src/typescript/shared/scripts/httpApiJwtSmoke.ts`
+- `src/typescript/shared/scripts/lambda-build/build-execute-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/build-present-to-client-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/build-stage-changed-consumer-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/package-lambda.mjs`
+- `terraform/README.md`
+- `terraform/delivery.tf`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/events/main.tf`
+- `terraform/modules/events/outputs.tf`
+- `terraform/modules/events/variables.tf`
+- `terraform/modules/lambda_consumers/main.tf`
+- `terraform/modules/lambda_consumers/variables.tf`
+- `terraform/providers.tf`
+- `terraform/variables.tf`
+- `tests/typescript/shared/scripts/awsFreshApplySmoke.test.ts`
+- `tests/typescript/shared/scripts/httpApiJwtSmoke.test.ts`
+- `tests/typescript/terraformSprint5Stack.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run build:lambdas` passed and rebuilt all three ZIP artifacts.
+- Focused Terraform contract suite passed: 8 tests.
+- `terraform fmt -check -recursive terraform` passed.
+- `terraform -chdir=terraform validate` passed.
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- `npm test` ran 423 tests: 354 passed and 69 database-backed tests failed because no
+  Docker-compatible container runtime or vector extension database is available locally.
+- AWS login and read-only preflight succeeded for account `814650854375` in `us-east-1`.
+  The backend bucket exists and has no `scrum-202-step4/` state prefix; both managed ECR
+  repositories contain immutable `v1.0.0.0` images, and the three Lambda ZIPs rebuilt locally.
+- Apply remains blocked before backend initialization: the available `TAX_PULSE_CONFIG` secret
+  contains the expected key names but its `DATABASE_URL` host is `localhost`, so it cannot
+  bootstrap ECS tasks in AWS. It also lacks the documented JWT audience/private-key fields.
+  No secret values were printed, no shared secret was modified, and no AWS resources were
+  created. A valid AWS-reachable runtime secret, synthetic bearer token, and prepared tenant/case
+  are required before applying the isolated stack.
+- `git diff --name-only origin/development...HEAD` reports 24 changed files, including this
+  journal entry; no credentials, tokens, tfvars, or taxpayer data were added.
+
+### Fresh-apply repair follow-up
+
+**Branch:** `christopher-martus-jira202`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-202
+
+**Summary:** Repair the Terraform root for an isolated, RS256-capable fresh apply.
+
+**Description:** Reconciled the code with the live AWS inventory without mutating shared
+resources. The `dev` state is incomplete and mixed with manually created infrastructure,
+so this follow-up makes a new stack safe to create under its own backend key, prefix, and
+environment.
+
+**Acceptance Criteria:**
+
+- An isolated root provisions the event path, transition HTTP API, JWT authorizer, and
+  projection consumer without relying on the shared `dev` state.
+- The root exposes public endpoints and configures a public RS256 issuer/JWKS source for
+  API Gateway and both ECS services.
+- A fresh plan is non-destructive and can be applied after approved signing-key inputs are
+  supplied.
+
+**Code Connection:** Added stack-scoped names and tags, managed runtime-secret wiring from
+the new RDS endpoint, HTTPS egress for private ECS tasks, issuer-metadata Lambda packaging
+and Terraform resources, current RS256 environment keys, least-privilege transition Lambda
+IAM, and opt-in account-global GitHub release-pipeline resources.
+
+**Project Scope Connection:** Removes the live blockers to SCRUM-202's isolated fresh apply
+while leaving the existing shared `dev` resources untouched.
+
+**Changed Files:**
+
+- `package.json`
+- `src/typescript/shared/scripts/lambda-build/build-issuer-metadata-lambda.mjs`
+- `terraform/README.md`
+- `terraform/runtime_config.tf`
+- `terraform/{database,delivery,dynamodb,outputs,providers,redis,release_pipeline,variables,vpc}.tf`
+- `terraform/modules/ecs_services/{main,variables}.tf`
+- `terraform/modules/lambda_consumers/{main,outputs,variables}.tf`
+- `tests/typescript/terraformSprint5Stack.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- AWS read-only inventory authenticated as account `814650854375` in `us-east-1`.
+- The shared `dev` state plan was not applied; it proposed 47 adds, 12 changes, and 3
+  destroys, including target-group replacements and deletion of the legacy Lambda role.
+- `npm run build:lambdas` passed and now produces all four ZIP artifacts.
+- `terraform -chdir=terraform fmt -recursive` and `terraform -chdir=terraform validate` passed.
+- Focused Terraform and issuer tests passed: 17 tests across 3 files.
+- `npm run typecheck` and `git diff --check` passed.
+- A separate state key, `scrum-202/codex-preflight/terraform.tfstate`, produced an isolated
+  plan of 108 adds, 0 changes, and 0 destroys using only synthetic preflight values. No AWS
+  resources, secret values, credentials, or real keys were created or printed.
+
+### Deployed sandbox completion
+
+**Branch:** `christopher-martus-jira202`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-202
+
+**Summary:** Complete the canonical sandbox deployment and acceptance smoke test.
+
+**Description:** Corrected the deployed Tax Engine image/runtime compatibility and completed
+the SNS-to-SQS-to-Lambda projection path in the Terraform-managed sandbox.
+
+**Acceptance Criteria:**
+
+- SNS topics, SQS queue, DLQ, queue policy, and Lambda projection mapping are provisioned.
+- The JWT-protected HTTP API and both stub routes remain deployed.
+- Root public outputs expose the ALB, API Gateway, and SPA URLs.
+- The deployed smoke test returns 200 for the ALB calculation and authorized transition, then
+  observes the `Client Approval` DynamoDB projection.
+
+**Code Connection:** The Tax Engine now validates the shared JWT audience and runs the
+published x86_64-compatible image. The event queue visibility timeout exceeds the Lambda
+timeout, and the SNS subscription retains the standard notification envelope required by the
+projection consumer.
+
+**Project Scope Connection:** Resolves the final live deployment blockers for SCRUM-202 while
+keeping all application infrastructure under the canonical Terraform state.
+
+**Changed Files:**
+
+- `deployment/ecs/tax-engine.task-definition.json`
+- `src/tax_liability_engine/jwt_authentication.py`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/events/main.tf`
+- `terraform/variables.tf`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused JWT authentication tests passed: 17 tests.
+- `terraform -chdir=terraform fmt -check` and `git diff --check` passed.
+- A final Terraform plan reported 0 adds and 0 destroys; its 22 in-place updates were applied.
+- The final AWS smoke passed with ALB calculation `200`, authorized transition `200`, and
+  DynamoDB projected stage `Client Approval` on the first poll.
 
 
 

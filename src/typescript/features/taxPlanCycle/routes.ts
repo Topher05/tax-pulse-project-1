@@ -6,6 +6,15 @@ import {
   taxPlanCycleCreateController,
   type TaxPlanCycleCreateController,
 } from "./controllers/createController.js";
+import {
+  TaxPlanDetailsAssistantCaseNotFoundError,
+  TaxPlanDetailsAssistantUnsupportedRecommendationError,
+  TaxPlanDetailsAssistantUnavailableError,
+  taxPlanDetailsAssistantController,
+  taxPlanDetailsAssistantRequestSchema,
+  type TaxPlanDetailsAssistantController,
+} from "./controllers/assistantController.js";
+import { AssistTenantScopeUnavailableError } from "../../assist/tenantScopes.js";
 import type {
   AuditEntryReader,
   AuditEntryWriter,
@@ -50,6 +59,7 @@ export interface ValidationErrorResponse extends ProblemDetails {
 export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
   transitionController?: TaxPlanCycleTransitionController;
+  assistantController?: TaxPlanDetailsAssistantController;
   taxPlanCycleRepository?: Pick<TaxPlanCycleRepository, "findByCaseId" | "listQueue">;
   clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
   scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
@@ -339,6 +349,8 @@ export function createTaxPlanCycleRouter(
   const router = Router();
   const controller = options.controller ?? taxPlanCycleCreateController;
   const transitionController = options.transitionController ?? taxPlanCycleTransitionController;
+  const assistantController =
+    options.assistantController ?? taxPlanDetailsAssistantController;
   const scenarioModelingController = options.scenarioModelingController;
   const taxPlanCycleRepository =
     options.taxPlanCycleRepository ?? {
@@ -642,6 +654,121 @@ export function createTaxPlanCycleRouter(
 
         res.status(200).json(cycle);
       } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.post(
+    "/tax-plan-cycles/:caseId/assist",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedParams = taxPlanCycleReadParamsSchema.safeParse(req.params);
+
+      if (!parsedParams.success) {
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Request path parameters failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: parsedParams.error.issues.map(toValidationIssue),
+            },
+          }),
+        );
+        return;
+      }
+
+      const parsedBody = taxPlanDetailsAssistantRequestSchema.safeParse(req.body);
+
+      if (!parsedBody.success) {
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Assistant request body failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: parsedBody.error.issues.map(toValidationIssue),
+            },
+          }),
+        );
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
+
+        const response = await assistantController.assist({
+          tenantId,
+          actor: user.id,
+          caseId: parsedParams.data.caseId,
+          ...parsedBody.data,
+        });
+
+        res.status(200).json(response);
+      } catch (error) {
+        if (error instanceof TaxPlanDetailsAssistantCaseNotFoundError) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Cycle Not Found",
+              status: 404,
+              detail: "No tax plan cycle was found for the requested case ID.",
+            }),
+          );
+          return;
+        }
+
+        if (error instanceof AssistTenantScopeUnavailableError) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/assistant-configuration-unavailable",
+              title: "Assistant Unavailable",
+              status: 503,
+              detail: "The assistant tenant scope configuration is unavailable for this tenant.",
+            }),
+          );
+          return;
+        }
+
+        if (error instanceof TaxPlanDetailsAssistantUnavailableError) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/assistant-unavailable",
+              title: "Assistant Unavailable",
+              status: 503,
+              detail: error.message,
+            }),
+          );
+          return;
+        }
+
+        if (error instanceof TaxPlanDetailsAssistantUnsupportedRecommendationError) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/assistant-unsupported-recommendation-context",
+              title: "Recommendation Context Not Grounded",
+              status: 422,
+              detail: "The recommendation context is not supported by tenant-scoped assist sources.",
+            }),
+          );
+          return;
+        }
+
         next(error);
       }
     },

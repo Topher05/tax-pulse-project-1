@@ -4,17 +4,32 @@ import { useState } from "react";
 
 import { useSession } from "../auth/AuthProvider.tsx";
 import { NotificationToastProvider } from "./NotificationToast.tsx";
+import { AssistantDrawer } from "./assist/AssistantDrawer.tsx";
+import { AssistFAB } from "./assist/AssistFAB.tsx";
+import { AssistantPanelProvider, useAssistantPanel } from "./assist/assistantPanel.tsx";
 import styles from "./AppShell.module.css";
 import { getPulseNavGroupsForRole } from "../shared/navigation.ts";
 import { getViewTitle } from "../shared/viewTitle.ts";
 
-export function AppShell() {
+function AppShellLayout() {
   const { logout, user } = useSession();
   const [liveCalculationEnabled, setLiveCalculationEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const viewTitle = getViewTitle(pathname);
   const navGroups = getPulseNavGroupsForRole(user?.role);
+  const {
+    assistantCaseContext,
+    fabAnchorElement,
+    closeAssistant,
+    errorMessage,
+    isDrawerOpen,
+    isLoading,
+    messages,
+    openAssistant,
+    sendMessage,
+    startNewDialogue,
+  } = useAssistantPanel();
 
   if (user?.role === "Client" && !["/my-tax-plan", "/action-items"].includes(pathname)) {
     return <Navigate replace to="/my-tax-plan" />;
@@ -25,9 +40,7 @@ export function AppShell() {
   };
 
   return (
-    <NotificationToastProvider>
-      <>
-        <div className={styles.shell}>
+    <div className={styles.shell}>
           <aside className={styles.sidebar} aria-label="Primary">
             <div className={styles.brand}>
               <span className={styles.brandMark} aria-hidden="true">
@@ -138,7 +151,26 @@ export function AppShell() {
             </main>
           </div>
 
-          {settingsOpen ? (
+          {assistantCaseContext !== null ? (
+            <AssistFAB
+              anchorElement={fabAnchorElement}
+              isOpen={isDrawerOpen}
+              onOpen={() => void openAssistant()}
+            />
+          ) : null}
+
+          <AssistantDrawer
+            assistantCaseContext={assistantCaseContext}
+            errorMessage={errorMessage}
+            isLoading={isLoading}
+            isOpen={isDrawerOpen}
+            messages={messages}
+            onClose={closeAssistant}
+            onSendMessage={sendMessage}
+            onStartNewDialogue={startNewDialogue}
+          />
+
+      {settingsOpen ? (
             <div
               className={styles.modalOverlay}
               role="presentation"
@@ -167,9 +199,17 @@ export function AppShell() {
                 </button>
               </div>
             </div>
-          ) : null}
-        </div>
-      </>
+      ) : null}
+    </div>
+  );
+}
+
+export function AppShell() {
+  return (
+    <NotificationToastProvider>
+      <AssistantPanelProvider>
+        <AppShellLayout />
+      </AssistantPanelProvider>
     </NotificationToastProvider>
   );
 }

@@ -1,8 +1,13 @@
 import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
-import { SignJWT } from "jose";
 import { afterEach, describe, expect, test, vi } from "vitest";
+
+import {
+  createTestJwtFixture,
+  signTestAccessToken,
+  withJwksServer,
+} from "../../bootstrap/jwtTestUtils.js";
 
 const repository = vi.hoisted(() => ({
   create: vi.fn(async () => "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91"),
@@ -113,6 +118,12 @@ vi.mock("../../../../src/typescript/features/taxPlanCycle/index.js", async (impo
 });
 
 const originalEnvironment = { ...process.env };
+const jwtFixturePromise = createTestJwtFixture("https://auth.taxpulse.example");
+const assistStartupEnvironment = {
+  OPENAI_API_KEY: "test-openai-api-key",
+  ASSIST_TENANT_CORPUS_SCOPE_MAP:
+    '{"018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01":"tenant-alpha","018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d02":"tenant-beta"}',
+} as const;
 
 afterEach(() => {
   process.env = { ...originalEnvironment };
@@ -120,37 +131,12 @@ afterEach(() => {
 });
 
 async function createAccessToken(): Promise<string> {
-  return await new SignJWT({
-    role: "Advisor",
-    tenant_id: "tenant-from-jwt",
-  })
-    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-    .setSubject("user-from-jwt")
-    .setIssuer(process.env.JWT_ISSUER!)
-    .setExpirationTime("15m")
-    .sign(new TextEncoder().encode(process.env.JWT_SIGNING_SECRET!));
+  return await signTestAccessToken(await jwtFixturePromise);
 }
 
 describe("main Tax Plan Cycle composition", () => {
   test("uses the repository-backed controller for protected creates and reads", async () => {
-    process.env = {
-      ...originalEnvironment,
-      DATABASE_URL: "postgresql://test:test@localhost:5432/taxpulse",
-      JWT_ISSUER: "https://auth.taxpulse.example",
-      JWT_SIGNING_SECRET: "a-unique-test-secret-that-is-more-than-32-bytes",
-      JWT_ACCESS_TOKEN_TTL_SECONDS: "900",
-      JWT_REFRESH_TOKEN_TTL_SECONDS: "1200",
-      LIABILITY_ENGINE_BASE: "http://127.0.0.1:8000",
-      TAXPULSE_REDIS_URL: "redis://localhost:6379",
-      TAXPULSE_STAGE_CHANGED_TOPIC_ARN:
-        "arn:aws:sns:us-east-1:123456789012:taxpulse-stage-changed",
-      LOG_LEVEL: "silent",
-      PORT: "0",
-    };
-    const { main } = await import("../../../../src/typescript/index.js");
-    const server = await main();
-    const address = server.address() as AddressInfo;
-    const token = await createAccessToken();
+    const jwtFixture = await jwtFixturePromise;
     repository.listQueue.mockResolvedValue([
       {
         id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
@@ -165,90 +151,121 @@ describe("main Tax Plan Cycle composition", () => {
       },
     ]);
 
-    try {
-      const createResponse = await fetch(`http://127.0.0.1:${address.port}/v1/tax-plan-cycles`, {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${token}`,
-          "content-type": "application/json",
-          "Idempotency-Key": "main-composition-key-001",
-        },
-        body: JSON.stringify({
-          client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
-          planning_period: "2026-Q4",
+    await withJwksServer(jwtFixture.jwks, async (jwksUrl) => {
+      process.env = {
+        ...originalEnvironment,
+        DATABASE_URL: "postgresql://test:test@localhost:5432/taxpulse",
+        JWT_ISSUER: jwtFixture.issuer,
+        JWT_JWKS_URL: jwksUrl,
+        JWT_SIGNING_PRIVATE_KEY: jwtFixture.privateKeyPem,
+        JWT_SIGNING_KEY_ID: jwtFixture.signingKeyId,
+        JWT_ACCESS_TOKEN_TTL_SECONDS: "900",
+        JWT_REFRESH_TOKEN_TTL_SECONDS: "1200",
+        LIABILITY_ENGINE_BASE: "http://127.0.0.1:8000",
+        TAXPULSE_REDIS_URL: "redis://localhost:6379",
+        ...assistStartupEnvironment,
+        TAXPULSE_STAGE_CHANGED_TOPIC_ARN:
+          "arn:aws:sns:us-east-1:123456789012:taxpulse-stage-changed",
+        LOG_LEVEL: "silent",
+        PORT: "0",
+      };
+      const { main } = await import("../../../../src/typescript/index.js");
+      const server = await main();
+      const address = server.address() as AddressInfo;
+      const token = await createAccessToken();
+
+      try {
+        const createResponse = await fetch(`http://127.0.0.1:${address.port}/v1/tax-plan-cycles`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+            "Idempotency-Key": "main-composition-key-001",
+          },
+          body: JSON.stringify({
+            client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+            planning_period: "2026-Q4",
+            owner: "postman-test-owner",
+            priority: "high",
+            due_date: "2026-12-31",
+          }),
+        });
+        const readResponse = await fetch(
+          `http://127.0.0.1:${address.port}/v1/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91`,
+          { headers: { authorization: `Bearer ${token}` } },
+        );
+        const queueResponse = await fetch(
+          `http://127.0.0.1:${address.port}/v1/tax-plan-cycles`,
+          { headers: { authorization: `Bearer ${token}` } },
+        );
+        const unversionedResponse = await fetch(
+          `http://127.0.0.1:${address.port}/tax-plan-cycles`,
+        );
+        const unknownVersionResponse = await fetch(
+          `http://127.0.0.1:${address.port}/v2/tax-plan-cycles`,
+        );
+
+        expect(createResponse.status).toBe(202);
+        expect(readResponse.status).toBe(200);
+        expect(queueResponse.status).toBe(200);
+        expect(unversionedResponse.status).toBe(404);
+        expect(unknownVersionResponse.status).toBe(404);
+        expect(createTaxPlanCycleRepository).toHaveBeenCalledTimes(1);
+        expect(repository.create).toHaveBeenCalledWith({
+          tenantId: "tenant-from-jwt",
+          planningPeriod: "2026-Q4",
+          clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
           owner: "postman-test-owner",
           priority: "high",
-          due_date: "2026-12-31",
-        }),
-      });
-      const readResponse = await fetch(
-        `http://127.0.0.1:${address.port}/v1/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91`,
-        { headers: { authorization: `Bearer ${token}` } },
-      );
-      const queueResponse = await fetch(
-        `http://127.0.0.1:${address.port}/v1/tax-plan-cycles`,
-        { headers: { authorization: `Bearer ${token}` } },
-      );
-      const unversionedResponse = await fetch(
-        `http://127.0.0.1:${address.port}/tax-plan-cycles`,
-      );
-      const unknownVersionResponse = await fetch(
-        `http://127.0.0.1:${address.port}/v2/tax-plan-cycles`,
-      );
-
-      expect(createResponse.status).toBe(202);
-      expect(readResponse.status).toBe(200);
-      expect(queueResponse.status).toBe(200);
-      expect(unversionedResponse.status).toBe(404);
-      expect(unknownVersionResponse.status).toBe(404);
-      expect(createTaxPlanCycleRepository).toHaveBeenCalledTimes(1);
-      expect(repository.create).toHaveBeenCalledWith({
-        tenantId: "tenant-from-jwt",
-        planningPeriod: "2026-Q4",
-        clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
-        owner: "postman-test-owner",
-        priority: "high",
-        dueDate: "2026-12-31",
-        actor: "user-from-jwt",
-      });
-      expect(repository.findByCaseId).toHaveBeenCalledWith({
-        tenantId: "tenant-from-jwt",
-        caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
-      });
-      expect(repository.listQueue).toHaveBeenCalledWith({
-        tenantId: "tenant-from-jwt",
-      });
-    } finally {
-      server.close();
-      await once(server, "close");
-    }
+          dueDate: "2026-12-31",
+          actor: "user-from-jwt",
+        });
+        expect(repository.findByCaseId).toHaveBeenCalledWith({
+          tenantId: "tenant-from-jwt",
+          caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+        });
+        expect(repository.listQueue).toHaveBeenCalledWith({
+          tenantId: "tenant-from-jwt",
+        });
+      } finally {
+        server.close();
+        await once(server, "close");
+      }
+    });
   });
 
   test("wires the stage-changed publisher into the transition controller when configured", async () => {
-    process.env = {
-      ...originalEnvironment,
-      DATABASE_URL: "postgresql://test:test@localhost:5432/taxpulse",
-      JWT_ISSUER: "https://auth.taxpulse.example",
-      JWT_SIGNING_SECRET: "a-unique-test-secret-that-is-more-than-32-bytes",
-      JWT_ACCESS_TOKEN_TTL_SECONDS: "900",
-      JWT_REFRESH_TOKEN_TTL_SECONDS: "1200",
-      TAXPULSE_REDIS_URL: "redis://localhost:6379",
-      TAXPULSE_STAGE_CHANGED_TOPIC_ARN:
-        "arn:aws:sns:us-east-1:123456789012:taxpulse-stage-changed",
-      LOG_LEVEL: "silent",
-      PORT: "0",
-    };
+    const jwtFixture = await jwtFixturePromise;
 
-    const { main } = await import("../../../../src/typescript/index.js");
-    const server = await main();
+    await withJwksServer(jwtFixture.jwks, async (jwksUrl) => {
+      process.env = {
+        ...originalEnvironment,
+        DATABASE_URL: "postgresql://test:test@localhost:5432/taxpulse",
+        JWT_ISSUER: jwtFixture.issuer,
+        JWT_JWKS_URL: jwksUrl,
+        JWT_SIGNING_PRIVATE_KEY: jwtFixture.privateKeyPem,
+        JWT_SIGNING_KEY_ID: jwtFixture.signingKeyId,
+        JWT_ACCESS_TOKEN_TTL_SECONDS: "900",
+        JWT_REFRESH_TOKEN_TTL_SECONDS: "1200",
+        TAXPULSE_REDIS_URL: "redis://localhost:6379",
+        ...assistStartupEnvironment,
+        TAXPULSE_STAGE_CHANGED_TOPIC_ARN:
+          "arn:aws:sns:us-east-1:123456789012:taxpulse-stage-changed",
+        LOG_LEVEL: "silent",
+        PORT: "0",
+      };
 
-    try {
-      expect(transitionControllerOptions.value).toMatchObject({
-        stageChangedEventPublisher: stageChangedPublisher,
-      });
-    } finally {
-      server.close();
-      await once(server, "close");
-    }
+      const { main } = await import("../../../../src/typescript/index.js");
+      const server = await main();
+
+      try {
+        expect(transitionControllerOptions.value).toMatchObject({
+          stageChangedEventPublisher: stageChangedPublisher,
+        });
+      } finally {
+        server.close();
+        await once(server, "close");
+      }
+    });
   });
 });

@@ -5,6 +5,71 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-jira168 - SCRUM-168
+
+**Branch:** `dylan-harle-jira168`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-168
+
+**Summary:** Sign images with Cosign and verify before deploy
+
+**Description:** As a Security Engineer, I want Cosign signing with pre-deploy verification, so that only signed artifacts deploy.
+
+**Acceptance Criteria:**
+
+- Released images are signed with Cosign.
+- The signature is verified before deploy and an unsigned image is rejected.
+- The verification step runs in the release pipeline.
+
+**Code Connection:**
+
+- Extended `.github/workflows/container-scan-sbom.yml` from the SCRUM-167 local build/scan flow into a development release pipeline that still scans both application images on PR and `main`, but only publishes, signs, verifies, and deploys from `refs/heads/development`.
+- Built the Core Case Service and Tax Engine release images for `linux/arm64`, pushed them to the Terraform-managed ECR repositories under immutable commit-derived tags, scanned the pushed digests, generated SBOM artifacts, and signed each digest with Cosign keyless GitHub OIDC identity.
+- Added a fail-closed deployment job that verifies both signatures against the exact `container-scan-sbom.yml` workflow identity and `https://token.actions.githubusercontent.com` issuer before rendering digest-qualified ECS task definitions and deploying the `core-case-service` and `tax-engine` ECS services.
+- Added Terraform-managed GitHub Actions OIDC trust and a least-privilege release role for ECR publication, Cosign verification, ECS deployment, and scoped `iam:PassRole`, exposing the role ARN for the repository variable `AWS_RELEASE_ROLE_ARN`.
+- Configured the Lambda consumer module to use the existing imported `FirstLambdaRole`, avoiding replacement under the previously generated `taxpulse-lambda-consumer-role` name.
+- Recorded ADR-0038 so the signing identity, digest deployment rule, and fail-closed release behavior are documented as the SCRUM-168 architecture decision.
+
+**Project Scope Connection:**
+
+- Platform.
+- Builds directly on SCRUM-167’s Trivy scan and Syft SBOM workflow for the two container artifacts.
+- Preserves the existing `.trivyignore` handling documented in `docs/trivy-suppressions.md` rather than widening or removing the Node 22.0.0 suppressions.
+- Establishes the signed-artifact deployment gate that SCRUM-169 can rely on before adding post-deploy ZAP coverage.
+
+**Changed Files:**
+
+- `.github/workflows/container-scan-sbom.yml`
+- `terraform/release_pipeline.tf`
+- `terraform/delivery.tf`
+- `terraform/variables.tf`
+- `terraform/outputs.tf`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/outputs.tf`
+- `terraform/modules/lambda_consumers/main.tf`
+- `terraform/modules/lambda_consumers/variables.tf`
+- `tests/typescript/workflows/containerScanSbom.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `adr/0038-cosign-signed-ecs-release-pipeline.md`
+- `adr/README.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `aws sts get-caller-identity --profile default --region us-east-1` and `--profile taxpulse-login` both resolved to AWS account `814650854375`, confirming the local AWS CLI profile bridge was usable for Terraform.
+- `npm test -- --run tests/typescript/workflows/terraformDeliveryModules.test.ts tests/typescript/workflows/containerScanSbom.test.ts` passed with 2 files and 10 tests after the final Terraform alignment pass.
+- `terraform fmt -check` passed after formatting `terraform/delivery.tf`.
+- `terraform state list` confirmed the existing shared resources, including the imported `module.lambda_consumers.aws_iam_role.lambda`, Terraform-managed ECR repositories, and the GitHub OIDC provider, were already present in remote state.
+- `terraform state show module.lambda_consumers.aws_iam_role.lambda` confirmed the imported Lambda execution role resolves to `FirstLambdaRole`.
+- `terraform plan -no-color -input=false -var db_password=Temporary168Plan! -target=aws_iam_openid_connect_provider.github_actions -target=aws_iam_role.github_actions_release -target=aws_iam_role_policy.github_actions_release` first produced a clean targeted SCRUM-168 plan with only the GitHub Actions release role and inline policy to add.
+- `terraform apply -auto-approve -input=false -var db_password=Temporary168Plan! -target=aws_iam_openid_connect_provider.github_actions -target=aws_iam_role.github_actions_release -target=aws_iam_role_policy.github_actions_release` failed under `dylan.harle@fedstack.com` because AWS denied `iam:CreateRole`, after which the role and matching inline policy were created manually in AWS and imported into the shared remote Terraform state.
+- `terraform import -var db_password=Temporary168Plan! aws_iam_role.github_actions_release taxpulse-github-actions-release-role` and `terraform import -var db_password=Temporary168Plan! aws_iam_role_policy.github_actions_release taxpulse-github-actions-release-role:taxpulse-github-actions-release-rolePolicy` both succeeded.
+- `terraform output -raw github_actions_release_role_arn` returned `arn:aws:iam::814650854375:role/taxpulse-github-actions-release-role`.
+- After importing the manually created role and policy, `terraform plan -no-color -input=false -var db_password=Temporary168Plan! -target=aws_iam_openid_connect_provider.github_actions -target=aws_iam_role.github_actions_release -target=aws_iam_role_policy.github_actions_release` returned `No changes. Your infrastructure matches the configuration.`
+- GitHub Actions release execution, Cosign verification output, repository variable creation, and live ECS deployment were not run from this implementation session.
+
 ## dylan-harle-jira180 - SCRUM-180
 
 **Branch:** `dylan-harle-jira180`
@@ -50,6 +115,78 @@ Add new ticket entries below using this template.
 
 - `npm run typecheck` passed.
 - `npm run test:vitest` passed.
+
+## dylan-harle-jira182 - SCRUM-182
+
+**Branch:** `dylan-harle-jira182`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-182
+
+**Summary:** Ship the `/assist` endpoint with citations and tenant scoping
+
+**Description:** As an Advisor, I want an `/assist` endpoint that explains and cites a recommendation, so that I can justify the plan to a client.
+
+**Acceptance Criteria:**
+
+- POST `/assist` takes a recommendation context and returns an explanation grounded in retrieved chunks.
+- The response includes citations identifying the tax-code or playbook source.
+- The endpoint enforces tenant scoping so retrieval never crosses tenants.
+
+**Code Connection:**
+
+- Replaced the temporary case-scoped assistant stub with a real `POST /v1/tax-plan-cycles/:caseId/assist` controller that validates `recommendation_context`, verifies the case in-tenant, retrieves tenant-scoped corpus chunks, and returns a grounded explanation plus public citations.
+- Added fail-closed tenant-scope parsing from `ASSIST_TENANT_CORPUS_SCOPE_MAP`, automatically including `tenant-shared` and returning service-unavailable behavior for unmapped tenants instead of widening retrieval scope.
+- Added an OpenAI Responses structured-output explanation provider driven by `ASSIST_RESPONSE_MODEL`, with chunk-id validation so every returned citation must correspond to a retrieved chunk.
+- Updated both semantic and lexical retrieval paths, the runtime composition, the smoke/evaluation helpers, and the Pulse UI assistant drawer so advisors send recommendation context and see rendered citations in the existing UI flow.
+- Extended assistant-focused tests plus retrieval/environment coverage and updated ADR-0035 plus `.env.example` to document the live endpoint contract.
+
+**Project Scope Connection:**
+
+- RAG-Powered AI Assist.
+- Builds directly on SCRUM-181's retrieval evaluation work while preserving the offline RAGAS path as a separate quality gate from live request servicing.
+- Preserves Core Case tenant isolation by enforcing retrieval scoping in PostgreSQL rather than retrieving broadly and filtering later in memory.
+
+**Changed Files:**
+
+- `src/typescript/assist/explanation.ts`
+- `src/typescript/assist/tenantScopes.ts`
+- `src/typescript/assist/embeddings.ts`
+- `src/typescript/assist/retrieval.ts`
+- `src/typescript/assist/evaluation.ts`
+- `src/typescript/shared/scripts/corpusHybridSmoke.ts`
+- `src/typescript/index.ts`
+- `src/typescript/features/taxPlanCycle/controllers/assistantController.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/shared/scripts/corpusBootstrap.ts`
+- `tests/typescript/assist/explanation.test.ts`
+- `tests/typescript/assist/tenantScopes.test.ts`
+- `tests/typescript/assist/embeddings.test.ts`
+- `tests/typescript/assist/embeddings.integration.test.ts`
+- `tests/typescript/assist/retrieval.test.ts`
+- `tests/typescript/features/taxPlanCycle/assistantController.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `src/pulseUI/entities/taxPlanDetailsAssistant.ts`
+- `src/pulseUI/components/assist/assistantPanel.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.module.css`
+- `src/pulseUI/tests/assist/taxPlanDetailsAssistant.test.ts`
+- `src/pulseUI/tests/assist/AssistantDrawer.test.tsx`
+- `.env.example`
+- `Dockerfile`
+- `docker-compose.yml`
+- `adr/0035-ai-assist-corpus-boundary.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- Focused `/assist` Vitest coverage continued to pass before the Docker rebuild; a later sandbox-only Vitest config resolution failure did not indicate an application regression.
+- `npm run stack:up` rebuilt the local Compose stack, auto-bootstrapped `45` tenant-scoped assist embeddings, and returned a healthy `core-case-service`.
+- A live `POST /v1/tax-plan-cycles/:caseId/assist` request with a supported estimated-payment safe-harbor recommendation returned `200` with relevant tax-code citations.
+- A live `POST /v1/tax-plan-cycles/:caseId/assist` request with the unsupported Roth-conversion sample returned `422 Recommendation Context Not Grounded` instead of a weakly grounded answer.
 
 ## dylan-harle-jira159 - SCRUM-159
 

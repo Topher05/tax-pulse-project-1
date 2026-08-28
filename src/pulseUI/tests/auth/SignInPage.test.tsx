@@ -1,10 +1,12 @@
 import "@testing-library/jest-dom/vitest";
 
+import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
+import { createPulseQueryClient } from "../../app/queryClient.ts";
 import { AuthProvider } from "../../auth/AuthProvider.tsx";
 import type { AuthClient } from "../../auth/authClient.ts";
 import type { MfaChallenge, SessionTokenResponse } from "../../auth/session.ts";
@@ -40,6 +42,16 @@ const tokenResponse: SessionTokenResponse = {
   refresh_expires_in: 2_592_000,
 };
 
+function renderAuthRoute(client: AuthClient, initialPath: string) {
+  return render(
+    <QueryClientProvider client={createPulseQueryClient()}>
+      <AuthProvider client={client}>
+        <RouterProvider router={createPulseRouter([initialPath])} />
+      </AuthProvider>
+    </QueryClientProvider>,
+  );
+}
+
 test("signs in through MFA, reaches the dashboard, and returns to sign-in after logout", async () => {
   const client: AuthClient = {
     login: vi.fn(async () => challenge),
@@ -50,17 +62,16 @@ test("signs in through MFA, reaches the dashboard, and returns to sign-in after 
     logout: vi.fn(),
   };
 
-  render(
-    <AuthProvider client={client}>
-      <RouterProvider router={createPulseRouter(["/sign-in"])} />
-    </AuthProvider>,
-  );
+  renderAuthRoute(client, "/sign-in");
 
   expect(await screen.findByRole("link", { name: "Forgot your password?" })).toHaveAttribute(
     "href",
     "/password-reset",
   );
 
+  fireEvent.change(await screen.findByRole("textbox", { name: "Firm workspace" }), {
+    target: { value: "summit-ridge-tax" },
+  });
   fireEvent.change(await screen.findByRole("textbox", { name: "Email address" }), {
     target: { value: challenge.email },
   });
@@ -70,6 +81,7 @@ test("signs in through MFA, reaches the dashboard, and returns to sign-in after 
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
   await vi.waitFor(() => expect(client.login).toHaveBeenCalledWith({
+    workspaceSlug: "summit-ridge-tax",
     email: challenge.email,
     password: "synthetic-password",
   }));
@@ -105,12 +117,11 @@ test("shows an error and stays on sign-in when credentials are rejected", async 
     logout: vi.fn(),
   };
 
-  render(
-    <AuthProvider client={client}>
-      <RouterProvider router={createPulseRouter(["/sign-in"])} />
-    </AuthProvider>,
-  );
+  renderAuthRoute(client, "/sign-in");
 
+  fireEvent.change(await screen.findByRole("textbox", { name: "Firm workspace" }), {
+    target: { value: "summit-ridge-tax" },
+  });
   fireEvent.change(await screen.findByRole("textbox", { name: "Email address" }), {
     target: { value: challenge.email },
   });
@@ -123,6 +134,7 @@ test("shows an error and stays on sign-in when credentials are rejected", async 
     await screen.findByRole("alert"),
   ).toHaveTextContent("Unable to sign in. Check your credentials and try again.");
   expect(client.login).toHaveBeenCalledWith({
+    workspaceSlug: "summit-ridge-tax",
     email: challenge.email,
     password: "incorrect-synthetic-password",
   });
@@ -144,12 +156,11 @@ test("shows an error and does not establish a session when MFA verification fail
     logout: vi.fn(),
   };
 
-  render(
-    <AuthProvider client={client}>
-      <RouterProvider router={createPulseRouter(["/sign-in"])} />
-    </AuthProvider>,
-  );
+  renderAuthRoute(client, "/sign-in");
 
+  fireEvent.change(await screen.findByRole("textbox", { name: "Firm workspace" }), {
+    target: { value: "summit-ridge-tax" },
+  });
   fireEvent.change(await screen.findByRole("textbox", { name: "Email address" }), {
     target: { value: challenge.email },
   });
@@ -181,11 +192,7 @@ test("rejects direct MFA access without an ephemeral challenge", async () => {
     logout: vi.fn(),
   };
 
-  render(
-    <AuthProvider client={client}>
-      <RouterProvider router={createPulseRouter(["/sign-in/mfa"])} />
-    </AuthProvider>,
-  );
+  renderAuthRoute(client, "/sign-in/mfa");
 
   expect(
     await screen.findByText("Start by signing in to request a verification code."),

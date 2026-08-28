@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: ${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}
       POSTGRES_PASSWORD: ${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}
     ports:
-      - "55432:5432"
+      - "25432:5432"
     volumes:
       - taxpulse-postgres-18-data:/var/lib/postgresql
     healthcheck:
@@ -53,6 +53,22 @@ services:
     command: ["node", "dist/typescript/shared/database/seed.js"]
     restart: "no"
 
+  core-case-corpus-embed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}:${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}@postgres:5432/${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY is required in .env}
+      CORPUS_CHUNKS_PATH: ${CORPUS_CHUNKS_PATH:-data/corpus/build/chunks.jsonl}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      core-case-seed:
+        condition: service_completed_successfully
+    command: ["node", "dist/typescript/shared/scripts/corpusBootstrap.js"]
+    restart: "no"
+
   core-case-service:
     build:
       context: .
@@ -69,6 +85,9 @@ services:
       PORT: "3000"
       TAXPULSE_LOGIN_BASE_DOMAIN: localhost
       TAXPULSE_REDIS_URL: redis://taxpulse-redis:6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY is required in .env}
+      ASSIST_TENANT_CORPUS_SCOPE_MAP: ${ASSIST_TENANT_CORPUS_SCOPE_MAP:?ASSIST_TENANT_CORPUS_SCOPE_MAP is required in .env}
+      ASSIST_RESPONSE_MODEL: ${ASSIST_RESPONSE_MODEL:-gpt-4o-mini}
       AWS_PROFILE: ${AWS_PROFILE:-}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
@@ -82,6 +101,8 @@ services:
       - "${TAXPULSE_CORE_HOST_PORT:-3000}:3000"
     depends_on:
       core-case-seed:
+        condition: service_completed_successfully
+      core-case-corpus-embed:
         condition: service_completed_successfully
       tax-engine:
         condition: service_healthy

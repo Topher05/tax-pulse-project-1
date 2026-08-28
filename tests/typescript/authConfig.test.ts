@@ -42,6 +42,22 @@ describe("JWT configuration", () => {
     ).toMatchObject({
       jwksUrl: "https://keys.taxpulse.example/current.json",
     });
+    expect(
+      getJwtConfigFromEnv({
+        ...validEnvironment,
+        JWT_JWKS_URL: "https://keys.taxpulse.example/current.json",
+        JWT_SIGNING_SECRET: "retired-shared-secret",
+      }).signingSecret,
+    ).toBeUndefined();
+  });
+
+  test("uses the legacy signing secret only without an explicit JWKS URL", () => {
+    expect(
+      getJwtConfigFromEnv({
+        ...validEnvironment,
+        JWT_SIGNING_SECRET: "local-test-secret",
+      }).signingSecret,
+    ).toBe("local-test-secret");
   });
 
   test.each([
