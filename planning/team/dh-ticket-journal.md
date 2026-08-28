@@ -1538,6 +1538,7 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - The SNS topic itself was not created from this implementation because the environment owner requested manual creation first.
 - Compared the existing AWS runtime secret with Terraform inputs using SHA-256 fingerprints only; all four managed values match after PEM line-ending normalization, and no AWS secret value was changed.
 - Applied the deployment successfully with 6 resources added, 5 updated, and none destroyed; reconciled the existing CloudFront default-certificate protocol setting afterward so its dependent KMS and S3 policies do not produce perpetual plan drift.
+- `terraform fmt -check -recursive`, `terraform validate -no-color`, and `git diff --check` pass after applying canonical formatting to the SLO alarm configuration.
 
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX

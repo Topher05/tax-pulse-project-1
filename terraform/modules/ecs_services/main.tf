@@ -30,7 +30,7 @@ locals {
   tax_engine_image               = coalesce(var.tax_engine_image_uri, "${aws_ecr_repository.tax_engine.repository_url}:${var.tax_engine_image_tag}")
   core_case_pull_repository_arn  = coalesce(var.core_case_image_repository_arn, aws_ecr_repository.core_case.arn)
   tax_engine_pull_repository_arn = coalesce(var.tax_engine_image_repository_arn, aws_ecr_repository.tax_engine.arn)
-  slo_alarm_prefix             = "${local.resource_name_prefix}-slo"
+  slo_alarm_prefix               = "${local.resource_name_prefix}-slo"
 }
 
 resource "aws_ecr_repository" "core_case" {
@@ -718,20 +718,20 @@ resource "aws_ecs_service" "tax_engine" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "tax_engine_latency_slo_risk" {
-  alarm_name          = "${local.slo_alarm_prefix}-tax-engine-latency-risk"
-  alarm_description   = "SCRUM-187 SLO risk: successful tax-engine requests exceed the 2 second p95 latency objective."
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 5
-  datapoints_to_alarm = 3
+  alarm_name                            = "${local.slo_alarm_prefix}-tax-engine-latency-risk"
+  alarm_description                     = "SCRUM-187 SLO risk: successful tax-engine requests exceed the 2 second p95 latency objective."
+  comparison_operator                   = "GreaterThanThreshold"
+  evaluation_periods                    = 5
+  datapoints_to_alarm                   = 3
   evaluate_low_sample_count_percentiles = "ignore"
-  threshold           = 2000
-  treat_missing_data  = "notBreaching"
-  alarm_actions       = [aws_sns_topic.slo_alarms.arn]
-  ok_actions          = [aws_sns_topic.slo_alarms.arn]
-  namespace           = "TaxPulse"
-  metric_name         = "tax_plan_cycle.tax_engine_request.duration_ms"
-  extended_statistic  = "p95"
-  period              = 300
+  threshold                             = 2000
+  treat_missing_data                    = "notBreaching"
+  alarm_actions                         = [aws_sns_topic.slo_alarms.arn]
+  ok_actions                            = [aws_sns_topic.slo_alarms.arn]
+  namespace                             = "TaxPulse"
+  metric_name                           = "tax_plan_cycle.tax_engine_request.duration_ms"
+  extended_statistic                    = "p95"
+  period                                = 300
 
   dimensions = {
     service = "core-case-service"
