@@ -137,6 +137,16 @@ output "github_actions_release_role_arn" {
   value       = aws_iam_role.github_actions_release.arn
 }
 
+output "runtime_config_secret_arn" {
+  description = "Secrets Manager ARN containing the ECS runtime configuration."
+  value       = local.runtime_config_secret_arn
+}
+
+output "ecs_task_execution_role_arn" {
+  description = "ECS task execution role whose runtime-secret access is validated before CI deploys."
+  value       = module.ecs_services.execution_role_arn
+}
+
 output "slo_alarm_topic_arn" {
   description = "SNS topic ARN used by the SCRUM-187 CloudWatch SLO alarms."
   value       = module.ecs_services.slo_alarm_topic_arn

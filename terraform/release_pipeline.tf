@@ -124,6 +124,18 @@ data "aws_iam_policy_document" "github_actions_release" {
       module.ecs_services.tax_engine_task_role_arn,
     ]
   }
+
+  statement {
+    sid       = "ValidateExecutionRoleSecretAccess"
+    actions   = ["iam:SimulatePrincipalPolicy"]
+    resources = [module.ecs_services.execution_role_arn]
+  }
+
+  statement {
+    sid       = "DescribeRuntimeConfigSecret"
+    actions   = ["secretsmanager:DescribeSecret"]
+    resources = [local.runtime_config_secret_arn]
+  }
 }
 
 resource "aws_iam_role_policy" "github_actions_release" {

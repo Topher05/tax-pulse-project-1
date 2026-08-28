@@ -348,6 +348,75 @@ jobs:
           test "${{ needs.build-core-case.outputs.repository }}@${{ needs.build-core-case.outputs.digest }}" != "${{ needs.build-core-case.outputs.image_ref }}"
           test "${{ needs.build-tax-engine.outputs.repository }}@${{ needs.build-tax-engine.outputs.digest }}" != "${{ needs.build-tax-engine.outputs.image_ref }}"
 
+      - name: Initialize Terraform backend
+        shell: bash
+        run: terraform -chdir=terraform init -input=false
+
+      - name: Resolve and validate Terraform runtime configuration
+        id: runtime-config
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUNTIME_CONFIG_SECRET_ARN="$(terraform -chdir=terraform output -raw runtime_config_secret_arn)"
+          EXECUTION_ROLE_ARN="$(terraform -chdir=terraform output -raw ecs_task_execution_role_arn)"
+
+          if [[ ! "$RUNTIME_CONFIG_SECRET_ARN" =~ ^arn:aws:secretsmanager:${AWS_REGION}:[0-9]{12}:secret:taxpulse-dev-runtime-config- ]]; then
+            echo "Terraform returned an unexpected runtime secret ARN: $RUNTIME_CONFIG_SECRET_ARN" >&2
+            exit 1
+          fi
+          if [[ ! "$EXECUTION_ROLE_ARN" =~ ^arn:aws:iam::[0-9]{12}:role/ ]]; then
+            echo "Terraform returned an invalid ECS execution role ARN: $EXECUTION_ROLE_ARN" >&2
+            exit 1
+          fi
+
+          aws secretsmanager describe-secret --secret-id "$RUNTIME_CONFIG_SECRET_ARN" >/dev/null
+          ACCESS_DECISION="$(aws iam simulate-principal-policy \
+            --policy-source-arn "$EXECUTION_ROLE_ARN" \
+            --action-names secretsmanager:GetSecretValue \
+            --resource-arns "$RUNTIME_CONFIG_SECRET_ARN" \
+            --query 'EvaluationResults[0].EvalDecision' \
+            --output text)"
+          if [[ "$ACCESS_DECISION" != "allowed" ]]; then
+            echo "ECS execution role cannot read Terraform runtime secret: $ACCESS_DECISION" >&2
+            exit 1
+          fi
+
+          echo "secret_arn=$RUNTIME_CONFIG_SECRET_ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Inject Terraform runtime secret into task definitions
+        shell: bash
+        env:
+          RUNTIME_CONFIG_SECRET_ARN: ${{ steps.runtime-config.outputs.secret_arn }}
+        run: |
+          set -euo pipefail
+          jq --arg arn "$RUNTIME_CONFIG_SECRET_ARN" '
+            def secret($name): {name: $name, valueFrom: ($arn + ":" + $name + "::")};
+            (.containerDefinitions[] | select(.name == "core-case-service") | .secrets) = [
+              secret("DATABASE_URL"),
+              secret("JWT_SIGNING_PRIVATE_KEY"),
+              secret("JWT_SIGNING_KEY_ID"),
+              secret("JWT_SIGNING_SECRET")
+            ]
+          ' deployment/ecs/core-case-service.task-definition.json > core-case-service.rendered.json
+          mv core-case-service.rendered.json deployment/ecs/core-case-service.task-definition.json
+
+          jq --arg arn "$RUNTIME_CONFIG_SECRET_ARN" '
+            def secret($name): {name: $name, valueFrom: ($arn + ":" + $name + "::")};
+            (.containerDefinitions[] | select(.name == "tax-engine") | .secrets) = [
+              secret("JWT_SIGNING_SECRET")
+            ]
+          ' deployment/ecs/tax-engine.task-definition.json > tax-engine.rendered.json
+          mv tax-engine.rendered.json deployment/ecs/tax-engine.task-definition.json
+
+          jq -e --arg arn "$RUNTIME_CONFIG_SECRET_ARN" '
+            [.containerDefinitions[] | select(.name == "core-case-service") | .secrets[]]
+            | length == 4 and all(.valueFrom | startswith($arn + ":"))
+          ' deployment/ecs/core-case-service.task-definition.json >/dev/null
+          jq -e --arg arn "$RUNTIME_CONFIG_SECRET_ARN" '
+            [.containerDefinitions[] | select(.name == "tax-engine") | .secrets[]]
+            | length == 1 and all(.valueFrom | startswith($arn + ":"))
+          ' deployment/ecs/tax-engine.task-definition.json >/dev/null
+
       - name: Render Core Case task definition
         id: render-core-case
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -379,10 +448,6 @@ jobs:
           service: tax-engine
           task-definition: ${{ steps.render-tax-engine.outputs.task-definition }}
           wait-for-service-stability: true
-
-      - name: Initialize Terraform backend
-        shell: bash
-        run: terraform -chdir=terraform init -input=false
 
       - name: Record deployed SPA URL
         id: deployed-spa

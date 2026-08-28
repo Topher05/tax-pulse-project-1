@@ -160,10 +160,14 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(releasePipeline).toContain('"ecs:RegisterTaskDefinition"');
     expect(releasePipeline).toContain('"ecs:UpdateService"');
     expect(releasePipeline).toContain('"iam:PassRole"');
+    expect(releasePipeline).toContain('"iam:SimulatePrincipalPolicy"');
+    expect(releasePipeline).toContain('"secretsmanager:DescribeSecret"');
     expect(ecsServices.match(/ignore_changes = \[task_definition\]/g)).toHaveLength(2);
     expect(releasePipeline).not.toContain('"ecr:*"');
     expect(releasePipeline).not.toContain('"ecs:*"');
     expect(outputs).toContain('output "github_actions_release_role_arn"');
+    expect(outputs).toContain('output "runtime_config_secret_arn"');
+    expect(outputs).toContain('output "ecs_task_execution_role_arn"');
     expect(ecsOutputs).toContain('output "core_case_repository_arn"');
     expect(ecsOutputs).toContain('output "tax_engine_repository_arn"');
     expect(ecsOutputs).toContain('output "execution_role_arn"');
