@@ -125,7 +125,8 @@ SCRUM-163's security gate scans this `terraform/` directory with `terraform fmt`
 SCRUM-164 keeps delivery resources modular under `terraform/modules/`:
 
 - `ecs_services` creates the ECR, IAM, CloudWatch, ALB, target group, task
-  definition, and ECS service resources for the Core Case Service and Tax Engine.
+  definition, ECS service resources, SCRUM-187 SLO alarms, and the dedicated
+  KMS-encrypted SLO alarm SNS topic for the Core Case Service and Tax Engine.
 - `lambda_consumers` creates the present-to-client and execute Lambdas behind API
   Gateway, with optional stage-changed SQS consumer wiring.
 - `spa_delivery` creates the private S3 origin and CloudFront distribution for
@@ -144,7 +145,9 @@ Optional delivery inputs include immutable image tags, Lambda zip artifact paths
 `shared_config_secret_arn`, `spa_bucket_name`, and `redis_url`. The root creates the event resources and enables the
 stage-changed projection consumer by default. If `redis_url` is omitted, the ECS task
 configuration uses the SCRUM-162 ElastiCache TLS endpoint.
-
+SCRUM-187's alarm topic is named from the current Terraform root defaults as
+`${name_prefix}-${environment}-slo-alarms`; Terraform also manages its
+customer-managed KMS key and CloudWatch encryption permissions.
 The GitHub Actions OIDC provider and release role are account-level resources. This root
 is intended for the account's canonical stack; use a separate backend/account for an
 isolated disposable apply when those account-level resources already exist elsewhere.

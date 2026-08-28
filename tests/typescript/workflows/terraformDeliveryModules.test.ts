@@ -34,6 +34,40 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(ecsServices).toContain("xray:PutTraceSegments");
   });
 
+  test("defines SLO alarms and a dedicated SNS topic for ECS service degradation", () => {
+    const delivery = readTerraform("terraform/delivery.tf");
+    const ecsServices = readTerraform("terraform/modules/ecs_services/main.tf");
+    const ecsOutputs = readTerraform("terraform/modules/ecs_services/outputs.tf");
+    const rootOutputs = readTerraform("terraform/outputs.tf");
+    const ecsVariables = readTerraform("terraform/modules/ecs_services/variables.tf");
+
+    expect(delivery).toContain('slo_alarm_topic_name          = "${var.name_prefix}-${var.environment}-slo-alarms"');
+    expect(ecsVariables).toContain('variable "slo_alarm_topic_name"');
+    expect(ecsServices).toContain('resource "aws_sns_topic" "slo_alarms"');
+    expect(ecsServices).toContain('resource "aws_kms_key" "slo_alarms"');
+    expect(ecsServices).toContain("enable_key_rotation     = true");
+    expect(ecsServices).toContain("kms_master_key_id = aws_kms_key.slo_alarms.arn");
+    expect(ecsServices).toContain('sid    = "AllowCloudWatchAlarmEncryption"');
+    expect(ecsServices).toContain('resource "aws_sns_topic_policy" "slo_alarms"');
+    expect(ecsServices).toContain('identifiers = ["cloudwatch.amazonaws.com"]');
+    expect(ecsServices).toContain('resource "aws_cloudwatch_metric_alarm" "tax_engine_latency_slo_risk"');
+    expect(ecsServices).toMatch(
+      /metric_name\s+=\s+"tax_plan_cycle\.tax_engine_request\.duration_ms"/,
+    );
+    expect(ecsServices).toContain('evaluate_low_sample_count_percentiles = "ignore"');
+    expect(ecsServices).toContain('resource "aws_cloudwatch_metric_alarm" "core_case_availability_error_budget_burn"');
+    expect(ecsServices).toContain('metric_name = "HTTPCode_Target_5XX_Count"');
+    expect(ecsServices).toContain('metric_name = "RequestCount"');
+    expect(ecsServices).toContain('expression  = "IF(requests > 0, errors / requests, 0)"');
+    expect(ecsServices).toContain('resource "aws_cloudwatch_metric_alarm" "core_case_unhealthy_hosts"');
+    expect(ecsServices).toMatch(/metric_name\s+=\s+"HealthyHostCount"/);
+    expect(ecsServices).toContain('resource "aws_cloudwatch_composite_alarm" "core_case_availability_slo_risk"');
+    expect(ecsOutputs).toContain('output "slo_alarm_topic_arn"');
+    expect(ecsOutputs).toContain('output "slo_alarm_names"');
+    expect(rootOutputs).toContain('output "slo_alarm_topic_name"');
+    expect(rootOutputs).toContain('output "slo_alarm_names"');
+  });
+
   test("keeps optional stage-changed consumer SQS permissions behind the feature flag", () => {
     const lambdaConsumers = readTerraform("terraform/modules/lambda_consumers/main.tf");
     const lambdaVariables = readTerraform("terraform/modules/lambda_consumers/variables.tf");
@@ -106,6 +140,7 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     const variables = readTerraform("terraform/variables.tf");
     const outputs = readTerraform("terraform/outputs.tf");
     const ecsOutputs = readTerraform("terraform/modules/ecs_services/outputs.tf");
+    const ecsServices = readTerraform("terraform/modules/ecs_services/main.tf");
 
     expect(variables).toContain('variable "github_actions_repository"');
     expect(variables).toContain('default     = "AI-Native-2026-06-22-FedStack/tax-pulse-project-team-1"');
@@ -125,6 +160,7 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(releasePipeline).toContain('"ecs:RegisterTaskDefinition"');
     expect(releasePipeline).toContain('"ecs:UpdateService"');
     expect(releasePipeline).toContain('"iam:PassRole"');
+    expect(ecsServices.match(/ignore_changes = \[task_definition\]/g)).toHaveLength(2);
     expect(releasePipeline).not.toContain('"ecr:*"');
     expect(releasePipeline).not.toContain('"ecs:*"');
     expect(outputs).toContain('output "github_actions_release_role_arn"');
