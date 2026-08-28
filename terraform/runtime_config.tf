@@ -34,7 +34,9 @@ resource "aws_secretsmanager_secret_version" "runtime_config" {
       aws_db_instance.postgres.port,
       var.db_name,
     )
-    JWT_SIGNING_PRIVATE_KEY = var.jwt_signing_private_key
+    # Keep PEM serialization stable across Windows and Unix workstations so a
+    # line-ending-only difference does not create a new secret version.
+    JWT_SIGNING_PRIVATE_KEY = replace(var.jwt_signing_private_key, "\r\n", "\n")
     JWT_SIGNING_KEY_ID      = var.jwt_signing_key_id
     JWT_SIGNING_SECRET      = var.jwt_signing_secret
   })

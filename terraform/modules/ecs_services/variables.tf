@@ -124,3 +124,8 @@ variable "action_item_created_topic_arn" {
   description = "SNS topic ARN for action-item-created event publishing."
   type        = string
 }
+
+variable "slo_alarm_topic_name" {
+  description = "SNS topic name used by CloudWatch SLO alarms."
+  type        = string
+}
