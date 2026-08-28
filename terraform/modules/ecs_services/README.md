@@ -9,7 +9,8 @@ Creates the SCRUM-157 and SCRUM-158 runtime resources:
 - Internet-facing ALB, target groups, HTTP listener, and path rules.
 - ALB-only service security group ingress on ports `3000` and `8000`.
 - SCRUM-187 CloudWatch metric and composite alarms for tax-engine latency and
-  Core Case API availability, plus a dedicated SNS topic for alarm actions.
+  Core Case API availability, plus a dedicated KMS-encrypted SNS topic for
+  alarm actions.
 
 Required inputs are the SCRUM-162 VPC/subnets, immutable image tags, shared
 Secrets Manager ARN, Redis URL, SNS/SQS event endpoints, and the sandbox

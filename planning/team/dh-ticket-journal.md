@@ -1503,6 +1503,7 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - Corrected the Embedded Metric Format metadata emitted by the shared observability logger so CloudWatch receives dimension keys instead of raw dimension values, and added a service-only rollup dimension set that supports aggregate latency alarms.
 - Added a focused Tax Engine telemetry test to prove successful requests emit the rollup metric shape required by the latency SLO.
 - Extended the Terraform ECS services module with a dedicated SCRUM-187 SNS topic and policy for CloudWatch notifications, a p95 latency alarm for Tax Engine-backed requests, a Core Case API error-budget burn alarm based on ALB metric math, a backing healthy-host alarm, and a composite availability alarm.
+- Added a rotating customer-managed KMS key and a source-account-scoped CloudWatch key policy so SLO alarm notifications are encrypted at rest without breaking alarm publication.
 - Threaded the generated SLO topic name through the Terraform delivery root, exported the alarm/topic outputs for later operational handoff, and documented the exact SLO formulas, error budgets, exclusions, and alarm rules in a dedicated service-level-objectives document.
 - Normalized the Terraform-managed JWT private key to Unix line endings before JSON serialization, preventing Windows workstation formatting from creating an unnecessary Secrets Manager version during the SCRUM-187 apply.
 
@@ -1539,6 +1540,10 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - Compared the existing AWS runtime secret with Terraform inputs using SHA-256 fingerprints only; all four managed values match after PEM line-ending normalization, and no AWS secret value was changed.
 - Applied the deployment successfully with 6 resources added, 5 updated, and none destroyed; reconciled the existing CloudFront default-certificate protocol setting afterward so its dependent KMS and S3 policies do not produce perpetual plan drift.
 - `terraform fmt -check -recursive`, `terraform validate -no-color`, and `git diff --check` pass after applying canonical formatting to the SLO alarm configuration.
+- Updated Terraform source assertions to tolerate canonical formatter alignment; the focused delivery-module suite passes with 9 tests.
+- Added a scoped tfsec exception for the existing CloudFront default certificate because AWS fixes that distribution mode to `TLSv1`; enforcing the newer policy requires a future ACM certificate and custom alias rollout.
+- Preserved release-pipeline ownership of deployed ECS task revisions by ignoring `task_definition` drift on both services, preventing a later Terraform apply from rolling Core Case back from revision 16 to revision 11.
+- The focused delivery/security verification passes with 2 files and 13 tests; the encryption plan contains 2 additions, 2 in-place updates, and no destruction.
 
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX

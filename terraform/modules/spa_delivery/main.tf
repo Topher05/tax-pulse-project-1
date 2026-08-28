@@ -249,6 +249,7 @@ resource "aws_cloudfront_distribution" "spa" {
     cloudfront_default_certificate = true
     # CloudFront fixes this value to TLSv1 when using its default certificate.
     # Enforcing TLSv1.2_2021 requires an ACM certificate and distribution aliases.
+    #tfsec:ignore:aws-cloudfront-use-secure-tls-policy Default-certificate protocol is fixed by CloudFront; see the preceding explanation.
     minimum_protocol_version = "TLSv1"
   }
 }

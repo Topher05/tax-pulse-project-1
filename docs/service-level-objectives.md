@@ -8,8 +8,9 @@ the CloudWatch alarms that warn on-call when the objectives are at risk.
 - Window: rolling 28 days.
 - Platform services covered here: Tax Engine calculation latency and Core Case
   API availability behind the ECS application load balancer.
-- Alarm transport: SNS topic `taxpulse-dev-slo-alarms` under the current
-  Terraform root defaults of `name_prefix=taxpulse` and `environment=dev`.
+- Alarm transport: KMS-encrypted SNS topic `taxpulse-dev-slo-alarms` under the
+  current Terraform root defaults of `name_prefix=taxpulse` and
+  `environment=dev`.
 
 ## SLO 1: Calculation Latency
 
@@ -69,8 +70,8 @@ Composite operator alarm:
 
 ## Notification And Runbook Notes
 
-- Terraform manages the SNS topic and policy, but if the topic is created
-  manually first it should use the exact name `taxpulse-dev-slo-alarms`.
+- Terraform manages the SNS topic, its customer-managed KMS key, and the
+  CloudWatch publishing policies.
 - CloudWatch publishes both `ALARM` and `OK` transitions to that topic.
 - Topic subscriptions are intentionally managed outside this repository so each
   environment can attach its own pager or chat destinations.

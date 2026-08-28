@@ -1,4 +1,5 @@
 data "aws_caller_identity" "current" {}
+data "aws_partition" "current" {}
 
 locals {
   resource_name_prefix       = "${var.name_prefix}-${var.environment}"
@@ -79,8 +80,61 @@ resource "aws_cloudwatch_log_group" "tax_engine" {
   retention_in_days = var.log_retention_days
 }
 
+data "aws_iam_policy_document" "slo_alarm_key" {
+  statement {
+    sid       = "AllowAccountAdministration"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  statement {
+    sid    = "AllowCloudWatchAlarmEncryption"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey*",
+    ]
+    resources = ["*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudwatch.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+}
+
+resource "aws_kms_key" "slo_alarms" {
+  description             = "KMS key for TaxPulse SLO alarm notification encryption."
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+  policy                  = data.aws_iam_policy_document.slo_alarm_key.json
+
+  tags = {
+    Name        = "${local.resource_name_prefix}-slo-alarms"
+    Environment = var.environment
+  }
+}
+
+resource "aws_kms_alias" "slo_alarms" {
+  name          = "alias/${local.resource_name_prefix}-slo-alarms"
+  target_key_id = aws_kms_key.slo_alarms.key_id
+}
+
 resource "aws_sns_topic" "slo_alarms" {
-  name = var.slo_alarm_topic_name
+  name              = var.slo_alarm_topic_name
+  kms_master_key_id = aws_kms_key.slo_alarms.arn
 }
 
 data "aws_iam_policy_document" "slo_alarm_topic" {
@@ -684,6 +738,11 @@ resource "aws_ecs_service" "core_case" {
     container_port   = 3000
   }
 
+  lifecycle {
+    # The GitHub Actions release role deploys newer task definition revisions.
+    ignore_changes = [task_definition]
+  }
+
   depends_on = [aws_lb_listener_rule.core_case]
 }
 
@@ -712,6 +771,11 @@ resource "aws_ecs_service" "tax_engine" {
 
   service_registries {
     registry_arn = aws_service_discovery_service.tax_engine.arn
+  }
+
+  lifecycle {
+    # The GitHub Actions release role deploys newer task definition revisions.
+    ignore_changes = [task_definition]
   }
 
   depends_on = [aws_lb_listener_rule.tax_engine]
