@@ -1574,7 +1574,7 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - Added a dedicated AI-Assist prompt-safety module that normalizes recommendation and question text, detects direct instruction overrides, hidden-prompt exfiltration attempts, role spoofing, encoded payloads, and cross-tenant requests, then rejects those requests before retrieval begins.
 - Hardened the `/assist` explanation flow so the model receives structured JSON with explicitly untrusted user input, a hidden policy canary, and a fail-closed post-response validation that rejects leaked canaries or unknown chunk citations.
 - Added a second tenant-scope guard in the assistant controller so retrieved chunks must still belong to the resolved tenant scopes before citations are materialized, preventing a faulty retriever from leaking cross-tenant grounding.
-- Added a checked-in prompt-injection fixture set plus controller, route, provider, and smoke coverage, including a live stack smoke script that proves a grounded request returns `200` while a prompt-injection request returns `422 Assistant Request Rejected`.
+- Added a checked-in prompt-injection fixture set plus controller, route, provider, and smoke coverage. The HTTP-level endpoint test and live stack smoke now iterate through every checked-in fixture, require the exact generic `422 Assistant Request Rejected` response, and reject system-policy or cross-tenant response markers.
 
 **Project Scope Connection:**
 
@@ -1586,6 +1586,7 @@ axe check and a component test, so that it is accessible and regression-guarded.
 **Changed Files:**
 
 - `data/corpus/security/prompt-injection-cases.json`
+- `src/typescript/assist/promptInjectionFixtures.ts`
 - `src/typescript/assist/promptSafety.ts`
 - `src/typescript/assist/explanation.ts`
 - `src/typescript/shared/scripts/assistSmoke.ts`
@@ -1594,6 +1595,7 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/index.ts`
 - `tests/typescript/assist/promptSafety.test.ts`
+- `tests/typescript/assist/promptInjectionEndpoint.test.ts`
 - `tests/typescript/assist/explanation.test.ts`
 - `tests/typescript/shared/scripts/assistSmoke.test.ts`
 - `tests/typescript/features/taxPlanCycle/assistantController.test.ts`
@@ -1609,9 +1611,12 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - An initial `npm test` run before Compose startup surfaced preexisting stack-dependent deduction coverage that expects the local Postgres container; this was an environment precondition, not an application regression.
 - `npm run stack:up` rebuilt and started the local stack successfully on August 27, 2026.
 - `npm run stack:smoke` passed against the running Compose stack with healthy Core Case, Tax Engine, Redis, and synthetic registration flow.
-- `npm run assist:smoke` passed against the live `/assist` route with a grounded request returning `200` and the prompt-injection request returning `422`.
+- `npm run assist:smoke` passed against the rebuilt live `/assist` route on August 28, 2026 with a grounded request returning `200` and all six checked-in prompt-injection fixtures returning the exact generic `422` refusal without system-policy or cross-tenant response markers.
 - `npm run test:vitest -- tests/typescript/features/deductions/routes.test.ts tests/typescript/features/deductions/repository.test.ts` passed once the stack-backed Postgres dependency was available.
 - `npm test` passed on August 27, 2026 with `105` test files and `456` tests after the stack-backed rerun.
+- `npm run test:vitest -- tests/typescript/assist/promptInjectionEndpoint.test.ts tests/typescript/shared/scripts/assistSmoke.test.ts tests/typescript/assist/promptSafety.test.ts` passed on August 28, 2026 with `3` files and `5` tests.
+- `npm run typecheck`, `npm run stack:up`, and `npm run stack:smoke` passed on August 28, 2026.
+- The August 28 full `npm test` run passed `96` files and `447` tests, including the new endpoint test, but `10` database-heavy files timed out while starting Postgres testcontainers in parallel. Rerunning those exact files serially with `--maxWorkers=1 --no-file-parallelism` passed all `10` files and `43` tests, confirming resource contention rather than a regression.
 
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX

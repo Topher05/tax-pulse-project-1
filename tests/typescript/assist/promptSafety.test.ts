@@ -1,21 +1,12 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, test } from "vitest";
 
+import { loadAssistPromptInjectionFixtures } from "../../../src/typescript/assist/promptInjectionFixtures.js";
 import {
   detectAssistPromptInjection,
   normalizeAssistText,
 } from "../../../src/typescript/assist/promptSafety.js";
 
-interface PromptInjectionFixture {
-  id: string;
-  recommendation: string;
-  question?: string;
-}
-
-const promptInjectionFixtures = JSON.parse(
-  readFileSync("data/corpus/security/prompt-injection-cases.json", "utf8"),
-) as PromptInjectionFixture[];
+const promptInjectionFixtures = loadAssistPromptInjectionFixtures();
 
 describe("assist prompt safety", () => {
   test("normalizes whitespace and casing before inspection", () => {
