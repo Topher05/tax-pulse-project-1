@@ -407,13 +407,43 @@ export const userRows = [
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d71",
     tenantId: tenantRows[2].id,
-    email: "test-client@example.com",
-    displayName: "Test Client",
+    email: "maya.thompson@example.com",
+    displayName: "Maya Thompson",
     roleId: roleRows[2].id,
     statusId: userStatusRows[1].id,
     lastLoginAt: null,
   },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d72",
+    tenantId: tenantRows[2].id,
+    email: "sophia.martinez@example.com",
+    displayName: "Sophia Martinez",
+    roleId: roleRows[0].id,
+    statusId: userStatusRows[1].id,
+    lastLoginAt: null,
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d73",
+    tenantId: tenantRows[2].id,
+    email: "daniel.kim@example.com",
+    displayName: "Daniel Kim",
+    roleId: roleRows[1].id,
+    statusId: userStatusRows[1].id,
+    lastLoginAt: null,
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d74",
+    tenantId: tenantRows[2].id,
+    email: "cameron.lee@example.com",
+    displayName: "Cameron Lee",
+    roleId: roleRows[3].id,
+    statusId: userStatusRows[1].id,
+    lastLoginAt: null,
+  },
 ] as const satisfies readonly SeedUserRow[];
+
+const presentationDemoPasswordHash =
+  "$argon2id$v=19$m=65536,t=3,p=4$B24sXGqoqBs+ariu1S9dHw$RGFx+Z95/WZZ+TreriPpkS2n4cDZHoOzYvD4Tl/zW6s";
 
 export const credentialRows = [
   {
@@ -479,8 +509,22 @@ export const credentialRows = [
   {
     id: "cm7zq8f4k0010a1b2c3d4e5f6",
     userId: userRows[10].id,
-    passwordHash:
-      "$argon2id$v=19$m=65536,t=3,p=4$c3ludGhldGljLXRlc3QtY2xpZW50LXNlZWQtMDE$+IPCTtDIPAJDcHuRvZpGqvDAGYJbpeiK1gKMg6SSV6E",
+    passwordHash: presentationDemoPasswordHash,
+  },
+  {
+    id: "cm7zq8f4k0011a1b2c3d4e5f6",
+    userId: userRows[11].id,
+    passwordHash: presentationDemoPasswordHash,
+  },
+  {
+    id: "cm7zq8f4k0012a1b2c3d4e5f6",
+    userId: userRows[12].id,
+    passwordHash: presentationDemoPasswordHash,
+  },
+  {
+    id: "cm7zq8f4k0013a1b2c3d4e5f6",
+    userId: userRows[13].id,
+    passwordHash: presentationDemoPasswordHash,
   },
 ] as const satisfies readonly SeedCredentialRow[];
 
@@ -545,6 +589,21 @@ export const mfaEnrollmentRows = [
   },
   {
     userId: userRows[10].id,
+    totpSecret: createSyntheticTotpSecret(10),
+    isEnrolled: true,
+  },
+  {
+    userId: userRows[11].id,
+    totpSecret: createSyntheticTotpSecret(10),
+    isEnrolled: true,
+  },
+  {
+    userId: userRows[12].id,
+    totpSecret: createSyntheticTotpSecret(10),
+    isEnrolled: true,
+  },
+  {
+    userId: userRows[13].id,
     totpSecret: createSyntheticTotpSecret(10),
     isEnrolled: true,
   },
