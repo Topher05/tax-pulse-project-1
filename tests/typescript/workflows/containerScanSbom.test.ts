@@ -21,10 +21,21 @@ describe("SCRUM-168 container release workflow", () => {
     expect(workflow).toContain("role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}");
   });
 
-  test("builds ARM64 release images, signs by digest, verifies before deploy, and deploys digest refs", () => {
+  test("builds release images for their ECS architectures and deploys verified digests", () => {
     const workflow = readFileSync(workflowPath, "utf8");
+    const coreCaseJob = workflow.slice(
+      workflow.indexOf("build-core-case:"),
+      workflow.indexOf("build-tax-engine:"),
+    );
+    const taxEngineJob = workflow.slice(
+      workflow.indexOf("build-tax-engine:"),
+      workflow.indexOf("verify-and-deploy:"),
+    );
 
-    expect(workflow).toContain("platforms: linux/arm64");
+    expect(coreCaseJob).toContain("platforms: linux/arm64");
+    expect(coreCaseJob).not.toContain("platforms: linux/amd64");
+    expect(taxEngineJob).toContain("platforms: linux/amd64");
+    expect(taxEngineJob).not.toContain("platforms: linux/arm64");
     expect(workflow).toContain("push: true");
     expect(workflow).toContain("sigstore/cosign-installer@v4.1.0");
     expect(workflow).toContain("cosign-release: v3.0.6");

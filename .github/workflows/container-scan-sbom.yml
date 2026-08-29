@@ -201,7 +201,7 @@ jobs:
           file: ./Dockerfile.tax-engine
           push: true
           provenance: false
-          platforms: linux/arm64
+          platforms: linux/amd64
           tags: ${{ steps.release-metadata.outputs.image_ref }}
 
       - name: Record local image metadata
