@@ -118,6 +118,8 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(vpc).not.toContain('resource "aws_eip" "nat"');
     expect(ecsServices).toContain("subnets          = var.public_subnet_ids");
     expect(ecsServices).toContain("assign_public_ip = true");
+    expect(ecsServices.match(/deployment_circuit_breaker/g)).toHaveLength(2);
+    expect(ecsServices.match(/rollback = true/g)).toHaveLength(2);
   });
 
   test("generates an isolated transition Lambda role name unless explicitly overridden", () => {

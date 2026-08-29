@@ -37,14 +37,21 @@ describe("SCRUM-168 container release workflow", () => {
     expect(workflow).toContain("aws-actions/amazon-ecr-login@v2");
     expect(workflow).toContain("aws-actions/amazon-ecs-render-task-definition@v1");
     expect(workflow).toContain("aws-actions/amazon-ecs-deploy-task-definition@v2");
-    expect(workflow).toContain("core-case-service.task-definition.json");
-    expect(workflow).toContain("tax-engine.task-definition.json");
+    expect(workflow).toContain("core-case-service.canonical.json");
+    expect(workflow).toContain("tax-engine.canonical.json");
     expect(workflow).toContain("cluster: taxpulse-api");
     expect(workflow).toContain("terraform -chdir=terraform output -raw runtime_config_secret_arn");
     expect(workflow).toContain("aws secretsmanager describe-secret");
     expect(workflow).not.toContain("aws iam simulate-principal-policy");
     expect(workflow).toContain('secret("JWT_SIGNING_PRIVATE_KEY")');
     expect(workflow).toContain('secret("JWT_SIGNING_KEY_ID")');
+    expect(workflow).toContain('secret("ASSIST_TENANT_CORPUS_SCOPE_MAP")');
+    expect(workflow).toContain('secret("OPENAI_API_KEY")');
+    expect(workflow).toContain("terraform -chdir=terraform show -json");
+    expect(workflow).toContain("aws ecs describe-task-definition");
+    expect(workflow).toContain("Capture ECS deployment diagnostics");
+    expect(workflow).toContain("if: failure()");
+    expect(workflow).toContain("stoppedReason:stoppedReason");
     expect(workflow).not.toContain("TAX_PULSE_CONFIG");
   });
 

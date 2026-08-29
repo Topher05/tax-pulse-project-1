@@ -168,6 +168,8 @@ describe("ECS Fargate task definitions", () => {
       "JWT_SIGNING_PRIVATE_KEY",
       "JWT_SIGNING_KEY_ID",
       "JWT_SIGNING_SECRET",
+      "ASSIST_TENANT_CORPUS_SCOPE_MAP",
+      "OPENAI_API_KEY",
     ]);
     for (const secretName of names(container.secrets)) {
       expect(valueFromByName(container.secrets, secretName)).toBe(

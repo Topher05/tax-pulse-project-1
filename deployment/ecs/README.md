@@ -17,11 +17,10 @@ copies running are outside SCRUM-157.
 
 ## Before Registration
 
-The task definitions use the discovered AWS account ID, region, SNS topic, SQS queue,
-and CloudWatch log groups from the team account. Secret references contain the
-`TERRAFORM_RUNTIME_CONFIG_SECRET_ARN` marker. The development deployment workflow
-resolves the current Terraform-managed runtime secret and replaces that marker before
-registering either task definition.
+The development deployment workflow reads the canonical task definitions recorded in
+Terraform state, downloads them from ECS, injects the current runtime-secret ARN, and
+then replaces only the container image. The checked-in definitions remain documentation
+and manual-registration examples; CI does not deploy them.
 
 The task definitions expect these container images to exist in Amazon ECR. Replace
 `replace-with-immutable-image-tag` with the pushed image tag from the build pipeline,
@@ -70,6 +69,8 @@ production AWS dependencies instead of local Compose containers:
 - `JWT_SIGNING_PRIVATE_KEY` loaded from Secrets Manager
 - `JWT_SIGNING_KEY_ID` loaded from Secrets Manager
 - `JWT_SIGNING_SECRET` loaded from Secrets Manager
+- `ASSIST_TENANT_CORPUS_SCOPE_MAP` loaded from Secrets Manager
+- `OPENAI_API_KEY` loaded from Secrets Manager
 - `LIABILITY_ENGINE_BASE` points at the internal Tax Engine service-discovery name
 - `TAXPULSE_REDIS_URL` points at the managed Redis/ElastiCache endpoint
 - SNS/SQS identifiers are supplied as environment values

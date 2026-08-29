@@ -120,6 +120,14 @@
         {
           "name": "JWT_SIGNING_SECRET",
           "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:JWT_SIGNING_SECRET::"
+        },
+        {
+          "name": "ASSIST_TENANT_CORPUS_SCOPE_MAP",
+          "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:ASSIST_TENANT_CORPUS_SCOPE_MAP::"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:OPENAI_API_KEY::"
         }
       ],
       "healthCheck": {

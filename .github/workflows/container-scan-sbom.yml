@@ -295,7 +295,7 @@ jobs:
     outputs:
       spa_url: ${{ steps.deployed-spa.outputs.spa_url }}
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    timeout-minutes: 30
+    timeout-minutes: 75
 
     steps:
       - name: Checkout repository
@@ -368,6 +368,52 @@ jobs:
 
           echo "secret_arn=$RUNTIME_CONFIG_SECRET_ARN" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve canonical ECS task definitions
+        shell: bash
+        run: |
+          set -euo pipefail
+          CORE_CASE_TASK_DEFINITION_ARN="$(
+            terraform -chdir=terraform show -json |
+              jq -er '.. | objects | select(.address? == "module.ecs_services.aws_ecs_task_definition.core_case") | .values.arn'
+          )"
+          TAX_ENGINE_TASK_DEFINITION_ARN="$(
+            terraform -chdir=terraform show -json |
+              jq -er '.. | objects | select(.address? == "module.ecs_services.aws_ecs_task_definition.tax_engine") | .values.arn'
+          )"
+
+          [[ "$CORE_CASE_TASK_DEFINITION_ARN" == arn:aws:ecs:${AWS_REGION}:*:task-definition/taxpulse-core-case-service:* ]]
+          [[ "$TAX_ENGINE_TASK_DEFINITION_ARN" == arn:aws:ecs:${AWS_REGION}:*:task-definition/taxpulse-tax-engine:* ]]
+
+          aws ecs describe-task-definition \
+            --task-definition "$CORE_CASE_TASK_DEFINITION_ARN" \
+            --query taskDefinition \
+            --output json |
+            jq 'del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy,
+              .deregisteredAt
+            )' > deployment/ecs/core-case-service.canonical.json
+
+          aws ecs describe-task-definition \
+            --task-definition "$TAX_ENGINE_TASK_DEFINITION_ARN" \
+            --query taskDefinition \
+            --output json |
+            jq 'del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy,
+              .deregisteredAt
+            )' > deployment/ecs/tax-engine.canonical.json
+
       - name: Inject Terraform runtime secret into task definitions
         shell: bash
         env:
@@ -380,33 +426,35 @@ jobs:
               secret("DATABASE_URL"),
               secret("JWT_SIGNING_PRIVATE_KEY"),
               secret("JWT_SIGNING_KEY_ID"),
-              secret("JWT_SIGNING_SECRET")
+              secret("JWT_SIGNING_SECRET"),
+              secret("ASSIST_TENANT_CORPUS_SCOPE_MAP"),
+              secret("OPENAI_API_KEY")
             ]
-          ' deployment/ecs/core-case-service.task-definition.json > core-case-service.rendered.json
-          mv core-case-service.rendered.json deployment/ecs/core-case-service.task-definition.json
+          ' deployment/ecs/core-case-service.canonical.json > core-case-service.rendered.json
+          mv core-case-service.rendered.json deployment/ecs/core-case-service.canonical.json
 
           jq --arg arn "$RUNTIME_CONFIG_SECRET_ARN" '
             def secret($name): {name: $name, valueFrom: ($arn + ":" + $name + "::")};
             (.containerDefinitions[] | select(.name == "tax-engine") | .secrets) = [
               secret("JWT_SIGNING_SECRET")
             ]
-          ' deployment/ecs/tax-engine.task-definition.json > tax-engine.rendered.json
-          mv tax-engine.rendered.json deployment/ecs/tax-engine.task-definition.json
+          ' deployment/ecs/tax-engine.canonical.json > tax-engine.rendered.json
+          mv tax-engine.rendered.json deployment/ecs/tax-engine.canonical.json
 
           jq -e --arg arn "$RUNTIME_CONFIG_SECRET_ARN" '
             [.containerDefinitions[] | select(.name == "core-case-service") | .secrets[]]
-            | length == 4 and all(.valueFrom | startswith($arn + ":"))
-          ' deployment/ecs/core-case-service.task-definition.json >/dev/null
+            | length == 6 and all(.valueFrom | startswith($arn + ":"))
+          ' deployment/ecs/core-case-service.canonical.json >/dev/null
           jq -e --arg arn "$RUNTIME_CONFIG_SECRET_ARN" '
             [.containerDefinitions[] | select(.name == "tax-engine") | .secrets[]]
             | length == 1 and all(.valueFrom | startswith($arn + ":"))
-          ' deployment/ecs/tax-engine.task-definition.json >/dev/null
+          ' deployment/ecs/tax-engine.canonical.json >/dev/null
 
       - name: Render Core Case task definition
         id: render-core-case
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: deployment/ecs/core-case-service.task-definition.json
+          task-definition: deployment/ecs/core-case-service.canonical.json
           container-name: core-case-service
           image: ${{ needs.build-core-case.outputs.repository }}@${{ needs.build-core-case.outputs.digest }}
 
@@ -414,7 +462,7 @@ jobs:
         id: render-tax-engine
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: deployment/ecs/tax-engine.task-definition.json
+          task-definition: deployment/ecs/tax-engine.canonical.json
           container-name: tax-engine
           image: ${{ needs.build-tax-engine.outputs.repository }}@${{ needs.build-tax-engine.outputs.digest }}
 
@@ -433,6 +481,34 @@ jobs:
           service: tax-engine
           task-definition: ${{ steps.render-tax-engine.outputs.task-definition }}
           wait-for-service-stability: true
+
+      - name: Capture ECS deployment diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -u
+          aws ecs describe-services \
+            --cluster taxpulse-api \
+            --services core-case-service tax-engine \
+            --query 'services[].{service:serviceName,taskDefinition:taskDefinition,deployments:deployments,events:events[0:10]}' \
+            --output json
+
+          for service in core-case-service tax-engine; do
+            STOPPED_TASKS="$(aws ecs list-tasks \
+              --cluster taxpulse-api \
+              --service-name "$service" \
+              --desired-status STOPPED \
+              --max-items 10 \
+              --query 'taskArns' \
+              --output text)"
+            if [[ -n "$STOPPED_TASKS" && "$STOPPED_TASKS" != "None" ]]; then
+              aws ecs describe-tasks \
+                --cluster taxpulse-api \
+                --tasks $STOPPED_TASKS \
+                --query 'tasks[].{task:taskArn,taskDefinition:taskDefinitionArn,stopCode:stopCode,stoppedReason:stoppedReason,containers:containers[].{name:name,exitCode:exitCode,reason:reason}}' \
+                --output json
+            fi
+          done
 
       - name: Record deployed SPA URL
         id: deployed-spa
