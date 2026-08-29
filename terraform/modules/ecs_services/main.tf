@@ -550,6 +550,14 @@ resource "aws_ecs_task_definition" "core_case" {
           name      = "JWT_SIGNING_SECRET"
           valueFrom = "${var.shared_config_secret_arn}:JWT_SIGNING_SECRET::"
         },
+        {
+          name      = "ASSIST_TENANT_CORPUS_SCOPE_MAP"
+          valueFrom = "${var.shared_config_secret_arn}:ASSIST_TENANT_CORPUS_SCOPE_MAP::"
+        },
+        {
+          name      = "OPENAI_API_KEY"
+          valueFrom = "${var.shared_config_secret_arn}:OPENAI_API_KEY::"
+        },
       ]
       healthCheck = {
         command = [
@@ -723,6 +731,11 @@ resource "aws_ecs_service" "core_case" {
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
 
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
   network_configuration {
     # The sandbox SCP forbids NAT gateways. Fargate tasks therefore use public
     # subnets and public IPs for AWS service egress; inbound application traffic
@@ -756,6 +769,11 @@ resource "aws_ecs_service" "tax_engine" {
 
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     subnets          = var.public_subnet_ids

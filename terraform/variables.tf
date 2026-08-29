@@ -132,6 +132,28 @@ variable "jwt_signing_secret" {
   default     = null
 }
 
+variable "assist_tenant_corpus_scope_map" {
+  type        = string
+  description = "JSON object mapping tenant UUIDs to approved AI Assist corpus scopes."
+  sensitive   = true
+  default     = null
+
+  validation {
+    condition = (
+      var.assist_tenant_corpus_scope_map == null ||
+      can(jsondecode(var.assist_tenant_corpus_scope_map))
+    )
+    error_message = "assist_tenant_corpus_scope_map must be valid JSON when provided."
+  }
+}
+
+variable "openai_api_key" {
+  type        = string
+  description = "OpenAI API key used by the Core Case AI Assist providers."
+  sensitive   = true
+  default     = null
+}
+
 variable "jwt_public_jwk" {
   type        = string
   description = "Public RSA JWK JSON for the shared JWT issuer metadata Lambda."

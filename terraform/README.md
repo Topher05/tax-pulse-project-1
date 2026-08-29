@@ -37,10 +37,13 @@ the shared `dev` state until its separately managed resources are imported and r
 
 The target environment must also provide:
 
-- `db_password`, `jwt_signing_private_key`, `jwt_signing_key_id`, and `jwt_public_jwk`.
+- `db_password`, `jwt_signing_private_key`, `jwt_signing_key_id`,
+  `jwt_signing_secret`, `jwt_public_jwk`, `assist_tenant_corpus_scope_map`, and
+  `openai_api_key`.
   The root creates a stack-scoped runtime secret containing the newly created RDS endpoint.
   To use an externally managed secret instead, set `shared_config_secret_arn` with
-  `DATABASE_URL`, `JWT_SIGNING_PRIVATE_KEY`, and `JWT_SIGNING_KEY_ID` JSON keys.
+  `DATABASE_URL`, `JWT_SIGNING_PRIVATE_KEY`, `JWT_SIGNING_KEY_ID`,
+  `JWT_SIGNING_SECRET`, `ASSIST_TENANT_CORPUS_SCOPE_MAP`, and `OPENAI_API_KEY` JSON keys.
 - A public JWK derived from the signing key. `npm run jwt:public-jwk` prints it when run
   in an approved issuer-admin environment.
 - A valid synthetic bearer token after apply. The root provisions its own issuer metadata
@@ -139,7 +142,10 @@ Provide these values through uncommitted tfvars or CI variables:
 - `db_password`
 - `jwt_signing_private_key`
 - `jwt_signing_key_id`
+- `jwt_signing_secret`
 - `jwt_public_jwk`
+- `assist_tenant_corpus_scope_map`
+- `openai_api_key`
 
 Optional delivery inputs include immutable image tags, Lambda zip artifact paths,
 `shared_config_secret_arn`, `spa_bucket_name`, and `redis_url`. The root creates the event resources and enables the

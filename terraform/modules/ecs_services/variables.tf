@@ -91,7 +91,7 @@ variable "tax_engine_image_repository_arn" {
 }
 
 variable "shared_config_secret_arn" {
-  description = "Secrets Manager ARN with DATABASE_URL, JWT_SIGNING_PRIVATE_KEY, and JWT_SIGNING_KEY_ID keys."
+  description = "Secrets Manager ARN with database, JWT, and Core Case AI Assist runtime keys."
   type        = string
 }
 
