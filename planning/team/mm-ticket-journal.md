@@ -44,17 +44,29 @@ tenant isolation, or the Tax Plan Cycle UUID contract used by backend APIs.
 - `src/pulseUI/entities/taxPlanCycle.ts`
 - `src/pulseUI/entities/taxPlanCycleQueries.ts`
 - `src/pulseUI/tests/components/CurrentCaseSelector.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
 - `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/features/taxPlanCycle/taxPlanCycle.test.model.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
 - `planning/team/mm-ticket-journal.md`
 
 **Validation Notes:**
 
-- `npm run typecheck` passed.
-- `npm run typecheck` from `src/pulseUI` passed.
-- `npm run test:vitest -- tests/components/CurrentCaseSelector.test.tsx
-  tests/taxPlanCycle/Queue.test.tsx tests/taxPlanCycle/Queue.helpers.test.tsx
-  tests/taxPlanCycle/queries.test.ts` from `src/pulseUI` passed: 4 files, 19
-  tests.
+- `npm run typecheck:core` passed.
+- `npm --prefix src/pulseUI run verify` passed, including type checks, unit and
+  component tests, accessibility tests, and a production build.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+  passed, including the queue response assertion for `client_name`.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/integration.test.ts -t "lists a tenant's queue by due date and flags overdue cycles"`
+  passed, including the repository queue assertion for roster-backed `client_name`.
 
 ## martins-okorie-jira167 - SCRUM-167
 
