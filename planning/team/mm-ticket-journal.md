@@ -54,6 +54,7 @@ tenant isolation, or the Tax Plan Cycle UUID contract used by backend APIs.
 - `src/typescript/shared/scripts/cloudTap.ts`
 - `tests/typescript/features/taxPlanCycle/integration.test.ts`
 - `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/features/taxPlanCycle/schema.test.ts`
 - `tests/typescript/features/taxPlanCycle/taxPlanCycle.test.model.ts`
 - `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
 - `planning/team/mm-ticket-journal.md`
@@ -67,6 +68,9 @@ tenant isolation, or the Tax Plan Cycle UUID contract used by backend APIs.
   passed, including the queue response assertion for `client_name`.
 - `npm run test:vitest -- tests/typescript/features/taxPlanCycle/integration.test.ts -t "lists a tenant's queue by due date and flags overdue cycles"`
   passed, including the repository queue assertion for roster-backed `client_name`.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/schema.test.ts`
+  passed, including the repository queue schema assertion for `client_name` and
+  `updated_at`.
 
 ## martins-okorie-jira197 - SCRUM-197
 
