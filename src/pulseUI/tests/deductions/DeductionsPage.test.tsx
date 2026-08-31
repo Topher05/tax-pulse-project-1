@@ -358,14 +358,18 @@ describe("DeductionsPage", () => {
     expect(screen.getByText("Education")).toBeInTheDocument();
     expect(screen.getAllByText("$900")).toHaveLength(2);
     expect(screen.getAllByText("$225")).toHaveLength(2);
-    expect(createMock).toHaveBeenCalledWith(`/v1/cases/${seededCaseId}/deductions`, {
-      method: "POST",
-      body: {
-        date: "2026-08-01",
-        category: "Education",
-        description: "Advisor conference fee",
-        amount: 900,
+    expect(createMock).toHaveBeenCalledWith(
+      `/v1/cases/${seededCaseId}/deductions`,
+      {
+        method: "POST",
+        body: {
+          date: "2026-08-01",
+          category: "Education",
+          description: "Advisor conference fee",
+          amount: 900,
+        },
       },
-    });
+      expect.any(Function),
+    );
   });
 });
