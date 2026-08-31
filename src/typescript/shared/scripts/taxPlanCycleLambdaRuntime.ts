@@ -74,6 +74,17 @@ export function createMutableTaxPlanCycleRepository(
       currentStage = input.toStage;
       return materialize(input.caseId);
     },
+    async setHoldStatus(input: {
+      tenantId: string;
+      caseId: string;
+      onHold: boolean;
+      holdReason?: string;
+    }): Promise<TaxPlanCycle | null> {
+      void input.tenantId;
+      void input.onHold;
+      void input.holdReason;
+      return materialize(input.caseId);
+    },
     async listQueue(input: { tenantId: string; asOfDate?: string }): Promise<TaxPlanCycleQueueItem[]> {
       void input.tenantId;
       void input.asOfDate;

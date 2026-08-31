@@ -7,6 +7,10 @@ import {
   type TaxPlanCycleCreateController,
 } from "./controllers/createController.js";
 import {
+  taxPlanCycleHoldController,
+  type TaxPlanCycleHoldController,
+} from "./controllers/holdController.js";
+import {
   TaxPlanDetailsAssistantCaseNotFoundError,
   TaxPlanDetailsAssistantUnsafePromptError,
   TaxPlanDetailsAssistantUnsupportedRecommendationError,
@@ -25,6 +29,8 @@ import {
   taxPlanCycleCreateSchema,
   taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleReadParamsSchema,
+  taxPlanCycleHoldParamsSchema,
+  taxPlanCycleHoldSchema,
   taxPlanCycleSchema,
   clientTaxPlanReadModelSchema,
   taxPlanCycleTransitionParamsSchema,
@@ -42,6 +48,7 @@ import { scenarioModelingRequestSchema } from "./scenarioModeling.js";
 import type { ScenarioRepository } from "./repositories/scenarios.js";
 import type { Scenario } from "../../scenario.js";
 import type { TaxPlanCycleRepository } from "./repositories/repository.js";
+import { TaxPlanCycleOnHoldError } from "./repositories/repository.js";
 import type { ActionItemRepository } from "./repositories/actionItems.js";
 import type { ActionItemCompletedEventPublishInput } from "./infrastructure/cloudEvents/actionItemCompleted/index.js";
 import { cloudWatchObservabilityProvider } from "../../shared/cloud-logger/observability.js";
@@ -59,6 +66,7 @@ export interface ValidationErrorResponse extends ProblemDetails {
 
 export interface CreateTaxPlanCycleRouterOptions {
   controller?: TaxPlanCycleCreateController;
+  holdController?: TaxPlanCycleHoldController;
   transitionController?: TaxPlanCycleTransitionController;
   assistantController?: TaxPlanDetailsAssistantController;
   taxPlanCycleRepository?: Pick<TaxPlanCycleRepository, "findByCaseId" | "listQueue">;
@@ -192,6 +200,15 @@ function operatorAccessRequired(): ProblemHttpError {
   });
 }
 
+function taxPlanCycleOnHoldProblem(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/tax-plan-cycle-on-hold",
+    title: "Tax Plan Cycle On Hold",
+    status: 409,
+    detail: "Remove the hold before advancing this Tax Plan Cycle.",
+  });
+}
+
 function isClientUser(user: TenantScopedRequest["user"]): boolean {
   return user?.role === "Client";
 }
@@ -288,6 +305,10 @@ function isTransitionAuthorized(
   );
 }
 
+function canManageHold(user: TenantScopedRequest["user"]): boolean {
+  return user?.role === "Firm Admin" || isAdvisorWithEditPermission(user);
+}
+
 function logDeniedTransitionAttempt(
   auditLogger: Pick<Console, "info">,
   input: {
@@ -338,7 +359,7 @@ async function writeDeniedTransitionAttempt(
     caseId: string;
     actor: string;
     action: string;
-    outcome: "403" | "422";
+    outcome: "403" | "409" | "422";
   },
 ): Promise<void> {
   await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, input);
@@ -349,6 +370,7 @@ export function createTaxPlanCycleRouter(
 ): Router {
   const router = Router();
   const controller = options.controller ?? taxPlanCycleCreateController;
+  const holdController = options.holdController ?? taxPlanCycleHoldController;
   const transitionController = options.transitionController ?? taxPlanCycleTransitionController;
   const assistantController =
     options.assistantController ?? taxPlanDetailsAssistantController;
@@ -895,6 +917,123 @@ export function createTaxPlanCycleRouter(
   }
 
   router.patch(
+    "/tax-plan-cycles/:caseId/hold",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedParams = taxPlanCycleHoldParamsSchema.safeParse(req.params);
+      const parsedBody = taxPlanCycleHoldSchema.safeParse(req.body);
+
+      if (!parsedParams.success || !parsedBody.success) {
+        if (parsedParams.success) {
+          await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            caseId: parsedParams.data.caseId,
+            actor: (req as TenantScopedRequest).user?.id ?? "unknown",
+            action: "hold request validation failed",
+            outcome: "400",
+          });
+        }
+
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Hold request failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: [
+                ...(parsedParams.success
+                  ? []
+                  : parsedParams.error.issues.map(toValidationIssue)),
+                ...(parsedBody.success
+                  ? []
+                  : parsedBody.error.issues.map(toValidationIssue)),
+              ],
+            },
+          }),
+        );
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (!tenantId || !user?.role || !user.id) {
+          await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            caseId: parsedParams.data.caseId,
+            actor: user?.id ?? "unknown",
+            action: "hold authentication required",
+            outcome: "401",
+          });
+          next(authenticationRequired());
+          return;
+        }
+
+        if (!canManageHold(user)) {
+          await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            caseId: parsedParams.data.caseId,
+            actor: user.id,
+            action: `hold ${parsedParams.data.caseId} forbidden`,
+            outcome: "403",
+          });
+          next(operatorAccessRequired());
+          return;
+        }
+
+        const current = await holdController.findByCaseId({
+          tenantId,
+          caseId: parsedParams.data.caseId,
+        });
+
+        if (current === null) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Cycle Not Found",
+              status: 404,
+              detail: "No tax plan cycle was found for the requested case ID.",
+            }),
+          );
+          return;
+        }
+
+        const updated = await holdController.setHoldStatus({
+          tenantId,
+          caseId: parsedParams.data.caseId,
+          onHold: parsedBody.data.on_hold,
+          ...(parsedBody.data.on_hold
+            ? { holdReason: parsedBody.data.hold_reason }
+            : {}),
+          actor: user.id,
+        });
+
+        if (updated === null) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Cycle Not Found",
+              status: 404,
+              detail: "No tax plan cycle was found for the requested case ID.",
+            }),
+          );
+          return;
+        }
+
+        await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+          caseId: parsedParams.data.caseId,
+          actor: user.id,
+          action: parsedBody.data.on_hold ? "place hold" : "remove hold",
+          outcome: "200",
+        });
+
+        res.status(200).json(updated);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.patch(
     "/tax-plan-cycles/:caseId/transition",
     async (req: Request, res: Response, next: NextFunction) => {
       console.log("[tax-plan-cycle transition] request received", {
@@ -1023,6 +1162,16 @@ export function createTaxPlanCycleRouter(
           actor,
           action,
         };
+        if (cycle.on_hold) {
+          await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
+            caseId: parsedParams.data.caseId,
+            actor,
+            action,
+            outcome: "409",
+          });
+          next(taxPlanCycleOnHoldProblem());
+          return;
+        }
         console.log("[tax-plan-cycle transition] authorization check", {
           caseId: parsedParams.data.caseId,
           actor,
@@ -1122,6 +1271,23 @@ export function createTaxPlanCycleRouter(
 
         res.status(200).json(transitioned);
       } catch (error) {
+        if (error instanceof TaxPlanCycleOnHoldError) {
+          if (transitionAuditContext && !transitionAuditRecorded) {
+            try {
+              await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+                ...transitionAuditContext,
+                outcome: "409",
+              });
+              transitionAuditRecorded = true;
+            } catch {
+              // Ignore audit write failures on the error path so the original error still surfaces.
+            }
+          }
+
+          next(taxPlanCycleOnHoldProblem());
+          return;
+        }
+
         if (transitionAuditContext && !transitionAuditRecorded) {
           try {
             await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
