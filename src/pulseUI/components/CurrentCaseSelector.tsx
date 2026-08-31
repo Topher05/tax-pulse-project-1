@@ -22,7 +22,8 @@ function formatCaseOptionLabel(
   row: PlanCycleQueueRow,
   clientNamesById: ReadonlyMap<string, string>,
 ): string {
-  const clientName = clientNamesById.get(row.clientId ?? row.client) ?? row.client;
+  const clientName =
+    row.clientName?.trim() || clientNamesById.get(row.clientId ?? row.client) || row.client;
   const shortCaseId = formatShortCaseId(row.caseId);
 
   if (clientName.trim().length > 0 && !isUuid(clientName)) {
