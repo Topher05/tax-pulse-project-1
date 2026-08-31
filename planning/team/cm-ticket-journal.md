@@ -86,21 +86,44 @@ capacity management, or change application behavior.
 
 - `.github/workflows/zap-baseline.yml`
 - `.github/workflows/container-scan-sbom.yml`
+- `deployment/spa/deploy-config.json`
+- `terraform/modules/spa_delivery/outputs.tf`
 - `terraform/release_pipeline.tf`
 - `docs/release-evidence-packet.md`
 - `docs/aws-dev-scale-runbook.md`
 - `planning/team/cm-ticket-journal.md`
-- Focused workflow/Terraform tests remain deferred to the final implementation step.
+- `tests/typescript/spaDeliveryDefinitions.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
 
 **Validation Notes:**
 
 - AWS inventory was read after `aws login` in account `814650854375`, region `us-east-1`;
-  no scaling or deletion command was executed.
-- `terraform fmt -check -diff terraform/release_pipeline.tf` passed.
+  no ECS, RDS, Redis, networking, secret, or application-data scaling/deletion was executed.
+- The live release role policy was updated without touching application infrastructure and
+  IAM simulation returned `allowed` for the required SPA S3, KMS, CloudFront, and retained
+  Terraform-state operations.
+- A target-only Terraform apply was not used because its dependency graph included an ECS
+  task-definition replacement and Lambda update; only the reviewed inline role policy was
+  changed for pre-merge validation.
+- `npm run build:web` passed and produced `dist/pulseUI`; the deployment contract and workflow
+  were corrected to use that directory.
+- The versioned development SPA deployment completed through S3 and CloudFront invalidation
+  `IBSZXDCXQFG0OUN344BJCX62NB`. The branch build and deployed index both had SHA-256
+  `21c55c26e2af24875fa41bbf15e9bd3a0281b01bdd7fa4dd8cef3b77f5443156`; S3 reported
+  `aws:kms` encryption with the expected SPA key.
+- GitHub Actions run `33426077729` passed the ZAP-only pre-merge workflow for commit
+  `01ad2edd984bd9f055951a054de3280bab22955e`, including report upload and the fail-closed
+  High-severity gate. Release build/deploy jobs were skipped as intended.
+- `npm test -- --run tests/typescript/workflows/zapBaselineSecurityGate.test.ts
+  tests/typescript/workflows/terraformDeliveryModules.test.ts
+  tests/typescript/spaDeliveryDefinitions.test.ts` passed: 27 tests across 3 files.
+- `terraform fmt -check -diff terraform/release_pipeline.tf
+  terraform/modules/spa_delivery/outputs.tf` passed.
 - `terraform -chdir=terraform validate` passed.
 - `git diff --check` passed; only normal LF/CRLF conversion warnings were reported.
-- A successful development release, populated release manifest, and focused tests remain
-  required before final acceptance.
+- After merge, one successful `development` release and its populated release manifest remain
+  required for final acceptance evidence.
 
 
 
