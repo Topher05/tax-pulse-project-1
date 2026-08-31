@@ -13,6 +13,10 @@ export default defineConfig({
         // Preserve the tenant subdomain used by the BFF to resolve the login workspace.
         changeOrigin: false,
       },
+      "^/mfa/enroll(?:/confirm)?$": {
+        target: "http://127.0.0.1:3000",
+        changeOrigin: false,
+      },
       "^/v1/": {
         target: "http://127.0.0.1:3000",
         changeOrigin: false,

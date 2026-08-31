@@ -69,8 +69,8 @@ test("collects required registration details and validates password confirmation
   expect(fetchSpy).not.toHaveBeenCalled();
 });
 
-test("submits valid registration details and confirms account creation", async () => {
-  vi.spyOn(globalThis, "fetch").mockResolvedValue(
+test("submits valid registration details and starts MFA setup", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
     jsonResponse({
       id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
       tenant_id: tenantId,
@@ -78,6 +78,11 @@ test("submits valid registration details and confirms account creation", async (
       role: "Client",
       status: "invited",
     }, 201),
+  ).mockResolvedValueOnce(
+    jsonResponse({
+      provisioning_uri:
+        "otpauth://totp/TaxPulse%20Advisory:new-client%40example.test?secret=FAKEBASE32SECRETFAKEBASE32SECRET&issuer=TaxPulse%20Advisory",
+    }, 202),
   );
 
   renderRegisterPage();
@@ -99,8 +104,67 @@ test("submits valid registration details and confirms account creation", async (
       }),
     );
   });
+  expect(
+    await screen.findByRole("heading", { name: "Set up MFA" }),
+  ).toBeInTheDocument();
+  expect(
+    await screen.findByDisplayValue(
+      "otpauth://totp/TaxPulse%20Advisory:new-client%40example.test?secret=FAKEBASE32SECRETFAKEBASE32SECRET&issuer=TaxPulse%20Advisory",
+    ),
+  ).toBeInTheDocument();
+});
+
+test("completes MFA setup after registration", async () => {
+  vi.spyOn(globalThis, "fetch")
+    .mockResolvedValueOnce(
+      jsonResponse({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        tenant_id: tenantId,
+        email: "new-client@example.test",
+        role: "Client",
+        status: "invited",
+      }, 201),
+    )
+    .mockResolvedValueOnce(
+      jsonResponse({
+        provisioning_uri:
+          "otpauth://totp/TaxPulse%20Advisory:new-client%40example.test?secret=FAKEBASE32SECRETFAKEBASE32SECRET&issuer=TaxPulse%20Advisory",
+      }, 202),
+    )
+    .mockResolvedValueOnce(jsonResponse({ enrolled: true }));
+
+  renderRegisterPage();
+  await screen.findByRole("heading", { name: "Create your account" });
+  fillValidForm();
+  fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+  await screen.findByDisplayValue(
+    "otpauth://totp/TaxPulse%20Advisory:new-client%40example.test?secret=FAKEBASE32SECRETFAKEBASE32SECRET&issuer=TaxPulse%20Advisory",
+  );
+
+  fireEvent.change(screen.getByRole("textbox", { name: "Verification code" }), {
+    target: { value: "123456" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Enable MFA" }));
+
+  await waitFor(() => {
+    expect(globalThis.fetch).toHaveBeenLastCalledWith(
+      "/mfa/enroll/confirm",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          user_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+          code: "123456",
+        }),
+      }),
+    );
+  });
   expect(await screen.findByRole("status")).toHaveTextContent(
-    "Account created for new-client@example.test. Continue to sign in and complete MFA setup.",
+    "MFA is enabled. You can now sign in with your authenticator app.",
+  );
+  expect(screen.getByRole("link", { name: "Continue to sign in" })).toHaveAttribute(
+    "href",
+    "/sign-in",
   );
 });
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 import { AuthRequestError, registerAccount } from "../../auth/authClient.ts";
 
@@ -18,8 +18,8 @@ function getRegistrationError(error: unknown): string {
 }
 
 export function RegisterPage() {
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
-  const [successEmail, setSuccessEmail] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
@@ -40,7 +40,6 @@ export function RegisterPage() {
             const confirmPassword = String(formData.get("confirm_password") ?? "");
 
             setError(null);
-            setSuccessEmail(null);
 
             if (!uuidPattern.test(tenantId)) {
               setError("Enter a valid workspace ID.");
@@ -54,9 +53,17 @@ export function RegisterPage() {
 
             setIsSubmitting(true);
             void registerAccount({ tenantId, email, password })
-              .then((account) => {
-                setSuccessEmail(account.email);
-                form.reset();
+              .then(async (account) => {
+                await navigate({
+                  to: "/register/mfa",
+                  state: {
+                    mfaChallenge: {
+                      tenantId: account.tenantId,
+                      email: account.email,
+                      userId: account.id,
+                    },
+                  },
+                });
               })
               .catch((registrationError: unknown) => {
                 setError(getRegistrationError(registrationError));
@@ -96,11 +103,6 @@ export function RegisterPage() {
           </label>
           {error === null ? null : (
             <p className="authError" role="alert">{error}</p>
-          )}
-          {successEmail === null ? null : (
-            <p className="authSuccess" role="status">
-              Account created for {successEmail}. Continue to sign in and complete MFA setup.
-            </p>
           )}
           <button className="authPrimaryButton" disabled={isSubmitting} type="submit">
             {isSubmitting ? "Creating account..." : "Create account"}
