@@ -79,6 +79,7 @@ function buildTaxPlanCycleQueuePayload() {
     {
       id: taxPlanCycleRows[1].id,
       client_id: taxPlanCycleRows[1].clientId,
+      client_name: "Test Client",
       stage: taxPlanCycleRows[1].stage,
       owner: taxPlanCycleRows[1].owner,
       priority: taxPlanCycleRows[1].priority,
@@ -152,7 +153,7 @@ describe("QuarterlyPaymentsPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Quarterly Payments", level: 2 }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Client case" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Select a case to load quarterly payments/i })).toBeInTheDocument();
   });
 
@@ -172,8 +173,8 @@ describe("QuarterlyPaymentsPage", () => {
 
     renderQuarterlyPaymentsPage();
 
-    const selector = await screen.findByRole("combobox", { name: "Case ID" });
-    await screen.findByRole("option", { name: caseId });
+    const selector = await screen.findByRole("combobox", { name: "Client case" });
+    await screen.findByRole("option", { name: "Test Client (9d12)" });
 
     fireEvent.change(selector, { target: { value: caseId } });
 

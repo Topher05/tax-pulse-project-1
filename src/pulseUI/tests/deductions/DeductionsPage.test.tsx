@@ -32,6 +32,7 @@ function buildTaxPlanCycleQueuePayload() {
   return taxPlanCycleRows.map((row) => ({
     id: row.id,
     client_id: row.clientId,
+    client_name: "Test Client",
     stage: row.stage,
     owner: row.owner,
     priority: row.priority,
@@ -101,7 +102,7 @@ describe("DeductionsPage", () => {
     renderDeductionsPage("/deductions");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    expect(await screen.findByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
+    expect(await screen.findByRole("combobox", { name: "Client case" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Select a case to load deductions" }),
     ).toBeInTheDocument();
@@ -133,8 +134,8 @@ describe("DeductionsPage", () => {
     const { container } = renderDeductionsPage("/deductions");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    const selector = await screen.findByRole("combobox", { name: "Case ID" });
-    await screen.findByRole("option", { name: seededCaseId });
+    const selector = await screen.findByRole("combobox", { name: "Client case" });
+    await screen.findByRole("option", { name: "Test Client (9d12)" });
 
     fireEvent.change(selector, { target: { value: seededCaseId } });
 
@@ -187,8 +188,8 @@ describe("DeductionsPage", () => {
     const { container } = renderDeductionsPage("/deductions");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    const selector = await screen.findByRole("combobox", { name: "Case ID" });
-    await screen.findByRole("option", { name: seededCaseId });
+    const selector = await screen.findByRole("combobox", { name: "Client case" });
+    await screen.findByRole("option", { name: "Test Client (9d12)" });
 
     fireEvent.change(selector, { target: { value: seededCaseId } });
 
@@ -222,8 +223,8 @@ describe("DeductionsPage", () => {
     const { container } = renderDeductionsPage("/deductions");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    const selector = await screen.findByRole("combobox", { name: "Case ID" });
-    await screen.findByRole("option", { name: seededCaseId });
+    const selector = await screen.findByRole("combobox", { name: "Client case" });
+    await screen.findByRole("option", { name: "Test Client (9d12)" });
 
     fireEvent.change(selector, { target: { value: seededCaseId } });
 
@@ -270,8 +271,8 @@ describe("DeductionsPage", () => {
     const { container } = renderDeductionsPage("/deductions");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    const selector = await screen.findByRole("combobox", { name: "Case ID" });
-    await screen.findByRole("option", { name: seededCaseId });
+    const selector = await screen.findByRole("combobox", { name: "Client case" });
+    await screen.findByRole("option", { name: "Test Client (9d12)" });
 
     fireEvent.change(selector, { target: { value: seededCaseId } });
 
@@ -326,8 +327,8 @@ describe("DeductionsPage", () => {
 
     renderDeductionsPage("/deductions");
 
-    const selector = await screen.findByRole("combobox", { name: "Case ID" });
-    await screen.findByRole("option", { name: seededCaseId });
+    const selector = await screen.findByRole("combobox", { name: "Client case" });
+    await screen.findByRole("option", { name: "Test Client (9d12)" });
 
     fireEvent.change(selector, { target: { value: seededCaseId } });
 

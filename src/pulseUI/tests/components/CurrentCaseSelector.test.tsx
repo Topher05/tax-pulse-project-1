@@ -17,6 +17,7 @@ import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 const seededCaseId = taxPlanCycleRows[1].id;
 const seededClientName = clientRosterRows[2].clientName;
+const staleClientName = "Stale roster name";
 
 if (!isUuid(seededCaseId)) {
   throw new Error("CurrentCaseSelector test fixture must use a UUID-shaped case ID.");
@@ -26,6 +27,7 @@ function buildTaxPlanCycleQueuePayload() {
   return taxPlanCycleRows.map((row) => ({
     id: row.id,
     client_id: row.clientId,
+    client_name: row.id === seededCaseId ? seededClientName : "Queue client",
     stage: row.stage,
     owner: row.owner,
     priority: row.priority,
@@ -96,7 +98,7 @@ describe("CurrentCaseSelector", () => {
     expect(selector.closest("label")).toHaveClass("min-[1031px]:w-[22rem]");
   });
 
-  test("populates options from the tax plan cycle queue endpoint", async () => {
+  test("populates friendly options from the tax plan cycle queue endpoint", async () => {
     renderSelector();
 
     await waitFor(() => {
@@ -106,13 +108,20 @@ describe("CurrentCaseSelector", () => {
       );
     });
 
-    expect(await screen.findByRole("option", { name: "Case 9d12" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("option", { name: `${seededClientName} (9d12)` }),
+    ).toBeInTheDocument();
   });
 
-  test("uses friendly client names when the queue payload includes them", async () => {
+  test("prefers a queue client name over a stale roster name", async () => {
     vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path) => {
       if (path === "/v1/clients") {
-        return Promise.resolve([]) as never;
+        return Promise.resolve([
+          {
+            ...buildClientRosterPayload()[2],
+            clientName: staleClientName,
+          },
+        ]) as never;
       }
 
       return Promise.resolve([
@@ -150,6 +159,7 @@ describe("CurrentCaseSelector", () => {
         {
           ...buildTaxPlanCycleQueuePayload()[1],
           client_id: clientId,
+          client_name: "",
         },
       ]) as never;
     });
@@ -170,12 +180,55 @@ describe("CurrentCaseSelector", () => {
     expect(option).toHaveValue(seededCaseId);
   });
 
+  test("disambiguates duplicate client names while preserving the full UUID value", async () => {
+    const firstCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11";
+    const secondCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22";
+    const onCaseIdChange = vi.fn();
+
+    vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path) => {
+      if (path === "/v1/clients") {
+        return Promise.resolve([]) as never;
+      }
+
+      return Promise.resolve([
+        {
+          ...buildTaxPlanCycleQueuePayload()[1],
+          id: firstCaseId,
+          client_name: "Jordan Lee",
+        },
+        {
+          ...buildTaxPlanCycleQueuePayload()[1],
+          id: secondCaseId,
+          client_name: "Jordan Lee",
+        },
+      ]) as never;
+    });
+
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={createPulseQueryClient()}>
+        <TestSessionProvider>{children}</TestSessionProvider>
+      </QueryClientProvider>
+    );
+
+    render(<CurrentCaseSelector caseId={null} onCaseIdChange={onCaseIdChange} />, { wrapper });
+
+    const selector = await screen.findByRole("combobox", { name: "Client case" });
+    expect(await screen.findByRole("option", { name: "Jordan Lee (9d11)" })).toHaveValue(
+      firstCaseId,
+    );
+    expect(screen.getByRole("option", { name: "Jordan Lee (9d22)" })).toHaveValue(secondCaseId);
+
+    fireEvent.change(selector, { target: { value: secondCaseId } });
+
+    expect(onCaseIdChange).toHaveBeenCalledWith(secondCaseId);
+  });
+
   test("emits selected case IDs only when they are UUID-shaped", async () => {
     const onCaseIdChange = vi.fn();
     renderSelector({ onCaseIdChange });
 
     const selector = await screen.findByRole("combobox", { name: "Client case" });
-    await screen.findByRole("option", { name: "Case 9d12" });
+    await screen.findByRole("option", { name: `${seededClientName} (9d12)` });
 
     fireEvent.change(selector, { target: { value: "" } });
     fireEvent.change(selector, { target: { value: "not-a-uuid" } });
