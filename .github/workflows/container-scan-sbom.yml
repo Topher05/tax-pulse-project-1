@@ -7,6 +7,11 @@ on:
       - development
   pull_request:
   workflow_dispatch:
+    inputs:
+      premerge_zap_target_url:
+        description: Optional deployed URL for a ZAP-only pre-merge validation run
+        required: false
+        type: string
 
 concurrency:
   group: release-scan-${{ github.ref }}
@@ -26,6 +31,7 @@ env:
 jobs:
   build-core-case:
     name: Build, Scan, SBOM & Sign Core Case
+    if: github.event_name != 'workflow_dispatch' || inputs.premerge_zap_target_url == ''
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
     outputs:
@@ -157,6 +163,7 @@ jobs:
 
   build-tax-engine:
     name: Build, Scan, SBOM & Sign Tax Engine
+    if: github.event_name != 'workflow_dispatch' || inputs.premerge_zap_target_url == ''
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
     outputs:
@@ -531,24 +538,24 @@ jobs:
           [[ "$CLOUDFRONT_DISTRIBUTION_ID" =~ ^[A-Z0-9]+$ ]]
           [[ "$SPA_URL" =~ ^https://.+$ ]]
 
-          aws s3 sync src/pulseUI/dist "s3://$SPA_BUCKET" \
+          aws s3 sync dist/pulseUI "s3://$SPA_BUCKET" \
             --delete \
             --cache-control "public,max-age=31536000,immutable" \
             --exclude index.html
-          aws s3 cp src/pulseUI/dist/index.html "s3://$SPA_BUCKET/index.html" \
+          aws s3 cp dist/pulseUI/index.html "s3://$SPA_BUCKET/index.html" \
             --cache-control "no-cache,max-age=0,must-revalidate" \
             --content-type text/html
 
           INVALIDATION_ID="$(aws cloudfront create-invalidation \
             --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
             --paths '/*' \
-            --query Id \
+            --query Invalidation.Id \
             --output text)"
           aws cloudfront wait invalidation-completed \
             --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
             --id "$INVALIDATION_ID"
 
-          EXPECTED_SHA256="$(sha256sum src/pulseUI/dist/index.html | cut -d' ' -f1)"
+          EXPECTED_SHA256="$(sha256sum dist/pulseUI/index.html | cut -d' ' -f1)"
           curl --fail --silent --show-error --retry 5 --retry-all-errors \
             "${SPA_URL}?release=${GITHUB_SHA}" \
             --output deployed-index.html
@@ -567,6 +574,13 @@ jobs:
     uses: ./.github/workflows/zap-baseline.yml
     with:
       target_url: ${{ needs.verify-and-deploy.outputs.spa_url }}
+
+  premerge-zap-baseline:
+    name: Pre-merge OWASP ZAP Baseline Scan
+    if: github.event_name == 'workflow_dispatch' && inputs.premerge_zap_target_url != ''
+    uses: ./.github/workflows/zap-baseline.yml
+    with:
+      target_url: ${{ inputs.premerge_zap_target_url }}
 
   release-evidence:
     name: Release Evidence Manifest

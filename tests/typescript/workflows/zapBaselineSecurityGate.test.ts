@@ -130,11 +130,12 @@ describe("SCRUM-169 release integration", () => {
     expect(workflow).toContain('SPA_BUCKET="$(terraform -chdir=terraform output -raw spa_bucket_name)"');
     expect(workflow).toContain('CLOUDFRONT_DISTRIBUTION_ID="$(terraform -chdir=terraform output -raw cloudfront_distribution_id)"');
     expect(workflow).toContain('SPA_URL="$(terraform -chdir=terraform output -raw spa_url)"');
-    expect(workflow).toContain('aws s3 sync src/pulseUI/dist "s3://$SPA_BUCKET"');
-    expect(workflow).toContain("aws s3 cp src/pulseUI/dist/index.html");
+    expect(workflow).toContain('aws s3 sync dist/pulseUI "s3://$SPA_BUCKET"');
+    expect(workflow).toContain("aws s3 cp dist/pulseUI/index.html");
     expect(workflow).toContain("aws cloudfront create-invalidation");
+    expect(workflow).toContain("--query Invalidation.Id");
     expect(workflow).toContain("aws cloudfront wait invalidation-completed");
-    expect(workflow).toContain('EXPECTED_SHA256="$(sha256sum src/pulseUI/dist/index.html');
+    expect(workflow).toContain('EXPECTED_SHA256="$(sha256sum dist/pulseUI/index.html');
     expect(workflow).toContain('ACTUAL_SHA256="$(sha256sum deployed-index.html');
     expect(workflow).toContain('[[ "$SPA_URL" =~ ^https://.+$ ]]');
     expect(workflow).toContain("zap-baseline:");
@@ -147,6 +148,18 @@ describe("SCRUM-169 release integration", () => {
     const zapIndex = workflow.indexOf("zap-baseline:");
     expect(deployIndex).toBeGreaterThan(-1);
     expect(zapIndex).toBeGreaterThan(deployIndex);
+  });
+
+  test("supports a ZAP-only manual pre-merge validation without release builds", () => {
+    const workflow = readFileSync(releaseWorkflowPath, "utf8");
+
+    expect(workflow).toContain("premerge_zap_target_url:");
+    expect(workflow).toContain(
+      "if: github.event_name != 'workflow_dispatch' || inputs.premerge_zap_target_url == ''",
+    );
+    expect(workflow).toContain("premerge-zap-baseline:");
+    expect(workflow).toContain("github.event_name == 'workflow_dispatch'");
+    expect(workflow).toContain("target_url: ${{ inputs.premerge_zap_target_url }}");
   });
 
   test("fails invalid terraform output before invoking the reusable ZAP workflow", () => {

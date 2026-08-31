@@ -164,6 +164,11 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(releasePipeline).toContain('"iam:PassRole"');
     expect(releasePipeline).not.toContain('"iam:SimulatePrincipalPolicy"');
     expect(releasePipeline).toContain('"secretsmanager:DescribeSecret"');
+    expect(releasePipeline).toContain('github_actions_terraform_state_bucket_arn');
+    expect(releasePipeline).toContain('sid       = "ReadTerraformStateBucket"');
+    expect(releasePipeline).toContain('"dev/terraform.tfstate.tflock"');
+    expect(releasePipeline).toContain('sid = "ManageDevelopmentTerraformState"');
+    expect(releasePipeline).toContain('"s3:GetObject"');
     expect(releasePipeline).toContain('github_actions_spa_bucket_arn');
     expect(releasePipeline).toContain('sid       = "ListSpaBucket"');
     expect(releasePipeline).toContain('"s3:GetBucketLocation"');
@@ -171,6 +176,10 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(releasePipeline).toContain('sid = "PublishSpaObjects"');
     expect(releasePipeline).toContain('"s3:DeleteObject"');
     expect(releasePipeline).toContain('"s3:PutObject"');
+    expect(releasePipeline).toContain('sid = "EncryptSpaObjects"');
+    expect(releasePipeline).toContain('"kms:Decrypt"');
+    expect(releasePipeline).toContain('"kms:GenerateDataKey"');
+    expect(releasePipeline).toContain('module.spa_delivery.kms_key_arn');
     expect(releasePipeline).toContain('sid       = "InvalidateSpaDistribution"');
     expect(releasePipeline).toContain('"cloudfront:CreateInvalidation"');
     expect(releasePipeline).toContain('"cloudfront:GetInvalidation"');
@@ -184,5 +193,8 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(ecsOutputs).toContain('output "core_case_repository_arn"');
     expect(ecsOutputs).toContain('output "tax_engine_repository_arn"');
     expect(ecsOutputs).toContain('output "execution_role_arn"');
+    expect(readTerraform("terraform/modules/spa_delivery/outputs.tf")).toContain(
+      'output "kms_key_arn"',
+    );
   });
 });

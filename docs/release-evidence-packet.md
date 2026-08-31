@@ -19,7 +19,7 @@ Record these values from the successful `Container Scan & SBOM` run on `developm
 - Deployed SPA URL: from `release-evidence-manifest.json` field `deployed_spa_url`
 - UI source commit: from `release-evidence-manifest.json` field `ui_source_commit_sha`
 - Deployed SPA index SHA-256: from `release-evidence-manifest.json` field
-  `deployed_spa_index_sha256`; this must match the locally built `src/pulseUI/dist/index.html`
+  `deployed_spa_index_sha256`; this must match the locally built `dist/pulseUI/index.html`
 - Immutable images:
   - `core-case`: `<repository>@<digest>`
   - `tax-engine`: `<repository>@<digest>`
