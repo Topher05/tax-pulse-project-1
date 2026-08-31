@@ -50,6 +50,14 @@ export {
   type CreateActionItemCreatedCloudEventOptions,
 } from "./infrastructure/cloudEvents/actionItemCreated/index.js";
 export {
+  taxPlanCycleCommentCreateRequestSchema,
+  taxPlanCycleCommentSchema,
+  taxPlanCycleCommentsResponseSchema,
+  type TaxPlanCycleComment,
+  type TaxPlanCycleCommentCreateRequest,
+  type TaxPlanCycleCommentsResponse,
+} from "./comments.js";
+export {
   actionItemCompletedCloudEventSchemaV1,
   actionItemCompletedEventDataSchema,
   actionItemCompletedEventDataSchemaV1,
@@ -264,6 +272,13 @@ export {
   type ActionItemCreateInput,
   type ActionItemRepository,
 } from "./repositories/actionItems.js";
+export {
+  createTaxPlanCycleCommentRepository,
+  TaxPlanCycleCommentActorUnavailableError,
+  type TaxPlanCycleCommentCreateInput,
+  type TaxPlanCycleCommentListInput,
+  type TaxPlanCycleCommentRepository,
+} from "./repositories/comments.js";
 export {
   createTaxPlanCycleRouter,
   type CreateTaxPlanCycleRouterOptions,

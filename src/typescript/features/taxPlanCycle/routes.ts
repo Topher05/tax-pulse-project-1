@@ -22,6 +22,14 @@ import type {
 } from "../../auditEntryRepository.js";
 import { ProblemHttpError, type ProblemDetails } from "../../errors.js";
 import {
+  TaxPlanCycleCommentActorUnavailableError,
+  type TaxPlanCycleCommentRepository,
+} from "./repositories/comments.js";
+import {
+  taxPlanCycleCommentCreateRequestSchema,
+  taxPlanCycleCommentsResponseSchema,
+} from "./comments.js";
+import {
   taxPlanCycleCreateSchema,
   taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleReadParamsSchema,
@@ -65,6 +73,7 @@ export interface CreateTaxPlanCycleRouterOptions {
   clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
   scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
   actionItemRepository?: Pick<ActionItemRepository, "listByCaseId" | "complete">;
+  commentRepository?: Pick<TaxPlanCycleCommentRepository, "listByCase" | "create">;
   actionItemCompletedEventPublisher?: {
     publishActionItemCompleted(
       input: ActionItemCompletedEventPublishInput,
@@ -194,6 +203,10 @@ function operatorAccessRequired(): ProblemHttpError {
 
 function isClientUser(user: TenantScopedRequest["user"]): boolean {
   return user?.role === "Client";
+}
+
+function hasCommentAccess(user: TenantScopedRequest["user"]): boolean {
+  return user?.role === "Firm Admin" || user?.role === "Advisor";
 }
 
 function toClientTaxPlanScenario(scenario: Scenario) {
@@ -374,6 +387,14 @@ export function createTaxPlanCycleRouter(
     },
   };
   const actionItemRepository = options.actionItemRepository;
+  const commentRepository = options.commentRepository ?? {
+    async listByCase() {
+      return [];
+    },
+    async create() {
+      throw new Error("Comment repository is required for comment creation.");
+    },
+  };
   const auditLogger = options.auditLogger ?? console;
   const auditEntryWriter =
     options.auditEntryWriter ?? deprecatedNoopAuditEntryWriter;
@@ -545,6 +566,145 @@ export function createTaxPlanCycleRouter(
 
         res.status(200).json(toClientTaxPlanReadModel(cycle, scenarios));
       } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/tax-plan-cycles/:caseId/comments",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedParams = taxPlanCycleReadParamsSchema.safeParse(req.params);
+
+      if (!parsedParams.success) {
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Request path parameters failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: parsedParams.error.issues.map(toValidationIssue),
+            },
+          }),
+        );
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+
+        if (!hasCommentAccess(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
+
+        const cycle = await controller.findByCaseId({
+          tenantId,
+          caseId: parsedParams.data.caseId,
+        });
+
+        if (cycle === null) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Cycle Not Found",
+              status: 404,
+              detail: "No tax plan cycle was found for the requested case ID.",
+            }),
+          );
+          return;
+        }
+
+        const comments = await commentRepository.listByCase({
+          tenantId,
+          caseId: parsedParams.data.caseId,
+        });
+
+        res.status(200).json(taxPlanCycleCommentsResponseSchema.parse({ comments }));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.post(
+    "/tax-plan-cycles/:caseId/comments",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedParams = taxPlanCycleReadParamsSchema.safeParse(req.params);
+      const parsedBody = taxPlanCycleCommentCreateRequestSchema.safeParse(req.body);
+
+      if (!parsedParams.success || !parsedBody.success) {
+        next(
+          new ProblemHttpError({
+            type: "https://taxpulse.example/problems/validation-error",
+            title: "Validation Error",
+            status: 400,
+            detail: "Comment request failed validation.",
+            extensions: {
+              code: "VALIDATION_ERROR",
+              issues: [
+                ...(parsedParams.success
+                  ? []
+                  : parsedParams.error.issues.map(toValidationIssue)),
+                ...(parsedBody.success
+                  ? []
+                  : parsedBody.error.issues.map(toValidationIssue)),
+              ],
+            },
+          }),
+        );
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+
+        if (!tenantId || !user?.id || !user.role) {
+          next(authenticationRequired());
+          return;
+        }
+
+        if (!hasCommentAccess(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
+
+        const comment = await commentRepository.create({
+          tenantId,
+          caseId: parsedParams.data.caseId,
+          actorId: user.id,
+          actorRole: user.role,
+          body: parsedBody.data.body,
+        });
+
+        if (comment === null) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Cycle Not Found",
+              status: 404,
+              detail: "No tax plan cycle was found for the requested case ID.",
+            }),
+          );
+          return;
+        }
+
+        res.status(201).json(comment);
+      } catch (error) {
+        if (error instanceof TaxPlanCycleCommentActorUnavailableError) {
+          next(operatorAccessRequired());
+          return;
+        }
+
         next(error);
       }
     },
