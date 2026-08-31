@@ -742,6 +742,79 @@ current stub response path.
   Docker/database contention timeouts, which remain excluded under the ticket validation scope;
   no pgvector, seed, JWT, assertion, or other deterministic failures remained.
 
+**RAG API Integration Pass:**
+
+- Connected the existing drawer mutation to the merged RAG request contract. Opening the drawer
+  now sends recommendation context without a fabricated question, while follow-up prompts send the
+  same recommendation plus the trimmed advisor question.
+- Extended Plan Cycle Detail mapping with optional taxpayer identifier validation and derived the
+  page-scoped recommendation from stage, owner, priority, verified taxpayer name, and provider.
+  Missing or blank values use the required `...` placeholder, and route cleanup clears the context.
+- Added shared 2,000-character question validation with whitespace and unsupported-control-character
+  rejection. The composer exposes validation through `aria-invalid` and `aria-describedby`.
+- Replaced duplicate banner and transcript failures with one structured error message. Problem
+  Details title/code and message/detail fields are handled consistently across assistant failures.
+- Preserved successful explanation and citation rendering, request sequencing, authenticated-fetch
+  refresh behavior, responsive drawer behavior, and existing dialog accessibility.
+
+**RAG API Integration Changed Files:**
+
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.tsx`
+- `src/pulseUI/components/assist/AssistantDrawer.module.css`
+- `src/pulseUI/components/assist/assistantPanel.tsx`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/entities/taxPlanDetailsAssistant.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/tests/assist/AssistantDrawer.test.tsx`
+- `src/pulseUI/tests/assist/assistantPanel.test.tsx`
+- `src/pulseUI/tests/assist/taxPlanDetailsAssistant.test.ts`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `planning/team/cl-ticket-journal.md`
+
+**RAG API Integration Validation Notes:**
+
+- `npm.cmd --prefix src/pulseUI run typecheck` passed.
+- Focused assistant, details, query-mapping, and axe validation passed: 58 tests across 6 files.
+- `npm.cmd --prefix src/pulseUI run test` passed: 253 tests across 48 files.
+- `npm.cmd --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
+- The backend route and schema were not changed in this pass.
+
+**Assistant Toolbar Refinement:**
+
+- Removed the prompt-suggestions placeholder action and its toast behavior.
+- Right-aligned the remaining expand/collapse, new-dialogue, and close controls in a compact
+  three-button toolbar while preserving 44px pointer targets and accessible tooltips.
+- Updated the loading skeleton to mirror the same three-button count, right alignment, square
+  dimensions, spacing, and corner radius as the live toolbar.
+- Hardened drawer and loader accessibility with atomic polite loading announcements, labeled
+  conversation logs, toggle pressed-state semantics, hidden decorative skeletons, and retained
+  focus, keyboard, tooltip, and reduced-motion behavior.
+- Hardened responsive reflow with bounded resize widths, wrapping metadata and messages, fullscreen
+  safe-area padding, compact short-viewport layouts, dynamic loader sizing, and matching 44px
+  live/loading controls.
+- Replaced the three-row responsive case-stage grid with a single keyboard-focusable horizontal
+  progression below 1100px, eliminating the roughly 340px case-header expansion while keeping all
+  seven backend stages available through native scrolling and scroll snapping.
+- Corrected the actual desktop Case tabs height regression by preventing the main detail column and
+  its tab row from stretching to match the taller Case Properties and Quick Actions sidebar.
+
+**Final Pipeline Safety Validation:**
+
+- `npm.cmd --prefix src/pulseUI run verify` passed: Pulse UI typecheck, 255 tests across 48 files,
+  6 dedicated axe tests, and the production build. Vite reported only the existing chunk-size
+  advisory.
+- `npm.cmd run typecheck:core` and `npm.cmd run build` passed for Core Case Service.
+- Core Case Service passed 469 tests across 107 files when run with one worker. The parallel run's
+  11 failures were all exact 60-second Testcontainers/database timeouts; the same contracts passed
+  serially without code changes.
+- `py -3.12 -m uv run --no-sync ruff format --check src tests` reported all 42 Python files already
+  formatted, and `ruff check src tests` passed.
+- Locked-environment Pyright validation passed with 0 errors and 0 warnings.
+- `git diff --check` passed before the final journal update.
+
 **CI Security Gate Follow-up:**
 
 - Reviewed the Core TypeScript, Required Gate, and Gitleaks logs from the prior PR merge SHA.
@@ -753,6 +826,20 @@ current stub response path.
   in `.env.example`. All scanner rules remain enabled for every other finding.
 - Local Gitleaks execution was unavailable because the binary is not installed; the exact
   fingerprints were copied from the CI scan output for validation on the next workflow run.
+
+**Trivy Runtime Image Follow-up:**
+
+- Reproduced the Core Case container gate with Trivy 0.70.0 and identified the unsuppressed finding
+  as HIGH-severity `CVE-2026-9496` in `pacote@17.0.6`, bundled with the base image's global npm.
+- Removed npm and npx only from the Core Case runtime stage. The build stage retains npm for locked
+  dependency installation, TypeScript compilation, and production dependency pruning.
+- Added a container workflow regression test that requires the package-manager removal to happen
+  before the runtime switches to the non-root `node` user and preserves direct `node` startup.
+- The focused container workflow suite passed: 4 tests in 1 file.
+- `npm.cmd run typecheck:core` passed.
+- The rebuilt runtime retained Node.js 22.0.0 while confirming npm and npx were absent.
+- A socketless Trivy 0.70.0 image-tar scan passed with 0 unsuppressed HIGH/CRITICAL findings; no
+  vulnerability suppression was added.
 
 ## caleb-latimer-jira160 - SCRUM-160
 

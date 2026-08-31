@@ -75,7 +75,7 @@
       "secrets": [
         {
           "name": "JWT_SIGNING_SECRET",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:814650854375:secret:TAX_PULSE_CONFIG-q9DNrQ:JWT_SIGNING_SECRET::"
+          "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:JWT_SIGNING_SECRET::"
         }
       ],
       "healthCheck": {

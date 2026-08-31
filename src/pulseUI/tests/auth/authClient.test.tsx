@@ -2,7 +2,10 @@ import { describe, expect, test, vi } from "vitest";
 
 import {
   AuthRequestError,
+  beginMfaEnrollment,
+  confirmMfaEnrollment,
   createBrowserAuthClient,
+  registerAccount,
 } from "../../auth/authClient.ts";
 
 const credentials = {
@@ -21,6 +24,137 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 describe("browser auth client", () => {
+  test("starts MFA enrollment with the registered tenant and user identifiers", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      jsonResponse({
+        provisioning_uri:
+          "otpauth://totp/TaxPulse%20Advisory:new-client%40example.test?secret=FAKEBASE32SECRETFAKEBASE32SECRET&issuer=TaxPulse%20Advisory",
+      }, 202),
+    );
+
+    await expect(
+      beginMfaEnrollment(
+        {
+          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        },
+        fetcher,
+      ),
+    ).resolves.toEqual({
+      provisioningUri:
+        "otpauth://totp/TaxPulse%20Advisory:new-client%40example.test?secret=FAKEBASE32SECRETFAKEBASE32SECRET&issuer=TaxPulse%20Advisory",
+    });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/mfa/enroll",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          user_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        }),
+      }),
+    );
+  });
+
+  test("confirms MFA enrollment with a six-digit code", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => jsonResponse({ enrolled: true }));
+
+    await expect(
+      confirmMfaEnrollment(
+        {
+          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+          code: "123456",
+        },
+        fetcher,
+      ),
+    ).resolves.toBe(true);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/mfa/enroll/confirm",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          user_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+          code: "123456",
+        }),
+      }),
+    );
+  });
+
+  test("posts registration details to create an account", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      jsonResponse({
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+        email: "new-client@example.test",
+        role: "Client",
+        status: "invited",
+      }, 201),
+    );
+
+    await expect(
+      registerAccount(
+        {
+          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          email: "new-client@example.test",
+          password: "synthetic-password",
+        },
+        fetcher,
+      ),
+    ).resolves.toEqual({
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+      email: "new-client@example.test",
+      role: "Client",
+      status: "invited",
+    });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/auth/register",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          email: "new-client@example.test",
+          password: "synthetic-password",
+        }),
+      }),
+    );
+  });
+
+  test("surfaces duplicate registration details from Problem Details", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      jsonResponse({
+        type: "https://taxpulse.example/problems/email-already-registered",
+        title: "Email Already Registered",
+        status: 409,
+        detail: "An account with this email is already registered for this tenant.",
+        code: "EMAIL_ALREADY_REGISTERED",
+      }, 409),
+    );
+
+    await expect(
+      registerAccount(
+        {
+          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          email: "existing-client@example.test",
+          password: "synthetic-password",
+        },
+        fetcher,
+      ),
+    ).rejects.toMatchObject({
+      name: "AuthRequestError",
+      status: 409,
+      message: "An account with this email is already registered for this tenant.",
+    } satisfies Partial<AuthRequestError>);
+  });
+
   test("posts credentials to begin the MFA login flow", async () => {
     const fetcher = vi.fn<typeof fetch>(async () =>
       jsonResponse({

@@ -68,6 +68,63 @@ tenant isolation, or the Tax Plan Cycle UUID contract used by backend APIs.
 - `npm run test:vitest -- tests/typescript/features/taxPlanCycle/integration.test.ts -t "lists a tenant's queue by due date and flags overdue cycles"`
   passed, including the repository queue assertion for roster-backed `client_name`.
 
+## martins-okorie-jira197 - SCRUM-197
+
+**Branch:** `martins-okorie-jira197`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-197
+
+**Summary:** Create the React registration page
+
+**Description:** As a new user, I want to register through the React
+application, so that I can create an account and begin using the application.
+
+**Acceptance Criteria:**
+
+- The registration page collects required account details and validates required
+  fields before submission.
+- Submitting valid registration details sends a request to the registration
+  endpoint and confirms that the account was created.
+- Registration errors, including an already registered email address, are
+  displayed clearly without clearing valid form entries.
+
+**Code Connection:** Adds a public `/register` Pulse UI route, a registration
+page that follows the existing auth screen styling, a browser registration
+request helper for `POST /auth/register`, and a sign-in page link into the
+registration flow. The page sends the backend's existing required account
+details: tenant/workspace ID, email, and password.
+
+**Project Scope Connection:** Supports the React SPA operator and portal
+experience under SCRUM-16 by giving new users a browser-based account creation
+entry point while leaving secure backend registration and MFA enrollment
+behavior to the existing Identity & Auth boundaries and SCRUM-211 follow-up
+scope.
+
+**Changed Files:**
+
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/auth/authClient.ts`
+- `src/pulseUI/pages/auth/RegisterPage.tsx`
+- `src/pulseUI/pages/auth/SignInPage.tsx`
+- `src/pulseUI/shared/styles.css`
+- `src/pulseUI/vite.config.ts`
+- `src/pulseUI/tests/auth/RegisterPage.test.tsx`
+- `src/pulseUI/tests/auth/authClient.test.tsx`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed from the repository root.
+- `npm run typecheck` passed from `src/pulseUI`.
+- `npm run test:vitest -- tests/auth/RegisterPage.test.tsx
+  tests/auth/authClient.test.tsx tests/auth/SignInPage.test.tsx` passed from
+  `src/pulseUI`: 3 files, 13 tests.
+- `npm run test:vitest` passed from `src/pulseUI`: 48 files, 241 tests.
+- `npm run build` passed from `src/pulseUI`; Vite reported the existing
+  post-minification chunk-size warning.
+
 ## martins-okorie-jira167 - SCRUM-167
 
 **Branch:** `martins-okorie-jira167`

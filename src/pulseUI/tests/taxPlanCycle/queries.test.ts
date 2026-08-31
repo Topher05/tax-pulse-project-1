@@ -54,6 +54,10 @@ describe("Tax Plan Cycle detail query mapping", () => {
       priority: "high",
       due_date: "2026-05-12",
       on_hold: false,
+      taxpayer_identifier_validation: {
+        verified_name: "North Shore Family Office",
+        provider: "tivs",
+      },
     });
 
     await expect(fetchTaxPlanCycleDetails("TP-24018")).resolves.toMatchObject({
@@ -66,7 +70,27 @@ describe("Tax Plan Cycle detail query mapping", () => {
       scenarioCount: 0,
       onHold: false,
       overdue: true,
+      taxpayerIdentifierValidation: {
+        verifiedName: "North Shore Family Office",
+        provider: "tivs",
+      },
     });
+  });
+
+  test("omits taxpayer validation when it is absent from the backend response", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce({
+      id: "TP-24019",
+      client_id: "Example Client",
+      stage: "Intake",
+      owner: "Example Advisor",
+      priority: "medium",
+      due_date: "2027-05-12",
+      on_hold: false,
+    });
+
+    await expect(fetchTaxPlanCycleDetails("TP-24019")).resolves.not.toHaveProperty(
+      "taxpayerIdentifierValidation",
+    );
   });
 });
 

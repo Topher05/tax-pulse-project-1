@@ -26,7 +26,7 @@
             "Sid": "ReadSharedRuntimeConfigSecret",
             "Effect": "Allow",
             "Action": "secretsmanager:GetSecretValue",
-            "Resource": "arn:aws:secretsmanager:us-east-1:814650854375:secret:TAX_PULSE_CONFIG-q9DNrQ"
+            "Resource": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN"
           }
         ]
       }

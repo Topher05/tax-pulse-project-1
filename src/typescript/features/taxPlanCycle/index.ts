@@ -242,6 +242,7 @@ export {
   taxPlanDetailsAssistantRequestSchema,
   taxPlanDetailsAssistantResponseSchema,
   TaxPlanDetailsAssistantCaseNotFoundError,
+  TaxPlanDetailsAssistantUnsafePromptError,
   TaxPlanDetailsAssistantUnsupportedRecommendationError,
   TaxPlanDetailsAssistantUnavailableError,
   type TaxPlanDetailsAssistant,

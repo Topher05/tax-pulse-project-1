@@ -49,6 +49,13 @@ Tenant scoping is fail-closed. The runtime reads `ASSIST_TENANT_CORPUS_SCOPE_MAP
 
 Explanation generation is also grounded and fail-closed. The runtime uses the OpenAI Responses API with structured output under `ASSIST_RESPONSE_MODEL` (default `gpt-4o-mini`) to produce `{ explanation, cited_chunk_ids[] }`, validates that every cited chunk ID belongs to the retrieved set, and only then materializes response citations. The public response intentionally excludes tenant metadata while preserving source identity through chunk ID, document ID/title/type, fictional issuer, section ID/path, and synthetic notice.
 
+## Jira 183 Additions
+SCRUM-183 adds prompt-injection defenses and a checked-in adversarial test set around the live `/assist` surface. The controller now rejects prompt-injection attempts before retrieval when the recommendation or optional advisor question tries to override instructions, reveal hidden prompts, spoof assistant roles, decode encoded attacks, or request cross-tenant context.
+
+The refusal path is also fail-closed. Prompt-injection attempts return `422 Assistant Request Rejected` with generic problem details rather than surfacing matched rules, system instructions, or tenant metadata. Retrieved chunks are revalidated against the resolved tenant scopes before explanation generation, so a faulty retriever cannot leak cross-tenant citations into the public response.
+
+Explanation generation is hardened as well. The model receives structured JSON that explicitly labels the recommendation and question as untrusted user input, includes a hidden policy canary, and rejects any output that repeats that canary. This gives the `/assist` route a second fail-closed guard even if an adversarial input reaches the model boundary.
+
 ## Consequences
 * Core Case Service ownership of case data remains unchanged.
 * Tax Liability Engine ownership of calculations remains unchanged.
@@ -62,6 +69,7 @@ Explanation generation is also grounded and fail-closed. The runtime uses the Op
 * The RAGAS scorer remains an offline, `uv`-locked Python step so dependency drift is caught before `/assist` delivery work lands.
 * Tenant-to-corpus scope mapping becomes a required runtime dependency for live `/assist` traffic, and unmapped tenants fail closed instead of silently broadening access.
 * Public `/assist` citations are derived strictly from retrieved chunks, which keeps explanation text auditable and prevents uncited or cross-tenant grounding from leaking into the response.
+* Prompt-injection handling now fails closed before retrieval and again after generation, which reduces the chance of leaking hidden instructions or cross-tenant context through adversarial recommendations.
 * The 15-question accepted benchmark keeps local evaluation practical, while expanding it would improve coverage at the cost of slower and more expensive scoring runs.
 * Higher thresholds improve the quality bar but can turn a tuning pass into a false negative while the synthetic corpus and checker responses are still being tightened.
 

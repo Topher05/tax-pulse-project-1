@@ -147,7 +147,25 @@ body::before {
   border-radius: 8px;
 }
 
+.authReadonlyLabel {
+  display: grid;
+  gap: 6px;
+  color: #344153;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.authReadonlyLabel input {
+  min-height: 44px;
+  padding: 0 12px;
+  color: #17202a;
+  background: #f8fafc;
+  border: 1px solid #aebac6;
+  border-radius: 8px;
+}
+
 .authForm input:focus-visible,
+.authReadonlyLabel input:focus-visible,
 .authPrimaryButton:focus-visible,
 .authTextLink:focus-visible {
   outline: 3px solid #54b6b1;
@@ -186,6 +204,19 @@ body::before {
   background: #fff0f1;
   border: 1px solid #e9a5aa;
   border-radius: 8px;
+}
+
+.authSuccess {
+  padding: 10px 12px;
+  color: #16603f;
+  background: #edfdf5;
+  border: 1px solid #91d8b3;
+  border-radius: 8px;
+}
+
+.authStatus {
+  color: #526173;
+  font-weight: 700;
 }
 
 /* Keep the shared modal shell easy to tune if sizing or card treatment changes later. */

@@ -126,7 +126,14 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.45rem;
+  margin: 0;
+  padding: 0;
   list-style: none;
+}
+
+.stageStepper:focus-visible {
+  outline: 3px solid var(--pulse-accent-light);
+  outline-offset: 4px;
 }
 
 .stageStepItem {
@@ -211,11 +218,14 @@
   display: grid;
   gap: 1rem;
   min-width: 0;
+  align-content: start;
+  align-self: start;
 }
 
 .tabBar {
   display: flex;
   flex-wrap: wrap;
+  align-self: start;
   gap: 0.35rem;
   border-bottom: 1px solid var(--pulse-border);
 }
@@ -504,7 +514,19 @@
   }
 
   .stageStepper {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(8.5rem, 1fr);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding: 0.125rem 0.125rem 0.6rem;
+    scroll-padding-inline: 0.125rem;
+    scroll-snap-type: inline proximity;
+    scrollbar-gutter: stable;
+  }
+
+  .stageStepItem {
+    scroll-snap-align: start;
   }
 }
 
@@ -523,10 +545,6 @@
 
   .sectionHeader {
     flex-direction: column;
-  }
-
-  .stageStepper {
-    grid-template-columns: 1fr;
   }
 
   .commentComposer {

@@ -17,8 +17,10 @@ import { ActionItemsPage } from "../pages/clientPortal/ActionItemsPage.tsx";
 
 import { AuthBoundary } from "../auth/AuthBoundary.tsx";
 import { MfaChallengePage } from "../pages/auth/MfaChallengePage.tsx";
+import { MfaEnrollmentPage } from "../pages/auth/MfaEnrollmentPage.tsx";
 import { PasswordResetConfirmationPage } from "../pages/auth/PasswordResetConfirmationPage.tsx";
 import { PasswordResetPage } from "../pages/auth/PasswordResetPage.tsx";
+import { RegisterPage } from "../pages/auth/RegisterPage.tsx";
 import { SignInPage } from "../pages/auth/SignInPage.tsx";
 import { ScenarioPlannerPage } from "../pages/scenarios/ScenarioPlannerPage.tsx";
 import { DetailsPage } from "../pages/taxPlanCycle/Details.tsx";
@@ -83,10 +85,22 @@ const signInRoute = createRoute({
   component: SignInPage,
 });
 
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/register",
+  component: RegisterPage,
+});
+
 const mfaChallengeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sign-in/mfa",
   component: MfaChallengePage,
+});
+
+const mfaEnrollmentRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/register/mfa",
+  component: MfaEnrollmentPage,
 });
 
 const passwordResetRoute = createRoute({
@@ -218,7 +232,9 @@ const administrationAuditLogRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   signInRoute,
+  registerRoute,
   mfaChallengeRoute,
+  mfaEnrollmentRoute,
   passwordResetRoute,
   passwordResetConfirmationRoute,
   workspaceRoute.addChildren([

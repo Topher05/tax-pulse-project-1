@@ -107,11 +107,27 @@
       "secrets": [
         {
           "name": "DATABASE_URL",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:814650854375:secret:TAX_PULSE_CONFIG-q9DNrQ:DATABASE_URL::"
+          "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:DATABASE_URL::"
+        },
+        {
+          "name": "JWT_SIGNING_PRIVATE_KEY",
+          "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:JWT_SIGNING_PRIVATE_KEY::"
+        },
+        {
+          "name": "JWT_SIGNING_KEY_ID",
+          "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:JWT_SIGNING_KEY_ID::"
         },
         {
           "name": "JWT_SIGNING_SECRET",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:814650854375:secret:TAX_PULSE_CONFIG-q9DNrQ:JWT_SIGNING_SECRET::"
+          "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:JWT_SIGNING_SECRET::"
+        },
+        {
+          "name": "ASSIST_TENANT_CORPUS_SCOPE_MAP",
+          "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:ASSIST_TENANT_CORPUS_SCOPE_MAP::"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:OPENAI_API_KEY::"
         }
       ],
       "healthCheck": {
