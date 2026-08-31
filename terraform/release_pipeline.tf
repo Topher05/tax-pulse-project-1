@@ -20,6 +20,7 @@ locals {
       module.ecs_services.tax_engine_service_name,
     ),
   ]
+  github_actions_spa_bucket_arn = "arn:aws:s3:::${module.spa_delivery.bucket_name}"
 }
 
 data "aws_caller_identity" "current" {}
@@ -129,6 +130,27 @@ data "aws_iam_policy_document" "github_actions_release" {
     sid       = "DescribeRuntimeConfigSecret"
     actions   = ["secretsmanager:DescribeSecret"]
     resources = [local.runtime_config_secret_arn]
+  }
+
+  statement {
+    sid       = "ListSpaBucket"
+    actions   = ["s3:GetBucketLocation", "s3:ListBucket"]
+    resources = [local.github_actions_spa_bucket_arn]
+  }
+
+  statement {
+    sid = "PublishSpaObjects"
+    actions = [
+      "s3:DeleteObject",
+      "s3:PutObject",
+    ]
+    resources = ["${local.github_actions_spa_bucket_arn}/*"]
+  }
+
+  statement {
+    sid       = "InvalidateSpaDistribution"
+    actions   = ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"]
+    resources = [module.spa_delivery.cloudfront_distribution_arn]
   }
 }
 
