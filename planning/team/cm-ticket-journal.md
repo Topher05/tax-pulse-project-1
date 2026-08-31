@@ -36,6 +36,73 @@ Add new ticket entries below using this template.
 -->
 
 
+## christopher-martus-jira231 - SCRUM-231
+
+**Branch:** `christopher-martus-jira231`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-231
+
+**Summary:** Fix ZAP scan and prepare AWS scaling and UI release deployment
+
+**Description:** Identify and resolve the ZAP baseline failure, document a reversible
+AWS development-environment scale-down/restore procedure, and ensure normal releases
+deploy and verify the latest Pulse UI alongside the backend services.
+
+**Acceptance Criteria:**
+
+- ZAP report generation succeeds and the High-severity gate remains fail-closed.
+- Applicable AWS resources can be scaled down without deleting data or configuration.
+- The environment can be restored without rebuilding it from scratch.
+- Required retained dependencies are identified.
+- A normal release deploys the latest UI as well as backend components.
+- A release validates the expected UI version is accessible.
+- ZAP, AWS scaling, UI deployment, and known limitations are documented.
+
+**Code Connection:**
+
+- The ZAP workflow no longer pre-creates report files that the container cannot overwrite;
+  the supplied run log showed `AccessDeniedException /zap/wrk/report_html.html` with no
+  High-severity findings.
+- The release workflow builds `src/pulseUI`, syncs the Terraform-resolved private S3
+  bucket, invalidates CloudFront, and compares the deployed `index.html` SHA-256 with
+  the build output before recording release evidence.
+- The GitHub Actions release role receives only the S3 bucket-list/object-write and
+  CloudFront invalidation permissions required for that deployment.
+- The AWS runbook preserves ECS task definitions, RDS storage/snapshot, Redis, ALB/VPC,
+  SPA delivery, secrets, images, queues, functions, and Terraform state while reducing
+  continuously running compute.
+
+**Project Scope Connection:**
+
+This is an MVP operational-safety change: remove the concrete ZAP file-permission
+failure, close the existing UI release gap using the already-defined SPA delivery
+contract, and document reversible development capacity changes. It intentionally does
+not remediate informational ZAP warnings, delete infrastructure, redesign Terraform
+capacity management, or change application behavior.
+
+**Changed Files:**
+
+- `.github/workflows/zap-baseline.yml`
+- `.github/workflows/container-scan-sbom.yml`
+- `terraform/release_pipeline.tf`
+- `docs/release-evidence-packet.md`
+- `docs/aws-dev-scale-runbook.md`
+- `planning/team/cm-ticket-journal.md`
+- Focused workflow/Terraform tests remain deferred to the final implementation step.
+
+**Validation Notes:**
+
+- AWS inventory was read after `aws login` in account `814650854375`, region `us-east-1`;
+  no scaling or deletion command was executed.
+- `terraform fmt -check -diff terraform/release_pipeline.tf` passed.
+- `terraform -chdir=terraform validate` passed.
+- `git diff --check` passed; only normal LF/CRLF conversion warnings were reported.
+- A successful development release, populated release manifest, and focused tests remain
+  required before final acceptance.
+
+
 
 ## christopher-martus-jira169 - SCRUM-169
 
