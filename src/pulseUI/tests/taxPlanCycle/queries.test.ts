@@ -92,6 +92,41 @@ describe("Tax Plan Cycle detail query mapping", () => {
       "taxpayerIdentifierValidation",
     );
   });
+
+  test("maps hold reason when the backend returns one", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce({
+      id: "TP-24020",
+      client_id: "Example Client",
+      stage: "Review",
+      owner: "Example Advisor",
+      priority: "medium",
+      due_date: "2027-05-12",
+      on_hold: true,
+      hold_reason: "Awaiting signed documents",
+    });
+
+    await expect(fetchTaxPlanCycleDetails("TP-24020")).resolves.toMatchObject({
+      onHold: true,
+      holdReason: "Awaiting signed documents",
+    });
+  });
+
+  test("keeps missing or null hold reasons out of the details view", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce({
+      id: "TP-24021",
+      client_id: "Example Client",
+      stage: "Review",
+      owner: "Example Advisor",
+      priority: "medium",
+      due_date: "2027-05-12",
+      on_hold: false,
+      hold_reason: null,
+    });
+
+    await expect(fetchTaxPlanCycleDetails("TP-24021")).resolves.not.toHaveProperty(
+      "holdReason",
+    );
+  });
 });
 
 describe("Tax Plan Cycle audit query mapping", () => {

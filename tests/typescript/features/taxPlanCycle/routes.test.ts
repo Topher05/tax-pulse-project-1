@@ -15,7 +15,9 @@ import {
   type TaxPlanCycle,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateInput,
+  type TaxPlanCycleHoldController,
   type TaxPlanCycleTransitionController,
+  TaxPlanCycleOnHoldError,
   type AuditEntryOutput,
   type AuditEntryReader,
   type AuditEntryWriter,
@@ -256,6 +258,7 @@ async function withAssistantRouteServer(
 async function withTransitionRouteServer(
   options: {
     controller: TaxPlanCycleCreateController;
+    holdController?: TaxPlanCycleHoldController;
     transitionController: TaxPlanCycleTransitionController;
     auditEntryWriter: AuditEntryWriter;
     auditLogger: Pick<Console, "info">;
@@ -273,6 +276,7 @@ async function withTransitionRouteServer(
       app.use(
         createTaxPlanCycleRouter({
           controller: options.controller,
+          ...(options.holdController ? { holdController: options.holdController } : {}),
           transitionController: options.transitionController,
           auditEntryWriter: options.auditEntryWriter,
           auditLogger: options.auditLogger,
@@ -311,6 +315,51 @@ async function withTransitionRouteServerWithoutAuth(
           transitionController: options.transitionController,
           auditEntryWriter: options.auditEntryWriter,
           auditLogger: options.auditLogger,
+        }),
+      );
+    },
+  });
+
+  const server = app.listen(0);
+  await once(server, "listening");
+
+  try {
+    const address = server.address() as AddressInfo;
+    await run(`http://127.0.0.1:${address.port}`);
+  } finally {
+    server.close();
+    await once(server, "close");
+  }
+}
+
+async function withVersionedTaxPlanCycleRouteServer(
+  options: {
+    controller: TaxPlanCycleCreateController;
+    holdController?: TaxPlanCycleHoldController;
+    transitionController?: TaxPlanCycleTransitionController;
+    auditEntryWriter?: AuditEntryWriter;
+    auditLogger?: Pick<Console, "info">;
+    permissionsForRole?: Partial<
+      Record<"Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin", ReadonlyArray<string>>
+    >;
+  },
+  run: (baseUrl: string) => Promise<void>,
+): Promise<void> {
+  const app = createApp({
+    logger: silentLogger,
+    registerRoutes: (app) => {
+      app.use(createTestJwtAuthenticationMiddleware());
+      app.use(hydrateUserClaims(options.permissionsForRole));
+      app.use(
+        "/v1",
+        createTaxPlanCycleRouter({
+          controller: options.controller,
+          ...(options.holdController ? { holdController: options.holdController } : {}),
+          ...(options.transitionController
+            ? { transitionController: options.transitionController }
+            : {}),
+          ...(options.auditEntryWriter ? { auditEntryWriter: options.auditEntryWriter } : {}),
+          ...(options.auditLogger ? { auditLogger: options.auditLogger } : {}),
         }),
       );
     },
@@ -1163,7 +1212,283 @@ describe("createTaxPlanCycleRouter", () => {
   });
 });
 
-describe("transitionTaxPlanCycleRouter", () => {
+describe("holdTaxPlanCycleRouter", () => {
+  const holdCycle: TaxPlanCycle = {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e41",
+    client_id: validCreateBody.client_id,
+    stage: "Data Aggregation",
+    owner: validCreateBody.owner,
+    priority: validCreateBody.priority,
+    due_date: validCreateBody.due_date,
+    on_hold: false,
+  };
+
+  async function tokenFor(role: TestUserRole, userId = `${role.toLowerCase().replaceAll(" ", "-")}-001`) {
+    return await createAccessToken({
+      tenantId: "tenant-001",
+      userId,
+      email: `${userId}@example.com`,
+      role,
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+  }
+
+  test("places hold through the versioned route and trims the reason", async () => {
+    const updatedCycle: TaxPlanCycle = {
+      ...holdCycle,
+      on_hold: true,
+      hold_reason: "Awaiting signed documents",
+    };
+    const setHoldStatus = vi.fn<TaxPlanCycleHoldController["setHoldStatus"]>(() => updatedCycle);
+    const findByCaseId = vi.fn<TaxPlanCycleHoldController["findByCaseId"]>(() => holdCycle);
+    const auditLogger = { info: vi.fn() };
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await tokenFor("Firm Admin", "firm-admin-hold-001");
+
+    await withVersionedTaxPlanCycleRouteServer(
+      {
+        controller: { create: vi.fn(), findByCaseId: vi.fn() },
+        holdController: { setHoldStatus, findByCaseId },
+        auditEntryWriter: auditWriter,
+        auditLogger,
+      },
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${holdCycle.id}/hold`, {
+          method: "PATCH",
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            on_hold: true,
+            hold_reason: "  Awaiting signed documents  ",
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toEqual(updatedCycle);
+        expect(setHoldStatus).toHaveBeenCalledWith({
+          tenantId: "tenant-001",
+          caseId: holdCycle.id,
+          onHold: true,
+          holdReason: "Awaiting signed documents",
+          actor: "firm-admin-hold-001",
+        });
+        expect(auditLogger.info).toHaveBeenCalledWith(
+          expect.objectContaining({
+            case_id: holdCycle.id,
+            action: "place hold",
+            outcome: "200",
+          }),
+        );
+        expect(JSON.stringify(auditLogger.info.mock.calls)).not.toContain("Awaiting signed documents");
+        expect(JSON.stringify(auditWriter.record.mock.calls)).not.toContain("Awaiting signed documents");
+      },
+    );
+  });
+
+  test("allows an Advisor with EDIT to remove hold without a reason", async () => {
+    const heldCycle: TaxPlanCycle = {
+      ...holdCycle,
+      on_hold: true,
+      hold_reason: "Awaiting signed documents",
+    };
+    const updatedCycle: TaxPlanCycle = {
+      ...holdCycle,
+      on_hold: false,
+    };
+    const setHoldStatus = vi.fn<TaxPlanCycleHoldController["setHoldStatus"]>(() => updatedCycle);
+    const findByCaseId = vi.fn<TaxPlanCycleHoldController["findByCaseId"]>(() => heldCycle);
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await tokenFor("Advisor", "advisor-edit-hold-001");
+
+    await withVersionedTaxPlanCycleRouteServer(
+      {
+        controller: { create: vi.fn(), findByCaseId: vi.fn() },
+        holdController: { setHoldStatus, findByCaseId },
+        auditEntryWriter: auditWriter,
+        auditLogger: { info: vi.fn() },
+      },
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${holdCycle.id}/hold`, {
+          method: "PATCH",
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ on_hold: false }),
+        });
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toEqual(updatedCycle);
+        expect(setHoldStatus).toHaveBeenCalledWith({
+          tenantId: "tenant-001",
+          caseId: holdCycle.id,
+          onHold: false,
+          actor: "advisor-edit-hold-001",
+        });
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: holdCycle.id,
+            action: "remove hold",
+            outcome: "200",
+          }),
+        );
+      },
+    );
+  });
+
+  test("rejects blank hold reasons before controller mutation", async () => {
+    const setHoldStatus = vi.fn<TaxPlanCycleHoldController["setHoldStatus"]>(() => holdCycle);
+    const findByCaseId = vi.fn<TaxPlanCycleHoldController["findByCaseId"]>(() => holdCycle);
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await tokenFor("Firm Admin", "firm-admin-hold-blank-001");
+
+    await withVersionedTaxPlanCycleRouteServer(
+      {
+        controller: { create: vi.fn(), findByCaseId: vi.fn() },
+        holdController: { setHoldStatus, findByCaseId },
+        auditEntryWriter: auditWriter,
+        auditLogger: { info: vi.fn() },
+      },
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${holdCycle.id}/hold`, {
+          method: "PATCH",
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ on_hold: true, hold_reason: "   " }),
+        });
+        const body = (await response.json()) as ValidationErrorResponse;
+
+        expect(response.status).toBe(400);
+        expect(body).toMatchObject({
+          type: "https://taxpulse.example/problems/validation-error",
+          title: "Validation Error",
+          status: 400,
+          detail: "Hold request failed validation.",
+          code: "VALIDATION_ERROR",
+        });
+        expect(findByCaseId).not.toHaveBeenCalled();
+        expect(setHoldStatus).not.toHaveBeenCalled();
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: holdCycle.id,
+            action: "hold request validation failed",
+            outcome: "400",
+          }),
+        );
+      },
+    );
+  });
+
+  test.each([
+    ["Advisor without EDIT", "Advisor" as const, []],
+    ["Client", "Client" as const, ["EDIT"]],
+    ["Platform Admin", "TaxPulse Platform Admin" as const, ["EDIT"]],
+  ])("rejects %s hold mutations", async (_label, role, permissions) => {
+    const setHoldStatus = vi.fn<TaxPlanCycleHoldController["setHoldStatus"]>(() => holdCycle);
+    const findByCaseId = vi.fn<TaxPlanCycleHoldController["findByCaseId"]>(() => holdCycle);
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await tokenFor(role, `hold-denied-${role.toLowerCase().replaceAll(" ", "-")}`);
+
+    await withVersionedTaxPlanCycleRouteServer(
+      {
+        controller: { create: vi.fn(), findByCaseId: vi.fn() },
+        holdController: { setHoldStatus, findByCaseId },
+        auditEntryWriter: auditWriter,
+        auditLogger: { info: vi.fn() },
+        permissionsForRole: { [role]: permissions },
+      },
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${holdCycle.id}/hold`, {
+          method: "PATCH",
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ on_hold: false }),
+        });
+
+        expect(response.status).toBe(403);
+        expect(setHoldStatus).not.toHaveBeenCalled();
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: holdCycle.id,
+            outcome: "403",
+          }),
+        );
+      },
+    );
+  });
+
+  test("returns 404 for tenant-scoped missing hold targets", async () => {
+    const setHoldStatus = vi.fn<TaxPlanCycleHoldController["setHoldStatus"]>(() => holdCycle);
+    const findByCaseId = vi.fn<TaxPlanCycleHoldController["findByCaseId"]>(() => null);
+    const accessToken = await tokenFor("Firm Admin", "firm-admin-hold-missing-001");
+
+    await withVersionedTaxPlanCycleRouteServer(
+      {
+        controller: { create: vi.fn(), findByCaseId: vi.fn() },
+        holdController: { setHoldStatus, findByCaseId },
+      },
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/v1/tax-plan-cycles/${holdCycle.id}/hold`, {
+          method: "PATCH",
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ on_hold: false }),
+        });
+
+        expect(response.status).toBe(404);
+        await expect(response.json()).resolves.toMatchObject({
+          type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+          title: "Tax Plan Cycle Not Found",
+          status: 404,
+        });
+        expect(setHoldStatus).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  test("returns 401 for hold mutations without auth context", async () => {
+    const setHoldStatus = vi.fn<TaxPlanCycleHoldController["setHoldStatus"]>(() => holdCycle);
+    const auditWriter = { record: vi.fn() };
+
+    await withTransitionRouteServerWithoutAuth(
+      {
+        controller: { create: vi.fn(), findByCaseId: vi.fn() },
+        transitionController: { transition: vi.fn(), findByCaseId: vi.fn() },
+        auditEntryWriter: auditWriter,
+        auditLogger: { info: vi.fn() },
+      },
+      async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/tax-plan-cycles/${holdCycle.id}/hold`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ on_hold: false }),
+        });
+
+        expect(response.status).toBe(401);
+        expect(setHoldStatus).not.toHaveBeenCalled();
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: holdCycle.id,
+            action: "hold authentication required",
+            outcome: "401",
+          }),
+        );
+      },
+    );
+  });
+});
+
+ describe("transitionTaxPlanCycleRouter", () => {
   const reviewCycle: TaxPlanCycle = {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e51",
     client_id: validCreateBody.client_id,
@@ -1721,6 +2046,128 @@ describe("transitionTaxPlanCycleRouter", () => {
           }),
         );
         expect(create).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  test("returns 409 and does not transition a held cycle", async () => {
+    const heldCycle: TaxPlanCycle = {
+      ...dataAggregationCycle,
+      on_hold: true,
+      hold_reason: "Awaiting signed documents",
+    };
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => heldCycle);
+    const transition = vi.fn<TaxPlanCycleTransitionController["transition"]>(() => ({
+      ...heldCycle,
+      stage: "Modeling",
+    }));
+    const auditLogger = { info: vi.fn() };
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "advisor-held-001",
+      email: "advisor-held@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
+    await withTransitionRouteServer(
+      {
+        controller: { create: vi.fn(), findByCaseId },
+        transitionController: { transition, findByCaseId },
+        auditEntryWriter: auditWriter,
+        auditLogger,
+      },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${heldCycle.id}/transition`,
+          {
+            method: "PATCH",
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({ to_stage: "Modeling" }),
+          },
+        );
+
+        expect(response.status).toBe(409);
+        await expect(response.json()).resolves.toMatchObject({
+          type: "https://taxpulse.example/problems/tax-plan-cycle-on-hold",
+          title: "Tax Plan Cycle On Hold",
+          status: 409,
+          detail: "Remove the hold before advancing this Tax Plan Cycle.",
+        });
+        expect(transition).not.toHaveBeenCalled();
+        expect(auditLogger.info).toHaveBeenCalledWith(
+          expect.objectContaining({
+            case_id: heldCycle.id,
+            action: "transition Data Aggregation -> Modeling",
+            outcome: "409",
+          }),
+        );
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: heldCycle.id,
+            action: "transition Data Aggregation -> Modeling",
+            outcome: "409",
+          }),
+        );
+      },
+    );
+  });
+
+  test("maps an atomic repository hold rejection to the same 409 response", async () => {
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(() => dataAggregationCycle);
+    const transition = vi.fn<TaxPlanCycleTransitionController["transition"]>(() => {
+      throw new TaxPlanCycleOnHoldError();
+    });
+    const auditWriter = { record: vi.fn() };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "advisor-race-001",
+      email: "advisor-race@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
+    await withTransitionRouteServer(
+      {
+        controller: { create: vi.fn(), findByCaseId },
+        transitionController: { transition, findByCaseId },
+        auditEntryWriter: auditWriter,
+        auditLogger: { info: vi.fn() },
+      },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${dataAggregationCycle.id}/transition`,
+          {
+            method: "PATCH",
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({ to_stage: "Modeling" }),
+          },
+        );
+
+        expect(response.status).toBe(409);
+        await expect(response.json()).resolves.toMatchObject({
+          title: "Tax Plan Cycle On Hold",
+          status: 409,
+        });
+        expect(transition).toHaveBeenCalledTimes(1);
+        expect(auditWriter.record).toHaveBeenCalledWith(
+          expect.objectContaining({
+            caseId: dataAggregationCycle.id,
+            action: "transition Data Aggregation -> Modeling",
+            outcome: "409",
+          }),
+        );
       },
     );
   });

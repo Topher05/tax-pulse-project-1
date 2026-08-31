@@ -80,6 +80,7 @@ export function DetailsPage() {
   const queryClient = useQueryClient();
   const { showNotification } = useNotificationToast();
   const { registerFabAnchor, setAssistantCaseContext } = useAssistantPanel();
+  const holdDialogTitleId = useId();
   const holdReasonFieldId = useId();
   const holdReasonHelpId = useId();
 
@@ -175,7 +176,7 @@ export function DetailsPage() {
     try {
       const response = await caseApiPatchJson<{ on_hold: boolean; hold_reason?: string | null }>(
         `/v1/tax-plan-cycles/${caseId}/hold`,
-        onHold ? { on_hold: true as const, hold_reason: holdReason ?? "" } : { on_hold: false as const },
+        onHold ? { on_hold: true as const, hold_reason: (holdReason ?? "").trim() } : { on_hold: false as const },
         authenticatedFetch,
       );
       await invalidateCycleQueries();
@@ -518,11 +519,16 @@ export function DetailsPage() {
             className={styles.modalShell}
             role="dialog"
             aria-modal="true"
-            aria-labelledby={holdReasonFieldId}
+            aria-labelledby={holdDialogTitleId}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setIsHoldModalOpen(false);
+              }
+            }}
             onClick={(event) => event.stopPropagation()}
           >
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Place hold</h3>
+              <h3 id={holdDialogTitleId} className={styles.modalTitle}>Place hold</h3>
               <p className={styles.modalCopy}>Enter a short reason so the team knows why the cycle is paused.</p>
             </div>
             <label className={styles.modalField} htmlFor={holdReasonFieldId}>

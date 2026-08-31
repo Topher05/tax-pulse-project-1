@@ -29,6 +29,7 @@ import {
   stageTransition,
   taxPlanCycle,
   taxPlanCycleSchema,
+  TaxPlanCycleOnHoldError,
   taxpayerIdentifierValidation,
   tenants,
   type AuditEntryWriter,
@@ -2029,6 +2030,110 @@ describe("taxPlanCycle integration", () => {
 
       expect(transitionRows).toEqual([]);
       expect(outboxRows).toEqual([]);
+    });
+  });
+
+  test("persists hold state, blocks transitions while held, and resumes after unhold", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      await seedSampleTenant(client);
+      const repository = createTaxPlanCycleRepository(client);
+
+      const caseId = await repository.insert({
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q4",
+        cycle: {
+          client_id: sampleClientIds[0],
+          stage: "Intake",
+          owner: "advisor-hold-integration",
+          priority: "medium",
+          due_date: "2026-12-31",
+          on_hold: false,
+        },
+      });
+
+      await expect(
+        repository.setHoldStatus({
+          tenantId: sampleTenant.id,
+          caseId,
+          onHold: true,
+          holdReason: "Awaiting signed documents",
+        }),
+      ).resolves.toMatchObject({
+        id: caseId,
+        on_hold: true,
+        hold_reason: "Awaiting signed documents",
+      });
+      await expect(
+        repository.setHoldStatus({
+          tenantId: sampleTenant.id,
+          caseId,
+          onHold: true,
+          holdReason: "Awaiting corrected K-1",
+        }),
+      ).resolves.toMatchObject({
+        hold_reason: "Awaiting corrected K-1",
+      });
+      await expect(
+        repository.setHoldStatus({
+          tenantId: sampleTenantIds[1],
+          caseId,
+          onHold: false,
+        }),
+      ).resolves.toBeNull();
+
+      const transitionRowsBefore = await db
+        .select({ id: stageTransition.id })
+        .from(stageTransition)
+        .where(eq(stageTransition.caseId, caseId));
+      const outboxRowsBefore = await db.select({ id: outboxEvent.id }).from(outboxEvent);
+
+      await expect(
+        repository.transition({
+          tenantId: sampleTenant.id,
+          caseId,
+          toStage: "Data Aggregation",
+          actor: "advisor-hold-integration",
+        }),
+      ).rejects.toBeInstanceOf(TaxPlanCycleOnHoldError);
+
+      await expect(
+        repository.findByCaseId({ tenantId: sampleTenant.id, caseId }),
+      ).resolves.toMatchObject({
+        stage: "Intake",
+        on_hold: true,
+        hold_reason: "Awaiting corrected K-1",
+      });
+      await expect(
+        db.select({ id: stageTransition.id }).from(stageTransition).where(eq(stageTransition.caseId, caseId)),
+      ).resolves.toHaveLength(transitionRowsBefore.length);
+      await expect(db.select({ id: outboxEvent.id }).from(outboxEvent)).resolves.toHaveLength(
+        outboxRowsBefore.length,
+      );
+
+      await expect(
+        repository.setHoldStatus({
+          tenantId: sampleTenant.id,
+          caseId,
+          onHold: false,
+        }),
+      ).resolves.toMatchObject({
+        on_hold: false,
+      });
+      await expect(
+        repository.findByCaseId({ tenantId: sampleTenant.id, caseId }),
+      ).resolves.not.toHaveProperty("hold_reason");
+      await expect(
+        repository.transition({
+          tenantId: sampleTenant.id,
+          caseId,
+          toStage: "Data Aggregation",
+          actor: "advisor-hold-integration",
+        }),
+      ).resolves.toMatchObject({
+        stage: "Data Aggregation",
+        on_hold: false,
+      });
     });
   });
 
