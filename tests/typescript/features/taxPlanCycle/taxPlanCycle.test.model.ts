@@ -150,7 +150,9 @@ export const stageTransitionDbRowsSchema = z.array(stageTransitionDbRowSchema);
 
 export const taxPlanCycleRepositoryQueueItemSchema = taxPlanCycleSchema.and(
   z.object({
+    client_name: z.string().min(1),
     is_overdue: z.boolean(),
+    updated_at: z.iso.datetime(),
   }),
 );
 

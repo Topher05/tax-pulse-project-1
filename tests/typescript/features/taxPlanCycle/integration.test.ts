@@ -23,6 +23,7 @@ import {
   createTaxPlanCycleTransitionController,
   type JwtConfig,
   auditEntry,
+  clientRoster,
   outboxEvent,
   redactedAuditAmount,
   stageChangedCloudEventSchemaV1,
@@ -542,6 +543,45 @@ describe("taxPlanCycle integration", () => {
         },
       ]);
 
+      await db.insert(clientRoster).values([
+        {
+          id: repositoryQueueClientIds.overdue,
+          tenantId: repositoryQueueTenantId,
+          clientName: "Avery Brooks",
+          filingStatus: "Single - W-2",
+          ytdIncome: "95000.00",
+          estimatedTax: "18500.00",
+          quarterlyStatus: "Q3 due Sep 15",
+        },
+        {
+          id: repositoryQueueClientIds.onHold,
+          tenantId: repositoryQueueTenantId,
+          clientName: "Jordan Lee",
+          filingStatus: "MFJ - 1099",
+          ytdIncome: "142000.00",
+          estimatedTax: "32800.00",
+          quarterlyStatus: "Q3 due Sep 15",
+        },
+        {
+          id: repositoryQueueClientIds.future,
+          tenantId: repositoryQueueTenantId,
+          clientName: "Morgan Patel",
+          filingStatus: "HoH - W-2",
+          ytdIncome: "78000.00",
+          estimatedTax: "12100.00",
+          quarterlyStatus: null,
+        },
+        {
+          id: repositoryQueueClientIds.otherTenant,
+          tenantId: repositoryQueueOtherTenantId,
+          clientName: "Taylor Nguyen",
+          filingStatus: "Single - Schedule C",
+          ytdIncome: "118000.00",
+          estimatedTax: "26400.00",
+          quarterlyStatus: "Q3 due Sep 15",
+        },
+      ]);
+
       await db.insert(taxPlanCycle).values([
         {
           id: repositoryQueueCycleIds.overdue,
@@ -599,16 +639,19 @@ describe("taxPlanCycle integration", () => {
         {
           id: repositoryQueueCycleIds.overdue,
           client_id: repositoryQueueClientIds.overdue,
+          client_name: "Avery Brooks",
           stage: "Intake",
           owner: "advisor-queue-001",
           priority: "medium",
           due_date: "2026-07-10",
           on_hold: false,
           is_overdue: true,
+          updated_at: "2026-07-10T00:00:00.000Z",
         },
         {
           id: repositoryQueueCycleIds.onHold,
           client_id: repositoryQueueClientIds.onHold,
+          client_name: "Jordan Lee",
           stage: "Review",
           owner: "advisor-queue-002",
           priority: "high",
@@ -616,16 +659,19 @@ describe("taxPlanCycle integration", () => {
           on_hold: true,
           hold_reason: "Client upload pending",
           is_overdue: false,
+          updated_at: "2026-07-15T00:00:00.000Z",
         },
         {
           id: repositoryQueueCycleIds.future,
           client_id: repositoryQueueClientIds.future,
+          client_name: "Morgan Patel",
           stage: "Modeling",
           owner: "advisor-queue-003",
           priority: "low",
           due_date: "2026-07-20",
           on_hold: false,
           is_overdue: false,
+          updated_at: "2026-07-20T00:00:00.000Z",
         },
       ]);
     });

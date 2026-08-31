@@ -117,7 +117,7 @@ describe("ScenarioPlannerPage", () => {
     renderScenarioPlannerRoute("/scenarios");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    expect(await screen.findByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
+    expect(await screen.findByRole("combobox", { name: "Client case" })).toBeInTheDocument();
     expect(
       await screen.findByRole("heading", { name: "Select a case to load Scenario Planner" }),
     ).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe("ScenarioPlannerPage", () => {
     renderScenarioPlannerRoute(`/scenarios?caseId=${seededCaseId}`);
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    expect(await screen.findByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
+    expect(await screen.findByRole("combobox", { name: "Client case" })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "New scenario" })).toBeEnabled();
     expect(await screen.findByText("Scenario workspace")).toBeInTheDocument();
 

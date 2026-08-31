@@ -141,6 +141,7 @@ describe("main Tax Plan Cycle composition", () => {
       {
         id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
         client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
+        client_name: "Test Client",
         stage: "Modeling",
         owner: "postman-test-owner",
         priority: "high",
@@ -208,6 +209,9 @@ describe("main Tax Plan Cycle composition", () => {
         expect(createResponse.status).toBe(202);
         expect(readResponse.status).toBe(200);
         expect(queueResponse.status).toBe(200);
+        expect(await queueResponse.json()).toEqual([
+          expect.objectContaining({ client_name: "Test Client" }),
+        ]);
         expect(unversionedResponse.status).toBe(404);
         expect(unknownVersionResponse.status).toBe(404);
         expect(createTaxPlanCycleRepository).toHaveBeenCalledTimes(1);
