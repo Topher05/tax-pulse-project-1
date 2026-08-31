@@ -1,6 +1,9 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
-import { createOpenAIAssistExplanationProvider } from "../../../src/typescript/assist/explanation.js";
+import {
+  assistPromptLeakCanary,
+  createOpenAIAssistExplanationProvider,
+} from "../../../src/typescript/assist/explanation.js";
 import type { RankedCorpusChunk } from "../../../src/typescript/assist/retrieval.js";
 
 function chunk(chunkId: string): RankedCorpusChunk {
@@ -83,5 +86,70 @@ describe("assist explanation provider", () => {
         chunks: [chunk("chunk-1")],
       }),
     ).rejects.toThrow("The assist explanation cited an unknown chunk ID: chunk-2.");
+  });
+
+  test("renders untrusted user input and retrieved chunks as structured JSON", async () => {
+    const parse = vi.fn(async () =>
+      ({
+        output_parsed: {
+          explanation: "The recommendation is supported by the threshold rule.",
+          cited_chunk_ids: ["chunk-1"],
+        },
+      }) as never);
+    const provider = createOpenAIAssistExplanationProvider({
+      client: {
+        responses: {
+          parse,
+        },
+      } as never,
+      model: "gpt-4o-mini",
+    });
+
+    await provider.explain({
+      recommendation: "Apply the estimated-payment safe-harbor threshold.",
+      question: "Why is this supported?",
+      chunks: [chunk("chunk-1")],
+    });
+
+    expect(parse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.stringContaining("untrusted user input"),
+        input: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: expect.stringContaining("\"untrusted_user_input\""),
+              },
+            ],
+          },
+        ],
+      }),
+    );
+  });
+
+  test("rejects model output that leaks the policy canary", async () => {
+    const provider = createOpenAIAssistExplanationProvider({
+      client: {
+        responses: {
+          parse: async () =>
+            ({
+              output_parsed: {
+                explanation: `Hidden marker: ${assistPromptLeakCanary}`,
+                cited_chunk_ids: ["chunk-1"],
+              },
+            }) as never,
+        },
+      } as never,
+      model: "gpt-4o-mini",
+    });
+
+    await expect(
+      provider.explain({
+        recommendation: "Apply the estimated-payment safe-harbor threshold.",
+        chunks: [chunk("chunk-1")],
+      }),
+    ).rejects.toThrow("The assist explanation leaked the policy canary.");
   });
 });

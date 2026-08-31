@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
@@ -14,6 +14,7 @@ import {
   createInfoNotificationMessage,
   createSuccessNotificationMessage,
 } from "../../entities/notificationMessage.ts";
+import { buildTaxPlanDetailsAssistantRecommendation } from "../../entities/taxPlanDetailsAssistant.ts";
 import {
   fetchTaxPlanCycleAuditEntries,
   fetchTaxPlanCycleComments,
@@ -93,7 +94,6 @@ export function DetailsPage() {
   const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
   const [commentDraft, setCommentDraft] = useState("");
   const [isAdvancingStage, setIsAdvancingStage] = useState(false);
-  const stageLabelId = useId();
   const authenticatedFetch = useAuthenticatedFetch();
   const queryClient = useQueryClient();
   const { showNotification } = useNotificationToast();
@@ -119,7 +119,13 @@ export function DetailsPage() {
       caseId: detailsQuery.data.caseId,
       caseTitle: `${detailsQuery.data.caseId} - Q2 2026 Tax Plan`,
       clientName: detailsQuery.data.client,
-      recommendation: assistantRecommendation,
+      recommendation: buildTaxPlanDetailsAssistantRecommendation({
+        stage: detailsQuery.data.stage,
+        owner: detailsQuery.data.owner,
+        priority: detailsQuery.data.priority,
+        verifiedName: detailsQuery.data.taxpayerIdentifierValidation?.verifiedName,
+        provider: detailsQuery.data.taxpayerIdentifierValidation?.provider,
+      }),
       stage: detailsQuery.data.stage,
       advisor: detailsQuery.data.owner,
       dueDate: detailsQuery.data.dueDate,
@@ -416,8 +422,8 @@ export function DetailsPage() {
           </div>
         </div>
 
-        <section className={styles.stageSection} aria-labelledby={stageLabelId}>
-          <ol className={styles.stageStepper} aria-label="Case stage progression">
+        <div className={styles.stageSection}>
+          <ol className={styles.stageStepper} aria-label="Case stage progression" tabIndex={0}>
             {caseStages.map((stage, index) => {
               const isActive = selectedStage === stage;
               const isComplete = index < activeStageIndex;
@@ -439,7 +445,7 @@ export function DetailsPage() {
               );
             })}
           </ol>
-        </section>
+        </div>
       </PanelCard>
 
       <div className={styles.detailGrid}>

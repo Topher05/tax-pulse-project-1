@@ -17,11 +17,10 @@ copies running are outside SCRUM-157.
 
 ## Before Registration
 
-The task definitions use the discovered AWS account ID, region, SNS topic, SQS queue,
-CloudWatch log groups, and Secrets Manager ARN from the team account. The IAM role
-names, service-discovery names, data-store endpoints, and ECR image tags are the
-production contract that SCRUM-162 and SCRUM-164 should preserve when they codify the
-stack in Terraform.
+The development deployment workflow reads the canonical task definitions recorded in
+Terraform state, downloads them from ECS, injects the current runtime-secret ARN, and
+then replaces only the container image. The checked-in definitions remain documentation
+and manual-registration examples; CI does not deploy them.
 
 The task definitions expect these container images to exist in Amazon ECR. Replace
 `replace-with-immutable-image-tag` with the pushed image tag from the build pipeline,
@@ -67,7 +66,11 @@ production AWS dependencies instead of local Compose containers:
 
 - `PORT=3000`
 - `DATABASE_URL` loaded from Secrets Manager
+- `JWT_SIGNING_PRIVATE_KEY` loaded from Secrets Manager
+- `JWT_SIGNING_KEY_ID` loaded from Secrets Manager
 - `JWT_SIGNING_SECRET` loaded from Secrets Manager
+- `ASSIST_TENANT_CORPUS_SCOPE_MAP` loaded from Secrets Manager
+- `OPENAI_API_KEY` loaded from Secrets Manager
 - `LIABILITY_ENGINE_BASE` points at the internal Tax Engine service-discovery name
 - `TAXPULSE_REDIS_URL` points at the managed Redis/ElastiCache endpoint
 - SNS/SQS identifiers are supplied as environment values
@@ -90,8 +93,8 @@ Logs through the `awslogs` driver.
   `arn:aws:sns:us-east-1:814650854375:stage-changed`
 - Stage changed SQS queue:
   `https://sqs.us-east-1.amazonaws.com/814650854375/taxpulse-stage-changed`
-- Shared config secret:
-  `arn:aws:secretsmanager:us-east-1:814650854375:secret:TAX_PULSE_CONFIG-q9DNrQ`
+- Shared config secret: resolved from Terraform output `runtime_config_secret_arn`
+  during deployment; its current name is `taxpulse-dev-runtime-config`
 - Core log group: `Case-Service`
 - Tax Engine log group: `Tax-Engine`
 
@@ -126,8 +129,10 @@ balancer, target groups, listener, and listener rules.
 
 ## Register
 
-After replacing `replace-with-immutable-image-tag` and the IAM role placeholders,
-register the task definitions from the repository root:
+After replacing the immutable image, IAM role, and
+`TERRAFORM_RUNTIME_CONFIG_SECRET_ARN` placeholders, register the task definitions from
+the repository root. The GitHub deployment workflow performs these substitutions
+automatically:
 
 ```bash
 aws ecs register-task-definition \
@@ -173,7 +178,7 @@ The Tax Engine service reached steady state with one healthy Fargate task. The
 Core Case Service was created, but its container currently exits during startup
 because the current `DATABASE_URL` secret resolves to `127.0.0.1:5432` inside
 Fargate. That means it is looking for Postgres inside its own container. Point the
-shared `TAX_PULSE_CONFIG` secret's `DATABASE_URL` value at a reachable database
+Terraform-managed runtime secret's `DATABASE_URL` value at a reachable database
 before expecting the `/v1/*` ALB smoke check to pass.
 
 For AWS, that database should be a reachable PostgreSQL database, normally the RDS

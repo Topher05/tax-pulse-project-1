@@ -91,7 +91,7 @@ variable "tax_engine_image_repository_arn" {
 }
 
 variable "shared_config_secret_arn" {
-  description = "Secrets Manager ARN with DATABASE_URL, JWT_SIGNING_PRIVATE_KEY, and JWT_SIGNING_KEY_ID keys."
+  description = "Secrets Manager ARN with database, JWT, and Core Case AI Assist runtime keys."
   type        = string
 }
 
@@ -122,5 +122,10 @@ variable "stage_changed_queue_url" {
 
 variable "action_item_created_topic_arn" {
   description = "SNS topic ARN for action-item-created event publishing."
+  type        = string
+}
+
+variable "slo_alarm_topic_name" {
+  description = "SNS topic name used by CloudWatch SLO alarms."
   type        = string
 }

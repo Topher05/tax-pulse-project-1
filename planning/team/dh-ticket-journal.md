@@ -1551,6 +1551,139 @@ axe check and a component test, so that it is accessible and regression-guarded.
 - `terraform apply` completed successfully against the team AWS account and created the SCRUM-162 VPC, PostgreSQL, DynamoDB, Redis, and supporting networking resources.
 - `terraform plan -input=false` returned no changes immediately after apply, confirming a clean post-apply plan with no drift.
 
+## dylan-harle-jira183 - SCRUM-183
+
+**Branch:** `dylan-harle-jira183`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-183
+
+**Summary:** Add a prompt-injection defense test set
+
+**Description:** As a Security Engineer, I want a prompt-injection test set against `/assist`, so that the assistant resists adversarial inputs.
+
+**Acceptance Criteria:**
+
+- A test set submits prompt-injection attempts to `/assist`.
+- The endpoint refuses to leak system instructions or cross-tenant data.
+- The set runs as part of the AI-Assist test suite.
+
+**Code Connection:**
+
+- Added a dedicated AI-Assist prompt-safety module that normalizes recommendation and question text, detects direct instruction overrides, hidden-prompt exfiltration attempts, role spoofing, encoded payloads, and cross-tenant requests, then rejects those requests before retrieval begins.
+- Hardened the `/assist` explanation flow so the model receives structured JSON with explicitly untrusted user input, a hidden policy canary, and a fail-closed post-response validation that rejects leaked canaries or unknown chunk citations.
+- Added a second tenant-scope guard in the assistant controller so retrieved chunks must still belong to the resolved tenant scopes before citations are materialized, preventing a faulty retriever from leaking cross-tenant grounding.
+- Added a checked-in prompt-injection fixture set plus controller, route, provider, and smoke coverage. The HTTP-level endpoint test and live stack smoke now iterate through every checked-in fixture, require the exact generic `422 Assistant Request Rejected` response, and reject system-policy or cross-tenant response markers.
+
+**Project Scope Connection:**
+
+- Platform.
+- Builds directly on SCRUM-182's live `/assist` endpoint, citations, and tenant scoping contract.
+- Preserves tenant isolation by refusing adversarial requests before retrieval and by failing closed if retrieval or generation attempts to cross the tenant corpus boundary.
+- Provides the checked-in `/assist` security regression set that later AI-Assist tickets can rely on while expanding the advisor-facing workflow.
+
+**Changed Files:**
+
+- `data/corpus/security/prompt-injection-cases.json`
+- `src/typescript/assist/promptInjectionFixtures.ts`
+- `src/typescript/assist/promptSafety.ts`
+- `src/typescript/assist/explanation.ts`
+- `src/typescript/shared/scripts/assistSmoke.ts`
+- `src/typescript/features/taxPlanCycle/controllers/assistantController.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/assist/promptSafety.test.ts`
+- `tests/typescript/assist/promptInjectionEndpoint.test.ts`
+- `tests/typescript/assist/explanation.test.ts`
+- `tests/typescript/shared/scripts/assistSmoke.test.ts`
+- `tests/typescript/features/taxPlanCycle/assistantController.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `package.json`
+- `adr/0035-ai-assist-corpus-boundary.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run test:vitest -- tests/typescript/assist/promptSafety.test.ts tests/typescript/assist/explanation.test.ts tests/typescript/shared/scripts/assistSmoke.test.ts tests/typescript/features/taxPlanCycle/assistantController.test.ts tests/typescript/features/taxPlanCycle/routes.test.ts` passed with `5` files and `41` tests after the prompt-safety detection fix for Base64 payloads.
+- `npm run typecheck` passed.
+- An initial `npm test` run before Compose startup surfaced preexisting stack-dependent deduction coverage that expects the local Postgres container; this was an environment precondition, not an application regression.
+- `npm run stack:up` rebuilt and started the local stack successfully on August 27, 2026.
+- `npm run stack:smoke` passed against the running Compose stack with healthy Core Case, Tax Engine, Redis, and synthetic registration flow.
+- `npm run assist:smoke` passed against the rebuilt live `/assist` route on August 28, 2026 with a grounded request returning `200` and all six checked-in prompt-injection fixtures returning the exact generic `422` refusal without system-policy or cross-tenant response markers.
+- `npm run test:vitest -- tests/typescript/features/deductions/routes.test.ts tests/typescript/features/deductions/repository.test.ts` passed once the stack-backed Postgres dependency was available.
+- `npm test` passed on August 27, 2026 with `105` test files and `456` tests after the stack-backed rerun.
+- `npm run test:vitest -- tests/typescript/assist/promptInjectionEndpoint.test.ts tests/typescript/shared/scripts/assistSmoke.test.ts tests/typescript/assist/promptSafety.test.ts` passed on August 28, 2026 with `3` files and `5` tests.
+- `npm run typecheck`, `npm run stack:up`, and `npm run stack:smoke` passed on August 28, 2026.
+- The August 28 full `npm test` run passed `96` files and `447` tests, including the new endpoint test, but `10` database-heavy files timed out while starting Postgres testcontainers in parallel. Rerunning those exact files serially with `--maxWorkers=1 --no-file-parallelism` passed all `10` files and `43` tests, confirming resource contention rather than a regression.
+
+<!--
+## development - SCRUM-187
+
+**Branch:** `development`
+
+**Assignee:** Dylan Harle
+
+**Jira Key:** SCRUM-187
+
+**Summary:** Define SLOs and CloudWatch alarms
+
+**Description:** As a Platform Engineer, I want SLOs with alarms, so that on-call can detect and respond to degradation.
+
+**Acceptance Criteria:**
+
+- SLOs are defined for calculation latency and case-API availability with error budgets.
+- CloudWatch alarms fire when an SLO is at risk.
+- The SLOs and alarms are documented together.
+
+**Code Connection:**
+
+- Corrected the Embedded Metric Format metadata emitted by the shared observability logger so CloudWatch receives dimension keys instead of raw dimension values, and added a service-only rollup dimension set that supports aggregate latency alarms.
+- Added a focused Tax Engine telemetry test to prove successful requests emit the rollup metric shape required by the latency SLO.
+- Extended the Terraform ECS services module with a dedicated SCRUM-187 SNS topic and policy for CloudWatch notifications, a p95 latency alarm for Tax Engine-backed requests, a Core Case API error-budget burn alarm based on ALB metric math, a backing healthy-host alarm, and a composite availability alarm.
+- Added a rotating customer-managed KMS key and a source-account-scoped CloudWatch key policy so SLO alarm notifications are encrypted at rest without breaking alarm publication.
+- Threaded the generated SLO topic name through the Terraform delivery root, exported the alarm/topic outputs for later operational handoff, and documented the exact SLO formulas, error budgets, exclusions, and alarm rules in a dedicated service-level-objectives document.
+- Normalized the Terraform-managed JWT private key to Unix line endings before JSON serialization, preventing Windows workstation formatting from creating an unnecessary Secrets Manager version during the SCRUM-187 apply.
+
+**Project Scope Connection:**
+
+- Platform.
+- Builds directly on SCRUM-170's CloudWatch observability work and SCRUM-157/SCRUM-164's Terraform-managed ECS, ALB, and CloudWatch ownership boundaries.
+- Preserves the existing split where Terraform owns live AWS resource identifiers while source JSON and application code continue to supply the observability contracts.
+- Leaves SNS topic subscription endpoints outside repository scope so each environment can bind its own operator destinations without changing the Terraform module shape.
+
+**Changed Files:**
+
+- `src/typescript/shared/cloud-logger/observability.ts`
+- `tests/typescript/shared/cloud-logger.test.ts`
+- `tests/typescript/features/taxPlanCycle/engineClient.test.ts`
+- `terraform/delivery.tf`
+- `terraform/outputs.tf`
+- `terraform/runtime_config.tf`
+- `terraform/README.md`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/ecs_services/outputs.tf`
+- `terraform/modules/ecs_services/README.md`
+- `terraform/modules/spa_delivery/main.tf`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `docs/service-level-objectives.md`
+- `planning/team/dh-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm test -- --run tests/typescript/shared/cloud-logger.test.ts tests/typescript/features/taxPlanCycle/engineClient.test.ts tests/typescript/workflows/terraformDeliveryModules.test.ts` is the focused verification set for the observability and Terraform wiring touched by SCRUM-187.
+- `npm run typecheck`, `npm test`, `terraform fmt`, and `terraform validate` should be run after the manual SNS topic is created or imported in the target AWS account.
+- The SNS topic itself was not created from this implementation because the environment owner requested manual creation first.
+- Compared the existing AWS runtime secret with Terraform inputs using SHA-256 fingerprints only; all four managed values match after PEM line-ending normalization, and no AWS secret value was changed.
+- Applied the deployment successfully with 6 resources added, 5 updated, and none destroyed; reconciled the existing CloudFront default-certificate protocol setting afterward so its dependent KMS and S3 policies do not produce perpetual plan drift.
+- `terraform fmt -check -recursive`, `terraform validate -no-color`, and `git diff --check` pass after applying canonical formatting to the SLO alarm configuration.
+- Updated Terraform source assertions to tolerate canonical formatter alignment; the focused delivery-module suite passes with 9 tests.
+- Added a scoped tfsec exception for the existing CloudFront default certificate because AWS fixes that distribution mode to `TLSv1`; enforcing the newer policy requires a future ACM certificate and custom alias rollout.
+- Preserved release-pipeline ownership of deployed ECS task revisions by ignoring `task_definition` drift on both services, preventing a later Terraform apply from rolling Core Case back from revision 16 to revision 11.
+- The focused delivery/security verification passes with 2 files and 13 tests; the encryption plan contains 2 additions, 2 in-place updates, and no destruction.
+
 <!--
 ## dylan-harle-jiraXX - SCRUM-XX
 
