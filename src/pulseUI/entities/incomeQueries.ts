@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
-import { caseApiGetJson } from "../shared/caseApi.ts";
+import { caseApiGetJson, caseApiSendJson } from "../shared/caseApi.ts";
 import type { Uuid } from "../shared/planToolCase.ts";
 
 const incomeSourceCategorySchema = z.enum([
@@ -38,10 +38,17 @@ const incomeEventSchema = z.object({
 });
 
 const incomeEventsResponseSchema = z.array(incomeEventSchema);
+const incomeEventCreateSchema = z.object({
+  source: z.string().trim().min(1),
+  type: incomeSourceCategorySchema,
+  amount: z.number().finite().nonnegative(),
+  withholding: z.number().finite().nonnegative(),
+});
 
 export type IncomeSourceCategory = z.infer<typeof incomeSourceCategorySchema>;
 export type IncomeEventRecord = z.infer<typeof incomeEventSchema>;
 export type IncomeEventsPayload = IncomeEventRecord[];
+export type IncomeEventCreatePayload = z.infer<typeof incomeEventCreateSchema>;
 
 export function incomeEventsQueryKey(caseId: Uuid | "unselected") {
   return ["income-events", caseId] as const;
@@ -53,6 +60,23 @@ export async function fetchIncomeEvents(
 ): Promise<IncomeEventsPayload> {
   const payload = await caseApiGetJson<unknown>(`/v1/cases/${caseId}/income-events`, fetcher);
   return incomeEventsResponseSchema.parse(payload);
+}
+
+export async function createIncomeEvent(
+  caseId: Uuid,
+  input: IncomeEventCreatePayload,
+  fetcher?: typeof fetch,
+): Promise<IncomeEventRecord> {
+  const payload = await caseApiSendJson<unknown>(
+    `/v1/cases/${caseId}/income-events`,
+    {
+      method: "POST",
+      body: incomeEventCreateSchema.parse(input),
+    },
+    fetcher,
+  );
+
+  return incomeEventSchema.parse(payload);
 }
 
 export function useIncomeEventsQuery(caseId: Uuid | null) {
@@ -68,5 +92,25 @@ export function useIncomeEventsQuery(caseId: Uuid | null) {
       return fetchIncomeEvents(caseId, authenticatedFetch);
     },
     enabled: caseId !== null,
+  });
+}
+
+export function useCreateIncomeEventMutation(caseId: Uuid | null) {
+  const authenticatedFetch = useAuthenticatedFetch();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: IncomeEventCreatePayload) => {
+      if (caseId === null) {
+        throw new Error("A valid case ID is required before creating income events.");
+      }
+
+      return createIncomeEvent(caseId, input, authenticatedFetch);
+    },
+    onSuccess: async () => {
+      if (caseId !== null) {
+        await queryClient.invalidateQueries({ queryKey: incomeEventsQueryKey(caseId) });
+      }
+    },
   });
 }

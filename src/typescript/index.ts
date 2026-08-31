@@ -234,16 +234,25 @@ export {
   type PlatformTenantUsersTenant,
 } from "./features/platformAdministration/index.js";
 export {
-  buildIncomeEventMockRows,
+  createIncomeEventRepository,
+  createIncomeEventService,
   createIncomeEventsRouter,
+  incomeEventCreateSchema,
   incomeEventReadParamsSchema,
   incomeEventRowsSchema,
   incomeEventRowSchema,
   incomeEventTypeSchema,
+  incomeEventTypeValues,
+  type CreateIncomeEventServiceOptions,
   type CreateIncomeEventsRouterOptions,
-  type IncomeEventsMockCase,
+  type IncomeEventCreate,
+  type IncomeEventCreateInput,
+  type IncomeEventListInput,
+  type IncomeEventRepository,
   type IncomeEventRow,
   type IncomeEventRows,
+  type IncomeEventService,
+  type IncomeEventServiceCreateInput,
   type IncomeEventType,
 } from "./features/incomeEvents/index.js";
 export {
@@ -685,7 +694,11 @@ import {
   createPlatformAdministrationRepository,
   createPlatformAdministrationRouter,
 } from "./features/platformAdministration/index.js";
-import { createIncomeEventsRouter } from "./features/incomeEvents/index.js";
+import {
+  createIncomeEventRepository,
+  createIncomeEventService,
+  createIncomeEventsRouter,
+} from "./features/incomeEvents/index.js";
 import { createOpenAIEmbeddingProvider } from "./assist/embeddings.js";
 import { createOpenAIAssistExplanationProvider } from "./assist/explanation.js";
 import { retrieveHybridCorpusChunks } from "./assist/retrieval.js";
@@ -757,6 +770,8 @@ export async function main(): Promise<Server> {
   const platformAdministrationRepository = createPlatformAdministrationRepository(client);
   const scenarioRepository = createScenarioRepository(client);
   const deductionRepository = createDeductionRepository(client);
+  const incomeEventRepository = createIncomeEventRepository(client);
+  const incomeEventService = createIncomeEventService(incomeEventRepository);
   const assistTenantScopeMap = parseAssistTenantCorpusScopeMap();
   const assistEmbeddingProvider = createOpenAIEmbeddingProvider();
   const assistExplanationProvider = createOpenAIAssistExplanationProvider();
@@ -950,7 +965,7 @@ export async function main(): Promise<Server> {
       app.use(
         taxPlanCycleApiPrefix,
         createIncomeEventsRouter({
-          taxPlanCycleRepository,
+          service: incomeEventService,
         }),
       );
       app.use(

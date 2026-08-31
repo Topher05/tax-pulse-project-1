@@ -2815,3 +2815,92 @@ This ticket keeps ADR-0014 cache-aside behavior separate from the idempotency le
 - The document uses Mermaid flowcharts, sequence diagrams, and an ER diagram to cover the full flow.
 - The scope sections explicitly call out conditional routing and trust boundaries.
 - The naming convention matches the requested `taxPulse_dataFlow.md` form.
+
+## caleb-latimer-jira218 - SCRUM-218
+
+**Branch:** `caleb-latimer-jira218`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-218
+
+**Summary:** Persist income events and replace mock Income table data
+
+**Description:** Add the Core Case Service `income_event` table, generated Drizzle
+migration, tenant-scoped repository/service boundary, persisted read and create routes,
+synthetic seed data, and Pulse UI create mutation so the Income table no longer depends
+on deterministic backend mocks.
+
+**Acceptance Criteria:**
+
+- A generated Drizzle migration creates `income_event` with UUID identity, Tax Plan Cycle
+  ownership, event date, source, known type, amount, and withholding columns.
+- Database checks reject blank sources and negative monetary values, and an index supports
+  case-and-date reads.
+- GET returns persisted tenant-scoped rows while preserving empty and not-found semantics.
+- POST validates source, type, amount, and withholding, assigns the current UTC date, and
+  returns the persisted row.
+- Deterministic synthetic seed rows replace the removed mock generator.
+- The existing Add Income form persists through an authenticated mutation and refreshes
+  the case-scoped Income query.
+- OpenAPI and automated tests cover the read/create contract and database boundary.
+
+**Code Connection:**
+
+- Added the canonical income-event enum and table to the shared Drizzle schema and
+  generated `0019_create_income_event` with Drizzle Kit.
+- Added an income-event repository that verifies tenant ownership through
+  `tax_plan_cycle`, plus a service that owns UTC date assignment through an injectable
+  clock.
+- Replaced the mocked Express GET implementation and added the matching POST operation.
+- Added three checked-in synthetic rows to the canonical seed flow.
+- Added the Pulse UI create client and TanStack mutation, invalidating the selected case's
+  income-event query after successful persistence.
+
+**Project Scope Connection:**
+
+This work lives in the TypeScript Core Case Service persistence boundary, with a narrow
+Pulse UI integration for the existing Income form and table. It builds on SCRUM-31,
+SCRUM-106, SCRUM-108, and SCRUM-109; supersedes SCRUM-172's table intent and the
+income-event portion of SCRUM-174; and enables SCRUM-175 and SCRUM-176. The Python Tax
+Engine, update/delete operations, and SQL-side KPI aggregation remain out of scope.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0019_create_income_event.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0019_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/features/incomeEvents/incomeEvents.ts`
+- `src/typescript/features/incomeEvents/repository.ts`
+- `src/typescript/features/incomeEvents/service.ts`
+- `src/typescript/features/incomeEvents/routes.ts`
+- `src/typescript/features/incomeEvents/index.ts`
+- `src/typescript/features/incomeEvents/mockIncomeEvents.model.ts` (removed)
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/entities/incomeQueries.ts`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/entities/incomeQueries.test.tsx`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/features/incomeEvents/migration.test.ts`
+- `tests/typescript/features/incomeEvents/repository.test.ts`
+- `tests/typescript/features/incomeEvents/routes.test.ts`
+- `tests/typescript/features/incomeEvents/service.test.ts`
+- `tests/typescript/features/incomeEvents/mockIncomeEvents.model.test.ts` (removed)
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed for the application, tests, and Pulse UI.
+- `npm run db:check` passed for the generated migration and metadata.
+- Focused backend route, service, and OpenAPI validation passed: 3 files and 20 tests.
+- Focused Pulse UI validation passed: 3 files and 14 tests.
+- Full Pulse UI validation passed: 49 files and 263 tests.
+- The full root run passed 90 files and 422 tests; 22 database-backed files with 72 tests
+  could not start because no Docker/Testcontainers runtime was available. The same
+  environment limitation blocked the 5 new repository/migration integration tests.
+- `git diff --check` passed with only line-ending normalization warnings.
