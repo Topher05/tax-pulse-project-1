@@ -122,4 +122,31 @@ describe("createIncomeEventsRouter", () => {
     expect(unauthenticated.status).toBe(401);
     expect(missing.status).toBe(404);
   });
+
+  test("rejects malformed case IDs and unexpected create fields before calling the service", async () => {
+    const listByCase = vi.fn(async () => [row]);
+    const create = vi.fn(async () => row);
+    const service: IncomeEventService = { listByCase, create };
+    const invalidPath = await request(service, "/cases/not-a-uuid/income-events");
+    const unexpectedField = await request(
+      service,
+      `/cases/${caseId}/income-events`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          source: "Acme Corporation",
+          type: "w2",
+          amount: 900,
+          withholding: 125.5,
+          tenantId: "attacker-controlled-tenant",
+        }),
+      },
+    );
+
+    expect(invalidPath.status).toBe(400);
+    expect(unexpectedField.status).toBe(400);
+    expect(listByCase).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  });
 });

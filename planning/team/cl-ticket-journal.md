@@ -1627,6 +1627,7 @@ sequenceDiagram
 - `src/typescript/coreCaseOpenApi.ts`
 - `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
 - `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/assist/evaluation.test.ts`
 - `src/pulseUI/package.json`
 - `src/pulseUI/package-lock.json`
 - `src/pulseUI/app/bootstrap.tsx`
@@ -2878,29 +2879,50 @@ Engine, update/delete operations, and SQL-side KPI aggregation remain out of sco
 - `src/typescript/features/incomeEvents/service.ts`
 - `src/typescript/features/incomeEvents/routes.ts`
 - `src/typescript/features/incomeEvents/index.ts`
+- `src/typescript/shared/scripts/typecheck.mjs`
 - `src/typescript/features/incomeEvents/mockIncomeEvents.model.ts` (removed)
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
 - `src/pulseUI/entities/incomeQueries.ts`
+- `src/pulseUI/pages/income/IncomeEntryForm.tsx`
+- `src/pulseUI/pages/income/incomeEntrySchema.ts`
 - `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/components/IncomeEntryForm.test.tsx`
 - `src/pulseUI/tests/entities/incomeQueries.test.tsx`
 - `src/pulseUI/tests/income/IncomePage.test.tsx`
 - `tests/typescript/coreCaseOpenApi.test.ts`
 - `tests/typescript/features/incomeEvents/migration.test.ts`
 - `tests/typescript/features/incomeEvents/repository.test.ts`
 - `tests/typescript/features/incomeEvents/routes.test.ts`
+- `tests/typescript/features/incomeEvents/schema.test.ts`
 - `tests/typescript/features/incomeEvents/service.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/bootstrap/migrationTestUtils.ts`
 - `tests/typescript/features/incomeEvents/mockIncomeEvents.model.test.ts` (removed)
+- `package.json`
+- `package-lock.json`
+- `src/pulseUI/package-lock.json`
+- `osv-scanner.toml`
 - `planning/team/cl-ticket-journal.md`
 
 **Validation Notes:**
 
-- `npm run typecheck` passed for the application, tests, and Pulse UI.
-- `npm run db:check` passed for the generated migration and metadata.
-- Focused backend route, service, and OpenAPI validation passed: 3 files and 20 tests.
-- Focused Pulse UI validation passed: 3 files and 14 tests.
-- Full Pulse UI validation passed: 49 files and 263 tests.
-- The full root run passed 90 files and 422 tests; 22 database-backed files with 72 tests
-  could not start because no Docker/Testcontainers runtime was available. The same
-  environment limitation blocked the 5 new repository/migration integration tests.
+- `npm run typecheck`, `npm run build`, and `npm run db:check` passed.
+- The focused Jira 218 backend suite passed 8 files and 41 tests, including migration,
+  database repository, schema, service, authenticated route, application composition,
+  OpenAPI, and evaluation-contract coverage.
+- Full Pulse UI verification passed 49 files and 264 tests, the 6-test accessibility
+  gate, and the Vite production build. The focused Income UI suite passed 15 tests.
+- The composition test now covers JWT tenant propagation through middleware, router, and
+  service to the repository port for both persisted GET and POST operations.
+- The exact Semgrep pipeline command passed with zero ERROR findings after fixing the
+  dynamic child-process executable pattern in the shared typecheck runner.
+- The exact Bandit high-severity pipeline command passed with zero high findings.
+- Patch-level dependency fixes update Undici, Nano ID, PostCSS, and brace expansion.
+  Narrow OSV exceptions document the remaining development-only esbuild, Lighthouse
+  OpenTelemetry, and extract-zip advisories whose fixed majors require a newer Node
+  runtime than the repository's pinned Node 22.0.0.
+- A full root Vitest run exposed and corrected the income seed assertion; unrelated
+  concurrent database tests later timed out under shared Testcontainers contention and
+  are excluded as requested. The Jira 218 database tests pass reliably in isolation.
 - `git diff --check` passed with only line-ending normalization warnings.

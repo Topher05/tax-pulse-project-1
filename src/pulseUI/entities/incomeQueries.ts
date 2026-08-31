@@ -39,7 +39,7 @@ const incomeEventSchema = z.object({
 
 const incomeEventsResponseSchema = z.array(incomeEventSchema);
 const incomeEventCreateSchema = z.object({
-  source: z.string().trim().min(1),
+  source: z.string().trim().min(1).max(200),
   type: incomeSourceCategorySchema,
   amount: z.number().finite().nonnegative(),
   withholding: z.number().finite().nonnegative(),

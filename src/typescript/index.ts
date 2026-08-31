@@ -243,6 +243,7 @@ export {
   incomeEventRowSchema,
   incomeEventTypeSchema,
   incomeEventTypeValues,
+  maximumIncomeEventSourceLength,
   type CreateIncomeEventServiceOptions,
   type CreateIncomeEventsRouterOptions,
   type IncomeEventCreate,

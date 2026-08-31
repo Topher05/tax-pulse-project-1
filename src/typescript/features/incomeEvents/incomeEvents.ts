@@ -23,9 +23,10 @@ export const incomeEventRowSchema = z.object({
 export const incomeEventRowsSchema = z.array(incomeEventRowSchema);
 
 const maximumIncomeCurrencyValue = 999_999_999_999.99;
+export const maximumIncomeEventSourceLength = 200;
 
-export const incomeEventCreateSchema = z.object({
-  source: z.string().trim().min(1),
+export const incomeEventCreateSchema = z.strictObject({
+  source: z.string().trim().min(1).max(maximumIncomeEventSourceLength),
   type: incomeEventTypeSchema,
   amount: z.coerce
     .number()
@@ -40,7 +41,7 @@ export const incomeEventCreateSchema = z.object({
 });
 
 export const incomeEventReadParamsSchema = z.object({
-  caseId: z.string().min(1),
+  caseId: z.uuid(),
 });
 
 export type IncomeEventType = z.infer<typeof incomeEventTypeSchema>;

@@ -29,7 +29,11 @@ describeDatabase("createIncomeEventRepository", () => {
         "2026-04-30",
         "2026-06-30",
       ]);
-      expect(rows?.[0]).toMatchObject(incomeEventRows[0]);
+      const { caseId, ...expectedSeedRow } = incomeEventRows[0];
+      expect(rows?.[0]).toMatchObject({
+        ...expectedSeedRow,
+        case_id: caseId,
+      });
     });
   });
 

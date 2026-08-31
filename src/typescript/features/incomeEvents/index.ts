@@ -5,6 +5,7 @@ export {
   incomeEventRowSchema,
   incomeEventTypeSchema,
   incomeEventTypeValues,
+  maximumIncomeEventSourceLength,
   type IncomeEventCreate,
   type IncomeEventRow,
   type IncomeEventRows,
