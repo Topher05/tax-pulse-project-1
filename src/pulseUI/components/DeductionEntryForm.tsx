@@ -35,10 +35,9 @@ const deductionEntrySchema = z.object({
       return value;
     },
     z.number({
-        error: (issue) =>
-          issue.input === undefined ? "Amount is required" : "Amount must be a number",
-      }).finite()
-      .min(0, { message: "Amount cannot be negative" }),
+      error: (issue) =>
+        issue.input === undefined ? "Amount is required" : "Amount must be a number",
+    }).min(0, { message: "Amount cannot be negative" }),
   ),
 });
 
