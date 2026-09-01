@@ -61,6 +61,7 @@ export const taxPlanCycleSchema = taxPlanCycleBaseSchema.superRefine(
 );
 
 export const taxPlanCycleQueueItemSchema = taxPlanCycleSchema.extend({
+  client_name: z.string().min(1),
   is_overdue: z.boolean(),
   updated_at: z.iso.datetime(),
 });
