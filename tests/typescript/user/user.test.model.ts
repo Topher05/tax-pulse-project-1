@@ -81,9 +81,9 @@ export const expectedUserRows = userRows.map((row) => ({
 }));
 
 export const userRowSchema = z.object({
-  id: z.string().uuid(),
-  tenant_id: z.string().uuid(),
-  email: z.string().email(),
+  id: z.uuid(),
+  tenant_id: z.uuid(),
+  email: z.email(),
   role_id: z.number().int(),
   status_id: z.number().int(),
   display_name: z.string().min(1),

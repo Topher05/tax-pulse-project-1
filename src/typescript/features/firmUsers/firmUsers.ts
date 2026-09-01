@@ -20,7 +20,7 @@ export const firmUserRowSchema = z.object({
   email: z.email(),
   role: firmUserRoleSchema,
   status: firmUserStatusSchema,
-  lastLoginAt: z.string().datetime().nullable(),
+  lastLoginAt: z.iso.datetime().nullable(),
 });
 
 export const firmUserRoleUpdateParamsSchema = z.object({

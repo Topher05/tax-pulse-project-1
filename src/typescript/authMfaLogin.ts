@@ -10,8 +10,8 @@ import type { TokenService } from "./tokenService.js";
 
 export const authMfaLoginRequestSchema = z
   .object({
-    tenant_id: z.string().uuid(),
-    user_id: z.string().uuid(),
+    tenant_id: z.uuid(),
+    user_id: z.uuid(),
     code: z.string().regex(/^\d{6}$/, "TOTP code must be exactly 6 digits."),
   })
   .strict();
