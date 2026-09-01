@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const nonNegativeFiniteAmountSchema = z.number().finite().nonnegative();
+const nonNegativeFiniteAmountSchema = z.number().nonnegative();
 const nonNegativeDecimalStringSchema = z
   .string()
   .regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/);
