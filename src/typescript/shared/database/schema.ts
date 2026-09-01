@@ -20,6 +20,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { ScenarioComputedResult, ScenarioTypedFigures } from "../../scenario.js";
 import { taxPlanCycleStages } from "../../features/taxPlanCycle/taxPlanCycle.js";
+import { incomeEventTypeValues } from "../../features/incomeEvents/incomeEvents.js";
 import {
   taxpayerIdentifierTypeValues,
   taxpayerIdentifierValidationResultValues,
@@ -55,6 +56,11 @@ export const deductionCategoryValues = [
 export const deductionCategoryEnum = pgEnum(
   "deduction_category",
   deductionCategoryValues,
+);
+
+export const incomeEventTypeEnum = pgEnum(
+  "income_event_type",
+  incomeEventTypeValues,
 );
 
 export const tenants = pgTable(
@@ -423,6 +429,40 @@ export const deduction = pgTable(
     }),
     index("deduction_case_id_deleted_idx").on(table.caseId, table.deleted),
     index("deduction_case_id_date_idx").on(table.caseId, table.date),
+  ],
+);
+
+export const incomeEvent = pgTable(
+  "income_event",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    caseId: uuid("case_id").notNull(),
+    date: date("date").notNull(),
+    source: text("source").notNull(),
+    type: incomeEventTypeEnum("type").notNull(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    withholding: numeric("withholding", { precision: 14, scale: 2 }).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "income_event_id_pk",
+      columns: [table.id],
+    }),
+    foreignKey({
+      name: "income_event_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    check(
+      "income_event_source_nonempty_check",
+      sql`length(btrim(${table.source})) > 0`,
+    ),
+    check("income_event_amount_nonnegative_check", sql`${table.amount} >= 0`),
+    check(
+      "income_event_withholding_nonnegative_check",
+      sql`${table.withholding} >= 0`,
+    ),
+    index("income_event_case_id_date_idx").on(table.caseId, table.date),
   ],
 );
 

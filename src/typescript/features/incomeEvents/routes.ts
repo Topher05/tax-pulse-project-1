@@ -3,12 +3,13 @@ import type { NextFunction, Request, Response } from "express";
 import type * as z from "zod";
 
 import { ProblemHttpError } from "../../errors.js";
-import type { TaxPlanCycleRepository } from "../taxPlanCycle/repositories/repository.js";
-import { buildIncomeEventMockRows } from "./mockIncomeEvents.model.js";
 import {
+  incomeEventCreateSchema,
   incomeEventReadParamsSchema,
+  incomeEventRowSchema,
   incomeEventRowsSchema,
 } from "./incomeEvents.js";
+import type { IncomeEventService } from "./service.js";
 
 interface TenantScopedRequest extends Request {
   tenant?: {
@@ -20,7 +21,7 @@ interface TenantScopedRequest extends Request {
 }
 
 export interface CreateIncomeEventsRouterOptions {
-  taxPlanCycleRepository: Pick<TaxPlanCycleRepository, "findByCaseId">;
+  service: IncomeEventService;
 }
 
 function authenticationRequired(): ProblemHttpError {
@@ -66,7 +67,7 @@ function validationError(
 }
 
 export function createIncomeEventsRouter({
-  taxPlanCycleRepository,
+  service,
 }: CreateIncomeEventsRouterOptions): Router {
   const router = Router();
 
@@ -94,22 +95,66 @@ export function createIncomeEventsRouter({
       }
 
       try {
-        const cycle = await taxPlanCycleRepository.findByCaseId({
+        const payload = await service.listByCase({
           tenantId: tenant.id,
           caseId: parsedParams.data.caseId,
         });
 
-        if (!cycle) {
+        if (!payload) {
           next(taxPlanCycleNotFound());
           return;
         }
 
-        const payload = buildIncomeEventMockRows({
-          caseId: cycle.id,
-          dueDate: cycle.due_date,
+        res.status(200).json(incomeEventRowsSchema.parse(payload));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.post(
+    "/cases/:caseId/income-events",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedParams = incomeEventReadParamsSchema.safeParse(req.params);
+
+      if (!parsedParams.success) {
+        next(
+          validationError(
+            "Request path parameters failed validation.",
+            parsedParams.error.issues,
+          ),
+        );
+        return;
+      }
+
+      const parsedBody = incomeEventCreateSchema.safeParse(req.body);
+
+      if (!parsedBody.success) {
+        next(validationError("Request body failed validation.", parsedBody.error.issues));
+        return;
+      }
+
+      const tenant = (req as TenantScopedRequest).tenant;
+      const user = (req as TenantScopedRequest).user;
+
+      if (!tenant?.id || !user?.id) {
+        next(authenticationRequired());
+        return;
+      }
+
+      try {
+        const created = await service.create({
+          tenantId: tenant.id,
+          caseId: parsedParams.data.caseId,
+          ...parsedBody.data,
         });
 
-        res.status(200).json(incomeEventRowsSchema.parse(payload));
+        if (!created) {
+          next(taxPlanCycleNotFound());
+          return;
+        }
+
+        res.status(201).json(incomeEventRowSchema.parse(created));
       } catch (error) {
         next(error);
       }

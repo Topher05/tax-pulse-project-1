@@ -16,6 +16,7 @@ let resolvedDatabaseUrl: Promise<string> | undefined;
 
 export const drizzleEnumTypeNames = [
   "deduction_category",
+  "income_event_type",
   "user_role_name",
   "user_status_value",
 ] as const;

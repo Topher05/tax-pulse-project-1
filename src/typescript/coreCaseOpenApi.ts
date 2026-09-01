@@ -24,6 +24,12 @@ import {
   deductionTableRowsSchema,
 } from "./features/deductions/repositories/deduction.js";
 import {
+  incomeEventCreateSchema,
+  incomeEventReadParamsSchema,
+  incomeEventRowSchema,
+  incomeEventRowsSchema,
+} from "./features/incomeEvents/index.js";
+import {
   quarterlyEstimateReadParamsSchema,
   quarterlyEstimateRowsSchema,
 } from "./features/quarterlyPayments/repositories/quarterlyPayments.js";
@@ -186,6 +192,22 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "DeductionRow",
     schema: deductionTableRowSchema,
+  },
+  {
+    name: "IncomeEventReadParams",
+    schema: incomeEventReadParamsSchema,
+  },
+  {
+    name: "IncomeEventRows",
+    schema: incomeEventRowsSchema,
+  },
+  {
+    name: "IncomeEventCreateRequest",
+    schema: incomeEventCreateSchema,
+  },
+  {
+    name: "IncomeEventRow",
+    schema: incomeEventRowSchema,
   },
   {
     name: "QuarterlyEstimateReadParams",
@@ -607,6 +629,13 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const deductionCreateRequestSchema = toOpenApiSchema(deductionCreateSchema);
   const deductionRowResponseSchema = toOpenApiSchema(deductionTableRowSchema);
   const deductionRowsResponseSchema = toOpenApiSchema(deductionTableRowsSchema);
+  const incomeEventReadCaseIdSchema = requireObjectProperty(
+    toOpenApiSchema(incomeEventReadParamsSchema),
+    "caseId",
+  );
+  const incomeEventCreateRequestSchema = toOpenApiSchema(incomeEventCreateSchema);
+  const incomeEventRowResponseSchema = toOpenApiSchema(incomeEventRowSchema);
+  const incomeEventRowsResponseSchema = toOpenApiSchema(incomeEventRowsSchema);
   const quarterlyEstimateParamsSchema = requireObjectProperty(
     toOpenApiSchema(quarterlyEstimateReadParamsSchema),
     "caseId",
@@ -1183,6 +1212,170 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                         code: "too_small",
                       },
                     ],
+                  },
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "404": {
+              description:
+                "No tenant-scoped Tax Plan Cycle was found for the requested case.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+                    title: "Tax Plan Cycle Not Found",
+                    status: 404,
+                    detail: "No tax plan cycle was found for the requested case ID.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/cases/{caseId}/income-events": {
+        get: {
+          operationId: "readCaseIncomeEvents",
+          tags: ["Core Case Service"],
+          summary: "Read the case income-event rows",
+          description:
+            "Returns tenant-scoped persisted income events ordered by date and ID. Numeric fields are serialized as decimal strings.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Case identifier scoped by the authenticated request tenant.",
+              schema: incomeEventReadCaseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+            },
+          ],
+          responses: {
+            "200": {
+              description: "The case income-event rows were returned.",
+              content: {
+                "application/json": {
+                  schema: incomeEventRowsResponseSchema,
+                  example: [
+                    {
+                      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8ca218",
+                      case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+                      date: "2026-01-31",
+                      source: "Synthetic W-2 wages",
+                      type: "w2",
+                      amount: "125000.50",
+                      withholding: "21500.25",
+                    },
+                  ],
+                },
+              },
+            },
+            "401": {
+              description:
+                "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "404": {
+              description:
+                "No tenant-scoped Tax Plan Cycle was found for the requested case.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+                    title: "Tax Plan Cycle Not Found",
+                    status: 404,
+                    detail: "No tax plan cycle was found for the requested case ID.",
+                  },
+                },
+              },
+            },
+          },
+        },
+        post: {
+          operationId: "createCaseIncomeEvent",
+          tags: ["Core Case Service"],
+          summary: "Create a case income event",
+          description:
+            "Creates a tenant-scoped income event using the current UTC calendar date and returns the persisted row.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Case identifier scoped by the authenticated request tenant.",
+              schema: incomeEventReadCaseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: incomeEventCreateRequestSchema,
+                example: {
+                  source: "Acme Corporation",
+                  type: "w2",
+                  amount: 125000.5,
+                  withholding: 21500.25,
+                },
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The income-event row was created.",
+              content: {
+                "application/json": {
+                  schema: incomeEventRowResponseSchema,
+                  example: {
+                    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8ca219",
+                    case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
+                    date: "2026-08-31",
+                    source: "Acme Corporation",
+                    type: "w2",
+                    amount: "125000.50",
+                    withholding: "21500.25",
+                  },
+                },
+              },
+            },
+            "400": {
+              description: "The request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    ...validationErrorExample,
+                    detail: "Request body failed validation.",
                   },
                 },
               },
