@@ -45,11 +45,15 @@ export async function fetchDeductions(
 export async function createDeduction(
   caseId: Uuid,
   input: DeductionCreatePayload,
+  fetcher?: typeof fetch,
 ): Promise<DeductionQueryRecord> {
-  const payload = await caseApiSendJson<unknown>(`/v1/cases/${caseId}/deductions`, {
+  const request = {
     method: "POST",
     body: deductionCreateSchema.parse(input),
-  });
+  };
+  const payload = fetcher
+    ? await caseApiSendJson<unknown>(`/v1/cases/${caseId}/deductions`, request, fetcher)
+    : await caseApiSendJson<unknown>(`/v1/cases/${caseId}/deductions`, request);
   return deductionRecordSchema.parse(payload);
 }
 
@@ -71,6 +75,7 @@ export function useDeductionsQuery(caseId: Uuid | null) {
 
 export function useCreateDeductionMutation(caseId: Uuid | null) {
   const queryClient = useQueryClient();
+  const authenticatedFetch = useAuthenticatedFetch();
 
   return useMutation({
     mutationFn: (input: DeductionCreatePayload) => {
@@ -78,7 +83,7 @@ export function useCreateDeductionMutation(caseId: Uuid | null) {
         throw new Error("A valid case ID is required before creating deductions.");
       }
 
-      return createDeduction(caseId, input);
+      return createDeduction(caseId, input, authenticatedFetch);
     },
     onSuccess: async () => {
       if (caseId !== null) {

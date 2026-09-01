@@ -25,6 +25,15 @@ export interface RegistrationAccount {
   readonly status: string;
 }
 
+export interface MfaEnrollmentInput {
+  readonly tenantId: string;
+  readonly userId: string;
+}
+
+export interface MfaEnrollmentResult {
+  readonly provisioningUri: string;
+}
+
 export class AuthRequestError extends Error {
   constructor(readonly status: number, message = "Authentication request failed.") {
     super(message);
@@ -101,6 +110,49 @@ export async function registerAccount(
     role: requireString(body, "role"),
     status: requireString(body, "status"),
   };
+}
+
+export async function beginMfaEnrollment(
+  input: MfaEnrollmentInput,
+  fetcher: typeof fetch = fetch,
+): Promise<MfaEnrollmentResult> {
+  const response = await fetcher("/mfa/enroll", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      tenant_id: input.tenantId,
+      user_id: input.userId,
+    }),
+    credentials: "include",
+  });
+  const body = await requireRegistrationJson(response);
+
+  return {
+    provisioningUri: requireString(body, "provisioning_uri"),
+  };
+}
+
+export async function confirmMfaEnrollment(
+  input: MfaEnrollmentInput & { readonly code: string },
+  fetcher: typeof fetch = fetch,
+): Promise<true> {
+  const response = await fetcher("/mfa/enroll/confirm", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      tenant_id: input.tenantId,
+      user_id: input.userId,
+      code: input.code,
+    }),
+    credentials: "include",
+  });
+  const body = await requireRegistrationJson(response);
+
+  if (body.enrolled !== true) {
+    throw new AuthRequestError(502, "MFA enrollment service returned an invalid response.");
+  }
+
+  return true;
 }
 
 export function createBrowserAuthClient(fetcher: typeof fetch = fetch): AuthClient {

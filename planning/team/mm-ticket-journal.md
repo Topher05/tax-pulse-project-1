@@ -5,6 +5,73 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira209 - SCRUM-209
+
+**Branch:** `martins-okorie-jira209`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-209
+
+**Summary:** Case ID harness refinement: adjust to user name
+
+**Description:** Case ID harness currently allowed advisors to select a
+client's case by UUID because that was the only identifier available when the
+selector was implemented. With friendly client naming now available from the
+cycle payload or client roster, the selector should show a human-readable client
+case label while preserving UUID mapping under the hood.
+
+**Acceptance Criteria:**
+
+- The current case selector renders a user-friendly client case label instead
+  of exposing the full UUID as the primary option text.
+- The selector still submits and routes with the full UUID value.
+- Duplicate-name disambiguation is preserved with a short case identifier.
+
+**Code Connection:** Refines the `CurrentCaseSelector` used by plan tools such
+as Income, Deductions, Scenarios, and Quarterly Payments. The selector now
+formats options as `Client Name (last4)` when a name is present, consults the
+client roster as an under-the-hood ID-to-name mapping, and keeps the full case
+UUID as the option value for existing route/query behavior.
+
+**Project Scope Connection:** Supports the React SPA operator experience by
+making case selection easier for advisors without weakening scoped access,
+tenant isolation, or the Tax Plan Cycle UUID contract used by backend APIs.
+
+**Changed Files:**
+
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/entities/taxPlanCycle.ts`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/tests/components/CurrentCaseSelector.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/features/taxPlanCycle/schema.test.ts`
+- `tests/typescript/features/taxPlanCycle/taxPlanCycle.test.model.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck:core` passed.
+- `npm --prefix src/pulseUI run verify` passed, including type checks, unit and
+  component tests, accessibility tests, and a production build.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+  passed, including the queue response assertion for `client_name`.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/integration.test.ts -t "lists a tenant's queue by due date and flags overdue cycles"`
+  passed, including the repository queue assertion for roster-backed `client_name`.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/schema.test.ts`
+  passed, including the repository queue schema assertion for `client_name` and
+  `updated_at`.
+
 ## martins-okorie-jira197 - SCRUM-197
 
 **Branch:** `martins-okorie-jira197`

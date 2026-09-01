@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
@@ -30,7 +30,7 @@ export function createMfaEnrollmentRepository(
           and(
             eq(users.tenantId, tenantId),
             eq(users.id, userId),
-            eq(userStatus.status, "active"),
+            inArray(userStatus.status, ["active", "invited"]),
           ),
         )
         .limit(1);
@@ -74,10 +74,28 @@ export function createMfaEnrollmentRepository(
     },
 
     async markEnrolled({ userId }) {
-      await db
-        .update(mfaEnrollment)
-        .set({ isEnrolled: true })
-        .where(eq(mfaEnrollment.userId, userId));
+      await db.transaction(async (transaction) => {
+        const activeStatusRows = await transaction
+          .select({ id: userStatus.id })
+          .from(userStatus)
+          .where(eq(userStatus.status, "active"))
+          .limit(1);
+        const activeStatus = activeStatusRows[0];
+
+        if (!activeStatus) {
+          throw new Error("Active user status is not configured in the database.");
+        }
+
+        await transaction
+          .update(mfaEnrollment)
+          .set({ isEnrolled: true })
+          .where(eq(mfaEnrollment.userId, userId));
+
+        await transaction
+          .update(users)
+          .set({ statusId: activeStatus.id })
+          .where(eq(users.id, userId));
+      });
     },
   };
 }

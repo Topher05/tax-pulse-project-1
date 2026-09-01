@@ -38,6 +38,7 @@ function buildTaxPlanCycleQueuePayload() {
     {
       id: taxPlanCycleRows[1].id,
       client_id: taxPlanCycleRows[1].clientId,
+      client_name: "Test Client",
       stage: taxPlanCycleRows[1].stage,
       owner: taxPlanCycleRows[1].owner,
       priority: taxPlanCycleRows[1].priority,
@@ -179,7 +180,7 @@ describe("IncomePage", () => {
     expect(
       await screen.findByRole("heading", { name: "Income Events", level: 2 }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Client case" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Select a case to load income events" }),
     ).toBeInTheDocument();

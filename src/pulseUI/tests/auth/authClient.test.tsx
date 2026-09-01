@@ -2,6 +2,8 @@ import { describe, expect, test, vi } from "vitest";
 
 import {
   AuthRequestError,
+  beginMfaEnrollment,
+  confirmMfaEnrollment,
   createBrowserAuthClient,
   registerAccount,
 } from "../../auth/authClient.ts";
@@ -22,6 +24,68 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 describe("browser auth client", () => {
+  test("starts MFA enrollment with the registered tenant and user identifiers", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      jsonResponse({
+        provisioning_uri:
+          "otpauth://totp/TaxPulse%20Advisory:new-client%40example.test?secret=FAKEBASE32SECRETFAKEBASE32SECRET&issuer=TaxPulse%20Advisory",
+      }, 202),
+    );
+
+    await expect(
+      beginMfaEnrollment(
+        {
+          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        },
+        fetcher,
+      ),
+    ).resolves.toEqual({
+      provisioningUri:
+        "otpauth://totp/TaxPulse%20Advisory:new-client%40example.test?secret=FAKEBASE32SECRETFAKEBASE32SECRET&issuer=TaxPulse%20Advisory",
+    });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/mfa/enroll",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          user_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+        }),
+      }),
+    );
+  });
+
+  test("confirms MFA enrollment with a six-digit code", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => jsonResponse({ enrolled: true }));
+
+    await expect(
+      confirmMfaEnrollment(
+        {
+          tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          userId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+          code: "123456",
+        },
+        fetcher,
+      ),
+    ).resolves.toBe(true);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/mfa/enroll/confirm",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+          user_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61",
+          code: "123456",
+        }),
+      }),
+    );
+  });
+
   test("posts registration details to create an account", async () => {
     const fetcher = vi.fn<typeof fetch>(async () =>
       jsonResponse({
