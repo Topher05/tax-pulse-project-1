@@ -94,6 +94,15 @@ function renderDetails({
       },
     ]),
   );
+  const postCommentSpy = vi
+    .spyOn(detailQueries, "postTaxPlanCycleComment")
+    .mockResolvedValue({
+      id: "comment-posted-001",
+      initials: "MR",
+      author: "Maya Reed",
+      when: "Aug 31, 2026, 11:08 AM",
+      text: "Review quarterly estimate assumptions.",
+    });
   const patchSpy = vi.spyOn(caseApi, "caseApiPatchJson");
   const assistSpy = vi.spyOn(caseApi, "caseApiPostJson").mockResolvedValue({
     explanation: "Grounded explanation.",
@@ -108,7 +117,7 @@ function renderDetails({
     </QueryClientProvider>,
   );
 
-  return { assistSpy, detailsMock, patchSpy };
+  return { assistSpy, detailsMock, patchSpy, postCommentSpy };
 }
 
 describe("Tax Plan Cycle details page", () => {
@@ -199,6 +208,60 @@ describe("Tax Plan Cycle details page", () => {
     expect(await screen.findByText("No comments have been added for this case.")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Comment draft" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Post" })).toBeInTheDocument();
+  });
+
+  test("submits comments through the backend and clears the draft after refetch", async () => {
+    const { postCommentSpy } = renderDetails({ comments: [] });
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Comments" }));
+    const commentBox = await screen.findByRole("textbox", { name: "Comment draft" });
+    fireEvent.change(commentBox, {
+      target: { value: "  Review quarterly estimate assumptions.  " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Post" }));
+
+    await waitFor(() => {
+      expect(postCommentSpy).toHaveBeenCalledWith(
+        "TP-24018",
+        "Review quarterly estimate assumptions.",
+        expect.any(Function),
+      );
+    });
+    await waitFor(() => expect(commentBox).toHaveValue(""));
+  });
+
+  test("disables blank and pending comment submissions", async () => {
+    const { postCommentSpy } = renderDetails({
+      comments: [],
+    });
+    postCommentSpy.mockReturnValueOnce(new Promise(() => undefined));
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Comments" }));
+
+    const postButton = await screen.findByRole("button", { name: "Post" });
+    expect(postButton).toBeDisabled();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Comment draft" }), {
+      target: { value: "Submit once." },
+    });
+    fireEvent.click(postButton);
+
+    expect(await screen.findByRole("button", { name: "Posting..." })).toBeDisabled();
+    expect(postCommentSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test("retains the comment draft and shows an error when submit fails", async () => {
+    const { postCommentSpy } = renderDetails({ comments: [] });
+    postCommentSpy.mockRejectedValueOnce(new Error("Write failed."));
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Comments" }));
+    const commentBox = await screen.findByRole("textbox", { name: "Comment draft" });
+    fireEvent.change(commentBox, { target: { value: "Keep this draft." } });
+    fireEvent.click(screen.getByRole("button", { name: "Post" }));
+
+    expect(await screen.findByText("Comment failed")).toBeInTheDocument();
+    expect(commentBox).toHaveValue("Keep this draft.");
+    expect(screen.getByText("Comment could not be saved. Please try again.")).toBeInTheDocument();
   });
 
   test("loads redacted audit entries when the Audit Trail tab is opened", async () => {

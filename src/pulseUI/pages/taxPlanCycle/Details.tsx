@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 
@@ -19,6 +19,7 @@ import {
   fetchTaxPlanCycleAuditEntries,
   fetchTaxPlanCycleComments,
   fetchTaxPlanCycleDetails,
+  postTaxPlanCycleComment,
   taxPlanCycleAuditEntriesQueryKey,
   taxPlanCycleCommentsQueryKey,
   taxPlanCycleDetailsQueryKey,
@@ -142,8 +143,35 @@ export function DetailsPage() {
   });
   const commentsQuery = useQuery({
     queryKey: taxPlanCycleCommentsQueryKey(caseId),
-    queryFn: () => fetchTaxPlanCycleComments(caseId),
+    queryFn: () => fetchTaxPlanCycleComments(caseId, authenticatedFetch),
     enabled: caseId.length > 0 && activeTab === "Comments",
+  });
+  const postCommentMutation = useMutation({
+    mutationFn: async (body: string) =>
+      postTaxPlanCycleComment(caseId, body, authenticatedFetch),
+    onSuccess: async () => {
+      setCommentDraft("");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: taxPlanCycleCommentsQueryKey(caseId) }),
+        queryClient.invalidateQueries({ queryKey: taxPlanCycleAuditEntriesQueryKey(caseId) }),
+      ]);
+      showNotification(createSuccessNotificationMessage("Comment posted.", "Comment Saved"));
+    },
+    onError: (error) => {
+      let message = "The comment could not be saved.";
+
+      if (error instanceof CaseApiError) {
+        const problem = parseProblemPayload(error.body);
+
+        if (problem?.message) {
+          message = problem.message;
+        }
+      } else if (error instanceof Error && error.message.trim().length > 0) {
+        message = error.message;
+      }
+
+      showNotification(createErrorNotificationMessage(message, "Comment failed"));
+    },
   });
 
   if (detailsQuery.isPending) {
@@ -246,6 +274,16 @@ export function DetailsPage() {
     }
   };
 
+  const handlePostComment = () => {
+    const trimmedDraft = commentDraft.trim();
+
+    if (trimmedDraft.length === 0 || postCommentMutation.isPending) {
+      return;
+    }
+
+    postCommentMutation.mutate(trimmedDraft);
+  };
+
   const renderActiveTab = () => {
     switch (activeTab) {
       case "Overview":
@@ -331,9 +369,19 @@ export function DetailsPage() {
                     }}
                   />
                 </label>
-                <button className={styles.primaryAction} type="button">
-                  Post
+                <button
+                  className={styles.primaryAction}
+                  type="button"
+                  disabled={commentDraft.trim().length === 0 || postCommentMutation.isPending}
+                  onClick={handlePostComment}
+                >
+                  {postCommentMutation.isPending ? "Posting..." : "Post"}
                 </button>
+                {postCommentMutation.isError ? (
+                  <p className={styles.stateCopy} role="alert">
+                    Comment could not be saved. Please try again.
+                  </p>
+                ) : null}
               </div>
             </div>
           </PanelCard>

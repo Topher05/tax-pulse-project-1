@@ -1,4 +1,4 @@
-import { caseApiGetJson } from "../shared/caseApi.ts";
+import { caseApiGetJson, caseApiPostJson } from "../shared/caseApi.ts";
 import type { PlanCycleQueueRow } from "./taxPlanCycle.ts";
 
 export interface TaxPlanCycleQueueApiRow {
@@ -67,6 +67,20 @@ export interface TaxPlanCycleAuditEntryView {
   occurredAt: string;
 }
 
+export interface TaxPlanCycleCommentApiRow {
+  id: string;
+  case_id: string;
+  actor_id: string;
+  actor_role: string;
+  author_display_name: string;
+  body: string;
+  created_at: string;
+}
+
+export interface TaxPlanCycleCommentsApiResponse {
+  comments: readonly TaxPlanCycleCommentApiRow[];
+}
+
 export interface TaxPlanCycleCommentView {
   id: string;
   initials: string;
@@ -74,23 +88,6 @@ export interface TaxPlanCycleCommentView {
   when: string;
   text: string;
 }
-
-const sampleComments = [
-  {
-    id: "comment-001",
-    initials: "DC",
-    author: "Dana Cohen, CPA",
-    when: "Today - 11:08",
-    text: "I've narrowed it down to the combined Roth + DAF strategy. We can walk through it on the 12th.",
-  },
-  {
-    id: "comment-002",
-    initials: "RP",
-    author: "Riley Park",
-    when: "Mar 30",
-    text: "All Q1 data is in. We're starting the modeling now and should have a draft ready soon.",
-  },
-] as const satisfies readonly TaxPlanCycleCommentView[];
 
 const displayDateFormat = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -100,6 +97,14 @@ const displayDateFormat = new Intl.DateTimeFormat("en-US", {
 });
 
 const auditDateTimeFormat = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "2-digit",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+const commentDateTimeFormat = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "2-digit",
   year: "numeric",
@@ -127,6 +132,28 @@ function formatDisplayDate(isoDate: string): string {
 
 function formatAuditDateTime(isoDateTime: string): string {
   return auditDateTimeFormat.format(new Date(isoDateTime));
+}
+
+function getInitials(displayName: string): string {
+  const nameParts = displayName
+    .replace(/,/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return nameParts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function toCommentView(row: TaxPlanCycleCommentApiRow): TaxPlanCycleCommentView {
+  return {
+    id: row.id,
+    initials: getInitials(row.author_display_name),
+    author: row.author_display_name,
+    when: commentDateTimeFormat.format(new Date(row.created_at)),
+    text: row.body,
+  };
 }
 
 function toQueueRow(row: TaxPlanCycleQueueApiRow): PlanCycleQueueRow {
@@ -214,7 +241,27 @@ export async function fetchTaxPlanCycleAuditEntries(
 }
 
 export async function fetchTaxPlanCycleComments(
-  _caseId: string,
+  caseId: string,
+  fetcher?: typeof fetch,
 ): Promise<readonly TaxPlanCycleCommentView[]> {
-  return sampleComments;
+  const payload = await caseApiGetJson<TaxPlanCycleCommentsApiResponse>(
+    `/v1/tax-plan-cycles/${caseId}/comments`,
+    fetcher,
+  );
+
+  return payload.comments.map(toCommentView);
+}
+
+export async function postTaxPlanCycleComment(
+  caseId: string,
+  body: string,
+  fetcher?: typeof fetch,
+): Promise<TaxPlanCycleCommentView> {
+  const payload = await caseApiPostJson<TaxPlanCycleCommentApiRow>(
+    `/v1/tax-plan-cycles/${caseId}/comments`,
+    { body },
+    fetcher,
+  );
+
+  return toCommentView(payload);
 }

@@ -24,6 +24,13 @@ const repository = vi.hoisted(() => ({
   listQueue: vi.fn(),
 }));
 const createTaxPlanCycleRepository = vi.hoisted(() => vi.fn(() => repository));
+const commentRepository = vi.hoisted(() => ({
+  listByCase: vi.fn(async () => []),
+  create: vi.fn(async () => null),
+}));
+const createTaxPlanCycleCommentRepository = vi.hoisted(() =>
+  vi.fn(() => commentRepository),
+);
 const stageChangedPublisher = vi.hoisted(() => ({
   publishStageChanged: vi.fn(async () => undefined),
 }));
@@ -102,6 +109,7 @@ vi.mock("../../../../src/typescript/features/taxPlanCycle/index.js", async (impo
       send: vi.fn(),
     })),
     createSnsStageChangedEventPublisher: vi.fn(() => stageChangedPublisher),
+    createTaxPlanCycleCommentRepository,
     createTaxpayerIdentifierValidationRepository: vi.fn(() => ({
       record: vi.fn(),
       findByCaseId: vi.fn(async () => null),
@@ -211,6 +219,7 @@ describe("main Tax Plan Cycle composition", () => {
         expect(unversionedResponse.status).toBe(404);
         expect(unknownVersionResponse.status).toBe(404);
         expect(createTaxPlanCycleRepository).toHaveBeenCalledTimes(1);
+        expect(createTaxPlanCycleCommentRepository).toHaveBeenCalledTimes(1);
         expect(repository.create).toHaveBeenCalledWith({
           tenantId: "tenant-from-jwt",
           planningPeriod: "2026-Q4",

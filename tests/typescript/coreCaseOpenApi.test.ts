@@ -34,9 +34,13 @@ import {
   registrationRequestSchema,
   taxPlanCycleCreateResultSchema,
   taxPlanCycleCreateSchema,
+  taxPlanCycleCommentCreateRequestSchema,
+  taxPlanCycleCommentSchema,
+  taxPlanCycleCommentsResponseSchema,
   taxPlanCycleReadParamsSchema,
   taxPlanCycleSchema,
 } from "../../src/typescript/index.js";
+import { auditEntryOutputSchema } from "../../src/typescript/auditEntryOutput.js";
 
 const silentLogger = createLogger({ level: "silent" });
 
@@ -686,6 +690,45 @@ describe("Core Case Service OpenAPI document", () => {
     });
   });
 
+  test("documents persisted comments and read-only case audit entries", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const commentsPath = requiredRecord(paths, "/v1/tax-plan-cycles/{caseId}/comments");
+    const listCommentsOperation = requiredRecord(commentsPath, "get");
+    const createCommentOperation = requiredRecord(commentsPath, "post");
+    const auditPath = requiredRecord(paths, "/v1/tax-plan-cycles/{caseId}/audit-entries");
+    const listAuditOperation = requiredRecord(auditPath, "get");
+    const commentRequestBody = requiredRecord(createCommentOperation, "requestBody");
+    const commentRequestContent = requiredRecord(commentRequestBody, "content");
+    const commentRequestJson = requiredRecord(commentRequestContent, "application/json");
+    const commentRequestExample = requiredRecord(commentRequestJson, "example");
+    const listCommentResponses = requiredRecord(listCommentsOperation, "responses");
+    const createCommentResponses = requiredRecord(createCommentOperation, "responses");
+    const auditResponses = requiredRecord(listAuditOperation, "responses");
+    const auditOkResponse = requiredRecord(auditResponses, "200");
+    const auditOkContent = requiredRecord(auditOkResponse, "content");
+    const auditOkJson = requiredRecord(auditOkContent, "application/json");
+    const auditExample = requiredRecord(auditOkJson, "example");
+
+    expect(listCommentsOperation.operationId).toBe("listTaxPlanCycleComments");
+    expect(createCommentOperation.operationId).toBe("createTaxPlanCycleComment");
+    expect(listAuditOperation.operationId).toBe("listTaxPlanCycleAuditEntries");
+    expect(commentRequestExample).toEqual({
+      body: "Walk through Roth and DAF timing on the next review call.",
+    });
+    expect(Object.keys(listCommentResponses)).toEqual(
+      expect.arrayContaining(["200", "400", "401", "403", "404"]),
+    );
+    expect(Object.keys(createCommentResponses)).toEqual(
+      expect.arrayContaining(["201", "400", "401", "403", "404"]),
+    );
+    expect(Object.keys(auditResponses)).toEqual(
+      expect.arrayContaining(["200", "400", "401", "403", "404"]),
+    );
+    expect(listAuditOperation.description).toMatch(/redacted/i);
+    expect(JSON.stringify(auditExample)).toContain("[REDACTED_AMOUNT]");
+  });
+
   test("registers the same zod schema objects used by routes and domain exports", () => {
     expect(coreCaseOpenApiSchemaRegistrations).toEqual(
       expect.arrayContaining([
@@ -728,6 +771,22 @@ describe("Core Case Service OpenAPI document", () => {
         expect.objectContaining({
           name: "TaxPlanCycleCreateAccepted",
           schema: taxPlanCycleCreateResultSchema,
+        }),
+        expect.objectContaining({
+          name: "TaxPlanCycleCommentCreateRequest",
+          schema: taxPlanCycleCommentCreateRequestSchema,
+        }),
+        expect.objectContaining({
+          name: "TaxPlanCycleComment",
+          schema: taxPlanCycleCommentSchema,
+        }),
+        expect.objectContaining({
+          name: "TaxPlanCycleCommentsResponse",
+          schema: taxPlanCycleCommentsResponseSchema,
+        }),
+        expect.objectContaining({
+          name: "TaxPlanCycleAuditEntry",
+          schema: auditEntryOutputSchema,
         }),
         expect.objectContaining({
           name: "ClientRosterRow",

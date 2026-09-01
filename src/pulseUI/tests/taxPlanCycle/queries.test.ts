@@ -3,7 +3,9 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import * as caseApi from "../../shared/caseApi.ts";
 import {
   fetchTaxPlanCycleAuditEntries,
+  fetchTaxPlanCycleComments,
   fetchTaxPlanCycleDetails,
+  postTaxPlanCycleComment,
   taxPlanCycleAuditEntriesQueryKey,
   taxPlanCycleCommentsQueryKey,
   taxPlanCycleDetailsQueryKey,
@@ -130,6 +132,71 @@ describe("Tax Plan Cycle audit query mapping", () => {
     ]);
     expect(caseApi.caseApiGetJson).toHaveBeenCalledWith(
       "/v1/tax-plan-cycles/TP-24018/audit-entries",
+      undefined,
+    );
+  });
+});
+
+describe("Tax Plan Cycle comment query mapping", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test("fetches persisted comments and derives initials and display timestamps", async () => {
+    vi.spyOn(caseApi, "caseApiGetJson").mockResolvedValueOnce({
+      comments: [
+        {
+          id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f91",
+          case_id: "TP-24018",
+          actor_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+          actor_role: "Advisor",
+          author_display_name: "Dana Cohen, CPA",
+          body: "I've narrowed it down to the combined Roth + DAF strategy.",
+          created_at: "2026-08-31T15:08:00.000Z",
+        },
+      ],
+    });
+
+    await expect(fetchTaxPlanCycleComments("TP-24018")).resolves.toEqual([
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f91",
+        initials: "DC",
+        author: "Dana Cohen, CPA",
+        when: new Intl.DateTimeFormat("en-US", {
+          month: "short",
+          day: "2-digit",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date("2026-08-31T15:08:00.000Z")),
+        text: "I've narrowed it down to the combined Roth + DAF strategy.",
+      },
+    ]);
+    expect(caseApi.caseApiGetJson).toHaveBeenCalledWith(
+      "/v1/tax-plan-cycles/TP-24018/comments",
+      undefined,
+    );
+  });
+
+  test("posts comment bodies through the backend", async () => {
+    vi.spyOn(caseApi, "caseApiPostJson").mockResolvedValueOnce({
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f92",
+      case_id: "TP-24018",
+      actor_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+      actor_role: "Advisor",
+      author_display_name: "Riley Park",
+      body: "All Q1 data is in.",
+      created_at: "2026-03-30T14:00:00.000Z",
+    });
+
+    await expect(postTaxPlanCycleComment("TP-24018", "All Q1 data is in.")).resolves.toMatchObject({
+      initials: "RP",
+      author: "Riley Park",
+      text: "All Q1 data is in.",
+    });
+    expect(caseApi.caseApiPostJson).toHaveBeenCalledWith(
+      "/v1/tax-plan-cycles/TP-24018/comments",
+      { body: "All Q1 data is in." },
       undefined,
     );
   });

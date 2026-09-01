@@ -2815,3 +2815,68 @@ This ticket keeps ADR-0014 cache-aside behavior separate from the idempotency le
 - The document uses Mermaid flowcharts, sequence diagrams, and an ER diagram to cover the full flow.
 - The scope sections explicitly call out conditional routing and trust boundaries.
 - The naming convention matches the requested `taxPulse_dataFlow.md` form.
+
+## caleb-latimer-jira199 - SCRUM-199
+
+**Branch:** `caleb-latimer-jira199`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-199
+
+**Summary:** Persist Plan Cycle Detail comments and audit trail data
+
+**Description:** As an Advisor, I want Comments and Audit Trail data to load from backend persistence, so that case discussion and history survive refreshes and reflect the real case record.
+
+**Acceptance Criteria:**
+
+- Persist comments keyed to `tax_plan_cycle.case_id` and `tenant_id`.
+- Provide tenant-scoped `POST` and `GET` endpoints for case comments.
+- Store non-empty trimmed body text with actor, role/context, author display snapshot, and created timestamp.
+- Load and submit Plan Cycle Detail Comments through the backend with loading, empty, and error states.
+- Keep the Plan Cycle Detail Audit Trail backed by persistence and read-only.
+- Redact income and deduction dollar figures before audit entries render.
+- Cover persistence, tenant isolation, frontend submission, empty states, and audit redaction with tests.
+
+**Code Connection:** `tax_plan_cycle_comment` was added through a Drizzle-generated migration and schema definition, the tax plan cycle router now exposes append-only comment read/create endpoints, and comment creation writes a `comment_created` audit row in the same database transaction. PulseUI comment queries now use the authenticated case API, the detail Comments tab submits via React Query mutation, and OpenAPI documents both comments and case audit-entry reads.
+
+**Project Scope Connection:** This preserves TaxPulse tenant isolation and append-only case history while moving user-facing case collaboration out of local mock state and into Core Case Service persistence.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0019_bumpy_king_cobra.sql`
+- `src/typescript/features/taxPlanCycle/comments.ts`
+- `src/typescript/features/taxPlanCycle/repositories/comments.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `tests/typescript/features/taxPlanCycle/commentsMigration.test.ts`
+- `tests/typescript/features/taxPlanCycle/repositories/comments.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen` passed and generated `0019_bumpy_king_cobra.sql`.
+- `npm run db:check` passed.
+- `npm run typecheck:core` passed.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/routes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts tests/typescript/auditEntryOutput.test.ts` passed with 53 tests.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/commentsMigration.test.ts tests/typescript/features/taxPlanCycle/repositories/comments.test.ts` passed with 4 Docker-backed tests.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/integration.test.ts` passed with 24 Docker-backed tests.
+- Full `npm run test:vitest` was run; it had only Docker/Compose environment failures under parallel database load: Testcontainers `Port 5432/tcp not bound after 45000ms`, Vitest 60000ms timeouts, and missing Compose container `taxpulse-local-postgres-1`. No non-environment assertion failure was observed.
+- `npm run build` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test` passed with 272 tests.
+- `npm --prefix src/pulseUI run test:ax` passed with 6 tests.
+- `npm --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
+- `docker build -f Dockerfile -t taxpulse-core-case-service:jira199 .` passed.

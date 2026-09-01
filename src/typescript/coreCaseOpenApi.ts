@@ -39,11 +39,15 @@ import {
 } from "./mfaEnrollment.js";
 import {
   taxPlanCycleCreateSchema,
+  taxPlanCycleCommentCreateRequestSchema,
+  taxPlanCycleCommentSchema,
+  taxPlanCycleCommentsResponseSchema,
   taxPlanCycleReadParamsSchema,
   taxPlanCycleQueueItemSchema,
   taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleSchema,
 } from "./features/taxPlanCycle/index.js";
+import { auditEntryOutputSchema } from "./auditEntryOutput.js";
 import { taxPlanCycleReadResponseSchema } from "./features/taxPlanCycle/taxPlanCycle.js";
 import {
   clientRosterListResponseSchema,
@@ -110,6 +114,22 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "TaxPlanCycleCreateAccepted",
     schema: taxPlanCycleCreateResultSchema,
+  },
+  {
+    name: "TaxPlanCycleCommentCreateRequest",
+    schema: taxPlanCycleCommentCreateRequestSchema,
+  },
+  {
+    name: "TaxPlanCycleComment",
+    schema: taxPlanCycleCommentSchema,
+  },
+  {
+    name: "TaxPlanCycleCommentsResponse",
+    schema: taxPlanCycleCommentsResponseSchema,
+  },
+  {
+    name: "TaxPlanCycleAuditEntry",
+    schema: auditEntryOutputSchema,
   },
   {
     name: "ClientRosterRow",
@@ -263,6 +283,25 @@ const fakeTaxPlanCycleQueueExample = [
     updated_at: "2026-07-01T12:00:00.000Z",
   },
 ];
+
+const fakeTaxPlanCycleCommentExample = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f92",
+  case_id: fakeTaxPlanCycleExample.id,
+  actor_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+  actor_role: "Advisor",
+  author_display_name: "Dana Cohen, CPA",
+  body: "I've narrowed it down to the combined Roth + DAF strategy.",
+  created_at: "2026-08-31T15:08:00.000Z",
+};
+
+const fakeTaxPlanCycleAuditEntryExample = {
+  id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d43",
+  case_id: fakeTaxPlanCycleExample.id,
+  actor: "advisor-001",
+  action: "Scenario modeling requested with income [REDACTED_AMOUNT].",
+  outcome: "deduction amount [REDACTED_AMOUNT] queued for review.",
+  occurred_at: "2026-07-03T16:45:00.000Z",
+};
 
 const fakeClientRosterExample = [
   {
@@ -566,6 +605,14 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const createRequestSchema = toOpenApiSchema(taxPlanCycleCreateSchema);
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
+  const taxPlanCycleCommentCreateRequestOpenApiSchema = toOpenApiSchema(
+    taxPlanCycleCommentCreateRequestSchema,
+  );
+  const taxPlanCycleCommentOpenApiSchema = toOpenApiSchema(taxPlanCycleCommentSchema);
+  const taxPlanCycleCommentsResponseOpenApiSchema = toOpenApiSchema(
+    taxPlanCycleCommentsResponseSchema,
+  );
+  const taxPlanCycleAuditEntryOpenApiSchema = toOpenApiSchema(auditEntryOutputSchema);
   const clientRosterListOpenApiSchema = toOpenApiSchema(
     clientRosterListResponseSchema,
   );
@@ -1687,6 +1734,217 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
             },
             "409": {
               description: "The tenant already has a user with this email.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/tax-plan-cycles/{caseId}/comments": {
+        get: {
+          operationId: "listTaxPlanCycleComments",
+          tags: ["Core Case Service"],
+          summary: "List persisted comments for a Tax Plan Cycle",
+          description:
+            "Returns append-only comments for the tenant-scoped case in chronological order. " +
+            "Only Firm Admin and Advisor users can access this operator workspace view.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Synthetic UUID case identifier scoped by the request tenant.",
+              schema: caseIdSchema,
+              example: fakeTaxPlanCycleExample.id,
+            },
+          ],
+          responses: {
+            "200": {
+              description: "The case comments were returned oldest-first.",
+              content: {
+                "application/json": {
+                  schema: taxPlanCycleCommentsResponseOpenApiSchema,
+                  example: { comments: [fakeTaxPlanCycleCommentExample] },
+                },
+              },
+            },
+            "400": {
+              description: "The case ID path parameter failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: validationErrorExample,
+                },
+              },
+            },
+            "401": {
+              description: "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description: "The authenticated user cannot access operator comments.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "404": {
+              description: "No tenant-scoped Tax Plan Cycle was found for the requested case.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+        post: {
+          operationId: "createTaxPlanCycleComment",
+          tags: ["Core Case Service"],
+          summary: "Create an append-only Tax Plan Cycle comment",
+          description:
+            "Stores a trimmed, non-empty case comment with the authenticated actor, role, " +
+            "author display-name snapshot, and created timestamp. Comment creation also records a comment_created audit entry.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Synthetic UUID case identifier scoped by the request tenant.",
+              schema: caseIdSchema,
+              example: fakeTaxPlanCycleExample.id,
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: taxPlanCycleCommentCreateRequestOpenApiSchema,
+                example: { body: "Walk through Roth and DAF timing on the next review call." },
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description: "The comment was persisted.",
+              content: {
+                "application/json": {
+                  schema: taxPlanCycleCommentOpenApiSchema,
+                  example: fakeTaxPlanCycleCommentExample,
+                },
+              },
+            },
+            "400": {
+              description: "The comment request failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: validationErrorExample,
+                },
+              },
+            },
+            "401": {
+              description: "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description:
+                "The authenticated user is not a Firm Admin or Advisor, or the actor is unavailable in the tenant.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "404": {
+              description: "No tenant-scoped Tax Plan Cycle was found for the requested case.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/tax-plan-cycles/{caseId}/audit-entries": {
+        get: {
+          operationId: "listTaxPlanCycleAuditEntries",
+          tags: ["Core Case Service"],
+          summary: "List persisted audit entries for a Tax Plan Cycle",
+          description:
+            "Returns tenant-scoped, read-only audit entries in chronological order with income and deduction dollar figures redacted before output.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description:
+                "Synthetic UUID case identifier scoped by the request tenant.",
+              schema: caseIdSchema,
+              example: fakeTaxPlanCycleExample.id,
+            },
+          ],
+          responses: {
+            "200": {
+              description: "The case audit entries were returned oldest-first.",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["audit_entries"],
+                    properties: {
+                      audit_entries: {
+                        type: "array",
+                        items: taxPlanCycleAuditEntryOpenApiSchema,
+                      },
+                    },
+                  },
+                  example: { audit_entries: [fakeTaxPlanCycleAuditEntryExample] },
+                },
+              },
+            },
+            "400": {
+              description: "The case ID path parameter failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: validationErrorExample,
+                },
+              },
+            },
+            "401": {
+              description: "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "403": {
+              description: "The authenticated user cannot access operator audit entries.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                },
+              },
+            },
+            "404": {
+              description: "No tenant-scoped Tax Plan Cycle was found for the requested case.",
               content: {
                 "application/problem+json": {
                   schema: problemDetailsSchema,
