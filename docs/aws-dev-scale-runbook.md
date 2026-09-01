@@ -30,7 +30,7 @@ Before mutating anything, record the account, region, service counts/task
 definitions, RDS status/endpoint, Redis status, and Terraform state object:
 
 ```powershell
-$ExpectedAccount = "814650854375"
+$ExpectedAccount = "your account number"
 $Region = "us-east-1"
 $Account = (aws sts get-caller-identity --query Account --output text).Trim()
 if ($Account -ne $ExpectedAccount) { throw "Wrong AWS account: $Account" }
