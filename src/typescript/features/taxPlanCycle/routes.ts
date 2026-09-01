@@ -8,6 +8,7 @@ import {
 } from "./controllers/createController.js";
 import {
   TaxPlanDetailsAssistantCaseNotFoundError,
+  TaxPlanDetailsAssistantUnsafePromptError,
   TaxPlanDetailsAssistantUnsupportedRecommendationError,
   TaxPlanDetailsAssistantUnavailableError,
   taxPlanDetailsAssistantController,
@@ -752,6 +753,18 @@ export function createTaxPlanCycleRouter(
               title: "Assistant Unavailable",
               status: 503,
               detail: error.message,
+            }),
+          );
+          return;
+        }
+
+        if (error instanceof TaxPlanDetailsAssistantUnsafePromptError) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/assistant-prompt-injection-detected",
+              title: "Assistant Request Rejected",
+              status: 422,
+              detail: "The assistant request could not be processed safely.",
             }),
           );
           return;

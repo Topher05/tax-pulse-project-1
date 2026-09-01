@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import {
   BotMessageSquare,
-  Orbit,
   PanelLeftClose,
   PanelRightClose,
   Plus,
@@ -11,9 +10,10 @@ import {
   X,
 } from "lucide-react";
 
-import { useNotificationToast } from "../NotificationToast.tsx";
-import { PanelCard } from "../PanelCard.tsx";
-import { createInfoNotificationMessage } from "../../entities/notificationMessage.ts";
+import {
+  taxPlanDetailsAssistantQuestionMaxLength,
+  validateTaxPlanDetailsAssistantQuestion,
+} from "../../entities/taxPlanDetailsAssistant.ts";
 import { AssitantLoader } from "./AssitantLoader.tsx";
 import type { AssistantCaseContext, AssistantMessage } from "./assistantPanel.tsx";
 import { Tooltip } from "./Tooltips.tsx";
@@ -24,7 +24,6 @@ interface AssistantDrawerProps {
   readonly isLoading: boolean;
   readonly assistantCaseContext: AssistantCaseContext | null;
   readonly messages: readonly AssistantMessage[];
-  readonly errorMessage: string | null;
   onClose: () => void;
   onSendMessage(message: string): Promise<void>;
   onStartNewDialogue(): void;
@@ -67,18 +66,21 @@ export function AssistantDrawer({
   isLoading,
   assistantCaseContext,
   messages,
-  errorMessage,
   onClose,
   onSendMessage,
   onStartNewDialogue,
 }: AssistantDrawerProps) {
   const [draft, setDraft] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const { showNotification } = useNotificationToast();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const dialogTitleId = useId();
   const dialogSummaryId = useId();
+  const composerDescriptionId = useId();
+  const composerValidationId = useId();
   const summary = formatCaseSummary(assistantCaseContext);
+  const questionValidation = validateTaxPlanDetailsAssistantQuestion(draft);
+  const validationMessage =
+    draft.length > 0 && !questionValidation.isValid ? questionValidation.message : null;
 
   useEffect(() => {
     if (isOpen) {
@@ -96,13 +98,13 @@ export function AssistantDrawer({
   }, [isOpen]);
 
   const submitDraft = async () => {
-    const trimmedDraft = draft.trim();
-    if (trimmedDraft.length === 0 || isLoading) {
+    const validation = validateTaxPlanDetailsAssistantQuestion(draft);
+    if (!validation.isValid || isLoading) {
       return;
     }
 
     setDraft("");
-    await onSendMessage(trimmedDraft);
+    await onSendMessage(validation.question);
   };
 
   const handleNewDialogue = () => {
@@ -161,12 +163,14 @@ export function AssistantDrawer({
     key: string;
     label: string;
     icon: ReactNode;
+    isPressed?: boolean;
     onClick: () => void;
   }[] = [
     {
       key: "pane-size",
       label: isFullscreen ? "Collapse to drawer" : "Expand to fullscreen",
       icon: isFullscreen ? <PanelRightClose aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />,
+      isPressed: isFullscreen,
       onClick: () => {
         setIsFullscreen((current) => !current);
       },
@@ -176,19 +180,6 @@ export function AssistantDrawer({
       label: "Start new dialogue",
       icon: <StickyNotePlusIcon />,
       onClick: handleNewDialogue,
-    },
-    {
-      key: "prompt-suggestions",
-      label: "Open prompt suggestions",
-      icon: <Orbit aria-hidden="true" />,
-      onClick: () => {
-        showNotification(
-          createInfoNotificationMessage(
-            "Prompt suggestions will be added in a future ticket.",
-            "Recommended Prompts",
-          ),
-        );
-      },
     },
     {
       key: "close-assistant",
@@ -230,6 +221,7 @@ export function AssistantDrawer({
                 <button
                   type="button"
                   aria-label={action.label}
+                  aria-pressed={action.isPressed}
                   className={styles.toolbarButton}
                   onClick={action.onClick}
                 >
@@ -245,13 +237,12 @@ export function AssistantDrawer({
             {isLoading ? (
               <AssitantLoader />
             ) : (
-              <div className={styles.messageLog} aria-live="polite" role="log">
-                {errorMessage ? (
-                  <PanelCard className={styles.errorCard} title="Assistant request failed">
-                    <p className={styles.errorMessage}>{errorMessage}</p>
-                  </PanelCard>
-                ) : null}
-
+              <div
+                className={styles.messageLog}
+                aria-label="Assistant conversation"
+                aria-live="polite"
+                role="log"
+              >
                 {messages.map((message) => (
                   <article
                     key={message.id}
@@ -299,7 +290,14 @@ export function AssistantDrawer({
                   <div className={styles.composerEditor}>
                     <textarea
                       aria-label="Assistant prompt"
+                      aria-describedby={
+                        validationMessage
+                          ? `${composerDescriptionId} ${composerValidationId}`
+                          : composerDescriptionId
+                      }
+                      aria-invalid={validationMessage ? "true" : undefined}
                       className={styles.composerInput}
+                      maxLength={taxPlanDetailsAssistantQuestionMaxLength}
                       placeholder="Ask a follow-up, refine the recommendation, or request a citation..."
                       value={draft}
                       onChange={(event) => {
@@ -317,14 +315,19 @@ export function AssistantDrawer({
                         type="submit"
                         aria-label="Send message"
                         className={styles.sendButton}
-                        disabled={draft.trim().length === 0}
+                        disabled={!questionValidation.isValid || isLoading}
                       >
                         <Send aria-hidden="true" />
                       </button>
                     </div>
                   </div>
                 </div>
-                <p className={styles.disclaimer}>
+                {validationMessage ? (
+                  <p className={styles.validationMessage} id={composerValidationId} role="alert">
+                    {validationMessage}
+                  </p>
+                ) : null}
+                <p className={styles.disclaimer} id={composerDescriptionId}>
                   TaxPulse RAG Assistant can make mistakes. Issues will be addressed in future tickets
                 </p>
               </form>

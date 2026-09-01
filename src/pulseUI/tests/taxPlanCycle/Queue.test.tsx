@@ -24,6 +24,7 @@ function renderQueue() {
     {
       caseId: "TP-24018",
       client: "North Shore Family Office",
+      clientId: "client-north-shore",
       stage: "Modeling",
       owner: "Maya Reed",
       priority: "High",
@@ -34,6 +35,7 @@ function renderQueue() {
     {
       caseId: "TP-24021",
       client: "Harbor Point Advisors",
+      clientId: "client-harbor-point",
       stage: "Review",
       owner: "Jordan Kim",
       priority: "Medium",
@@ -44,6 +46,7 @@ function renderQueue() {
     {
       caseId: "TP-24027",
       client: "Cedar Ridge Wealth",
+      clientId: "client-cedar-ridge",
       stage: "Modeling",
       owner: "Avery Chen",
       priority: "Low",
@@ -54,6 +57,7 @@ function renderQueue() {
     {
       caseId: "TP-24033",
       client: "Summit View Partners",
+      clientId: "client-summit-view",
       stage: "Executed",
       owner: "Noah Patel",
       priority: "High",
@@ -64,6 +68,7 @@ function renderQueue() {
     {
       caseId: "TP-24038",
       client: "Beacon Street Group",
+      clientId: "client-beacon-street",
       stage: "Review",
       owner: "Isla Torres",
       priority: "Medium",

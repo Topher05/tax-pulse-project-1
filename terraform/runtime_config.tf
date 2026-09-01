@@ -34,9 +34,13 @@ resource "aws_secretsmanager_secret_version" "runtime_config" {
       aws_db_instance.postgres.port,
       var.db_name,
     )
-    JWT_SIGNING_PRIVATE_KEY = var.jwt_signing_private_key
-    JWT_SIGNING_KEY_ID      = var.jwt_signing_key_id
-    JWT_SIGNING_SECRET      = var.jwt_signing_secret
+    # Keep PEM serialization stable across Windows and Unix workstations so a
+    # line-ending-only difference does not create a new secret version.
+    JWT_SIGNING_PRIVATE_KEY        = replace(var.jwt_signing_private_key, "\r\n", "\n")
+    JWT_SIGNING_KEY_ID             = var.jwt_signing_key_id
+    JWT_SIGNING_SECRET             = var.jwt_signing_secret
+    ASSIST_TENANT_CORPUS_SCOPE_MAP = var.assist_tenant_corpus_scope_map
+    OPENAI_API_KEY                 = var.openai_api_key
   })
 
   lifecycle {
@@ -46,9 +50,13 @@ resource "aws_secretsmanager_secret_version" "runtime_config" {
         length(trimspace(var.jwt_signing_private_key)) > 0 &&
         var.jwt_signing_key_id != null &&
         var.jwt_signing_secret != null &&
-        length(trimspace(var.jwt_signing_secret)) > 0
+        length(trimspace(var.jwt_signing_secret)) > 0 &&
+        var.assist_tenant_corpus_scope_map != null &&
+        length(trimspace(var.assist_tenant_corpus_scope_map)) > 0 &&
+        var.openai_api_key != null &&
+        length(trimspace(var.openai_api_key)) > 0
       )
-      error_message = "Set jwt_signing_private_key, jwt_signing_key_id, and jwt_signing_secret when Terraform manages the runtime secret."
+      error_message = "Set the JWT and AI Assist runtime values when Terraform manages the runtime secret."
     }
   }
 }

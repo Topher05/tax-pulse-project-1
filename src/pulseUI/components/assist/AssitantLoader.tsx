@@ -18,14 +18,24 @@ export function AssitantLoader({ variant = "main" }: AssitantLoaderProps) {
   }
 
   return (
-    <div className={styles.loader} role="status" aria-label="Loading assistant">
+    <div
+      className={styles.loader}
+      role="status"
+      aria-atomic="true"
+      aria-label="Loading assistant"
+      aria-live="polite"
+    >
       <div className={styles.skeletonToolbar} aria-hidden="true">
-        {Array.from({ length: 4 }, (_, index) => (
-          <div className={styles.skeletonToolbarButton} key={`toolbar-skeleton-${index}`} />
+        {Array.from({ length: 3 }, (_, index) => (
+          <div
+            className={styles.skeletonToolbarButton}
+            data-loader-toolbar-button
+            key={`toolbar-skeleton-${index}`}
+          />
         ))}
       </div>
 
-      <div className={styles.center}>
+      <div className={styles.center} aria-hidden="true">
         <div className={styles.spinner} aria-hidden="true">
           <span className={styles.spinnerCore} />
         </div>
@@ -34,7 +44,6 @@ export function AssitantLoader({ variant = "main" }: AssitantLoaderProps) {
           <span>Loading citations, response scaffolding, and the case context.</span>
         </div>
       </div>
-
     </div>
   );
 }

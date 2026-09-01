@@ -39,14 +39,14 @@ module "ecs_services" {
   tax_engine_image_repository_arn = var.tax_engine_image_repository_arn
   permissions_boundary_arn        = var.iam_permissions_boundary_arn
 
-  shared_config_secret_arn = local.runtime_config_secret_arn
-  jwt_issuer               = module.lambda_consumers.jwt_issuer
-  login_base_domain        = var.login_base_domain
-  redis_url                = local.delivery_redis_url
-
+  shared_config_secret_arn      = local.runtime_config_secret_arn
+  jwt_issuer                    = module.lambda_consumers.jwt_issuer
+  login_base_domain             = var.login_base_domain
+  redis_url                     = local.delivery_redis_url
   stage_changed_topic_arn       = module.events.stage_changed_topic_arn
   stage_changed_queue_url       = module.events.stage_changed_queue_url
   action_item_created_topic_arn = module.events.action_item_created_topic_arn
+  slo_alarm_topic_name          = "${var.name_prefix}-${var.environment}-slo-alarms"
 }
 
 module "lambda_consumers" {

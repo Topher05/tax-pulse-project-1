@@ -55,6 +55,10 @@ function valueByName(values: NamedValue[] | undefined, name: string): string | u
   return values?.find((value) => value.name === name)?.value;
 }
 
+function valueFromByName(values: NamedValue[] | undefined, name: string): string | undefined {
+  return values?.find((value) => value.name === name)?.valueFrom;
+}
+
 function expectFargateTask(task: TaskDefinition): void {
   expect(task.networkMode).toBe("awsvpc");
   expect(task.requiresCompatibilities).toContain("FARGATE");
@@ -159,7 +163,19 @@ describe("ECS Fargate task definitions", () => {
     expect(valueByName(container.environment, "TAXPULSE_REDIS_URL")).toBe(
       "redis://taxpulse-redis.cache.taxpulse.internal:6379",
     );
-    expect(names(container.secrets)).toEqual(expect.arrayContaining(["DATABASE_URL", "JWT_SIGNING_SECRET"]));
+    expect(names(container.secrets)).toEqual([
+      "DATABASE_URL",
+      "JWT_SIGNING_PRIVATE_KEY",
+      "JWT_SIGNING_KEY_ID",
+      "JWT_SIGNING_SECRET",
+      "ASSIST_TENANT_CORPUS_SCOPE_MAP",
+      "OPENAI_API_KEY",
+    ]);
+    for (const secretName of names(container.secrets)) {
+      expect(valueFromByName(container.secrets, secretName)).toBe(
+        `TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:${secretName}::`,
+      );
+    }
     expect(container.healthCheck?.command.join(" ")).toContain("/health");
     expectCloudWatchLogs(container, "Case-Service");
   });
@@ -197,7 +213,10 @@ describe("ECS Fargate task definitions", () => {
       containerName: "aws-otel-collector",
       condition: "START",
     });
-    expect(names(container.secrets)).toEqual(expect.arrayContaining(["JWT_SIGNING_SECRET"]));
+    expect(names(container.secrets)).toEqual(["JWT_SIGNING_SECRET"]);
+    expect(valueFromByName(container.secrets, "JWT_SIGNING_SECRET")).toBe(
+      "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:JWT_SIGNING_SECRET::",
+    );
     expect(container.healthCheck?.command.join(" ")).toContain("/health");
     expect(collector.command).toEqual(["--config=/etc/ecs/ecs-default-config.yaml"]);
     expect(collector.portMappings).toEqual(

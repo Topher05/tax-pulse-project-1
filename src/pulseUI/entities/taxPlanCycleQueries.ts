@@ -4,6 +4,7 @@ import type { PlanCycleQueueRow } from "./taxPlanCycle.ts";
 export interface TaxPlanCycleQueueApiRow {
   id: string;
   client_id: string;
+  client_name: string;
   stage: string;
   owner: string;
   priority: "low" | "medium" | "high";
@@ -24,6 +25,10 @@ export interface TaxPlanCycleDetailsApiResponse {
   on_hold: boolean;
   hold_reason?: string | null;
   scenarios?: readonly unknown[];
+  taxpayer_identifier_validation?: {
+    verified_name?: string | null;
+    provider?: string | null;
+  };
 }
 
 export interface TaxPlanCycleDetailsView {
@@ -36,6 +41,10 @@ export interface TaxPlanCycleDetailsView {
   scenarioCount: number;
   onHold: boolean;
   overdue: boolean;
+  taxpayerIdentifierValidation?: {
+    verifiedName?: string | null;
+    provider?: string | null;
+  };
 }
 
 export interface TaxPlanCycleAuditEntryApiRow {
@@ -125,6 +134,8 @@ function toQueueRow(row: TaxPlanCycleQueueApiRow): PlanCycleQueueRow {
   return {
     caseId: row.id,
     client: row.client_id,
+    clientId: row.client_id,
+    clientName: row.client_name,
     stage: row.stage,
     owner: row.owner,
     priority: row.priority.charAt(0).toUpperCase() + row.priority.slice(1),
@@ -149,6 +160,14 @@ function toDetailsView(
     scenarioCount: scenarios.length,
     onHold: row.on_hold,
     overdue: row.due_date < new Date().toISOString().slice(0, 10),
+    ...(row.taxpayer_identifier_validation
+      ? {
+          taxpayerIdentifierValidation: {
+            verifiedName: row.taxpayer_identifier_validation.verified_name,
+            provider: row.taxpayer_identifier_validation.provider,
+          },
+        }
+      : {}),
   };
 }
 

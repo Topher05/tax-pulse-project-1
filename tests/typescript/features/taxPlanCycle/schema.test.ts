@@ -62,13 +62,17 @@ describe("taxPlanCycleSchema", () => {
       taxPlanCycleRepositoryQueueItemsSchema.parse([
         {
           ...wellFormedCycle,
+          client_name: "Test Client",
           is_overdue: true,
+          updated_at: "2026-12-31T00:00:00.000Z",
         },
       ]),
     ).toEqual([
       {
         ...wellFormedCycle,
+        client_name: "Test Client",
         is_overdue: true,
+        updated_at: "2026-12-31T00:00:00.000Z",
       },
     ]);
   });
