@@ -252,7 +252,6 @@ export {
 } from "./controllers/assistantController.js";
 export {
   createTaxPlanCycleTransitionController,
-  taxPlanCycleTransitionController,
   type ActionItemCreatedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionControllerOptions,
