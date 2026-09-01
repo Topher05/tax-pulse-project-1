@@ -542,7 +542,6 @@ export {
   taxPlanCycleCreateResultSchema,
   TaxPlanDetailsAssistantUnsafePromptError,
   createTaxPlanCycleTransitionController,
-  taxPlanCycleTransitionController,
   createTaxPlanCycleRouter,
   STAGE_CHANGED_CONSUMER_NAME,
   buildIdempotencyKey,

@@ -6,8 +6,8 @@ import type { UserRole } from "./authTypes.js";
 
 const mfaChallengeContextSchema = z
   .object({
-    tenant_id: z.string().uuid().optional(),
-    user_id: z.string().uuid().optional(),
+    tenant_id: z.uuid().optional(),
+    user_id: z.uuid().optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -26,8 +26,8 @@ export const mfaEnrollRequestSchema = mfaChallengeContextSchema;
 
 export const mfaEnrollConfirmRequestSchema = z
   .object({
-    tenant_id: z.string().uuid().optional(),
-    user_id: z.string().uuid().optional(),
+    tenant_id: z.uuid().optional(),
+    user_id: z.uuid().optional(),
     code: z.string().regex(/^\d{6}$/, "TOTP code must be exactly 6 digits."),
   })
   .strict()

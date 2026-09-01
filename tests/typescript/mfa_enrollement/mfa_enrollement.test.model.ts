@@ -45,7 +45,7 @@ export const expectedMfaEnrollmentRows = mfaEnrollmentRows.map((row) => ({
 }));
 
 export const mfaEnrollmentRowSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.uuid(),
   totpSecret: z.string().min(16).max(512),
   isEnrolled: z.boolean(),
 });

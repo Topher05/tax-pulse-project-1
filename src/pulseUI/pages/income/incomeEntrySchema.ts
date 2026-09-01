@@ -26,7 +26,6 @@ function requiredCurrency(label: "Amount" | "Withholding") {
         error: (issue) =>
           issue.input === undefined ? `${label} is required` : `${label} must be a number`,
       })
-      .finite()
       .min(0, { message: `${label} cannot be negative` }),
   );
 }

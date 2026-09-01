@@ -30,13 +30,17 @@ const jwtEnvironmentSchema = z
       .string()
       .trim()
       .min(1, "JWT_ISSUER is required.")
-      .url("JWT_ISSUER must be a valid URL."),
+      .pipe(z.url("JWT_ISSUER must be a valid URL.")),
     JWT_AUDIENCE: z
       .string()
       .trim()
       .min(1, "JWT_AUDIENCE must not be empty.")
       .default("taxpulse-http-api"),
-    JWT_JWKS_URL: z.string().trim().url("JWT_JWKS_URL must be a valid URL.").optional(),
+    JWT_JWKS_URL: z
+      .string()
+      .trim()
+      .pipe(z.url("JWT_JWKS_URL must be a valid URL."))
+      .optional(),
     JWT_SIGNING_SECRET: z.string().trim().min(1).optional(),
     JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce
       .number()

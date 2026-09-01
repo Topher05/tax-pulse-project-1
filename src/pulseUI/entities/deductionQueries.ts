@@ -5,7 +5,7 @@ import { caseApiGetJson, caseApiSendJson } from "../shared/caseApi.ts";
 import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
 import type { Uuid } from "../shared/planToolCase.ts";
 
-const deductionAmountSchema = z.coerce.number().finite().nonnegative();
+const deductionAmountSchema = z.coerce.number().nonnegative();
 
 const deductionRecordSchema = z.object({
   id: z.string().min(1),

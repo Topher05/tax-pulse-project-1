@@ -404,7 +404,7 @@ const scenarioOpenApiSchema = z.strictObject({
   name: z.string().min(1),
   typed_figures: scenarioTypedFiguresSchema,
   computed_result: scenarioComputedResultSchema,
-  created_at: z.string().datetime(),
+  created_at: z.iso.datetime(),
 });
 
 const fakeScenarioModelingRequestExample = {

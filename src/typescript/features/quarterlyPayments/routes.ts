@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { NextFunction, Request, Response } from "express";
-import type { ZodIssue } from "zod";
+import type * as z from "zod";
 
 import { ProblemHttpError } from "../../errors.js";
 import {
@@ -28,7 +28,7 @@ function authenticationRequired(): ProblemHttpError {
   });
 }
 
-function toValidationIssue(issue: Pick<ZodIssue, "path" | "message" | "code">) {
+function toValidationIssue(issue: Pick<z.core.$ZodIssue, "path" | "message" | "code">) {
   return {
     path: issue.path.map((segment) => (typeof segment === "number" ? segment : String(segment))),
     message: issue.message,

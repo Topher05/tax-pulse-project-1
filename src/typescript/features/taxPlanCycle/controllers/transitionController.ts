@@ -217,10 +217,3 @@ export function createTaxPlanCycleTransitionController(
     findByCaseId: (input) => repository.findByCaseId(input),
   };
 }
-
-/** @deprecated Legacy fallback stub. Inject a real repository-backed controller instead. */
-export const taxPlanCycleTransitionController: TaxPlanCycleTransitionController =
-  {
-    transition: () => null,
-    findByCaseId: () => null,
-  };

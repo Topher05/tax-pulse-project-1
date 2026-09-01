@@ -26,7 +26,6 @@ function decimalFieldSchema(fieldLabel: string) {
             ? `${fieldLabel} is required`
             : `${fieldLabel} must be a number`,
       })
-      .finite()
       .min(0, { message: `${fieldLabel} cannot be negative` })
       .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-8, {
         message: `${fieldLabel} must use 0.01 increments`,
@@ -59,4 +58,3 @@ export function createScenarioDefaults(): ScenarioFormInput {
     scenarios: [createScenarioEntry()],
   };
 }
-

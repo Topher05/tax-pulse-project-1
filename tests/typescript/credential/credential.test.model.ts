@@ -51,7 +51,7 @@ export const expectedCredentialRows = credentialRows.map((row) => ({
 
 export const credentialRowSchema = z.object({
   id: z.string().regex(/^c[a-z0-9]{24}$/),
-  userId: z.string().uuid(),
+  userId: z.uuid(),
   passwordHash: z.string().regex(/^\$argon2id\$/),
 });
 
