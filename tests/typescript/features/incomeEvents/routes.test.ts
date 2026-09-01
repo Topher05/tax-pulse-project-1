@@ -100,6 +100,35 @@ describe("createIncomeEventsRouter", () => {
     });
   });
 
+  test("rejects string and null monetary values before calling the service", async () => {
+    const create = vi.fn(async () => row);
+    const service: IncomeEventService = { listByCase: async () => [], create };
+    const stringAmount = await request(service, `/cases/${caseId}/income-events`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        source: "Acme Corporation",
+        type: "w2",
+        amount: "900.00",
+        withholding: 125.5,
+      }),
+    });
+    const nullWithholding = await request(service, `/cases/${caseId}/income-events`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        source: "Acme Corporation",
+        type: "w2",
+        amount: 900,
+        withholding: null,
+      }),
+    });
+
+    expect(stringAmount.status).toBe(400);
+    expect(nullWithholding.status).toBe(400);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   test("returns validation, authentication, and tenant-not-found problems", async () => {
     const service: IncomeEventService = {
       listByCase: async () => null,

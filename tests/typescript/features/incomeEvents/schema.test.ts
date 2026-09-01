@@ -12,7 +12,7 @@ describe("income-event schemas", () => {
       incomeEventCreateSchema.parse({
         source: " Acme Corporation ",
         type: "w2",
-        amount: "900.50",
+        amount: 900.5,
         withholding: 125.25,
       }),
     ).toEqual({
@@ -36,6 +36,12 @@ describe("income-event schemas", () => {
       },
     ],
     ["unknown type", { source: "Acme", type: "salary", amount: 1, withholding: 0 }],
+    ["string amount", { source: "Acme", type: "w2", amount: "1.00", withholding: 0 }],
+    ["empty string amount", { source: "Acme", type: "w2", amount: "", withholding: 0 }],
+    ["null amount", { source: "Acme", type: "w2", amount: null, withholding: 0 }],
+    ["string withholding", { source: "Acme", type: "w2", amount: 1, withholding: "0.00" }],
+    ["empty string withholding", { source: "Acme", type: "w2", amount: 1, withholding: "" }],
+    ["null withholding", { source: "Acme", type: "w2", amount: 1, withholding: null }],
     ["negative amount", { source: "Acme", type: "w2", amount: -1, withholding: 0 }],
     [
       "numeric overflow",

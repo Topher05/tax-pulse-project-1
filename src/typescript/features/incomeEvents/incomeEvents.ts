@@ -28,12 +28,12 @@ export const maximumIncomeEventSourceLength = 200;
 export const incomeEventCreateSchema = z.strictObject({
   source: z.string().trim().min(1).max(maximumIncomeEventSourceLength),
   type: incomeEventTypeSchema,
-  amount: z.coerce
+  amount: z
     .number()
     .finite()
     .nonnegative()
     .max(maximumIncomeCurrencyValue),
-  withholding: z.coerce
+  withholding: z
     .number()
     .finite()
     .nonnegative()
