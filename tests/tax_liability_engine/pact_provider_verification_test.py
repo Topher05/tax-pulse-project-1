@@ -3,7 +3,7 @@ from __future__ import annotations
 import socket
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -33,7 +33,7 @@ def find_available_port() -> int:
 
 
 @contextmanager
-def run_tax_engine_provider() -> Iterator[str]:
+def run_tax_engine_provider() -> Generator[str]:
     port = find_available_port()
     base_url = f"http://127.0.0.1:{port}"
     server = uvicorn.Server(

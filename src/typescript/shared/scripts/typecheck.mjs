@@ -3,17 +3,14 @@ import { spawnSync } from "node:child_process";
 const checks = [
   {
     label: "app",
-    command: process.execPath,
     args: ["./node_modules/typescript/bin/tsc", "-p", "tsconfig.json", "--noEmit"],
   },
   {
     label: "tests",
-    command: process.execPath,
     args: ["./node_modules/typescript/bin/tsc", "-p", "tsconfig.test.json", "--noEmit"],
   },
   {
     label: "pulseUI",
-    command: process.execPath,
     args: [
       "./src/pulseUI/node_modules/typescript/bin/tsc",
       "-p",
@@ -23,10 +20,10 @@ const checks = [
   },
 ];
 
-function runTypeScriptCheck(label, command, args) {
+function runTypeScriptCheck(label, args) {
   console.log(`Running TypeScript typecheck for ${label}...`);
 
-  const result = spawnSync(command, args, {
+  const result = spawnSync(process.execPath, args, {
     stdio: "inherit",
   });
 
@@ -37,7 +34,7 @@ function runTypeScriptCheck(label, command, args) {
 }
 
 for (const check of checks) {
-  runTypeScriptCheck(check.label, check.command, check.args);
+  runTypeScriptCheck(check.label, check.args);
 }
 
 console.log("PASS: typecheck");

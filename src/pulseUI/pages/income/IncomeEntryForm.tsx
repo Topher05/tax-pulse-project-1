@@ -5,6 +5,7 @@ import { useForm, type DefaultValues } from "react-hook-form";
 
 import {
   incomeEntrySchema,
+  maximumIncomeSourceLength,
   type IncomeCreatePayload,
   type IncomeEntryFormInput,
 } from "./incomeEntrySchema.ts";
@@ -96,6 +97,7 @@ export function IncomeEntryForm({ onClose, onCreate }: IncomeEntryFormProps) {
               id={`${formId}-source`}
               type="text"
               placeholder="e.g. Acme Corporation"
+              maxLength={maximumIncomeSourceLength}
               aria-invalid={errors.source ? "true" : undefined}
               aria-describedby={errors.source ? `${formId}-source-error` : undefined}
               {...register("source")}

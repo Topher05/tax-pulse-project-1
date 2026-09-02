@@ -26,10 +26,10 @@ const platformUserStatusSchema = z.enum(["Active", "Inactive"]);
 const platformTenantUserApiRowSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  email: z.string().email(),
+  email: z.email(),
   role: platformUserRoleSchema,
   status: platformUserStatusSchema,
-  lastLoginAt: z.string().datetime().nullable(),
+  lastLoginAt: z.iso.datetime().nullable(),
 });
 const platformTenantUsersTenantApiSchema = z.object({
   id: z.string().min(1),
@@ -54,7 +54,7 @@ const platformPermissionMatrixSectionSchema = z.object({
 const platformPermissionMatrixResponseSchema = z.array(platformPermissionMatrixSectionSchema);
 const platformAuditLogEntrySchema = z.object({
   id: z.string().min(1),
-  occurredAt: z.string().datetime(),
+  occurredAt: z.iso.datetime(),
   user: z.string().min(1),
   role: platformUserRoleSchema.nullable(),
   action: z.string().min(1),
@@ -63,7 +63,7 @@ const platformAuditLogEntrySchema = z.object({
 const platformAuditLogResponseSchema = z.array(platformAuditLogEntrySchema);
 const platformTenantUserCreateRequestSchema = z.object({
   displayName: z.string().trim().min(1),
-  email: z.string().email(),
+  email: z.email(),
   role: platformUserRoleSchema,
   status: platformUserStatusSchema,
 });

@@ -1,5 +1,5 @@
 {
-  "id": "94ee4b69-ddfb-449a-9729-9a6b8607f8da",
+  "id": "43f0dcad-9d78-43e1-923b-40b1050b8cf9",
   "prevId": "1e18cd8a-c5c8-4cb4-b6f3-19355533f468",
   "version": "7",
   "dialect": "postgresql",
@@ -691,6 +691,122 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+<<<<<<< HEAD
+=======
+    "public.income_event": {
+      "name": "income_event",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "case_id": {
+          "name": "case_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "income_event_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "withholding": {
+          "name": "withholding",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "income_event_case_id_date_idx": {
+          "name": "income_event_case_id_date_idx",
+          "columns": [
+            {
+              "expression": "case_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "income_event_case_id_fk": {
+          "name": "income_event_case_id_fk",
+          "tableFrom": "income_event",
+          "tableTo": "tax_plan_cycle",
+          "columnsFrom": [
+            "case_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "income_event_id_pk": {
+          "name": "income_event_id_pk",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "income_event_source_nonempty_check": {
+          "name": "income_event_source_nonempty_check",
+          "value": "length(btrim(\"income_event\".\"source\")) > 0"
+        },
+        "income_event_amount_nonnegative_check": {
+          "name": "income_event_amount_nonnegative_check",
+          "value": "\"income_event\".\"amount\" >= 0"
+        },
+        "income_event_withholding_nonnegative_check": {
+          "name": "income_event_withholding_nonnegative_check",
+          "value": "\"income_event\".\"withholding\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+>>>>>>> development
     "public.mfa_enrollment": {
       "name": "mfa_enrollment",
       "schema": "",
@@ -835,6 +951,7 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+<<<<<<< HEAD
     "public.password_reset_token": {
       "name": "password_reset_token",
       "schema": "",
@@ -924,6 +1041,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+=======
+>>>>>>> development
     "public.refresh_token": {
       "name": "refresh_token",
       "schema": "",
@@ -1957,6 +2076,20 @@
         "Other"
       ]
     },
+<<<<<<< HEAD
+=======
+    "public.income_event_type": {
+      "name": "income_event_type",
+      "schema": "public",
+      "values": [
+        "w2",
+        "1099",
+        "capital-gains",
+        "rental",
+        "other"
+      ]
+    },
+>>>>>>> development
     "public.user_role_name": {
       "name": "user_role_name",
       "schema": "public",

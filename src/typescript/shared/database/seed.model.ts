@@ -141,6 +141,15 @@ export type SeedDeductionRow = {
   deleted: boolean;
 };
 
+export type SeedIncomeEventRow = {
+  caseId: string;
+  date: string;
+  source: string;
+  type: "w2" | "1099" | "capital-gains" | "rental" | "other";
+  amount: string;
+  withholding: string;
+};
+
 const federalRates = ["0.1000", "0.1200", "0.2200", "0.2400", "0.3200", "0.3500", "0.3700"] as const;
 const californiaRates = [
   "0.0100",
@@ -959,6 +968,33 @@ export const deductionRows = [
     deleted: false,
   },
 ] as const satisfies readonly SeedDeductionRow[];
+
+export const incomeEventRows = [
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-01-31",
+    source: "Synthetic W-2 wages",
+    type: "w2",
+    amount: "125000.50",
+    withholding: "21500.25",
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-04-30",
+    source: "Synthetic consulting 1099",
+    type: "1099",
+    amount: "18500.00",
+    withholding: "0.00",
+  },
+  {
+    caseId: taxPlanCycleRows[1].id,
+    date: "2026-06-30",
+    source: "Synthetic brokerage capital gains",
+    type: "capital-gains",
+    amount: "9400.75",
+    withholding: "1200.00",
+  },
+] as const satisfies readonly SeedIncomeEventRow[];
 
 export const stageTransitionRows = [
   {

@@ -44,6 +44,12 @@ describe("IncomeEntryForm", () => {
     expect(onCreate).not.toHaveBeenCalled();
   });
 
+  test("limits the income source length at the UI boundary", () => {
+    render(<IncomeEntryForm onClose={vi.fn()} onCreate={vi.fn()} />);
+
+    expect(screen.getByLabelText("Source")).toHaveAttribute("maxlength", "200");
+  });
+
   test("invokes the create handler with a typed payload", async () => {
     const onCreate = vi.fn();
     const onClose = vi.fn();

@@ -9,8 +9,8 @@ import { roleNameEnum, userStatusEnum } from "./shared/database/schema.js";
  */
 export const registrationRequestSchema = z
   .object({
-    tenant_id: z.string().uuid(),
-    email: z.string().email(),
+    tenant_id: z.uuid(),
+    email: z.email(),
     password: z.string().min(1),
   })
   .strict();
@@ -24,9 +24,9 @@ export const registrationInitialAccountValues = {
 
 export const registrationAccountResponseSchema = z
   .object({
-    id: z.string().uuid(),
-    tenant_id: z.string().uuid(),
-    email: z.string().email(),
+    id: z.uuid(),
+    tenant_id: z.uuid(),
+    email: z.email(),
     role: z.enum(roleNameEnum.enumValues),
     status: z.enum(userStatusEnum.enumValues),
   })

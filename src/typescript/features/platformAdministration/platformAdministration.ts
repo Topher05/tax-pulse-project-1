@@ -25,7 +25,7 @@ export const platformPermissionMatrixResponseSchema = z.array(
 
 export const platformAuditLogEntrySchema = z.object({
   id: z.uuid(),
-  occurredAt: z.string().datetime(),
+  occurredAt: z.iso.datetime(),
   user: z.string().min(1),
   role: firmUserRoleSchema.nullable(),
   action: z.string().min(1),

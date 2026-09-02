@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const nonNegativeRosterAmountSchema = z.number().finite().nonnegative();
+const nonNegativeRosterAmountSchema = z.number().nonnegative();
 
 export const clientRosterRowSchema = z.object({
   id: z.uuid(),
