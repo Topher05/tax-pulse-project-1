@@ -141,7 +141,7 @@ describe("SCRUM-161 SPA delivery definitions", () => {
 
     expect(deployConfig).toMatchObject({
       buildCommand: "npm run build:web",
-      buildDirectory: "src/pulseUI/dist",
+      buildDirectory: "dist/pulseUI",
       bucketName: "SCRUM-164_SPA_BUCKET_NAME",
       cloudFrontDistributionId: "SCRUM-164_CLOUDFRONT_DISTRIBUTION_ID",
     });

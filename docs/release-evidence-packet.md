@@ -17,6 +17,9 @@ Record these values from the successful `Container Scan & SBOM` run on `developm
 - Actions run page:
   `https://github.com/<owner>/<repo>/actions/runs/<run_id>`
 - Deployed SPA URL: from `release-evidence-manifest.json` field `deployed_spa_url`
+- UI source commit: from `release-evidence-manifest.json` field `ui_source_commit_sha`
+- Deployed SPA index SHA-256: from `release-evidence-manifest.json` field
+  `deployed_spa_index_sha256`; this must match the locally built `dist/pulseUI/index.html`
 - Immutable images:
   - `core-case`: `<repository>@<digest>`
   - `tax-engine`: `<repository>@<digest>`
@@ -62,6 +65,8 @@ records:
 - `commit_checks_url`
 - `actions_run_url`
 - `deployed_spa_url`
+- `ui_source_commit_sha`
+- `deployed_spa_index_sha256`
 - both immutable image references and digests
 - the artifact names expected for that run
 
@@ -160,8 +165,10 @@ workflow:
 1. Trigger `Container Scan & SBOM` on `development` for the target commit.
 2. Confirm both image jobs succeed and publish immutable digests.
 3. Confirm `Verify Signatures & Deploy ECS` succeeds.
-4. Confirm `OWASP ZAP Baseline Scan` succeeds against the Terraform-resolved SPA URL.
-5. Confirm `Release Evidence Manifest` succeeds and uploads
+4. Confirm the verify/deploy job builds Pulse UI, syncs the Terraform-resolved private S3
+   bucket, completes a CloudFront invalidation, and verifies the deployed index digest.
+5. Confirm `OWASP ZAP Baseline Scan` succeeds against the Terraform-resolved SPA URL.
+6. Confirm `Release Evidence Manifest` succeeds and uploads
    `release-evidence-manifest.json`.
 
 Expected success condition:
@@ -182,6 +189,7 @@ Expected success condition:
 
 - `terraform output -raw spa_url` returns a non-empty `https://...` URL.
 - The same URL is recorded in `release-evidence-manifest.json` as `deployed_spa_url`.
+- The manifest's `deployed_spa_index_sha256` matches the built UI index digest.
 - ZAP scans that exact URL through the reusable `target_url` input.
 
 ## Smoke verification
