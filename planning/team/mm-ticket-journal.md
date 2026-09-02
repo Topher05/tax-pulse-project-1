@@ -23,7 +23,7 @@ Add new ticket entries below using this template.
 - The reset-password page accepts the reset token and a valid new password, then submits them to the existing backend endpoint without implementing new password-reset service logic.
 - Successful and unsuccessful reset attempts display clear user-facing messages without revealing whether an account exists or exposing tokens, passwords, or sensitive authentication details.
 
-**Code Connection:** Added the backend password reset domain (`passwordReset.ts`, `passwordResetService.ts`, `passwordResetRepository.ts`, `passwordResetRoutes.ts`) including a `password_reset_token` database table with migration generated via `drizzle-kit generate`. Wired the forgot-password and reset-password endpoints (`POST /auth/forgot-password` and `POST /auth/reset-password`). Integrated a console-logged `ResetTokenNotifier` as the development email alternative. Implemented Pulse UI `PasswordResetPage` form submission, `NewPasswordPage` token and new password reset submission, `authClient` API helpers, and route configuration in `routeTree.tsx`.
+**Code Connection:** Added the backend password reset domain (`passwordReset.ts`, `passwordResetService.ts`, `passwordResetRepository.ts`, `passwordResetRoutes.ts`) including a `password_reset_token` database table with migration generated via `drizzle-kit generate`. Wired the forgot-password and reset-password endpoints (`POST /auth/forgot-password` and `POST /auth/reset-password`). Integrated a console-logged `ResetTokenNotifier` as the development email alternative. Implemented Pulse UI `PasswordResetPage` form submission, `NewPasswordPage` token and new password reset submission, `authClient` API helpers, and route configuration in `routeTree.tsx`. Review follow-up scopes forgot-password lookup to the hostname-resolved active tenant and atomically consumes unused, unexpired reset tokens before password updates.
 
 **Project Scope Connection:** Completes the user self-service password recovery flow for tenant-scoped users, maintaining least-privilege tenant isolation and secure Argon2id password hashing while ensuring anonymous requests cannot enumerate registered accounts.
 
@@ -56,6 +56,7 @@ Add new ticket entries below using this template.
 - Vitest unit & route integration tests passed: `tests/typescript/passwordReset.test.ts` (8 tests), `tests/typescript/passwordResetRoutes.test.ts` (5 tests).
 - Pulse UI React component tests passed: `src/pulseUI/tests/auth/PasswordResetPage.test.tsx` (2 tests), `src/pulseUI/tests/auth/NewPasswordPage.test.tsx` (4 tests), `src/pulseUI/tests/auth/authClient.test.tsx` (10 tests).
 - `drizzle-kit generate` created migration `0019_fantastic_sinister_six.sql`.
+- Review follow-up validation passed: `npx vitest run tests/typescript/passwordReset.test.ts tests/typescript/passwordResetRoutes.test.ts --config vitest.config.ts`, `npm --prefix src/pulseUI test -- tests/auth/PasswordResetPage.test.tsx tests/auth/NewPasswordPage.test.tsx tests/auth/authClient.test.tsx`, and `npm run typecheck`.
 
 ## martins-okorie-jira209 - SCRUM-209
 

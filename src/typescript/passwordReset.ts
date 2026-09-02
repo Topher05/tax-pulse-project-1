@@ -51,11 +51,13 @@ export interface ActiveUserRecord {
 }
 
 export interface PasswordResetRepository {
-  findActiveUserByEmail(email: string): Promise<ActiveUserRecord | null>;
+  findActiveUserByEmail(tenantId: string, email: string): Promise<ActiveUserRecord | null>;
   createResetToken(input: PasswordResetTokenInsert): Promise<void>;
-  findValidToken(tokenHash: string): Promise<PasswordResetTokenRecord | null>;
-  markTokenUsed(tokenId: string): Promise<void>;
-  updatePasswordHash(userId: string, passwordHash: string): Promise<void>;
+  resetPasswordWithToken(
+    tokenHash: string,
+    passwordHash: string,
+    usedAt: Date,
+  ): Promise<PasswordResetTokenRecord | null>;
 }
 
 export interface ResetTokenNotifier {

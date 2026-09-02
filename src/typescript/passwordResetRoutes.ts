@@ -9,9 +9,13 @@ import {
   resetPasswordRequestSchema,
 } from "./passwordReset.js";
 import type { PasswordResetService } from "./passwordResetService.js";
+import { parseTenantLoginHostname } from "./tenantLoginHost.js";
+import type { TenantLoginResolver } from "./tenantLoginResolver.js";
 
 export interface CreatePasswordResetRouterOptions {
   service: PasswordResetService;
+  tenantLoginResolver: TenantLoginResolver;
+  tenantLoginBaseDomain?: string;
 }
 
 interface PasswordResetValidationErrorIssue {
@@ -37,6 +41,8 @@ function toValidationIssue(issue: ZodIssue): PasswordResetValidationErrorIssue {
 
 export function createPasswordResetRouter({
   service,
+  tenantLoginResolver,
+  tenantLoginBaseDomain,
 }: CreatePasswordResetRouterOptions): Router {
   const router = Router();
 
@@ -62,7 +68,21 @@ export function createPasswordResetRouter({
       }
 
       try {
-        await service.requestReset(parsedBody.data.email);
+        const loginSlug = parseTenantLoginHostname(req.hostname, {
+          baseDomain: tenantLoginBaseDomain,
+        });
+        if (!loginSlug) {
+          res.status(202).json({ accepted: true });
+          return;
+        }
+
+        const tenant = await tenantLoginResolver.findActiveTenantByLoginSlug(loginSlug);
+        if (!tenant) {
+          res.status(202).json({ accepted: true });
+          return;
+        }
+
+        await service.requestReset(tenant.tenantId, parsedBody.data.email);
         res.status(202).json({ accepted: true });
       } catch (error) {
         next(error);

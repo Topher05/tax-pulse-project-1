@@ -1008,7 +1008,11 @@ export async function main(): Promise<Server> {
           tenantLoginBaseDomain,
         }),
       );
-      app.use(createPasswordResetRouter({ service: passwordResetService }));
+      app.use(createPasswordResetRouter({
+        service: passwordResetService,
+        tenantLoginResolver,
+        tenantLoginBaseDomain,
+      }));
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
         secureCookies: process.env.NODE_ENV === "production",

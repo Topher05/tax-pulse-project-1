@@ -8,10 +8,20 @@ import {
   createApp,
   createLogger,
   createPasswordResetRouter,
+  type TenantLoginResolver,
   type PasswordResetService,
 } from "../../src/typescript/index.js";
 
 const silentLogger = createLogger({ level: "silent" });
+const tenantLoginHostname = "north-shore-advisors.taxpulse.example";
+const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d51";
+const tenantLoginResolver: TenantLoginResolver = {
+  async findActiveTenantByLoginSlug(loginSlug) {
+    return loginSlug === "north-shore-advisors"
+      ? { tenantId, loginSlug }
+      : null;
+  },
+};
 
 async function withPasswordResetServer(
   service: PasswordResetService,
@@ -20,9 +30,10 @@ async function withPasswordResetServer(
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (expressApp) => {
-      expressApp.use(createPasswordResetRouter({ service }));
+      expressApp.use(createPasswordResetRouter({ service, tenantLoginResolver }));
     },
   });
+  app.set("trust proxy", true);
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
 
@@ -47,13 +58,39 @@ describe("password reset routes", () => {
       await withPasswordResetServer(service, async (baseUrl) => {
         const response = await fetch(`${baseUrl}/auth/forgot-password`, {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-host": tenantLoginHostname,
+          },
           body: JSON.stringify({ email: "user@example.com" }),
         });
 
         expect(response.status).toBe(202);
         await expect(response.json()).resolves.toEqual({ accepted: true });
-        expect(requestReset).toHaveBeenCalledWith("user@example.com");
+        expect(requestReset).toHaveBeenCalledWith(tenantId, "user@example.com");
+      });
+    });
+
+    test("returns accepted without invoking reset service for unknown login workspace", async () => {
+      const requestReset = vi.fn<PasswordResetService["requestReset"]>(async () => undefined);
+      const service: PasswordResetService = {
+        requestReset,
+        confirmReset: vi.fn(),
+      };
+
+      await withPasswordResetServer(service, async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/auth/forgot-password`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-host": "unknown.taxpulse.example",
+          },
+          body: JSON.stringify({ email: "user@example.com" }),
+        });
+
+        expect(response.status).toBe(202);
+        await expect(response.json()).resolves.toEqual({ accepted: true });
+        expect(requestReset).not.toHaveBeenCalled();
       });
     });
 

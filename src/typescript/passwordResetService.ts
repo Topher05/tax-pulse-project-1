@@ -19,7 +19,7 @@ export interface CreatePasswordResetServiceOptions {
 }
 
 export interface PasswordResetService {
-  requestReset(email: string): Promise<void>;
+  requestReset(tenantId: string, email: string): Promise<void>;
   confirmReset(rawToken: string, newPassword: string): Promise<void>;
 }
 
@@ -39,11 +39,11 @@ export function createPasswordResetService({
   now = () => new Date(),
 }: CreatePasswordResetServiceOptions): PasswordResetService {
   return {
-    async requestReset(email) {
-      const user = await repository.findActiveUserByEmail(email);
+    async requestReset(tenantId, email) {
+      const user = await repository.findActiveUserByEmail(tenantId, email);
 
       if (user === null) {
-        // Silently succeed — never reveal whether an email is registered.
+        // Silently succeed so callers cannot learn whether an email is registered.
         return;
       }
 
@@ -62,23 +62,16 @@ export function createPasswordResetService({
 
     async confirmReset(rawToken, newPassword) {
       const tokenHash = sha256Hex(rawToken);
-      const tokenRecord = await repository.findValidToken(tokenHash);
+      const newPasswordHash = await hashPassword(newPassword, hashPasswordOptions);
+      const tokenRecord = await repository.resetPasswordWithToken(
+        tokenHash,
+        newPasswordHash,
+        now(),
+      );
 
       if (tokenRecord === null) {
         throw new InvalidResetTokenError();
       }
-
-      if (tokenRecord.usedAt !== null) {
-        throw new InvalidResetTokenError();
-      }
-
-      if (tokenRecord.expiresAt.getTime() <= now().getTime()) {
-        throw new InvalidResetTokenError();
-      }
-
-      const newPasswordHash = await hashPassword(newPassword, hashPasswordOptions);
-      await repository.updatePasswordHash(tokenRecord.userId, newPasswordHash);
-      await repository.markTokenUsed(tokenRecord.id);
     },
   };
 }

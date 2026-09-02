@@ -114,6 +114,14 @@ jobs:
           ignore-unfixed: true
           exit-code: "0"
 
+      - name: Print Core Case Trivy report on failure
+        if: failure()
+        shell: bash
+        run: |
+          if [[ -s trivy-report-taxpulse-core-case.txt ]]; then
+            cat trivy-report-taxpulse-core-case.txt
+          fi
+
       - name: Generate SBOM with Syft
         if: always()
         uses: anchore/sbom-action@v0
@@ -244,6 +252,14 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "0"
+
+      - name: Print Tax Engine Trivy report on failure
+        if: failure()
+        shell: bash
+        run: |
+          if [[ -s trivy-report-taxpulse-tax-engine.txt ]]; then
+            cat trivy-report-taxpulse-tax-engine.txt
+          fi
 
       - name: Generate SBOM with Syft
         if: always()

@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
@@ -21,7 +21,7 @@ export function createPasswordResetRepository(
   const db = drizzle(client);
 
   return {
-    async findActiveUserByEmail(email) {
+    async findActiveUserByEmail(tenantId, email) {
       const rows = await db
         .select({
           userId: users.id,
@@ -31,6 +31,7 @@ export function createPasswordResetRepository(
         .innerJoin(userStatus, eq(users.statusId, userStatus.id))
         .where(
           and(
+            eq(users.tenantId, tenantId),
             eq(users.email, email),
             eq(userStatus.status, "active"),
           ),
@@ -49,41 +50,44 @@ export function createPasswordResetRepository(
       });
     },
 
-    async findValidToken(tokenHash) {
-      const rows = await db
-        .select({
-          id: passwordResetToken.id,
-          userId: passwordResetToken.userId,
-          tokenHash: passwordResetToken.tokenHash,
-          expiresAt: passwordResetToken.expiresAt,
-          usedAt: passwordResetToken.usedAt,
-        })
-        .from(passwordResetToken)
-        .where(
-          and(
-            eq(passwordResetToken.tokenHash, tokenHash),
-            isNull(passwordResetToken.usedAt),
-          ),
-        )
-        .limit(1);
+    async resetPasswordWithToken(tokenHash, newPasswordHash, usedAt) {
+      return await db.transaction(async (transaction) => {
+        const tokenRows = await transaction
+          .update(passwordResetToken)
+          .set({ usedAt })
+          .where(
+            and(
+              eq(passwordResetToken.tokenHash, tokenHash),
+              isNull(passwordResetToken.usedAt),
+              gt(passwordResetToken.expiresAt, usedAt),
+            ),
+          )
+          .returning({
+            id: passwordResetToken.id,
+            userId: passwordResetToken.userId,
+            tokenHash: passwordResetToken.tokenHash,
+            expiresAt: passwordResetToken.expiresAt,
+            usedAt: passwordResetToken.usedAt,
+          });
 
-      const row: PasswordResetTokenRecord | undefined = rows[0];
+        const tokenRecord: PasswordResetTokenRecord | undefined = tokenRows[0];
 
-      return row ?? null;
-    },
+        if (!tokenRecord) {
+          return null;
+        }
 
-    async markTokenUsed(tokenId) {
-      await db
-        .update(passwordResetToken)
-        .set({ usedAt: new Date() })
-        .where(eq(passwordResetToken.id, tokenId));
-    },
+        const credentialRows = await transaction
+          .update(credential)
+          .set({ passwordHash: newPasswordHash })
+          .where(eq(credential.userId, tokenRecord.userId))
+          .returning({ id: credential.id });
 
-    async updatePasswordHash(userId, newPasswordHash) {
-      await db
-        .update(credential)
-        .set({ passwordHash: newPasswordHash })
-        .where(eq(credential.userId, userId));
+        if (!credentialRows[0]) {
+          throw new Error("Password reset token owner has no credential row.");
+        }
+
+        return tokenRecord;
+      });
     },
   };
 }

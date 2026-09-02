@@ -15,25 +15,32 @@ import {
 import { fastPasswordHashConfig } from "./auth/auth.test.model.js";
 
 const userId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d61";
+const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d51";
 const userEmail = "alex@example.com";
-const tokenId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d72";
-const rawToken = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+const tokenId = "test-reset-token-id";
+const rawToken = "fake-reset-token-for-tests";
 const newPassword = "new-secure-password";
 
 class InMemoryPasswordResetRepository implements PasswordResetRepository {
-  activeUser: ActiveUserRecord | null = {
-    userId,
-    email: userEmail,
-  };
+  activeUsers: Array<ActiveUserRecord & { tenantId: string }> = [
+    {
+      tenantId,
+      userId,
+      email: userEmail,
+    },
+  ];
 
   tokenRecords: PasswordResetTokenRecord[] = [];
   updatedPasswordHashes: Map<string, string> = new Map();
 
-  async findActiveUserByEmail(email: string): Promise<ActiveUserRecord | null> {
-    if (this.activeUser && this.activeUser.email === email) {
-      return this.activeUser;
-    }
-    return null;
+  async findActiveUserByEmail(
+    requestedTenantId: string,
+    email: string,
+  ): Promise<ActiveUserRecord | null> {
+    const user = this.activeUsers.find(
+      (record) => record.tenantId === requestedTenantId && record.email === email,
+    );
+    return user ? { userId: user.userId, email: user.email } : null;
   }
 
   async createResetToken(input: PasswordResetTokenInsert): Promise<void> {
@@ -46,16 +53,16 @@ class InMemoryPasswordResetRepository implements PasswordResetRepository {
     });
   }
 
-  async findValidToken(tokenHash: string): Promise<PasswordResetTokenRecord | null> {
+  async consumeValidToken(
+    tokenHash: string,
+    usedAt: Date,
+  ): Promise<PasswordResetTokenRecord | null> {
     const record = this.tokenRecords.find((r) => r.tokenHash === tokenHash);
-    return record ?? null;
-  }
-
-  async markTokenUsed(id: string): Promise<void> {
-    const record = this.tokenRecords.find((r) => r.id === id);
-    if (record) {
-      record.usedAt = new Date();
+    if (!record || record.usedAt !== null || record.expiresAt.getTime() <= usedAt.getTime()) {
+      return null;
     }
+    record.usedAt = usedAt;
+    return record;
   }
 
   async updatePasswordHash(uId: string, passwordHash: string): Promise<void> {
@@ -112,7 +119,7 @@ describe("password reset service", () => {
       generateRawToken: () => rawToken,
     });
 
-    await service.requestReset(userEmail);
+    await service.requestReset(tenantId, userEmail);
 
     expect(repository.tokenRecords).toHaveLength(1);
     expect(repository.tokenRecords[0]?.userId).toBe(userId);
@@ -126,16 +133,38 @@ describe("password reset service", () => {
 
   test("silently completes without creating token or notifying when user is not found", async () => {
     const repository = new InMemoryPasswordResetRepository();
-    repository.activeUser = null;
+    repository.activeUsers = [];
     const notify = vi.fn<ResetTokenNotifier["notify"]>(async () => undefined);
     const service = createPasswordResetService({
       repository,
       notifier: { notify },
     });
 
-    await expect(service.requestReset("unknown@example.com")).resolves.toBeUndefined();
+    await expect(service.requestReset(tenantId, "unknown@example.com")).resolves.toBeUndefined();
     expect(repository.tokenRecords).toHaveLength(0);
     expect(notify).not.toHaveBeenCalled();
+  });
+
+  test("looks up reset recipients within the resolved tenant", async () => {
+    const otherTenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d52";
+    const otherUserId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d62";
+    const repository = new InMemoryPasswordResetRepository();
+    repository.activeUsers = [
+      { tenantId, userId, email: userEmail },
+      { tenantId: otherTenantId, userId: otherUserId, email: userEmail },
+    ];
+    const notify = vi.fn<ResetTokenNotifier["notify"]>(async () => undefined);
+    const service = createPasswordResetService({
+      repository,
+      notifier: { notify },
+      createTokenId: () => tokenId,
+      generateRawToken: () => rawToken,
+    });
+
+    await service.requestReset(otherTenantId, userEmail);
+
+    expect(repository.tokenRecords).toHaveLength(1);
+    expect(repository.tokenRecords[0]?.userId).toBe(otherUserId);
   });
 
   test("confirms password reset with a valid token and hashes the new password with Argon2id", async () => {
@@ -149,7 +178,7 @@ describe("password reset service", () => {
       generateRawToken: () => rawToken,
     });
 
-    await service.requestReset(userEmail);
+    await service.requestReset(tenantId, userEmail);
     await expect(service.confirmReset(rawToken, newPassword)).resolves.toBeUndefined();
 
     expect(repository.tokenRecords[0]?.usedAt).not.toBeNull();
@@ -183,7 +212,7 @@ describe("password reset service", () => {
       generateRawToken: () => rawToken,
     });
 
-    await service.requestReset(userEmail);
+    await service.requestReset(tenantId, userEmail);
     await service.confirmReset(rawToken, newPassword);
 
     await expect(service.confirmReset(rawToken, "another-password")).rejects.toBeInstanceOf(
@@ -205,7 +234,7 @@ describe("password reset service", () => {
       now: () => currentTime,
     });
 
-    await service.requestReset(userEmail);
+    await service.requestReset(tenantId, userEmail);
 
     // Fast forward 2 hours
     currentTime = new Date("2026-08-28T14:00:01Z");
