@@ -77,7 +77,7 @@ and startup guidance is in [Local Development](./docs/local-development.md).
 Start the API and UI in separate terminals:
 
 ```bash
-npm run dev
+npm run stack:up
 npm run dev:web
 ```
 
