@@ -72,11 +72,11 @@ export function createAuditEntryWriter(client: Client): AuditEntryWriter {
     async record(input) {
       await db.execute(sql`
         INSERT INTO ${auditEntryTable} (
-          ${auditEntryTable.caseId},
-          ${auditEntryTable.actor},
-          ${auditEntryTable.action},
-          ${auditEntryTable.outcome},
-          ${auditEntryTable.occurredAt}
+          ${sql.identifier("case_id")},
+          ${sql.identifier("actor")},
+          ${sql.identifier("action")},
+          ${sql.identifier("outcome")},
+          ${sql.identifier("occurred_at")}
         )
         SELECT
           ${taxPlanCycleTable.id},
