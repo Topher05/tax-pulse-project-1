@@ -303,6 +303,12 @@ function createInMemoryTransitionRepository(
     toStage: TaxPlanCycle["stage"];
     actor: string;
   }) => Promise<TaxPlanCycle | null>;
+  setHoldStatus: (input: {
+    tenantId: string;
+    caseId: string;
+    onHold: boolean;
+    holdReason?: string;
+  }) => Promise<TaxPlanCycle | null>;
   findByCaseId: (input: { tenantId: string; caseId: string }) => Promise<TaxPlanCycle | null>;
   findCurrentByClientId: (input: {
     tenantId: string;
@@ -362,6 +368,13 @@ function createInMemoryTransitionRepository(
         stage: input.toStage,
       };
 
+      return currentCycle;
+    },
+    async setHoldStatus(input) {
+      void input.tenantId;
+      void input.caseId;
+      void input.onHold;
+      void input.holdReason;
       return currentCycle;
     },
     getCurrentCycle: () => currentCycle,

@@ -119,7 +119,7 @@ describe("tax plan cycle queue cache", () => {
     );
   });
 
-  test("bumps the tenant cache version for stage and due-date invalidations", async () => {
+  test("bumps the tenant cache version for stage, due-date, and hold invalidations", async () => {
     const redisClient = createInMemoryRedisClient();
     const cache = createTaxPlanCycleQueueCache(redisClient);
     const invalidator = createTaxPlanCycleQueueCacheInvalidator(cache);
@@ -132,8 +132,12 @@ describe("tax plan cycle queue cache", () => {
       tenantId,
       caseId,
     });
+    await invalidator.invalidateAfterHoldChange({
+      tenantId,
+      caseId,
+    });
 
-    expect(redisClient.incr).toHaveBeenCalledTimes(2);
+    expect(redisClient.incr).toHaveBeenCalledTimes(3);
     expect(redisClient.incr).toHaveBeenNthCalledWith(
       1,
       buildTaxPlanCycleQueueTenantVersionKey(tenantId),
@@ -142,8 +146,12 @@ describe("tax plan cycle queue cache", () => {
       2,
       buildTaxPlanCycleQueueTenantVersionKey(tenantId),
     );
+    expect(redisClient.incr).toHaveBeenNthCalledWith(
+      3,
+      buildTaxPlanCycleQueueTenantVersionKey(tenantId),
+    );
     expect(redisClient.store.get(buildTaxPlanCycleQueueTenantVersionKey(tenantId))).toBe(
-      "2",
+      "3",
     );
   });
 
@@ -192,6 +200,12 @@ describe("tax plan cycle queue cache", () => {
 
     await expect(
       invalidator.invalidateAfterStageChange({
+        tenantId,
+        caseId,
+      }),
+    ).resolves.toBeUndefined();
+    await expect(
+      invalidator.invalidateAfterHoldChange({
         tenantId,
         caseId,
       }),

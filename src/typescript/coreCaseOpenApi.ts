@@ -45,10 +45,14 @@ import {
 } from "./mfaEnrollment.js";
 import {
   taxPlanCycleCreateSchema,
+  taxPlanCycleHoldParamsSchema,
+  taxPlanCycleHoldSchema,
   taxPlanCycleReadParamsSchema,
   taxPlanCycleQueueItemSchema,
   taxPlanCycleQueueGetResponseSchema,
   taxPlanCycleSchema,
+  taxPlanCycleTransitionParamsSchema,
+  taxPlanCycleTransitionSchema,
 } from "./features/taxPlanCycle/index.js";
 import { taxPlanCycleReadResponseSchema } from "./features/taxPlanCycle/taxPlanCycle.js";
 import {
@@ -96,6 +100,22 @@ export const coreCaseOpenApiSchemaRegistrations = [
   {
     name: "TaxPlanCycleReadParams",
     schema: taxPlanCycleReadParamsSchema,
+  },
+  {
+    name: "TaxPlanCycleHoldParams",
+    schema: taxPlanCycleHoldParamsSchema,
+  },
+  {
+    name: "TaxPlanCycleHoldRequest",
+    schema: taxPlanCycleHoldSchema,
+  },
+  {
+    name: "TaxPlanCycleTransitionParams",
+    schema: taxPlanCycleTransitionParamsSchema,
+  },
+  {
+    name: "TaxPlanCycleTransitionRequest",
+    schema: taxPlanCycleTransitionSchema,
   },
   {
     name: "TaxPlanCycle",
@@ -588,6 +608,10 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
   const createRequestSchema = toOpenApiSchema(taxPlanCycleCreateSchema);
   const readParamsSchema = toOpenApiSchema(taxPlanCycleReadParamsSchema);
   const taxPlanCycleResponseSchema = toOpenApiSchema(taxPlanCycleSchema);
+  const taxPlanCycleHoldRequestSchema = toOpenApiSchema(taxPlanCycleHoldSchema);
+  const taxPlanCycleTransitionRequestSchema = toOpenApiSchema(
+    taxPlanCycleTransitionSchema,
+  );
   const clientRosterListOpenApiSchema = toOpenApiSchema(
     clientRosterListResponseSchema,
   );
@@ -2115,6 +2139,223 @@ export function createCoreCaseOpenApiDocument(): JsonObject {
                     title: "Internal Server Error",
                     status: 500,
                     detail: "An unexpected error occurred.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/tax-plan-cycles/{caseId}/hold": {
+        patch: {
+          operationId: "updateTaxPlanCycleHold",
+          tags: ["Core Case Service"],
+          summary: "Update the hold state of a Tax Plan Cycle",
+          description:
+            "Places or removes a hold on a Tax Plan Cycle. When on_hold is true, a non-empty hold_reason is required.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description: "Synthetic UUID case identifier scoped by the request tenant.",
+              schema: caseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: taxPlanCycleHoldRequestSchema,
+                examples: {
+                  hold: {
+                    summary: "Place hold",
+                    value: { on_hold: true, hold_reason: "Awaiting signed documents" },
+                  },
+                  unhold: {
+                    summary: "Remove hold",
+                    value: { on_hold: false },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "The Tax Plan Cycle hold state was updated.",
+              content: {
+                "application/json": {
+                  schema: taxPlanCycleResponseSchema,
+                  example: { ...fakeTaxPlanCycleExample, on_hold: true, hold_reason: "Awaiting signed documents" },
+                },
+              },
+            },
+            "400": {
+              description: "The case ID or request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: validationErrorExample,
+                },
+              },
+            },
+            "401": {
+              description: "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "403": {
+              description: "The authenticated role is not permitted to change hold state.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/operator-access-required",
+                    title: "Operator Access Required",
+                    status: 403,
+                    detail: "Client users can access plan progress only through the My Tax Plan view.",
+                  },
+                },
+              },
+            },
+            "404": {
+              description: "No Tax Plan Cycle was found for the requested case ID in the request tenant.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+                    title: "Tax Plan Cycle Not Found",
+                    status: 404,
+                    detail: "No tax plan cycle was found for the requested case ID.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/v1/tax-plan-cycles/{caseId}/transition": {
+        patch: {
+          operationId: "transitionTaxPlanCycle",
+          tags: ["Core Case Service"],
+          summary: "Transition a Tax Plan Cycle stage",
+          description:
+            "Transitions a Tax Plan Cycle to the requested stage. Held cycles return 409 until the hold is removed.",
+          parameters: [
+            {
+              name: "caseId",
+              in: "path",
+              required: true,
+              description: "Synthetic UUID case identifier scoped by the request tenant.",
+              schema: caseIdSchema,
+              example: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: taxPlanCycleTransitionRequestSchema,
+                example: { to_stage: "Modeling" },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "The Tax Plan Cycle stage was updated.",
+              content: {
+                "application/json": {
+                  schema: taxPlanCycleResponseSchema,
+                  example: { ...fakeTaxPlanCycleExample, stage: "Modeling" },
+                },
+              },
+            },
+            "400": {
+              description: "The case ID or request body failed validation.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: validationErrorExample,
+                },
+              },
+            },
+            "401": {
+              description: "The request did not include a valid shared JWT access token.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/authentication-required",
+                    title: "Authentication Required",
+                    status: 401,
+                    detail: "A valid access token is required.",
+                  },
+                },
+              },
+            },
+            "403": {
+              description: "The authenticated role is not permitted to perform this transition.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/forbidden-transition",
+                    title: "Forbidden",
+                    status: 403,
+                    detail: "The current role is not authorized to perform this transition.",
+                  },
+                },
+              },
+            },
+            "404": {
+              description: "No Tax Plan Cycle was found for the requested case ID in the request tenant.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+                    title: "Tax Plan Cycle Not Found",
+                    status: 404,
+                    detail: "No tax plan cycle was found for the requested case ID.",
+                  },
+                },
+              },
+            },
+            "409": {
+              description: "The Tax Plan Cycle is on hold and cannot advance stages.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/tax-plan-cycle-on-hold",
+                    title: "Tax Plan Cycle On Hold",
+                    status: 409,
+                    detail: "Remove the hold before advancing this Tax Plan Cycle.",
+                  },
+                },
+              },
+            },
+            "422": {
+              description: "The requested stage transition is not legal.",
+              content: {
+                "application/problem+json": {
+                  schema: problemDetailsSchema,
+                  example: {
+                    type: "https://taxpulse.example/problems/invalid-transition",
+                    title: "Invalid Transition",
+                    status: 422,
+                    detail: "The requested stage transition is not legal.",
                   },
                 },
               },

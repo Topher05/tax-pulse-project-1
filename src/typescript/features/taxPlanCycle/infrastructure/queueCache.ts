@@ -34,6 +34,10 @@ export interface TaxPlanCycleQueueCacheInvalidator {
     tenantId: string;
     caseId: string;
   }): Promise<void>;
+  invalidateAfterHoldChange(input: {
+    tenantId: string;
+    caseId: string;
+  }): Promise<void>;
 }
 
 const queueCacheNamespace = "taxpulse:queue";
@@ -143,6 +147,7 @@ export function createTaxPlanCycleQueueCacheInvalidator(
   return {
     invalidateAfterStageChange: invalidate,
     invalidateAfterDueDateChange: invalidate,
+    invalidateAfterHoldChange: invalidate,
   };
 }
 
@@ -155,5 +160,6 @@ export function createNoopTaxPlanCycleQueueCacheInvalidator(): TaxPlanCycleQueue
   return {
     invalidateAfterStageChange: invalidate,
     invalidateAfterDueDateChange: invalidate,
+    invalidateAfterHoldChange: invalidate,
   };
 }

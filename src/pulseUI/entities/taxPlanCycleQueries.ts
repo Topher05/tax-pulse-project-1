@@ -40,6 +40,7 @@ export interface TaxPlanCycleDetailsView {
   dueDate: string;
   scenarioCount: number;
   onHold: boolean;
+  holdReason?: string | null;
   overdue: boolean;
   taxpayerIdentifierValidation?: {
     verifiedName?: string | null;
@@ -159,6 +160,7 @@ function toDetailsView(
     dueDate: formatDisplayDate(row.due_date),
     scenarioCount: scenarios.length,
     onHold: row.on_hold,
+    ...(row.hold_reason == null ? {} : { holdReason: row.hold_reason }),
     overdue: row.due_date < new Date().toISOString().slice(0, 10),
     ...(row.taxpayer_identifier_validation
       ? {

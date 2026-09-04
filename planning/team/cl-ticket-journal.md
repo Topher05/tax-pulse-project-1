@@ -5,6 +5,94 @@
 
 Add new ticket entries below using this template.
 
+## caleb-latimer-jira229 - SCRUM-229
+
+**Branch:** `caleb-latimer-jira229`
+
+**Assignee:** Caleb Latimer
+
+**Jira:** [SCRUM-229](https://fedstack-june22-t1.atlassian.net/browse/SCRUM-229)
+
+**Related ADR:** [ADR-0001: Tax Plan Cycle condition lives in stage](../../adr/0001-condition-lives-in-stage.md)
+
+**Summary:** Tax Plan Cycle hold management
+
+**Description:** Add a tenant-scoped hold/unhold mutation for Tax Plan Cycles, keep hold as an orthogonal flag, and block stage advancement while a hold is active. The Pulse UI replaces the placeholder Hold toast with a working modal flow for placing a hold reason and an immediate unhold action.
+
+**Acceptance Criteria:**
+
+- A `PATCH /v1/tax-plan-cycles/:caseId/hold` endpoint exists with strict hold/unhold validation.
+- A non-empty trimmed hold reason is required when `on_hold` is true, and unhold clears the stored reason.
+- Firm Admins and Advisors with `EDIT` can change hold state; clients and other unauthorized users cannot.
+- Held cycles cannot advance stages, including concurrent hold/advance races.
+- The Pulse details view shows the hold reason while held and disables Advance Stage until the hold is removed.
+- The Hold action opens a modal for active cycles and removes hold immediately for held cycles.
+
+**Code Connection:**
+
+- `src/typescript/features/taxPlanCycle/controllers/holdController.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/auditEntryRepository.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `src/typescript/shared/scripts/taxPlanCycleLambdaRuntime.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
+
+**Project Scope Connection:**
+
+- Core Case workflow and tenant-scoped state transitions
+- Pulse UI case details workflow controls
+- API contract and audit logging
+
+**Changed Files:**
+
+- `planning/team/cl-ticket-journal.md`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/features/taxPlanCycle/controllers/holdController.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueCache.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/index.ts`
+- `src/typescript/auditEntryRepository.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `src/typescript/shared/scripts/taxPlanCycleLambdaRuntime.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/features/taxPlanCycle/createIdempotency.test.ts`
+- `tests/typescript/features/taxPlanCycle/holdController.test.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `tests/typescript/features/taxPlanCycle/lambdaHandlers.test.ts`
+- `tests/typescript/features/taxPlanCycle/queueCache.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/features/taxPlanCycle/transitionController.test.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck:core` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Focused backend Vitest suites passed: 77 tests across OpenAPI, hold controller, Lambda handlers, queue cache, routes, transition controller, and deployed present-to-client boundary.
+- Focused Pulse UI Details/query suites passed: 29 tests.
+- The database integration suite could not start because Testcontainers could not find a working Docker or Podman runtime; this is an environment limitation, not a test assertion failure.
+- `git diff --check origin/development...HEAD` and `git diff --check` passed with no whitespace errors.
+
 ## caleb-latimer-jira181 - SCRUM-181
 
 **Branch:** `caleb-latimer-jira181`

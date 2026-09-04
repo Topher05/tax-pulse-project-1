@@ -51,6 +51,13 @@
   font-size: 0.88rem;
 }
 
+.holdSupportText {
+  margin: 0.4rem 0 0;
+  color: var(--pulse-warning);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .actionCluster {
   display: flex;
   flex-wrap: wrap;
@@ -493,6 +500,72 @@
   text-align: right;
 }
 
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(15 23 42 / 58%);
+  backdrop-filter: blur(10px);
+  z-index: 60;
+}
+
+.modalShell {
+  width: min(100%, 32rem);
+  padding: 1.1rem;
+  border: 1px solid var(--pulse-border);
+  border-radius: 20px;
+  background: var(--pulse-surface);
+  box-shadow: 0 22px 50px rgb(15 23 42 / 22%);
+}
+
+.modalHeader {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.modalTitle {
+  margin: 0;
+  color: var(--pulse-ink);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.modalCopy {
+  margin: 0;
+  color: var(--pulse-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.modalField {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.modalInput {
+  min-height: 42px;
+  padding: 0.75rem 0.9rem;
+  color: var(--pulse-ink);
+  background: var(--pulse-surface-muted);
+  border: 1px solid var(--pulse-border);
+  border-radius: 12px;
+}
+
+.modalInput:focus {
+  outline: 3px solid var(--pulse-accent-light);
+  outline-offset: 2px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
 .stateCopy {
   color: var(--pulse-muted);
   font-size: 0.9rem;
@@ -550,5 +623,9 @@
   .commentComposer {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
   }
 }

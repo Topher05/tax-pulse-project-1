@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import type { Server } from "node:http";
+import { createTaxPlanCycleHoldController } from "./features/taxPlanCycle/index.js";
 
 export {
   clientDeductionAggregationPayloadSchema,
@@ -581,10 +582,13 @@ export {
   getStageChangedQueueUrlFromEnv,
   parseStageChangedSqsMessage,
   createTaxPlanCycleCreateController,
+  createTaxPlanCycleHoldController,
   taxPlanCycleCreateController,
+  taxPlanCycleHoldController,
   taxPlanCycleCreateResultSchema,
   TaxPlanDetailsAssistantUnsafePromptError,
   createTaxPlanCycleTransitionController,
+  TaxPlanCycleOnHoldError,
   createTaxPlanCycleRouter,
   STAGE_CHANGED_CONSUMER_NAME,
   buildIdempotencyKey,
@@ -596,6 +600,9 @@ export {
   type TaxPlanCycleCreateControllerInput,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateResult,
+  type TaxPlanCycleHoldController,
+  type TaxPlanCycleHoldControllerInput,
+  type TaxPlanCycleHoldControllerOptions,
   type TaxPlanCycleQueueCache,
   type TaxPlanCycleQueueCacheClient,
   type TaxPlanCycleQueueCacheInvalidator,
@@ -982,6 +989,10 @@ export async function main(): Promise<Server> {
           actionItemRepository,
           actionItemCompletedEventPublisher,
           controller: taxPlanCycleController,
+          holdController: createTaxPlanCycleHoldController(taxPlanCycleRepository, {
+            queueCacheInvalidator,
+            telemetryLogger: logger,
+          }),
           taxPlanCycleRepository,
           scenarioRepository,
           scenarioModelingController,

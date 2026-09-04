@@ -62,6 +62,20 @@ export interface TaxPlanCycleTransitionInput {
   actor: string;
 }
 
+export interface TaxPlanCycleHoldInput {
+  tenantId: string;
+  caseId: string;
+  onHold: boolean;
+  holdReason?: string;
+}
+
+export class TaxPlanCycleOnHoldError extends Error {
+  constructor() {
+    super("A Tax Plan Cycle on hold cannot advance stages.");
+    this.name = "TaxPlanCycleOnHoldError";
+  }
+}
+
 export type TaxPlanCycleQueueItem = TaxPlanCycle & {
   client_name: string;
   is_overdue: boolean;
@@ -76,6 +90,7 @@ export interface TaxPlanCycleRepository {
   transition(
     input: TaxPlanCycleTransitionInput,
   ): Promise<TaxPlanCycle | null>;
+  setHoldStatus(input: TaxPlanCycleHoldInput): Promise<TaxPlanCycle | null>;
   listQueue(input: TaxPlanCycleQueueInput): Promise<TaxPlanCycleQueueItem[]>;
 }
 
@@ -323,7 +338,7 @@ export function createTaxPlanCycleRepository(
           { now: () => occurredAt },
         );
 
-        await tx
+        const updatedRows = await tx
           .update(taxPlanCycleTable)
           .set({
             stage: toStage,
@@ -332,8 +347,14 @@ export function createTaxPlanCycleRepository(
             and(
               eq(taxPlanCycleTable.tenantId, tenantId),
               eq(taxPlanCycleTable.id, caseId),
+              eq(taxPlanCycleTable.onHold, false),
             ),
-          );
+          )
+          .returning({ id: taxPlanCycleTable.id });
+
+        if (updatedRows.length === 0) {
+          throw new TaxPlanCycleOnHoldError();
+        }
 
         await tx.insert(stageTransitionTable).values({
           caseId,
@@ -353,6 +374,34 @@ export function createTaxPlanCycleRepository(
           stage: toStage,
         });
       });
+    },
+
+    async setHoldStatus({ tenantId, caseId, onHold, holdReason }) {
+      const rows = await db
+        .update(taxPlanCycleTable)
+        .set({
+          onHold,
+          holdReason: onHold ? (holdReason ?? null) : null,
+        })
+        .where(
+          and(
+            eq(taxPlanCycleTable.tenantId, tenantId),
+            eq(taxPlanCycleTable.id, caseId),
+          ),
+        )
+        .returning({
+          id: taxPlanCycleTable.id,
+          clientId: taxPlanCycleTable.clientId,
+          stage: taxPlanCycleTable.stage,
+          owner: taxPlanCycleTable.owner,
+          priority: taxPlanCycleTable.priority,
+          dueDate: taxPlanCycleTable.dueDate,
+          onHold: taxPlanCycleTable.onHold,
+          holdReason: taxPlanCycleTable.holdReason,
+        });
+
+      const row = rows[0];
+      return row ? toTaxPlanCycle(row) : null;
     },
 
     async listQueue({ tenantId, asOfDate = todayIsoDate() }) {

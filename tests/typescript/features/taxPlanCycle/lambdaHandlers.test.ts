@@ -8,6 +8,7 @@ import {
   type LambdaRequestContext,
   type TaxPlanCycle,
 } from "../../../../src/typescript/index.js";
+import { TaxPlanCycleOnHoldError } from "../../../../src/typescript/features/taxPlanCycle/repositories/repository.js";
 
 const reviewCycle: TaxPlanCycle = {
   id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
@@ -225,6 +226,7 @@ describe("tax plan cycle Lambda handlers", () => {
     );
     expect(record).toHaveBeenCalledWith(
       expect.objectContaining({
+        tenantId: "tenant-001",
         caseId: reviewCycle.id,
         actor: "advisor-001",
         action: "transition Review -> Client Approval",
@@ -232,5 +234,74 @@ describe("tax plan cycle Lambda handlers", () => {
       }),
     );
     expect(controller.transition).not.toHaveBeenCalled();
+  });
+
+  test("returns a reason-free 409 and audit entry when an authorized transition is held", async () => {
+    const heldCycle: TaxPlanCycle = {
+      ...reviewCycle,
+      on_hold: true,
+      hold_reason: "Awaiting signed engagement letter",
+    };
+    const controller = {
+      findByCaseId: vi.fn(async () => heldCycle),
+      transition: vi.fn(),
+    };
+    const record = vi.fn(async () => undefined);
+    const auditLogger = { info: vi.fn() };
+    const telemetryLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+    const handler = createPresentToClientLambdaHandler({
+      controller,
+      auditEntryWriter: { record },
+      auditLogger,
+      telemetryLogger,
+      authenticator: createAuthenticator({
+        tenantId: "tenant-001",
+        userId: "firm-admin-001",
+        role: "Firm Admin",
+        permissions: [],
+      }),
+    });
+
+    const response = await handler(createRequest({
+      body: JSON.stringify({ action_item: { description: "Send packet", deadline: "2026-08-14" } }),
+    }));
+
+    expect(response.statusCode).toBe(409);
+    expect(JSON.parse(response.body)).toMatchObject({
+      title: "Tax Plan Cycle On Hold",
+      status: 409,
+    });
+    expect(controller.transition).not.toHaveBeenCalled();
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({
+      tenantId: "tenant-001", caseId: reviewCycle.id, outcome: "409",
+    }));
+    expect(JSON.stringify([auditLogger.info.mock.calls, telemetryLogger.warn.mock.calls])).not.toContain(
+      heldCycle.hold_reason,
+    );
+  });
+
+  test("returns a 409 and one audit entry when execute races with a hold", async () => {
+    const controller = {
+      findByCaseId: vi.fn(async () => clientApprovalCycle),
+      transition: vi.fn(async () => { throw new TaxPlanCycleOnHoldError(); }),
+    };
+    const record = vi.fn(async () => undefined);
+    const handler = createExecuteLambdaHandler({
+      controller,
+      auditEntryWriter: { record },
+      authenticator: createAuthenticator({
+        tenantId: "tenant-001", userId: "firm-admin-001", role: "Firm Admin", permissions: [],
+      }),
+    });
+
+    const response = await handler(createRequest({ body: undefined }));
+
+    expect(response.statusCode).toBe(409);
+    expect(controller.transition).toHaveBeenCalledTimes(1);
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({
+      tenantId: "tenant-001", caseId: reviewCycle.id, outcome: "409",
+    }));
   });
 });

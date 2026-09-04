@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
@@ -11,7 +11,6 @@ import { StatusPill } from "../../components/StatusPill.tsx";
 import { useAssistantPanel } from "../../components/assist/assistantPanel.tsx";
 import {
   createErrorNotificationMessage,
-  createInfoNotificationMessage,
   createSuccessNotificationMessage,
 } from "../../entities/notificationMessage.ts";
 import { buildTaxPlanDetailsAssistantRecommendation } from "../../entities/taxPlanDetailsAssistant.ts";
@@ -22,16 +21,12 @@ import {
   taxPlanCycleAuditEntriesQueryKey,
   taxPlanCycleCommentsQueryKey,
   taxPlanCycleDetailsQueryKey,
+  taxPlanCycleQueueQueryKey,
 } from "../../entities/taxPlanCycleQueries.ts";
 import { caseApiPatchJson, CaseApiError } from "../../shared/caseApi.ts";
 
 import styles from "./Details.module.css";
-import {
-  caseStages,
-  detailTabs,
-  type DetailStage,
-  type DetailTab,
-} from "./detailViewState.ts";
+import { caseStages, detailTabs, type DetailStage, type DetailTab } from "./detailViewState.ts";
 
 const sampleScenarios = [
   {
@@ -50,42 +45,26 @@ const assistantRecommendation = "Apply the estimated-payment safe-harbor thresho
 
 function priorityTone(priority: string): "danger" | "warning" | "info" {
   const normalized = priority.toLowerCase();
-
-  if (normalized === "high") {
-    return "danger";
-  }
-
-  if (normalized === "medium") {
-    return "warning";
-  }
-
+  if (normalized === "high") return "danger";
+  if (normalized === "medium") return "warning";
   return "info";
 }
 
 function getNextStage(stage: DetailStage): DetailStage | null {
   const stageIndex = caseStages.indexOf(stage);
-
-  if (stageIndex < 0 || stageIndex >= caseStages.length - 1) {
-    return null;
-  }
-
+  if (stageIndex < 0 || stageIndex >= caseStages.length - 1) return null;
   return caseStages[stageIndex + 1] as DetailStage;
 }
 
 function parseProblemPayload(body: string): { header?: string; message?: string } | null {
   try {
     const parsed = JSON.parse(body) as { title?: unknown; detail?: unknown };
-
     return {
       header: typeof parsed.title === "string" ? parsed.title : undefined,
       message: typeof parsed.detail === "string" ? parsed.detail : undefined,
     };
   } catch {
-    if (body.trim().length === 0) {
-      return null;
-    }
-
-    return { message: body };
+    return body.trim().length === 0 ? null : { message: body };
   }
 }
 
@@ -94,14 +73,24 @@ export function DetailsPage() {
   const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
   const [commentDraft, setCommentDraft] = useState("");
   const [isAdvancingStage, setIsAdvancingStage] = useState(false);
+  const [isHoldModalOpen, setIsHoldModalOpen] = useState(false);
+  const [holdReasonDraft, setHoldReasonDraft] = useState("");
+  const [isUpdatingHold, setIsUpdatingHold] = useState(false);
   const authenticatedFetch = useAuthenticatedFetch();
   const queryClient = useQueryClient();
   const { showNotification } = useNotificationToast();
   const { registerFabAnchor, setAssistantCaseContext } = useAssistantPanel();
+  const holdDialogTitleId = useId();
+  const holdReasonFieldId = useId();
+  const holdReasonHelpId = useId();
 
   useEffect(() => {
     setActiveTab("Overview");
     setCommentDraft("");
+    setIsHoldModalOpen(false);
+    setHoldReasonDraft("");
+    setIsAdvancingStage(false);
+    setIsUpdatingHold(false);
   }, [caseId]);
 
   const detailsQuery = useQuery({
@@ -111,9 +100,7 @@ export function DetailsPage() {
   });
 
   useEffect(() => {
-    if (detailsQuery.data === undefined) {
-      return;
-    }
+    if (detailsQuery.data === undefined) return;
 
     setAssistantCaseContext({
       caseId: detailsQuery.data.caseId,
@@ -131,10 +118,9 @@ export function DetailsPage() {
       dueDate: detailsQuery.data.dueDate,
     });
 
-    return () => {
-      setAssistantCaseContext(null);
-    };
+    return () => setAssistantCaseContext(null);
   }, [detailsQuery.data, setAssistantCaseContext]);
+
   const auditEntriesQuery = useQuery({
     queryKey: taxPlanCycleAuditEntriesQueryKey(caseId),
     queryFn: () => fetchTaxPlanCycleAuditEntries(caseId, authenticatedFetch),
@@ -148,10 +134,7 @@ export function DetailsPage() {
 
   if (detailsQuery.isPending) {
     return (
-      <PanelCard
-        title="Loading case details"
-        description="Fetching the case record and associated workflow state."
-      >
+      <PanelCard title="Loading case details" description="Fetching the case record and associated workflow state.">
         <p className={styles.stateCopy}>Loading case details...</p>
       </PanelCard>
     );
@@ -161,40 +144,87 @@ export function DetailsPage() {
     return (
       <EmptyState
         title="Case details could not load"
-        description={
-          detailsQuery.error instanceof Error
-            ? detailsQuery.error.message
-            : "Case details request failed."
-        }
+        description={detailsQuery.error instanceof Error ? detailsQuery.error.message : "Case details request failed."}
       />
     );
   }
 
   const details = detailsQuery.data;
-
-  if (!details) {
-    return null;
-  }
+  if (!details) return null;
 
   const selectedStage = details.stage;
   const activeStageIndex = caseStages.indexOf(details.stage as DetailStage);
   const nextStage = getNextStage(details.stage as DetailStage);
 
+  const invalidateCycleQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: taxPlanCycleDetailsQueryKey(caseId) }),
+      queryClient.invalidateQueries({ queryKey: taxPlanCycleAuditEntriesQueryKey(caseId) }),
+      queryClient.invalidateQueries({ queryKey: taxPlanCycleCommentsQueryKey(caseId) }),
+      queryClient.invalidateQueries({ queryKey: taxPlanCycleQueueQueryKey }),
+    ]);
+  };
+
   const handleReassignAction = () => {
     showNotification(createErrorNotificationMessage("Implementation Details TBD.", "Reassign"));
   };
 
+  const submitHoldStatus = async (onHold: boolean, holdReason?: string) => {
+    if (isUpdatingHold) return;
+
+    setIsUpdatingHold(true);
+    try {
+      const response = await caseApiPatchJson<{ on_hold: boolean; hold_reason?: string | null }>(
+        `/v1/tax-plan-cycles/${caseId}/hold`,
+        onHold ? { on_hold: true as const, hold_reason: (holdReason ?? "").trim() } : { on_hold: false as const },
+        authenticatedFetch,
+      );
+      await invalidateCycleQueries();
+      setHoldReasonDraft(response.hold_reason ?? "");
+      setIsHoldModalOpen(false);
+      showNotification(
+        createSuccessNotificationMessage(
+          response.on_hold ? "Hold placed on this cycle." : "Hold removed from this cycle.",
+          response.on_hold ? "Hold placed" : "Hold removed",
+        ),
+      );
+    } catch (error) {
+      let header = onHold ? "Place hold failed" : "Remove hold failed";
+      let message = onHold ? "The hold could not be applied." : "The hold could not be removed.";
+      if (error instanceof CaseApiError) {
+        const problem = parseProblemPayload(error.body);
+        if (problem?.header) header = problem.header;
+        if (problem?.message) message = problem.message;
+        if (error.status === 409) {
+          await queryClient.invalidateQueries({ queryKey: taxPlanCycleDetailsQueryKey(caseId) });
+        }
+      } else if (error instanceof Error && error.message.trim().length > 0) {
+        message = error.message;
+      }
+      showNotification(createErrorNotificationMessage(message, header));
+    } finally {
+      setIsUpdatingHold(false);
+    }
+  };
+
   const handleHoldAction = () => {
-    showNotification(createInfoNotificationMessage("Implementation Details TBD.", "Hold"));
+    if (details.onHold) {
+      void submitHoldStatus(false);
+      return;
+    }
+    setHoldReasonDraft("");
+    setIsHoldModalOpen(true);
   };
 
   const handleAdvanceStage = async () => {
-    if (isAdvancingStage || nextStage === null) {
+    if (isAdvancingStage || nextStage === null || details.onHold) {
       showNotification(
         createErrorNotificationMessage(
-          nextStage === null
-            ? "There is no further stage available for this cycle."
-            : "The stage transition is already in progress.",
+          details.onHold
+            ? "Remove the hold before advancing this cycle."
+            : nextStage === null
+              ? "There is no further stage available for this cycle."
+              : "The stage transition is already in progress.",
           "Advance Stage unavailable",
         ),
       );
@@ -202,45 +232,38 @@ export function DetailsPage() {
     }
 
     setIsAdvancingStage(true);
-
     try {
       const transitioned = await caseApiPatchJson<{ stage: DetailStage }>(
         `/v1/tax-plan-cycles/${caseId}/transition`,
         { to_stage: nextStage },
         authenticatedFetch,
       );
-
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: taxPlanCycleDetailsQueryKey(caseId) }),
         queryClient.invalidateQueries({ queryKey: taxPlanCycleAuditEntriesQueryKey(caseId) }),
+        queryClient.invalidateQueries({ queryKey: taxPlanCycleQueueQueryKey }),
       ]);
-
       showNotification(
-        createSuccessNotificationMessage(
-          `${details.stage} → ${transitioned.stage} transition successful.`,
-          "Stage Advanced",
-        ),
+        createSuccessNotificationMessage(`${details.stage} → ${transitioned.stage} transition successful.`, "Stage Advanced"),
       );
     } catch (error) {
       let header = "Advance Stage failed";
       let message = "The stage transition could not be completed.";
-
       if (error instanceof CaseApiError) {
         const problem = parseProblemPayload(error.body);
-
-        if (problem?.header) {
-          header = problem.header;
-        }
-
-        if (problem?.message) {
-          message = problem.message;
+        if (problem?.header) header = problem.header;
+        if (problem?.message) message = problem.message;
+        if (error.status === 409) {
+          await queryClient.invalidateQueries({ queryKey: taxPlanCycleDetailsQueryKey(caseId) });
         }
       } else if (error instanceof Error && error.message.trim().length > 0) {
         message = error.message;
       }
-
       showNotification(createErrorNotificationMessage(message, header));
-      await queryClient.invalidateQueries({ queryKey: taxPlanCycleAuditEntriesQueryKey(caseId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: taxPlanCycleAuditEntriesQueryKey(caseId) }),
+        queryClient.invalidateQueries({ queryKey: taxPlanCycleDetailsQueryKey(caseId) }),
+      ]);
     } finally {
       setIsAdvancingStage(false);
     }
@@ -294,21 +317,15 @@ export function DetailsPage() {
           <PanelCard title="Comments">
             <div className={styles.commentList}>
               {commentsQuery.isPending ? (
-                <p className={styles.stateCopy} role="status">
-                  Loading comments...
-                </p>
+                <p className={styles.stateCopy} role="status">Loading comments...</p>
               ) : commentsQuery.isError ? (
-                <p className={styles.stateCopy} role="alert">
-                  Comments could not load.
-                </p>
+                <p className={styles.stateCopy} role="alert">Comments could not load.</p>
               ) : commentsQuery.data.length === 0 ? (
                 <p className={styles.stateCopy}>No comments have been added for this case.</p>
               ) : (
                 commentsQuery.data.map((comment) => (
                   <article className={styles.comment} key={comment.id}>
-                    <div className={styles.commentAvatar} aria-hidden="true">
-                      {comment.initials}
-                    </div>
+                    <div className={styles.commentAvatar} aria-hidden="true">{comment.initials}</div>
                     <div className={styles.commentBody}>
                       <div className={styles.commentHead}>
                         <span className={styles.commentAuthor}>{comment.author}</span>
@@ -326,14 +343,10 @@ export function DetailsPage() {
                     aria-label="Comment draft"
                     className={styles.commentInput}
                     value={commentDraft}
-                    onChange={(event) => {
-                      setCommentDraft(event.target.value);
-                    }}
+                    onChange={(event) => setCommentDraft(event.target.value)}
                   />
                 </label>
-                <button className={styles.primaryAction} type="button">
-                  Post
-                </button>
+                <button className={styles.primaryAction} type="button">Post</button>
               </div>
             </div>
           </PanelCard>
@@ -342,13 +355,9 @@ export function DetailsPage() {
         return (
           <PanelCard title="Audit Trail">
             {auditEntriesQuery.isPending ? (
-              <p className={styles.stateCopy} role="status">
-                Loading audit trail...
-              </p>
+              <p className={styles.stateCopy} role="status">Loading audit trail...</p>
             ) : auditEntriesQuery.isError ? (
-              <p className={styles.stateCopy} role="alert">
-                Audit trail could not load.
-              </p>
+              <p className={styles.stateCopy} role="alert">Audit trail could not load.</p>
             ) : auditEntriesQuery.data.length === 0 ? (
               <p className={styles.stateCopy}>No audit entries have been recorded for this case.</p>
             ) : (
@@ -384,58 +393,45 @@ export function DetailsPage() {
             </div>
             <h2 className={styles.caseTitle}>{details.client} - Q2 2026 Tax Plan</h2>
             <p className={styles.caseSubtitle}>
-              Advisor: {details.owner} · Opened Apr 1, 2026 ·{" "}
-              {details.onHold ? "On hold" : "Active"}
+              Advisor: {details.owner} · Opened Apr 1, 2026 · {details.onHold ? "On hold" : "Active"}
             </p>
+            {details.onHold ? (
+              <p id={holdReasonHelpId} className={styles.holdSupportText}>
+                Remove the hold before advancing this cycle.
+              </p>
+            ) : null}
           </div>
-
           <div className={styles.actionCluster}>
+            <button className={styles.secondaryAction} type="button" onClick={handleReassignAction}>Reassign</button>
             <button
               className={styles.secondaryAction}
               type="button"
-              onClick={() => {
-                handleReassignAction();
-              }}
+              onClick={handleHoldAction}
+              disabled={isUpdatingHold}
             >
-              Reassign
-            </button>
-            <button
-              className={styles.secondaryAction}
-              type="button"
-              onClick={() => {
-                handleHoldAction();
-              }}
-            >
-              Hold
+              {details.onHold ? "Remove hold" : "Hold"}
             </button>
             <button
               className={styles.primaryAction}
               type="button"
-              disabled={isAdvancingStage || nextStage === null}
-              onClick={() => {
-                void handleAdvanceStage();
-              }}
+              disabled={isAdvancingStage || nextStage === null || details.onHold}
+              aria-describedby={details.onHold ? holdReasonHelpId : undefined}
+              onClick={() => void handleAdvanceStage()}
             >
               <span>{isAdvancingStage ? "Advancing..." : "Advance Stage"}</span>
               {!isAdvancingStage ? <ChevronRight className={styles.actionButtonIcon} aria-hidden="true" /> : null}
             </button>
           </div>
         </div>
-
         <div className={styles.stageSection}>
           <ol className={styles.stageStepper} aria-label="Case stage progression" tabIndex={0}>
             {caseStages.map((stage, index) => {
               const isActive = selectedStage === stage;
               const isComplete = index < activeStageIndex;
-
               return (
                 <li key={stage} className={styles.stageStepItem}>
                   <div
-                    className={[
-                      styles.stageStep,
-                      isActive ? styles.stageStepActive : "",
-                      isComplete ? styles.stageStepComplete : "",
-                    ].join(" ")}
+                    className={[styles.stageStep, isActive ? styles.stageStepActive : "", isComplete ? styles.stageStepComplete : ""].join(" ")}
                     aria-current={isActive ? "step" : undefined}
                   >
                     <span className={styles.stageStepNumber}>{index + 1}</span>
@@ -447,7 +443,6 @@ export function DetailsPage() {
           </ol>
         </div>
       </PanelCard>
-
       <div className={styles.detailGrid}>
         <div className={styles.mainColumn}>
           <div className={styles.tabBar} role="tablist" aria-label="Case tabs">
@@ -458,18 +453,14 @@ export function DetailsPage() {
                 role="tab"
                 aria-selected={activeTab === tab}
                 type="button"
-                onClick={() => {
-                  setActiveTab(tab);
-                }}
+                onClick={() => setActiveTab(tab)}
               >
                 {tab}
               </button>
             ))}
           </div>
-
           {renderActiveTab()}
         </div>
-
         <aside className={styles.sidePanel}>
           <PanelCard title="Case Properties">
             <div className={styles.sidePanelRows}>
@@ -497,6 +488,12 @@ export function DetailsPage() {
                 <span className={styles.sidePanelLabel}>On Hold</span>
                 <span className={styles.sidePanelValue}>{details.onHold ? "Yes" : "No"}</span>
               </div>
+              {details.onHold && details.holdReason ? (
+                <div className={styles.sidePanelRow}>
+                  <span className={styles.sidePanelLabel}>Hold Reason</span>
+                  <span className={styles.sidePanelValue}>{details.holdReason}</span>
+                </div>
+              ) : null}
               <div className={styles.sidePanelRow}>
                 <span className={styles.sidePanelLabel}>Priority</span>
                 <span className={styles.sidePanelValue}>
@@ -505,26 +502,62 @@ export function DetailsPage() {
               </div>
             </div>
           </PanelCard>
-
           <PanelCard title="Quick Actions">
             <div className={styles.quickActions}>
-              <button className={styles.secondaryAction} type="button">
-                Run new scenario
-              </button>
-              <button className={styles.secondaryAction} type="button">
-                Schedule client meeting
-              </button>
-              <button className={styles.secondaryAction} type="button">
-                Flag for compliance
-              </button>
-              <button className={styles.dangerAction} type="button">
-                Close cycle
-              </button>
+              <button className={styles.secondaryAction} type="button">Run new scenario</button>
+              <button className={styles.secondaryAction} type="button">Schedule client meeting</button>
+              <button className={styles.secondaryAction} type="button">Flag for compliance</button>
+              <button className={styles.dangerAction} type="button">Close cycle</button>
             </div>
           </PanelCard>
           <div ref={registerFabAnchor} className={styles.assistantFabAnchor} />
         </aside>
       </div>
+      {isHoldModalOpen ? (
+        <div className={styles.modalBackdrop} role="presentation" onClick={() => setIsHoldModalOpen(false)}>
+          <div
+            className={styles.modalShell}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={holdDialogTitleId}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setIsHoldModalOpen(false);
+              }
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h3 id={holdDialogTitleId} className={styles.modalTitle}>Place hold</h3>
+              <p className={styles.modalCopy}>Enter a short reason so the team knows why the cycle is paused.</p>
+            </div>
+            <label className={styles.modalField} htmlFor={holdReasonFieldId}>
+              <span className={styles.fieldLabel}>Hold reason</span>
+              <input
+                id={holdReasonFieldId}
+                className={styles.modalInput}
+                type="text"
+                value={holdReasonDraft}
+                autoFocus
+                onChange={(event) => setHoldReasonDraft(event.target.value)}
+              />
+            </label>
+            <div className={styles.modalActions}>
+              <button className={styles.secondaryAction} type="button" onClick={() => setIsHoldModalOpen(false)}>
+                Cancel
+              </button>
+              <button
+                className={styles.primaryAction}
+                type="button"
+                disabled={isUpdatingHold || holdReasonDraft.trim().length === 0}
+                onClick={() => void submitHoldStatus(true, holdReasonDraft)}
+              >
+                {isUpdatingHold ? "Placing..." : "Place Hold"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

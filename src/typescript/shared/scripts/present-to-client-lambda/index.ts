@@ -7,6 +7,7 @@ import { roleNameEnum } from "../../../shared/database/schema.js";
 import type { TaxPlanCycle } from "../../../features/taxPlanCycle/taxPlanCycle.js";
 import type { ActionItemCreatedEventInput } from "../../../features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.js";
 import type { TaxPlanCycleTransitionController } from "../../../features/taxPlanCycle/controllers/transitionController.js";
+import { TaxPlanCycleOnHoldError } from "../../../features/taxPlanCycle/repositories/repository.js";
 import {
   emitObservabilityEvent,
   cloudWatchObservabilityProvider,
@@ -295,15 +296,17 @@ async function writeDeniedTransitionAttempt(
   auditLogger: Pick<Console, "info">,
   auditEntryWriter: AuditEntryWriter,
   input: {
+    tenantId: string;
     caseId: string;
     actor: string;
     action: string;
-    outcome: "403" | "422";
+    outcome: "403" | "409" | "422";
   },
 ): Promise<void> {
   const occurredAt = new Date();
 
   auditLogger.info({
+    tenant_id: input.tenantId,
     case_id: input.caseId,
     actor: input.actor,
     action: input.action,
@@ -312,11 +315,21 @@ async function writeDeniedTransitionAttempt(
   });
 
   await auditEntryWriter.record({
+    tenantId: input.tenantId,
     caseId: input.caseId,
     actor: input.actor,
     action: input.action,
     outcome: input.outcome,
     occurredAt,
+  });
+}
+
+function taxPlanCycleOnHoldProblem(): ProblemHttpError {
+  return new ProblemHttpError({
+    type: "https://taxpulse.example/problems/tax-plan-cycle-on-hold",
+    title: "Tax Plan Cycle On Hold",
+    status: 409,
+    detail: "Remove the hold before advancing this Tax Plan Cycle.",
   });
 }
 
@@ -437,6 +450,7 @@ async function handlePresentToClientRequest(input: {
     });
 
     await writeDeniedTransitionAttempt(input.auditLogger, input.auditEntryWriter, {
+      tenantId: principal.tenantId,
       caseId: parsedParams.data.caseId,
       actor: principal.userId,
       action,
@@ -466,6 +480,7 @@ async function handlePresentToClientRequest(input: {
     });
 
     await writeDeniedTransitionAttempt(input.auditLogger, input.auditEntryWriter, {
+      tenantId: principal.tenantId,
       caseId: parsedParams.data.caseId,
       actor: principal.userId,
       action,
@@ -482,14 +497,60 @@ async function handlePresentToClientRequest(input: {
     );
   }
 
-  const transitioned = await input.controller.transition({
-    tenantId: principal.tenantId,
-    caseId: parsedParams.data.caseId,
-    fromStage: cycle.stage,
-    toStage: "Client Approval",
-    actor: principal.userId,
-    actionItem: parsedBody.data.action_item as ActionItemCreatedEventInput,
-  });
+  if (cycle.on_hold) {
+    emitObservabilityEvent(input.telemetryLogger, "warn", "present-to-client lambda request denied", {
+      ...requestContext,
+      tenant_id: principal.tenantId,
+      case_id: parsedParams.data.caseId,
+      outcome: "on_hold",
+      status_code: 409,
+      metric_name: "tax_plan_cycle.lambda.request.count",
+      metric_value: 1,
+      metric_unit: "Count",
+    });
+    await writeDeniedTransitionAttempt(input.auditLogger, input.auditEntryWriter, {
+      tenantId: principal.tenantId,
+      caseId: parsedParams.data.caseId,
+      actor: principal.userId,
+      action,
+      outcome: "409",
+    });
+    return problemDetailsToResponse(taxPlanCycleOnHoldProblem());
+  }
+
+  let transitioned: TaxPlanCycle | null;
+  try {
+    transitioned = await input.controller.transition({
+      tenantId: principal.tenantId,
+      caseId: parsedParams.data.caseId,
+      fromStage: cycle.stage,
+      toStage: "Client Approval",
+      actor: principal.userId,
+      actionItem: parsedBody.data.action_item as ActionItemCreatedEventInput,
+    });
+  } catch (error) {
+    if (error instanceof TaxPlanCycleOnHoldError) {
+      emitObservabilityEvent(input.telemetryLogger, "warn", "present-to-client lambda request denied", {
+        ...requestContext,
+        tenant_id: principal.tenantId,
+        case_id: parsedParams.data.caseId,
+        outcome: "on_hold",
+        status_code: 409,
+        metric_name: "tax_plan_cycle.lambda.request.count",
+        metric_value: 1,
+        metric_unit: "Count",
+      });
+      await writeDeniedTransitionAttempt(input.auditLogger, input.auditEntryWriter, {
+        tenantId: principal.tenantId,
+        caseId: parsedParams.data.caseId,
+        actor: principal.userId,
+        action,
+        outcome: "409",
+      });
+      return problemDetailsToResponse(taxPlanCycleOnHoldProblem());
+    }
+    throw error;
+  }
 
   if (transitioned === null) {
     emitObservabilityEvent(input.telemetryLogger, "warn", "present-to-client lambda request could not transition cycle", {
