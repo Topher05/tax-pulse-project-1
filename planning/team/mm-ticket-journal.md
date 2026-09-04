@@ -72,6 +72,7 @@ Add new ticket entries below using this template.
 - Targeted backend tests passed: `passwordReset.test.ts` (9), `passwordResetRoutes.test.ts` (6), and `passwordResetNotifier.test.ts` (3), for 18 passing tests.
 - Targeted Pulse UI tests passed: `PasswordResetPage.test.tsx` (2), `NewPasswordPage.test.tsx` (4), and `authClient.test.tsx` (10), for 16 passing tests.
 - `terraform fmt` completed and `terraform -chdir=terraform validate` passed for the SES environment and least-privilege sender identity wiring.
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts` uses whitespace-tolerant matching so canonical `terraform fmt` alignment does not cause a false CI failure.
 - The new repository integration test covers atomic password update, one-time token consumption, and refresh-token revocation. It could not execute locally because no Docker/Testcontainers runtime or Compose Postgres service was available.
 - The repository-wide `npm test` completed type checking and 456 tests successfully; 72 database/container tests failed because the same Docker runtime and Compose Postgres prerequisites were unavailable.
 
