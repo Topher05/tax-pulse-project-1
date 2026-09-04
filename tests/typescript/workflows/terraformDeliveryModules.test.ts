@@ -41,7 +41,9 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     const rootOutputs = readTerraform("terraform/outputs.tf");
     const ecsVariables = readTerraform("terraform/modules/ecs_services/variables.tf");
 
-    expect(delivery).toContain('slo_alarm_topic_name          = "${var.name_prefix}-${var.environment}-slo-alarms"');
+    expect(delivery).toMatch(
+      /slo_alarm_topic_name\s+=\s+"\$\{var\.name_prefix\}-\$\{var\.environment\}-slo-alarms"/,
+    );
     expect(ecsVariables).toContain('variable "slo_alarm_topic_name"');
     expect(ecsServices).toContain('resource "aws_sns_topic" "slo_alarms"');
     expect(ecsServices).toContain('resource "aws_kms_key" "slo_alarms"');

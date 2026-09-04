@@ -148,6 +148,39 @@ export {
 } from "./authRegistrationService.js";
 export { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
 export {
+  forgotPasswordRequestSchema,
+  InvalidResetTokenError,
+  invalidResetTokenProblem,
+  resetPasswordRequestSchema,
+  resetPasswordResultSchema,
+  type ActiveUserRecord,
+  type ForgotPasswordRequest,
+  type PasswordResetRepository,
+  type PasswordResetTokenInsert,
+  type PasswordResetTokenRecord,
+  type ResetPasswordRequest,
+  type ResetPasswordResult,
+  type ResetTokenNotifier,
+} from "./passwordReset.js";
+export {
+  createPasswordResetService,
+  type CreatePasswordResetServiceOptions,
+  type PasswordResetService,
+} from "./passwordResetService.js";
+export { createPasswordResetRepository } from "./passwordResetRepository.js";
+export {
+  createPasswordResetSesClient,
+  createSesPasswordResetNotifier,
+  getPasswordResetNotifierConfigFromEnv,
+  type PasswordResetNotifierConfig,
+  type SesV2Client,
+} from "./passwordResetNotifier.js";
+export {
+  createPasswordResetRouter,
+  type CreatePasswordResetRouterOptions,
+  type PasswordResetValidationErrorResponse,
+} from "./passwordResetRoutes.js";
+export {
   coreCaseOpenApiSchemaRegistrations,
   createCoreCaseOpenApiDocument,
   type CoreCaseOpenApiSchemaRegistration,
@@ -670,6 +703,14 @@ import {
 } from "./features/deductions/index.js";
 import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
 import { createRegistrationService } from "./authRegistrationService.js";
+import { createPasswordResetRepository } from "./passwordResetRepository.js";
+import { createPasswordResetService } from "./passwordResetService.js";
+import { createPasswordResetRouter } from "./passwordResetRoutes.js";
+import {
+  createPasswordResetSesClient,
+  createSesPasswordResetNotifier,
+  getPasswordResetNotifierConfigFromEnv,
+} from "./passwordResetNotifier.js";
 import {
   createAuditEntryRepository,
   createAuditEntryWriter,
@@ -760,6 +801,15 @@ export async function main(): Promise<Server> {
   const tenantLoginResolver = createTenantLoginResolver(client);
   const registrationService = createRegistrationService({
     store: createRegistrationAccountRepository(client),
+  });
+  const passwordResetRepository = createPasswordResetRepository(client);
+  const passwordResetNotifier = createSesPasswordResetNotifier(
+    createPasswordResetSesClient(),
+    getPasswordResetNotifierConfigFromEnv(),
+  );
+  const passwordResetService = createPasswordResetService({
+    repository: passwordResetRepository,
+    notifier: passwordResetNotifier,
   });
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
@@ -982,6 +1032,11 @@ export async function main(): Promise<Server> {
           tenantLoginBaseDomain,
         }),
       );
+      app.use(createPasswordResetRouter({
+        service: passwordResetService,
+        tenantLoginResolver,
+        tenantLoginBaseDomain,
+      }));
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
         secureCookies: process.env.NODE_ENV === "production",

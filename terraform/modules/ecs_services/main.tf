@@ -262,6 +262,12 @@ data "aws_iam_policy_document" "core_case_runtime_access" {
     actions   = ["sns:Publish"]
     resources = [var.stage_changed_topic_arn, var.action_item_created_topic_arn]
   }
+
+  statement {
+    sid       = "SendPasswordResetEmail"
+    actions   = ["ses:SendEmail"]
+    resources = [var.password_reset_sender_identity_arn]
+  }
 }
 
 resource "aws_iam_role_policy" "core_case_runtime_access" {
@@ -509,6 +515,8 @@ resource "aws_ecs_task_definition" "core_case" {
         { name = "JWT_REFRESH_TOKEN_TTL_SECONDS", value = "2592000" },
         { name = "LIABILITY_ENGINE_BASE", value = "http://tax-engine.service.taxpulse.internal:8000" },
         { name = "TAXPULSE_LOGIN_BASE_DOMAIN", value = var.login_base_domain },
+        { name = "TAXPULSE_PASSWORD_RESET_FROM_EMAIL", value = var.password_reset_from_email },
+        { name = "TAXPULSE_PASSWORD_RESET_PAGE_URL", value = var.password_reset_page_url },
         { name = "TAXPULSE_REDIS_URL", value = var.redis_url },
         { name = "AWS_REGION", value = var.aws_region },
         { name = "TAXPULSE_STAGE_CHANGED_TOPIC_ARN", value = var.stage_changed_topic_arn },
