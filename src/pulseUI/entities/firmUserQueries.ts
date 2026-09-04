@@ -26,10 +26,10 @@ const firmUserStatusSchema = z.enum(["Active", "Inactive"]);
 const firmUserApiRowSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  email: z.string().email(),
+  email: z.email(),
   role: firmUserRoleSchema,
   status: firmUserStatusSchema,
-  lastLoginAt: z.string().datetime().nullable(),
+  lastLoginAt: z.iso.datetime().nullable(),
 });
 const firmUsersResponseSchema = z.array(firmUserApiRowSchema);
 

@@ -315,7 +315,7 @@ function createInMemoryTransitionRepository(
     clientId: string;
   }) => Promise<TaxPlanCycle | null>;
   listQueue: (input: { tenantId: string; asOfDate?: string }) => Promise<Array<
-    TaxPlanCycle & { is_overdue: boolean; updated_at: string }
+    TaxPlanCycle & { client_name: string; is_overdue: boolean; updated_at: string }
   >>;
   getCurrentCycle: () => TaxPlanCycle;
   transitions: Array<{
@@ -349,6 +349,7 @@ function createInMemoryTransitionRepository(
       return [
         {
           ...currentCycle,
+          client_name: "CloudTap Client",
           is_overdue: false,
           updated_at: new Date().toISOString(),
         },

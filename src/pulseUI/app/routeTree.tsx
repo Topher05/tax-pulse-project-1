@@ -18,6 +18,7 @@ import { ActionItemsPage } from "../pages/clientPortal/ActionItemsPage.tsx";
 import { AuthBoundary } from "../auth/AuthBoundary.tsx";
 import { MfaChallengePage } from "../pages/auth/MfaChallengePage.tsx";
 import { MfaEnrollmentPage } from "../pages/auth/MfaEnrollmentPage.tsx";
+import { NewPasswordPage } from "../pages/auth/NewPasswordPage.tsx";
 import { PasswordResetConfirmationPage } from "../pages/auth/PasswordResetConfirmationPage.tsx";
 import { PasswordResetPage } from "../pages/auth/PasswordResetPage.tsx";
 import { RegisterPage } from "../pages/auth/RegisterPage.tsx";
@@ -113,6 +114,15 @@ const passwordResetConfirmationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/password-reset/confirmation",
   component: PasswordResetConfirmationPage,
+});
+
+const passwordResetNewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/password-reset/new",
+  validateSearch: (search: Record<string, unknown>) => ({
+    token: typeof search.token === "string" ? search.token : undefined,
+  }),
+  component: NewPasswordPage,
 });
 
 const dashboardRoute = createRoute({
@@ -237,6 +247,7 @@ export const routeTree = rootRoute.addChildren([
   mfaEnrollmentRoute,
   passwordResetRoute,
   passwordResetConfirmationRoute,
+  passwordResetNewRoute,
   workspaceRoute.addChildren([
     dashboardRoute,
     myTaxPlanRoute,

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { NextFunction, Request, Response } from "express";
-import type { ZodIssue } from "zod";
+import type * as z from "zod";
 
 import { ProblemHttpError, type ProblemDetails } from "./errors.js";
 import {
@@ -36,7 +36,7 @@ interface AuthenticatedTenantRequest extends Request {
   };
 }
 
-function toValidationIssue(issue: ZodIssue): MfaValidationErrorIssue {
+function toValidationIssue(issue: z.core.$ZodIssue): MfaValidationErrorIssue {
   return {
     path: issue.path.map((segment) =>
       typeof segment === "number" ? segment : String(segment),
@@ -48,7 +48,7 @@ function toValidationIssue(issue: ZodIssue): MfaValidationErrorIssue {
 
 function validationError(input: {
   detail: string;
-  issues: ZodIssue[];
+  issues: z.core.$ZodIssue[];
 }): ProblemHttpError {
   return new ProblemHttpError({
     type: "https://taxpulse.example/problems/validation-error",

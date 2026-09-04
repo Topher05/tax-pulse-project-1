@@ -4,6 +4,7 @@ import type { Client } from "pg";
 
 import {
   auditEntry as auditEntryTable,
+  clientRoster as clientRosterTable,
   outboxEvent as outboxEventTable,
   stageTransition as stageTransitionTable,
   taxPlanCycle as taxPlanCycleTable,
@@ -76,6 +77,7 @@ export class TaxPlanCycleOnHoldError extends Error {
 }
 
 export type TaxPlanCycleQueueItem = TaxPlanCycle & {
+  client_name: string;
   is_overdue: boolean;
   updated_at: string;
 };
@@ -121,7 +123,7 @@ function todayIsoDate(): string {
 }
 
 function toTaxPlanCycleQueueItem(
-  row: Parameters<typeof toTaxPlanCycle>[0],
+  row: Parameters<typeof toTaxPlanCycle>[0] & { clientName: string },
   asOfDate: string,
   updatedAt: Date | null,
 ): TaxPlanCycleQueueItem {
@@ -130,6 +132,7 @@ function toTaxPlanCycleQueueItem(
 
   return {
     ...cycle,
+    client_name: row.clientName,
     is_overdue: cycle.due_date < asOfDate,
     updated_at: queueUpdatedAt.toISOString(),
   };
@@ -407,6 +410,7 @@ export function createTaxPlanCycleRepository(
           .select({
             id: taxPlanCycleTable.id,
             clientId: taxPlanCycleTable.clientId,
+            clientName: clientRosterTable.clientName,
             stage: taxPlanCycleTable.stage,
             owner: taxPlanCycleTable.owner,
             priority: taxPlanCycleTable.priority,
@@ -415,6 +419,13 @@ export function createTaxPlanCycleRepository(
             holdReason: taxPlanCycleTable.holdReason,
           })
           .from(taxPlanCycleTable)
+          .innerJoin(
+            clientRosterTable,
+            and(
+              eq(clientRosterTable.id, taxPlanCycleTable.clientId),
+              eq(clientRosterTable.tenantId, taxPlanCycleTable.tenantId),
+            ),
+          )
           .where(eq(taxPlanCycleTable.tenantId, tenantId))
           .orderBy(asc(taxPlanCycleTable.dueDate)),
         db

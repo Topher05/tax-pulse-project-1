@@ -21,3 +21,15 @@ reason = "Accepted eval-only ragas advisory because the branch intentionally use
 [[IgnoredVulns]]
 id = "GHSA-95ww-475f-pr4f"
 reason = "Alias for the accepted eval-only ragas advisory."
+
+[[IgnoredVulns]]
+id = "GHSA-67mh-4wv8-2f99"
+reason = "Accepted dev-only esbuild advisory: the affected development server is not exposed, and the fixed Vite/Vitest line requires a Node runtime newer than the repository's pinned Node 22.0.0."
+
+[[IgnoredVulns]]
+id = "GHSA-8988-4f7v-96qf"
+reason = "Accepted dev-only OpenTelemetry advisory inherited through Lighthouse; Lighthouse runs locally against synthetic accessibility fixtures and the fixed major requires a newer Node runtime."
+
+[[IgnoredVulns]]
+id = "GHSA-jmr9-qjv8-65gv"
+reason = "Accepted dev-only extract-zip advisory inherited through Lighthouse and Puppeteer; no untrusted archives are processed, and npm only offers a breaking Lighthouse major upgrade."

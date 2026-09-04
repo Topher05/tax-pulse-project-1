@@ -8,6 +8,7 @@ import { ToolHeader } from "../../components/ToolHeader.tsx";
 import {
   type IncomeEventRecord,
   type IncomeSourceCategory,
+  useCreateIncomeEventMutation,
   useIncomeEventsQuery,
 } from "../../entities/incomeQueries.ts";
 import { usePlanToolCase, useSetPlanToolCaseId } from "../../shared/usePlanToolCase.ts";
@@ -274,6 +275,7 @@ export function IncomePage() {
   const setCaseId = useSetPlanToolCaseId();
   const contextControl = <CurrentCaseSelector caseId={caseId} onCaseIdChange={setCaseId} />;
   const incomeEventsQuery = useIncomeEventsQuery(caseId);
+  const createIncomeEventMutation = useCreateIncomeEventMutation(caseId);
 
   if (caseId === null || hasInvalidCaseId) {
     return (
@@ -307,7 +309,9 @@ export function IncomePage() {
           ? incomeEventsQuery.error.message
           : "Income events request failed."
       }
-      onCreateIncome={() => undefined}
+      onCreateIncome={async (payload) => {
+        await createIncomeEventMutation.mutateAsync(payload);
+      }}
       onRetry={() => {
         void incomeEventsQuery.refetch();
       }}

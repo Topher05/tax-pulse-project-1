@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { NextFunction, Request, Response } from "express";
-import { z, type ZodIssue } from "zod";
+import { z } from "zod";
 
 import {
   type PasswordAuthenticationResult,
@@ -24,7 +24,7 @@ export const passwordLoginRequestSchema = z
       .string()
       .regex(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/)
       .optional(),
-    email: z.string().email(),
+    email: z.email(),
     password: z.string().min(1),
   })
   .strict();
@@ -32,7 +32,7 @@ export const passwordLoginRequestSchema = z
 export const mfaChallengeResponseSchema = z.object({
   status: z.literal("mfa_challenge_required"),
   tenant_id: z.uuid(),
-  email: z.string().email(),
+  email: z.email(),
   user_id: z.uuid(),
 });
 
@@ -67,7 +67,7 @@ export interface CreateAuthRouterOptions {
   registrationService?: RegistrationService;
 }
 
-function toValidationIssue(issue: ZodIssue): AuthValidationErrorIssue {
+function toValidationIssue(issue: z.core.$ZodIssue): AuthValidationErrorIssue {
   return {
     path: issue.path.map((segment) =>
       typeof segment === "number" ? segment : String(segment),

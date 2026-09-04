@@ -5,6 +5,144 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira207 - SCRUM-207
+
+**Branch:** `martins-okorie-jira207`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-207
+
+**Summary:** Reset Password
+
+**Description:** As a registered user, I want to reset my password through the React application so that I can regain access to my account without administrator assistance.
+
+**Acceptance Criteria:**
+
+- The application provides a forgot-password form that accepts an email address and submits a request to the existing password-reset backend endpoint.
+- The reset-password page accepts the reset token and a valid new password, then submits them to the existing backend endpoint without implementing new password-reset service logic.
+- Successful and unsuccessful reset attempts display clear user-facing messages without revealing whether an account exists or exposing tokens, passwords, or sensitive authentication details.
+
+**Code Connection:** Added the backend password reset domain (`passwordReset.ts`, `passwordResetService.ts`, `passwordResetRepository.ts`, `passwordResetRoutes.ts`) including a `password_reset_token` database table with migration `0020_password_reset_token.sql` generated via `drizzle-kit generate`. Wired the forgot-password and reset-password endpoints (`POST /auth/forgot-password` and `POST /auth/reset-password`). Added an AWS SES `ResetTokenNotifier` with required production sender and HTTPS reset-page configuration; raw reset tokens and recipient emails are no longer written to application logs. Implemented Pulse UI `PasswordResetPage` form submission, `NewPasswordPage` token and new password reset submission, `authClient` API helpers, and route configuration in `routeTree.tsx`. Forgot-password lookup is scoped to the hostname-resolved active tenant. Reset confirmation atomically consumes an unused, unexpired token, updates the Argon2id password hash, and revokes the user's active refresh tokens.
+
+**Project Scope Connection:** Completes the user self-service password recovery flow for tenant-scoped users, maintaining least-privilege tenant isolation, SES sender-scoped IAM access, secure Argon2id password hashing, and post-reset session revocation while ensuring anonymous responses cannot enumerate registered accounts.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0020_password_reset_token.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0019_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0020_snapshot.json`
+- `src/typescript/passwordReset.ts`
+- `src/typescript/passwordResetService.ts`
+- `src/typescript/passwordResetRepository.ts`
+- `src/typescript/passwordResetRoutes.ts`
+- `src/typescript/passwordResetNotifier.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/auth/authClient.ts`
+- `src/pulseUI/pages/auth/PasswordResetPage.tsx`
+- `src/pulseUI/pages/auth/NewPasswordPage.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/vite.config.ts`
+- `tests/typescript/passwordReset.test.ts`
+- `tests/typescript/passwordResetRoutes.test.ts`
+- `tests/typescript/passwordResetNotifier.test.ts`
+- `tests/typescript/passwordResetRepository.integration.test.ts`
+- `src/pulseUI/tests/auth/PasswordResetPage.test.tsx`
+- `src/pulseUI/tests/auth/NewPasswordPage.test.tsx`
+- `src/pulseUI/tests/auth/authClient.test.tsx`
+- `.env.example`
+- `docker-compose.yml`
+- `package.json`
+- `package-lock.json`
+- `terraform/variables.tf`
+- `terraform/delivery.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/ecs_services/main.tf`
+- `.github/workflows/container-scan-sbom.yml`
+- `.gitleaksignore`
+- `tests/typescript/workflows/containerScanSbom.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed for the app, tests, and Pulse UI.
+- `npm run db:check` passed after repairing the `0019` merge conflict and regenerating `0020_password_reset_token.sql` plus `0020_snapshot.json` with `drizzle-kit generate`.
+- Targeted backend tests passed: `passwordReset.test.ts` (9), `passwordResetRoutes.test.ts` (6), and `passwordResetNotifier.test.ts` (3), for 18 passing tests.
+- Targeted Pulse UI tests passed: `PasswordResetPage.test.tsx` (2), `NewPasswordPage.test.tsx` (4), and `authClient.test.tsx` (10), for 16 passing tests.
+- `terraform fmt` completed and `terraform -chdir=terraform validate` passed for the SES environment and least-privilege sender identity wiring.
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts` uses whitespace-tolerant matching so canonical `terraform fmt` alignment does not cause a false CI failure.
+- The new repository integration test covers atomic password update, one-time token consumption, and refresh-token revocation. It could not execute locally because no Docker/Testcontainers runtime or Compose Postgres service was available.
+- The repository-wide `npm test` completed type checking and 456 tests successfully; 72 database/container tests failed because the same Docker runtime and Compose Postgres prerequisites were unavailable.
+
+## martins-okorie-jira209 - SCRUM-209
+
+**Branch:** `martins-okorie-jira209`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-209
+
+**Summary:** Case ID harness refinement: adjust to user name
+
+**Description:** Case ID harness currently allowed advisors to select a
+client's case by UUID because that was the only identifier available when the
+selector was implemented. With friendly client naming now available from the
+cycle payload or client roster, the selector should show a human-readable client
+case label while preserving UUID mapping under the hood.
+
+**Acceptance Criteria:**
+
+- The current case selector renders a user-friendly client case label instead
+  of exposing the full UUID as the primary option text.
+- The selector still submits and routes with the full UUID value.
+- Duplicate-name disambiguation is preserved with a short case identifier.
+
+**Code Connection:** Refines the `CurrentCaseSelector` used by plan tools such
+as Income, Deductions, Scenarios, and Quarterly Payments. The selector now
+formats options as `Client Name (last4)` when a name is present, consults the
+client roster as an under-the-hood ID-to-name mapping, and keeps the full case
+UUID as the option value for existing route/query behavior.
+
+**Project Scope Connection:** Supports the React SPA operator experience by
+making case selection easier for advisors without weakening scoped access,
+tenant isolation, or the Tax Plan Cycle UUID contract used by backend APIs.
+
+**Changed Files:**
+
+- `src/pulseUI/components/CurrentCaseSelector.tsx`
+- `src/pulseUI/entities/taxPlanCycle.ts`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/tests/components/CurrentCaseSelector.test.tsx`
+- `src/pulseUI/tests/deductions/DeductionsPage.test.tsx`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `src/pulseUI/tests/scenarios/ScenarioPlannerPage.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Queue.test.tsx`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/features/taxPlanCycle/schema.test.ts`
+- `tests/typescript/features/taxPlanCycle/taxPlanCycle.test.model.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck:core` passed.
+- `npm --prefix src/pulseUI run verify` passed, including type checks, unit and
+  component tests, accessibility tests, and a production build.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+  passed, including the queue response assertion for `client_name`.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/integration.test.ts -t "lists a tenant's queue by due date and flags overdue cycles"`
+  passed, including the repository queue assertion for roster-backed `client_name`.
+- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/schema.test.ts`
+  passed, including the repository queue schema assertion for `client_name` and
+  `updated_at`.
+
 ## martins-okorie-jira197 - SCRUM-197
 
 **Branch:** `martins-okorie-jira197`

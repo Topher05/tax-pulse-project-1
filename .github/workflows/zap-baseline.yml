@@ -27,9 +27,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Initialize report files
-        run: touch report_html.html report_md.md report_json.json
-
       - name: Run OWASP ZAP baseline scan
         id: zap
         continue-on-error: true

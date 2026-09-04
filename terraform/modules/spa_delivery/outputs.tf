@@ -23,6 +23,11 @@ output "cloudfront_distribution_arn" {
   value       = aws_cloudfront_distribution.spa.arn
 }
 
+output "kms_key_arn" {
+  description = "KMS key ARN used to encrypt SPA artifacts."
+  value       = aws_kms_key.spa.arn
+}
+
 output "spa_url" {
   description = "CloudFront HTTPS URL for the SPA."
   value       = "https://${aws_cloudfront_distribution.spa.domain_name}"

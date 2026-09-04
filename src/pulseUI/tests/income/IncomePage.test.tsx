@@ -38,6 +38,7 @@ function buildTaxPlanCycleQueuePayload() {
     {
       id: taxPlanCycleRows[1].id,
       client_id: taxPlanCycleRows[1].clientId,
+      client_name: "Test Client",
       stage: taxPlanCycleRows[1].stage,
       owner: taxPlanCycleRows[1].owner,
       priority: taxPlanCycleRows[1].priority,
@@ -179,7 +180,7 @@ describe("IncomePage", () => {
     expect(
       await screen.findByRole("heading", { name: "Income Events", level: 2 }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Client case" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Select a case to load income events" }),
     ).toBeInTheDocument();
@@ -224,6 +225,66 @@ describe("IncomePage", () => {
     expect(screen.getByText("$21,500.25")).toBeInTheDocument();
     expect(caseApiMock).toHaveBeenCalledWith(
       `/v1/cases/${seededCaseId}/income-events`,
+      expect.any(Function),
+    );
+  });
+
+  test("persists the Add Income form and renders the refreshed row", async () => {
+    const createdRow: IncomeApiRow = {
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8ca218",
+      case_id: seededCaseId,
+      date: "2026-08-31",
+      source: "Consulting",
+      type: "1099",
+      amount: "250.25",
+      withholding: "25.00",
+    };
+    let incomeRows = [...sampleIncomePayload];
+    vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
+      if (path === "/v1/tax-plan-cycles") {
+        return Promise.resolve(buildTaxPlanCycleQueuePayload() as never);
+      }
+      if (path === `/v1/cases/${seededCaseId}/income-events`) {
+        return Promise.resolve(incomeRows as never);
+      }
+      throw new Error(`Unexpected income request: ${path}`);
+    });
+    const send = vi.spyOn(caseApi, "caseApiSendJson").mockImplementation(async () => {
+      incomeRows = [...incomeRows, createdRow];
+      return createdRow as never;
+    });
+
+    renderIncomePage();
+    expect(await screen.findByText("Acme W-2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Add Income" }));
+    const dialog = screen.getByRole("dialog", { name: "Add Income" });
+    fireEvent.change(within(dialog).getByLabelText("Source"), {
+      target: { value: "Consulting" },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Type"), {
+      target: { value: "1099" },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Amount"), {
+      target: { value: "250.25" },
+    });
+    fireEvent.change(within(dialog).getByLabelText("Withholding"), {
+      target: { value: "25" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add Income" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Add Income" })).toBeNull());
+    expect(await screen.findByText("Consulting")).toBeInTheDocument();
+    expect(send).toHaveBeenCalledWith(
+      `/v1/cases/${seededCaseId}/income-events`,
+      {
+        method: "POST",
+        body: {
+          source: "Consulting",
+          type: "1099",
+          amount: 250.25,
+          withholding: 25,
+        },
+      },
       expect.any(Function),
     );
   });

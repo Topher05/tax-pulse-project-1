@@ -4,7 +4,7 @@ const issuerSchema = z
   .string()
   .trim()
   .min(1, "JWT_ISSUER is required.")
-  .url("JWT_ISSUER must be a valid URL.");
+  .pipe(z.url("JWT_ISSUER must be a valid URL."));
 
 const keyIdSchema = z
   .string()
@@ -63,7 +63,7 @@ export function getJwtJwksVerifierConfigFromEnv(
   const jwksUrl = z
     .string()
     .trim()
-    .url("JWT_JWKS_URL must be a valid URL.")
+    .pipe(z.url("JWT_JWKS_URL must be a valid URL."))
     .parse(env.JWT_JWKS_URL ?? new URL("/.well-known/jwks.json", issuer).toString());
 
   return { issuer, jwksUrl };

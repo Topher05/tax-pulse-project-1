@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { NextFunction, Request, Response } from "express";
-import type { ZodIssue } from "zod";
+import type * as z from "zod";
 
 import {
   taxPlanCycleCreateController,
@@ -39,10 +39,7 @@ import {
   clientTaxPlanScenarioSchema,
   type TaxPlanCycleStage,
 } from "./taxPlanCycle.js";
-import {
-  taxPlanCycleTransitionController,
-  type TaxPlanCycleTransitionController,
-} from "./controllers/transitionController.js";
+import type { TaxPlanCycleTransitionController } from "./controllers/transitionController.js";
 import type { ScenarioModelingController } from "./controllers/scenarios.js";
 import { scenarioModelingRequestSchema } from "./scenarioModeling.js";
 import type { ScenarioRepository } from "./repositories/scenarios.js";
@@ -149,7 +146,7 @@ const transitionAccessMatrix: Partial<
   },
 };
 
-function toValidationIssue(issue: ZodIssue): ValidationErrorIssue {
+function toValidationIssue(issue: z.core.$ZodIssue): ValidationErrorIssue {
   return {
     path: issue.path.map((segment) =>
       typeof segment === "number" ? segment : String(segment),
@@ -371,7 +368,10 @@ export function createTaxPlanCycleRouter(
   const router = Router();
   const controller = options.controller ?? taxPlanCycleCreateController;
   const holdController = options.holdController ?? taxPlanCycleHoldController;
-  const transitionController = options.transitionController ?? taxPlanCycleTransitionController;
+  const transitionController = options.transitionController ?? {
+    transition: () => null,
+    findByCaseId: () => null,
+  };
   const assistantController =
     options.assistantController ?? taxPlanDetailsAssistantController;
   const scenarioModelingController = options.scenarioModelingController;
@@ -397,8 +397,7 @@ export function createTaxPlanCycleRouter(
   };
   const actionItemRepository = options.actionItemRepository;
   const auditLogger = options.auditLogger ?? console;
-  const auditEntryWriter =
-    options.auditEntryWriter ?? deprecatedNoopAuditEntryWriter;
+  const auditEntryWriter = options.auditEntryWriter ?? noopAuditEntryWriter;
   const auditEntryReader = options.auditEntryReader ?? {
     listByCase: async () => [],
   };
@@ -1308,8 +1307,7 @@ export function createTaxPlanCycleRouter(
   return router;
 }
 
-/** @deprecated Legacy fallback stub. Inject a real audit writer instead. */
-const deprecatedNoopAuditEntryWriter: AuditEntryWriter = {
+const noopAuditEntryWriter: AuditEntryWriter = {
   async record() {
     return undefined;
   },

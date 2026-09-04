@@ -39,6 +39,7 @@ function createInMemoryRepository(initialCycle: TaxPlanCycle) {
       return [
         {
           ...currentCycle,
+          client_name: "Test Client",
           is_overdue: false,
           updated_at: new Date().toISOString(),
         },

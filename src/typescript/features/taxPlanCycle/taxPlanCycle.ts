@@ -61,6 +61,7 @@ export const taxPlanCycleSchema = taxPlanCycleBaseSchema.superRefine(
 );
 
 export const taxPlanCycleQueueItemSchema = taxPlanCycleSchema.extend({
+  client_name: z.string().min(1),
   is_overdue: z.boolean(),
   updated_at: z.iso.datetime(),
 });
@@ -79,8 +80,8 @@ export const taxPlanCycleReadResponseSchema = taxPlanCycleSchema.extend({
 export const clientTaxPlanScenarioSchema = z.strictObject({
   id: z.uuid(),
   name: z.string().min(1),
-  total_tax: z.number().finite().nonnegative(),
-  delta_vs_baseline: z.number().finite(),
+  total_tax: z.number().nonnegative(),
+  delta_vs_baseline: z.number(),
 });
 
 /**
@@ -89,8 +90,8 @@ export const clientTaxPlanScenarioSchema = z.strictObject({
  */
 export const clientTaxPlanReadModelSchema = taxPlanCycleSchema.extend({
   advisor: z.string().min(1),
-  next_meeting: z.string().datetime().nullable(),
-  projected_savings: z.number().finite().nonnegative().nullable(),
+  next_meeting: z.iso.datetime().nullable(),
+  projected_savings: z.number().nonnegative().nullable(),
   top_recommendation: z.string().min(1).nullable(),
   scenarios: z.array(clientTaxPlanScenarioSchema),
 });

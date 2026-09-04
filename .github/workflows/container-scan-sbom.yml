@@ -7,6 +7,11 @@ on:
       - development
   pull_request:
   workflow_dispatch:
+    inputs:
+      premerge_zap_target_url:
+        description: Optional deployed URL for a ZAP-only pre-merge validation run
+        required: false
+        type: string
 
 concurrency:
   group: release-scan-${{ github.ref }}
@@ -26,6 +31,7 @@ env:
 jobs:
   build-core-case:
     name: Build, Scan, SBOM & Sign Core Case
+    if: github.event_name != 'workflow_dispatch' || inputs.premerge_zap_target_url == ''
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
     outputs:
@@ -114,6 +120,14 @@ jobs:
           ignore-unfixed: true
           exit-code: "0"
 
+      - name: Print Core Case Trivy report on failure
+        if: failure()
+        shell: bash
+        run: |
+          if [[ -s trivy-report-taxpulse-core-case.txt ]]; then
+            cat trivy-report-taxpulse-core-case.txt
+          fi
+
       - name: Generate SBOM with Syft
         if: always()
         uses: anchore/sbom-action@v0
@@ -157,6 +171,7 @@ jobs:
 
   build-tax-engine:
     name: Build, Scan, SBOM & Sign Tax Engine
+    if: github.event_name != 'workflow_dispatch' || inputs.premerge_zap_target_url == ''
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
     outputs:
@@ -245,6 +260,14 @@ jobs:
           ignore-unfixed: true
           exit-code: "0"
 
+      - name: Print Tax Engine Trivy report on failure
+        if: failure()
+        shell: bash
+        run: |
+          if [[ -s trivy-report-taxpulse-tax-engine.txt ]]; then
+            cat trivy-report-taxpulse-tax-engine.txt
+          fi
+
       - name: Generate SBOM with Syft
         if: always()
         uses: anchore/sbom-action@v0
@@ -294,6 +317,7 @@ jobs:
       - build-tax-engine
     outputs:
       spa_url: ${{ steps.deployed-spa.outputs.spa_url }}
+      spa_index_sha256: ${{ steps.deployed-spa.outputs.spa_index_sha256 }}
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 75
 
@@ -351,6 +375,14 @@ jobs:
       - name: Initialize Terraform backend
         shell: bash
         run: terraform -chdir=terraform init -input=false
+
+      - name: Install Pulse UI dependencies
+        shell: bash
+        run: npm ci --prefix src/pulseUI
+
+      - name: Build Pulse UI
+        shell: bash
+        run: npm run build:web
 
       - name: Resolve Terraform runtime configuration
         id: runtime-config
@@ -510,21 +542,47 @@ jobs:
             fi
           done
 
-      - name: Record deployed SPA URL
+      - name: Deploy and verify Pulse UI
         id: deployed-spa
         shell: bash
         run: |
           set -euo pipefail
+          SPA_BUCKET="$(terraform -chdir=terraform output -raw spa_bucket_name)"
+          CLOUDFRONT_DISTRIBUTION_ID="$(terraform -chdir=terraform output -raw cloudfront_distribution_id)"
           SPA_URL="$(terraform -chdir=terraform output -raw spa_url)"
-          if [[ -z "$SPA_URL" ]]; then
-            echo "terraform output spa_url was empty" >&2
+          [[ "$SPA_BUCKET" =~ ^taxpulse-dev-[0-9]{12}-spa$ ]]
+          [[ "$CLOUDFRONT_DISTRIBUTION_ID" =~ ^[A-Z0-9]+$ ]]
+          [[ "$SPA_URL" =~ ^https://.+$ ]]
+
+          aws s3 sync dist/pulseUI "s3://$SPA_BUCKET" \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude index.html
+          aws s3 cp dist/pulseUI/index.html "s3://$SPA_BUCKET/index.html" \
+            --cache-control "no-cache,max-age=0,must-revalidate" \
+            --content-type text/html
+
+          INVALIDATION_ID="$(aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths '/*' \
+            --query Invalidation.Id \
+            --output text)"
+          aws cloudfront wait invalidation-completed \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --id "$INVALIDATION_ID"
+
+          EXPECTED_SHA256="$(sha256sum dist/pulseUI/index.html | cut -d' ' -f1)"
+          curl --fail --silent --show-error --retry 5 --retry-all-errors \
+            "${SPA_URL}?release=${GITHUB_SHA}" \
+            --output deployed-index.html
+          ACTUAL_SHA256="$(sha256sum deployed-index.html | cut -d' ' -f1)"
+          if [[ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]]; then
+            echo "Deployed SPA index digest mismatch: expected $EXPECTED_SHA256, got $ACTUAL_SHA256" >&2
             exit 1
           fi
-          if [[ ! "$SPA_URL" =~ ^https://.+ ]]; then
-            echo "terraform output spa_url must be an HTTPS URL, got: $SPA_URL" >&2
-            exit 1
-          fi
+
           echo "spa_url=${SPA_URL}" >> "$GITHUB_OUTPUT"
+          echo "spa_index_sha256=${EXPECTED_SHA256}" >> "$GITHUB_OUTPUT"
 
   zap-baseline:
     name: OWASP ZAP Baseline Scan
@@ -532,6 +590,13 @@ jobs:
     uses: ./.github/workflows/zap-baseline.yml
     with:
       target_url: ${{ needs.verify-and-deploy.outputs.spa_url }}
+
+  premerge-zap-baseline:
+    name: Pre-merge OWASP ZAP Baseline Scan
+    if: github.event_name == 'workflow_dispatch' && inputs.premerge_zap_target_url != ''
+    uses: ./.github/workflows/zap-baseline.yml
+    with:
+      target_url: ${{ inputs.premerge_zap_target_url }}
 
   release-evidence:
     name: Release Evidence Manifest
@@ -555,6 +620,7 @@ jobs:
           TAX_ENGINE_REPOSITORY: ${{ needs.build-tax-engine.outputs.repository }}
           TAX_ENGINE_DIGEST: ${{ needs.build-tax-engine.outputs.digest }}
           SPA_URL: ${{ needs.verify-and-deploy.outputs.spa_url }}
+          SPA_INDEX_SHA256: ${{ needs.verify-and-deploy.outputs.spa_index_sha256 }}
         shell: python
         run: |
           import json
@@ -569,6 +635,8 @@ jobs:
               "commit_checks_url": f"{github_server_url}/{repository}/commit/{sha}/checks",
               "actions_run_url": f"{github_server_url}/{repository}/actions/runs/{run_id}",
               "deployed_spa_url": os.environ["SPA_URL"],
+              "ui_source_commit_sha": sha,
+              "deployed_spa_index_sha256": os.environ["SPA_INDEX_SHA256"],
               "images": [
                   {
                       "name": "core-case",

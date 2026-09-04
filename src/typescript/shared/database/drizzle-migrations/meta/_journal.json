@@ -134,6 +134,20 @@
       "when": 1787335886300,
       "tag": "0018_mute_lila_cheney",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1788149437143,
+      "tag": "0019_create_income_event",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1788534141332,
+      "tag": "0020_password_reset_token",
+      "breakpoints": true
     }
   ]
 }

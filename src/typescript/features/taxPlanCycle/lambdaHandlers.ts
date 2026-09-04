@@ -83,7 +83,7 @@ function authenticationRequired(): ProblemHttpError {
   });
 }
 
-function toValidationIssue(issue: z.ZodIssue): {
+function toValidationIssue(issue: z.core.$ZodIssue): {
   path: Array<string | number>;
   message: string;
   code: string;

@@ -19,6 +19,8 @@ import {
   firmUserRoleUpdateRequestSchema,
   firmUsersListResponseSchema,
   firmUserRowSchema,
+  incomeEventCreateSchema,
+  incomeEventRowSchema,
   mfaChallengeResponseSchema,
   mfaEnrollConfirmRequestSchema,
   mfaEnrollConfirmResultSchema,
@@ -727,6 +729,38 @@ describe("Core Case Service OpenAPI document", () => {
     });
   });
 
+  test("documents reading and creating income events for a selected case", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const incomePath = requiredRecord(paths, "/v1/cases/{caseId}/income-events");
+    const readOperation = requiredRecord(incomePath, "get");
+    const createOperation = requiredRecord(incomePath, "post");
+    const requestBody = requiredRecord(createOperation, "requestBody");
+    const requestContent = requiredRecord(requestBody, "content");
+    const requestJson = requiredRecord(requestContent, "application/json");
+    const requestExample = requiredRecord(requestJson, "example");
+    const responses = requiredRecord(createOperation, "responses");
+    const createdResponse = requiredRecord(responses, "201");
+    const createdContent = requiredRecord(createdResponse, "content");
+    const createdJson = requiredRecord(createdContent, "application/json");
+    const createdExample = requiredRecord(createdJson, "example");
+
+    expect(readOperation.operationId).toBe("readCaseIncomeEvents");
+    expect(createOperation.operationId).toBe("createCaseIncomeEvent");
+    expect(requestExample).toMatchObject({
+      source: "Acme Corporation",
+      type: "w2",
+      amount: 125000.5,
+      withholding: 21500.25,
+    });
+    expect(createdExample).toMatchObject({
+      source: requestExample.source,
+      type: requestExample.type,
+      amount: "125000.50",
+      withholding: "21500.25",
+    });
+  });
+
   test("registers the same zod schema objects used by routes and domain exports", () => {
     expect(coreCaseOpenApiSchemaRegistrations).toEqual(
       expect.arrayContaining([
@@ -821,6 +855,14 @@ describe("Core Case Service OpenAPI document", () => {
         expect.objectContaining({
           name: "DeductionRow",
           schema: deductionTableRowSchema,
+        }),
+        expect.objectContaining({
+          name: "IncomeEventCreateRequest",
+          schema: incomeEventCreateSchema,
+        }),
+        expect.objectContaining({
+          name: "IncomeEventRow",
+          schema: incomeEventRowSchema,
         }),
         expect.objectContaining({
           name: "MfaEnrollRequest",

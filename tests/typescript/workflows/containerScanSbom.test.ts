@@ -19,6 +19,10 @@ describe("SCRUM-168 container release workflow", () => {
     expect(workflow).toContain("if: github.ref != 'refs/heads/development'");
     expect(workflow).toContain("aws-actions/configure-aws-credentials@v5");
     expect(workflow).toContain("role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}");
+    expect(workflow).toContain("Print Core Case Trivy report on failure");
+    expect(workflow).toContain("Print Tax Engine Trivy report on failure");
+    expect(workflow).toContain("cat trivy-report-taxpulse-core-case.txt");
+    expect(workflow).toContain("cat trivy-report-taxpulse-tax-engine.txt");
   });
 
   test("builds release images for their ECS architectures and deploys verified digests", () => {

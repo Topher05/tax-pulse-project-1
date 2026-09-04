@@ -55,6 +55,7 @@ describe("ZAP baseline security gate workflow", () => {
     expect(workflow).toContain("report_html.html");
     expect(workflow).toContain("report_md.md");
     expect(workflow).toContain("report_json.json");
+    expect(workflow).not.toContain("Initialize report files");
   });
 
   test("fails closed on unsuccessful scans or missing reports", () => {
@@ -119,12 +120,24 @@ describe("SCRUM-169 release integration", () => {
     const workflow = readFileSync(releaseWorkflowPath, "utf8");
 
     expect(workflow).toContain("spa_url: ${{ steps.deployed-spa.outputs.spa_url }}");
+    expect(workflow).toContain("spa_index_sha256: ${{ steps.deployed-spa.outputs.spa_index_sha256 }}");
     expect(workflow).toContain("hashicorp/setup-terraform@v4");
     expect(workflow).toContain("terraform_wrapper: false");
     expect(workflow).toContain("terraform -chdir=terraform init -input=false");
+    expect(workflow).toContain("Install Pulse UI dependencies");
+    expect(workflow).toContain("run: npm ci --prefix src/pulseUI");
+    expect(workflow).toContain("run: npm run build:web");
+    expect(workflow).toContain('SPA_BUCKET="$(terraform -chdir=terraform output -raw spa_bucket_name)"');
+    expect(workflow).toContain('CLOUDFRONT_DISTRIBUTION_ID="$(terraform -chdir=terraform output -raw cloudfront_distribution_id)"');
     expect(workflow).toContain('SPA_URL="$(terraform -chdir=terraform output -raw spa_url)"');
-    expect(workflow).toContain('if [[ -z "$SPA_URL" ]]');
-    expect(workflow).toContain('if [[ ! "$SPA_URL" =~ ^https://.+ ]]');
+    expect(workflow).toContain('aws s3 sync dist/pulseUI "s3://$SPA_BUCKET"');
+    expect(workflow).toContain("aws s3 cp dist/pulseUI/index.html");
+    expect(workflow).toContain("aws cloudfront create-invalidation");
+    expect(workflow).toContain("--query Invalidation.Id");
+    expect(workflow).toContain("aws cloudfront wait invalidation-completed");
+    expect(workflow).toContain('EXPECTED_SHA256="$(sha256sum dist/pulseUI/index.html');
+    expect(workflow).toContain('ACTUAL_SHA256="$(sha256sum deployed-index.html');
+    expect(workflow).toContain('[[ "$SPA_URL" =~ ^https://.+$ ]]');
     expect(workflow).toContain("zap-baseline:");
     expect(workflow).toContain("needs: verify-and-deploy");
     expect(workflow).toContain("uses: ./.github/workflows/zap-baseline.yml");
@@ -137,10 +150,22 @@ describe("SCRUM-169 release integration", () => {
     expect(zapIndex).toBeGreaterThan(deployIndex);
   });
 
+  test("supports a ZAP-only manual pre-merge validation without release builds", () => {
+    const workflow = readFileSync(releaseWorkflowPath, "utf8");
+
+    expect(workflow).toContain("premerge_zap_target_url:");
+    expect(workflow).toContain(
+      "if: github.event_name != 'workflow_dispatch' || inputs.premerge_zap_target_url == ''",
+    );
+    expect(workflow).toContain("premerge-zap-baseline:");
+    expect(workflow).toContain("github.event_name == 'workflow_dispatch'");
+    expect(workflow).toContain("target_url: ${{ inputs.premerge_zap_target_url }}");
+  });
+
   test("fails invalid terraform output before invoking the reusable ZAP workflow", () => {
     const workflow = readFileSync(releaseWorkflowPath, "utf8");
 
-    const invalidOutputCheckIndex = workflow.indexOf('if [[ ! "$SPA_URL" =~ ^https://.+ ]]');
+    const invalidOutputCheckIndex = workflow.indexOf('[[ "$SPA_URL" =~ ^https://.+$ ]]');
     const zapIndex = workflow.indexOf("zap-baseline:");
     expect(invalidOutputCheckIndex).toBeGreaterThan(-1);
     expect(zapIndex).toBeGreaterThan(invalidOutputCheckIndex);
@@ -159,6 +184,8 @@ describe("SCRUM-169 release integration", () => {
     expect(workflow).toContain("commit_checks_url");
     expect(workflow).toContain("actions_run_url");
     expect(workflow).toContain("deployed_spa_url");
+    expect(workflow).toContain("ui_source_commit_sha");
+    expect(workflow).toContain("deployed_spa_index_sha256");
     expect(workflow).toContain("immutable_ref");
     expect(workflow).toContain("trivy-report-taxpulse-core-case");
     expect(workflow).toContain("sbom-taxpulse-core-case");
