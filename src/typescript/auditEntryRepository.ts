@@ -70,25 +70,26 @@ export function createAuditEntryWriter(client: Client): AuditEntryWriter {
 
   return {
     async record(input) {
-      await db
-        .insert(auditEntryTable)
-        .select(
-          db
-            .select({
-              caseId: taxPlanCycleTable.id,
-              actor: sql<string>`${input.actor}`.as("actor"),
-              action: sql<string>`${input.action}`.as("action"),
-              outcome: sql<string>`${input.outcome}`.as("outcome"),
-              occurredAt: sql<Date>`${input.occurredAt}`.as("occurred_at"),
-            })
-            .from(taxPlanCycleTable)
-            .where(
-              and(
-                eq(taxPlanCycleTable.tenantId, input.tenantId),
-                eq(taxPlanCycleTable.id, input.caseId),
-              ),
-            ),
-        );
+      await db.execute(sql`
+        INSERT INTO ${auditEntryTable} (
+          ${auditEntryTable.caseId},
+          ${auditEntryTable.actor},
+          ${auditEntryTable.action},
+          ${auditEntryTable.outcome},
+          ${auditEntryTable.occurredAt}
+        )
+        SELECT
+          ${taxPlanCycleTable.id},
+          ${input.actor},
+          ${input.action},
+          ${input.outcome},
+          ${input.occurredAt}
+        FROM ${taxPlanCycleTable}
+        WHERE ${and(
+          eq(taxPlanCycleTable.tenantId, input.tenantId),
+          eq(taxPlanCycleTable.id, input.caseId),
+        )}
+      `);
     },
   };
 }
