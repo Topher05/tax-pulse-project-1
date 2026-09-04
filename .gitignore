@@ -13,7 +13,7 @@ src/pulseUI/coverage/*
 src/pulseUI/test-results/
 src/pulseUI/playwright-report/
 .DS_Store
-codebase_guide/*
+/codebase_guide/
 .vscode/
 artifacts/
 .lambda-package/

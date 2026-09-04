@@ -309,6 +309,7 @@ function canManageHold(user: TenantScopedRequest["user"]): boolean {
 function logDeniedTransitionAttempt(
   auditLogger: Pick<Console, "info">,
   input: {
+    tenantId?: string;
     caseId: string;
     actor: string;
     action: string;
@@ -318,6 +319,7 @@ function logDeniedTransitionAttempt(
   const occurredAt = new Date();
 
   auditLogger.info({
+    tenant_id: input.tenantId,
     case_id: input.caseId,
     actor: input.actor,
     action: input.action,
@@ -332,6 +334,7 @@ async function writeTransitionAttemptAudit(
   auditLogger: Pick<Console, "info">,
   auditEntryWriter: AuditEntryWriter,
   input: {
+    tenantId?: string;
     caseId: string;
     actor: string;
     action: string;
@@ -340,19 +343,23 @@ async function writeTransitionAttemptAudit(
 ): Promise<void> {
   const occurredAt = logDeniedTransitionAttempt(auditLogger, input);
 
-  await auditEntryWriter.record({
-    caseId: input.caseId,
-    actor: input.actor,
-    action: input.action,
-    outcome: input.outcome,
-    occurredAt,
-  });
+  if (input.tenantId) {
+    await auditEntryWriter.record({
+      tenantId: input.tenantId,
+      caseId: input.caseId,
+      actor: input.actor,
+      action: input.action,
+      outcome: input.outcome,
+      occurredAt,
+    });
+  }
 }
 
 async function writeDeniedTransitionAttempt(
   auditLogger: Pick<Console, "info">,
   auditEntryWriter: AuditEntryWriter,
   input: {
+    tenantId?: string;
     caseId: string;
     actor: string;
     action: string;
@@ -918,12 +925,14 @@ export function createTaxPlanCycleRouter(
   router.patch(
     "/tax-plan-cycles/:caseId/hold",
     async (req: Request, res: Response, next: NextFunction) => {
+      const tenantId = (req as TenantScopedRequest).tenant?.id;
       const parsedParams = taxPlanCycleHoldParamsSchema.safeParse(req.params);
       const parsedBody = taxPlanCycleHoldSchema.safeParse(req.body);
 
       if (!parsedParams.success || !parsedBody.success) {
         if (parsedParams.success) {
           await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            tenantId,
             caseId: parsedParams.data.caseId,
             actor: (req as TenantScopedRequest).user?.id ?? "unknown",
             action: "hold request validation failed",
@@ -953,12 +962,17 @@ export function createTaxPlanCycleRouter(
         return;
       }
 
+      let holdAuditContext:
+        | { tenantId: string; caseId: string; actor: string }
+        | undefined;
+      let holdAuditRecorded = false;
+
       try {
-        const tenantId = (req as TenantScopedRequest).tenant?.id;
         const user = (req as TenantScopedRequest).user;
 
         if (!tenantId || !user?.role || !user.id) {
           await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            tenantId,
             caseId: parsedParams.data.caseId,
             actor: user?.id ?? "unknown",
             action: "hold authentication required",
@@ -970,6 +984,7 @@ export function createTaxPlanCycleRouter(
 
         if (!canManageHold(user)) {
           await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            tenantId,
             caseId: parsedParams.data.caseId,
             actor: user.id,
             action: `hold ${parsedParams.data.caseId} forbidden`,
@@ -996,6 +1011,12 @@ export function createTaxPlanCycleRouter(
           return;
         }
 
+        holdAuditContext = {
+          tenantId,
+          caseId: parsedParams.data.caseId,
+          actor: user.id,
+        };
+
         const updated = await holdController.setHoldStatus({
           tenantId,
           caseId: parsedParams.data.caseId,
@@ -1019,14 +1040,27 @@ export function createTaxPlanCycleRouter(
         }
 
         await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+          tenantId,
           caseId: parsedParams.data.caseId,
           actor: user.id,
           action: parsedBody.data.on_hold ? "place hold" : "remove hold",
           outcome: "200",
         });
+        holdAuditRecorded = true;
 
         res.status(200).json(updated);
       } catch (error) {
+        if (holdAuditContext !== undefined && !holdAuditRecorded) {
+          try {
+            await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+              ...holdAuditContext,
+              action: "hold request failed",
+              outcome: "500",
+            });
+          } catch {
+            // Preserve the original hold failure when the audit write also fails.
+          }
+        }
         next(error);
       }
     },
@@ -1035,6 +1069,7 @@ export function createTaxPlanCycleRouter(
   router.patch(
     "/tax-plan-cycles/:caseId/transition",
     async (req: Request, res: Response, next: NextFunction) => {
+      const tenantId = (req as TenantScopedRequest).tenant?.id;
       console.log("[tax-plan-cycle transition] request received", {
         params: req.params,
         body: req.body,
@@ -1057,6 +1092,7 @@ export function createTaxPlanCycleRouter(
 
         if (parsedParams.success) {
           await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            tenantId,
             caseId: parsedParams.data.caseId,
             actor: (req as TenantScopedRequest).user?.id ?? "unknown",
             action: "transition request validation failed",
@@ -1088,6 +1124,7 @@ export function createTaxPlanCycleRouter(
 
       let transitionAuditContext:
         | {
+            tenantId: string;
             caseId: string;
             actor: string;
             action: string;
@@ -1096,7 +1133,6 @@ export function createTaxPlanCycleRouter(
       let transitionAuditRecorded = false;
 
       try {
-        const tenantId = (req as TenantScopedRequest).tenant?.id;
         const user = (req as TenantScopedRequest).user;
 
         if (!tenantId || !user?.role || !user.id) {
@@ -1107,6 +1143,7 @@ export function createTaxPlanCycleRouter(
           });
 
           await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            tenantId,
             caseId: parsedParams.data.caseId,
             actor: user?.id ?? "unknown",
             action: "transition authentication required",
@@ -1126,6 +1163,7 @@ export function createTaxPlanCycleRouter(
           });
 
           await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+            tenantId,
             caseId: parsedParams.data.caseId,
             actor: user.id,
             action: `transition ${parsedParams.data.caseId} client-role-not-allowed`,
@@ -1157,20 +1195,11 @@ export function createTaxPlanCycleRouter(
         const requestedStage = parsedBody.data.to_stage;
         const action = `transition ${cycle.stage} -> ${requestedStage}`;
         transitionAuditContext = {
+          tenantId,
           caseId: parsedParams.data.caseId,
           actor,
           action,
         };
-        if (cycle.on_hold) {
-          await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
-            caseId: parsedParams.data.caseId,
-            actor,
-            action,
-            outcome: "409",
-          });
-          next(taxPlanCycleOnHoldProblem());
-          return;
-        }
         console.log("[tax-plan-cycle transition] authorization check", {
           caseId: parsedParams.data.caseId,
           actor,
@@ -1190,6 +1219,7 @@ export function createTaxPlanCycleRouter(
           });
 
           await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
+            tenantId,
             caseId: parsedParams.data.caseId,
             actor,
             action,
@@ -1217,6 +1247,7 @@ export function createTaxPlanCycleRouter(
           });
 
           await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
+            tenantId,
             caseId: parsedParams.data.caseId,
             actor,
             action,
@@ -1230,6 +1261,19 @@ export function createTaxPlanCycleRouter(
               detail: "The requested stage transition is not legal.",
             }),
           );
+          return;
+        }
+
+        if (cycle.on_hold) {
+          await writeDeniedTransitionAttempt(auditLogger, auditEntryWriter, {
+            tenantId,
+            caseId: parsedParams.data.caseId,
+            actor,
+            action,
+            outcome: "409",
+          });
+          transitionAuditRecorded = true;
+          next(taxPlanCycleOnHoldProblem());
           return;
         }
 
@@ -1254,6 +1298,7 @@ export function createTaxPlanCycleRouter(
         }
 
         await writeTransitionAttemptAudit(auditLogger, auditEntryWriter, {
+          tenantId,
           caseId: parsedParams.data.caseId,
           actor,
           action,

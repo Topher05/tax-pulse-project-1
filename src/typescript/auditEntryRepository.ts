@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
@@ -17,6 +17,7 @@ export interface AuditEntryListInput {
 }
 
 export interface AuditEntryWriteInput {
+  tenantId: string;
   caseId: string;
   actor: string;
   action: string;
@@ -69,13 +70,25 @@ export function createAuditEntryWriter(client: Client): AuditEntryWriter {
 
   return {
     async record(input) {
-      await db.insert(auditEntryTable).values({
-        caseId: input.caseId,
-        actor: input.actor,
-        action: input.action,
-        outcome: input.outcome,
-        occurredAt: input.occurredAt,
-      });
+      await db
+        .insert(auditEntryTable)
+        .select(
+          db
+            .select({
+              caseId: taxPlanCycleTable.id,
+              actor: sql<string>`${input.actor}`.as("actor"),
+              action: sql<string>`${input.action}`.as("action"),
+              outcome: sql<string>`${input.outcome}`.as("outcome"),
+              occurredAt: sql<Date>`${input.occurredAt}`.as("occurred_at"),
+            })
+            .from(taxPlanCycleTable)
+            .where(
+              and(
+                eq(taxPlanCycleTable.tenantId, input.tenantId),
+                eq(taxPlanCycleTable.id, input.caseId),
+              ),
+            ),
+        );
     },
   };
 }

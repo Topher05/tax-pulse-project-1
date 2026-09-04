@@ -11,7 +11,9 @@ Add new ticket entries below using this template.
 
 **Assignee:** Caleb Latimer
 
-**Jira Key:** SCRUM-229
+**Jira:** [SCRUM-229](https://fedstack-june22-t1.atlassian.net/browse/SCRUM-229)
+
+**Related ADR:** [ADR-0001: Tax Plan Cycle condition lives in stage](../../adr/0001-condition-lives-in-stage.md)
 
 **Summary:** Tax Plan Cycle hold management
 
@@ -31,11 +33,15 @@ Add new ticket entries below using this template.
 - `src/typescript/features/taxPlanCycle/controllers/holdController.ts`
 - `src/typescript/features/taxPlanCycle/repositories/repository.ts`
 - `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/auditEntryRepository.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/index.ts`
 - `src/typescript/shared/scripts/cloudTap.ts`
 - `src/typescript/shared/scripts/taxPlanCycleLambdaRuntime.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
 - `src/pulseUI/entities/taxPlanCycleQueries.ts`
 - `src/pulseUI/pages/taxPlanCycle/Details.tsx`
 - `src/pulseUI/pages/taxPlanCycle/Details.module.css`
@@ -52,19 +58,38 @@ Add new ticket entries below using this template.
 - `src/pulseUI/entities/taxPlanCycleQueries.ts`
 - `src/pulseUI/pages/taxPlanCycle/Details.module.css`
 - `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
 - `src/typescript/coreCaseOpenApi.ts`
 - `src/typescript/features/taxPlanCycle/controllers/holdController.ts`
 - `src/typescript/features/taxPlanCycle/index.ts`
 - `src/typescript/features/taxPlanCycle/repositories/repository.ts`
 - `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueCache.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
 - `src/typescript/index.ts`
+- `src/typescript/auditEntryRepository.ts`
 - `src/typescript/shared/scripts/cloudTap.ts`
 - `src/typescript/shared/scripts/taxPlanCycleLambdaRuntime.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/features/taxPlanCycle/createIdempotency.test.ts`
+- `tests/typescript/features/taxPlanCycle/holdController.test.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `tests/typescript/features/taxPlanCycle/lambdaHandlers.test.ts`
+- `tests/typescript/features/taxPlanCycle/queueCache.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/features/taxPlanCycle/transitionController.test.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
 
 **Validation Notes:**
 
-- `npx tsc --noEmit` passed after wiring the hold endpoint, UI modal, OpenAPI entries, and repository stubs.
-- Focused test execution was not started yet in this turn.
+- `npm --prefix src/pulseUI run typecheck` and focused Details/query UI tests passed before remediation; the UI implementation was intentionally left unchanged.
+- Before dependency repair, `npm run typecheck:core` reached the changed sources and was blocked only by `TS2307: Cannot find module '@aws-sdk/client-sesv2'` from `src/typescript/passwordResetNotifier.ts`; focused backend Vitest collection was blocked by the same package.
+- `npm ci` and a non-lockfile `npm install --package-lock=false --ignore-scripts` repair were attempted without manifest or lockfile changes. Windows returned `EPERM` for an in-use `node_modules/openai/resources/admin/organization/groups` directory; the incomplete install now also leaves local `tsc` unavailable, so the complete backend and Pulse validation commands remain blocked.
+- `git diff --check origin/development...HEAD` and `git diff --check` passed with no whitespace errors.
 
 ## caleb-latimer-jira181 - SCRUM-181
 

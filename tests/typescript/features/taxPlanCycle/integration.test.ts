@@ -850,6 +850,50 @@ describe("taxPlanCycle integration", () => {
     });
   });
 
+  test("writes audit entries only for a case owned by the supplied tenant", async () => {
+    await withTaxPlanCycleIntegrationDatabase(async (client) => {
+      const db = drizzle(client);
+      const auditEntryWriter = createAuditEntryWriter(client);
+      const caseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d90";
+
+      await seedSampleTenant(client);
+      await db.insert(taxPlanCycle).values({
+        id: caseId,
+        clientId: repositoryClientIds.primary,
+        tenantId: sampleTenant.id,
+        planningPeriod: "2026-Q1",
+        stage: "Intake",
+        owner: "advisor-audit-001",
+        priority: "low",
+        dueDate: "2026-09-30",
+        onHold: false,
+      });
+
+      await auditEntryWriter.record({
+        tenantId: sampleTenant.id,
+        caseId,
+        actor: "advisor-audit-001",
+        action: "same tenant audit",
+        outcome: "200",
+        occurredAt: new Date("2026-06-30T12:00:00Z"),
+      });
+      await auditEntryWriter.record({
+        tenantId: sampleTenantIds[1],
+        caseId,
+        actor: "advisor-other-tenant",
+        action: "cross tenant audit",
+        outcome: "200",
+        occurredAt: new Date("2026-06-30T12:01:00Z"),
+      });
+
+      await expect(
+        db.select({ action: auditEntry.action })
+          .from(auditEntry)
+          .where(eq(auditEntry.caseId, caseId)),
+      ).resolves.toEqual([{ action: "same tenant audit" }]);
+    });
+  });
+
   test("creates a cycle in Intake with taxpayer identifier validation and persists both atomically in Drizzle", async () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {
       const db = drizzle(client);
