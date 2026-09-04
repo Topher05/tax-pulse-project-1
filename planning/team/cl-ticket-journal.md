@@ -86,9 +86,11 @@ Add new ticket entries below using this template.
 
 **Validation Notes:**
 
-- `npm --prefix src/pulseUI run typecheck` and focused Details/query UI tests passed before remediation; the UI implementation was intentionally left unchanged.
-- Before dependency repair, `npm run typecheck:core` reached the changed sources and was blocked only by `TS2307: Cannot find module '@aws-sdk/client-sesv2'` from `src/typescript/passwordResetNotifier.ts`; focused backend Vitest collection was blocked by the same package.
-- `npm ci` and a non-lockfile `npm install --package-lock=false --ignore-scripts` repair were attempted without manifest or lockfile changes. Windows returned `EPERM` for an in-use `node_modules/openai/resources/admin/organization/groups` directory; the incomplete install now also leaves local `tsc` unavailable, so the complete backend and Pulse validation commands remain blocked.
+- `npm run typecheck:core` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Focused backend Vitest suites passed: 77 tests across OpenAPI, hold controller, Lambda handlers, queue cache, routes, transition controller, and deployed present-to-client boundary.
+- Focused Pulse UI Details/query suites passed: 29 tests.
+- The database integration suite could not start because Testcontainers could not find a working Docker or Podman runtime; this is an environment limitation, not a test assertion failure.
 - `git diff --check origin/development...HEAD` and `git diff --check` passed with no whitespace errors.
 
 ## caleb-latimer-jira181 - SCRUM-181

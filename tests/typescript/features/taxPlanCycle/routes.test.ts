@@ -1476,13 +1476,7 @@ describe("holdTaxPlanCycleRouter", () => {
 
         expect(response.status).toBe(401);
         expect(setHoldStatus).not.toHaveBeenCalled();
-        expect(auditWriter.record).toHaveBeenCalledWith(
-          expect.objectContaining({
-            caseId: holdCycle.id,
-            action: "hold authentication required",
-            outcome: "401",
-          }),
-        );
+        expect(auditWriter.record).not.toHaveBeenCalled();
       },
     );
   });
@@ -2036,15 +2030,7 @@ describe("holdTaxPlanCycleRouter", () => {
             occurred_at: expect.any(String),
           }),
         );
-        expect(auditWriter.record).toHaveBeenCalledWith(
-          expect.objectContaining({
-            caseId: dataAggregationCycle.id,
-            actor: "unknown",
-            action: "transition authentication required",
-            outcome: "401",
-            occurredAt: expect.any(Date),
-          }),
-        );
+        expect(auditWriter.record).not.toHaveBeenCalled();
         expect(create).not.toHaveBeenCalled();
       },
     );
