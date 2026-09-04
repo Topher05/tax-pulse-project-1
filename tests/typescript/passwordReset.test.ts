@@ -32,6 +32,7 @@ class InMemoryPasswordResetRepository implements PasswordResetRepository {
 
   tokenRecords: PasswordResetTokenRecord[] = [];
   updatedPasswordHashes: Map<string, string> = new Map();
+  revokedSessionUserIds: string[] = [];
 
   async findActiveUserByEmail(
     requestedTenantId: string,
@@ -53,8 +54,9 @@ class InMemoryPasswordResetRepository implements PasswordResetRepository {
     });
   }
 
-  async consumeValidToken(
+  async resetPasswordWithToken(
     tokenHash: string,
+    passwordHash: string,
     usedAt: Date,
   ): Promise<PasswordResetTokenRecord | null> {
     const record = this.tokenRecords.find((r) => r.tokenHash === tokenHash);
@@ -62,11 +64,9 @@ class InMemoryPasswordResetRepository implements PasswordResetRepository {
       return null;
     }
     record.usedAt = usedAt;
+    this.updatedPasswordHashes.set(record.userId, passwordHash);
+    this.revokedSessionUserIds.push(record.userId);
     return record;
-  }
-
-  async updatePasswordHash(uId: string, passwordHash: string): Promise<void> {
-    this.updatedPasswordHashes.set(uId, passwordHash);
   }
 }
 
@@ -186,6 +186,7 @@ describe("password reset service", () => {
     expect(updatedHash).toBeDefined();
     expect(updatedHash).toMatch(/^\$argon2id\$/);
     await expect(verify(updatedHash!, newPassword)).resolves.toBe(true);
+    expect(repository.revokedSessionUserIds).toEqual([userId]);
   });
 
   test("rejects an invalid reset token", async () => {

@@ -169,6 +169,13 @@ export {
 } from "./passwordResetService.js";
 export { createPasswordResetRepository } from "./passwordResetRepository.js";
 export {
+  createPasswordResetSesClient,
+  createSesPasswordResetNotifier,
+  getPasswordResetNotifierConfigFromEnv,
+  type PasswordResetNotifierConfig,
+  type SesV2Client,
+} from "./passwordResetNotifier.js";
+export {
   createPasswordResetRouter,
   type CreatePasswordResetRouterOptions,
   type PasswordResetValidationErrorResponse,
@@ -700,6 +707,11 @@ import { createPasswordResetRepository } from "./passwordResetRepository.js";
 import { createPasswordResetService } from "./passwordResetService.js";
 import { createPasswordResetRouter } from "./passwordResetRoutes.js";
 import {
+  createPasswordResetSesClient,
+  createSesPasswordResetNotifier,
+  getPasswordResetNotifierConfigFromEnv,
+} from "./passwordResetNotifier.js";
+import {
   createAuditEntryRepository,
   createAuditEntryWriter,
 } from "./auditEntryRepository.js";
@@ -791,16 +803,13 @@ export async function main(): Promise<Server> {
     store: createRegistrationAccountRepository(client),
   });
   const passwordResetRepository = createPasswordResetRepository(client);
+  const passwordResetNotifier = createSesPasswordResetNotifier(
+    createPasswordResetSesClient(),
+    getPasswordResetNotifierConfigFromEnv(),
+  );
   const passwordResetService = createPasswordResetService({
     repository: passwordResetRepository,
-    notifier: {
-      async notify({ email, resetToken }) {
-        logger.info(
-          { email, resetUrl: `/password-reset/new?token=${resetToken}` },
-          "Password reset token generated (console notifier)",
-        );
-      },
-    },
+    notifier: passwordResetNotifier,
   });
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);

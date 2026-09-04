@@ -691,8 +691,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-<<<<<<< HEAD
-=======
     "public.income_event": {
       "name": "income_event",
       "schema": "",
@@ -806,7 +804,6 @@
       },
       "isRLSEnabled": false
     },
->>>>>>> development
     "public.mfa_enrollment": {
       "name": "mfa_enrollment",
       "schema": "",
@@ -951,98 +948,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-<<<<<<< HEAD
-    "public.password_reset_token": {
-      "name": "password_reset_token",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "token_hash": {
-          "name": "token_hash",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "used_at": {
-          "name": "used_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "password_reset_token_token_hash_key": {
-          "name": "password_reset_token_token_hash_key",
-          "columns": [
-            {
-              "expression": "token_hash",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "password_reset_token_user_id_idx": {
-          "name": "password_reset_token_user_id_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "password_reset_token_user_id_fk": {
-          "name": "password_reset_token_user_id_fk",
-          "tableFrom": "password_reset_token",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-=======
->>>>>>> development
     "public.refresh_token": {
       "name": "refresh_token",
       "schema": "",
@@ -2076,8 +1981,6 @@
         "Other"
       ]
     },
-<<<<<<< HEAD
-=======
     "public.income_event_type": {
       "name": "income_event_type",
       "schema": "public",
@@ -2089,7 +1992,6 @@
         "other"
       ]
     },
->>>>>>> development
     "public.user_role_name": {
       "name": "user_role_name",
       "schema": "public",

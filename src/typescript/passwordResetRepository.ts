@@ -5,6 +5,7 @@ import type { Client } from "pg";
 import {
   credential,
   passwordResetToken,
+  refreshToken,
   users,
   userStatus,
 } from "./shared/database/schema.js";
@@ -85,6 +86,16 @@ export function createPasswordResetRepository(
         if (!credentialRows[0]) {
           throw new Error("Password reset token owner has no credential row.");
         }
+
+        await transaction
+          .update(refreshToken)
+          .set({ revokedAt: usedAt })
+          .where(
+            and(
+              eq(refreshToken.userId, tokenRecord.userId),
+              isNull(refreshToken.revokedAt),
+            ),
+          );
 
         return tokenRecord;
       });
