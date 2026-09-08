@@ -74,6 +74,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
+      NODE_ENV: development
       DATABASE_URL: postgresql://${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}:${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}@postgres:5432/${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
       JWT_ISSUER: ${JWT_ISSUER:-https://auth.taxpulse.example}
       JWT_JWKS_URL: ${JWT_JWKS_URL:-http://core-case-service:3000/.well-known/jwks.json}
