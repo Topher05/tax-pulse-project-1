@@ -30,31 +30,42 @@ const client = new Client({ connectionString: databaseUrl });
 try {
   await client.connect();
   const records = await rebuildCorpusEmbeddings(drizzle(client) as never, chunks, provider);
-  const expectedScopes = new Set(records.map((record) => record.citation.tenantId));
+  const expectedScopeCounts = new Map<string, number>();
+  for (const record of records) {
+    expectedScopeCounts.set(
+      record.citation.tenantId,
+      (expectedScopeCounts.get(record.citation.tenantId) ?? 0) + 1,
+    );
+  }
   const verification = await client.query<{ tenant_id: string; count: number }>(
     `SELECT citation->>'tenantId' AS tenant_id, COUNT(*)::int AS count
        FROM "ai_assist_corpus_embedding"
       GROUP BY citation->>'tenantId'`,
   );
-  const persistedScopes = new Set(
-    verification.rows.filter((row) => row.count > 0).map((row) => row.tenant_id),
+  const persistedScopeCounts = new Map(
+    verification.rows.map((row) => [row.tenant_id, row.count] as const),
   );
-  const persistedCount = verification.rows.reduce((total, row) => total + row.count, 0);
-  if (persistedCount !== records.length || expectedScopes.size === 0) {
+  if (expectedScopeCounts.size === 0 || persistedScopeCounts.size !== expectedScopeCounts.size) {
     throw new Error(
-      `Corpus bootstrap verification failed: expected ${records.length} row(s), found ${persistedCount}.`,
+      `Corpus bootstrap verification failed: expected scopes ${JSON.stringify(
+        Object.fromEntries(expectedScopeCounts),
+      )}, found ${JSON.stringify(Object.fromEntries(persistedScopeCounts))}.`,
     );
   }
-  for (const scope of expectedScopes) {
-    if (!persistedScopes.has(scope)) {
-      throw new Error(`Corpus bootstrap verification found no persisted rows for ${scope}.`);
+  for (const [scope, expectedCount] of expectedScopeCounts) {
+    if (persistedScopeCounts.get(scope) !== expectedCount) {
+      throw new Error(
+        `Corpus bootstrap verification found an incorrect row count for ${scope}: expected ${expectedCount}, found ${persistedScopeCounts.get(scope) ?? 0}.`,
+      );
     }
   }
   console.log(
     JSON.stringify({
       event: "assist_corpus_bootstrap_complete",
       chunk_count: records.length,
-      tenant_scopes: [...persistedScopes].sort(),
+      tenant_scope_counts: Object.fromEntries(
+        [...persistedScopeCounts.entries()].sort(([left], [right]) => left.localeCompare(right)),
+      ),
       artifact_path: chunksPath,
       embedding_model: records[0]?.embeddingModel ?? "unknown",
     }),
