@@ -74,6 +74,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
+      NODE_ENV: development
       DATABASE_URL: postgresql://${TAXPULSE_COMPOSE_POSTGRES_USER:?TAXPULSE_COMPOSE_POSTGRES_USER is required in .env}:${TAXPULSE_COMPOSE_POSTGRES_PASSWORD:?TAXPULSE_COMPOSE_POSTGRES_PASSWORD is required in .env}@postgres:5432/${TAXPULSE_COMPOSE_POSTGRES_DB:?TAXPULSE_COMPOSE_POSTGRES_DB is required in .env}
       JWT_ISSUER: ${JWT_ISSUER:-https://auth.taxpulse.example}
       JWT_JWKS_URL: ${JWT_JWKS_URL:-http://core-case-service:3000/.well-known/jwks.json}
@@ -84,6 +85,9 @@ services:
       LIABILITY_ENGINE_BASE: http://tax-engine:8000
       PORT: "3000"
       TAXPULSE_LOGIN_BASE_DOMAIN: localhost
+      TAXPULSE_PASSWORD_RESET_FROM_EMAIL: ${TAXPULSE_PASSWORD_RESET_FROM_EMAIL:-no-reply@taxpulse.example}
+      TAXPULSE_PASSWORD_RESET_PAGE_URL: ${TAXPULSE_PASSWORD_RESET_PAGE_URL:-http://north-star-planning.localhost:5173/password-reset/new}
+      TAXPULSE_SES_ENDPOINT_URL: ${TAXPULSE_SES_ENDPOINT_URL:-http://host.docker.internal:4566}
       TAXPULSE_REDIS_URL: redis://taxpulse-redis:6379
       OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY is required in .env}
       ASSIST_TENANT_CORPUS_SCOPE_MAP: ${ASSIST_TENANT_CORPUS_SCOPE_MAP:?ASSIST_TENANT_CORPUS_SCOPE_MAP is required in .env}

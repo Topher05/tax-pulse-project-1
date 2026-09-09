@@ -19,6 +19,8 @@ import {
   firmUserRoleUpdateRequestSchema,
   firmUsersListResponseSchema,
   firmUserRowSchema,
+  incomeEventCreateSchema,
+  incomeEventRowSchema,
   mfaChallengeResponseSchema,
   mfaEnrollConfirmRequestSchema,
   mfaEnrollConfirmResultSchema,
@@ -447,6 +449,47 @@ describe("Core Case Service OpenAPI document", () => {
     expect(example.status).toBeUndefined();
   });
 
+  test("documents Tax Plan Cycle hold and held-transition conflict responses", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const holdOperation = requiredRecord(
+      requiredRecord(paths, "/v1/tax-plan-cycles/{caseId}/hold"),
+      "patch",
+    );
+    const transitionOperation = requiredRecord(
+      requiredRecord(paths, "/v1/tax-plan-cycles/{caseId}/transition"),
+      "patch",
+    );
+    const holdRequestBody = requiredRecord(holdOperation, "requestBody");
+    const holdContent = requiredRecord(holdRequestBody, "content");
+    const holdJson = requiredRecord(holdContent, "application/json");
+    const holdExamples = requiredRecord(holdJson, "examples");
+    const holdResponses = requiredRecord(holdOperation, "responses");
+    const transitionResponses = requiredRecord(transitionOperation, "responses");
+    const conflictResponse = requiredRecord(transitionResponses, "409");
+    const conflictContent = requiredRecord(conflictResponse, "content");
+    const conflictJson = requiredRecord(conflictContent, "application/problem+json");
+    const conflictExample = requiredRecord(conflictJson, "example");
+
+    expect(holdOperation.operationId).toBe("updateTaxPlanCycleHold");
+    expect(Object.keys(holdResponses)).toEqual(
+      expect.arrayContaining(["200", "400", "401", "403", "404"]),
+    );
+    expect(requiredRecord(requiredRecord(holdExamples, "hold"), "value")).toMatchObject({
+      on_hold: true,
+      hold_reason: "Awaiting signed documents",
+    });
+    expect(requiredRecord(requiredRecord(holdExamples, "unhold"), "value")).toEqual({
+      on_hold: false,
+    });
+    expect(conflictExample).toMatchObject({
+      type: "https://taxpulse.example/problems/tax-plan-cycle-on-hold",
+      title: "Tax Plan Cycle On Hold",
+      status: 409,
+      detail: "Remove the hold before advancing this Tax Plan Cycle.",
+    });
+  });
+
   test("documents client roster rows for the future TanStack Table", () => {
     const document = createCoreCaseOpenApiDocument();
     const paths = requiredRecord(document, "paths");
@@ -729,6 +772,38 @@ describe("Core Case Service OpenAPI document", () => {
     expect(JSON.stringify(auditExample)).toContain("[REDACTED_AMOUNT]");
   });
 
+  test("documents reading and creating income events for a selected case", () => {
+    const document = createCoreCaseOpenApiDocument();
+    const paths = requiredRecord(document, "paths");
+    const incomePath = requiredRecord(paths, "/v1/cases/{caseId}/income-events");
+    const readOperation = requiredRecord(incomePath, "get");
+    const createOperation = requiredRecord(incomePath, "post");
+    const requestBody = requiredRecord(createOperation, "requestBody");
+    const requestContent = requiredRecord(requestBody, "content");
+    const requestJson = requiredRecord(requestContent, "application/json");
+    const requestExample = requiredRecord(requestJson, "example");
+    const responses = requiredRecord(createOperation, "responses");
+    const createdResponse = requiredRecord(responses, "201");
+    const createdContent = requiredRecord(createdResponse, "content");
+    const createdJson = requiredRecord(createdContent, "application/json");
+    const createdExample = requiredRecord(createdJson, "example");
+
+    expect(readOperation.operationId).toBe("readCaseIncomeEvents");
+    expect(createOperation.operationId).toBe("createCaseIncomeEvent");
+    expect(requestExample).toMatchObject({
+      source: "Acme Corporation",
+      type: "w2",
+      amount: 125000.5,
+      withholding: 21500.25,
+    });
+    expect(createdExample).toMatchObject({
+      source: requestExample.source,
+      type: requestExample.type,
+      amount: "125000.50",
+      withholding: "21500.25",
+    });
+  });
+
   test("registers the same zod schema objects used by routes and domain exports", () => {
     expect(coreCaseOpenApiSchemaRegistrations).toEqual(
       expect.arrayContaining([
@@ -839,6 +914,14 @@ describe("Core Case Service OpenAPI document", () => {
         expect.objectContaining({
           name: "DeductionRow",
           schema: deductionTableRowSchema,
+        }),
+        expect.objectContaining({
+          name: "IncomeEventCreateRequest",
+          schema: incomeEventCreateSchema,
+        }),
+        expect.objectContaining({
+          name: "IncomeEventRow",
+          schema: incomeEventRowSchema,
         }),
         expect.objectContaining({
           name: "MfaEnrollRequest",

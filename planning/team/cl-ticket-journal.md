@@ -5,6 +5,94 @@
 
 Add new ticket entries below using this template.
 
+## caleb-latimer-jira229 - SCRUM-229
+
+**Branch:** `caleb-latimer-jira229`
+
+**Assignee:** Caleb Latimer
+
+**Jira:** [SCRUM-229](https://fedstack-june22-t1.atlassian.net/browse/SCRUM-229)
+
+**Related ADR:** [ADR-0001: Tax Plan Cycle condition lives in stage](../../adr/0001-condition-lives-in-stage.md)
+
+**Summary:** Tax Plan Cycle hold management
+
+**Description:** Add a tenant-scoped hold/unhold mutation for Tax Plan Cycles, keep hold as an orthogonal flag, and block stage advancement while a hold is active. The Pulse UI replaces the placeholder Hold toast with a working modal flow for placing a hold reason and an immediate unhold action.
+
+**Acceptance Criteria:**
+
+- A `PATCH /v1/tax-plan-cycles/:caseId/hold` endpoint exists with strict hold/unhold validation.
+- A non-empty trimmed hold reason is required when `on_hold` is true, and unhold clears the stored reason.
+- Firm Admins and Advisors with `EDIT` can change hold state; clients and other unauthorized users cannot.
+- Held cycles cannot advance stages, including concurrent hold/advance races.
+- The Pulse details view shows the hold reason while held and disables Advance Stage until the hold is removed.
+- The Hold action opens a modal for active cycles and removes hold immediately for held cycles.
+
+**Code Connection:**
+
+- `src/typescript/features/taxPlanCycle/controllers/holdController.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/auditEntryRepository.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `src/typescript/shared/scripts/taxPlanCycleLambdaRuntime.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
+
+**Project Scope Connection:**
+
+- Core Case workflow and tenant-scoped state transitions
+- Pulse UI case details workflow controls
+- API contract and audit logging
+
+**Changed Files:**
+
+- `planning/team/cl-ticket-journal.md`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.module.css`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/features/taxPlanCycle/controllers/holdController.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/lambdaHandlers.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/queueCache.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/index.ts`
+- `src/typescript/auditEntryRepository.ts`
+- `src/typescript/shared/scripts/cloudTap.ts`
+- `src/typescript/shared/scripts/taxPlanCycleLambdaRuntime.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/features/taxPlanCycle/createIdempotency.test.ts`
+- `tests/typescript/features/taxPlanCycle/holdController.test.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `tests/typescript/features/taxPlanCycle/lambdaHandlers.test.ts`
+- `tests/typescript/features/taxPlanCycle/queueCache.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/features/taxPlanCycle/transitionController.test.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
+
+**Validation Notes:**
+
+- `npm run typecheck:core` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Focused backend Vitest suites passed: 77 tests across OpenAPI, hold controller, Lambda handlers, queue cache, routes, transition controller, and deployed present-to-client boundary.
+- Focused Pulse UI Details/query suites passed: 29 tests.
+- The database integration suite could not start because Testcontainers could not find a working Docker or Podman runtime; this is an environment limitation, not a test assertion failure.
+- `git diff --check origin/development...HEAD` and `git diff --check` passed with no whitespace errors.
+
 ## caleb-latimer-jira181 - SCRUM-181
 
 **Branch:** `caleb-latimer-jira181`
@@ -1627,6 +1715,7 @@ sequenceDiagram
 - `src/typescript/coreCaseOpenApi.ts`
 - `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
 - `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/assist/evaluation.test.ts`
 - `src/pulseUI/package.json`
 - `src/pulseUI/package-lock.json`
 - `src/pulseUI/app/bootstrap.tsx`
@@ -2845,7 +2934,9 @@ This ticket keeps ADR-0014 cache-aside behavior separate from the idempotency le
 **Changed Files:**
 
 - `src/typescript/shared/database/schema.ts`
-- `src/typescript/shared/database/drizzle-migrations/0019_bumpy_king_cobra.sql`
+- `src/typescript/shared/database/drizzle-migrations/0021_military_shiva.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0021_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
 - `src/typescript/features/taxPlanCycle/comments.ts`
 - `src/typescript/features/taxPlanCycle/repositories/comments.ts`
 - `src/typescript/features/taxPlanCycle/routes.ts`
@@ -2867,16 +2958,119 @@ This ticket keeps ADR-0014 cache-aside behavior separate from the idempotency le
 
 **Validation Notes:**
 
-- `npm run db:gen` passed and generated `0019_bumpy_king_cobra.sql`.
-- `npm run db:check` passed.
+- The comments migration was regenerated after merging development and now follows development migrations 0019 and 0020 as migration 0021.
+- `npm run db:check` passed with no Drizzle journal or snapshot consistency errors.
 - `npm run typecheck:core` passed.
-- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/routes.test.ts tests/typescript/coreCaseOpenApi.test.ts tests/typescript/features/taxPlanCycle/mainComposition.test.ts tests/typescript/auditEntryOutput.test.ts` passed with 53 tests.
-- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/commentsMigration.test.ts tests/typescript/features/taxPlanCycle/repositories/comments.test.ts` passed with 4 Docker-backed tests.
-- `npm run test:vitest -- tests/typescript/features/taxPlanCycle/integration.test.ts` passed with 24 Docker-backed tests.
-- Full `npm run test:vitest` was run; it had only Docker/Compose environment failures under parallel database load: Testcontainers `Port 5432/tcp not bound after 45000ms`, Vitest 60000ms timeouts, and missing Compose container `taxpulse-local-postgres-1`. No non-environment assertion failure was observed.
-- `npm run build` passed.
-- `npm --prefix src/pulseUI run typecheck` passed.
-- `npm --prefix src/pulseUI test` passed with 272 tests.
-- `npm --prefix src/pulseUI run test:ax` passed with 6 tests.
-- `npm --prefix src/pulseUI run build` passed; Vite reported the existing chunk-size warning.
-- `docker build -f Dockerfile -t taxpulse-core-case-service:jira199 .` passed.
+- Focused backend regression coverage passed: 92 tests across comments persistence/migration, Tax Plan Cycle routes and integration, OpenAPI, and application composition.
+- Focused PulseUI regression coverage passed: 34 tests across Plan Cycle Detail comments, the existing hold UI, and Tax Plan Cycle queries.
+- The merge result was compared with development; the remaining delta is limited to the SCRUM-199 files listed above, and existing development behavior in the shared conflict files remains covered.
+
+## caleb-latimer-jira218 - SCRUM-218
+
+**Branch:** `caleb-latimer-jira218`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-218
+
+**Summary:** Persist income events and replace mock Income table data
+
+**Description:** Add the Core Case Service `income_event` table, generated Drizzle
+migration, tenant-scoped repository/service boundary, persisted read and create routes,
+synthetic seed data, and Pulse UI create mutation so the Income table no longer depends
+on deterministic backend mocks.
+
+**Acceptance Criteria:**
+
+- A generated Drizzle migration creates `income_event` with UUID identity, Tax Plan Cycle
+  ownership, event date, source, known type, amount, and withholding columns.
+- Database checks reject blank sources and negative monetary values, and an index supports
+  case-and-date reads.
+- GET returns persisted tenant-scoped rows while preserving empty and not-found semantics.
+- POST validates source, type, amount, and withholding, assigns the current UTC date, and
+  returns the persisted row.
+- Deterministic synthetic seed rows replace the removed mock generator.
+- The existing Add Income form persists through an authenticated mutation and refreshes
+  the case-scoped Income query.
+- OpenAPI and automated tests cover the read/create contract and database boundary.
+
+**Code Connection:**
+
+- Added the canonical income-event enum and table to the shared Drizzle schema and
+  generated `0019_create_income_event` with Drizzle Kit.
+- Added an income-event repository that verifies tenant ownership through
+  `tax_plan_cycle`, plus a service that owns UTC date assignment through an injectable
+  clock.
+- Replaced the mocked Express GET implementation and added the matching POST operation.
+- Added three checked-in synthetic rows to the canonical seed flow.
+- Added the Pulse UI create client and TanStack mutation, invalidating the selected case's
+  income-event query after successful persistence.
+
+**Project Scope Connection:**
+
+This work lives in the TypeScript Core Case Service persistence boundary, with a narrow
+Pulse UI integration for the existing Income form and table. It builds on SCRUM-31,
+SCRUM-106, SCRUM-108, and SCRUM-109; supersedes SCRUM-172's table intent and the
+income-event portion of SCRUM-174; and enables SCRUM-175 and SCRUM-176. The Python Tax
+Engine, update/delete operations, and SQL-side KPI aggregation remain out of scope.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0019_create_income_event.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0019_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/features/incomeEvents/incomeEvents.ts`
+- `src/typescript/features/incomeEvents/repository.ts`
+- `src/typescript/features/incomeEvents/service.ts`
+- `src/typescript/features/incomeEvents/routes.ts`
+- `src/typescript/features/incomeEvents/index.ts`
+- `src/typescript/shared/scripts/typecheck.mjs`
+- `src/typescript/features/incomeEvents/mockIncomeEvents.model.ts` (removed)
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/entities/incomeQueries.ts`
+- `src/pulseUI/pages/income/IncomeEntryForm.tsx`
+- `src/pulseUI/pages/income/incomeEntrySchema.ts`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/components/IncomeEntryForm.test.tsx`
+- `src/pulseUI/tests/entities/incomeQueries.test.tsx`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `tests/typescript/features/incomeEvents/migration.test.ts`
+- `tests/typescript/features/incomeEvents/repository.test.ts`
+- `tests/typescript/features/incomeEvents/routes.test.ts`
+- `tests/typescript/features/incomeEvents/schema.test.ts`
+- `tests/typescript/features/incomeEvents/service.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/bootstrap/migrationTestUtils.ts`
+- `tests/typescript/features/incomeEvents/mockIncomeEvents.model.test.ts` (removed)
+- `package.json`
+- `package-lock.json`
+- `src/pulseUI/package-lock.json`
+- `osv-scanner.toml`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck`, `npm run build`, and `npm run db:check` passed.
+- The focused Jira 218 backend suite passed 8 files and 41 tests, including migration,
+  database repository, schema, service, authenticated route, application composition,
+  OpenAPI, and evaluation-contract coverage.
+- Full Pulse UI verification passed 49 files and 264 tests, the 6-test accessibility
+  gate, and the Vite production build. The focused Income UI suite passed 15 tests.
+- The composition test now covers JWT tenant propagation through middleware, router, and
+  service to the repository port for both persisted GET and POST operations.
+- The exact Semgrep pipeline command passed with zero ERROR findings after fixing the
+  dynamic child-process executable pattern in the shared typecheck runner.
+- The exact Bandit high-severity pipeline command passed with zero high findings.
+- Patch-level dependency fixes update Undici, Nano ID, PostCSS, and brace expansion.
+  Narrow OSV exceptions document the remaining development-only esbuild, Lighthouse
+  OpenTelemetry, and extract-zip advisories whose fixed majors require a newer Node
+  runtime than the repository's pinned Node 22.0.0.
+- A full root Vitest run exposed and corrected the income seed assertion; unrelated
+  concurrent database tests later timed out under shared Testcontainers contention and
+  are excluded as requested. The Jira 218 database tests pass reliably in isolation.
+- `git diff --check` passed with only line-ending normalization warnings.

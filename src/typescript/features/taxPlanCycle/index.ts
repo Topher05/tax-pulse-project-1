@@ -1,6 +1,8 @@
 export {
   isLegalTaxPlanCycleStageTransition,
   taxPlanCycleCreateSchema,
+  taxPlanCycleHoldParamsSchema,
+  taxPlanCycleHoldSchema,
   taxPlanCyclePrioritySchema,
   taxPlanCycleQueueItemSchema,
   taxPlanCycleQueueGetResponseSchema,
@@ -96,10 +98,19 @@ export {
   type TaxPlanCycleQueueItem,
   type TaxPlanCycleReadHelper,
   type TaxPlanCycleReadInput,
+  type TaxPlanCycleHoldInput,
+  TaxPlanCycleOnHoldError,
   type TaxPlanCycleRepository,
   type TaxPlanCycleRepositoryCreateInput,
   type TaxPlanCycleTransitionInput as TaxPlanCycleRepositoryTransitionInput,
 } from "./repositories/repository.js";
+export {
+  createTaxPlanCycleHoldController,
+  taxPlanCycleHoldController,
+  type TaxPlanCycleHoldController,
+  type TaxPlanCycleHoldControllerInput,
+  type TaxPlanCycleHoldControllerOptions,
+} from "./controllers/holdController.js";
 export {
   buildTaxPlanCycleCreateIdempotencyKey,
   createRedisTaxPlanCycleCreateIdempotencyStore,
@@ -260,7 +271,6 @@ export {
 } from "./controllers/assistantController.js";
 export {
   createTaxPlanCycleTransitionController,
-  taxPlanCycleTransitionController,
   type ActionItemCreatedEventPublisher,
   type TaxPlanCycleTransitionControllerInput,
   type TaxPlanCycleTransitionControllerOptions,

@@ -5,6 +5,77 @@
 
 Add new ticket entries below using this template.
 
+## martins-okorie-jira207 - SCRUM-207
+
+**Branch:** `martins-okorie-jira207`
+
+**Assignee:** Martins Okorie
+
+**Jira Key:** SCRUM-207
+
+**Summary:** Reset Password
+
+**Description:** As a registered user, I want to reset my password through the React application so that I can regain access to my account without administrator assistance.
+
+**Acceptance Criteria:**
+
+- The application provides a forgot-password form that accepts an email address and submits a request to the existing password-reset backend endpoint.
+- The reset-password page accepts the reset token and a valid new password, then submits them to the existing backend endpoint without implementing new password-reset service logic.
+- Successful and unsuccessful reset attempts display clear user-facing messages without revealing whether an account exists or exposing tokens, passwords, or sensitive authentication details.
+
+**Code Connection:** Added the backend password reset domain (`passwordReset.ts`, `passwordResetService.ts`, `passwordResetRepository.ts`, `passwordResetRoutes.ts`) including a `password_reset_token` database table with migration `0020_password_reset_token.sql` generated via `drizzle-kit generate`. Wired the forgot-password and reset-password endpoints (`POST /auth/forgot-password` and `POST /auth/reset-password`). Added an AWS SES `ResetTokenNotifier` with required production sender and HTTPS reset-page configuration; raw reset tokens and recipient emails are no longer written to application logs. Implemented Pulse UI `PasswordResetPage` form submission, `NewPasswordPage` token and new password reset submission, `authClient` API helpers, and route configuration in `routeTree.tsx`. Forgot-password lookup is scoped to the hostname-resolved active tenant. Reset confirmation atomically consumes an unused, unexpired token, updates the Argon2id password hash, and revokes the user's active refresh tokens.
+
+**Project Scope Connection:** Completes the user self-service password recovery flow for tenant-scoped users, maintaining least-privilege tenant isolation, SES sender-scoped IAM access, secure Argon2id password hashing, and post-reset session revocation while ensuring anonymous responses cannot enumerate registered accounts.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0020_password_reset_token.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0019_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0020_snapshot.json`
+- `src/typescript/passwordReset.ts`
+- `src/typescript/passwordResetService.ts`
+- `src/typescript/passwordResetRepository.ts`
+- `src/typescript/passwordResetRoutes.ts`
+- `src/typescript/passwordResetNotifier.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/auth/authClient.ts`
+- `src/pulseUI/pages/auth/PasswordResetPage.tsx`
+- `src/pulseUI/pages/auth/NewPasswordPage.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/vite.config.ts`
+- `tests/typescript/passwordReset.test.ts`
+- `tests/typescript/passwordResetRoutes.test.ts`
+- `tests/typescript/passwordResetNotifier.test.ts`
+- `tests/typescript/passwordResetRepository.integration.test.ts`
+- `src/pulseUI/tests/auth/PasswordResetPage.test.tsx`
+- `src/pulseUI/tests/auth/NewPasswordPage.test.tsx`
+- `src/pulseUI/tests/auth/authClient.test.tsx`
+- `.env.example`
+- `docker-compose.yml`
+- `package.json`
+- `package-lock.json`
+- `terraform/variables.tf`
+- `terraform/delivery.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/ecs_services/main.tf`
+- `.github/workflows/container-scan-sbom.yml`
+- `.gitleaksignore`
+- `tests/typescript/workflows/containerScanSbom.test.ts`
+- `planning/team/mm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed for the app, tests, and Pulse UI.
+- `npm run db:check` passed after repairing the `0019` merge conflict and regenerating `0020_password_reset_token.sql` plus `0020_snapshot.json` with `drizzle-kit generate`.
+- Targeted backend tests passed: `passwordReset.test.ts` (9), `passwordResetRoutes.test.ts` (6), and `passwordResetNotifier.test.ts` (3), for 18 passing tests.
+- Targeted Pulse UI tests passed: `PasswordResetPage.test.tsx` (2), `NewPasswordPage.test.tsx` (4), and `authClient.test.tsx` (10), for 16 passing tests.
+- `terraform fmt` completed and `terraform -chdir=terraform validate` passed for the SES environment and least-privilege sender identity wiring.
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts` uses whitespace-tolerant matching so canonical `terraform fmt` alignment does not cause a false CI failure.
+- The new repository integration test covers atomic password update, one-time token consumption, and refresh-token revocation. It could not execute locally because no Docker/Testcontainers runtime or Compose Postgres service was available.
+- The repository-wide `npm test` completed type checking and 456 tests successfully; 72 database/container tests failed because the same Docker runtime and Compose Postgres prerequisites were unavailable.
+
 ## martins-okorie-jira209 - SCRUM-209
 
 **Branch:** `martins-okorie-jira209`

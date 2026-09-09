@@ -151,6 +151,7 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
       findByCaseId: vi.fn(async () => null),
       findCurrentByClientId: vi.fn(async () => null),
       transition: vi.fn(async () => null),
+      setHoldStatus: vi.fn(async () => null),
       listQueue: vi.fn(async () => []),
     };
     const controller = createTaxPlanCycleCreateController(repository);
@@ -180,6 +181,7 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
       findByCaseId: vi.fn(async () => null),
       findCurrentByClientId: vi.fn(async () => null),
       transition: vi.fn(async () => null),
+      setHoldStatus: vi.fn(async () => null),
       listQueue: vi.fn(async () => []),
     };
     const taxpayerIdentifierValidator: TaxpayerIdentifierValidator = {
@@ -256,6 +258,7 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
       findByCaseId: vi.fn(async () => null),
       findCurrentByClientId: vi.fn(async () => null),
       transition: vi.fn(async () => null),
+      setHoldStatus: vi.fn(async () => null),
       listQueue: vi.fn(async () => []),
     };
     const controller = createTaxPlanCycleCreateController(repository, {
@@ -294,6 +297,7 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
       findByCaseId: vi.fn(async () => null),
       findCurrentByClientId: vi.fn(async () => null),
       transition: vi.fn(async () => null),
+      setHoldStatus: vi.fn(async () => null),
       listQueue: vi.fn(async () => []),
     };
     const taxpayerIdentifierValidator: TaxpayerIdentifierValidator = {
@@ -341,6 +345,7 @@ describe("Tax Plan Cycle create idempotency in Redis", () => {
       findByCaseId: vi.fn(async () => null),
       findCurrentByClientId: vi.fn(async () => null),
       transition: vi.fn(async () => null),
+      setHoldStatus: vi.fn(async () => null),
       listQueue: vi.fn(async () => []),
     };
     const taxpayerIdentifierValidator: TaxpayerIdentifierValidator = {

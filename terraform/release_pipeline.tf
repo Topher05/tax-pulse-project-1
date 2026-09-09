@@ -20,6 +20,12 @@ locals {
       module.ecs_services.tax_engine_service_name,
     ),
   ]
+  github_actions_spa_bucket_arn             = "arn:aws:s3:::${module.spa_delivery.bucket_name}"
+  github_actions_terraform_state_bucket_arn = "arn:aws:s3:::taxpulse-terraform-state"
+  github_actions_terraform_state_keys = [
+    "${local.github_actions_terraform_state_bucket_arn}/dev/terraform.tfstate",
+    "${local.github_actions_terraform_state_bucket_arn}/dev/terraform.tfstate.tflock",
+  ]
 }
 
 data "aws_caller_identity" "current" {}
@@ -129,6 +135,61 @@ data "aws_iam_policy_document" "github_actions_release" {
     sid       = "DescribeRuntimeConfigSecret"
     actions   = ["secretsmanager:DescribeSecret"]
     resources = [local.runtime_config_secret_arn]
+  }
+
+  statement {
+    sid       = "ReadTerraformStateBucket"
+    actions   = ["s3:ListBucket"]
+    resources = [local.github_actions_terraform_state_bucket_arn]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values = [
+        "dev/terraform.tfstate",
+        "dev/terraform.tfstate.tflock",
+      ]
+    }
+  }
+
+  statement {
+    sid = "ManageDevelopmentTerraformState"
+    actions = [
+      "s3:DeleteObject",
+      "s3:GetObject",
+      "s3:PutObject",
+    ]
+    resources = local.github_actions_terraform_state_keys
+  }
+
+  statement {
+    sid       = "ListSpaBucket"
+    actions   = ["s3:GetBucketLocation", "s3:ListBucket"]
+    resources = [local.github_actions_spa_bucket_arn]
+  }
+
+  statement {
+    sid = "PublishSpaObjects"
+    actions = [
+      "s3:DeleteObject",
+      "s3:PutObject",
+    ]
+    resources = ["${local.github_actions_spa_bucket_arn}/*"]
+  }
+
+  statement {
+    sid = "EncryptSpaObjects"
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey",
+    ]
+    resources = [module.spa_delivery.kms_key_arn]
+  }
+
+  statement {
+    sid       = "InvalidateSpaDistribution"
+    actions   = ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"]
+    resources = [module.spa_delivery.cloudfront_distribution_arn]
   }
 }
 

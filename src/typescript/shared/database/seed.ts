@@ -11,6 +11,7 @@ import {
   auditEntry,
   credential,
   deduction,
+  incomeEvent,
   federalTaxBracket,
   mfaEnrollment,
   roles,
@@ -32,6 +33,7 @@ import {
   clientRosterRows,
   credentialRows,
   deductionRows,
+  incomeEventRows,
   federalTaxBracketRows,
   mfaEnrollmentRows,
   roleRows,
@@ -58,6 +60,7 @@ export async function applySeed(client: Client): Promise<void> {
         "action_item",
         "taxpayer_identifier_validation",
         "scenario",
+        "income_event",
         "deduction",
         "stage_transition",
         "client_roster",
@@ -95,6 +98,7 @@ export async function applySeed(client: Client): Promise<void> {
     ]);
     await db.insert(clientRoster).values([...clientRosterRows]);
     await db.insert(deduction).values([...deductionRows]);
+    await db.insert(incomeEvent).values([...incomeEventRows]);
     await db.insert(stageTransition).values([...stageTransitionRows]);
     await db.insert(auditEntry).values([...auditEntryRows]);
     await db.insert(federalTaxBracket).values([...federalTaxBracketRows]);

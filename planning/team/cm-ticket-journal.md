@@ -36,6 +36,96 @@ Add new ticket entries below using this template.
 -->
 
 
+## christopher-martus-jira231 - SCRUM-231
+
+**Branch:** `christopher-martus-jira231`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-231
+
+**Summary:** Fix ZAP scan and prepare AWS scaling and UI release deployment
+
+**Description:** Identify and resolve the ZAP baseline failure, document a reversible
+AWS development-environment scale-down/restore procedure, and ensure normal releases
+deploy and verify the latest Pulse UI alongside the backend services.
+
+**Acceptance Criteria:**
+
+- ZAP report generation succeeds and the High-severity gate remains fail-closed.
+- Applicable AWS resources can be scaled down without deleting data or configuration.
+- The environment can be restored without rebuilding it from scratch.
+- Required retained dependencies are identified.
+- A normal release deploys the latest UI as well as backend components.
+- A release validates the expected UI version is accessible.
+- ZAP, AWS scaling, UI deployment, and known limitations are documented.
+
+**Code Connection:**
+
+- The ZAP workflow no longer pre-creates report files that the container cannot overwrite;
+  the supplied run log showed `AccessDeniedException /zap/wrk/report_html.html` with no
+  High-severity findings.
+- The release workflow builds `src/pulseUI`, syncs the Terraform-resolved private S3
+  bucket, invalidates CloudFront, and compares the deployed `index.html` SHA-256 with
+  the build output before recording release evidence.
+- The GitHub Actions release role receives only the S3 bucket-list/object-write and
+  CloudFront invalidation permissions required for that deployment.
+- The AWS runbook preserves ECS task definitions, RDS storage/snapshot, Redis, ALB/VPC,
+  SPA delivery, secrets, images, queues, functions, and Terraform state while reducing
+  continuously running compute.
+
+**Project Scope Connection:**
+
+This is an MVP operational-safety change: remove the concrete ZAP file-permission
+failure, close the existing UI release gap using the already-defined SPA delivery
+contract, and document reversible development capacity changes. It intentionally does
+not remediate informational ZAP warnings, delete infrastructure, redesign Terraform
+capacity management, or change application behavior.
+
+**Changed Files:**
+
+- `.github/workflows/zap-baseline.yml`
+- `.github/workflows/container-scan-sbom.yml`
+- `deployment/spa/deploy-config.json`
+- `terraform/modules/spa_delivery/outputs.tf`
+- `terraform/release_pipeline.tf`
+- `docs/release-evidence-packet.md`
+- `docs/aws-dev-scale-runbook.md`
+- `planning/team/cm-ticket-journal.md`
+- `tests/typescript/spaDeliveryDefinitions.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
+
+**Validation Notes:**
+
+- AWS inventory was read after `aws login` in account `814650854375`, region `us-east-1`;
+  no ECS, RDS, Redis, networking, secret, or application-data scaling/deletion was executed.
+- The live release role policy was updated without touching application infrastructure and
+  IAM simulation returned `allowed` for the required SPA S3, KMS, CloudFront, and retained
+  Terraform-state operations.
+- A target-only Terraform apply was not used because its dependency graph included an ECS
+  task-definition replacement and Lambda update; only the reviewed inline role policy was
+  changed for pre-merge validation.
+- `npm run build:web` passed and produced `dist/pulseUI`; the deployment contract and workflow
+  were corrected to use that directory.
+- The versioned development SPA deployment completed through S3 and CloudFront invalidation
+  `IBSZXDCXQFG0OUN344BJCX62NB`. The branch build and deployed index both had SHA-256
+  `21c55c26e2af24875fa41bbf15e9bd3a0281b01bdd7fa4dd8cef3b77f5443156`; S3 reported
+  `aws:kms` encryption with the expected SPA key.
+- GitHub Actions run `33426077729` passed the ZAP-only pre-merge workflow for commit
+  `01ad2edd984bd9f055951a054de3280bab22955e`, including report upload and the fail-closed
+  High-severity gate. Release build/deploy jobs were skipped as intended.
+- `npm test -- --run tests/typescript/workflows/zapBaselineSecurityGate.test.ts
+  tests/typescript/workflows/terraformDeliveryModules.test.ts
+  tests/typescript/spaDeliveryDefinitions.test.ts` passed: 27 tests across 3 files.
+- `terraform fmt -check -diff terraform/release_pipeline.tf
+  terraform/modules/spa_delivery/outputs.tf` passed.
+- `terraform -chdir=terraform validate` passed.
+- `git diff --check` passed; only normal LF/CRLF conversion warnings were reported.
+- After merge, one successful `development` release and its populated release manifest remain
+  required for final acceptance evidence.
+
+
 
 ## christopher-martus-jira169 - SCRUM-169
 

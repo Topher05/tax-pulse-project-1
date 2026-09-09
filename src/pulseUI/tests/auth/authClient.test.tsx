@@ -4,8 +4,10 @@ import {
   AuthRequestError,
   beginMfaEnrollment,
   confirmMfaEnrollment,
+  confirmPasswordReset,
   createBrowserAuthClient,
   registerAccount,
+  requestPasswordReset,
 } from "../../auth/authClient.ts";
 
 const credentials = {
@@ -253,5 +255,49 @@ describe("browser auth client", () => {
       name: "AuthRequestError",
       status: 502,
     } satisfies Partial<AuthRequestError>);
+  });
+
+  test("submits email to request password reset", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      jsonResponse({ accepted: true }, 202),
+    );
+
+    await expect(
+      requestPasswordReset({ email: "user@example.test" }, fetcher),
+    ).resolves.toBe(true);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/auth/forgot-password",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ email: "user@example.test" }),
+      }),
+    );
+  });
+
+  test("submits token and new password to confirm password reset", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      jsonResponse({ reset: true }, 200),
+    );
+
+    await expect(
+      confirmPasswordReset(
+        { token: "test-token-123", newPassword: "brand-new-password" },
+        fetcher,
+      ),
+    ).resolves.toBe(true);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      "/auth/reset-password",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          token: "test-token-123",
+          new_password: "brand-new-password",
+        }),
+      }),
+    );
   });
 });

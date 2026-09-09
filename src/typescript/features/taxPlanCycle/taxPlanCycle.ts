@@ -80,8 +80,8 @@ export const taxPlanCycleReadResponseSchema = taxPlanCycleSchema.extend({
 export const clientTaxPlanScenarioSchema = z.strictObject({
   id: z.uuid(),
   name: z.string().min(1),
-  total_tax: z.number().finite().nonnegative(),
-  delta_vs_baseline: z.number().finite(),
+  total_tax: z.number().nonnegative(),
+  delta_vs_baseline: z.number(),
 });
 
 /**
@@ -90,8 +90,8 @@ export const clientTaxPlanScenarioSchema = z.strictObject({
  */
 export const clientTaxPlanReadModelSchema = taxPlanCycleSchema.extend({
   advisor: z.string().min(1),
-  next_meeting: z.string().datetime().nullable(),
-  projected_savings: z.number().finite().nonnegative().nullable(),
+  next_meeting: z.iso.datetime().nullable(),
+  projected_savings: z.number().nonnegative().nullable(),
   top_recommendation: z.string().min(1).nullable(),
   scenarios: z.array(clientTaxPlanScenarioSchema),
 });
@@ -113,6 +113,18 @@ export const taxPlanCycleTransitionParamsSchema = z.object({
 export const taxPlanCycleTransitionSchema = z.strictObject({
   to_stage: taxPlanCycleStageSchema,
 });
+export const taxPlanCycleHoldParamsSchema = z.object({
+  caseId: z.uuid(),
+});
+export const taxPlanCycleHoldSchema = z.discriminatedUnion("on_hold", [
+  z.strictObject({
+    on_hold: z.literal(true),
+    hold_reason: z.string().trim().min(1),
+  }),
+  z.strictObject({
+    on_hold: z.literal(false),
+  }),
+]);
 
 export type TaxPlanCycleStage = z.infer<typeof taxPlanCycleStageSchema>;
 export type TaxPlanCyclePriority = z.infer<typeof taxPlanCyclePrioritySchema>;
@@ -136,3 +148,7 @@ export type TaxPlanCycleTransitionParams = z.infer<
 export type TaxPlanCycleTransitionInput = z.infer<
   typeof taxPlanCycleTransitionSchema
 >;
+export type TaxPlanCycleHoldParams = z.infer<
+  typeof taxPlanCycleHoldParamsSchema
+>;
+export type TaxPlanCycleHoldInput = z.infer<typeof taxPlanCycleHoldSchema>;

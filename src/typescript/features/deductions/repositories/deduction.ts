@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const nonNegativeMoneyAmountSchema = z.number().finite().nonnegative();
+const nonNegativeMoneyAmountSchema = z.number().nonnegative();
 
 export const deductionCategoryValues = [
   "Business Expense",
@@ -45,7 +45,7 @@ export const deductionCreateSchema = z.object({
   date: z.iso.date(),
   description: z.string().trim().min(1),
   category: deductionCategorySchema,
-  amount: z.coerce.number().finite().nonnegative(),
+  amount: z.coerce.number().nonnegative(),
 });
 
 export const clientDeductionAggregationPayloadSchema = z.object({

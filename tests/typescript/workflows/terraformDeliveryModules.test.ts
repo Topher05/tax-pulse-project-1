@@ -41,7 +41,9 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     const rootOutputs = readTerraform("terraform/outputs.tf");
     const ecsVariables = readTerraform("terraform/modules/ecs_services/variables.tf");
 
-    expect(delivery).toContain('slo_alarm_topic_name          = "${var.name_prefix}-${var.environment}-slo-alarms"');
+    expect(delivery).toMatch(
+      /slo_alarm_topic_name\s+=\s+"\$\{var\.name_prefix\}-\$\{var\.environment\}-slo-alarms"/,
+    );
     expect(ecsVariables).toContain('variable "slo_alarm_topic_name"');
     expect(ecsServices).toContain('resource "aws_sns_topic" "slo_alarms"');
     expect(ecsServices).toContain('resource "aws_kms_key" "slo_alarms"');
@@ -164,6 +166,26 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(releasePipeline).toContain('"iam:PassRole"');
     expect(releasePipeline).not.toContain('"iam:SimulatePrincipalPolicy"');
     expect(releasePipeline).toContain('"secretsmanager:DescribeSecret"');
+    expect(releasePipeline).toContain('github_actions_terraform_state_bucket_arn');
+    expect(releasePipeline).toContain('sid       = "ReadTerraformStateBucket"');
+    expect(releasePipeline).toContain('"dev/terraform.tfstate.tflock"');
+    expect(releasePipeline).toContain('sid = "ManageDevelopmentTerraformState"');
+    expect(releasePipeline).toContain('"s3:GetObject"');
+    expect(releasePipeline).toContain('github_actions_spa_bucket_arn');
+    expect(releasePipeline).toContain('sid       = "ListSpaBucket"');
+    expect(releasePipeline).toContain('"s3:GetBucketLocation"');
+    expect(releasePipeline).toContain('"s3:ListBucket"');
+    expect(releasePipeline).toContain('sid = "PublishSpaObjects"');
+    expect(releasePipeline).toContain('"s3:DeleteObject"');
+    expect(releasePipeline).toContain('"s3:PutObject"');
+    expect(releasePipeline).toContain('sid = "EncryptSpaObjects"');
+    expect(releasePipeline).toContain('"kms:Decrypt"');
+    expect(releasePipeline).toContain('"kms:GenerateDataKey"');
+    expect(releasePipeline).toContain('module.spa_delivery.kms_key_arn');
+    expect(releasePipeline).toContain('sid       = "InvalidateSpaDistribution"');
+    expect(releasePipeline).toContain('"cloudfront:CreateInvalidation"');
+    expect(releasePipeline).toContain('"cloudfront:GetInvalidation"');
+    expect(releasePipeline).toContain('module.spa_delivery.cloudfront_distribution_arn');
     expect(ecsServices.match(/ignore_changes = \[task_definition\]/g)).toHaveLength(2);
     expect(releasePipeline).not.toContain('"ecr:*"');
     expect(releasePipeline).not.toContain('"ecs:*"');
@@ -173,5 +195,8 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(ecsOutputs).toContain('output "core_case_repository_arn"');
     expect(ecsOutputs).toContain('output "tax_engine_repository_arn"');
     expect(ecsOutputs).toContain('output "execution_role_arn"');
+    expect(readTerraform("terraform/modules/spa_delivery/outputs.tf")).toContain(
+      'output "kms_key_arn"',
+    );
   });
 });

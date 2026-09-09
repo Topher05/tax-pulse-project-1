@@ -334,13 +334,201 @@ describe("Tax Plan Cycle details page", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Implementation Details TBD.");
   });
 
-  test("shows an info toast for the hold placeholder action", async () => {
-    renderDetails();
+  test("opens an accessible hold modal and blocks blank submissions", async () => {
+    const { patchSpy } = renderDetails();
 
     fireEvent.click(await screen.findByRole("button", { name: "Hold" }));
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Hold");
-    expect(screen.getByRole("status")).toHaveTextContent("Implementation Details TBD.");
+    const dialog = await screen.findByRole("dialog", { name: "Place hold" });
+    const reasonField = within(dialog).getByRole("textbox", { name: "Hold reason" });
+    const placeHoldButton = within(dialog).getByRole("button", { name: "Place Hold" });
+
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(reasonField).toHaveFocus();
+    expect(placeHoldButton).toBeDisabled();
+
+    fireEvent.change(reasonField, { target: { value: "   " } });
+
+    expect(placeHoldButton).toBeDisabled();
+    expect(patchSpy).not.toHaveBeenCalled();
+  });
+
+  test("places hold with a trimmed reason and refreshes cycle data", async () => {
+    const heldDetails: DetailsView = {
+      caseId: "TP-24018",
+      client: "North Shore Family Office",
+      stage: "Review",
+      owner: "Maya Reed",
+      priority: "High",
+      dueDate: "May 12, 2026",
+      scenarioCount: 2,
+      onHold: true,
+      holdReason: "Awaiting signed documents",
+      overdue: true,
+    };
+    const { detailsMock, patchSpy } = renderDetails({
+      details: [
+        {
+          ...heldDetails,
+          onHold: false,
+          holdReason: undefined,
+        },
+        heldDetails,
+      ],
+    });
+    patchSpy.mockResolvedValueOnce({
+      on_hold: true,
+      hold_reason: "Awaiting signed documents",
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Hold" }));
+    const dialog = await screen.findByRole("dialog", { name: "Place hold" });
+    fireEvent.change(within(dialog).getByRole("textbox", { name: "Hold reason" }), {
+      target: { value: "  Awaiting signed documents  " },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Place Hold" }));
+
+    await waitFor(() => expect(patchSpy).toHaveBeenCalledTimes(1));
+    expect(patchSpy).toHaveBeenCalledWith(
+      "/v1/tax-plan-cycles/TP-24018/hold",
+      { on_hold: true, hold_reason: "Awaiting signed documents" },
+      expect.any(Function),
+    );
+    await waitFor(() => expect(detailsMock.mock.calls.length).toBeGreaterThanOrEqual(2));
+    expect(screen.queryByRole("dialog", { name: "Place hold" })).not.toBeInTheDocument();
+    expect(await screen.findByText("Hold Reason")).toBeInTheDocument();
+    expect(screen.getByText("Awaiting signed documents")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Hold placed");
+  });
+
+  test("keeps the hold modal open with the entered reason when the API fails", async () => {
+    const { patchSpy } = renderDetails();
+    patchSpy.mockRejectedValueOnce(
+      new caseApi.CaseApiError(
+        400,
+        JSON.stringify({
+          title: "Validation Error",
+          detail: "Hold request failed validation.",
+        }),
+      ),
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Hold" }));
+    const reasonField = await screen.findByRole("textbox", { name: "Hold reason" });
+    fireEvent.change(reasonField, { target: { value: "Awaiting signed documents" } });
+    fireEvent.click(screen.getByRole("button", { name: "Place Hold" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Validation Error");
+    expect(screen.getByRole("dialog", { name: "Place hold" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Hold reason" })).toHaveValue(
+      "Awaiting signed documents",
+    );
+  });
+
+  test("dismisses the hold modal without submitting", async () => {
+    const { patchSpy } = renderDetails();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Hold" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog", { name: "Place hold" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Hold" }));
+    fireEvent.keyDown(await screen.findByRole("dialog", { name: "Place hold" }), {
+      key: "Escape",
+    });
+
+    expect(screen.queryByRole("dialog", { name: "Place hold" })).not.toBeInTheDocument();
+    expect(patchSpy).not.toHaveBeenCalled();
+  });
+
+  test("shows held state, disables advancement, and removes hold immediately", async () => {
+    const activeDetails: DetailsView = {
+      caseId: "TP-24018",
+      client: "North Shore Family Office",
+      stage: "Review",
+      owner: "Maya Reed",
+      priority: "High",
+      dueDate: "May 12, 2026",
+      scenarioCount: 2,
+      onHold: false,
+      overdue: true,
+    };
+    const { patchSpy } = renderDetails({
+      details: [
+        {
+          ...activeDetails,
+          onHold: true,
+          holdReason: "Awaiting signed documents",
+        },
+        activeDetails,
+      ],
+    });
+    patchSpy.mockResolvedValueOnce({ on_hold: false, hold_reason: null });
+
+    const advanceButton = await screen.findByRole("button", { name: "Advance Stage" });
+
+    expect(screen.getByRole("button", { name: "Remove hold" })).toBeInTheDocument();
+    expect(screen.getByText("Hold Reason")).toBeInTheDocument();
+    expect(screen.getByText("Awaiting signed documents")).toBeInTheDocument();
+    expect(advanceButton).toBeDisabled();
+    expect(advanceButton).toHaveAccessibleDescription("Remove the hold before advancing this cycle.");
+
+    fireEvent.click(advanceButton);
+    expect(patchSpy).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove hold" }));
+
+    await waitFor(() => expect(patchSpy).toHaveBeenCalledTimes(1));
+    expect(patchSpy).toHaveBeenCalledWith(
+      "/v1/tax-plan-cycles/TP-24018/hold",
+      { on_hold: false },
+      expect.any(Function),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent("Hold removed");
+  });
+
+  test("refreshes details and shows the conflict message when transition is rejected by a concurrent hold", async () => {
+    const heldDetails: DetailsView = {
+      caseId: "TP-24018",
+      client: "North Shore Family Office",
+      stage: "Review",
+      owner: "Maya Reed",
+      priority: "High",
+      dueDate: "May 12, 2026",
+      scenarioCount: 2,
+      onHold: true,
+      holdReason: "Awaiting signed documents",
+      overdue: true,
+    };
+    const { detailsMock, patchSpy } = renderDetails({
+      details: [
+        {
+          ...heldDetails,
+          onHold: false,
+          holdReason: undefined,
+        },
+        heldDetails,
+      ],
+    });
+    patchSpy.mockRejectedValueOnce(
+      new caseApi.CaseApiError(
+        409,
+        JSON.stringify({
+          title: "Tax Plan Cycle On Hold",
+          detail: "Remove the hold before advancing this Tax Plan Cycle.",
+        }),
+      ),
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Advance Stage" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Tax Plan Cycle On Hold");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Remove the hold before advancing this Tax Plan Cycle.",
+    );
+    await waitFor(() => expect(detailsMock.mock.calls.length).toBeGreaterThanOrEqual(2));
+    expect(await screen.findByRole("button", { name: "Advance Stage" })).toBeDisabled();
   });
 
   test("shows a transition success toast and refreshes the displayed stage after advancing", async () => {

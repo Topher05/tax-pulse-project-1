@@ -1,5 +1,5 @@
 {
-  "id": "f2150fd1-9cdd-4700-aebb-f00c0e9501dc",
+  "id": "43f0dcad-9d78-43e1-923b-40b1050b8cf9",
   "prevId": "1e18cd8a-c5c8-4cb4-b6f3-19355533f468",
   "version": "7",
   "dialect": "postgresql",
@@ -689,6 +689,119 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.income_event": {
+      "name": "income_event",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "case_id": {
+          "name": "case_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "income_event_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "withholding": {
+          "name": "withholding",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "income_event_case_id_date_idx": {
+          "name": "income_event_case_id_date_idx",
+          "columns": [
+            {
+              "expression": "case_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "income_event_case_id_fk": {
+          "name": "income_event_case_id_fk",
+          "tableFrom": "income_event",
+          "tableTo": "tax_plan_cycle",
+          "columnsFrom": [
+            "case_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "income_event_id_pk": {
+          "name": "income_event_id_pk",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "income_event_source_nonempty_check": {
+          "name": "income_event_source_nonempty_check",
+          "value": "length(btrim(\"income_event\".\"source\")) > 0"
+        },
+        "income_event_amount_nonnegative_check": {
+          "name": "income_event_amount_nonnegative_check",
+          "value": "\"income_event\".\"amount\" >= 0"
+        },
+        "income_event_withholding_nonnegative_check": {
+          "name": "income_event_withholding_nonnegative_check",
+          "value": "\"income_event\".\"withholding\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.mfa_enrollment": {
@@ -1450,156 +1563,6 @@
       },
       "isRLSEnabled": false
     },
-    "public.tax_plan_cycle_comment": {
-      "name": "tax_plan_cycle_comment",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "uuidv7()"
-        },
-        "case_id": {
-          "name": "case_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "actor_id": {
-          "name": "actor_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "actor_role": {
-          "name": "actor_role",
-          "type": "user_role_name",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "author_display_name": {
-          "name": "author_display_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "body": {
-          "name": "body",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "tax_plan_cycle_comment_tenant_case_created_idx": {
-          "name": "tax_plan_cycle_comment_tenant_case_created_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "case_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "tax_plan_cycle_comment_case_id_fk": {
-          "name": "tax_plan_cycle_comment_case_id_fk",
-          "tableFrom": "tax_plan_cycle_comment",
-          "tableTo": "tax_plan_cycle",
-          "columnsFrom": [
-            "case_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "tax_plan_cycle_comment_tenant_id_fk": {
-          "name": "tax_plan_cycle_comment_tenant_id_fk",
-          "tableFrom": "tax_plan_cycle_comment",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "tax_plan_cycle_comment_actor_id_fk": {
-          "name": "tax_plan_cycle_comment_actor_id_fk",
-          "tableFrom": "tax_plan_cycle_comment",
-          "tableTo": "users",
-          "columnsFrom": [
-            "actor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "tax_plan_cycle_comment_id_pk": {
-          "name": "tax_plan_cycle_comment_id_pk",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "tax_plan_cycle_comment_body_nonblank_check": {
-          "name": "tax_plan_cycle_comment_body_nonblank_check",
-          "value": "length(btrim(\"tax_plan_cycle_comment\".\"body\")) > 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.taxpayer_identifier_validation": {
       "name": "taxpayer_identifier_validation",
       "schema": "",
@@ -2016,6 +1979,17 @@
         "Education",
         "Retirement Contribution",
         "Other"
+      ]
+    },
+    "public.income_event_type": {
+      "name": "income_event_type",
+      "schema": "public",
+      "values": [
+        "w2",
+        "1099",
+        "capital-gains",
+        "rental",
+        "other"
       ]
     },
     "public.user_role_name": {

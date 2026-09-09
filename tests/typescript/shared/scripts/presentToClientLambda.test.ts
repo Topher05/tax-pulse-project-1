@@ -72,6 +72,23 @@ function createInMemoryRepository(initialCycle: TaxPlanCycle) {
 
       return currentCycle;
     },
+    async setHoldStatus(input: {
+      tenantId: string;
+      caseId: string;
+      onHold: boolean;
+      holdReason?: string;
+    }) {
+      void input.tenantId;
+      void input.caseId;
+      currentCycle = {
+        ...currentCycle,
+        on_hold: input.onHold,
+        ...(input.onHold && input.holdReason
+          ? { hold_reason: input.holdReason }
+          : {}),
+      };
+      return currentCycle;
+    },
     getCurrentCycle() {
       return currentCycle;
     },

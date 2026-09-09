@@ -34,6 +34,15 @@ export interface MfaEnrollmentResult {
   readonly provisioningUri: string;
 }
 
+export interface ForgotPasswordInput {
+  readonly email: string;
+}
+
+export interface ResetPasswordInput {
+  readonly token: string;
+  readonly newPassword: string;
+}
+
 export class AuthRequestError extends Error {
   constructor(readonly status: number, message = "Authentication request failed.") {
     super(message);
@@ -150,6 +159,44 @@ export async function confirmMfaEnrollment(
 
   if (body.enrolled !== true) {
     throw new AuthRequestError(502, "MFA enrollment service returned an invalid response.");
+  }
+
+  return true;
+}
+
+export async function requestPasswordReset(
+  input: ForgotPasswordInput,
+  fetcher: typeof fetch = fetch,
+): Promise<true> {
+  const response = await fetcher("/auth/forgot-password", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      email: input.email,
+    }),
+    credentials: "include",
+  });
+  await requireRegistrationJson(response);
+  return true;
+}
+
+export async function confirmPasswordReset(
+  input: ResetPasswordInput,
+  fetcher: typeof fetch = fetch,
+): Promise<true> {
+  const response = await fetcher("/auth/reset-password", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      token: input.token,
+      new_password: input.newPassword,
+    }),
+    credentials: "include",
+  });
+  const body = await requireRegistrationJson(response);
+
+  if (body.reset !== true) {
+    throw new AuthRequestError(502, "Password reset service returned an invalid response.");
   }
 
   return true;

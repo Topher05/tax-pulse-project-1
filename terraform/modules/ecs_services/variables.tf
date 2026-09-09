@@ -105,6 +105,21 @@ variable "login_base_domain" {
   type        = string
 }
 
+variable "password_reset_from_email" {
+  description = "Verified SES sender address used for password-reset messages."
+  type        = string
+}
+
+variable "password_reset_page_url" {
+  description = "Public HTTPS Pulse UI URL used in password-reset messages."
+  type        = string
+}
+
+variable "password_reset_sender_identity_arn" {
+  description = "Verified SES identity ARN allowed for password-reset delivery."
+  type        = string
+}
+
 variable "redis_url" {
   description = "Managed Redis URL for the Core Case Service."
   type        = string

@@ -31,6 +31,40 @@ const commentRepository = vi.hoisted(() => ({
 const createTaxPlanCycleCommentRepository = vi.hoisted(() =>
   vi.fn(() => commentRepository),
 );
+const incomeEventRepository = vi.hoisted(() => ({
+  listByCase: vi.fn(async ({ caseId }: { caseId: string }) => [
+    {
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8ca218",
+      case_id: caseId,
+      date: "2026-08-31",
+      source: "Synthetic W-2 wages",
+      type: "w2" as const,
+      amount: "125000.50",
+      withholding: "21500.25",
+    },
+  ]),
+  create: vi.fn(
+    async (input: {
+      caseId: string;
+      date: string;
+      source: string;
+      type: "w2" | "1099" | "capital-gains" | "rental" | "other";
+      amount: number;
+      withholding: number;
+    }) => ({
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8ca219",
+      case_id: input.caseId,
+      date: input.date,
+      source: input.source,
+      type: input.type,
+      amount: input.amount.toFixed(2),
+      withholding: input.withholding.toFixed(2),
+    }),
+  ),
+}));
+const createIncomeEventRepository = vi.hoisted(() =>
+  vi.fn(() => incomeEventRepository),
+);
 const stageChangedPublisher = vi.hoisted(() => ({
   publishStageChanged: vi.fn(async () => undefined),
 }));
@@ -98,6 +132,16 @@ vi.mock(
     };
   },
 );
+
+vi.mock("../../../../src/typescript/features/incomeEvents/index.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../../../src/typescript/features/incomeEvents/index.js")>();
+
+  return {
+    ...actual,
+    createIncomeEventRepository,
+  };
+});
 
 vi.mock("../../../../src/typescript/features/taxPlanCycle/index.js", async (importOriginal) => {
   const actual =
@@ -207,6 +251,29 @@ describe("main Tax Plan Cycle composition", () => {
           `http://127.0.0.1:${address.port}/v1/tax-plan-cycles`,
           { headers: { authorization: `Bearer ${token}` } },
         );
+        const incomeReadResponse = await fetch(
+          `http://127.0.0.1:${address.port}/v1/cases/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91/income-events`,
+          { headers: { authorization: `Bearer ${token}` } },
+        );
+        const incomeCreateResponse = await fetch(
+          `http://127.0.0.1:${address.port}/v1/cases/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91/income-events`,
+          {
+            method: "POST",
+            headers: {
+              authorization: `Bearer ${token}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              source: "Acme Consulting",
+              type: "1099",
+              amount: 900,
+              withholding: 125.5,
+            }),
+          },
+        );
+        const unauthenticatedIncomeResponse = await fetch(
+          `http://127.0.0.1:${address.port}/v1/cases/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91/income-events`,
+        );
         const unversionedResponse = await fetch(
           `http://127.0.0.1:${address.port}/tax-plan-cycles`,
         );
@@ -217,6 +284,23 @@ describe("main Tax Plan Cycle composition", () => {
         expect(createResponse.status).toBe(202);
         expect(readResponse.status).toBe(200);
         expect(queueResponse.status).toBe(200);
+        expect(incomeReadResponse.status).toBe(200);
+        expect(await incomeReadResponse.json()).toEqual([
+          expect.objectContaining({
+            case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+            source: "Synthetic W-2 wages",
+            amount: "125000.50",
+          }),
+        ]);
+        expect(incomeCreateResponse.status).toBe(201);
+        expect(await incomeCreateResponse.json()).toMatchObject({
+          case_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+          source: "Acme Consulting",
+          type: "1099",
+          amount: "900.00",
+          withholding: "125.50",
+        });
+        expect(unauthenticatedIncomeResponse.status).toBe(401);
         expect(await queueResponse.json()).toEqual([
           expect.objectContaining({ client_name: "Test Client" }),
         ]);
@@ -224,6 +308,7 @@ describe("main Tax Plan Cycle composition", () => {
         expect(unknownVersionResponse.status).toBe(404);
         expect(createTaxPlanCycleRepository).toHaveBeenCalledTimes(1);
         expect(createTaxPlanCycleCommentRepository).toHaveBeenCalledTimes(1);
+        expect(createIncomeEventRepository).toHaveBeenCalledTimes(1);
         expect(repository.create).toHaveBeenCalledWith({
           tenantId: "tenant-from-jwt",
           planningPeriod: "2026-Q4",
@@ -239,6 +324,19 @@ describe("main Tax Plan Cycle composition", () => {
         });
         expect(repository.listQueue).toHaveBeenCalledWith({
           tenantId: "tenant-from-jwt",
+        });
+        expect(incomeEventRepository.listByCase).toHaveBeenCalledWith({
+          tenantId: "tenant-from-jwt",
+          caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+        });
+        expect(incomeEventRepository.create).toHaveBeenCalledWith({
+          tenantId: "tenant-from-jwt",
+          caseId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+          date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          source: "Acme Consulting",
+          type: "1099",
+          amount: 900,
+          withholding: 125.5,
         });
       } finally {
         server.close();

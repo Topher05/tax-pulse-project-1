@@ -8,6 +8,8 @@ export const incomeSourceCategories = [
   "other",
 ] as const;
 
+export const maximumIncomeSourceLength = 200;
+
 export type IncomeSourceCategory = (typeof incomeSourceCategories)[number];
 
 function requiredCurrency(label: "Amount" | "Withholding") {
@@ -26,13 +28,16 @@ function requiredCurrency(label: "Amount" | "Withholding") {
         error: (issue) =>
           issue.input === undefined ? `${label} is required` : `${label} must be a number`,
       })
-      .finite()
       .min(0, { message: `${label} cannot be negative` }),
   );
 }
 
 export const incomeEntrySchema = z.object({
-  source: z.string().trim().min(1, "Source is required"),
+  source: z
+    .string()
+    .trim()
+    .min(1, "Source is required")
+    .max(maximumIncomeSourceLength, "Source must be 200 characters or fewer"),
   type: z.enum(incomeSourceCategories, { error: "Type is required" }),
   amount: requiredCurrency("Amount"),
   withholding: requiredCurrency("Withholding"),

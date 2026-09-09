@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import type { Server } from "node:http";
+import { createTaxPlanCycleHoldController } from "./features/taxPlanCycle/index.js";
 
 export {
   clientDeductionAggregationPayloadSchema,
@@ -148,6 +149,39 @@ export {
 } from "./authRegistrationService.js";
 export { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
 export {
+  forgotPasswordRequestSchema,
+  InvalidResetTokenError,
+  invalidResetTokenProblem,
+  resetPasswordRequestSchema,
+  resetPasswordResultSchema,
+  type ActiveUserRecord,
+  type ForgotPasswordRequest,
+  type PasswordResetRepository,
+  type PasswordResetTokenInsert,
+  type PasswordResetTokenRecord,
+  type ResetPasswordRequest,
+  type ResetPasswordResult,
+  type ResetTokenNotifier,
+} from "./passwordReset.js";
+export {
+  createPasswordResetService,
+  type CreatePasswordResetServiceOptions,
+  type PasswordResetService,
+} from "./passwordResetService.js";
+export { createPasswordResetRepository } from "./passwordResetRepository.js";
+export {
+  createPasswordResetSesClient,
+  createSesPasswordResetNotifier,
+  getPasswordResetNotifierConfigFromEnv,
+  type PasswordResetNotifierConfig,
+  type SesV2Client,
+} from "./passwordResetNotifier.js";
+export {
+  createPasswordResetRouter,
+  type CreatePasswordResetRouterOptions,
+  type PasswordResetValidationErrorResponse,
+} from "./passwordResetRoutes.js";
+export {
   coreCaseOpenApiSchemaRegistrations,
   createCoreCaseOpenApiDocument,
   type CoreCaseOpenApiSchemaRegistration,
@@ -235,16 +269,26 @@ export {
   type PlatformTenantUsersTenant,
 } from "./features/platformAdministration/index.js";
 export {
-  buildIncomeEventMockRows,
+  createIncomeEventRepository,
+  createIncomeEventService,
   createIncomeEventsRouter,
+  incomeEventCreateSchema,
   incomeEventReadParamsSchema,
   incomeEventRowsSchema,
   incomeEventRowSchema,
   incomeEventTypeSchema,
+  incomeEventTypeValues,
+  maximumIncomeEventSourceLength,
+  type CreateIncomeEventServiceOptions,
   type CreateIncomeEventsRouterOptions,
-  type IncomeEventsMockCase,
+  type IncomeEventCreate,
+  type IncomeEventCreateInput,
+  type IncomeEventListInput,
+  type IncomeEventRepository,
   type IncomeEventRow,
   type IncomeEventRows,
+  type IncomeEventService,
+  type IncomeEventServiceCreateInput,
   type IncomeEventType,
 } from "./features/incomeEvents/index.js";
 export {
@@ -549,11 +593,13 @@ export {
   getStageChangedQueueUrlFromEnv,
   parseStageChangedSqsMessage,
   createTaxPlanCycleCreateController,
+  createTaxPlanCycleHoldController,
   taxPlanCycleCreateController,
+  taxPlanCycleHoldController,
   taxPlanCycleCreateResultSchema,
   TaxPlanDetailsAssistantUnsafePromptError,
   createTaxPlanCycleTransitionController,
-  taxPlanCycleTransitionController,
+  TaxPlanCycleOnHoldError,
   createTaxPlanCycleRouter,
   STAGE_CHANGED_CONSUMER_NAME,
   buildIdempotencyKey,
@@ -565,6 +611,9 @@ export {
   type TaxPlanCycleCreateControllerInput,
   type TaxPlanCycleCreateController,
   type TaxPlanCycleCreateResult,
+  type TaxPlanCycleHoldController,
+  type TaxPlanCycleHoldControllerInput,
+  type TaxPlanCycleHoldControllerOptions,
   type TaxPlanCycleQueueCache,
   type TaxPlanCycleQueueCacheClient,
   type TaxPlanCycleQueueCacheInvalidator,
@@ -673,6 +722,14 @@ import {
 } from "./features/deductions/index.js";
 import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
 import { createRegistrationService } from "./authRegistrationService.js";
+import { createPasswordResetRepository } from "./passwordResetRepository.js";
+import { createPasswordResetService } from "./passwordResetService.js";
+import { createPasswordResetRouter } from "./passwordResetRoutes.js";
+import {
+  createPasswordResetSesClient,
+  createSesPasswordResetNotifier,
+  getPasswordResetNotifierConfigFromEnv,
+} from "./passwordResetNotifier.js";
 import {
   createAuditEntryRepository,
   createAuditEntryWriter,
@@ -697,7 +754,11 @@ import {
   createPlatformAdministrationRepository,
   createPlatformAdministrationRouter,
 } from "./features/platformAdministration/index.js";
-import { createIncomeEventsRouter } from "./features/incomeEvents/index.js";
+import {
+  createIncomeEventRepository,
+  createIncomeEventService,
+  createIncomeEventsRouter,
+} from "./features/incomeEvents/index.js";
 import { createOpenAIEmbeddingProvider } from "./assist/embeddings.js";
 import { createOpenAIAssistExplanationProvider } from "./assist/explanation.js";
 import { retrieveHybridCorpusChunks } from "./assist/retrieval.js";
@@ -760,6 +821,15 @@ export async function main(): Promise<Server> {
   const registrationService = createRegistrationService({
     store: createRegistrationAccountRepository(client),
   });
+  const passwordResetRepository = createPasswordResetRepository(client);
+  const passwordResetNotifier = createSesPasswordResetNotifier(
+    createPasswordResetSesClient(),
+    getPasswordResetNotifierConfigFromEnv(),
+  );
+  const passwordResetService = createPasswordResetService({
+    repository: passwordResetRepository,
+    notifier: passwordResetNotifier,
+  });
   const mfaEnrollmentRepository = createMfaEnrollmentRepository(client);
   const refreshTokenRepository = createRefreshTokenRepository(client);
   const taxPlanCycleRepository = createTaxPlanCycleRepository(client);
@@ -770,6 +840,8 @@ export async function main(): Promise<Server> {
   const scenarioRepository = createScenarioRepository(client);
   const commentRepository = createTaxPlanCycleCommentRepository(client);
   const deductionRepository = createDeductionRepository(client);
+  const incomeEventRepository = createIncomeEventRepository(client);
+  const incomeEventService = createIncomeEventService(incomeEventRepository);
   const assistTenantScopeMap = parseAssistTenantCorpusScopeMap();
   const assistEmbeddingProvider = createOpenAIEmbeddingProvider();
   const assistExplanationProvider = createOpenAIAssistExplanationProvider();
@@ -931,6 +1003,10 @@ export async function main(): Promise<Server> {
           actionItemCompletedEventPublisher,
           commentRepository,
           controller: taxPlanCycleController,
+          holdController: createTaxPlanCycleHoldController(taxPlanCycleRepository, {
+            queueCacheInvalidator,
+            telemetryLogger: logger,
+          }),
           taxPlanCycleRepository,
           scenarioRepository,
           scenarioModelingController,
@@ -964,7 +1040,7 @@ export async function main(): Promise<Server> {
       app.use(
         taxPlanCycleApiPrefix,
         createIncomeEventsRouter({
-          taxPlanCycleRepository,
+          service: incomeEventService,
         }),
       );
       app.use(
@@ -981,6 +1057,11 @@ export async function main(): Promise<Server> {
           tenantLoginBaseDomain,
         }),
       );
+      app.use(createPasswordResetRouter({
+        service: passwordResetService,
+        tenantLoginResolver,
+        tenantLoginBaseDomain,
+      }));
       app.use(createAuthMfaLoginRouter({
         controller: authMfaLoginController,
         secureCookies: process.env.NODE_ENV === "production",
