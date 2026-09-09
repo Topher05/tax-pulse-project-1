@@ -10,7 +10,7 @@ import {
 
 export interface CreatePasswordResetServiceOptions {
   repository: PasswordResetRepository;
-  notifier: ResetTokenNotifier;
+  notifier?: ResetTokenNotifier;
   hashPasswordOptions?: HashPasswordOptions;
   tokenTtlMs?: number;
   createTokenId?: () => string;
@@ -40,6 +40,10 @@ export function createPasswordResetService({
 }: CreatePasswordResetServiceOptions): PasswordResetService {
   return {
     async requestReset(tenantId, email) {
+      if (!notifier) {
+        return;
+      }
+
       const user = await repository.findActiveUserByEmail(tenantId, email);
 
       if (user === null) {

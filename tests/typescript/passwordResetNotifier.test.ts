@@ -33,9 +33,32 @@ describe("password reset notifier", () => {
     );
   });
 
-  test("requires explicit delivery configuration in production", () => {
-    expect(() => getPasswordResetNotifierConfigFromEnv({ NODE_ENV: "production" })).toThrow(
-      "TAXPULSE_PASSWORD_RESET_FROM_EMAIL is required in production.",
+  test("disables delivery when configuration is absent", () => {
+    expect(getPasswordResetNotifierConfigFromEnv({ NODE_ENV: "production" })).toBeNull();
+  });
+
+  test("loads complete delivery configuration", () => {
+    expect(
+      getPasswordResetNotifierConfigFromEnv({
+        NODE_ENV: "production",
+        TAXPULSE_PASSWORD_RESET_FROM_EMAIL: "no-reply@taxpulse.example",
+        TAXPULSE_PASSWORD_RESET_PAGE_URL:
+          "https://login.taxpulse.example/password-reset/new",
+      }),
+    ).toEqual({
+      fromEmail: "no-reply@taxpulse.example",
+      resetPageUrl: "https://login.taxpulse.example/password-reset/new",
+    });
+  });
+
+  test("rejects partial delivery configuration", () => {
+    expect(() =>
+      getPasswordResetNotifierConfigFromEnv({
+        NODE_ENV: "production",
+        TAXPULSE_PASSWORD_RESET_FROM_EMAIL: "no-reply@taxpulse.example",
+      }),
+    ).toThrow(
+      "TAXPULSE_PASSWORD_RESET_FROM_EMAIL and TAXPULSE_PASSWORD_RESET_PAGE_URL must be configured together.",
     );
   });
 

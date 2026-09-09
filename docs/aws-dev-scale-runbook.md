@@ -100,7 +100,7 @@ aws ecs wait services-stable --cluster taxpulse-api `
   --services core-case-service tax-engine
 ```
 
-3. Verify the ALB health endpoint, the Terraform-resolved SPA URL, and the
+3. Verify ALB target health, the Terraform-resolved SPA URL, and the
    authenticated synthetic smoke path. Use the commands in
    [`terraform/README.md`](../terraform/README.md) for the JWT-protected smoke;
    never record the bearer token or taxpayer data.
@@ -109,13 +109,36 @@ aws ecs wait services-stable --cluster taxpulse-api `
 $SpaUrl = (terraform -chdir=terraform output -raw spa_url).TrimEnd('/')
 $ApiUrl = (terraform -chdir=terraform output -raw api_base_url).TrimEnd('/')
 Invoke-WebRequest "$SpaUrl/?restore=$(Get-Date -Format yyyyMMddHHmmss)" -UseBasicParsing
-Invoke-WebRequest "$ApiUrl/health" -UseBasicParsing
+$TargetGroupArns = aws elbv2 describe-target-groups `
+  --names taxpulse-dev-core-case taxpulse-dev-tax-engine `
+  --query 'TargetGroups[].TargetGroupArn' --output text
+foreach ($TargetGroupArn in ($TargetGroupArns -split '\s+')) {
+  aws elbv2 describe-target-health --target-group-arn $TargetGroupArn `
+    --query 'TargetHealthDescriptions[].TargetHealth.State'
+}
 ```
+
+The ALB listener intentionally routes `/auth/*` and `/v1/*` to Core Case; it does
+not expose the container's `/health` endpoint as a public route.
 
 4. Confirm both ECS services have one running task, target health is healthy,
    RDS is `available`, and the application smoke reports successful HTTP status
    codes. If ECS fails to stabilize, inspect service events and stopped-task
    reasons before changing desired counts again.
+
+### Core Case password-reset startup failures
+
+Password-reset email delivery is optional. When no SES sender or public reset URL is
+available, leave `password_reset_from_email`, `password_reset_page_url`, and
+`password_reset_sender_identity_arn` unset together. Core Case will log one warning,
+continue serving the application, and silently accept forgot-password requests without
+creating reset tokens.
+
+If Core Case cycles after a restore, inspect its latest `Case-Service` application log
+stream. An error requiring `TAXPULSE_PASSWORD_RESET_FROM_EMAIL` indicates that ECS is
+running an older image that predates optional password-reset delivery. Deploy the
+current Core Case image and reconcile the Terraform-managed task definition; do not
+invent a sender address or add an unverified SES identity merely to satisfy startup.
 
 ## Limitations and operational notes
 

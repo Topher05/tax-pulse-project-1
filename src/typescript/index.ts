@@ -822,10 +822,18 @@ export async function main(): Promise<Server> {
     store: createRegistrationAccountRepository(client),
   });
   const passwordResetRepository = createPasswordResetRepository(client);
-  const passwordResetNotifier = createSesPasswordResetNotifier(
-    createPasswordResetSesClient(),
-    getPasswordResetNotifierConfigFromEnv(),
-  );
+  const passwordResetNotifierConfig = getPasswordResetNotifierConfigFromEnv();
+  const passwordResetNotifier = passwordResetNotifierConfig
+    ? createSesPasswordResetNotifier(
+        createPasswordResetSesClient(),
+        passwordResetNotifierConfig,
+      )
+    : undefined;
+  if (!passwordResetNotifier) {
+    logger.warn(
+      "Password-reset email delivery is disabled because no notifier configuration is present.",
+    );
+  }
   const passwordResetService = createPasswordResetService({
     repository: passwordResetRepository,
     notifier: passwordResetNotifier,

@@ -32,6 +32,20 @@ locals {
   core_case_pull_repository_arn  = coalesce(var.core_case_image_repository_arn, aws_ecr_repository.core_case.arn)
   tax_engine_pull_repository_arn = coalesce(var.tax_engine_image_repository_arn, aws_ecr_repository.tax_engine.arn)
   slo_alarm_prefix               = "${local.resource_name_prefix}-slo"
+  password_reset_enabled = alltrue([
+    var.password_reset_from_email != null,
+    var.password_reset_page_url != null,
+    var.password_reset_sender_identity_arn != null,
+  ])
+  password_reset_disabled = alltrue([
+    var.password_reset_from_email == null,
+    var.password_reset_page_url == null,
+    var.password_reset_sender_identity_arn == null,
+  ])
+  password_reset_environment = local.password_reset_enabled ? [
+    { name = "TAXPULSE_PASSWORD_RESET_FROM_EMAIL", value = var.password_reset_from_email },
+    { name = "TAXPULSE_PASSWORD_RESET_PAGE_URL", value = var.password_reset_page_url },
+  ] : []
 }
 
 resource "aws_ecr_repository" "core_case" {
@@ -263,10 +277,14 @@ data "aws_iam_policy_document" "core_case_runtime_access" {
     resources = [var.stage_changed_topic_arn, var.action_item_created_topic_arn]
   }
 
-  statement {
-    sid       = "SendPasswordResetEmail"
-    actions   = ["ses:SendEmail"]
-    resources = [var.password_reset_sender_identity_arn]
+  dynamic "statement" {
+    for_each = local.password_reset_enabled ? [var.password_reset_sender_identity_arn] : []
+
+    content {
+      sid       = "SendPasswordResetEmail"
+      actions   = ["ses:SendEmail"]
+      resources = [statement.value]
+    }
   }
 }
 
@@ -506,7 +524,7 @@ resource "aws_ecs_task_definition" "core_case" {
           appProtocol   = "http"
         }
       ]
-      environment = [
+      environment = concat([
         { name = "NODE_ENV", value = "production" },
         { name = "PORT", value = "3000" },
         { name = "JWT_ISSUER", value = var.jwt_issuer },
@@ -515,8 +533,6 @@ resource "aws_ecs_task_definition" "core_case" {
         { name = "JWT_REFRESH_TOKEN_TTL_SECONDS", value = "2592000" },
         { name = "LIABILITY_ENGINE_BASE", value = "http://tax-engine.service.taxpulse.internal:8000" },
         { name = "TAXPULSE_LOGIN_BASE_DOMAIN", value = var.login_base_domain },
-        { name = "TAXPULSE_PASSWORD_RESET_FROM_EMAIL", value = var.password_reset_from_email },
-        { name = "TAXPULSE_PASSWORD_RESET_PAGE_URL", value = var.password_reset_page_url },
         { name = "TAXPULSE_REDIS_URL", value = var.redis_url },
         { name = "AWS_REGION", value = var.aws_region },
         { name = "TAXPULSE_STAGE_CHANGED_TOPIC_ARN", value = var.stage_changed_topic_arn },
@@ -534,7 +550,7 @@ resource "aws_ecs_task_definition" "core_case" {
           name  = "OTEL_TRACES_SAMPLER_ARG"
           value = tostring(var.observability_trace_sampling_ratio)
         },
-      ]
+      ], local.password_reset_environment)
       dependsOn = [
         {
           containerName = local.collector_container_name
@@ -616,6 +632,13 @@ resource "aws_ecs_task_definition" "core_case" {
       }
     }
   ])
+
+  lifecycle {
+    precondition {
+      condition     = local.password_reset_enabled || local.password_reset_disabled
+      error_message = "Password-reset sender email, page URL, and SES identity ARN must be configured together or all left null."
+    }
+  }
 }
 
 resource "aws_ecs_task_definition" "tax_engine" {
