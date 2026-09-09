@@ -60,6 +60,7 @@ describe("tax plan details assistant controller", () => {
 
   test("returns a grounded explanation and public citations", async () => {
     const retrievedChunks: RankedCorpusChunk[] = [buildRetrievedChunk()];
+    let retrievalQuery = "";
     const controller = createTaxPlanDetailsAssistantController({
       taxPlanCycleRepository: {
         async findByCaseId() {
@@ -70,7 +71,8 @@ describe("tax plan details assistant controller", () => {
         ["018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01", "tenant-alpha"],
       ]),
       retriever: {
-        async retrieve() {
+        async retrieve(input) {
+          retrievalQuery = input.query;
           return retrievedChunks;
         },
       },
@@ -109,6 +111,33 @@ describe("tax plan details assistant controller", () => {
         },
       ],
     });
+    expect(retrievalQuery).toBe("Why is this recommended?");
+  });
+
+  test("falls back to the recommendation when no question is supplied", async () => {
+    let retrievalQuery = "";
+    const controller = createTaxPlanDetailsAssistantController({
+      taxPlanCycleRepository: { async findByCaseId() { return { id: "case-1" }; } },
+      tenantScopeMap: new Map([["018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01", "tenant-alpha"]]),
+      retriever: {
+        async retrieve(input) {
+          retrievalQuery = input.query;
+          return [buildRetrievedChunk()];
+        },
+      },
+      explanationProvider: {
+        async explain() { return { explanation: "Grounded.", citedChunkIds: ["chunk-1"] }; },
+      },
+    });
+
+    await controller.assist({
+      tenantId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01",
+      actor: "advisor-001",
+      caseId: "case-1",
+      recommendation_context: { recommendation: "Apply the estimated-payment safe-harbor threshold" },
+    });
+
+    expect(retrievalQuery).toBe("Apply the estimated-payment safe-harbor threshold");
   });
 
   test("returns not found when the case cannot be loaded in-tenant", async () => {

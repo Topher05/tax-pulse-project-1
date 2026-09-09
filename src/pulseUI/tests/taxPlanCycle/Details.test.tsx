@@ -154,25 +154,13 @@ describe("Tax Plan Cycle details page", () => {
     expect(screen.getByRole("button", { name: "Run new scenario" })).toBeInTheDocument();
   });
 
-  test("opens the assistant with derived case context and no initial question", async () => {
+  test("opens the assistant without sending a request until a question is entered", async () => {
     const { assistSpy } = renderDetails();
 
     fireEvent.click(await screen.findByRole("button", { name: "Open RAG assistant" }));
 
-    await waitFor(() => {
-      expect(assistSpy).toHaveBeenCalledWith(
-        "/v1/tax-plan-cycles/TP-24018/assist",
-        {
-          recommendation_context: {
-            recommendation:
-              "Tax Plan Cycle in Review case owned by Maya Reed with a High priority for the taxpayer North Shore Family Office from tivs",
-          },
-        },
-        expect.any(Function),
-      );
-    });
-    expect(await screen.findByText("Grounded explanation.")).toBeInTheDocument();
-    expect(screen.queryByText("Advisor prompt")).not.toBeInTheDocument();
+    expect(assistSpy).not.toHaveBeenCalled();
+    expect(await screen.findByRole("textbox", { name: "Assistant prompt" })).toBeInTheDocument();
   });
 
   test("switches tabs and preserves the comment draft when returning to Comments", async () => {
