@@ -34,6 +34,27 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(ecsServices).toContain("xray:PutTraceSegments");
   });
 
+  test("keeps password-reset delivery optional and all-or-none", () => {
+    const rootVariables = readTerraform("terraform/variables.tf");
+    const ecsVariables = readTerraform("terraform/modules/ecs_services/variables.tf");
+    const ecsServices = readTerraform("terraform/modules/ecs_services/main.tf");
+
+    expect(rootVariables).toMatch(
+      /variable "password_reset_from_email"[\s\S]*?default\s+=\s+null/,
+    );
+    expect(ecsVariables).toMatch(
+      /variable "password_reset_sender_identity_arn"[\s\S]*?default\s+=\s+null/,
+    );
+    expect(ecsServices).toContain("password_reset_enabled = alltrue([");
+    expect(ecsServices).toContain("local.password_reset_environment");
+    expect(ecsServices).toContain(
+      "for_each = local.password_reset_enabled ? [var.password_reset_sender_identity_arn] : []",
+    );
+    expect(ecsServices).toContain(
+      "condition     = local.password_reset_enabled || local.password_reset_disabled",
+    );
+  });
+
   test("defines SLO alarms and a dedicated SNS topic for ECS service degradation", () => {
     const delivery = readTerraform("terraform/delivery.tf");
     const ecsServices = readTerraform("terraform/modules/ecs_services/main.tf");

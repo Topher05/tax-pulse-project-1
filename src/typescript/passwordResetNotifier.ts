@@ -15,36 +15,22 @@ export interface SesV2Client {
   send(command: SendEmailCommand): Promise<unknown>;
 }
 
-function requiredProductionValue(
-  env: NodeJS.ProcessEnv,
-  name: string,
-  developmentDefault: string,
-): string {
-  const value = env[name]?.trim();
-  if (value) {
-    return value;
-  }
-
-  if (env.NODE_ENV === "production") {
-    throw new Error(`${name} is required in production.`);
-  }
-
-  return developmentDefault;
-}
-
 export function getPasswordResetNotifierConfigFromEnv(
   env: NodeJS.ProcessEnv = process.env,
-): PasswordResetNotifierConfig {
-  const fromEmail = requiredProductionValue(
-    env,
-    "TAXPULSE_PASSWORD_RESET_FROM_EMAIL",
-    "no-reply@taxpulse.example",
-  );
-  const resetPageUrl = requiredProductionValue(
-    env,
-    "TAXPULSE_PASSWORD_RESET_PAGE_URL",
-    "http://north-star-planning.localhost:5173/password-reset/new",
-  );
+): PasswordResetNotifierConfig | null {
+  const fromEmail = env.TAXPULSE_PASSWORD_RESET_FROM_EMAIL?.trim();
+  const resetPageUrl = env.TAXPULSE_PASSWORD_RESET_PAGE_URL?.trim();
+
+  if (!fromEmail && !resetPageUrl) {
+    return null;
+  }
+
+  if (!fromEmail || !resetPageUrl) {
+    throw new Error(
+      "TAXPULSE_PASSWORD_RESET_FROM_EMAIL and TAXPULSE_PASSWORD_RESET_PAGE_URL must be configured together.",
+    );
+  }
+
   const parsedResetPageUrl = new URL(resetPageUrl);
 
   if (env.NODE_ENV === "production" && parsedResetPageUrl.protocol !== "https:") {
