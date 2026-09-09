@@ -20,6 +20,23 @@ locals {
       module.ecs_services.tax_engine_service_name,
     ),
   ]
+  github_actions_release_cluster_arn = format(
+    "arn:aws:ecs:%s:%s:cluster/%s",
+    var.aws_region,
+    data.aws_caller_identity.current.account_id,
+    module.ecs_services.cluster_name,
+  )
+  github_actions_core_case_task_definition_arn = format(
+    "arn:aws:ecs:%s:%s:task-definition/taxpulse-core-case-service:*",
+    var.aws_region,
+    data.aws_caller_identity.current.account_id,
+  )
+  github_actions_core_case_task_arns = format(
+    "arn:aws:ecs:%s:%s:task/%s/*",
+    var.aws_region,
+    data.aws_caller_identity.current.account_id,
+    module.ecs_services.cluster_name,
+  )
   github_actions_spa_bucket_arn             = "arn:aws:s3:::${module.spa_delivery.bucket_name}"
   github_actions_terraform_state_bucket_arn = "arn:aws:s3:::taxpulse-terraform-state"
   github_actions_terraform_state_keys = [
@@ -116,6 +133,24 @@ data "aws_iam_policy_document" "github_actions_release" {
       "ecs:RegisterTaskDefinition",
     ]
     resources = ["*"]
+  }
+
+  statement {
+    sid       = "RunAssistCorpusTask"
+    actions   = ["ecs:RunTask"]
+    resources = [local.github_actions_core_case_task_definition_arn]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "ecs:cluster"
+      values   = [local.github_actions_release_cluster_arn]
+    }
+  }
+
+  statement {
+    sid       = "DescribeAssistCorpusTask"
+    actions   = ["ecs:DescribeTasks"]
+    resources = [local.github_actions_core_case_task_arns]
   }
 
   statement {
