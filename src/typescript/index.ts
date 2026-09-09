@@ -957,6 +957,7 @@ export async function main(): Promise<Server> {
       },
     },
     explanationProvider: assistExplanationProvider,
+    assistLogger: logger,
   });
   const tokenService = createTokenService({
     config: jwtConfig,

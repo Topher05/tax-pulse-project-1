@@ -162,6 +162,11 @@ describe("SCRUM-164 Terraform delivery modules", () => {
     expect(releasePipeline).toContain("module.ecs_services.core_case_service_name");
     expect(releasePipeline).toContain("module.ecs_services.tax_engine_service_name");
     expect(releasePipeline).toContain('"ecs:RegisterTaskDefinition"');
+    expect(releasePipeline).toContain('"ecs:RunTask"');
+    expect(releasePipeline).toContain('"ecs:DescribeTasks"');
+    expect(releasePipeline).toContain('task-definition/taxpulse-core-case-service:*');
+    expect(releasePipeline).toContain('task/%s/*');
+    expect(releasePipeline).toContain('module.ecs_services.cluster_name');
     expect(releasePipeline).toContain('"ecs:UpdateService"');
     expect(releasePipeline).toContain('"iam:PassRole"');
     expect(releasePipeline).not.toContain('"iam:SimulatePrincipalPolicy"');

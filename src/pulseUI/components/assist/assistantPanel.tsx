@@ -141,20 +141,14 @@ export function AssistantPanelProvider({ children }: PropsWithChildren) {
   );
 
   const openAssistant = useCallback(async () => {
-    if (assistantCaseContext === null || isPending) {
+    if (assistantCaseContext === null) {
       return;
     }
 
-    const requestId = ++requestCounter.current;
+    requestCounter.current += 1;
     setDrawerOpen(true);
     setMessages([]);
-
-    await runAssistantRequest(
-      requestId,
-      assistantCaseContext.caseId,
-      assistantCaseContext.recommendation,
-    );
-  }, [assistantCaseContext, isPending, runAssistantRequest]);
+  }, [assistantCaseContext]);
 
   const sendMessage = useCallback(
     async (message: string) => {

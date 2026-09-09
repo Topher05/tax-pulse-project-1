@@ -82,6 +82,7 @@ export interface CreateTaxPlanDetailsAssistantControllerOptions {
   };
   explanationProvider: AssistExplanationProvider;
   resultLimit?: number;
+  assistLogger?: Pick<Console, "info">;
 }
 
 export interface TaxPlanDetailsAssistantController {
@@ -122,7 +123,7 @@ export function createTaxPlanDetailsAssistantController(
         throw new TaxPlanDetailsAssistantUnsafePromptError();
       }
 
-      const retrievalQuery = recommendation;
+      const retrievalQuery = question || recommendation;
 
       const chunks = await options.retriever.retrieve({
         query: retrievalQuery,
@@ -130,6 +131,11 @@ export function createTaxPlanDetailsAssistantController(
         tenantScopes,
       });
       if (chunks.length === 0) {
+        options.assistLogger?.info({
+          event: "tax_plan_cycle_assist_retrieval_empty",
+          tenant_scopes: tenantScopes,
+          result_limit: resultLimit,
+        });
         throw new TaxPlanDetailsAssistantUnavailableError("No grounded assist context was available.");
       }
 
