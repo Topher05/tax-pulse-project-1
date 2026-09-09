@@ -35,6 +35,7 @@
     "assist:smoke": "tsx src/typescript/shared/scripts/assistSmoke.ts",
     "corpus:build": "tsx src/typescript/shared/scripts/corpusBuild.ts",
     "corpus:embed": "tsx src/typescript/shared/scripts/corpusEmbed.ts",
+    "corpus:bootstrap": "tsx src/typescript/shared/scripts/corpusBootstrap.ts",
     "corpus:smoke": "tsx src/typescript/shared/scripts/corpusSmoke.ts",
     "corpus:validate": "tsx src/typescript/shared/scripts/corpusValidate.ts",
     "corpus:smoke:hybrid": "tsx src/typescript/shared/scripts/corpusHybridSmoke.ts",

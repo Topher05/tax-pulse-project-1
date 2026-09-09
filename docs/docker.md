@@ -63,6 +63,10 @@ The one-shot `core-case-seed` service runs Drizzle migrations and loads syntheti
 data before Core starts. This is destructive to the local Compose database. The
 `core-case-corpus-embed` service then prepares the checked-in synthetic corpus.
 
+For a direct `npm run dev` workflow, run `npm run corpus:bootstrap` after creating or
+resetting the database. The command defaults to `data/corpus/build/chunks.jsonl`; set
+`CORPUS_CHUNKS_PATH` only when using a different validated artifact.
+
 The smoke check verifies both service health endpoints, Redis reachability, and a
 synthetic registration request against PostgreSQL-backed authentication tables.
 
