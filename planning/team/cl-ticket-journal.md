@@ -2905,6 +2905,66 @@ This ticket keeps ADR-0014 cache-aside behavior separate from the idempotency le
 - The scope sections explicitly call out conditional routing and trust boundaries.
 - The naming convention matches the requested `taxPulse_dataFlow.md` form.
 
+## caleb-latimer-jira199 - SCRUM-199
+
+**Branch:** `caleb-latimer-jira199`
+
+**Assignee:** Caleb Latimer
+
+**Jira Key:** SCRUM-199
+
+**Summary:** Persist Plan Cycle Detail comments and audit trail data
+
+**Description:** As an Advisor, I want Comments and Audit Trail data to load from backend persistence, so that case discussion and history survive refreshes and reflect the real case record.
+
+**Acceptance Criteria:**
+
+- Persist comments keyed to `tax_plan_cycle.case_id` and `tenant_id`.
+- Provide tenant-scoped `POST` and `GET` endpoints for case comments.
+- Store non-empty trimmed body text with actor, role/context, author display snapshot, and created timestamp.
+- Load and submit Plan Cycle Detail Comments through the backend with loading, empty, and error states.
+- Keep the Plan Cycle Detail Audit Trail backed by persistence and read-only.
+- Redact income and deduction dollar figures before audit entries render.
+- Cover persistence, tenant isolation, frontend submission, empty states, and audit redaction with tests.
+
+**Code Connection:** `tax_plan_cycle_comment` was added through a Drizzle-generated migration and schema definition, the tax plan cycle router now exposes append-only comment read/create endpoints, and comment creation writes a `comment_created` audit row in the same database transaction. PulseUI comment queries now use the authenticated case API, the detail Comments tab submits via React Query mutation, and OpenAPI documents both comments and case audit-entry reads.
+
+**Project Scope Connection:** This preserves TaxPulse tenant isolation and append-only case history while moving user-facing case collaboration out of local mock state and into Core Case Service persistence.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0021_military_shiva.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0021_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/features/taxPlanCycle/comments.ts`
+- `src/typescript/features/taxPlanCycle/repositories/comments.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/shared/database/seed.model.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/entities/taxPlanCycleQueries.ts`
+- `src/pulseUI/pages/taxPlanCycle/Details.tsx`
+- `tests/typescript/features/taxPlanCycle/commentsMigration.test.ts`
+- `tests/typescript/features/taxPlanCycle/repositories/comments.test.ts`
+- `tests/typescript/features/taxPlanCycle/routes.test.ts`
+- `tests/typescript/features/taxPlanCycle/mainComposition.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `src/pulseUI/tests/taxPlanCycle/queries.test.ts`
+- `src/pulseUI/tests/taxPlanCycle/Details.test.tsx`
+- `planning/team/cl-ticket-journal.md`
+
+**Validation Notes:**
+
+- The comments migration was regenerated after merging development and now follows development migrations 0019 and 0020 as migration 0021.
+- `npm run db:check` passed with no Drizzle journal or snapshot consistency errors.
+- `npm run typecheck:core` passed.
+- Focused backend regression coverage passed: 92 tests across comments persistence/migration, Tax Plan Cycle routes and integration, OpenAPI, and application composition.
+- Focused PulseUI regression coverage passed: 34 tests across Plan Cycle Detail comments, the existing hold UI, and Tax Plan Cycle queries.
+- The merge result was compared with development; the remaining delta is limited to the SCRUM-199 files listed above, and existing development behavior in the shared conflict files remains covered.
+
 ## caleb-latimer-jira218 - SCRUM-218
 
 **Branch:** `caleb-latimer-jira218`

@@ -124,6 +124,17 @@ export type SeedActionItemRow = {
   completed: boolean;
 };
 
+export type SeedTaxPlanCycleCommentRow = {
+  id: string;
+  caseId: string;
+  tenantId: string;
+  actorId: string;
+  actorRole: "Firm Admin" | "Advisor" | "Client" | "TaxPulse Platform Admin";
+  authorDisplayName: string;
+  body: string;
+  createdAt: Date;
+};
+
 export type SeedDeductionRow = {
   caseId: string;
   date: string;
@@ -447,6 +458,24 @@ export const userRows = [
     displayName: "Cameron Lee",
     roleId: roleRows[3].id,
     statusId: userStatusRows[1].id,
+    lastLoginAt: null,
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+    tenantId: tenantRows[2].id,
+    email: "dana.cohen.seed@example.com",
+    displayName: "Dana Cohen, CPA",
+    roleId: roleRows[1].id,
+    statusId: userStatusRows[2].id,
+    lastLoginAt: null,
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d76",
+    tenantId: tenantRows[2].id,
+    email: "riley.park.seed@example.com",
+    displayName: "Riley Park",
+    roleId: roleRows[1].id,
+    statusId: userStatusRows[2].id,
     lastLoginAt: null,
   },
 ] as const satisfies readonly SeedUserRow[];
@@ -773,6 +802,29 @@ export const actionItemRows = [
     completed: false,
   },
 ] as const satisfies readonly SeedActionItemRow[];
+
+export const taxPlanCycleCommentRows = [
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f91",
+    caseId: taxPlanCycleRows[5].id,
+    tenantId: taxPlanCycleRows[5].tenantId,
+    actorId: userRows[15].id,
+    actorRole: "Advisor",
+    authorDisplayName: "Riley Park",
+    body: "All Q1 data is in. We're starting the modeling now and should have a draft ready soon.",
+    createdAt: new Date("2026-03-30T14:00:00.000Z"),
+  },
+  {
+    id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f92",
+    caseId: taxPlanCycleRows[5].id,
+    tenantId: taxPlanCycleRows[5].tenantId,
+    actorId: userRows[14].id,
+    actorRole: "Advisor",
+    authorDisplayName: "Dana Cohen, CPA",
+    body: "I've narrowed it down to the combined Roth + DAF strategy. We can walk through it on the 12th.",
+    createdAt: new Date("2026-08-31T15:08:00.000Z"),
+  },
+] as const satisfies readonly SeedTaxPlanCycleCommentRow[];
 
 export const clientRosterRows = [
   {

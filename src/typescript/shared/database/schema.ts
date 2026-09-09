@@ -321,6 +321,53 @@ export const actionItem = pgTable(
   ],
 );
 
+export const taxPlanCycleComment = pgTable(
+  "tax_plan_cycle_comment",
+  {
+    id: uuid("id").default(sql`uuidv7()`).notNull(),
+    caseId: uuid("case_id").notNull(),
+    tenantId: uuid("tenant_id").notNull(),
+    actorId: uuid("actor_id").notNull(),
+    actorRole: roleNameEnum("actor_role").notNull(),
+    authorDisplayName: text("author_display_name").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      name: "tax_plan_cycle_comment_id_pk",
+      columns: [table.id],
+    }),
+    foreignKey({
+      name: "tax_plan_cycle_comment_case_id_fk",
+      columns: [table.caseId],
+      foreignColumns: [taxPlanCycle.id],
+    }),
+    foreignKey({
+      name: "tax_plan_cycle_comment_tenant_id_fk",
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }),
+    foreignKey({
+      name: "tax_plan_cycle_comment_actor_id_fk",
+      columns: [table.actorId],
+      foreignColumns: [users.id],
+    }),
+    check(
+      "tax_plan_cycle_comment_body_nonblank_check",
+      sql`length(btrim(${table.body})) > 0`,
+    ),
+    index("tax_plan_cycle_comment_tenant_case_created_idx").on(
+      table.tenantId,
+      table.caseId,
+      table.createdAt,
+      table.id,
+    ),
+  ],
+);
+
 export const taxpayerIdentifierValidation = pgTable(
   "taxpayer_identifier_validation",
   {

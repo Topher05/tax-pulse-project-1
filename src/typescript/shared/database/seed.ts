@@ -17,6 +17,7 @@ import {
   roles,
   stageTransition,
   stateTaxBracket,
+  taxPlanCycleComment,
   taxpayerIdentifierValidation,
   taxPlanCycle,
   tenants,
@@ -37,6 +38,7 @@ import {
   mfaEnrollmentRows,
   roleRows,
   stageTransitionRows,
+  taxPlanCycleCommentRows,
   taxPlanCycleRows,
   tenantRows,
   userRows,
@@ -54,6 +56,7 @@ export async function applySeed(client: Client): Promise<void> {
     await client.query(`
       TRUNCATE TABLE
         "audit_entry",
+        "tax_plan_cycle_comment",
         "action_item",
         "taxpayer_identifier_validation",
         "scenario",
@@ -81,6 +84,7 @@ export async function applySeed(client: Client): Promise<void> {
     await db.insert(mfaEnrollment).values([...mfaEnrollmentRows]);
     await db.insert(taxPlanCycle).values(buildTaxPlanCycleInsertRows());
     await db.insert(actionItem).values(buildActionItemInsertRows());
+    await db.insert(taxPlanCycleComment).values([...taxPlanCycleCommentRows]);
     await db.insert(taxpayerIdentifierValidation).values([
       {
         caseId: taxPlanCycleRows[1].id,

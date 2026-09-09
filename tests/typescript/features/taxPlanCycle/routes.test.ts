@@ -21,6 +21,8 @@ import {
   type AuditEntryOutput,
   type AuditEntryReader,
   type AuditEntryWriter,
+  type TaxPlanCycleComment,
+  type TaxPlanCycleCommentRepository,
   type ValidationErrorResponse,
 } from "../../../../src/typescript/index.js";
 import {
@@ -140,13 +142,14 @@ async function createAccessToken(input: {
 async function withRouteServer(
   controller: TaxPlanCycleCreateController,
   auditEntryReader: AuditEntryReader | undefined,
+  commentRepository: Pick<TaxPlanCycleCommentRepository, "listByCase" | "create"> | undefined,
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (app) => {
       app.use(createTestJwtAuthenticationMiddleware());
-      app.use(createTaxPlanCycleRouter({ auditEntryReader, controller }));
+      app.use(createTaxPlanCycleRouter({ auditEntryReader, commentRepository, controller }));
     },
   });
 
@@ -606,7 +609,7 @@ describe("createTaxPlanCycleRouter", () => {
       totpCode: "123456",
     });
 
-    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: {
@@ -660,7 +663,7 @@ describe("createTaxPlanCycleRouter", () => {
       totpCode: "123456",
     });
 
-    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: {
@@ -702,7 +705,7 @@ describe("createTaxPlanCycleRouter", () => {
       totpCode: "123456",
     });
 
-    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: {
@@ -743,7 +746,7 @@ describe("createTaxPlanCycleRouter", () => {
       totpCode: "123456",
     });
 
-    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: {
@@ -776,7 +779,7 @@ describe("createTaxPlanCycleRouter", () => {
       totpCode: "123456",
     });
 
-    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: {
@@ -824,7 +827,7 @@ describe("createTaxPlanCycleRouter", () => {
       totpCode: "123456",
     });
 
-    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles`, {
         method: "POST",
         headers: {
@@ -985,7 +988,7 @@ describe("createTaxPlanCycleRouter", () => {
       totpCode: "123456",
     });
 
-    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, undefined, async (baseUrl) => {
       const response = await fetch(
         `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01`,
         { headers: { authorization: `Bearer ${accessToken}` } },
@@ -1020,7 +1023,7 @@ describe("createTaxPlanCycleRouter", () => {
       totpCode: "123456",
     });
 
-    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, undefined, async (baseUrl) => {
       const response = await fetch(
         `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02`,
         { headers: { authorization: `Bearer ${accessToken}` } },
@@ -1061,7 +1064,7 @@ describe("createTaxPlanCycleRouter", () => {
       totpCode: "123456",
     });
 
-    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, undefined, async (baseUrl) => {
       const response = await fetch(
         `${baseUrl}/tax-plan-cycles/018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e03`,
         { headers: { authorization: `Bearer ${accessToken}` } },
@@ -1096,7 +1099,7 @@ describe("createTaxPlanCycleRouter", () => {
       totpCode: "123456",
     });
 
-    await withRouteServer({ create, findByCaseId }, undefined, async (baseUrl) => {
+    await withRouteServer({ create, findByCaseId }, undefined, undefined, async (baseUrl) => {
       const response = await fetch(`${baseUrl}/tax-plan-cycles/%20`, {
         headers: { authorization: `Bearer ${accessToken}` },
       });
@@ -1152,6 +1155,7 @@ describe("createTaxPlanCycleRouter", () => {
     await withRouteServer(
       { create, findByCaseId },
       { listByCase },
+      undefined,
       async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/audit-entries`,
@@ -1199,6 +1203,7 @@ describe("createTaxPlanCycleRouter", () => {
     await withRouteServer(
       { create, findByCaseId },
       { listByCase },
+      undefined,
       async (baseUrl) => {
         const response = await fetch(
           `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/audit-entries`,
@@ -1207,6 +1212,255 @@ describe("createTaxPlanCycleRouter", () => {
 
         expect(response.status).toBe(404);
         expect(listByCase).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  test("returns persisted comments for a tenant-scoped case in chronological order", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: validReadCycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => validReadCycle,
+    );
+    const comments: TaxPlanCycleComment[] = [
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f91",
+        case_id: validReadCycle.id,
+        actor_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+        actor_role: "Advisor",
+        author_display_name: "Riley Park",
+        body: "All Q1 data is in.",
+        created_at: "2026-03-30T14:00:00.000Z",
+      },
+      {
+        id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f92",
+        case_id: validReadCycle.id,
+        actor_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d76",
+        actor_role: "Advisor",
+        author_display_name: "Dana Cohen, CPA",
+        body: "I've narrowed it down to the combined Roth + DAF strategy.",
+        created_at: "2026-08-31T15:08:00.000Z",
+      },
+    ];
+    const listByCase = vi.fn<TaxPlanCycleCommentRepository["listByCase"]>(
+      () => Promise.resolve(comments),
+    );
+    const postComment = vi.fn<TaxPlanCycleCommentRepository["create"]>();
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
+    await withRouteServer(
+      { create, findByCaseId },
+      undefined,
+      { listByCase, create: postComment },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/comments`,
+          { headers: { authorization: `Bearer ${accessToken}` } },
+        );
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toEqual({ comments });
+        expect(findByCaseId).toHaveBeenCalledWith({
+          tenantId: "tenant-001",
+          caseId: validReadCycle.id,
+        });
+        expect(listByCase).toHaveBeenCalledWith({
+          tenantId: "tenant-001",
+          caseId: validReadCycle.id,
+        });
+        expect(postComment).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  test("creates a trimmed comment for advisors", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: validReadCycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => validReadCycle,
+    );
+    const persisted: TaxPlanCycleComment = {
+      id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9f93",
+      case_id: validReadCycle.id,
+      actor_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d75",
+      actor_role: "Advisor",
+      author_display_name: "Dana Cohen, CPA",
+      body: "Modeling notes are ready.",
+      created_at: "2026-08-31T15:08:00.000Z",
+    };
+    const listByCase = vi.fn<TaxPlanCycleCommentRepository["listByCase"]>(
+      () => Promise.resolve([]),
+    );
+    const postComment = vi.fn<TaxPlanCycleCommentRepository["create"]>(
+      () => Promise.resolve(persisted),
+    );
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: persisted.actor_id,
+      email: "advisor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
+    await withRouteServer(
+      { create, findByCaseId },
+      undefined,
+      { listByCase, create: postComment },
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/comments`,
+          {
+            method: "POST",
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({ body: "  Modeling notes are ready.  " }),
+          },
+        );
+
+        expect(response.status).toBe(201);
+        await expect(response.json()).resolves.toEqual(persisted);
+        expect(postComment).toHaveBeenCalledWith({
+          tenantId: "tenant-001",
+          caseId: validReadCycle.id,
+          actorId: persisted.actor_id,
+          actorRole: "Advisor",
+          body: "Modeling notes are ready.",
+        });
+        expect(listByCase).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  test("rejects blank comment bodies before repository access", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: validReadCycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => validReadCycle,
+    );
+    const commentRepository = {
+      listByCase: vi.fn<TaxPlanCycleCommentRepository["listByCase"]>(),
+      create: vi.fn<TaxPlanCycleCommentRepository["create"]>(),
+    };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Firm Admin",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
+    await withRouteServer(
+      { create, findByCaseId },
+      undefined,
+      commentRepository,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/comments`,
+          {
+            method: "POST",
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({ body: "   " }),
+          },
+        );
+
+        expect(response.status).toBe(400);
+        expect(commentRepository.create).not.toHaveBeenCalled();
+        expect(findByCaseId).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  test("rejects client comment access", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: validReadCycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => validReadCycle,
+    );
+    const commentRepository = {
+      listByCase: vi.fn<TaxPlanCycleCommentRepository["listByCase"]>(),
+      create: vi.fn<TaxPlanCycleCommentRepository["create"]>(),
+    };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "client-001",
+      email: "client@example.com",
+      role: "Client",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
+    await withRouteServer(
+      { create, findByCaseId },
+      undefined,
+      commentRepository,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/comments`,
+          { headers: { authorization: `Bearer ${accessToken}` } },
+        );
+
+        expect(response.status).toBe(403);
+        expect(commentRepository.listByCase).not.toHaveBeenCalled();
+        expect(findByCaseId).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  test("does not list comments for an unknown or cross-tenant case", async () => {
+    const create = vi.fn<TaxPlanCycleCreateController["create"]>(() => ({
+      case_id: validReadCycle.id,
+    }));
+    const findByCaseId = vi.fn<TaxPlanCycleCreateController["findByCaseId"]>(
+      () => null,
+    );
+    const commentRepository = {
+      listByCase: vi.fn<TaxPlanCycleCommentRepository["listByCase"]>(),
+      create: vi.fn<TaxPlanCycleCommentRepository["create"]>(),
+    };
+    const accessToken = await createAccessToken({
+      tenantId: "tenant-001",
+      userId: "actor-001",
+      email: "actor@example.com",
+      role: "Advisor",
+      password: "correct-password",
+      totpSecret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+      totpCode: "123456",
+    });
+
+    await withRouteServer(
+      { create, findByCaseId },
+      undefined,
+      commentRepository,
+      async (baseUrl) => {
+        const response = await fetch(
+          `${baseUrl}/tax-plan-cycles/${validReadCycle.id}/comments`,
+          { headers: { authorization: `Bearer ${accessToken}` } },
+        );
+
+        expect(response.status).toBe(404);
+        expect(commentRepository.listByCase).not.toHaveBeenCalled();
       },
     );
   });

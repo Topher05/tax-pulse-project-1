@@ -210,6 +210,7 @@ export {
   roles,
   stageTransition,
   stateTaxBracket,
+  taxPlanCycleComment,
   taxpayerIdentifierValidation,
   taxPlanCycle,
   tenants,
@@ -298,14 +299,24 @@ export {
   type TaxBracketReference,
 } from "./bracketReferenceRepository.js";
 export {
+  createTaxPlanCycleCommentRepository,
   createScenarioRepository,
   maximumScenariosPerCase,
   ScenarioCaseNotFoundError,
   ScenarioLimitExceededError,
+  taxPlanCycleCommentCreateRequestSchema,
+  taxPlanCycleCommentSchema,
+  taxPlanCycleCommentsResponseSchema,
   type Scenario,
   type ScenarioCreateInput,
   type ScenarioCreateManyInput,
   type ScenarioRepository,
+  type TaxPlanCycleComment,
+  type TaxPlanCycleCommentCreateInput,
+  type TaxPlanCycleCommentCreateRequest,
+  type TaxPlanCycleCommentListInput,
+  type TaxPlanCycleCommentRepository,
+  type TaxPlanCycleCommentsResponse,
 } from "./features/taxPlanCycle/index.js";
 export {
   scenarioComparisonEngineInputSchema,
@@ -687,6 +698,7 @@ import {
   createTaxPlanCycleTransitionController,
   createScenarioModelingController,
   createScenarioRepository,
+  createTaxPlanCycleCommentRepository,
   createTaxEngineClient,
   createTinEinValidationAcl,
   createTinEinValidationSoapClient,
@@ -826,6 +838,7 @@ export async function main(): Promise<Server> {
   const firmUsersRepository = createFirmUsersRepository(client);
   const platformAdministrationRepository = createPlatformAdministrationRepository(client);
   const scenarioRepository = createScenarioRepository(client);
+  const commentRepository = createTaxPlanCycleCommentRepository(client);
   const deductionRepository = createDeductionRepository(client);
   const incomeEventRepository = createIncomeEventRepository(client);
   const incomeEventService = createIncomeEventService(incomeEventRepository);
@@ -988,6 +1001,7 @@ export async function main(): Promise<Server> {
           clientPortalReadRepository: taxPlanCycleRepository,
           actionItemRepository,
           actionItemCompletedEventPublisher,
+          commentRepository,
           controller: taxPlanCycleController,
           holdController: createTaxPlanCycleHoldController(taxPlanCycleRepository, {
             queueCacheInvalidator,
