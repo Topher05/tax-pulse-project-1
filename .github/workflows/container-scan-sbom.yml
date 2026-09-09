@@ -507,7 +507,8 @@ jobs:
 
           # Run the corpus job from the exact image being released. The collector is
           # omitted because this one-shot task only needs the Core Case container.
-          jq '.containerDefinitions |= map(select(.name == "core-case-service"))' \
+          jq '.containerDefinitions |= map(select(.name == "core-case-service"))
+            | (.containerDefinitions[] | select(.name == "core-case-service") | del(.dependsOn))' \
             "$CORE_CASE_TASK_DEFINITION" > core-case-corpus-bootstrap.json
           BOOTSTRAP_TASK_DEFINITION_ARN="$(aws ecs register-task-definition \
             --cli-input-json file://core-case-corpus-bootstrap.json \
