@@ -498,6 +498,44 @@ jobs:
           container-name: tax-engine
           image: ${{ needs.build-tax-engine.outputs.repository }}@${{ needs.build-tax-engine.outputs.digest }}
 
+      - name: Bootstrap and verify Assist corpus
+        shell: bash
+        env:
+          CORE_CASE_TASK_DEFINITION: ${{ steps.render-core-case.outputs.task-definition }}
+        run: |
+          set -euo pipefail
+
+          # Run the corpus job from the exact image being released. The collector is
+          # omitted because this one-shot task only needs the Core Case container.
+          jq '.containerDefinitions |= map(select(.name == "core-case-service"))' \
+            "$CORE_CASE_TASK_DEFINITION" > core-case-corpus-bootstrap.json
+          BOOTSTRAP_TASK_DEFINITION_ARN="$(aws ecs register-task-definition \
+            --cli-input-json file://core-case-corpus-bootstrap.json \
+            --query 'taskDefinition.taskDefinitionArn' --output text)"
+
+          PRIVATE_SUBNETS="$(terraform -chdir=terraform output -json private_subnet_ids | jq -r 'join(",")')"
+          SERVICE_SECURITY_GROUP="$(terraform -chdir=terraform output -raw ecs_service_security_group_id)"
+          NETWORK_CONFIGURATION="awsvpcConfiguration={subnets=[$PRIVATE_SUBNETS],securityGroups=[$SERVICE_SECURITY_GROUP],assignPublicIp=DISABLED}"
+          TASK_ARN="$(aws ecs run-task \
+            --cluster taxpulse-api \
+            --task-definition "$BOOTSTRAP_TASK_DEFINITION_ARN" \
+            --launch-type FARGATE \
+            --network-configuration "$NETWORK_CONFIGURATION" \
+            --overrides '{"containerOverrides":[{"name":"core-case-service","command":["node","dist/typescript/shared/scripts/corpusBootstrap.js"]}]}' \
+            --query 'tasks[0].taskArn' --output text)"
+
+          test -n "$TASK_ARN" && test "$TASK_ARN" != "None"
+          aws ecs wait tasks-stopped --cluster taxpulse-api --tasks "$TASK_ARN"
+          EXIT_CODE="$(aws ecs describe-tasks --cluster taxpulse-api --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[?name==`core-case-service`].exitCode | [0]' --output text)"
+          if [[ "$EXIT_CODE" != "0" ]]; then
+            echo "Assist corpus bootstrap failed with exit code $EXIT_CODE" >&2
+            aws ecs describe-tasks --cluster taxpulse-api --tasks "$TASK_ARN" \
+              --query 'tasks[0].{stopCode:stopCode,stoppedReason:stoppedReason,containers:containers[].{name:name,exitCode:exitCode,reason:reason}}' \
+              --output json
+            exit 1
+          fi
+
       - name: Deploy Core Case service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
