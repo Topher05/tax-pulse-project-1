@@ -94,39 +94,12 @@ describe("AssistantPanelProvider", () => {
     cleanup();
   });
 
-  test("opens with a recommendation-only request and an assistant-only transcript", async () => {
-    mutationMocks.mutateAsync.mockResolvedValueOnce({
-      explanation: "Grounded initial explanation.",
-      citations: [
-        {
-          chunk_id: "chunk-1",
-          document_id: "doc-1",
-          document_title: "Synthetic Tax Code",
-          document_type: "tax_code",
-          fictional_issuer: "Training Revenue Authority",
-          section_id: "SYN-1",
-          section_path: "Tax Code > Synthetic",
-          synthetic_notice: "Synthetic training content.",
-        },
-      ],
-    });
+  test("opens ready for a question without making an automatic request", async () => {
     renderPanel();
 
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
 
-    await waitFor(() => {
-      expect(mutationMocks.mutateAsync).toHaveBeenCalledWith({
-        caseId: "case-001",
-        request: {
-          recommendation_context: {
-            recommendation: assistantContext.recommendation,
-          },
-        },
-      });
-    });
-    expect(await screen.findByText("Grounded initial explanation.")).toBeInTheDocument();
-    expect(screen.getByText("Synthetic Tax Code")).toBeInTheDocument();
-    expect(screen.queryByText("Advisor prompt")).not.toBeInTheDocument();
+    expect(mutationMocks.mutateAsync).not.toHaveBeenCalled();
     expect(screen.getByText("Drawer open")).toBeInTheDocument();
   });
 
@@ -169,8 +142,7 @@ describe("AssistantPanelProvider", () => {
     );
     renderPanel();
 
-    fireEvent.click(screen.getByRole("button", { name: "Open" }));
-
+    fireEvent.click(screen.getByRole("button", { name: "Send valid" }));
     expect(await screen.findByText("Unsupported context")).toBeInTheDocument();
     expect(screen.getAllByText("No grounded content matched.")).toHaveLength(1);
   });
