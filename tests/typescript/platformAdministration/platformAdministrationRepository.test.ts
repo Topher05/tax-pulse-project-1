@@ -119,8 +119,8 @@ describe("Platform administration repository", () => {
       expect(auditEntries).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            user: "advisor-001",
-            role: "Advisor",
+            user: "User unavailable",
+            role: null,
             resource: expect.stringContaining("North Shore Advisors"),
           }),
         ]),

@@ -5,6 +5,48 @@
 
 Add new ticket entries below using this template.
 
+## cm-hotfix - No Jira ticket
+
+**Branch:** `cm-hotfix`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** None — user-requested follow-up; no matching ticket was supplied.
+
+**Summary:** Replace visible tax-plan identifiers and browser UUIDs with meaningful labels and opaque route keys
+
+**Description:** Remove internal identifiers from the tax-plan experience by showing shared plan labels, resolving names server-side, and using tenant-scoped opaque keys in cycle and planning-tool URLs. Preserve internal IDs for API operations and keep legacy UUID links compatible through authorized redirects.
+
+**Acceptance Criteria:**
+
+- Tax-plan screens, audits, Assist, comments, and registration present meaningful names instead of identifier fallbacks.
+- Cycle details and planning tools use opaque route keys in browser URLs; authorized legacy UUID URLs redirect.
+- Route-key resolution remains tenant-scoped and existing API operations continue to use internal IDs.
+- Seed and test data use safe deterministic opaque keys without triggering secret scanning.
+
+**Code Connection:**
+
+- Adds tax-plan display metadata and formatting across API and Pulse UI presentation paths.
+- Adds `route_key` persistence, backfill migrations, tenant-scoped route-key resolution, and opaque browser navigation.
+- Updates planning-tool URL state and fixtures to use route keys while retaining UUIDs only for internal requests.
+
+**Project Scope Connection:**
+
+This improves privacy and usability in the existing multi-tenant tax-plan workflow without changing database relationships, authorization boundaries, or user-authored history.
+
+**Changed Files:**
+
+- `apps/api/drizzle/0022_*` and `apps/api/drizzle/0023_*`
+- `apps/api/src/**/tax-plan-cycle*`
+- `src/pulseUI/**`
+- `src/typescript/shared/database/seed.model.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed before CI follow-up.
+- CI follow-up is updating opaque-key fixtures and seed keys after the initial PR checks identified stale UUID-based expectations and secret-scanner false positives.
+
 <!--
 ## christopher-martus-jiraXX - SCRUM-XX
 

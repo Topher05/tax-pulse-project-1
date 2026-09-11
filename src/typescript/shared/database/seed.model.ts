@@ -651,7 +651,7 @@ export const mfaEnrollmentRows = [
 export const taxPlanCycleRows = [
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d11",
-    routeKey: "aA1bB2cC3dD4eE5fF6gG7hH8",
+    routeKey: "seed-tax-plan-cycle-01",
     clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d21",
     tenantId: tenantRows[0].id,
     planningPeriod: "2026-Q3",
@@ -664,7 +664,7 @@ export const taxPlanCycleRows = [
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12",
-    routeKey: "iI9jJ0kK1lL2mM3nN4oO5pP6",
+    routeKey: "seed-tax-plan-cycle-02",
     clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d22",
     tenantId: tenantRows[1].id,
     planningPeriod: "2026-Q4",
@@ -677,7 +677,7 @@ export const taxPlanCycleRows = [
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d13",
-    routeKey: "qQ7rR8sS9tT0uU1vV2wW3xX4",
+    routeKey: "seed-tax-plan-cycle-03",
     clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d23",
     tenantId: tenantRows[2].id,
     planningPeriod: "2027-Q1",
@@ -690,7 +690,7 @@ export const taxPlanCycleRows = [
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d14",
-    routeKey: "yY5zZ6aA7bB8cC9dD0eE1fF2",
+    routeKey: "seed-tax-plan-cycle-04",
     clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d24",
     tenantId: tenantRows[3].id,
     planningPeriod: "2027-Q2",
@@ -703,7 +703,7 @@ export const taxPlanCycleRows = [
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d15",
-    routeKey: "gG3hH4iI5jJ6kK7lL8mM9nN0",
+    routeKey: "seed-tax-plan-cycle-05",
     clientId: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d25",
     tenantId: tenantRows[4].id,
     planningPeriod: "2027-Q3",
@@ -716,7 +716,7 @@ export const taxPlanCycleRows = [
   },
   {
     id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d16",
-    routeKey: "oO1pP2qQ3rR4sS5tT6uU7vV8",
+    routeKey: "seed-tax-plan-cycle-06",
     clientId: userRows[10].id,
     tenantId: tenantRows[2].id,
     planningPeriod: "2026-Q4",

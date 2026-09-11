@@ -207,8 +207,8 @@ describe("IncomePage", () => {
     expect(
       await screen.findByRole("heading", { name: "Income Events", level: 2 }),
     ).toBeInTheDocument();
+    expect(await screen.findByRole("status", { name: "Loading income events" })).toBeInTheDocument();
     expect(container.querySelector('[data-income-query-state="loading"]')).not.toBeNull();
-    expect(screen.getByRole("status", { name: "Loading income events" })).toBeInTheDocument();
 
     await act(async () => {
       deferred.resolve(sampleIncomePayload);

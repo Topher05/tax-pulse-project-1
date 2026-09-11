@@ -8,6 +8,7 @@ import {
 } from "../../shared/planToolCase.ts";
 
 const validCaseId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d12";
+const validRouteKey = "seed-tax-plan-cycle-01";
 
 describe("planToolCase", () => {
   test("identifies plan tool paths", () => {
@@ -26,28 +27,33 @@ describe("planToolCase", () => {
   });
 
   test("validates router search into the plan tool search contract", () => {
+    expect(validatePlanToolSearch({ plan: validRouteKey })).toEqual({ plan: validRouteKey });
+    expect(validatePlanToolSearch({ plan: ` ${validRouteKey} ` })).toEqual({ plan: validRouteKey });
+    expect(validatePlanToolSearch({ plan: "not-a-route-key" })).toEqual({ invalidPlan: true });
     expect(validatePlanToolSearch({ caseId: validCaseId })).toEqual({ caseId: validCaseId });
-    expect(validatePlanToolSearch({ caseId: ` ${validCaseId} ` })).toEqual({ caseId: validCaseId });
-    expect(validatePlanToolSearch({ caseId: "not-a-uuid" })).toEqual({ invalidCaseId: true });
     expect(validatePlanToolSearch({ caseId: "" })).toEqual({});
     expect(validatePlanToolSearch({})).toEqual({});
   });
 
   test("normalizes router search into valid, missing, and invalid states", () => {
     expect(normalizePlanToolSearch({ caseId: validCaseId })).toEqual({
-      caseId: validCaseId,
+      routeKey: null,
+      legacyCaseId: validCaseId,
       hasInvalidCaseId: false,
     });
     expect(normalizePlanToolSearch({})).toEqual({
-      caseId: null,
+      routeKey: null,
+      legacyCaseId: null,
       hasInvalidCaseId: false,
     });
     expect(normalizePlanToolSearch({ caseId: "not-a-uuid" })).toEqual({
-      caseId: null,
+      routeKey: null,
+      legacyCaseId: null,
       hasInvalidCaseId: true,
     });
-    expect(normalizePlanToolSearch({ invalidCaseId: true })).toEqual({
-      caseId: null,
+    expect(normalizePlanToolSearch({ invalidPlan: true })).toEqual({
+      routeKey: null,
+      legacyCaseId: null,
       hasInvalidCaseId: true,
     });
   });

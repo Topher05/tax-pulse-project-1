@@ -37,7 +37,7 @@ export function usePlanToolCase(): ResolvedPlanToolCase {
   const legacyPlan = legacyQueueQuery.data?.find((plan) => plan.caseId === normalized.legacyCaseId);
 
   useEffect(() => {
-    if (!legacyPlan) return;
+    if (!legacyPlan?.routeKey) return;
     void navigate({ search: { plan: legacyPlan.routeKey }, replace: true } as never);
   }, [legacyPlan, navigate]);
 
