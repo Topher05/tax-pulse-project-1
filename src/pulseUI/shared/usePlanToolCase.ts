@@ -24,11 +24,6 @@ export function usePlanToolCase(): ResolvedPlanToolCase {
   const navigate = useNavigate();
   const authenticatedFetch = useAuthenticatedFetch();
   const normalized = normalizePlanToolSearch(search);
-  const routeKeyQuery = useQuery({
-    queryKey: taxPlanCycleRouteKeyQueryKey(normalized.routeKey ?? ""),
-    queryFn: () => resolveTaxPlanCycleRouteKey(normalized.routeKey!, authenticatedFetch),
-    enabled: normalized.routeKey !== null,
-  });
   const legacyQueueQuery = useQuery({
     queryKey: taxPlanCycleQueueQueryKey,
     queryFn: () => fetchTaxPlanCycleQueue(authenticatedFetch),
@@ -38,6 +33,14 @@ export function usePlanToolCase(): ResolvedPlanToolCase {
   const queuedRoutePlan = legacyQueueQuery.data?.find(
     (plan) => plan.routeKey === normalized.routeKey,
   );
+  const routeKeyQuery = useQuery({
+    queryKey: taxPlanCycleRouteKeyQueryKey(normalized.routeKey ?? ""),
+    queryFn: () => resolveTaxPlanCycleRouteKey(normalized.routeKey!, authenticatedFetch),
+    enabled:
+      normalized.routeKey !== null &&
+      legacyQueueQuery.isSuccess &&
+      queuedRoutePlan === undefined,
+  });
 
   useEffect(() => {
     if (!legacyPlan?.routeKey) return;

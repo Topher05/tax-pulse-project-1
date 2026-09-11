@@ -16,6 +16,8 @@ import {
 import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model.ts";
 import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
+const seededRouteKey = taxPlanCycleRows[1].routeKey;
+
 beforeAll(() => {
   window.scrollTo = vi.fn();
 });
@@ -179,7 +181,7 @@ describe("QuarterlyPaymentsPage", () => {
     const selector = await screen.findByRole("combobox", { name: "Tax plan" });
     await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan" });
 
-    fireEvent.change(selector, { target: { value: caseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
     await waitFor(() => {
       expect(caseApiMock).toHaveBeenCalledWith(
@@ -218,12 +220,14 @@ describe("QuarterlyPaymentsPage", () => {
       throw new Error(`Unexpected quarterly payments request: ${path}`);
     });
 
-    const { container } = renderQuarterlyPaymentsPage(`/quarterly-payments?caseId=${caseId}`);
+    const { container } = renderQuarterlyPaymentsPage(`/quarterly-payments?plan=${seededRouteKey}`);
 
     expect(
       await screen.findByRole("heading", { name: "Quarterly Payments", level: 2 }),
     ).toBeInTheDocument();
-    expect(container.querySelector('[data-quarterly-query-state="loading"]')).not.toBeNull();
+    await waitFor(() => {
+      expect(container.querySelector('[data-quarterly-query-state="loading"]')).not.toBeNull();
+    });
     expect(
       screen.getByRole("status", { name: "Loading quarterly estimates" }),
     ).toBeInTheDocument();
@@ -260,7 +264,7 @@ describe("QuarterlyPaymentsPage", () => {
       throw new Error(`Unexpected quarterly payments request: ${path}`);
     });
 
-    const { container } = renderQuarterlyPaymentsPage(`/quarterly-payments?caseId=${caseId}`);
+    const { container } = renderQuarterlyPaymentsPage(`/quarterly-payments?plan=${seededRouteKey}`);
 
     await waitFor(() => {
       expect(container.querySelector('[data-quarterly-query-state="empty"]')).not.toBeNull();
@@ -295,7 +299,7 @@ describe("QuarterlyPaymentsPage", () => {
       throw new Error(`Unexpected quarterly payments request: ${path}`);
     });
 
-    const { container } = renderQuarterlyPaymentsPage(`/quarterly-payments?caseId=${caseId}`);
+    const { container } = renderQuarterlyPaymentsPage(`/quarterly-payments?plan=${seededRouteKey}`);
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(

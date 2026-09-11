@@ -12,6 +12,7 @@ import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model
 import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 const seededCaseId = taxPlanCycleRows[1].id;
+const seededRouteKey = taxPlanCycleRows[1].routeKey;
 
 type DeductionApiRow = {
   id: string;
@@ -140,9 +141,9 @@ describe("DeductionsPage", () => {
     const selector = await screen.findByRole("combobox", { name: "Tax plan" });
     await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan · Plan 2" });
 
-    fireEvent.change(selector, { target: { value: seededCaseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
-    expect(selector).toHaveValue(seededCaseId);
+    await waitFor(() => expect(selector).toHaveValue(seededRouteKey));
     expect(container.querySelector('[data-deductions-query-state="loading"]')).not.toBeNull();
     expect(screen.getByRole("status", { name: "Loading deductions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Deduction" })).toBeEnabled();
@@ -194,7 +195,7 @@ describe("DeductionsPage", () => {
     const selector = await screen.findByRole("combobox", { name: "Tax plan" });
     await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan · Plan 2" });
 
-    fireEvent.change(selector, { target: { value: seededCaseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
     await waitFor(() => {
       expect(container.querySelector('[data-deductions-query-state="empty"]')).not.toBeNull();
@@ -229,9 +230,9 @@ describe("DeductionsPage", () => {
     const selector = await screen.findByRole("combobox", { name: "Tax plan" });
     await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan · Plan 2" });
 
-    fireEvent.change(selector, { target: { value: seededCaseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
-    expect(selector).toHaveValue(seededCaseId);
+    await waitFor(() => expect(selector).toHaveValue(seededRouteKey));
 
     await act(async () => {
       deferred.reject(new Error("deductions endpoint unavailable"));
@@ -277,7 +278,7 @@ describe("DeductionsPage", () => {
     const selector = await screen.findByRole("combobox", { name: "Tax plan" });
     await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan · Plan 2" });
 
-    fireEvent.change(selector, { target: { value: seededCaseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
 
@@ -333,7 +334,7 @@ describe("DeductionsPage", () => {
     const selector = await screen.findByRole("combobox", { name: "Tax plan" });
     await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan · Plan 2" });
 
-    fireEvent.change(selector, { target: { value: seededCaseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
     await screen.findByRole("heading", { name: "No deductions yet" });
     fireEvent.click(screen.getByRole("button", { name: "Add Deduction" }));
