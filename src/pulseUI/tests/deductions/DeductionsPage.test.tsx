@@ -31,6 +31,7 @@ if (!isUuid(seededCaseId)) {
 function buildTaxPlanCycleQueuePayload() {
   return taxPlanCycleRows.map((row, index) => ({
     id: row.id,
+    route_key: row.routeKey,
     client_id: row.clientId,
     client_name: "Test Client",
     planning_period: "2026-Q2",

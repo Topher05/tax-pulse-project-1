@@ -78,6 +78,7 @@ function buildTaxPlanCycleQueuePayload() {
   return [
     {
       id: taxPlanCycleRows[1].id,
+      route_key: taxPlanCycleRows[1].routeKey,
       client_id: taxPlanCycleRows[1].clientId,
       client_name: "Test Client",
       planning_period: "2026-Q2",

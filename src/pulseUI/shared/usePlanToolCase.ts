@@ -32,9 +32,12 @@ export function usePlanToolCase(): ResolvedPlanToolCase {
   const legacyQueueQuery = useQuery({
     queryKey: taxPlanCycleQueueQueryKey,
     queryFn: () => fetchTaxPlanCycleQueue(authenticatedFetch),
-    enabled: normalized.legacyCaseId !== null,
+    enabled: normalized.legacyCaseId !== null || normalized.routeKey !== null,
   });
   const legacyPlan = legacyQueueQuery.data?.find((plan) => plan.caseId === normalized.legacyCaseId);
+  const queuedRoutePlan = legacyQueueQuery.data?.find(
+    (plan) => plan.routeKey === normalized.routeKey,
+  );
 
   useEffect(() => {
     if (!legacyPlan?.routeKey) return;
@@ -43,9 +46,13 @@ export function usePlanToolCase(): ResolvedPlanToolCase {
 
   if (normalized.routeKey !== null) {
     return {
-      caseId: (routeKeyQuery.data?.caseId as Uuid | undefined) ?? null,
+      caseId:
+        (routeKeyQuery.data?.caseId as Uuid | undefined) ??
+        (queuedRoutePlan?.caseId as Uuid | undefined) ??
+        null,
       routeKey: normalized.routeKey,
-      hasInvalidCaseId: normalized.hasInvalidCaseId || routeKeyQuery.isError,
+      hasInvalidCaseId:
+        normalized.hasInvalidCaseId || (routeKeyQuery.isError && queuedRoutePlan === undefined),
     };
   }
 
