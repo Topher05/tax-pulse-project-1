@@ -557,7 +557,7 @@ const fakeAuthMfaLoginResultExample = {
 };
 
 const fakeRegistrationRequestExample = {
-  tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
+  workspace_slug: "summit-ridge-tax",
   email: "new-client@example.test",
   password: "synthetic-registration-password",
 };
@@ -576,7 +576,7 @@ const fakeMfaChallengeResponseExample = {
 
 const fakeRegistrationAccountResponseExample = {
   id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e02",
-  tenant_id: fakeRegistrationRequestExample.tenant_id,
+  tenant_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e01",
   email: fakeRegistrationRequestExample.email,
   role: "Client",
   status: "invited",

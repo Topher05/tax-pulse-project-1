@@ -80,6 +80,8 @@ function buildTaxPlanCycleQueuePayload() {
       id: taxPlanCycleRows[1].id,
       client_id: taxPlanCycleRows[1].clientId,
       client_name: "Test Client",
+      planning_period: "2026-Q2",
+      cycle_label: "Test Client · Q2 2026 Tax Plan",
       stage: taxPlanCycleRows[1].stage,
       owner: taxPlanCycleRows[1].owner,
       priority: taxPlanCycleRows[1].priority,
@@ -153,8 +155,8 @@ describe("QuarterlyPaymentsPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Quarterly Payments", level: 2 }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Client case" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Select a case to load quarterly payments/i })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Tax plan" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Select a tax plan to load quarterly payments/i })).toBeInTheDocument();
   });
 
   test("loads selected quarterly estimates through the authenticated case API fetcher", async () => {
@@ -173,8 +175,8 @@ describe("QuarterlyPaymentsPage", () => {
 
     renderQuarterlyPaymentsPage();
 
-    const selector = await screen.findByRole("combobox", { name: "Client case" });
-    await screen.findByRole("option", { name: "Test Client (9d12)" });
+    const selector = await screen.findByRole("combobox", { name: "Tax plan" });
+    await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan" });
 
     fireEvent.change(selector, { target: { value: caseId } });
 

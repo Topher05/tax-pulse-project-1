@@ -1,6 +1,7 @@
-import { and, asc, desc, eq, max, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, max, min, ne, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
+import { buildTaxPlanCycleLabels, displayPersonName } from "../../../shared/displayLabels.js";
 
 import {
   auditEntry as auditEntryTable,
@@ -9,6 +10,7 @@ import {
   stageTransition as stageTransitionTable,
   taxPlanCycle as taxPlanCycleTable,
   taxpayerIdentifierValidation as taxpayerIdentifierValidationTable,
+  users as usersTable,
 } from "../../../shared/database/schema.js";
 import { createStageChangedCloudEventV1 } from "../stageChangedEvent.js";
 import { taxPlanCycleSchema, type TaxPlanCycle } from "../taxPlanCycle.js";
@@ -78,6 +80,9 @@ export class TaxPlanCycleOnHoldError extends Error {
 
 export type TaxPlanCycleQueueItem = TaxPlanCycle & {
   client_name: string;
+  planning_period?: string;
+  owner_display_name?: string;
+  cycle_label?: string;
   is_overdue: boolean;
   updated_at: string;
 };
@@ -123,9 +128,14 @@ function todayIsoDate(): string {
 }
 
 function toTaxPlanCycleQueueItem(
-  row: Parameters<typeof toTaxPlanCycle>[0] & { clientName: string },
+  row: Parameters<typeof toTaxPlanCycle>[0] & {
+    clientName: string;
+    planningPeriod: string;
+    ownerDisplayName: string;
+  },
   asOfDate: string,
   updatedAt: Date | null,
+  cycleLabel: string,
 ): TaxPlanCycleQueueItem {
   const cycle = toTaxPlanCycle(row);
   const queueUpdatedAt = updatedAt ?? new Date(`${cycle.due_date}T00:00:00.000Z`);
@@ -133,6 +143,9 @@ function toTaxPlanCycleQueueItem(
   return {
     ...cycle,
     client_name: row.clientName,
+    planning_period: row.planningPeriod,
+    owner_display_name: row.ownerDisplayName,
+    cycle_label: cycleLabel,
     is_overdue: cycle.due_date < asOfDate,
     updated_at: queueUpdatedAt.toISOString(),
   };
@@ -296,7 +309,7 @@ export function createTaxPlanCycleRepository(
 
       return row ? toTaxPlanCycle(row) : null;
     },
-
+//1
     async transition({ tenantId, caseId, toStage, actor }) {
       return await db.transaction(async (tx) => {
         const rows = await tx
@@ -405,12 +418,13 @@ export function createTaxPlanCycleRepository(
     },
 
     async listQueue({ tenantId, asOfDate = todayIsoDate() }) {
-      const [rows, latestTransitions] = await Promise.all([
+      const [rows, latestTransitions, earliestEvents, tenantUsers] = await Promise.all([
         db
           .select({
             id: taxPlanCycleTable.id,
             clientId: taxPlanCycleTable.clientId,
             clientName: clientRosterTable.clientName,
+            planningPeriod: taxPlanCycleTable.planningPeriod,
             stage: taxPlanCycleTable.stage,
             owner: taxPlanCycleTable.owner,
             priority: taxPlanCycleTable.priority,
@@ -440,16 +454,44 @@ export function createTaxPlanCycleRepository(
           )
           .where(eq(taxPlanCycleTable.tenantId, tenantId))
           .groupBy(stageTransitionTable.caseId),
+        db
+          .select({
+            caseId: auditEntryTable.caseId,
+            createdAt: min(auditEntryTable.occurredAt),
+          })
+          .from(auditEntryTable)
+          .innerJoin(taxPlanCycleTable, eq(taxPlanCycleTable.id, auditEntryTable.caseId))
+          .where(eq(taxPlanCycleTable.tenantId, tenantId))
+          .groupBy(auditEntryTable.caseId),
+        db
+          .select({ id: usersTable.id, displayName: usersTable.displayName })
+          .from(usersTable)
+          .where(eq(usersTable.tenantId, tenantId)),
       ]);
       const latestTransitionByCaseId = new Map(
         latestTransitions.map((row) => [row.caseId, row.updatedAt ?? null]),
       );
+      const earliestEventByCaseId = new Map(
+        earliestEvents.map((row) => [row.caseId, row.createdAt ?? null]),
+      );
+      const userNameById = new Map(tenantUsers.map((user) => [user.id, user.displayName]));
+      const cycleLabelById = buildTaxPlanCycleLabels(rows.map((row) => ({
+        id: row.id,
+        clientKey: row.clientId,
+        clientName: row.clientName,
+        planningPeriod: row.planningPeriod,
+        earliestEventAt: earliestEventByCaseId.get(row.id),
+      })));
 
       return rows.map((row) =>
         toTaxPlanCycleQueueItem(
-          row,
+          {
+            ...row,
+            ownerDisplayName: userNameById.get(row.owner) ?? displayPersonName(row.owner),
+          },
           asOfDate,
           latestTransitionByCaseId.get(row.id) ?? null,
+          cycleLabelById.get(row.id) ?? "Client unavailable · Planning period unavailable Tax Plan",
         ),
       );
     },

@@ -23,14 +23,14 @@ describe("ToolHeader", () => {
         eyebrow="Plan tools"
         title="Deductions"
         description="Track deductions that are ready, planned, or under review."
-        contextControl={<select aria-label="Case ID" />}
+        contextControl={<select aria-label="Tax plan" />}
         action={<button type="button">Add Deduction</button>}
       />,
     );
 
     expect(screen.getByRole("heading", { name: "Deductions" })).toBeInTheDocument();
     expect(screen.getByText("Track deductions that are ready, planned, or under review.")).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Case ID" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Tax plan" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Deduction" })).toBeInTheDocument();
   });
 
@@ -38,13 +38,13 @@ describe("ToolHeader", () => {
     render(
       <ToolHeader
         title="Deductions"
-        contextControl={<select aria-label="Case ID" />}
+        contextControl={<select aria-label="Tax plan" />}
         action={<button type="button">Add Deduction</button>}
       />,
     );
 
     const action = screen.getByRole("button", { name: "Add Deduction" });
-    const contextControl = screen.getByRole("combobox", { name: "Case ID" });
+    const contextControl = screen.getByRole("combobox", { name: "Tax plan" });
 
     expect(
       action.compareDocumentPosition(contextControl) & Node.DOCUMENT_POSITION_FOLLOWING,

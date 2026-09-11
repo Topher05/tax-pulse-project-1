@@ -31,7 +31,7 @@ vi.mock("../../entities/taxPlanDetailsAssistant.ts", async (importOriginal) => {
 
 const assistantContext: AssistantCaseContext = {
   caseId: "case-001",
-  caseTitle: "case-001 - Q2 2026 Tax Plan",
+  caseTitle: "North Shore Family Office · Q2 2026 Tax Plan",
   clientName: "Example Client",
   recommendation:
     "Tax Plan Cycle in Review case owned by Maya Reed with a High priority for the taxpayer Example Client from tivs",

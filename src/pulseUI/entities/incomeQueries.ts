@@ -86,7 +86,7 @@ export function useIncomeEventsQuery(caseId: Uuid | null) {
     queryKey: incomeEventsQueryKey(caseId ?? "unselected"),
     queryFn: () => {
       if (caseId === null) {
-        throw new Error("A valid case ID is required before fetching income events.");
+        throw new Error("Choose a valid tax plan before fetching income events.");
       }
 
       return fetchIncomeEvents(caseId, authenticatedFetch);
@@ -102,7 +102,7 @@ export function useCreateIncomeEventMutation(caseId: Uuid | null) {
   return useMutation({
     mutationFn: (input: IncomeEventCreatePayload) => {
       if (caseId === null) {
-        throw new Error("A valid case ID is required before creating income events.");
+        throw new Error("Choose a valid tax plan before creating income events.");
       }
 
       return createIncomeEvent(caseId, input, authenticatedFetch);

@@ -117,15 +117,15 @@ describe("ScenarioPlannerPage", () => {
     renderScenarioPlannerRoute("/scenarios");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    expect(await screen.findByRole("combobox", { name: "Client case" })).toBeInTheDocument();
+    expect(await screen.findByRole("combobox", { name: "Tax plan" })).toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", { name: "Select a case to load Scenario Planner" }),
+      await screen.findByRole("heading", { name: "Select a tax plan to load Scenario Planner" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New scenario" })).toBeDisabled();
     expect(screen.getByRole("status")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Choose an accessible Tax Plan Cycle from the selector above before this tool fetches or changes case data.",
+        "Choose an accessible tax plan from the selector above before this tool loads or changes plan data.",
       ),
     ).toBeInTheDocument();
   });
@@ -134,7 +134,7 @@ describe("ScenarioPlannerPage", () => {
     renderScenarioPlannerRoute(`/scenarios?caseId=${seededCaseId}`);
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    expect(await screen.findByRole("combobox", { name: "Client case" })).toBeInTheDocument();
+    expect(await screen.findByRole("combobox", { name: "Tax plan" })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "New scenario" })).toBeEnabled();
     expect(await screen.findByText("Scenario workspace")).toBeInTheDocument();
 

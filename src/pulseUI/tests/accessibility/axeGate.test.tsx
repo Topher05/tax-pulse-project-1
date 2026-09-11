@@ -88,7 +88,7 @@ describe("Pulse UI accessibility gate", () => {
   test("assistant drawer states report no axe violations", async () => {
     const assistantCaseContext = {
       caseId: "case-001",
-      caseTitle: "case-001 - Q2 2026 Tax Plan",
+      caseTitle: "North Shore Family Office · Q2 2026 Tax Plan",
       clientName: "Client 001",
       recommendation: "Convert $40k traditional to Roth",
       stage: "Archived",
@@ -119,7 +119,7 @@ describe("Pulse UI accessibility gate", () => {
       </NotificationToastProvider>,
     );
 
-    expect(screen.getByRole("dialog", { name: "case-001 - Q2 2026 Tax Plan" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "North Shore Family Office · Q2 2026 Tax Plan" })).toBeInTheDocument();
     await expectNoViolations(container);
 
     rerender(
@@ -165,6 +165,8 @@ describe("Pulse UI accessibility gate", () => {
     vi.spyOn(detailQueries, "fetchTaxPlanCycleDetails").mockResolvedValue({
       caseId: "TP-24018",
       client: "North Shore Family Office",
+      planningPeriod: "Q2 2026",
+      cycleLabel: "North Shore Family Office · Q2 2026 Tax Plan",
       stage: "Review",
       owner: "Maya Reed",
       priority: "High",
@@ -184,7 +186,7 @@ describe("Pulse UI accessibility gate", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "North Shore Family Office - Q2 2026 Tax Plan",
+        name: "North Shore Family Office · Q2 2026 Tax Plan",
       }),
     ).toBeInTheDocument();
 

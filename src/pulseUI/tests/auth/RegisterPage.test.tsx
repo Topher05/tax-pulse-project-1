@@ -7,6 +7,7 @@ import { afterEach, beforeAll, expect, test, vi } from "vitest";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 
 const tenantId = "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01";
+const workspaceSlug = "summit-ridge-tax";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -29,8 +30,8 @@ function renderRegisterPage() {
 }
 
 function fillValidForm(email = "new-client@example.test") {
-  fireEvent.change(screen.getByRole("textbox", { name: "Workspace ID" }), {
-    target: { value: tenantId },
+  fireEvent.change(screen.getByRole("textbox", { name: "Firm workspace" }), {
+    target: { value: workspaceSlug },
   });
   fireEvent.change(screen.getByRole("textbox", { name: "Email address" }), {
     target: { value: email },
@@ -51,8 +52,8 @@ test("collects required registration details and validates password confirmation
   expect(await screen.findByRole("heading", { name: "Create your account" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Back to sign in" })).toHaveAttribute("href", "/sign-in");
 
-  fireEvent.change(screen.getByRole("textbox", { name: "Workspace ID" }), {
-    target: { value: tenantId },
+  fireEvent.change(screen.getByRole("textbox", { name: "Firm workspace" }), {
+    target: { value: workspaceSlug },
   });
   fireEvent.change(screen.getByRole("textbox", { name: "Email address" }), {
     target: { value: "new-client@example.test" },
@@ -97,7 +98,7 @@ test("submits valid registration details and starts MFA setup", async () => {
         method: "POST",
         credentials: "include",
         body: JSON.stringify({
-          tenant_id: tenantId,
+          workspace_slug: workspaceSlug,
           email: "new-client@example.test",
           password: "synthetic-password",
         }),
@@ -187,7 +188,7 @@ test("shows duplicate email errors without clearing valid form entries", async (
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "An account with this email is already registered for this workspace.",
   );
-  expect(screen.getByRole("textbox", { name: "Workspace ID" })).toHaveValue(tenantId);
+  expect(screen.getByRole("textbox", { name: "Firm workspace" })).toHaveValue(workspaceSlug);
   expect(screen.getByRole("textbox", { name: "Email address" })).toHaveValue(
     "existing-client@example.test",
   );

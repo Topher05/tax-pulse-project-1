@@ -277,12 +277,17 @@ function validationError(detail: string): ProblemHttpError {
 }
 
 function toClientTaxPlanReadModel(
-  cycle: ReturnType<typeof taxPlanCycleSchema.parse>,
+  cycle: ReturnType<typeof taxPlanCycleSchema.parse> & {
+    client_name?: string;
+    planning_period?: string;
+    owner_display_name?: string;
+    cycle_label?: string;
+  },
   scenarios: readonly Scenario[],
 ) {
   return clientTaxPlanReadModelSchema.parse({
     ...cycle,
-    advisor: cycle.owner,
+    advisor: cycle.owner_display_name ?? cycle.owner,
     next_meeting: null,
     projected_savings: null,
     top_recommendation: null,
@@ -591,8 +596,11 @@ export function createTaxPlanCycleRouter(
           tenantId,
           caseId: cycle.id,
         });
+        const queueItem = (await taxPlanCycleRepository.listQueue({ tenantId })).find(
+          (item) => item.id === cycle.id,
+        );
 
-        res.status(200).json(toClientTaxPlanReadModel(cycle, scenarios));
+        res.status(200).json(toClientTaxPlanReadModel({ ...cycle, ...queueItem }, scenarios));
       } catch (error) {
         next(error);
       }
@@ -645,7 +653,7 @@ export function createTaxPlanCycleRouter(
               type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
               title: "Tax Plan Cycle Not Found",
               status: 404,
-              detail: "No tax plan cycle was found for the requested case ID.",
+              detail: "The requested tax plan could not be found.",
             }),
           );
           return;
@@ -841,7 +849,10 @@ export function createTaxPlanCycleRouter(
           return;
         }
 
-        res.status(200).json(cycle);
+        const queueItem = (await taxPlanCycleRepository.listQueue({ tenantId })).find(
+          (item) => item.id === cycle.id,
+        );
+        res.status(200).json({ ...cycle, ...queueItem });
       } catch (error) {
         next(error);
       }

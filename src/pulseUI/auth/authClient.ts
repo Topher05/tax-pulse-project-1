@@ -11,11 +11,15 @@ export interface AuthClient {
   logout(): Promise<void>;
 }
 
-export interface RegistrationInput {
+export type RegistrationInput = {
+  readonly workspaceSlug: string;
+  readonly email: string;
+  readonly password: string;
+} | {
   readonly tenantId: string;
   readonly email: string;
   readonly password: string;
-}
+};
 
 export interface RegistrationAccount {
   readonly id: string;
@@ -104,7 +108,9 @@ export async function registerAccount(
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      tenant_id: input.tenantId,
+      ...("workspaceSlug" in input
+        ? { workspace_slug: input.workspaceSlug }
+        : { tenant_id: input.tenantId }),
       email: input.email,
       password: input.password,
     }),

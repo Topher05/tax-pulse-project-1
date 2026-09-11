@@ -26,9 +26,9 @@ const percentFormatter = new Intl.NumberFormat("en-US", {
 });
 
 const queuePreview = [
-  { id: "TP-24018", client: "North Shore Family Office", stage: "Review", owner: "Maya Reed", priority: "High", due: "May 12, 2026" },
-  { id: "TP-24021", client: "Harbor Point Advisors", stage: "Modeling", owner: "Jordan Kim", priority: "Medium", due: "Jun 03, 2026" },
-  { id: "TP-24033", client: "Summit View Partners", stage: "Executed", owner: "Noah Patel", priority: "Low", due: "Jun 09, 2026" },
+  { label: "North Shore Family Office · Q2 2026 Tax Plan", client: "North Shore Family Office", stage: "Review", owner: "Maya Reed", priority: "High", due: "May 12, 2026" },
+  { label: "Harbor Point Advisors · Q2 2026 Tax Plan", client: "Harbor Point Advisors", stage: "Modeling", owner: "Jordan Kim", priority: "Medium", due: "Jun 03, 2026" },
+  { label: "Summit View Partners · Q2 2026 Tax Plan", client: "Summit View Partners", stage: "Executed", owner: "Noah Patel", priority: "Low", due: "Jun 09, 2026" },
 ] as const;
 
 const scenarioSummary = [
@@ -203,7 +203,7 @@ export function DashboardPage({ chartData }: DashboardPageProps = {}) {
             <table className={styles.table} aria-label="Queue preview">
               <thead>
                 <tr>
-                  <th>Case ID</th>
+                  <th>Tax Plan</th>
                   <th>Client</th>
                   <th>Stage</th>
                   <th>Owner</th>
@@ -212,8 +212,8 @@ export function DashboardPage({ chartData }: DashboardPageProps = {}) {
               </thead>
               <tbody>
                 {queuePreview.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.id}</td>
+                  <tr key={row.label}>
+                    <td>{row.label}</td>
                     <td>{row.client}</td>
                     <td>{row.stage}</td>
                     <td>{row.owner}</td>

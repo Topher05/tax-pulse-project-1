@@ -1,10 +1,16 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
+import {
+  buildTaxPlanCycleLabels,
+  displayPersonName,
+  removeTechnicalIdentifiers,
+} from "../../shared/displayLabels.js";
 
 import { serializeAuditEntryForOutput } from "../../auditEntryOutput.js";
 import {
   auditEntry as auditEntryTable,
+  clientRoster,
   roles,
   taxPlanCycle,
   tenants,
@@ -298,28 +304,6 @@ function toPlatformTenantUserRow(row: {
   });
 }
 
-function inferAuditRole(actor: string): PlatformAuditLogEntry["role"] {
-  const normalizedActor = actor.toLowerCase();
-
-  if (normalizedActor.includes("firm-admin")) {
-    return "Firm Admin";
-  }
-
-  if (normalizedActor.includes("advisor")) {
-    return "Advisor";
-  }
-
-  if (normalizedActor.includes("client")) {
-    return "Client";
-  }
-
-  if (normalizedActor.includes("platform")) {
-    return "TaxPulse Platform Admin";
-  }
-
-  return null;
-}
-
 function toPlatformAuditLogEntry(row: {
   id: string;
   caseId: string;
@@ -329,23 +313,23 @@ function toPlatformAuditLogEntry(row: {
   occurredAt: Date;
   tenantName: string | null;
   planningPeriod: string | null;
-}): PlatformAuditLogEntry {
+  clientId: string;
+  clientName: string | null;
+  actorDisplayName: string | null;
+  actorRole: string | null;
+}, cycleLabel: string): PlatformAuditLogEntry {
   const serialized = serializeAuditEntryForOutput(row);
-  const resourceParts = [
-    row.tenantName,
-    row.planningPeriod,
-    `Case ${row.caseId}`,
-  ].filter((part): part is string => part !== null && part !== "");
+  const resourceParts = [row.tenantName?.trim() || "Firm unavailable", cycleLabel];
 
   return platformAuditLogEntrySchema.parse({
     id: serialized.id,
     occurredAt: serialized.occurred_at,
-    user: serialized.actor,
-    role: inferAuditRole(serialized.actor),
+    user: row.actorDisplayName ?? displayPersonName(serialized.actor),
+    role: row.actorRole,
     action:
       serialized.outcome === "succeeded"
-        ? serialized.action
-        : `${serialized.action} - ${serialized.outcome}`,
+        ? removeTechnicalIdentifiers(serialized.action)
+        : removeTechnicalIdentifiers(`${serialized.action} - ${serialized.outcome}`),
     resource: resourceParts.join(" - "),
   });
 }
@@ -371,13 +355,49 @@ export function createPlatformAdministrationRepository(
           occurredAt: auditEntryTable.occurredAt,
           tenantName: tenants.name,
           planningPeriod: taxPlanCycle.planningPeriod,
+          clientId: taxPlanCycle.clientId,
+          clientName: clientRoster.clientName,
+          actorDisplayName: users.displayName,
+          actorRole: roles.role,
         })
         .from(auditEntryTable)
         .innerJoin(taxPlanCycle, eq(taxPlanCycle.id, auditEntryTable.caseId))
         .leftJoin(tenants, eq(tenants.id, taxPlanCycle.tenantId))
+        .leftJoin(
+          clientRoster,
+          sql`${clientRoster.id} = ${taxPlanCycle.clientId} AND ${clientRoster.tenantId} = ${taxPlanCycle.tenantId}`,
+        )
+        .leftJoin(
+          users,
+          sql`${users.id}::text = ${auditEntryTable.actor} AND ${users.tenantId} = ${taxPlanCycle.tenantId}`,
+        )
+        .leftJoin(roles, eq(roles.id, users.roleId))
         .orderBy(desc(auditEntryTable.occurredAt));
 
-      return rows.map(toPlatformAuditLogEntry);
+      const cycles = new Map<string, {
+        id: string;
+        clientKey: string;
+        clientName: string | null;
+        planningPeriod: string | null;
+        earliestEventAt: Date;
+      }>();
+      for (const row of rows) {
+        const current = cycles.get(row.caseId);
+        if (!current || row.occurredAt < current.earliestEventAt) {
+          cycles.set(row.caseId, {
+            id: row.caseId,
+            clientKey: row.clientId,
+            clientName: row.clientName,
+            planningPeriod: row.planningPeriod,
+            earliestEventAt: row.occurredAt,
+          });
+        }
+      }
+      const labels = buildTaxPlanCycleLabels([...cycles.values()]);
+      return rows.map((row) => toPlatformAuditLogEntry(
+        row,
+        labels.get(row.caseId) ?? "Client unavailable · Planning period unavailable Tax Plan",
+      ));
     },
 
     async listTenantsWithUsers() {

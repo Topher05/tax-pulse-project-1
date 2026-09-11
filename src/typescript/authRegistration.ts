@@ -7,15 +7,32 @@ import { roleNameEnum, userStatusEnum } from "./shared/database/schema.js";
  * Tenant membership, role, and account state are assigned by the service so a
  * caller cannot grant itself elevated access.
  */
+const registrationCredentialsSchema = {
+  email: z.email(),
+  password: z.string().min(1),
+};
+
 export const registrationRequestSchema = z
-  .object({
-    tenant_id: z.uuid(),
-    email: z.email(),
-    password: z.string().min(1),
+  .strictObject({
+    tenant_id: z.uuid().optional(),
+    workspace_slug: z
+      .string()
+      .regex(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/)
+      .optional(),
+    ...registrationCredentialsSchema,
   })
-  .strict();
+  .superRefine((request, context) => {
+    if ((request.tenant_id === undefined) === (request.workspace_slug === undefined)) {
+      context.addIssue({
+        code: "custom",
+        path: ["workspace_slug"],
+        message: "Provide either workspace_slug or tenant_id, but not both.",
+      });
+    }
+  });
 
 export type RegistrationRequest = z.infer<typeof registrationRequestSchema>;
+export type ResolvedRegistrationRequest = RegistrationRequest & { tenant_id: string };
 
 export const registrationInitialAccountValues = {
   role: "Client",

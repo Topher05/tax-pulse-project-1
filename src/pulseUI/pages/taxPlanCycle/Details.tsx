@@ -105,7 +105,7 @@ export function DetailsPage() {
 
     setAssistantCaseContext({
       caseId: detailsQuery.data.caseId,
-      caseTitle: `${detailsQuery.data.caseId} - Q2 2026 Tax Plan`,
+      caseTitle: detailsQuery.data.cycleLabel ?? "Tax Plan",
       clientName: detailsQuery.data.client,
       recommendation: buildTaxPlanDetailsAssistantRecommendation({
         stage: detailsQuery.data.stage,
@@ -315,7 +315,7 @@ export function DetailsPage() {
             <div className={styles.overviewGrid}>
               <div>
                 <p className={styles.fieldLabel}>Planning Period</p>
-                <p className={styles.fieldValue}>Q2 2026 (April-June)</p>
+                <p className={styles.fieldValue}>{details.planningPeriod}</p>
               </div>
               <div>
                 <p className={styles.fieldLabel}>Recommendation</p>
@@ -438,12 +438,12 @@ export function DetailsPage() {
         <div className={styles.caseHeaderRow}>
           <div className={styles.caseHeadline}>
             <div className={styles.caseMetaRow}>
-              <span className={styles.caseId}>CASE-{details.caseId}</span>
+              <span className={styles.caseId}>{details.cycleLabel}</span>
               <StatusPill tone={priorityTone(details.priority)}>{details.priority}</StatusPill>
             </div>
-            <h2 className={styles.caseTitle}>{details.client} - Q2 2026 Tax Plan</h2>
+            <h2 className={styles.caseTitle}>{details.cycleLabel}</h2>
             <p className={styles.caseSubtitle}>
-              Advisor: {details.owner} · Opened Apr 1, 2026 · {details.onHold ? "On hold" : "Active"}
+              Advisor: {details.owner} · {details.onHold ? "On hold" : "Active"}
             </p>
             {details.onHold ? (
               <p id={holdReasonHelpId} className={styles.holdSupportText}>

@@ -53,6 +53,8 @@ function renderDetails({
       {
         caseId: "TP-24018",
         client: "North Shore Family Office",
+        planningPeriod: "Q2 2026",
+        cycleLabel: "North Shore Family Office · Q2 2026 Tax Plan",
         stage: "Review",
         owner: "Maya Reed",
         priority: "High",
@@ -126,7 +128,7 @@ describe("Tax Plan Cycle details page", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "North Shore Family Office - Q2 2026 Tax Plan",
+        name: "North Shore Family Office · Q2 2026 Tax Plan",
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Advance Stage/ })).toBeInTheDocument();
@@ -149,7 +151,7 @@ describe("Tax Plan Cycle details page", () => {
   test("renders overview and case properties content after the case loads", async () => {
     renderDetails();
 
-    expect(await screen.findByText("Q2 2026 (April-June)")).toBeInTheDocument();
+    expect(await screen.findByText("Q2 2026")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Case Properties" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Run new scenario" })).toBeInTheDocument();
   });

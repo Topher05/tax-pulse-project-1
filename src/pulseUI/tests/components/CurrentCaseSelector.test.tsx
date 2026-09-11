@@ -28,6 +28,7 @@ function buildTaxPlanCycleQueuePayload() {
     id: row.id,
     client_id: row.clientId,
     client_name: row.id === seededCaseId ? seededClientName : "Queue client",
+    planning_period: row.planningPeriod,
     stage: row.stage,
     owner: row.owner,
     priority: row.priority,
@@ -85,14 +86,14 @@ afterEach(() => {
 });
 
 describe("CurrentCaseSelector", () => {
-  test("renders the accessible case ID selector and default option", async () => {
+  test("renders the accessible tax plan selector and default option", async () => {
     renderSelector();
 
-    const selector = await screen.findByRole("combobox", { name: "Client case" });
+    const selector = await screen.findByRole("combobox", { name: "Tax plan" });
 
-    expect(screen.getByText("Client case")).toBeInTheDocument();
+    expect(screen.getByText("Tax plan")).toBeInTheDocument();
     expect(selector).toHaveValue("");
-    expect(await screen.findByRole("option", { name: "Select a client case" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "Select a tax plan" })).toBeInTheDocument();
     expect(selector).toHaveClass("opacity-80");
     expect(selector).toHaveStyle({ padding: "18px 2px 10px 5px" });
     expect(selector.closest("label")).toHaveClass("min-[1031px]:w-[22rem]");
@@ -109,7 +110,7 @@ describe("CurrentCaseSelector", () => {
     });
 
     expect(
-      await screen.findByRole("option", { name: `${seededClientName} (9d12)` }),
+      await screen.findByRole("option", { name: `${seededClientName} · Q4 2026 Tax Plan` }),
     ).toBeInTheDocument();
   });
 
@@ -144,11 +145,11 @@ describe("CurrentCaseSelector", () => {
     );
 
     expect(
-      await screen.findByRole("option", { name: `${seededClientName} (9d12)` }),
+      await screen.findByRole("option", { name: `${seededClientName} · Q4 2026 Tax Plan` }),
     ).toBeInTheDocument();
   });
 
-  test("maps client roster names under the hood while preserving UUID values", async () => {
+  test("uses an unavailable label without exposing a client ID", async () => {
     const clientId = clientRosterRows[2].id;
     vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path) => {
       if (path === "/v1/clients") {
@@ -176,7 +177,9 @@ describe("CurrentCaseSelector", () => {
       { wrapper },
     );
 
-    const option = await screen.findByRole("option", { name: `${seededClientName} (9d12)` });
+    const option = await screen.findByRole("option", {
+      name: "Client unavailable · Q4 2026 Tax Plan",
+    });
     expect(option).toHaveValue(seededCaseId);
   });
 
@@ -195,11 +198,13 @@ describe("CurrentCaseSelector", () => {
           ...buildTaxPlanCycleQueuePayload()[1],
           id: firstCaseId,
           client_name: "Jordan Lee",
+          cycle_label: "Jordan Lee · Q4 2026 Tax Plan · Plan 1",
         },
         {
           ...buildTaxPlanCycleQueuePayload()[1],
           id: secondCaseId,
           client_name: "Jordan Lee",
+          cycle_label: "Jordan Lee · Q4 2026 Tax Plan · Plan 2",
         },
       ]) as never;
     });
@@ -212,11 +217,11 @@ describe("CurrentCaseSelector", () => {
 
     render(<CurrentCaseSelector caseId={null} onCaseIdChange={onCaseIdChange} />, { wrapper });
 
-    const selector = await screen.findByRole("combobox", { name: "Client case" });
-    expect(await screen.findByRole("option", { name: "Jordan Lee (9d11)" })).toHaveValue(
+    const selector = await screen.findByRole("combobox", { name: "Tax plan" });
+    expect(await screen.findByRole("option", { name: "Jordan Lee · Q4 2026 Tax Plan · Plan 1" })).toHaveValue(
       firstCaseId,
     );
-    expect(screen.getByRole("option", { name: "Jordan Lee (9d22)" })).toHaveValue(secondCaseId);
+    expect(screen.getByRole("option", { name: "Jordan Lee · Q4 2026 Tax Plan · Plan 2" })).toHaveValue(secondCaseId);
 
     fireEvent.change(selector, { target: { value: secondCaseId } });
 
@@ -227,8 +232,8 @@ describe("CurrentCaseSelector", () => {
     const onCaseIdChange = vi.fn();
     renderSelector({ onCaseIdChange });
 
-    const selector = await screen.findByRole("combobox", { name: "Client case" });
-    await screen.findByRole("option", { name: `${seededClientName} (9d12)` });
+    const selector = await screen.findByRole("combobox", { name: "Tax plan" });
+    await screen.findByRole("option", { name: `${seededClientName} · Q4 2026 Tax Plan` });
 
     fireEvent.change(selector, { target: { value: "" } });
     fireEvent.change(selector, { target: { value: "not-a-uuid" } });
@@ -241,6 +246,6 @@ describe("CurrentCaseSelector", () => {
   test("uses full opacity when a real case is selected", async () => {
     renderSelector({ caseId: seededCaseId });
 
-    expect(await screen.findByRole("combobox", { name: "Client case" })).toHaveClass("opacity-100");
+    expect(await screen.findByRole("combobox", { name: "Tax plan" })).toHaveClass("opacity-100");
   });
 });

@@ -9,6 +9,8 @@ export type PlanCycleQueueRow = {
   client: string;
   clientId?: string;
   clientName?: string;
+  planningPeriod?: string;
+  cycleLabel?: string;
   stage: string;
   owner: string;
   priority: string;

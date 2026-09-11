@@ -54,7 +54,7 @@ export function useQuarterlyEstimatesQuery(caseId: Uuid | null) {
     queryKey: quarterlyEstimatesQueryKey(caseId ?? "unselected"),
     queryFn: () => {
       if (caseId === null) {
-        throw new Error("A valid case ID is required before fetching quarterly estimates.");
+        throw new Error("Choose a valid tax plan before fetching quarterly estimates.");
       }
 
       return fetchQuarterlyEstimates(caseId, authenticatedFetch);
