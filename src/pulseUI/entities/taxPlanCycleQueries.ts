@@ -10,6 +10,7 @@ import type { PlanCycleQueueRow } from "./taxPlanCycle.ts";
 
 export interface TaxPlanCycleQueueApiRow {
   id: string;
+  route_key: string;
   client_id: string;
   client_name: string;
   planning_period?: string;
@@ -27,6 +28,7 @@ export interface TaxPlanCycleQueueApiRow {
 
 export interface TaxPlanCycleDetailsApiResponse {
   id: string;
+  route_key?: string;
   client_id: string;
   client_name?: string;
   planning_period?: string;
@@ -47,6 +49,7 @@ export interface TaxPlanCycleDetailsApiResponse {
 
 export interface TaxPlanCycleDetailsView {
   caseId: string;
+  routeKey?: string;
   client: string;
   planningPeriod?: string;
   cycleLabel?: string;
@@ -133,6 +136,10 @@ const commentDateTimeFormat = new Intl.DateTimeFormat("en-US", {
 
 export const taxPlanCycleQueueQueryKey = ["taxPlanCycle", "queue"] as const;
 
+export function taxPlanCycleRouteKeyQueryKey(routeKey: string) {
+  return ["taxPlanCycle", "routeKey", routeKey] as const;
+}
+
 export function taxPlanCycleDetailsQueryKey(caseId: string) {
   return ["taxPlanCycle", "details", caseId] as const;
 }
@@ -179,6 +186,7 @@ function toCommentView(row: TaxPlanCycleCommentApiRow): TaxPlanCycleCommentView 
 function toQueueRow(row: TaxPlanCycleQueueApiRow): PlanCycleQueueRow {
   return {
     caseId: row.id,
+    routeKey: row.route_key,
     client: displayClientName(row.client_name || row.client_id),
     clientId: row.client_id,
     clientName: row.client_name,
@@ -205,6 +213,7 @@ function toDetailsView(
 
   return {
     caseId: row.id,
+    routeKey: row.route_key,
     client: clientName,
     planningPeriod: formatPlanningPeriod(row.planning_period),
     cycleLabel: formatTaxPlanLabel({
@@ -262,6 +271,17 @@ export async function fetchTaxPlanCycleDetails(
   );
 
   return toDetailsView(payload);
+}
+
+export async function resolveTaxPlanCycleRouteKey(
+  routeKey: string,
+  fetcher?: typeof fetch,
+): Promise<{ caseId: string; routeKey: string }> {
+  const payload = await caseApiGetJson<{ id: string; route_key: string }>(
+    `/v1/tax-plan-cycles/route-keys/${encodeURIComponent(routeKey)}`,
+    fetcher,
+  );
+  return { caseId: payload.id, routeKey: payload.route_key };
 }
 
 export async function fetchTaxPlanCycleAuditEntries(

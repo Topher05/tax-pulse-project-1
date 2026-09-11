@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, max, min, ne, sql } from "drizzle-orm";
+import { randomBytes } from "node:crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 import { buildTaxPlanCycleLabels, displayPersonName } from "../../../shared/displayLabels.js";
@@ -22,6 +23,11 @@ import type {
 export interface TaxPlanCycleReadInput {
   tenantId: string;
   caseId: string;
+}
+
+export interface TaxPlanCycleRouteKeyReadInput {
+  tenantId: string;
+  routeKey: string;
 }
 
 export interface TaxPlanCycleQueueInput {
@@ -79,6 +85,7 @@ export class TaxPlanCycleOnHoldError extends Error {
 }
 
 export type TaxPlanCycleQueueItem = TaxPlanCycle & {
+  route_key: string;
   client_name: string;
   planning_period?: string;
   owner_display_name?: string;
@@ -91,6 +98,7 @@ export interface TaxPlanCycleRepository {
   create(input: TaxPlanCycleRepositoryCreateInput): Promise<string>;
   insert(input: TaxPlanCycleInsertInput): Promise<string>;
   findByCaseId(input: TaxPlanCycleReadInput): Promise<TaxPlanCycle | null>;
+  findByRouteKey?(input: TaxPlanCycleRouteKeyReadInput): Promise<TaxPlanCycle | null>;
   findCurrentByClientId(input: TaxPlanCycleClientReadInput): Promise<TaxPlanCycle | null>;
   transition(
     input: TaxPlanCycleTransitionInput,
@@ -129,6 +137,7 @@ function todayIsoDate(): string {
 
 function toTaxPlanCycleQueueItem(
   row: Parameters<typeof toTaxPlanCycle>[0] & {
+    routeKey: string;
     clientName: string;
     planningPeriod: string;
     ownerDisplayName: string;
@@ -142,6 +151,7 @@ function toTaxPlanCycleQueueItem(
 
   return {
     ...cycle,
+    route_key: row.routeKey,
     client_name: row.clientName,
     planning_period: row.planningPeriod,
     owner_display_name: row.ownerDisplayName,
@@ -174,6 +184,7 @@ export function createTaxPlanCycleRepository(
         .values({
           clientId: input.clientId,
           tenantId: input.tenantId,
+          routeKey: randomBytes(18).toString("base64url"),
           planningPeriod: input.planningPeriod,
           stage: "Intake",
           owner: input.owner,
@@ -282,6 +293,31 @@ export function createTaxPlanCycleRepository(
       return row ? toTaxPlanCycle(row) : null;
     },
 
+    async findByRouteKey({ tenantId, routeKey }) {
+      const rows = await db
+        .select({
+          id: taxPlanCycleTable.id,
+          clientId: taxPlanCycleTable.clientId,
+          stage: taxPlanCycleTable.stage,
+          owner: taxPlanCycleTable.owner,
+          priority: taxPlanCycleTable.priority,
+          dueDate: taxPlanCycleTable.dueDate,
+          onHold: taxPlanCycleTable.onHold,
+          holdReason: taxPlanCycleTable.holdReason,
+        })
+        .from(taxPlanCycleTable)
+        .where(
+          and(
+            eq(taxPlanCycleTable.tenantId, tenantId),
+            eq(taxPlanCycleTable.routeKey, routeKey),
+          ),
+        )
+        .limit(1);
+
+      const row = rows[0];
+      return row ? toTaxPlanCycle(row) : null;
+    },
+
     async findCurrentByClientId({ tenantId, clientId }) {
       const rows = await db
         .select({
@@ -315,6 +351,7 @@ export function createTaxPlanCycleRepository(
         const rows = await tx
           .select({
             id: taxPlanCycleTable.id,
+            routeKey: taxPlanCycleTable.routeKey,
             clientId: taxPlanCycleTable.clientId,
             stage: taxPlanCycleTable.stage,
             owner: taxPlanCycleTable.owner,
@@ -422,6 +459,7 @@ export function createTaxPlanCycleRepository(
         db
           .select({
             id: taxPlanCycleTable.id,
+            routeKey: taxPlanCycleTable.routeKey,
             clientId: taxPlanCycleTable.clientId,
             clientName: clientRosterTable.clientName,
             planningPeriod: taxPlanCycleTable.planningPeriod,

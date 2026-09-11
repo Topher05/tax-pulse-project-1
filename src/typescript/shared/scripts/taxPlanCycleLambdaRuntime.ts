@@ -46,6 +46,9 @@ export function createMutableTaxPlanCycleRepository(
       void input.tenantId;
       return materialize(input.caseId);
     },
+    async findByRouteKey(): Promise<TaxPlanCycle | null> {
+      return null;
+    },
     async findCurrentByClientId(input: {
       tenantId: string;
       clientId: string;

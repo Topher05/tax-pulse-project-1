@@ -17,7 +17,7 @@ import {
   useCreateDeductionMutation,
   useDeductionsQuery,
 } from "../../entities/deductionQueries.ts";
-import { usePlanToolCase, useSetPlanToolCaseId } from "../../shared/usePlanToolCase.ts";
+import { usePlanToolCase, useSetPlanToolRouteKey } from "../../shared/usePlanToolCase.ts";
 import styles from "./DeductionsPage.module.css";
 
 function formatCurrency(value: number): string {
@@ -226,9 +226,9 @@ function DeductionsScreen({
 }
 
 export function DeductionsPage() {
-  const { caseId, hasInvalidCaseId } = usePlanToolCase();
-  const setCaseId = useSetPlanToolCaseId();
-  const contextControl = <CurrentCaseSelector caseId={caseId} onCaseIdChange={setCaseId} />;
+  const { caseId, routeKey, hasInvalidCaseId } = usePlanToolCase();
+  const setRouteKey = useSetPlanToolRouteKey();
+  const contextControl = <CurrentCaseSelector routeKey={routeKey} onRouteKeyChange={setRouteKey} />;
   const [isAddDeductionModalOpen, setIsAddDeductionModalOpen] = useState(false);
   const deductionsQuery = useDeductionsQuery(caseId);
   const createDeductionMutation = useCreateDeductionMutation(caseId);

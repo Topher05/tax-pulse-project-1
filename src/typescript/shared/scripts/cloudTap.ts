@@ -310,12 +310,13 @@ function createInMemoryTransitionRepository(
     holdReason?: string;
   }) => Promise<TaxPlanCycle | null>;
   findByCaseId: (input: { tenantId: string; caseId: string }) => Promise<TaxPlanCycle | null>;
+  findByRouteKey: (input: { tenantId: string; routeKey: string }) => Promise<TaxPlanCycle | null>;
   findCurrentByClientId: (input: {
     tenantId: string;
     clientId: string;
   }) => Promise<TaxPlanCycle | null>;
   listQueue: (input: { tenantId: string; asOfDate?: string }) => Promise<Array<
-    TaxPlanCycle & { client_name: string; is_overdue: boolean; updated_at: string }
+    TaxPlanCycle & { route_key: string; client_name: string; is_overdue: boolean; updated_at: string }
   >>;
   getCurrentCycle: () => TaxPlanCycle;
   transitions: Array<{
@@ -340,6 +341,10 @@ function createInMemoryTransitionRepository(
       void input.tenantId;
       return input.caseId === currentCycle.id ? currentCycle : null;
     },
+    async findByRouteKey(input) {
+      void input.tenantId;
+      return input.routeKey === "cloudtap-plan-route-key-01" ? currentCycle : null;
+    },
     async findCurrentByClientId(input) {
       void input.tenantId;
       void input.clientId;
@@ -349,6 +354,7 @@ function createInMemoryTransitionRepository(
       return [
         {
           ...currentCycle,
+          route_key: "cloudtap-plan-route-key-01",
           client_name: "CloudTap Client",
           is_overdue: false,
           updated_at: new Date().toISOString(),

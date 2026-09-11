@@ -6,7 +6,6 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
-import { useNavigate, useSearch } from "@tanstack/react-router";
 
 import styles from "./ScenarioPlannerPage.module.css";
 import { CurrentCaseSelector } from "../../components/CurrentCaseSelector.tsx";
@@ -20,6 +19,7 @@ import {
   type ScenarioResultsView,
 } from "../../entities/scenarioResults.ts";
 import type { ScenarioFormValues } from "../../components/scenario-form/schema.ts";
+import { usePlanToolCase, useSetPlanToolRouteKey } from "../../shared/usePlanToolCase.ts";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -157,16 +157,14 @@ function ScenarioResultsTable({
 }
 
 export function ScenarioPlannerPage() {
-  const search = useSearch({ from: "/_workspace/scenarios" });
-  const navigate = useNavigate({ from: "/scenarios" });
+  const { caseId, routeKey, hasInvalidCaseId } = usePlanToolCase();
+  const setRouteKey = useSetPlanToolRouteKey();
   const authenticatedFetch = useAuthenticatedFetch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [results, setResults] = useState<ScenarioResultsView>({
     baseline: scenarioBaseline,
     rows: [],
   });
-  const caseId = search.caseId ?? null;
-  const hasInvalidCaseId = search.invalidCaseId ?? false;
   const scenarioMutation = useMutation({
     mutationFn: (values: ScenarioFormValues) => {
       if (caseId === null) {
@@ -200,15 +198,8 @@ export function ScenarioPlannerPage() {
         title="Scenario Planner"
         contextControl={
           <CurrentCaseSelector
-            caseId={caseId}
-            onCaseIdChange={(nextCaseId) => {
-              void navigate({
-                search: {
-                  caseId: nextCaseId,
-                },
-                replace: true,
-              });
-            }}
+            routeKey={routeKey}
+            onRouteKeyChange={setRouteKey}
           />
         }
         action={headerAction}

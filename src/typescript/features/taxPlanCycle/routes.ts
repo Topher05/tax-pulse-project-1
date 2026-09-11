@@ -43,6 +43,7 @@ import {
   clientTaxPlanReadModelSchema,
   taxPlanCycleTransitionParamsSchema,
   taxPlanCycleTransitionSchema,
+  taxPlanCycleRouteKeySchema,
   isLegalTaxPlanCycleStageTransition,
   clientTaxPlanScenarioSchema,
   type TaxPlanCycleStage,
@@ -74,7 +75,10 @@ export interface CreateTaxPlanCycleRouterOptions {
   holdController?: TaxPlanCycleHoldController;
   transitionController?: TaxPlanCycleTransitionController;
   assistantController?: TaxPlanDetailsAssistantController;
-  taxPlanCycleRepository?: Pick<TaxPlanCycleRepository, "findByCaseId" | "listQueue">;
+  taxPlanCycleRepository?: Pick<
+    TaxPlanCycleRepository,
+    "findByCaseId" | "findByRouteKey" | "listQueue"
+  >;
   clientPortalReadRepository?: Pick<TaxPlanCycleRepository, "findCurrentByClientId">;
   scenarioRepository?: Pick<ScenarioRepository, "listByCaseId">;
   actionItemRepository?: Pick<ActionItemRepository, "listByCaseId" | "complete">;
@@ -405,6 +409,9 @@ export function createTaxPlanCycleRouter(
       async findByCaseId() {
         return null;
       },
+      async findByRouteKey() {
+        return null;
+      },
       async listQueue() {
         return [];
       },
@@ -456,6 +463,51 @@ export function createTaxPlanCycleRouter(
         const response = taxPlanCycleQueueGetResponseSchema.parse(queue);
 
         res.status(200).json(response);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/tax-plan-cycles/route-keys/:routeKey",
+    async (req: Request, res: Response, next: NextFunction) => {
+      const parsedRouteKey = taxPlanCycleRouteKeySchema.safeParse(req.params.routeKey);
+      if (!parsedRouteKey.success) {
+        next(validationError("Tax plan link is invalid."));
+        return;
+      }
+
+      try {
+        const tenantId = (req as TenantScopedRequest).tenant?.id;
+        const user = (req as TenantScopedRequest).user;
+        if (!tenantId || !user?.id) {
+          next(authenticationRequired());
+          return;
+        }
+        if (isClientUser(user)) {
+          next(operatorAccessRequired());
+          return;
+        }
+
+        const cycle =
+          (await taxPlanCycleRepository.findByRouteKey?.({
+            tenantId,
+            routeKey: parsedRouteKey.data,
+          })) ?? null;
+        if (cycle === null || !canReadCycle(user, cycle)) {
+          next(
+            new ProblemHttpError({
+              type: "https://taxpulse.example/problems/tax-plan-cycle-not-found",
+              title: "Tax Plan Not Found",
+              status: 404,
+              detail: "The requested tax plan could not be found.",
+            }),
+          );
+          return;
+        }
+
+        res.status(200).json({ id: cycle.id, route_key: parsedRouteKey.data });
       } catch (error) {
         next(error);
       }

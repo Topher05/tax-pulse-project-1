@@ -6,14 +6,20 @@ import {
 } from "../entities/taxPlanCycleQueries.ts";
 import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
 import { formatTaxPlanLabel } from "../shared/displayLabels.ts";
-import { isUuid, type Uuid } from "../shared/planToolCase.ts";
+import type { Uuid } from "../shared/planToolCase.ts";
 
 interface CurrentCaseSelectorProps {
-  caseId: Uuid | null;
-  onCaseIdChange: (caseId: Uuid) => void;
+  routeKey?: string | null;
+  onRouteKeyChange?: (routeKey: string) => void;
+  /** @deprecated Compatibility only; browser state now uses routeKey. */
+  caseId?: Uuid | null;
+  /** @deprecated Compatibility only; browser state now uses routeKey. */
+  onCaseIdChange?: (caseId: Uuid) => void;
 }
 
 export function CurrentCaseSelector({
+  routeKey,
+  onRouteKeyChange,
   caseId,
   onCaseIdChange,
 }: CurrentCaseSelectorProps) {
@@ -23,7 +29,8 @@ export function CurrentCaseSelector({
     queryFn: () => fetchTaxPlanCycleQueue(authenticatedFetch),
   });
   const cases = queueQuery.data ?? [];
-  const selectorTone = caseId === null ? "opacity-80" : "opacity-100";
+  const selectedValue = routeKey ?? caseId ?? "";
+  const selectorTone = selectedValue.length === 0 ? "opacity-80" : "opacity-100";
 
   return (
     <label className="relative block w-full min-w-0 pt-2 min-[1031px]:w-[22rem]">
@@ -33,14 +40,18 @@ export function CurrentCaseSelector({
       <select
         className={`min-h-10 w-full min-w-0 truncate rounded-[10px] border border-[var(--pulse-border)] bg-[var(--pulse-surface)] text-sm font-semibold normal-case text-[var(--pulse-ink)] shadow-sm outline-none transition focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--pulse-accent-light)] disabled:cursor-not-allowed disabled:opacity-50 ${selectorTone}`}
         style={{ padding: "18px 2px 10px 5px" }}
-        value={caseId ?? ""}
+        value={selectedValue}
         aria-label="Tax plan"
         disabled={queueQuery.isPending}
         onChange={(event) => {
-          const selectedCaseId = event.target.value;
-
-          if (isUuid(selectedCaseId)) {
-            onCaseIdChange(selectedCaseId);
+          const selectedValue = event.target.value;
+          const selectedPlan = cases.find(
+            (plan) => plan.routeKey === selectedValue || plan.caseId === selectedValue,
+          );
+          if (selectedPlan?.routeKey && onRouteKeyChange) {
+            onRouteKeyChange(selectedPlan.routeKey);
+          } else if (selectedPlan && onCaseIdChange) {
+            onCaseIdChange(selectedPlan.caseId as Uuid);
           }
         }}
       >
@@ -48,7 +59,7 @@ export function CurrentCaseSelector({
           {queueQuery.isPending ? "Loading tax plans..." : "Select a tax plan"}
         </option>
         {cases.map((row) => (
-          <option key={row.caseId} value={row.caseId}>
+          <option key={row.caseId} value={row.routeKey ?? row.caseId}>
             {formatTaxPlanLabel({
               cycleLabel: row.cycleLabel,
               clientName: row.clientName,

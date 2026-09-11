@@ -275,6 +275,9 @@ export const taxPlanCycle = pgTable(
     id: uuid("id").default(sql`uuidv7()`).notNull(),
     clientId: uuid("client_id").notNull(),
     tenantId: uuid("tenant_id").notNull(),
+    routeKey: varchar("route_key", { length: 24 })
+      .default(sql`translate(encode(uuid_send(uuidv7()), 'base64'), '+/=', '-_')`)
+      .notNull(),
     planningPeriod: text("planning_period").notNull(),
     stage: text("stage").notNull(),
     owner: text("owner").notNull(),
@@ -295,6 +298,7 @@ export const taxPlanCycle = pgTable(
     }),
     check("tax_plan_cycle_stage_check", sql`${table.stage} IN (${stageValuesSql})`),
     index("tax_plan_cycle_tenant_id_due_date_idx").on(table.tenantId, table.dueDate),
+    uniqueIndex("tax_plan_cycle_route_key_key").on(table.routeKey),
   ],
 );
 

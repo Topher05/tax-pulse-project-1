@@ -6,6 +6,7 @@ export type PlanCycleQueueMetric = {
 
 export type PlanCycleQueueRow = {
   caseId: string;
+  routeKey?: string;
   client: string;
   clientId?: string;
   clientName?: string;

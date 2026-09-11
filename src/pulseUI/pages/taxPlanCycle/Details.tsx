@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 
 import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
@@ -18,13 +18,16 @@ import {
   fetchTaxPlanCycleAuditEntries,
   fetchTaxPlanCycleComments,
   fetchTaxPlanCycleDetails,
+  resolveTaxPlanCycleRouteKey,
   postTaxPlanCycleComment,
   taxPlanCycleAuditEntriesQueryKey,
   taxPlanCycleCommentsQueryKey,
   taxPlanCycleDetailsQueryKey,
   taxPlanCycleQueueQueryKey,
+  taxPlanCycleRouteKeyQueryKey,
 } from "../../entities/taxPlanCycleQueries.ts";
 import { caseApiPatchJson, CaseApiError } from "../../shared/caseApi.ts";
+import { isRouteKey, isUuid } from "../../shared/planToolCase.ts";
 
 import styles from "./Details.module.css";
 import { caseStages, detailTabs, type DetailStage, type DetailTab } from "./detailViewState.ts";
@@ -70,7 +73,8 @@ function parseProblemPayload(body: string): { header?: string; message?: string 
 }
 
 export function DetailsPage() {
-  const { id: caseId = "" } = useParams({ from: "/_workspace/cycles/$id" });
+  const { id: routeReference = "" } = useParams({ from: "/_workspace/cycles/$id" });
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
   const [commentDraft, setCommentDraft] = useState("");
   const [isAdvancingStage, setIsAdvancingStage] = useState(false);
@@ -78,6 +82,14 @@ export function DetailsPage() {
   const [holdReasonDraft, setHoldReasonDraft] = useState("");
   const [isUpdatingHold, setIsUpdatingHold] = useState(false);
   const authenticatedFetch = useAuthenticatedFetch();
+  const routeKeyQuery = useQuery({
+    queryKey: taxPlanCycleRouteKeyQueryKey(routeReference),
+    queryFn: () => resolveTaxPlanCycleRouteKey(routeReference, authenticatedFetch),
+    enabled: isRouteKey(routeReference),
+  });
+  const caseId = isRouteKey(routeReference)
+    ? (routeKeyQuery.data?.caseId ?? "")
+    : routeReference;
   const queryClient = useQueryClient();
   const { showNotification } = useNotificationToast();
   const { registerFabAnchor, setAssistantCaseContext } = useAssistantPanel();
@@ -92,13 +104,22 @@ export function DetailsPage() {
     setHoldReasonDraft("");
     setIsAdvancingStage(false);
     setIsUpdatingHold(false);
-  }, [caseId]);
+  }, [routeReference]);
 
   const detailsQuery = useQuery({
     queryKey: taxPlanCycleDetailsQueryKey(caseId),
     queryFn: () => fetchTaxPlanCycleDetails(caseId, authenticatedFetch),
     enabled: caseId.length > 0,
   });
+
+  useEffect(() => {
+    if (!isUuid(routeReference) || !detailsQuery.data?.routeKey) return;
+    void navigate({
+      to: "/cycles/$id",
+      params: { id: detailsQuery.data.routeKey },
+      replace: true,
+    });
+  }, [detailsQuery.data?.routeKey, navigate, routeReference]);
 
   useEffect(() => {
     if (detailsQuery.data === undefined) return;
@@ -160,7 +181,7 @@ export function DetailsPage() {
     },
   });
 
-  if (detailsQuery.isPending) {
+  if ((isRouteKey(routeReference) && routeKeyQuery.isPending) || detailsQuery.isPending) {
     return (
       <PanelCard title="Loading case details" description="Fetching the case record and associated workflow state.">
         <p className={styles.stateCopy}>Loading case details...</p>
@@ -168,11 +189,17 @@ export function DetailsPage() {
     );
   }
 
-  if (detailsQuery.isError) {
+  if (routeKeyQuery.isError || detailsQuery.isError) {
     return (
       <EmptyState
         title="Case details could not load"
-        description={detailsQuery.error instanceof Error ? detailsQuery.error.message : "Case details request failed."}
+        description={
+          routeKeyQuery.error instanceof Error
+            ? routeKeyQuery.error.message
+            : detailsQuery.error instanceof Error
+              ? detailsQuery.error.message
+              : "Case details request failed."
+        }
       />
     );
   }
