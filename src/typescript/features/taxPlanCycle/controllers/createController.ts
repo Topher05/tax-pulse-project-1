@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ProblemHttpError } from "../../../errors.js";
+import { ProblemHttpError } from "../../../platform/http/errors.js";
 import type {
   TaxPlanCycle,
   TaxPlanCycleCreateInput,

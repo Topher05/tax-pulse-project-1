@@ -1,4 +1,4 @@
-import type { AuditEntryWriter } from "../../../auditEntryRepository.js";
+import type { AuditEntryWriter } from "../../../features/audit/persistence/auditEntryRepository.js";
 import {
   createTaxPlanCycleTransitionController,
 } from "../../../features/taxPlanCycle/controllers/transitionController.js";

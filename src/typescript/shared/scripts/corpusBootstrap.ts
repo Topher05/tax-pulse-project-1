@@ -5,8 +5,8 @@ import { Client } from "pg";
 import {
   createOpenAIEmbeddingProvider,
   rebuildCorpusEmbeddings,
-} from "../../assist/embeddings.js";
-import { readCorpusChunkArtifact } from "../../assist/corpus.js";
+} from "../../features/assist/embeddings.js";
+import { readCorpusChunkArtifact } from "../../features/assist/corpus.js";
 
 loadEnv({ override: true });
 

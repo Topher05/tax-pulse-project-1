@@ -26,13 +26,13 @@ export {
   type AggregationDataSource,
   type TaxPulseAggregationClientOptions,
 } from "./features/deductions/infrastructure/aggregationClient.js";
-export { createApp, type CreateAppOptions } from "./app.js";
+export { createApp, type CreateAppOptions } from "./app/createApp.js";
 export {
   ProblemHttpError,
   problemDetailsMiddleware,
   type ProblemDetails,
   type ProblemHttpErrorOptions,
-} from "./errors.js";
+} from "./platform/http/errors.js";
 export {
   createLogger,
   createRequestLogger,
@@ -46,7 +46,7 @@ export {
   type HashPasswordOptions,
   type PasswordHashingConfig,
   type PasswordHashingConfigOverrides,
-} from "./passwordHashing.js";
+} from "./features/auth/infrastructure/passwordHashing.js";
 export {
   type InvalidPasswordCredentialResult,
   type MfaChallengeRequiredResult,
@@ -59,17 +59,17 @@ export {
   type PasswordCredentialStore,
   type PasswordCredentialWriter,
   type StoredPasswordCredential,
-} from "./authModel.js";
+} from "./features/auth/domain/authModel.js";
 export {
   authenticatePasswordForMfaChallenge,
   registerPasswordCredential,
-} from "./authService.js";
-export { createPasswordCredentialStore } from "./authCredentials.js";
+} from "./features/auth/application/authService.js";
+export { createPasswordCredentialStore } from "./features/auth/persistence/authCredentials.js";
 export {
   createTenantLoginResolver,
   type TenantLoginResolution,
   type TenantLoginResolver,
-} from "./tenantLoginResolver.js";
+} from "./features/auth/persistence/tenantLoginResolver.js";
 export {
   auditEntryOutputSchema,
   redactAuditText,
@@ -77,17 +77,17 @@ export {
   serializeAuditEntryForOutput,
   type AuditEntryOutput,
   type StoredAuditEntry,
-} from "./auditEntryOutput.js";
+} from "./features/audit/domain/auditEntryOutput.js";
 export {
   createAuditEntryRepository,
   type AuditEntryListInput,
   type AuditEntryReader,
-} from "./auditEntryRepository.js";
+} from "./features/audit/persistence/auditEntryRepository.js";
 export {
   createAuditEntryWriter,
   type AuditEntryWriteInput,
   type AuditEntryWriter,
-} from "./auditEntryRepository.js";
+} from "./features/audit/persistence/auditEntryRepository.js";
 export {
   createDeductionRepository,
   createDeductionsRouter,
@@ -103,24 +103,24 @@ export {
   type AuthMfaLoginRequest,
   type AuthMfaLoginResult,
   type CreateAuthMfaLoginControllerOptions,
-} from "./authMfaLogin.js";
+} from "./features/auth/application/authMfaLogin.js";
 export {
   createAuthMfaLoginRouter,
   type AuthMfaValidationErrorIssue,
   type AuthMfaValidationErrorResponse,
   type CreateAuthMfaLoginRouterOptions,
-} from "./authMfaLoginRoutes.js";
+} from "./features/auth/http/authMfaLoginRoutes.js";
 export {
   authSessionTokenResponseSchema,
   createAuthSessionRouter,
   type CreateAuthSessionRouterOptions,
-} from "./authSessionRoutes.js";
+} from "./features/auth/http/authSessionRoutes.js";
 export {
   clearRefreshTokenCookie,
   getRefreshTokenFromCookie,
   refreshTokenCookieName,
   setRefreshTokenCookie,
-} from "./authSessionCookies.js";
+} from "./features/auth/http/authSessionCookies.js";
 export {
   createAuthRouter,
   mfaChallengeResponseSchema,
@@ -131,7 +131,7 @@ export {
   type MfaChallengeResponse,
   type PasswordAuthenticator,
   type PasswordLoginRequest,
-} from "./authRoutes.js";
+} from "./features/auth/http/authRoutes.js";
 export {
   RegistrationEmailConflictError,
   registrationAccountResponseSchema,
@@ -141,13 +141,13 @@ export {
   type RegistrationAccountResponse,
   type RegistrationAccountStore,
   type RegistrationRequest,
-} from "./authRegistration.js";
+} from "./features/auth/domain/authRegistration.js";
 export {
   createRegistrationService,
   type CreateRegistrationServiceOptions,
   type RegistrationService,
-} from "./authRegistrationService.js";
-export { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
+} from "./features/auth/application/authRegistrationService.js";
+export { createRegistrationAccountRepository } from "./features/auth/persistence/authRegistrationRepository.js";
 export {
   forgotPasswordRequestSchema,
   InvalidResetTokenError,
@@ -162,41 +162,41 @@ export {
   type ResetPasswordRequest,
   type ResetPasswordResult,
   type ResetTokenNotifier,
-} from "./passwordReset.js";
+} from "./features/auth/domain/passwordReset.js";
 export {
   createPasswordResetService,
   type CreatePasswordResetServiceOptions,
   type PasswordResetService,
-} from "./passwordResetService.js";
-export { createPasswordResetRepository } from "./passwordResetRepository.js";
+} from "./features/auth/application/passwordResetService.js";
+export { createPasswordResetRepository } from "./features/auth/persistence/passwordResetRepository.js";
 export {
   createPasswordResetSesClient,
   createSesPasswordResetNotifier,
   getPasswordResetNotifierConfigFromEnv,
   type PasswordResetNotifierConfig,
   type SesV2Client,
-} from "./passwordResetNotifier.js";
+} from "./features/auth/infrastructure/passwordResetNotifier.js";
 export {
   createPasswordResetRouter,
   type CreatePasswordResetRouterOptions,
   type PasswordResetValidationErrorResponse,
-} from "./passwordResetRoutes.js";
+} from "./features/auth/http/passwordResetRoutes.js";
 export {
   coreCaseOpenApiSchemaRegistrations,
   createCoreCaseOpenApiDocument,
   type CoreCaseOpenApiSchemaRegistration,
-} from "./coreCaseOpenApi.js";
-export { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
+} from "./app/openapi/coreCaseOpenApi.js";
+export { createCoreCaseOpenApiRouter } from "./app/openapi/coreCaseOpenApiRoutes.js";
 export {
   createJwksRouter,
   type CreateJwksRouterOptions,
-} from "./jwksRoutes.js";
+} from "./features/auth/http/jwksRoutes.js";
 export {
   getJwtJwksVerifierConfigFromEnv,
   getJwtRs256IssuerConfigFromEnv,
   type JwtJwksVerifierConfig,
   type JwtRs256IssuerConfig,
-} from "./jwtRs256Config.js";
+} from "./features/auth/infrastructure/jwtRs256Config.js";
 export {
   clientRoster,
   auditEntry,
@@ -297,7 +297,7 @@ export {
   type BracketReferenceLookupResult,
   type BracketReferenceRepository,
   type TaxBracketReference,
-} from "./bracketReferenceRepository.js";
+} from "./features/taxReference/persistence/bracketReferenceRepository.js";
 export {
   createTaxPlanCycleCommentRepository,
   createScenarioRepository,
@@ -408,7 +408,7 @@ export {
   type ScenarioComputedResult,
   type ScenarioTypedFigures,
   type ScenarioComparisonSummary,
-} from "./scenario.js";
+} from "./features/taxPlanCycle/domain/scenario.js";
 export {
   createTaxEngineClient,
   TaxEngineHttpError,
@@ -462,13 +462,13 @@ export {
   getJwtConfigFromEnv,
   getTenantLoginBaseDomainFromEnv,
   type JwtConfig,
-} from "./authConfig.js";
+} from "./features/auth/infrastructure/authConfig.js";
 export {
   createJwtAuthenticationMiddleware,
   hydrateUserClaims,
   type CreateJwtAuthenticationMiddlewareOptions,
   type CreateHydrateUserClaimsOptions,
-} from "./jwtAuthentication.js";
+} from "./features/auth/http/jwtAuthentication.js";
 export {
   TAXPULSE_COST_UNITS_HEADER,
   createCostAccountingMiddleware,
@@ -476,30 +476,30 @@ export {
   type CostAccountingRequest,
   type CostUnitResolver,
   type CreateCostAccountingMiddlewareOptions,
-} from "./costAccounting.js";
+} from "./platform/http/costAccounting.js";
 export {
   createTenantRateLimitMiddleware,
   type CreateTenantRateLimitMiddlewareOptions,
   type TenantRateLimitBucket,
   type TenantRateLimitStore,
-} from "./tenantRateLimiting.js";
+} from "./platform/http/tenantRateLimiting.js";
 export {
   type AccessTokenClaims,
   type AuthenticatedPrincipal,
   type IssuedTokenPair,
   type UserRole,
-} from "./authTypes.js";
+} from "./features/auth/domain/authTypes.js";
 export {
   createRefreshTokenRepository,
   type PersistRefreshTokenInput,
   type RefreshTokenRepository,
   type RevokeRefreshTokenByHashInput,
-} from "./refreshTokenRepository.js";
+} from "./features/auth/persistence/refreshTokenRepository.js";
 export {
   createTokenService,
   type CreateTokenServiceOptions,
   type TokenService,
-} from "./tokenService.js";
+} from "./features/auth/application/tokenService.js";
 export {
   createDefaultMfaTotpProvider,
   createMfaEnrollmentController,
@@ -517,8 +517,8 @@ export {
   type MfaEnrollResult,
   type MfaTenantUser,
   type MfaTotpProvider,
-} from "./mfaEnrollment.js";
-export { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
+} from "./features/auth/application/mfaEnrollment.js";
+export { createMfaEnrollmentRepository } from "./features/auth/persistence/mfaEnrollmentRepository.js";
 
 export {
   isLegalTaxPlanCycleStageTransition,
@@ -674,14 +674,14 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { createClient } from "redis";
 
-import { createApp } from "./app.js";
-import { createCoreCaseOpenApiRouter } from "./coreCaseOpenApiRoutes.js";
+import { createApp } from "./app/createApp.js";
+import { createCoreCaseOpenApiRouter } from "./app/openapi/coreCaseOpenApiRoutes.js";
 import { createLogger } from "./shared/cloud-logger/logger.js";
-import { createJwksRouter } from "./jwksRoutes.js";
-import { createJwtAuthenticationMiddleware, hydrateUserClaims } from "./jwtAuthentication.js";
-import { createCostAccountingMiddleware } from "./costAccounting.js";
-import { createTenantRateLimitMiddleware } from "./tenantRateLimiting.js";
-import { createMfaEnrollmentRouter } from "./mfaEnrollmentRoutes.js";
+import { createJwksRouter } from "./features/auth/http/jwksRoutes.js";
+import { createJwtAuthenticationMiddleware, hydrateUserClaims } from "./features/auth/http/jwtAuthentication.js";
+import { createCostAccountingMiddleware } from "./platform/http/costAccounting.js";
+import { createTenantRateLimitMiddleware } from "./platform/http/tenantRateLimiting.js";
+import { createMfaEnrollmentRouter } from "./features/auth/http/mfaEnrollmentRoutes.js";
 import {
   createNoopTaxPlanCycleQueueCacheInvalidator,
   createRedisTaxPlanCycleCreateIdempotencyStore,
@@ -709,39 +709,39 @@ import {
 import {
   getJwtConfigFromEnv,
   getTenantLoginBaseDomainFromEnv,
-} from "./authConfig.js";
-import { getJwtRs256IssuerConfigFromEnv } from "./jwtRs256Config.js";
-import { createAuthRouter } from "./authRoutes.js";
-import { createAuthMfaLoginRouter } from "./authMfaLoginRoutes.js";
-import { createAuthSessionRouter } from "./authSessionRoutes.js";
-import { createPasswordCredentialStore } from "./authCredentials.js";
-import { createTenantLoginResolver } from "./tenantLoginResolver.js";
+} from "./features/auth/infrastructure/authConfig.js";
+import { getJwtRs256IssuerConfigFromEnv } from "./features/auth/infrastructure/jwtRs256Config.js";
+import { createAuthRouter } from "./features/auth/http/authRoutes.js";
+import { createAuthMfaLoginRouter } from "./features/auth/http/authMfaLoginRoutes.js";
+import { createAuthSessionRouter } from "./features/auth/http/authSessionRoutes.js";
+import { createPasswordCredentialStore } from "./features/auth/persistence/authCredentials.js";
+import { createTenantLoginResolver } from "./features/auth/persistence/tenantLoginResolver.js";
 import {
   createDeductionRepository,
   createDeductionsRouter,
 } from "./features/deductions/index.js";
-import { createRegistrationAccountRepository } from "./authRegistrationRepository.js";
-import { createRegistrationService } from "./authRegistrationService.js";
-import { createPasswordResetRepository } from "./passwordResetRepository.js";
-import { createPasswordResetService } from "./passwordResetService.js";
-import { createPasswordResetRouter } from "./passwordResetRoutes.js";
+import { createRegistrationAccountRepository } from "./features/auth/persistence/authRegistrationRepository.js";
+import { createRegistrationService } from "./features/auth/application/authRegistrationService.js";
+import { createPasswordResetRepository } from "./features/auth/persistence/passwordResetRepository.js";
+import { createPasswordResetService } from "./features/auth/application/passwordResetService.js";
+import { createPasswordResetRouter } from "./features/auth/http/passwordResetRoutes.js";
 import {
   createPasswordResetSesClient,
   createSesPasswordResetNotifier,
   getPasswordResetNotifierConfigFromEnv,
-} from "./passwordResetNotifier.js";
+} from "./features/auth/infrastructure/passwordResetNotifier.js";
 import {
   createAuditEntryRepository,
   createAuditEntryWriter,
-} from "./auditEntryRepository.js";
+} from "./features/audit/persistence/auditEntryRepository.js";
 import {
   createAuthMfaLoginController,
-} from "./authMfaLogin.js";
-import { authenticatePasswordForMfaChallenge } from "./authService.js";
-import { createMfaEnrollmentController } from "./mfaEnrollment.js";
-import { createMfaEnrollmentRepository } from "./mfaEnrollmentRepository.js";
-import { createRefreshTokenRepository } from "./refreshTokenRepository.js";
-import { createTokenService } from "./tokenService.js";
+} from "./features/auth/application/authMfaLogin.js";
+import { authenticatePasswordForMfaChallenge } from "./features/auth/application/authService.js";
+import { createMfaEnrollmentController } from "./features/auth/application/mfaEnrollment.js";
+import { createMfaEnrollmentRepository } from "./features/auth/persistence/mfaEnrollmentRepository.js";
+import { createRefreshTokenRepository } from "./features/auth/persistence/refreshTokenRepository.js";
+import { createTokenService } from "./features/auth/application/tokenService.js";
 import {
   createClientRosterRepository,
   createClientRosterRouter,
@@ -759,10 +759,10 @@ import {
   createIncomeEventService,
   createIncomeEventsRouter,
 } from "./features/incomeEvents/index.js";
-import { createOpenAIEmbeddingProvider } from "./assist/embeddings.js";
-import { createOpenAIAssistExplanationProvider } from "./assist/explanation.js";
-import { retrieveHybridCorpusChunks } from "./assist/retrieval.js";
-import { parseAssistTenantCorpusScopeMap } from "./assist/tenantScopes.js";
+import { createOpenAIEmbeddingProvider } from "./features/assist/embeddings.js";
+import { createOpenAIAssistExplanationProvider } from "./features/assist/explanation.js";
+import { retrieveHybridCorpusChunks } from "./features/assist/retrieval.js";
+import { parseAssistTenantCorpusScopeMap } from "./features/assist/tenantScopes.js";
 import { createTaxPlanDetailsAssistantController } from "./features/taxPlanCycle/controllers/assistantController.js";
 
 loadEnv();
@@ -774,7 +774,7 @@ export {
   type CreateMfaEnrollmentRouterOptions,
   type MfaValidationErrorIssue,
   type MfaValidationErrorResponse,
-} from "./mfaEnrollmentRoutes.js";
+} from "./features/auth/http/mfaEnrollmentRoutes.js";
 
 export function createGreeting(runtime: string = "TypeScript"): string {
   return `hello from ${runtime}`;

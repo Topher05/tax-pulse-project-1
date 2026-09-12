@@ -19,12 +19,12 @@ import {
   taxPlanDetailsAssistantRequestSchema,
   type TaxPlanDetailsAssistantController,
 } from "./controllers/assistantController.js";
-import { AssistTenantScopeUnavailableError } from "../../assist/tenantScopes.js";
+import { AssistTenantScopeUnavailableError } from "../assist/tenantScopes.js";
 import type {
   AuditEntryReader,
   AuditEntryWriter,
-} from "../../auditEntryRepository.js";
-import { ProblemHttpError, type ProblemDetails } from "../../errors.js";
+} from "../audit/persistence/auditEntryRepository.js";
+import { ProblemHttpError, type ProblemDetails } from "../../platform/http/errors.js";
 import {
   TaxPlanCycleCommentActorUnavailableError,
   type TaxPlanCycleCommentRepository,
@@ -51,7 +51,7 @@ import type { TaxPlanCycleTransitionController } from "./controllers/transitionC
 import type { ScenarioModelingController } from "./controllers/scenarios.js";
 import { scenarioModelingRequestSchema } from "./scenarioModeling.js";
 import type { ScenarioRepository } from "./repositories/scenarios.js";
-import type { Scenario } from "../../scenario.js";
+import type { Scenario } from "./domain/scenario.js";
 import type { TaxPlanCycleRepository } from "./repositories/repository.js";
 import { TaxPlanCycleOnHoldError } from "./repositories/repository.js";
 import type { ActionItemRepository } from "./repositories/actionItems.js";

@@ -2,7 +2,7 @@ import { asc, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 
-import { serializeAuditEntryForOutput } from "../../auditEntryOutput.js";
+import { serializeAuditEntryForOutput } from "../audit/domain/auditEntryOutput.js";
 import {
   auditEntry as auditEntryTable,
   roles,

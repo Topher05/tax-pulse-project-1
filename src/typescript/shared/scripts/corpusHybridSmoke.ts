@@ -1,9 +1,9 @@
 import { config as loadEnv } from "dotenv";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
-import { retrieveHybridCorpusChunks } from "../../assist/retrieval.js";
-import { createOpenAIEmbeddingProvider } from "../../assist/embeddings.js";
-import { allAssistTenantCorpusScopes } from "../../assist/tenantScopes.js";
+import { retrieveHybridCorpusChunks } from "../../features/assist/retrieval.js";
+import { createOpenAIEmbeddingProvider } from "../../features/assist/embeddings.js";
+import { allAssistTenantCorpusScopes } from "../../features/assist/tenantScopes.js";
 import { assertComposePostgresReady } from "./composePostgres.js";
 
 async function main() {

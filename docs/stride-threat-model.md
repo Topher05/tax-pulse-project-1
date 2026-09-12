@@ -32,7 +32,7 @@ applies this middleware to the versioned tax-plan-cycle routes.
 
 **Implementation references:**
 
-- [`jwtAuthentication.ts`](../src/typescript/jwtAuthentication.ts) verifies JWTs,
+- [`jwtAuthentication.ts`](../src/typescript/features/auth/http/jwtAuthentication.ts) verifies JWTs,
   requires expiration, validates issuer and (for the JWKS configuration) audience,
   and rejects claims without a valid subject, role, or tenant.
 - [`index.ts`](../src/typescript/index.ts) installs JWT authentication and user-claim
@@ -62,11 +62,11 @@ rejected attempts, so the audit record can be compared with the workflow result.
 
 - [`0004_lively_sugar_man.sql`](../src/typescript/shared/database/drizzle-migrations/0004_lively_sugar_man.sql)
   defines the `audit_entry` table and trigger that blocks updates and deletes.
-- [`auditEntryRepository.ts`](../src/typescript/auditEntryRepository.ts) exposes an
+- [`auditEntryRepository.ts`](../src/typescript/features/audit/persistence/auditEntryRepository.ts) exposes an
   insert-only writer and tenant-scoped audit reader.
 - [`routes.ts`](../src/typescript/features/taxPlanCycle/routes.ts) records successful,
   rejected, validation-failed, and error-path transition attempts.
-- [`auditEntry.test.ts`](../tests/typescript/audit/auditEntry.test.ts) provides existing
+- [`auditEntry.test.ts`](../tests/typescript/features/audit/auditEntry.test.ts) provides existing
   integration evidence that the trigger rejects update and delete operations.
 
 **Residual limitation / follow-up:** The trigger blocks normal updates and deletes,
@@ -129,7 +129,7 @@ restricted to the platform-admin role.
 - [`repository.ts`](../src/typescript/features/taxPlanCycle/repositories/repository.ts)
   includes `tenantId` in cycle reads, transitions, and queue queries, including the
   update predicates and joined transition queries.
-- [`auditEntryRepository.ts`](../src/typescript/auditEntryRepository.ts) joins audit
+- [`auditEntryRepository.ts`](../src/typescript/features/audit/persistence/auditEntryRepository.ts) joins audit
   entries to their cycle and requires the requested tenant ID in the read predicate.
 - [`routes.ts`](../src/typescript/features/taxPlanCycle/routes.ts) passes authenticated
   tenant context to repositories, enforces client ownership for portal reads, and
@@ -158,7 +158,7 @@ and time window. Reject requests after the tenant's bucket is exhausted and retu
 
 **Implementation references:**
 
-- [`tenantRateLimiting.ts`](../src/typescript/tenantRateLimiting.ts) implements the
+- [`tenantRateLimiting.ts`](../src/typescript/platform/http/tenantRateLimiting.ts) implements the
   per-tenant window and counter, requires authenticated tenant context, and returns
   HTTP 429 with `Retry-After` when the limit is exceeded.
 - [`index.ts`](../src/typescript/index.ts) installs tenant rate limiting in the
@@ -192,7 +192,7 @@ advisor, firm-admin, and platform-admin principals.
 - [`platformAdministration/routes.ts`](../src/typescript/features/platformAdministration/routes.ts)
   rejects users who are not authenticated platform administrators before handling
   administration or platform audit requests.
-- [`jwtAuthentication.ts`](../src/typescript/jwtAuthentication.ts) accepts only
+- [`jwtAuthentication.ts`](../src/typescript/features/auth/http/jwtAuthentication.ts) accepts only
   recognized user roles when constructing the authenticated principal and hydrates
   the role's configured permissions for downstream authorization.
 

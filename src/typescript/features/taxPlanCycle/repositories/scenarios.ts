@@ -11,9 +11,9 @@ import {
   type Scenario,
   type ScenarioComputedResult,
   type ScenarioTypedFigures,
-} from "../../../scenario.js";
+} from "../domain/scenario.js";
 
-export type { Scenario } from "../../../scenario.js";
+export type { Scenario } from "../domain/scenario.js";
 
 export const maximumScenariosPerCase = 5;
 
