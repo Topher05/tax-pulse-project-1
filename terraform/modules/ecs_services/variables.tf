@@ -106,18 +106,26 @@ variable "login_base_domain" {
 }
 
 variable "password_reset_from_email" {
-  description = "Verified SES sender address used for password-reset messages."
+  description = "Optional verified SES sender address used for password-reset messages."
   type        = string
+  default     = null
 }
 
 variable "password_reset_page_url" {
-  description = "Public HTTPS Pulse UI URL used in password-reset messages."
+  description = "Optional public HTTPS Pulse UI URL used in password-reset messages."
   type        = string
+  default     = null
+
+  validation {
+    condition     = var.password_reset_page_url == null ? true : startswith(var.password_reset_page_url, "https://")
+    error_message = "password_reset_page_url must be null or use HTTPS."
+  }
 }
 
 variable "password_reset_sender_identity_arn" {
-  description = "Verified SES identity ARN allowed for password-reset delivery."
+  description = "Optional verified SES identity ARN allowed for password-reset delivery."
   type        = string
+  default     = null
 }
 
 variable "redis_url" {

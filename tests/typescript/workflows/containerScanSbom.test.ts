@@ -86,6 +86,22 @@ describe("SCRUM-168 container release workflow", () => {
     expect(deployIndex).toBeGreaterThan(renderIndex);
   });
 
+  test("runs the corpus bootstrap task without dangling collector dependencies", () => {
+    const workflow = readFileSync(workflowPath, "utf8");
+    const bootstrapIndex = workflow.indexOf("Bootstrap and verify Assist corpus");
+    const deployIndex = workflow.indexOf("Deploy Core Case service");
+    const bootstrapBlock = workflow.slice(bootstrapIndex, deployIndex);
+
+    expect(bootstrapIndex).toBeGreaterThan(-1);
+    expect(bootstrapIndex).toBeLessThan(deployIndex);
+    expect(bootstrapBlock).toContain('containerDefinitions |= map(select(.name == "core-case-service"))');
+    expect(bootstrapBlock).toContain("del(.dependsOn)");
+    expect(bootstrapBlock).toContain("aws ecs run-task");
+    expect(bootstrapBlock).toContain("aws ecs wait tasks-stopped");
+    expect(bootstrapBlock).toContain("aws ecs describe-tasks");
+    expect(bootstrapBlock).toContain("exit 1");
+  });
+
   test("removes build-only npm tooling from the Core Case runtime image", () => {
     const dockerfile = readFileSync(coreCaseDockerfilePath, "utf8");
     const removeNpmIndex = dockerfile.indexOf("/usr/local/lib/node_modules/npm");

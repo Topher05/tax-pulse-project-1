@@ -109,6 +109,16 @@ describe("password reset contracts", () => {
 });
 
 describe("password reset service", () => {
+  test("silently skips lookup and token creation when delivery is disabled", async () => {
+    const repository = new InMemoryPasswordResetRepository();
+    const findActiveUserByEmail = vi.spyOn(repository, "findActiveUserByEmail");
+    const service = createPasswordResetService({ repository });
+
+    await expect(service.requestReset(tenantId, userEmail)).resolves.toBeUndefined();
+    expect(findActiveUserByEmail).not.toHaveBeenCalled();
+    expect(repository.tokenRecords).toHaveLength(0);
+  });
+
   test("creates a hashed token and notifies the recipient when user exists", async () => {
     const repository = new InMemoryPasswordResetRepository();
     const notify = vi.fn<ResetTokenNotifier["notify"]>(async () => undefined);

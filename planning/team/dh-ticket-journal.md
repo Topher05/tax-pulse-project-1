@@ -5,6 +5,50 @@
 
 Add new ticket entries below using this template.
 
+## dylan-harle-corpus-hotfix - SCRUM-182
+
+**Branch:** `dylan-harle-corpus-hotfix`
+
+**Assignee:** Dylan Harle
+
+**Jira:** [SCRUM-182](https://fedstack-june22-t1.atlassian.net/browse/SCRUM-182)
+
+**Summary:** Restore Tax Plan Cycle RAG corpus provisioning and question-driven retrieval
+
+**Description:** Ensure the tenant-scoped assist corpus is populated before ECS deployment and make submitted assistant questions drive retrieval without changing the existing API contract.
+
+**Acceptance Criteria:**
+
+- The ECS bootstrap task runs successfully before Core Case deployment and verifies exact persisted counts for every corpus scope.
+- The bootstrap task definition has no dangling OpenTelemetry dependency.
+- The release role can run and inspect only the Core Case bootstrap task within the API cluster.
+- Assistant questions drive retrieval while recommendation-only callers retain fallback behavior.
+- Opening the assistant does not issue an automatic generic request.
+
+**Code Connection:**
+
+- Added exact per-scope corpus verification in `src/typescript/shared/scripts/corpusBootstrap.ts`.
+- Added the gated ECS bootstrap task and least-privilege `ecs:RunTask`/`ecs:DescribeTasks` permissions.
+- Added focused workflow and Terraform IAM contract coverage.
+
+**Project Scope Connection:**
+
+- RAG-Powered AI Assist and the [ADR-0035 AI-Assist Corpus Boundary](../../adr/0035-ai-assist-corpus-boundary.md).
+
+**Changed Files:**
+
+- `.github/workflows/container-scan-sbom.yml`
+- `terraform/release_pipeline.tf`
+- `src/typescript/shared/scripts/corpusBootstrap.ts`
+- `tests/typescript/workflows/containerScanSbom.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+
+**Validation Notes:**
+
+- Focused workflow and Terraform contract tests passed.
+- Core TypeScript typecheck passed.
+- The release Trivy finding remains dependent on the CI-provided image scan report and must be cleared before deployment.
+
 ## dylan-harle-jira168 - SCRUM-168
 
 **Branch:** `dylan-harle-jira168`

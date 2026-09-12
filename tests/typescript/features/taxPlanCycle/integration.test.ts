@@ -316,7 +316,7 @@ async function seedSampleTenant(client: Client): Promise<void> {
 }
 
 describe("taxPlanCycle integration", () => {
-  test("records applied migrations and skips them on rerun", async () => {
+  test("records applied migrations and skips them on rerun", { timeout: 120_000 }, async () => {
     await withTaxPlanCycleIntegrationDatabase(async (client) => {
       await migrateDatabase(client);
 

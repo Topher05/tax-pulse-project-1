@@ -179,22 +179,25 @@ variable "login_base_domain" {
 
 variable "password_reset_from_email" {
   type        = string
-  description = "Verified SES sender address used for password-reset messages."
+  description = "Optional verified SES sender address used for password-reset messages."
+  default     = null
 }
 
 variable "password_reset_page_url" {
   type        = string
-  description = "Public HTTPS Pulse UI URL used in password-reset messages."
+  description = "Optional public HTTPS Pulse UI URL used in password-reset messages."
+  default     = null
 
   validation {
-    condition     = startswith(var.password_reset_page_url, "https://")
-    error_message = "password_reset_page_url must use HTTPS."
+    condition     = var.password_reset_page_url == null ? true : startswith(var.password_reset_page_url, "https://")
+    error_message = "password_reset_page_url must be null or use HTTPS."
   }
 }
 
 variable "password_reset_sender_identity_arn" {
   type        = string
-  description = "Verified SES identity ARN the Core Case task may use to send password-reset messages."
+  description = "Optional verified SES identity ARN the Core Case task may use to send password-reset messages."
+  default     = null
 }
 
 variable "redis_url" {
