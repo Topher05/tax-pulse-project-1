@@ -40,3 +40,4 @@ This directory captures durable architecture and domain decisions for TaxPulse.
 - [ADR-0035: AI-Assist Corpus Boundary](./0035-ai-assist-corpus-boundary.md)
 - [ADR-0036: SAST Security Gate on Blacksmith Runners](./0036-sast-security-gate-on-blacksmith-runners.md)
 - [ADR-0038: Cosign-Signed ECS Release Pipeline](./0038-cosign-signed-ecs-release-pipeline.md)
+- [ADR-0039: Feature-Owned Core Case TypeScript Layout](./0039-core-case-feature-owned-layout.md)

@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-import type { AuditEntryWriter } from "../../../auditEntryRepository.js";
-import { ProblemHttpError, type ProblemDetails } from "../../../errors.js";
-import type { AuthenticatedPrincipal, UserRole } from "../../../authTypes.js";
+import type { AuditEntryWriter } from "../../../features/audit/persistence/auditEntryRepository.js";
+import { ProblemHttpError, type ProblemDetails } from "../../../platform/http/errors.js";
+import type { AuthenticatedPrincipal, UserRole } from "../../../features/auth/domain/authTypes.js";
 import { roleNameEnum } from "../../../shared/database/schema.js";
 import type { TaxPlanCycle } from "../../../features/taxPlanCycle/taxPlanCycle.js";
 import type { ActionItemCreatedEventInput } from "../../../features/taxPlanCycle/infrastructure/cloudEvents/actionItemCreated/index.js";

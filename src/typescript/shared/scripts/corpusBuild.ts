@@ -4,7 +4,7 @@ import {
   defaultCorpusChunkArtifactPath,
   defaultCorpusInputDirectory,
   loadCorpusIntakeConfig,
-} from "../../assist/corpus.js";
+} from "../../features/assist/corpus.js";
 
 import { config as loadEnv } from "dotenv";
 import { assertComposePostgresReady } from "./composePostgres.js";

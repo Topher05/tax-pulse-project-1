@@ -1,8 +1,8 @@
 import { Client } from "pg";
 import { createClient } from "redis";
 import { createLogger } from "../../shared/cloud-logger/logger.js";
-import { getJwtConfigFromEnv } from "../../authConfig.js";
-import { createAuditEntryWriter } from "../../auditEntryRepository.js";
+import { getJwtConfigFromEnv } from "../auth/infrastructure/authConfig.js";
+import { createAuditEntryWriter } from "../audit/persistence/auditEntryRepository.js";
 import {
   createNoopTaxPlanCycleQueueCacheInvalidator,
   createTaxPlanCycleQueueCache,

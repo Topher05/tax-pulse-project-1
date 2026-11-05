@@ -2,8 +2,8 @@ import { Router } from "express";
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 
-import { ProblemHttpError } from "../../errors.js";
-import type { UserRole } from "../../authTypes.js";
+import { ProblemHttpError } from "../../platform/http/errors.js";
+import type { UserRole } from "../auth/domain/authTypes.js";
 import {
   platformAuditLogResponseSchema,
   platformPermissionMatrixResponseSchema,

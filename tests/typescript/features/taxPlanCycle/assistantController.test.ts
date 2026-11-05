@@ -7,7 +7,7 @@ import {
   TaxPlanDetailsAssistantUnsafePromptError,
   TaxPlanDetailsAssistantUnsupportedRecommendationError,
 } from "../../../../src/typescript/features/taxPlanCycle/index.js";
-import type { RankedCorpusChunk } from "../../../../src/typescript/assist/retrieval.js";
+import type { RankedCorpusChunk } from "../../../../src/typescript/features/assist/retrieval.js";
 
 function buildRetrievedChunk(overrides: Partial<RankedCorpusChunk> = {}): RankedCorpusChunk {
   return {

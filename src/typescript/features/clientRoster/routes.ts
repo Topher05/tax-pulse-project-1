@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { NextFunction, Request, Response } from "express";
 
-import { ProblemHttpError } from "../../errors.js";
+import { ProblemHttpError } from "../../platform/http/errors.js";
 import { clientRosterListResponseSchema } from "./clientRoster.js";
 import type { ClientRosterRepository } from "./repository.js";
 

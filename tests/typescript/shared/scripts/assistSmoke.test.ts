@@ -3,8 +3,8 @@ import type { AddressInfo } from "node:net";
 
 import { describe, expect, test, vi } from "vitest";
 
-import { loadAssistPromptInjectionFixtures } from "../../../../src/typescript/assist/promptInjectionFixtures.js";
-import type { RankedCorpusChunk } from "../../../../src/typescript/assist/retrieval.js";
+import { loadAssistPromptInjectionFixtures } from "../../../../src/typescript/features/assist/promptInjectionFixtures.js";
+import type { RankedCorpusChunk } from "../../../../src/typescript/features/assist/retrieval.js";
 import {
   createTaxPlanCycleRouter,
   createTaxPlanDetailsAssistantController,

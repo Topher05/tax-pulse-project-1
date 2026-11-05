@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { config as loadEnv } from "dotenv";
 
-import { getJwtRs256IssuerConfigFromEnv } from "../../jwtRs256Config.js";
+import { getJwtRs256IssuerConfigFromEnv } from "../../features/auth/infrastructure/jwtRs256Config.js";
 
 loadEnv({ quiet: true });
 

@@ -1,8 +1,8 @@
-import { ProblemHttpError } from "../../../errors.js";
+import { ProblemHttpError } from "../../../platform/http/errors.js";
 import type { ScenarioComparisonEngineOutput } from "../scenarioModeling.js";
 import type { ScenarioRepository } from "../repositories/scenarios.js";
 import type { TaxEngineClient } from "../infrastructure/engineClient.js";
-import type { ScenarioTypedFigures } from "../../../scenario.js";
+import type { ScenarioTypedFigures } from "../domain/scenario.js";
 import type { TaxPlanCycleReadInput } from "../repositories/repository.js";
 import type { TaxPlanCycleRepository } from "../repositories/repository.js";
 import type { ScenarioModelingScenarioInput } from "../scenarioModeling.js";

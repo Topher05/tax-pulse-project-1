@@ -3,7 +3,7 @@ import {
   defaultCorpusInputDirectory,
   loadCorpusIntakeConfig,
   validateCorpusDirectory,
-} from "../../assist/corpus.js";
+} from "../../features/assist/corpus.js";
 
 import { config as loadEnv } from "dotenv";
 

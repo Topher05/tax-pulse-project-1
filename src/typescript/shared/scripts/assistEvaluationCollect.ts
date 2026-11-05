@@ -10,8 +10,8 @@ import {
   loadEvaluationQuestions,
   loadEvaluationThresholds,
   writeJsonArtifact,
-} from "../../assist/evaluation.js";
-import { createOpenAIEmbeddingProvider } from "../../assist/embeddings.js";
+} from "../../features/assist/evaluation.js";
+import { createOpenAIEmbeddingProvider } from "../../features/assist/embeddings.js";
 import { assertComposePostgresReady } from "./composePostgres.js";
 
 loadEnv();

@@ -3,6 +3,78 @@
 **Owner:** Christopher Martus  
 **Branch prefix:** `christopher-martus-`
 
+## development-hotfix-core-case-layout - HOTFIX (no Jira)
+
+**Branch:** `development`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** Not applicable (hotfix)
+
+**Summary:** Reorganize the Core Case TypeScript service around feature ownership
+
+**Description:** Replace the mixed flat `src/typescript` module layout with explicit
+application, feature, and platform boundaries without changing runtime behavior or deployment
+entry points.
+
+**Acceptance Criteria:**
+
+- The TypeScript source root contains only its executable entry and tool configuration.
+- Authentication, audit, assistance, tax-reference, OpenAPI, HTTP-platform, and scenario code
+  have explicit owners.
+- Relevant tests mirror the application or feature layout.
+- Existing build and runtime commands remain stable.
+- TypeScript compilation and focused structural regression tests pass.
+
+**Code Connection:**
+
+- Moved legacy authentication modules into domain, application, HTTP, persistence, and
+  infrastructure layers under `features/auth`.
+- Moved audit, assistance, tax-reference, OpenAPI, cross-cutting HTTP, and scenario modules
+  into their owning slices and updated all relative imports.
+- Added public feature barrels and a structural test that prevents recreation of flat modules.
+- Recorded the boundary and deferred repository-packaging phase in ADR-0039.
+
+**Project Scope Connection:**
+
+This is a behavior-preserving Core Case Service maintainability hotfix. Tenant isolation,
+role enforcement, stage workflow semantics, audit behavior, database schema, API contracts,
+Pulse UI behavior, Tax Engine behavior, infrastructure, and release entry points are unchanged.
+
+**Changed Files:**
+
+- `src/typescript/app/**`
+- `src/typescript/features/assist/**`
+- `src/typescript/features/audit/**`
+- `src/typescript/features/auth/**`
+- `src/typescript/features/taxPlanCycle/domain/scenario.ts`
+- `src/typescript/features/taxPlanCycle/repositories/scenarios.ts`
+- `src/typescript/features/taxReference/**`
+- `src/typescript/platform/http/**`
+- affected Core Case imports under `src/typescript/**`
+- corresponding application and feature tests under `tests/typescript/**`
+- `tests/typescript/workflows/typescriptStructure.test.ts`
+- `adr/0039-core-case-feature-owned-layout.md`
+- `adr/README.md`
+- `docs/stride-threat-model.md`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed after the source and test migration.
+- `npx vitest run --config vitest.config.ts
+  tests/typescript/workflows/typescriptStructure.test.ts` passed: 3 tests.
+- `npm run build` passed.
+- The focused structure, STRIDE-link, and scenario-contract suites passed: 7 tests across
+  3 test files.
+- `npm test` completed with 119 test files and 559 tests discovered. After correcting one
+  moved STRIDE-document test link, the only remaining failures were 77 existing
+  Docker/Testcontainers-dependent tests because no container runtime is available locally;
+  481 tests passed in that run.
+- `git diff --check` passed with only normal LF/CRLF conversion warnings.
+- Removed the redundant legacy scenario repository and its duplicate test; the existing
+  feature-owned repository remains the single implementation.
+
 Add new ticket entries below using this template.
 
 <!--
