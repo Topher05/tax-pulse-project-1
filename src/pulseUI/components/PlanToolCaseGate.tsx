@@ -13,11 +13,11 @@ export function PlanToolCaseGate({
   return (
     <PanelCard title={null} description={null}>
       <div className={styles.gate} role={hasInvalidCaseId ? "alert" : "status"}>
-        <h2 className={styles.title}>Select a case to load {toolName}</h2>
+        <h2 className={styles.title}>Select a tax plan to load {toolName}</h2>
         <p className={styles.copy}>
           {hasInvalidCaseId
-            ? "The case ID in the URL is not valid. Choose an accessible Tax Plan Cycle from the selector above."
-            : "Choose an accessible Tax Plan Cycle from the selector above before this tool fetches or changes case data."}
+            ? "This tax plan link is not valid. Choose an accessible tax plan from the selector above."
+            : "Choose an accessible tax plan from the selector above before this tool loads or changes plan data."}
         </p>
       </div>
     </PanelCard>

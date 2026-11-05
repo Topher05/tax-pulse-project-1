@@ -12,6 +12,7 @@ import { taxPlanCycleRows } from "../../../typescript/shared/database/seed.model
 import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 
 const seededCaseId = taxPlanCycleRows[1].id;
+const seededRouteKey = taxPlanCycleRows[1].routeKey;
 
 type DeductionApiRow = {
   id: string;
@@ -29,10 +30,13 @@ if (!isUuid(seededCaseId)) {
 }
 
 function buildTaxPlanCycleQueuePayload() {
-  return taxPlanCycleRows.map((row) => ({
+  return taxPlanCycleRows.map((row, index) => ({
     id: row.id,
+    route_key: row.routeKey,
     client_id: row.clientId,
     client_name: "Test Client",
+    planning_period: "2026-Q2",
+    cycle_label: `Test Client · Q2 2026 Tax Plan · Plan ${index + 1}`,
     stage: row.stage,
     owner: row.owner,
     priority: row.priority,
@@ -102,13 +106,13 @@ describe("DeductionsPage", () => {
     renderDeductionsPage("/deductions");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    expect(await screen.findByRole("combobox", { name: "Client case" })).toBeInTheDocument();
+    expect(await screen.findByRole("combobox", { name: "Tax plan" })).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Select a case to load deductions" }),
+      screen.getByRole("heading", { name: "Select a tax plan to load deductions" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Choose an accessible Tax Plan Cycle from the selector above before this tool fetches or changes case data.",
+        "Choose an accessible tax plan from the selector above before this tool loads or changes plan data.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add Deduction" })).not.toBeInTheDocument();
@@ -134,12 +138,12 @@ describe("DeductionsPage", () => {
     const { container } = renderDeductionsPage("/deductions");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    const selector = await screen.findByRole("combobox", { name: "Client case" });
-    await screen.findByRole("option", { name: "Test Client (9d12)" });
+    const selector = await screen.findByRole("combobox", { name: "Tax plan" });
+    await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan · Plan 2" });
 
-    fireEvent.change(selector, { target: { value: seededCaseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
-    expect(selector).toHaveValue(seededCaseId);
+    await waitFor(() => expect(selector).toHaveValue(seededRouteKey));
     expect(container.querySelector('[data-deductions-query-state="loading"]')).not.toBeNull();
     expect(screen.getByRole("status", { name: "Loading deductions" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Deduction" })).toBeEnabled();
@@ -188,10 +192,10 @@ describe("DeductionsPage", () => {
     const { container } = renderDeductionsPage("/deductions");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    const selector = await screen.findByRole("combobox", { name: "Client case" });
-    await screen.findByRole("option", { name: "Test Client (9d12)" });
+    const selector = await screen.findByRole("combobox", { name: "Tax plan" });
+    await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan · Plan 2" });
 
-    fireEvent.change(selector, { target: { value: seededCaseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
     await waitFor(() => {
       expect(container.querySelector('[data-deductions-query-state="empty"]')).not.toBeNull();
@@ -223,12 +227,12 @@ describe("DeductionsPage", () => {
     const { container } = renderDeductionsPage("/deductions");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    const selector = await screen.findByRole("combobox", { name: "Client case" });
-    await screen.findByRole("option", { name: "Test Client (9d12)" });
+    const selector = await screen.findByRole("combobox", { name: "Tax plan" });
+    await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan · Plan 2" });
 
-    fireEvent.change(selector, { target: { value: seededCaseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
-    expect(selector).toHaveValue(seededCaseId);
+    await waitFor(() => expect(selector).toHaveValue(seededRouteKey));
 
     await act(async () => {
       deferred.reject(new Error("deductions endpoint unavailable"));
@@ -271,10 +275,10 @@ describe("DeductionsPage", () => {
     const { container } = renderDeductionsPage("/deductions");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    const selector = await screen.findByRole("combobox", { name: "Client case" });
-    await screen.findByRole("option", { name: "Test Client (9d12)" });
+    const selector = await screen.findByRole("combobox", { name: "Tax plan" });
+    await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan · Plan 2" });
 
-    fireEvent.change(selector, { target: { value: seededCaseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
 
@@ -327,10 +331,10 @@ describe("DeductionsPage", () => {
 
     renderDeductionsPage("/deductions");
 
-    const selector = await screen.findByRole("combobox", { name: "Client case" });
-    await screen.findByRole("option", { name: "Test Client (9d12)" });
+    const selector = await screen.findByRole("combobox", { name: "Tax plan" });
+    await screen.findByRole("option", { name: "Test Client · Q2 2026 Tax Plan · Plan 2" });
 
-    fireEvent.change(selector, { target: { value: seededCaseId } });
+    fireEvent.change(selector, { target: { value: seededRouteKey } });
 
     await screen.findByRole("heading", { name: "No deductions yet" });
     fireEvent.click(screen.getByRole("button", { name: "Add Deduction" }));

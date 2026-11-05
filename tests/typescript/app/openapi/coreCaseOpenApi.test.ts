@@ -369,13 +369,13 @@ describe("Core Case Service OpenAPI document", () => {
     expect(registrationOperation.operationId).toBe("registerUser");
     expect(registrationOperation.tags).toEqual(["Authentication"]);
     expect(requestExample).toMatchObject({
-      tenant_id: expect.any(String),
+      workspace_slug: expect.any(String),
       email: expect.any(String),
       password: expect.any(String),
     });
     expect(createdExample).toMatchObject({
       id: expect.any(String),
-      tenant_id: requestExample.tenant_id,
+      tenant_id: expect.any(String),
       email: requestExample.email,
       role: "Client",
       status: "invited",

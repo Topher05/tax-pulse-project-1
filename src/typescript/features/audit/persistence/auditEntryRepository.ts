@@ -5,6 +5,7 @@ import type { Client } from "pg";
 import {
   auditEntry as auditEntryTable,
   taxPlanCycle as taxPlanCycleTable,
+  users as usersTable,
 } from "../../../shared/database/schema.js";
 import {
   serializeAuditEntryForOutput,
@@ -43,6 +44,7 @@ export function createAuditEntryRepository(client: Client): AuditEntryReader {
           id: auditEntryTable.id,
           caseId: auditEntryTable.caseId,
           actor: auditEntryTable.actor,
+          actorDisplayName: usersTable.displayName,
           action: auditEntryTable.action,
           outcome: auditEntryTable.outcome,
           occurredAt: auditEntryTable.occurredAt,
@@ -51,6 +53,10 @@ export function createAuditEntryRepository(client: Client): AuditEntryReader {
         .innerJoin(
           taxPlanCycleTable,
           eq(taxPlanCycleTable.id, auditEntryTable.caseId),
+        )
+        .leftJoin(
+          usersTable,
+          sql`${usersTable.id}::text = ${auditEntryTable.actor} AND ${usersTable.tenantId} = ${taxPlanCycleTable.tenantId}`,
         )
         .where(
           and(

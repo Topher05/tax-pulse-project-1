@@ -192,6 +192,7 @@ describe("main Tax Plan Cycle composition", () => {
     repository.listQueue.mockResolvedValue([
       {
         id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e91",
+        route_key: "test-main-composition-01",
         client_id: "018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9e11",
         client_name: "Test Client",
         stage: "Modeling",

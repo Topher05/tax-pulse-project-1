@@ -13,7 +13,7 @@ afterEach(() => {
 
 const context = {
   caseId: "case-001",
-  caseTitle: "case-001 - Q2 2026 Tax Plan",
+  caseTitle: "North Shore Family Office · Q2 2026 Tax Plan",
   clientName: "Client 001",
   recommendation: "Convert $40k traditional to Roth",
   stage: "Archived",
@@ -50,7 +50,7 @@ describe("AssistantDrawer", () => {
     );
     expect(screen.getByRole("tooltip", { name: "Start new dialogue" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Open prompt suggestions" })).not.toBeInTheDocument();
-    expect(screen.getByText("case-001 - Q2 2026 Tax Plan")).toBeInTheDocument();
+    expect(screen.getByText("North Shore Family Office · Q2 2026 Tax Plan")).toBeInTheDocument();
     expect(screen.getByText("Advisor 001 | Jun 30, 2026 | Archived")).toBeInTheDocument();
 
     const css = readFileSync("components/assist/AssistantDrawer.module.css", "utf8");
@@ -78,7 +78,7 @@ describe("AssistantDrawer", () => {
   test("toggles fullscreen", () => {
     renderDrawer();
 
-    const drawer = screen.getByRole("dialog", { name: "case-001 - Q2 2026 Tax Plan" });
+    const drawer = screen.getByRole("dialog", { name: "North Shore Family Office · Q2 2026 Tax Plan" });
     fireEvent.click(screen.getByRole("button", { name: "Expand to fullscreen" }));
     expect(drawer.className).toContain("fullscreen");
     expect(screen.getByRole("button", { name: "Collapse to drawer" })).toHaveAttribute(
@@ -90,7 +90,7 @@ describe("AssistantDrawer", () => {
   test("resets fullscreen mode when the drawer closes", () => {
     const { rerender } = renderDrawer();
 
-    const drawer = screen.getByRole("dialog", { name: "case-001 - Q2 2026 Tax Plan" });
+    const drawer = screen.getByRole("dialog", { name: "North Shore Family Office · Q2 2026 Tax Plan" });
     fireEvent.click(screen.getByRole("button", { name: "Expand to fullscreen" }));
     expect(drawer.className).toContain("fullscreen");
 
@@ -122,7 +122,7 @@ describe("AssistantDrawer", () => {
       </NotificationToastProvider>,
     );
 
-    expect(screen.getByRole("dialog", { name: "case-001 - Q2 2026 Tax Plan" }).className).not.toContain(
+    expect(screen.getByRole("dialog", { name: "North Shore Family Office · Q2 2026 Tax Plan" }).className).not.toContain(
       "fullscreen",
     );
   });
@@ -131,7 +131,7 @@ describe("AssistantDrawer", () => {
     const onClose = vi.fn();
     renderDrawer({ onClose });
 
-    const drawer = screen.getByRole("dialog", { name: "case-001 - Q2 2026 Tax Plan" });
+    const drawer = screen.getByRole("dialog", { name: "North Shore Family Office · Q2 2026 Tax Plan" });
     fireEvent.keyDown(drawer, { key: "Tab" });
     expect(screen.getByRole("button", { name: "Expand to fullscreen" })).toHaveFocus();
 
@@ -232,7 +232,8 @@ describe("AssistantDrawer", () => {
     expect(screen.getByText("Advisor prompt")).toBeInTheDocument();
     expect(screen.getByText("Assistant explanation.")).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Assistant citations" })).toBeInTheDocument();
-    expect(screen.getByText("Synthetic Estimated Payment Rules | SYN-TC-4100-b")).toBeInTheDocument();
+    expect(screen.getByText("Synthetic Estimated Payment Rules")).toBeInTheDocument();
+    expect(screen.queryByText("SYN-TC-4100-b")).not.toBeInTheDocument();
     expect(screen.getAllByText("Assistant unavailable.")).toHaveLength(1);
   });
 

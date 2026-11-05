@@ -81,6 +81,8 @@ function renderQueue() {
   vi.spyOn(queueQueries, "fetchTaxPlanCycleDetails").mockResolvedValue({
     caseId: "TP-24018",
     client: "North Shore Family Office",
+    planningPeriod: "Q2 2026",
+    cycleLabel: "North Shore Family Office · Q2 2026 Tax Plan",
     stage: "Modeling",
     owner: "Maya Reed",
     priority: "High",
@@ -137,7 +139,7 @@ describe("Tax Plan Cycle queue page", () => {
     fireEvent.click(within(table).getAllByRole("button", { name: "Open" })[0]!);
     expect(
       await screen.findByRole("heading", {
-        name: "North Shore Family Office - Q2 2026 Tax Plan",
+        name: "North Shore Family Office · Q2 2026 Tax Plan",
       }),
     ).toBeInTheDocument();
   });

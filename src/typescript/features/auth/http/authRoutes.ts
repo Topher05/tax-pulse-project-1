@@ -229,7 +229,30 @@ export function createAuthRouter(options: CreateAuthRouterOptions = {}): Router 
         }
 
         try {
-          const account = await registrationService.register(parsedBody.data);
+          let tenantId = "tenant_id" in parsedBody.data ? parsedBody.data.tenant_id : undefined;
+          if (parsedBody.data.workspace_slug !== undefined) {
+            const tenant = await options.tenantLoginResolver?.findActiveTenantByLoginSlug(
+              parsedBody.data.workspace_slug,
+            );
+            if (!tenant) {
+              next(new ProblemHttpError({
+                type: "https://taxpulse.example/problems/workspace-not-found",
+                title: "Workspace Not Found",
+                status: 404,
+                detail: "No active firm workspace was found with that name.",
+              }));
+              return;
+            }
+            tenantId = tenant.tenantId;
+          }
+          if (!tenantId) {
+            next(new Error("Tenant login resolver is required for workspace registration."));
+            return;
+          }
+          const account = await registrationService.register({
+            ...parsedBody.data,
+            tenant_id: tenantId,
+          });
           res.status(201).json(registrationAccountResponseSchema.parse(account));
         } catch (error) {
           if (error instanceof RegistrationEmailConflictError) {

@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { createPulseRouter } from "../../app/createPulseRouter.ts";
 import { createPulseQueryClient } from "../../app/queryClient.ts";
@@ -10,6 +10,7 @@ import { TestSessionProvider } from "../auth/TestSessionProvider.tsx";
 import * as caseApi from "../../shared/caseApi.ts";
 
 const seededCaseId = taxPlanCycleRows[1].id;
+const seededRouteKey = taxPlanCycleRows[1].routeKey;
 
 beforeAll(() => {
   window.scrollTo = vi.fn();
@@ -23,6 +24,15 @@ afterEach(() => {
 
 
 function renderScenarioPlannerRoute(pathname: string) {
+  vi.spyOn(caseApi, "caseApiGetJson").mockImplementation((path: string) => {
+    if (path === `/v1/tax-plan-cycles/route-keys/${seededRouteKey}`) {
+      return Promise.resolve({ id: seededCaseId, route_key: seededRouteKey } as never);
+    }
+    if (path === "/v1/tax-plan-cycles") {
+      return Promise.resolve([] as never);
+    }
+    throw new Error(`Unexpected scenario request: ${path}`);
+  });
   render(
     <QueryClientProvider client={createPulseQueryClient()}>
       <TestSessionProvider>
@@ -70,7 +80,9 @@ function mockScenarioResults() {
 }
 
 async function submitTwoScenarios() {
-  fireEvent.click(await screen.findByRole("button", { name: "New scenario" }));
+  const launchButton = await screen.findByRole("button", { name: "New scenario" });
+  await waitFor(() => expect(launchButton).toBeEnabled());
+  fireEvent.click(launchButton);
 
   fireEvent.change(screen.getByLabelText("Scenario Name"), {
     target: { value: "Freelance growth" },
@@ -117,24 +129,24 @@ describe("ScenarioPlannerPage", () => {
     renderScenarioPlannerRoute("/scenarios");
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    expect(await screen.findByRole("combobox", { name: "Client case" })).toBeInTheDocument();
+    expect(await screen.findByRole("combobox", { name: "Tax plan" })).toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", { name: "Select a case to load Scenario Planner" }),
+      await screen.findByRole("heading", { name: "Select a tax plan to load Scenario Planner" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New scenario" })).toBeDisabled();
     expect(screen.getByRole("status")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Choose an accessible Tax Plan Cycle from the selector above before this tool fetches or changes case data.",
+        "Choose an accessible tax plan from the selector above before this tool loads or changes plan data.",
       ),
     ).toBeInTheDocument();
   });
 
   test("opens and closes the scenario modal when a caseId is present", async () => {
-    renderScenarioPlannerRoute(`/scenarios?caseId=${seededCaseId}`);
+    renderScenarioPlannerRoute(`/scenarios?plan=${seededRouteKey}`);
 
     expect(await screen.findByText("Signed in as Advisor")).toBeInTheDocument();
-    expect(await screen.findByRole("combobox", { name: "Client case" })).toBeInTheDocument();
+    expect(await screen.findByRole("combobox", { name: "Tax plan" })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "New scenario" })).toBeEnabled();
     expect(await screen.findByText("Scenario workspace")).toBeInTheDocument();
 
@@ -148,7 +160,7 @@ describe("ScenarioPlannerPage", () => {
   test("submits scenario figures and renders tax impact results in a table", async () => {
     const postSpy = mockScenarioResults();
 
-    renderScenarioPlannerRoute(`/scenarios?caseId=${seededCaseId}`);
+    renderScenarioPlannerRoute(`/scenarios?plan=${seededRouteKey}`);
 
     expect(await screen.findByRole("table", { name: "Scenario results" })).toBeInTheDocument();
     expect(screen.getByText("Current baseline")).toBeInTheDocument();
@@ -207,7 +219,7 @@ describe("ScenarioPlannerPage", () => {
       }),
     );
 
-    renderScenarioPlannerRoute(`/scenarios?caseId=${seededCaseId}`);
+    renderScenarioPlannerRoute(`/scenarios?plan=${seededRouteKey}`);
 
     await submitTwoScenarios();
 

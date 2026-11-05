@@ -16,6 +16,11 @@ import {
 } from "../../entities/taxPlanDetailsAssistant.ts";
 import { AssitantLoader } from "./AssitantLoader.tsx";
 import type { AssistantCaseContext, AssistantMessage } from "./assistantPanel.tsx";
+import {
+  displayDocumentTitle,
+  displaySectionPath,
+  removeTechnicalIdentifiers,
+} from "../../shared/displayLabels.ts";
 import { Tooltip } from "./Tooltips.tsx";
 import styles from "./AssistantDrawer.module.css";
 
@@ -256,15 +261,17 @@ export function AssistantDrawer({
                     ].join(" ")}
                   >
                     <p className={styles.messageTitle}>{message.title}</p>
-                    <p className={styles.messageBody}>{message.body}</p>
+                    <p className={styles.messageBody}>
+                      {message.role === "user" ? message.body : removeTechnicalIdentifiers(message.body)}
+                    </p>
                     {message.role === "assistant" && message.citations && message.citations.length > 0 ? (
                       <ul className={styles.citationList} aria-label="Assistant citations">
                         {message.citations.map((citation) => (
                           <li key={`${message.id}-${citation.chunk_id}`} className={styles.citationItem}>
                             <p className={styles.citationTitle}>
-                              {citation.document_title} | {citation.section_id}
+                              {displayDocumentTitle(citation.document_title)}
                             </p>
-                            <p className={styles.citationMeta}>{citation.section_path}</p>
+                            <p className={styles.citationMeta}>{displaySectionPath(citation.section_path)}</p>
                           </li>
                         ))}
                       </ul>

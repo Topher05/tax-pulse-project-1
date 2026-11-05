@@ -27,6 +27,7 @@ export const expectedTaxPlanCycleColumns = [
   "due_date",
   "on_hold",
   "hold_reason",
+  "route_key",
 ] as const;
 
 export const expectedTaxPlanCycleColumnTypes = {
@@ -40,6 +41,7 @@ export const expectedTaxPlanCycleColumnTypes = {
   due_date: "date",
   on_hold: "boolean",
   hold_reason: "text",
+  route_key: "character varying",
 } as const;
 
 export const sampleTenant = {

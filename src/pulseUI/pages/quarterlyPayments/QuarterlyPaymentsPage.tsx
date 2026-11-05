@@ -14,7 +14,7 @@ import {
 } from "../../components/QuarterlyTimelineItem.tsx";
 import { ToolHeader } from "../../components/ToolHeader.tsx";
 import { useQuarterlyEstimatesQuery } from "../../entities/quarterlyEstimateQueries.ts";
-import { usePlanToolCase, useSetPlanToolCaseId } from "../../shared/usePlanToolCase.ts";
+import { usePlanToolCase, useSetPlanToolRouteKey } from "../../shared/usePlanToolCase.ts";
 
 export type { QuarterlyEstimateRecord, QuarterlyEstimateStatus } from "../../components/QuarterlyTimelineItem.tsx";
 
@@ -182,10 +182,10 @@ export function QuarterlyPaymentsScreen({
 }
 
 export function QuarterlyPaymentsPage() {
-  const { caseId, hasInvalidCaseId } = usePlanToolCase();
-  const setCaseId = useSetPlanToolCaseId();
+  const { caseId, routeKey, hasInvalidCaseId } = usePlanToolCase();
+  const setRouteKey = useSetPlanToolRouteKey();
   const quarterlyEstimatesQuery = useQuarterlyEstimatesQuery(caseId);
-  const contextControl = <CurrentCaseSelector caseId={caseId} onCaseIdChange={setCaseId} />;
+  const contextControl = <CurrentCaseSelector routeKey={routeKey} onRouteKeyChange={setRouteKey} />;
   const quarterlyEstimatesQueryState = quarterlyEstimatesQuery.isLoading
     ? "loading"
     : quarterlyEstimatesQuery.isError

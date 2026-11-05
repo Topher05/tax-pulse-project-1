@@ -1,10 +1,21 @@
 import { caseApiGetJson, caseApiPostJson } from "../shared/caseApi.ts";
+import {
+  displayClientName,
+  displayPersonName,
+  formatPlanningPeriod,
+  formatTaxPlanLabel,
+  removeTechnicalIdentifiers,
+} from "../shared/displayLabels.ts";
 import type { PlanCycleQueueRow } from "./taxPlanCycle.ts";
 
 export interface TaxPlanCycleQueueApiRow {
   id: string;
+  route_key: string;
   client_id: string;
   client_name: string;
+  planning_period?: string;
+  cycle_label?: string;
+  owner_display_name?: string;
   stage: string;
   owner: string;
   priority: "low" | "medium" | "high";
@@ -17,7 +28,12 @@ export interface TaxPlanCycleQueueApiRow {
 
 export interface TaxPlanCycleDetailsApiResponse {
   id: string;
+  route_key?: string;
   client_id: string;
+  client_name?: string;
+  planning_period?: string;
+  cycle_label?: string;
+  owner_display_name?: string;
   stage: string;
   owner: string;
   priority: "low" | "medium" | "high";
@@ -33,7 +49,10 @@ export interface TaxPlanCycleDetailsApiResponse {
 
 export interface TaxPlanCycleDetailsView {
   caseId: string;
+  routeKey?: string;
   client: string;
+  planningPeriod?: string;
+  cycleLabel?: string;
   stage: string;
   owner: string;
   priority: string;
@@ -52,6 +71,7 @@ export interface TaxPlanCycleAuditEntryApiRow {
   id: string;
   case_id: string;
   actor: string;
+  actor_display_name?: string;
   action: string;
   outcome: string;
   occurred_at: string;
@@ -116,6 +136,10 @@ const commentDateTimeFormat = new Intl.DateTimeFormat("en-US", {
 
 export const taxPlanCycleQueueQueryKey = ["taxPlanCycle", "queue"] as const;
 
+export function taxPlanCycleRouteKeyQueryKey(routeKey: string) {
+  return ["taxPlanCycle", "routeKey", routeKey] as const;
+}
+
 export function taxPlanCycleDetailsQueryKey(caseId: string) {
   return ["taxPlanCycle", "details", caseId] as const;
 }
@@ -149,10 +173,11 @@ function getInitials(displayName: string): string {
 }
 
 function toCommentView(row: TaxPlanCycleCommentApiRow): TaxPlanCycleCommentView {
+  const author = displayPersonName(row.author_display_name);
   return {
     id: row.id,
-    initials: getInitials(row.author_display_name),
-    author: row.author_display_name,
+    initials: getInitials(author),
+    author,
     when: commentDateTimeFormat.format(new Date(row.created_at)),
     text: row.body,
   };
@@ -161,11 +186,18 @@ function toCommentView(row: TaxPlanCycleCommentApiRow): TaxPlanCycleCommentView 
 function toQueueRow(row: TaxPlanCycleQueueApiRow): PlanCycleQueueRow {
   return {
     caseId: row.id,
-    client: row.client_id,
+    routeKey: row.route_key,
+    client: displayClientName(row.client_name || row.client_id),
     clientId: row.client_id,
     clientName: row.client_name,
+    planningPeriod: formatPlanningPeriod(row.planning_period),
+    cycleLabel: formatTaxPlanLabel({
+      clientName: row.client_name,
+      planningPeriod: row.planning_period,
+      cycleLabel: row.cycle_label,
+    }),
     stage: row.stage,
-    owner: row.owner,
+    owner: displayPersonName(row.owner_display_name ?? row.owner),
     priority: row.priority.charAt(0).toUpperCase() + row.priority.slice(1),
     dueDate: formatDisplayDate(row.due_date),
     updatedDate: formatDisplayDate(row.updated_at.slice(0, 10)),
@@ -177,12 +209,20 @@ function toDetailsView(
   row: TaxPlanCycleDetailsApiResponse,
 ): TaxPlanCycleDetailsView {
   const scenarios = row.scenarios ?? [];
+  const clientName = displayClientName(row.client_name || row.client_id);
 
   return {
     caseId: row.id,
-    client: row.client_id,
+    routeKey: row.route_key,
+    client: clientName,
+    planningPeriod: formatPlanningPeriod(row.planning_period),
+    cycleLabel: formatTaxPlanLabel({
+      clientName,
+      planningPeriod: row.planning_period,
+      cycleLabel: row.cycle_label,
+    }),
     stage: row.stage,
-    owner: row.owner,
+    owner: displayPersonName(row.owner_display_name ?? row.owner),
     priority: row.priority.charAt(0).toUpperCase() + row.priority.slice(1),
     dueDate: formatDisplayDate(row.due_date),
     scenarioCount: scenarios.length,
@@ -203,9 +243,9 @@ function toDetailsView(
 function toAuditEntryView(row: TaxPlanCycleAuditEntryApiRow): TaxPlanCycleAuditEntryView {
   return {
     id: row.id,
-    actor: row.actor,
-    action: row.action,
-    outcome: row.outcome,
+    actor: displayPersonName(row.actor_display_name ?? row.actor),
+    action: removeTechnicalIdentifiers(row.action),
+    outcome: removeTechnicalIdentifiers(row.outcome),
     occurredAt: formatAuditDateTime(row.occurred_at),
   };
 }
@@ -231,6 +271,17 @@ export async function fetchTaxPlanCycleDetails(
   );
 
   return toDetailsView(payload);
+}
+
+export async function resolveTaxPlanCycleRouteKey(
+  routeKey: string,
+  fetcher?: typeof fetch,
+): Promise<{ caseId: string; routeKey: string }> {
+  const payload = await caseApiGetJson<{ id: string; route_key: string }>(
+    `/v1/tax-plan-cycles/route-keys/${encodeURIComponent(routeKey)}`,
+    fetcher,
+  );
+  return { caseId: payload.id, routeKey: payload.route_key };
 }
 
 export async function fetchTaxPlanCycleAuditEntries(

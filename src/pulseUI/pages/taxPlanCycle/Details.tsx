@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 
 import { useAuthenticatedFetch } from "../../auth/authenticatedFetch.ts";
@@ -18,13 +18,16 @@ import {
   fetchTaxPlanCycleAuditEntries,
   fetchTaxPlanCycleComments,
   fetchTaxPlanCycleDetails,
+  resolveTaxPlanCycleRouteKey,
   postTaxPlanCycleComment,
   taxPlanCycleAuditEntriesQueryKey,
   taxPlanCycleCommentsQueryKey,
   taxPlanCycleDetailsQueryKey,
   taxPlanCycleQueueQueryKey,
+  taxPlanCycleRouteKeyQueryKey,
 } from "../../entities/taxPlanCycleQueries.ts";
 import { caseApiPatchJson, CaseApiError } from "../../shared/caseApi.ts";
+import { isRouteKey, isUuid } from "../../shared/planToolCase.ts";
 
 import styles from "./Details.module.css";
 import { caseStages, detailTabs, type DetailStage, type DetailTab } from "./detailViewState.ts";
@@ -70,7 +73,8 @@ function parseProblemPayload(body: string): { header?: string; message?: string 
 }
 
 export function DetailsPage() {
-  const { id: caseId = "" } = useParams({ from: "/_workspace/cycles/$id" });
+  const { id: routeReference = "" } = useParams({ from: "/_workspace/cycles/$id" });
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<DetailTab>("Overview");
   const [commentDraft, setCommentDraft] = useState("");
   const [isAdvancingStage, setIsAdvancingStage] = useState(false);
@@ -78,6 +82,14 @@ export function DetailsPage() {
   const [holdReasonDraft, setHoldReasonDraft] = useState("");
   const [isUpdatingHold, setIsUpdatingHold] = useState(false);
   const authenticatedFetch = useAuthenticatedFetch();
+  const routeKeyQuery = useQuery({
+    queryKey: taxPlanCycleRouteKeyQueryKey(routeReference),
+    queryFn: () => resolveTaxPlanCycleRouteKey(routeReference, authenticatedFetch),
+    enabled: isRouteKey(routeReference),
+  });
+  const caseId = isRouteKey(routeReference)
+    ? (routeKeyQuery.data?.caseId ?? "")
+    : routeReference;
   const queryClient = useQueryClient();
   const { showNotification } = useNotificationToast();
   const { registerFabAnchor, setAssistantCaseContext } = useAssistantPanel();
@@ -92,7 +104,7 @@ export function DetailsPage() {
     setHoldReasonDraft("");
     setIsAdvancingStage(false);
     setIsUpdatingHold(false);
-  }, [caseId]);
+  }, [routeReference]);
 
   const detailsQuery = useQuery({
     queryKey: taxPlanCycleDetailsQueryKey(caseId),
@@ -101,11 +113,20 @@ export function DetailsPage() {
   });
 
   useEffect(() => {
+    if (!isUuid(routeReference) || !detailsQuery.data?.routeKey) return;
+    void navigate({
+      to: "/cycles/$id",
+      params: { id: detailsQuery.data.routeKey },
+      replace: true,
+    });
+  }, [detailsQuery.data?.routeKey, navigate, routeReference]);
+
+  useEffect(() => {
     if (detailsQuery.data === undefined) return;
 
     setAssistantCaseContext({
       caseId: detailsQuery.data.caseId,
-      caseTitle: `${detailsQuery.data.caseId} - Q2 2026 Tax Plan`,
+      caseTitle: detailsQuery.data.cycleLabel ?? "Tax Plan",
       clientName: detailsQuery.data.client,
       recommendation: buildTaxPlanDetailsAssistantRecommendation({
         stage: detailsQuery.data.stage,
@@ -160,7 +181,7 @@ export function DetailsPage() {
     },
   });
 
-  if (detailsQuery.isPending) {
+  if ((isRouteKey(routeReference) && routeKeyQuery.isPending) || detailsQuery.isPending) {
     return (
       <PanelCard title="Loading case details" description="Fetching the case record and associated workflow state.">
         <p className={styles.stateCopy}>Loading case details...</p>
@@ -168,11 +189,17 @@ export function DetailsPage() {
     );
   }
 
-  if (detailsQuery.isError) {
+  if (routeKeyQuery.isError || detailsQuery.isError) {
     return (
       <EmptyState
         title="Case details could not load"
-        description={detailsQuery.error instanceof Error ? detailsQuery.error.message : "Case details request failed."}
+        description={
+          routeKeyQuery.error instanceof Error
+            ? routeKeyQuery.error.message
+            : detailsQuery.error instanceof Error
+              ? detailsQuery.error.message
+              : "Case details request failed."
+        }
       />
     );
   }
@@ -315,7 +342,7 @@ export function DetailsPage() {
             <div className={styles.overviewGrid}>
               <div>
                 <p className={styles.fieldLabel}>Planning Period</p>
-                <p className={styles.fieldValue}>Q2 2026 (April-June)</p>
+                <p className={styles.fieldValue}>{details.planningPeriod}</p>
               </div>
               <div>
                 <p className={styles.fieldLabel}>Recommendation</p>
@@ -438,12 +465,12 @@ export function DetailsPage() {
         <div className={styles.caseHeaderRow}>
           <div className={styles.caseHeadline}>
             <div className={styles.caseMetaRow}>
-              <span className={styles.caseId}>CASE-{details.caseId}</span>
+              <span className={styles.caseId}>{details.cycleLabel}</span>
               <StatusPill tone={priorityTone(details.priority)}>{details.priority}</StatusPill>
             </div>
-            <h2 className={styles.caseTitle}>{details.client} - Q2 2026 Tax Plan</h2>
+            <h2 className={styles.caseTitle}>{details.cycleLabel}</h2>
             <p className={styles.caseSubtitle}>
-              Advisor: {details.owner} · Opened Apr 1, 2026 · {details.onHold ? "On hold" : "Active"}
+              Advisor: {details.owner} · {details.onHold ? "On hold" : "Active"}
             </p>
             {details.onHold ? (
               <p id={holdReasonHelpId} className={styles.holdSupportText}>

@@ -6,6 +6,7 @@ import {
   registrationInitialAccountValues,
   type RegistrationAccountResponse,
   type RegistrationAccountStore,
+  type ResolvedRegistrationRequest,
   type RegistrationRequest,
 } from "../domain/authRegistration.js";
 
@@ -17,7 +18,7 @@ export interface CreateRegistrationServiceOptions {
 }
 
 export interface RegistrationService {
-  register(input: RegistrationRequest): Promise<RegistrationAccountResponse>;
+  register(input: ResolvedRegistrationRequest): Promise<RegistrationAccountResponse>;
 }
 
 function createCredentialId(): string {

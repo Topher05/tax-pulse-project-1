@@ -1,0 +1,1 @@
+ALTER TABLE "tax_plan_cycle" ALTER COLUMN "route_key" SET DEFAULT translate(encode(uuid_send(uuidv7()), 'base64'), '+/=', '-_');

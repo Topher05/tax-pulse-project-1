@@ -4,7 +4,7 @@ import {
   taxpayerIdentifierInputSchema,
   taxpayerIdentifierValidationSchema,
 } from "./taxpayerIdentifierValidation.js";
-
+//1
 export const taxPlanCycleStages = [
   "Intake",
   "Data Aggregation",
@@ -41,6 +41,8 @@ const taxPlanCycleBaseSchema = z.object({
   hold_reason: z.string().min(1).optional(),
 });
 
+export const taxPlanCycleRouteKeySchema = z.string().regex(/^[A-Za-z0-9_-]{22,24}$/);
+
 function requireHoldReasonWhenOnHold<
   T extends { on_hold: boolean; hold_reason?: string },
 >(
@@ -61,7 +63,11 @@ export const taxPlanCycleSchema = taxPlanCycleBaseSchema.superRefine(
 );
 
 export const taxPlanCycleQueueItemSchema = taxPlanCycleSchema.extend({
+  route_key: taxPlanCycleRouteKeySchema,
   client_name: z.string().min(1),
+  planning_period: z.string().min(1).optional(),
+  owner_display_name: z.string().min(1).optional(),
+  cycle_label: z.string().min(1).optional(),
   is_overdue: z.boolean(),
   updated_at: z.iso.datetime(),
 });
@@ -71,6 +77,11 @@ export const taxPlanCycleQueueGetResponseSchema = z.array(
 );
 
 export const taxPlanCycleReadResponseSchema = taxPlanCycleSchema.extend({
+  route_key: taxPlanCycleRouteKeySchema.optional(),
+  client_name: z.string().min(1).optional(),
+  planning_period: z.string().min(1).optional(),
+  owner_display_name: z.string().min(1).optional(),
+  cycle_label: z.string().min(1).optional(),
   scenarios: z.array(scenarioSchema),
   taxpayer_identifier_validation:
     taxpayerIdentifierValidationSchema.optional(),
@@ -89,6 +100,11 @@ export const clientTaxPlanScenarioSchema = z.strictObject({
  * nullable until their source records (meeting schedule and selected recommendation) exist.
  */
 export const clientTaxPlanReadModelSchema = taxPlanCycleSchema.extend({
+  route_key: taxPlanCycleRouteKeySchema.optional(),
+  client_name: z.string().min(1).optional(),
+  planning_period: z.string().min(1).optional(),
+  owner_display_name: z.string().min(1).optional(),
+  cycle_label: z.string().min(1).optional(),
   advisor: z.string().min(1),
   next_meeting: z.iso.datetime().nullable(),
   projected_savings: z.number().nonnegative().nullable(),

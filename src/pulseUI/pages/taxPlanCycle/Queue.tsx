@@ -6,6 +6,7 @@ import type { PlanCycleQueueMetric, PlanCycleQueueRow } from "../../entities/tax
 import { MetricCard } from "../../components/MetricCard.tsx";
 import { PanelCard } from "../../components/PanelCard.tsx";
 import { StatusPill } from "../../components/StatusPill.tsx";
+import { formatTaxPlanLabel } from "../../shared/displayLabels.ts";
 
 interface QueueProps {
   rows: readonly PlanCycleQueueRow[];
@@ -125,7 +126,7 @@ export function Queue({ rows }: QueueProps) {
           <table className={styles.table} aria-label="Tax Plan Cycle Cases">
             <thead>
               <tr>
-                <th>Case ID</th>
+                <th>Tax Plan</th>
                 <th>Client</th>
                 <th>Stage</th>
                 <th>Owner</th>
@@ -139,7 +140,13 @@ export function Queue({ rows }: QueueProps) {
               {rows.map((row) => (
                 <tr className={styles.row} key={row.caseId}>
                   <td className={styles.tableBodyCell}>
-                    <span className={styles.caseId}>{row.caseId}</span>
+                    <span className={styles.caseId}>
+                      {formatTaxPlanLabel({
+                        clientName: row.clientName ?? row.client,
+                        planningPeriod: row.planningPeriod,
+                        cycleLabel: row.cycleLabel,
+                      })}
+                    </span>
                   </td>
                   <td className={styles.tableBodyCell}>{row.client}</td>
                   <td className={styles.tableBodyCell}>{row.stage}</td>
@@ -162,7 +169,7 @@ export function Queue({ rows }: QueueProps) {
                       onClick={() => {
                         navigate({
                           to: "/cycles/$id",
-                          params: { id: row.caseId },
+                          params: { id: row.routeKey ?? row.caseId },
                         });
                       }}
                     >

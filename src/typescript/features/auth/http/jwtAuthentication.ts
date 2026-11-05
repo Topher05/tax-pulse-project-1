@@ -112,7 +112,7 @@ export function createJwtAuthenticationMiddleware({
         requiredClaims: ["exp"],
       });
     }
-
+//1
     const jwks = createRemoteJWKSet(
       new URL(config.jwksUrl ?? new URL("/.well-known/jwks.json", config.issuer)),
     );
@@ -131,7 +131,7 @@ export function createJwtAuthenticationMiddleware({
       next(authenticationRequired());
       return;
     }
-
+//2
     try {
       const { payload } = await verifyToken(token);
       const principal = toAuthenticatedPrincipal(payload);

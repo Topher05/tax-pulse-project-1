@@ -64,7 +64,7 @@ export function useDeductionsQuery(caseId: Uuid | null) {
     queryKey: deductionsQueryKey(caseId ?? "unselected"),
     queryFn: () => {
       if (caseId === null) {
-        throw new Error("A valid case ID is required before fetching deductions.");
+        throw new Error("Choose a valid tax plan before fetching deductions.");
       }
 
       return fetchDeductions(caseId, authenticatedFetch);
@@ -80,7 +80,7 @@ export function useCreateDeductionMutation(caseId: Uuid | null) {
   return useMutation({
     mutationFn: (input: DeductionCreatePayload) => {
       if (caseId === null) {
-        throw new Error("A valid case ID is required before creating deductions.");
+        throw new Error("Choose a valid tax plan before creating deductions.");
       }
 
       return createDeduction(caseId, input, authenticatedFetch);

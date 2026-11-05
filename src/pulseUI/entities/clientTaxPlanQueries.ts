@@ -2,10 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useAuthenticatedFetch } from "../auth/authenticatedFetch.ts";
 import { caseApiGetJson } from "../shared/caseApi.ts";
+import { displayPersonName } from "../shared/displayLabels.ts";
 
 export interface ClientTaxPlanCycle {
   id: string;
   client_id: string;
+  client_name?: string;
+  planning_period?: string;
+  owner_display_name?: string;
+  cycle_label?: string;
   stage: string;
   owner: string;
   priority: "low" | "medium" | "high";
@@ -32,7 +37,11 @@ export const clientTaxPlanRefreshIntervalMs = 15_000;
 export async function fetchClientTaxPlan(
   fetcher?: typeof fetch,
 ): Promise<ClientTaxPlanCycle> {
-  return await caseApiGetJson<ClientTaxPlanCycle>("/v1/portal/my-tax-plan", fetcher);
+  const taxPlan = await caseApiGetJson<ClientTaxPlanCycle>("/v1/portal/my-tax-plan", fetcher);
+  return {
+    ...taxPlan,
+    advisor: displayPersonName(taxPlan.advisor),
+  };
 }
 
 export function useClientTaxPlanQuery() {

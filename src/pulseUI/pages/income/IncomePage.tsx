@@ -11,7 +11,7 @@ import {
   useCreateIncomeEventMutation,
   useIncomeEventsQuery,
 } from "../../entities/incomeQueries.ts";
-import { usePlanToolCase, useSetPlanToolCaseId } from "../../shared/usePlanToolCase.ts";
+import { usePlanToolCase, useSetPlanToolRouteKey } from "../../shared/usePlanToolCase.ts";
 import { IncomeEntryForm } from "./IncomeEntryForm.tsx";
 import type { IncomeCreatePayload } from "./incomeEntrySchema.ts";
 import styles from "./IncomePage.module.css";
@@ -271,9 +271,9 @@ export function IncomeScreen({
 }
 
 export function IncomePage() {
-  const { caseId, hasInvalidCaseId } = usePlanToolCase();
-  const setCaseId = useSetPlanToolCaseId();
-  const contextControl = <CurrentCaseSelector caseId={caseId} onCaseIdChange={setCaseId} />;
+  const { caseId, routeKey, hasInvalidCaseId } = usePlanToolCase();
+  const setRouteKey = useSetPlanToolRouteKey();
+  const contextControl = <CurrentCaseSelector routeKey={routeKey} onRouteKeyChange={setRouteKey} />;
   const incomeEventsQuery = useIncomeEventsQuery(caseId);
   const createIncomeEventMutation = useCreateIncomeEventMutation(caseId);
 

@@ -20,6 +20,7 @@ export const auditEntryOutputSchema = z.object({
   id: z.uuid(),
   case_id: z.uuid(),
   actor: z.string(),
+  actor_display_name: z.string().min(1).optional(),
   action: z.string(),
   outcome: z.string(),
   occurred_at: z.string(),
@@ -31,6 +32,7 @@ export interface StoredAuditEntry {
   id: string;
   caseId: string;
   actor: string;
+  actorDisplayName?: string | null;
   action: string;
   outcome: string;
   occurredAt: Date;
@@ -88,6 +90,7 @@ export function serializeAuditEntryForOutput(entry: StoredAuditEntry): AuditEntr
     id: entry.id,
     case_id: entry.caseId,
     actor: entry.actor,
+    ...(entry.actorDisplayName ? { actor_display_name: entry.actorDisplayName } : {}),
     action: redactAuditText(entry.action),
     outcome: redactAuditText(entry.outcome),
     occurred_at: entry.occurredAt.toISOString(),

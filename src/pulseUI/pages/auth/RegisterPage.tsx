@@ -3,8 +3,6 @@ import { Link, useNavigate } from "@tanstack/react-router";
 
 import { AuthRequestError, registerAccount } from "../../auth/authClient.ts";
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function getRegistrationError(error: unknown): string {
   if (error instanceof AuthRequestError && error.status === 409) {
     return "An account with this email is already registered for this workspace.";
@@ -34,17 +32,12 @@ export function RegisterPage() {
             event.preventDefault();
             const form = event.currentTarget;
             const formData = new FormData(form);
-            const tenantId = String(formData.get("tenant_id") ?? "").trim();
+            const workspaceSlug = String(formData.get("workspace_slug") ?? "").trim().toLowerCase();
             const email = String(formData.get("email") ?? "").trim().toLowerCase();
             const password = String(formData.get("password") ?? "");
             const confirmPassword = String(formData.get("confirm_password") ?? "");
 
             setError(null);
-
-            if (!uuidPattern.test(tenantId)) {
-              setError("Enter a valid workspace ID.");
-              return;
-            }
 
             if (password !== confirmPassword) {
               setError("Passwords must match.");
@@ -52,7 +45,7 @@ export function RegisterPage() {
             }
 
             setIsSubmitting(true);
-            void registerAccount({ tenantId, email, password })
+            void registerAccount({ workspaceSlug, email, password })
               .then(async (account) => {
                 await navigate({
                   to: "/register/mfa",
@@ -74,11 +67,11 @@ export function RegisterPage() {
           }}
         >
           <label>
-            Workspace ID
+            Firm workspace
             <input
               autoComplete="organization"
-              name="tenant_id"
-              placeholder="018d6c1a-3f9b-7c28-8d1a-0f4a3b8c9d01"
+              name="workspace_slug"
+              placeholder="summit-ridge-tax"
               required
               type="text"
             />
