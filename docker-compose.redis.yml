@@ -1,0 +1,32 @@
+name: taxpulse-redis-stack
+
+services:
+  taxpulse-redis:
+    container_name: taxpulse-redis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  taxpulse-redisinsight:
+    container_name: taxpulse-redisinsight
+    image: redis/redisinsight:latest
+    depends_on:
+      taxpulse-redis:
+        condition: service_healthy
+    environment:
+      RI_ACCEPT_TERMS_AND_CONDITIONS: "true"
+      RI_APP_HOST: 0.0.0.0
+      RI_APP_PORT: "5540"
+      RI_DATABASE_MANAGEMENT: "true"
+      RI_REDIS_ALIAS0: taxpulse-redis
+      RI_REDIS_HOST0: taxpulse-redis
+      RI_REDIS_PORT0: "6379"
+    ports:
+      - "5540:5540"
+    restart: unless-stopped

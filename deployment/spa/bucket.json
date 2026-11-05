@@ -1,0 +1,27 @@
+{
+  "bucketName": "SCRUM-164_SPA_BUCKET_NAME",
+  "region": "us-east-1",
+  "purpose": "Private S3 origin for the TaxPulse SPA build artifacts.",
+  "publicAccessBlock": {
+    "BlockPublicAcls": true,
+    "IgnorePublicAcls": true,
+    "BlockPublicPolicy": true,
+    "RestrictPublicBuckets": true
+  },
+  "ownershipControls": {
+    "ObjectOwnership": "BucketOwnerEnforced"
+  },
+  "serverSideEncryption": {
+    "SSEAlgorithm": "AES256"
+  },
+  "tags": [
+    {
+      "Key": "user",
+      "Value": "martins-okorie"
+    },
+    {
+      "Key": "env",
+      "Value": "production-contract"
+    }
+  ]
+}

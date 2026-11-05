@@ -1,0 +1,1 @@
+ALTER TABLE "outbox_event" ADD COLUMN "sent_at" timestamp with time zone;

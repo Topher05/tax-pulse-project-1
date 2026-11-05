@@ -2,10 +2,12 @@ import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 
 import type { RequestHandler } from "express";
+import { exportPKCS8, generateKeyPair } from "jose";
 
 import {
   createApp,
   createAuthMfaLoginController,
+  createAuthRouter,
   createLogger,
   createTokenService,
   type AuthMfaLoginResult,
@@ -13,10 +15,13 @@ import {
   type JwtConfig,
   type MfaEnrollmentRepository,
   type PasswordAuthenticator,
+  type TenantLoginResolver,
   type UserRole,
 } from "../../../src/typescript/index.js";
 
 const silentLogger = createLogger({ level: "silent" });
+const bootstrapTenantLoginHostname = "bootstrap-tenant.taxpulse.example";
+const bootstrapTenantLoginSlug = "bootstrap-tenant";
 
 interface BootstrapPrincipal extends AuthenticatedPrincipal {
   email: string;
@@ -28,6 +33,11 @@ interface BootstrapPrincipal extends AuthenticatedPrincipal {
 interface BootstrapOptions {
   config: JwtConfig;
   principal: BootstrapPrincipal;
+  rs256IssuerConfig?: {
+    issuer: string;
+    signingKeyId: string;
+    signingPrivateKeyPem: string;
+  };
 }
 
 interface BootstrapLoginChallenge {
@@ -44,6 +54,9 @@ function createNoopRefreshTokenRepository() {
     },
     async revokeByTokenHash(): Promise<boolean> {
       return false;
+    },
+    async findActivePrincipalByTokenHash() {
+      return null;
     },
   };
 }
@@ -112,8 +125,18 @@ async function withBootstrapAuthServer(
   options: BootstrapOptions,
   run: (baseUrl: string) => Promise<void>,
 ): Promise<void> {
+  const generatedKeyPair = options.rs256IssuerConfig
+    ? null
+    : await generateKeyPair("RS256", { extractable: true });
   const tokenService = createTokenService({
     config: options.config,
+    rs256IssuerConfig:
+      options.rs256IssuerConfig ??
+      {
+        issuer: options.config.issuer,
+        signingKeyId: "bootstrap-test-rs256-key",
+        signingPrivateKeyPem: await exportPKCS8(generatedKeyPair!.privateKey),
+      },
     refreshTokenRepository: createNoopRefreshTokenRepository(),
   });
   const controller = createAuthMfaLoginController({
@@ -129,38 +152,18 @@ async function withBootstrapAuthServer(
     },
   });
   const authenticatePassword = createBootstrapAuthenticator(options.principal);
+  const tenantLoginResolver: TenantLoginResolver = {
+    async findActiveTenantByLoginSlug(loginSlug) {
+      return loginSlug === bootstrapTenantLoginSlug
+        ? { tenantId: options.principal.tenantId, loginSlug }
+        : null;
+    },
+  };
 
   const app = createApp({
     logger: silentLogger,
     registerRoutes: (expressApp) => {
-      expressApp.post("/auth/login", async (req, res, next) => {
-        try {
-          const result = await authenticatePassword({
-            tenantId: String(req.body?.tenant_id ?? ""),
-            email: String(req.body?.email ?? ""),
-            plaintextPassword: String(req.body?.password ?? ""),
-          });
-
-          if (result.status === "invalid_credentials") {
-            res.status(401).json({
-              type: "https://taxpulse.example/problems/invalid-credentials",
-              title: "Invalid Credentials",
-              status: 401,
-              detail: "The email or password is invalid.",
-            });
-            return;
-          }
-
-          res.status(202).json({
-            status: result.status,
-            tenant_id: result.tenantId,
-            email: result.email,
-            user_id: result.userId,
-          });
-        } catch (error) {
-          next(error);
-        }
-      });
+      expressApp.use(createAuthRouter({ authenticatePassword, tenantLoginResolver }));
       expressApp.post("/auth/login/mfa", async (req, res, next) => {
         try {
           const result = await controller.verify({
@@ -176,6 +179,7 @@ async function withBootstrapAuthServer(
       });
     },
   });
+  app.set("trust proxy", true);
 
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -198,9 +202,11 @@ export async function obtainAccessTokenViaLoginAndMfa(
   await withBootstrapAuthServer(options, async (baseUrl) => {
     const loginResponse = await fetch(`${baseUrl}/auth/login`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-host": bootstrapTenantLoginHostname,
+      },
       body: JSON.stringify({
-        tenant_id: options.principal.tenantId,
         email: options.principal.email,
         password: options.principal.password,
       }),

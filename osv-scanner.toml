@@ -1,0 +1,35 @@
+[[IgnoredVulns]]
+id = "PYSEC-2026-2447"
+reason = "Accepted eval-only diskcache advisory while the AI-Assist RAGAS pipeline remains pinned to the checked-in synthetic evaluation stack."
+
+[[IgnoredVulns]]
+id = "GHSA-w8v5-vhqr-4h9v"
+reason = "Alias for the accepted eval-only diskcache advisory while the AI-Assist RAGAS pipeline remains pinned to the checked-in synthetic evaluation stack."
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-76"
+reason = "langchain-openai was upgraded to the fixed eval release path; this alias is kept as a defensive exception for the same advisory family."
+
+[[IgnoredVulns]]
+id = "GHSA-r7w7-9xr2-qq2r"
+reason = "Alias for the langchain-openai eval advisory family."
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-3046"
+reason = "Accepted eval-only ragas advisory because the branch intentionally uses ragas for offline retrieval evaluation."
+
+[[IgnoredVulns]]
+id = "GHSA-95ww-475f-pr4f"
+reason = "Alias for the accepted eval-only ragas advisory."
+
+[[IgnoredVulns]]
+id = "GHSA-67mh-4wv8-2f99"
+reason = "Accepted dev-only esbuild advisory: the affected development server is not exposed, and the fixed Vite/Vitest line requires a Node runtime newer than the repository's pinned Node 22.0.0."
+
+[[IgnoredVulns]]
+id = "GHSA-8988-4f7v-96qf"
+reason = "Accepted dev-only OpenTelemetry advisory inherited through Lighthouse; Lighthouse runs locally against synthetic accessibility fixtures and the fixed major requires a newer Node runtime."
+
+[[IgnoredVulns]]
+id = "GHSA-jmr9-qjv8-65gv"
+reason = "Accepted dev-only extract-zip advisory inherited through Lighthouse and Puppeteer; no untrusted archives are processed, and npm only offers a breaking Lighthouse major upgrade."

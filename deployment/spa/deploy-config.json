@@ -1,0 +1,15 @@
+{
+  "buildCommand": "npm run build:web",
+  "buildDirectory": "dist/pulseUI",
+  "bucketName": "SCRUM-164_SPA_BUCKET_NAME",
+  "cloudFrontDistributionId": "SCRUM-164_CLOUDFRONT_DISTRIBUTION_ID",
+  "sync": {
+    "deleteRemovedFiles": true,
+    "immutableAssetCacheControl": "public,max-age=31536000,immutable",
+    "indexCacheControl": "no-cache,max-age=0,must-revalidate"
+  },
+  "invalidation": {
+    "paths": ["/*"],
+    "reason": "Ensure changed SPA assets and client-side routes are visible after deploy."
+  }
+}

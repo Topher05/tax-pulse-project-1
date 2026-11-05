@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: TaxPulse SCRUM-160 Lambda + API Gateway integration.
+
+Parameters:
+  JwtAudience:
+    Type: String
+    Default: taxpulse-http-api
+    Description: Audience required on TaxPulse serverless access tokens.
+  JwtPublicJwk:
+    Type: String
+    Description: Public RSA JWK JSON for the Core Case Service signing key, including its kid.
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 30
+    MemorySize: 512
+    Architectures:
+      - arm64
+
+Resources:
+  IssuerMetadataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist
+      Handler: issuer-metadata-lambda/index.handler
+      Description: Serves public OIDC discovery and JWKS metadata for the shared JWT issuer.
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          JWT_PUBLIC_JWK: !Ref JwtPublicJwk
+
+  IssuerMetadataFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      AuthType: NONE
+      TargetFunctionArn: !GetAtt IssuerMetadataFunction.Arn
+
+  IssuerMetadataFunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunctionUrl
+      FunctionName: !Ref IssuerMetadataFunction
+      FunctionUrlAuthType: NONE
+      Principal: "*"
+
+  IssuerMetadataFunctionInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref IssuerMetadataFunction
+      InvokedViaFunctionUrl: true
+      Principal: "*"
+
+  TaxPulseHttpApiAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-taxpulse-http-api"
+      RetentionInDays: 30
+
+  TaxPulseHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: Prod
+      AccessLogSettings:
+        DestinationArn: !GetAtt TaxPulseHttpApiAccessLogs.Arn
+        Format: >-
+          {"request_id":"$context.requestId","route_key":"$context.routeKey","status":"$context.status","response_latency":"$context.responseLatency","authorizer_error":"$context.authorizer.error","error_message":"$context.error.message"}
+      Auth:
+        Authorizers:
+          SharedJwt:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !GetAtt IssuerMetadataFunctionUrl.FunctionUrl
+              audience:
+                - !Ref JwtAudience
+        DefaultAuthorizer: SharedJwt
+
+  PresentToClientFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist
+      Handler: present-to-client-lambda/index.presentToClientHandler
+      Description: Transition a Tax Plan Cycle from Review to Client Approval.
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        PresentToClientApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TaxPulseHttpApi
+            Path: /v1/tax-plan-cycles/{caseId}/present-to-client
+            Method: post
+            PayloadFormatVersion: "2.0"
+
+  ExecuteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist
+      Handler: execute-lambda/index.handler
+      Description: Transition a Tax Plan Cycle from Client Approval to Executed.
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        ExecuteApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TaxPulseHttpApi
+            Path: /v1/tax-plan-cycles/{caseId}/execute
+            Method: post
+            PayloadFormatVersion: "2.0"
+
+Outputs:
+  PresentToClientFunctionArn:
+    Value: !GetAtt PresentToClientFunction.Arn
+  ExecuteFunctionArn:
+    Value: !GetAtt ExecuteFunction.Arn
+  TaxPulseHttpApiUrl:
+    Description: Base URL for the protected TaxPulse HTTP API.
+    Value: !Sub "https://${TaxPulseHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod"
+  JwtIssuerUrl:
+    Description: Configure the Core Case Service JWT_ISSUER to this public issuer URL.
+    Value: !GetAtt IssuerMetadataFunctionUrl.FunctionUrl

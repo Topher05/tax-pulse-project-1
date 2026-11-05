@@ -1,0 +1,220 @@
+{
+  "consumer": {
+    "name": "CoreCaseService"
+  },
+  "interactions": [
+    {
+      "description": "a scenario comparison request from the Core service",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "the tax calculation engine can compare three scenarios"
+        }
+      ],
+      "request": {
+        "body": {
+          "content": {
+            "baseline": {
+              "deductions": 12000,
+              "filing_status": "single",
+              "income": 100000,
+              "state": "CA"
+            },
+            "scenarios": [
+              {
+                "name": "Increase deductions",
+                "typed_figures": {
+                  "deductions": 20000,
+                  "filing_status": "single",
+                  "income": 100000,
+                  "state": "CA"
+                }
+              },
+              {
+                "name": "Keep baseline",
+                "typed_figures": {
+                  "deductions": 12000,
+                  "filing_status": "single",
+                  "income": 100000,
+                  "state": "CA"
+                }
+              },
+              {
+                "name": "Increase income",
+                "typed_figures": {
+                  "deductions": 12000,
+                  "filing_status": "single",
+                  "income": 110000,
+                  "state": "CA"
+                }
+              }
+            ]
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "authorization": [
+            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTAwMSIsInJvbGUiOiJBZHZpc29yIiwidGVuYW50X2lkIjoidGVuYW50LTAwMSIsImlzcyI6Imh0dHBzOi8vYXV0aC50YXhwdWxzZS5leGFtcGxlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjQxMDI0NDQ4MDB9.Rdhyyb0DSSVTPzV9nV-kw9W-6U_Fr8-YSrAnt3PmgCo"
+          ],
+          "traceparent": [
+            "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+          ],
+          "x-amzn-trace-id": [
+            "Root=1-67891233-abcdef012345678912345678;Parent=53995c3f42cd8ad8;Sampled=1"
+          ],
+          "x-request-id": [
+            "req-scenario-001"
+          ],
+          "x-taxpulse-tenant-id": [
+            "tenant-001"
+          ]
+        },
+        "method": "POST",
+        "path": "/scenarios/comparisons"
+      },
+      "response": {
+        "body": {
+          "content": [
+            {
+              "delta_vs_baseline": "-2504.00",
+              "name": "Increase deductions",
+              "total_tax": "16190.64"
+            },
+            {
+              "delta_vs_baseline": "0.00",
+              "name": "Keep baseline",
+              "total_tax": "18694.64"
+            },
+            {
+              "delta_vs_baseline": "3130.00",
+              "name": "Increase income",
+              "total_tax": "21824.64"
+            }
+          ],
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "a tax calculation request from the Core service",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "the tax calculation engine can calculate a single filing"
+        }
+      ],
+      "request": {
+        "body": {
+          "content": {
+            "deductions": 12000,
+            "filing_status": "single",
+            "income": 100000,
+            "state": "CA",
+            "withholding": 24500
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "authorization": [
+            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTAwMSIsInJvbGUiOiJBZHZpc29yIiwidGVuYW50X2lkIjoidGVuYW50LTAwMSIsImlzcyI6Imh0dHBzOi8vYXV0aC50YXhwdWxzZS5leGFtcGxlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjQxMDI0NDQ4MDB9.Rdhyyb0DSSVTPzV9nV-kw9W-6U_Fr8-YSrAnt3PmgCo"
+          ],
+          "traceparent": [
+            "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+          ],
+          "x-amzn-trace-id": [
+            "Root=1-67891233-abcdef012345678912345678;Parent=53995c3f42cd8ad8;Sampled=1"
+          ],
+          "x-request-id": [
+            "req-calculation-001"
+          ],
+          "x-taxpulse-tenant-id": [
+            "tenant-001"
+          ]
+        },
+        "method": "POST",
+        "path": "/tax-calculations"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "currency": "USD",
+            "deductions": "12000",
+            "effective_rate": "0.2124",
+            "federal_liability": "14072.00",
+            "filing_status": "single",
+            "income": "100000",
+            "marginal_rate": "0.3130",
+            "state": "CA",
+            "state_liability": "4622.64",
+            "taxable_income": "88000",
+            "total_liability": "18694.64"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "17.0.1"
+    },
+    "pactRust": {
+      "ffi": "0.5.4",
+      "models": "1.3.11"
+    },
+    "pactSpecification": {
+      "version": "4.0"
+    }
+  },
+  "provider": {
+    "name": "TaxCalculationEngine"
+  }
+}

@@ -1,0 +1,164 @@
+name: Build, Test & Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - development
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python-quality:
+    name: Python Quality
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13.14"
+
+      - name: Set up uv
+        # v9.0.0; setup-uv uses immutable release tags and does not publish a v9 tag.
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          version: "0.12.6"
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --locked --extra dev --extra eval
+
+      - name: Check RAGAS imports
+        run: uv run --no-sync python -c "from ragas.llms import llm_factory; from ragas.metrics.collections import ContextRelevance, Faithfulness"
+
+      - name: Check Python formatting
+        run: uv run --no-sync ruff format --check src tests
+
+      - name: Run Python lint
+        run: uv run --no-sync ruff check src tests
+
+      - name: Run Pyright
+        run: uv run --no-sync pyright
+
+      - name: Run Pytest
+        run: uv run --no-sync pytest
+
+  core-typescript:
+    name: Core TypeScript
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22.0.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck:core
+
+      - name: Run tests
+        run: npm run test:vitest
+
+      - name: Build
+        run: npm run build
+
+  pulse-ui:
+    name: Pulse UI
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22.0.0
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            src/pulseUI/package-lock.json
+
+      - name: Install root dependencies required by shared TypeScript test fixtures
+        run: npm ci
+
+      - name: Install locked Pulse UI dependencies
+        working-directory: src/pulseUI
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: src/pulseUI
+        run: npm run typecheck
+
+      - name: Run unit and component tests
+        working-directory: src/pulseUI
+        run: npm run test:vitest
+
+      - name: Run accessibility tests
+        working-directory: src/pulseUI
+        run: npm run test:ax
+
+      - name: Build production UI
+        working-directory: src/pulseUI
+        run: npm run build
+
+  container-validation:
+    name: Container Validation
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Build Core Case Service image
+        run: docker build --file Dockerfile --tag taxpulse-core-case:ci .
+
+      - name: Build Tax Engine image
+        run: docker build --file Dockerfile.tax-engine --tag taxpulse-tax-engine:ci .
+
+  required-gate:
+    name: Required Gate
+    if: ${{ always() }}
+    needs:
+      - python-quality
+      - core-typescript
+      - pulse-ui
+      - container-validation
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 5
+
+    steps:
+      - name: Require all CI jobs to pass
+        env:
+          PYTHON_RESULT: ${{ needs.python-quality.result }}
+          CORE_TYPESCRIPT_RESULT: ${{ needs.core-typescript.result }}
+          PULSE_UI_RESULT: ${{ needs.pulse-ui.result }}
+          CONTAINER_RESULT: ${{ needs.container-validation.result }}
+        run: |
+          if [[ "$PYTHON_RESULT" != "success" || \
+                "$CORE_TYPESCRIPT_RESULT" != "success" || \
+                "$PULSE_UI_RESULT" != "success" || \
+                "$CONTAINER_RESULT" != "success" ]]; then
+            echo "CI jobs did not all pass: python=$PYTHON_RESULT core=$CORE_TYPESCRIPT_RESULT ui=$PULSE_UI_RESULT containers=$CONTAINER_RESULT"
+            exit 1
+          fi

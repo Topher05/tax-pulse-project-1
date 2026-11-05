@@ -131,11 +131,31 @@ if (Test-Path -LiteralPath "package.json") {
     Write-Host "No package.json found. Skipping npm ci for this fresh-clone check." -ForegroundColor Yellow
 }
 
+if (Test-Path -LiteralPath "src/pulseUI/package.json") {
+    if (Test-Path -LiteralPath "src/pulseUI/package-lock.json") {
+        Write-Host "Pulse UI package.json and package-lock.json detected. Running npm ci in src/pulseUI..." -ForegroundColor Cyan
+        & npm --prefix src/pulseUI ci | Out-Host
+    } else {
+        Write-Host "Pulse UI package.json detected without package-lock.json. Running npm install in src/pulseUI..." -ForegroundColor Cyan
+        & npm --prefix src/pulseUI install | Out-Host
+    }
+
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Pulse UI npm dependency installation failed."
+    }
+}
+
 Write-Host "Installing Python package with dev dependencies..." -ForegroundColor Cyan
 # This editable install is required before Ruff, Pyright, and pytest can run reliably.
 & py -$PythonMajorMinor -m pip install -e ".[dev]" | Out-Host
 if ($LASTEXITCODE -ne 0) {
     Fail "Python package installation failed."
+}
+
+Write-Host "Verifying the canonical Python package import path..." -ForegroundColor Cyan
+& py -$PythonMajorMinor -c "import tax_liability_engine, tax_liability_engine.api; print(tax_liability_engine.__name__)" | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    Fail "Canonical Python package import check failed."
 }
 
 Write-Host "Verifying Python linting and type-check tools..." -ForegroundColor Cyan
@@ -177,12 +197,12 @@ if (Test-Path -LiteralPath "package.json") {
 }
 
 Write-Host "Running Python checks..." -ForegroundColor Cyan
-& py -$PythonMajorMinor -m ruff format --check src/python tests/python | Out-Host
+& py -$PythonMajorMinor -m ruff format --check src tests | Out-Host
 if ($LASTEXITCODE -ne 0) {
     Fail "Ruff formatting check failed."
 }
 
-& py -$PythonMajorMinor -m ruff check src/python tests/python | Out-Host
+& py -$PythonMajorMinor -m ruff check src tests | Out-Host
 if ($LASTEXITCODE -ne 0) {
     Fail "Ruff lint check failed."
 }

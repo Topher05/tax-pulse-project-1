@@ -1,0 +1,56 @@
+.chart {
+  min-height: 182px;
+  display: grid;
+  align-content: center;
+}
+
+.rows {
+  display: grid;
+  gap: 1.25rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.year {
+  color: var(--pulse-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.amount {
+  color: var(--pulse-ink);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.track {
+  height: 14px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--pulse-surface-muted);
+}
+
+.bar {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.barprior {
+  background: linear-gradient(90deg, var(--pulse-cyan), #67e8f9);
+}
+
+.barcurrent {
+  background: linear-gradient(90deg, var(--pulse-accent), var(--pulse-accent-light));
+}

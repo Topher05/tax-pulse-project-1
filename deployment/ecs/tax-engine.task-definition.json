@@ -1,0 +1,135 @@
+{
+  "family": "taxpulse-tax-engine",
+  "taskRoleArn": "arn:aws:iam::814650854375:role/taxpulse-tax-engine-task-role",
+  "executionRoleArn": "arn:aws:iam::814650854375:role/taxpulse-ecs-task-execution-role",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "tax-engine",
+      "image": "814650854375.dkr.ecr.us-east-1.amazonaws.com/taxpulse/tax-engine:scrum-202-rs256-aud-20260827",
+      "essential": true,
+      "portMappings": [
+        {
+          "name": "tax-engine-http",
+          "containerPort": 8000,
+          "hostPort": 8000,
+          "protocol": "tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "environment": [
+        {
+          "name": "PORT",
+          "value": "8000"
+        },
+        {
+          "name": "JWT_ISSUER",
+          "value": "https://auth.taxpulse.example"
+        },
+        {
+          "name": "JWT_AUDIENCE",
+          "value": "taxpulse-http-api"
+        },
+        {
+          "name": "OTEL_SERVICE_NAME",
+          "value": "tax-engine"
+        },
+        {
+          "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+          "value": "http://127.0.0.1:4318"
+        },
+        {
+          "name": "OTEL_EXPORTER_OTLP_PROTOCOL",
+          "value": "http/protobuf"
+        },
+        {
+          "name": "OTEL_PROPAGATORS",
+          "value": "tracecontext,baggage,xray"
+        },
+        {
+          "name": "OTEL_RESOURCE_ATTRIBUTES",
+          "value": "deployment.environment=dev,service.namespace=taxpulse"
+        },
+        {
+          "name": "OTEL_TRACES_SAMPLER",
+          "value": "parentbased_traceidratio"
+        },
+        {
+          "name": "OTEL_TRACES_SAMPLER_ARG",
+          "value": "1"
+        }
+      ],
+      "dependsOn": [
+        {
+          "containerName": "aws-otel-collector",
+          "condition": "START"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "JWT_SIGNING_SECRET",
+          "valueFrom": "TERRAFORM_RUNTIME_CONFIG_SECRET_ARN:JWT_SIGNING_SECRET::"
+        }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "python -c \"import os, sys, urllib.request; port = os.environ.get('PORT', '8000'); url = f'http://127.0.0.1:{port}/health'; sys.exit(0 if urllib.request.urlopen(url, timeout=2).status == 200 else 1)\""
+        ],
+        "interval": 10,
+        "timeout": 3,
+        "retries": 5,
+        "startPeriod": 20
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "Tax-Engine",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    },
+    {
+      "name": "aws-otel-collector",
+      "image": "public.ecr.aws/aws-observability/aws-otel-collector:v0.30.0",
+      "essential": true,
+      "command": [
+        "--config=/etc/ecs/ecs-default-config.yaml"
+      ],
+      "portMappings": [
+        {
+          "containerPort": 4317,
+          "hostPort": 4317,
+          "protocol": "tcp"
+        },
+        {
+          "containerPort": 4318,
+          "hostPort": 4318,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "AWS_REGION",
+          "value": "us-east-1"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "Tax-Engine",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "otel"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "roles": [
+    {
+      "roleName": "taxpulse-core-case-task-role",
+      "description": "Runtime task role for the Core Case Service application code.",
+      "assumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "ecs-tasks.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "inlinePolicies": [
+        {
+          "policyName": "taxpulse-core-case-runtime-access",
+          "policyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "PublishStageChangedEvents",
+                "Effect": "Allow",
+                "Action": "sns:Publish",
+                "Resource": "arn:aws:sns:us-east-1:814650854375:stage-changed"
+              }
+            ]
+          }
+        }
+      ],
+      "tags": [
+        {
+          "Key": "user",
+          "Value": "chimaobi-okorie"
+        },
+        {
+          "Key": "env",
+          "Value": "sandbox"
+        }
+      ]
+    },
+    {
+      "roleName": "taxpulse-tax-engine-task-role",
+      "description": "Runtime task role for the Tax Engine application code. No app-domain AWS grants are required yet.",
+      "assumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "ecs-tasks.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "inlinePolicies": [],
+      "tags": [
+        {
+          "Key": "user",
+          "Value": "chimaobi-okorie"
+        },
+        {
+          "Key": "env",
+          "Value": "sandbox"
+        }
+      ]
+    }
+  ]
+}

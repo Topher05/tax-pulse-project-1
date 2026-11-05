@@ -1,0 +1,2684 @@
+# Christopher Martus Ticket Journal
+
+**Owner:** Christopher Martus  
+**Branch prefix:** `christopher-martus-`
+
+## development-hotfix-core-case-layout - HOTFIX (no Jira)
+
+**Branch:** `development`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** Not applicable (hotfix)
+
+**Summary:** Reorganize the Core Case TypeScript service around feature ownership
+
+**Description:** Replace the mixed flat `src/typescript` module layout with explicit
+application, feature, and platform boundaries without changing runtime behavior or deployment
+entry points.
+
+**Acceptance Criteria:**
+
+- The TypeScript source root contains only its executable entry and tool configuration.
+- Authentication, audit, assistance, tax-reference, OpenAPI, HTTP-platform, and scenario code
+  have explicit owners.
+- Relevant tests mirror the application or feature layout.
+- Existing build and runtime commands remain stable.
+- TypeScript compilation and focused structural regression tests pass.
+
+**Code Connection:**
+
+- Moved legacy authentication modules into domain, application, HTTP, persistence, and
+  infrastructure layers under `features/auth`.
+- Moved audit, assistance, tax-reference, OpenAPI, cross-cutting HTTP, and scenario modules
+  into their owning slices and updated all relative imports.
+- Added public feature barrels and a structural test that prevents recreation of flat modules.
+- Recorded the boundary and deferred repository-packaging phase in ADR-0039.
+
+**Project Scope Connection:**
+
+This is a behavior-preserving Core Case Service maintainability hotfix. Tenant isolation,
+role enforcement, stage workflow semantics, audit behavior, database schema, API contracts,
+Pulse UI behavior, Tax Engine behavior, infrastructure, and release entry points are unchanged.
+
+**Changed Files:**
+
+- `src/typescript/app/**`
+- `src/typescript/features/assist/**`
+- `src/typescript/features/audit/**`
+- `src/typescript/features/auth/**`
+- `src/typescript/features/taxPlanCycle/domain/scenario.ts`
+- `src/typescript/features/taxPlanCycle/repositories/scenarios.ts`
+- `src/typescript/features/taxReference/**`
+- `src/typescript/platform/http/**`
+- affected Core Case imports under `src/typescript/**`
+- corresponding application and feature tests under `tests/typescript/**`
+- `tests/typescript/workflows/typescriptStructure.test.ts`
+- `adr/0039-core-case-feature-owned-layout.md`
+- `adr/README.md`
+- `docs/stride-threat-model.md`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed after the source and test migration.
+- `npx vitest run --config vitest.config.ts
+  tests/typescript/workflows/typescriptStructure.test.ts` passed: 3 tests.
+- `npm run build` passed.
+- The focused structure, STRIDE-link, and scenario-contract suites passed: 7 tests across
+  3 test files.
+- `npm test` completed with 119 test files and 559 tests discovered. After correcting one
+  moved STRIDE-document test link, the only remaining failures were 77 existing
+  Docker/Testcontainers-dependent tests because no container runtime is available locally;
+  481 tests passed in that run.
+- `git diff --check` passed with only normal LF/CRLF conversion warnings.
+- Removed the redundant legacy scenario repository and its duplicate test; the existing
+  feature-owned repository remains the single implementation.
+
+Add new ticket entries below using this template.
+
+## cm-hotfix - No Jira ticket
+
+**Branch:** `cm-hotfix`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** None — user-requested follow-up; no matching ticket was supplied.
+
+**Summary:** Replace visible tax-plan identifiers and browser UUIDs with meaningful labels and opaque route keys
+
+**Description:** Remove internal identifiers from the tax-plan experience by showing shared plan labels, resolving names server-side, and using tenant-scoped opaque keys in cycle and planning-tool URLs. Preserve internal IDs for API operations and keep legacy UUID links compatible through authorized redirects.
+
+**Acceptance Criteria:**
+
+- Tax-plan screens, audits, Assist, comments, and registration present meaningful names instead of identifier fallbacks.
+- Cycle details and planning tools use opaque route keys in browser URLs; authorized legacy UUID URLs redirect.
+- Route-key resolution remains tenant-scoped and existing API operations continue to use internal IDs.
+- Seed and test data use safe deterministic opaque keys without triggering secret scanning.
+
+**Code Connection:**
+
+- Adds tax-plan display metadata and formatting across API and Pulse UI presentation paths.
+- Adds `route_key` persistence, backfill migrations, tenant-scoped route-key resolution, and opaque browser navigation.
+- Updates planning-tool URL state and fixtures to use route keys while retaining UUIDs only for internal requests.
+
+**Project Scope Connection:**
+
+This improves privacy and usability in the existing multi-tenant tax-plan workflow without changing database relationships, authorization boundaries, or user-authored history.
+
+**Changed Files:**
+
+- `apps/api/drizzle/0022_*` and `apps/api/drizzle/0023_*`
+- `apps/api/src/**/tax-plan-cycle*`
+- `src/pulseUI/**`
+- `src/typescript/shared/database/seed.model.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed before CI follow-up.
+- CI follow-up is updating opaque-key fixtures and seed keys after the initial PR checks identified stale UUID-based expectations and secret-scanner false positives.
+
+<!--
+## christopher-martus-jiraXX - SCRUM-XX
+
+**Branch:** `christopher-martus-jiraXX`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-XX
+
+**Summary:**
+
+**Description:**
+
+**Acceptance Criteria:**
+
+-
+
+**Code Connection:**
+
+**Project Scope Connection:**
+
+**Changed Files:**
+
+-
+
+**Validation Notes:**
+
+-
+-->
+
+
+## christopher-martus-jira231 - SCRUM-231
+
+**Branch:** `christopher-martus-jira231`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-231
+
+**Summary:** Fix ZAP scan and prepare AWS scaling and UI release deployment
+
+**Description:** Identify and resolve the ZAP baseline failure, document a reversible
+AWS development-environment scale-down/restore procedure, and ensure normal releases
+deploy and verify the latest Pulse UI alongside the backend services.
+
+**Acceptance Criteria:**
+
+- ZAP report generation succeeds and the High-severity gate remains fail-closed.
+- Applicable AWS resources can be scaled down without deleting data or configuration.
+- The environment can be restored without rebuilding it from scratch.
+- Required retained dependencies are identified.
+- A normal release deploys the latest UI as well as backend components.
+- A release validates the expected UI version is accessible.
+- ZAP, AWS scaling, UI deployment, and known limitations are documented.
+
+**Code Connection:**
+
+- The ZAP workflow no longer pre-creates report files that the container cannot overwrite;
+  the supplied run log showed `AccessDeniedException /zap/wrk/report_html.html` with no
+  High-severity findings.
+- The release workflow builds `src/pulseUI`, syncs the Terraform-resolved private S3
+  bucket, invalidates CloudFront, and compares the deployed `index.html` SHA-256 with
+  the build output before recording release evidence.
+- The GitHub Actions release role receives only the S3 bucket-list/object-write and
+  CloudFront invalidation permissions required for that deployment.
+- The AWS runbook preserves ECS task definitions, RDS storage/snapshot, Redis, ALB/VPC,
+  SPA delivery, secrets, images, queues, functions, and Terraform state while reducing
+  continuously running compute.
+
+**Project Scope Connection:**
+
+This is an MVP operational-safety change: remove the concrete ZAP file-permission
+failure, close the existing UI release gap using the already-defined SPA delivery
+contract, and document reversible development capacity changes. It intentionally does
+not remediate informational ZAP warnings, delete infrastructure, redesign Terraform
+capacity management, or change application behavior.
+
+**Changed Files:**
+
+- `.github/workflows/zap-baseline.yml`
+- `.github/workflows/container-scan-sbom.yml`
+- `deployment/spa/deploy-config.json`
+- `terraform/modules/spa_delivery/outputs.tf`
+- `terraform/release_pipeline.tf`
+- `docs/release-evidence-packet.md`
+- `docs/aws-dev-scale-runbook.md`
+- `planning/team/cm-ticket-journal.md`
+- `tests/typescript/spaDeliveryDefinitions.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
+
+**Validation Notes:**
+
+- AWS inventory was read after `aws login` in account `814650854375`, region `us-east-1`;
+  no ECS, RDS, Redis, networking, secret, or application-data scaling/deletion was executed.
+- The live release role policy was updated without touching application infrastructure and
+  IAM simulation returned `allowed` for the required SPA S3, KMS, CloudFront, and retained
+  Terraform-state operations.
+- A target-only Terraform apply was not used because its dependency graph included an ECS
+  task-definition replacement and Lambda update; only the reviewed inline role policy was
+  changed for pre-merge validation.
+- `npm run build:web` passed and produced `dist/pulseUI`; the deployment contract and workflow
+  were corrected to use that directory.
+- The versioned development SPA deployment completed through S3 and CloudFront invalidation
+  `IBSZXDCXQFG0OUN344BJCX62NB`. The branch build and deployed index both had SHA-256
+  `21c55c26e2af24875fa41bbf15e9bd3a0281b01bdd7fa4dd8cef3b77f5443156`; S3 reported
+  `aws:kms` encryption with the expected SPA key.
+- GitHub Actions run `33426077729` passed the ZAP-only pre-merge workflow for commit
+  `01ad2edd984bd9f055951a054de3280bab22955e`, including report upload and the fail-closed
+  High-severity gate. Release build/deploy jobs were skipped as intended.
+- `npm test -- --run tests/typescript/workflows/zapBaselineSecurityGate.test.ts
+  tests/typescript/workflows/terraformDeliveryModules.test.ts
+  tests/typescript/spaDeliveryDefinitions.test.ts` passed: 27 tests across 3 files.
+- `terraform fmt -check -diff terraform/release_pipeline.tf
+  terraform/modules/spa_delivery/outputs.tf` passed.
+- `terraform -chdir=terraform validate` passed.
+- `git diff --check` passed; only normal LF/CRLF conversion warnings were reported.
+- After merge, one successful `development` release and its populated release manifest remain
+  required for final acceptance evidence.
+
+
+
+## christopher-martus-jira169 - SCRUM-169
+
+**Branch:** `christopher-martus-jira169`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-169
+
+**Summary:** Run an OWASP ZAP baseline scan against the deployed app
+
+**Description:** Add a release-compatible OWASP ZAP baseline scan that scans a deployed
+TaxPulse URL, publishes findings, and fails closed on High-severity alerts or scan failures.
+
+**Acceptance Criteria:**
+
+- An OWASP ZAP baseline scan runs against the deployed app.
+- The scan reports findings as a build artifact.
+- High-severity findings fail the release.
+
+**Code Connection:**
+
+- Added a reusable and manually dispatchable ZAP baseline workflow accepting a deployed
+  application URL.
+- The workflow runs on the repository's Blacksmith Ubuntu runner, disables GitHub issue
+  creation, and preserves HTML, Markdown, and JSON reports as an artifact.
+- The workflow validates the JSON report and fails for ZAP High-risk alerts (`riskcode: "3"`),
+  scan failures, unreachable targets, or missing/malformed reports.
+- A repository-local gate script makes the High-severity decision independently testable.
+
+**Project Scope Connection:**
+
+This establishes the repository-side web security scanning boundary for the release process.
+The release/deployment dependency graph now runs the deployed SPA scan after SCRUM-168's
+image verification and ECS deployment boundary.
+
+**Changed Files:**
+
+- `.github/workflows/zap-baseline.yml`
+- `.github/scripts/enforce-zap-high-severity.mjs`
+- `.github/workflows/container-scan-sbom.yml`
+- `tests/typescript/workflows/zapBaselineSecurityGate.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+
+## christopher-martus-jira188 - SCRUM-188
+
+**Branch:** `christopher-martus-jira188`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-188
+
+**Summary:** Add a documentation-only incident runbook for on-call response to TaxPulse degradation
+
+**Description:** Create and review an operator runbook for the two SCRUM-187 SLO-backed failure modes: Tax Engine calculation latency degradation and Core Case API availability degradation. The implementation remains documentation-only and uses a synthetic tabletop with no live infrastructure changes.
+
+**Acceptance Criteria:**
+
+- A checked-in runbook identifies exactly the two SLO-backed failure modes and provides actionable triage, evidence collection, containment/escalation, and recovery-verification steps for each.
+- Every numbered triage step includes a relative link to the applicable alarm documentation, a relative link to the SCRUM-171 disposition-log template, and the exact CloudWatch alarm name.
+- A synthetic tabletop scenario exercises both failure-mode paths, records expected responder decisions and evidence, identifies gaps, and states a review outcome without changing live infrastructure.
+
+**Code Connection:**
+
+- `docs/incident-runbook.md` documents the Tax Engine latency alarm, EMF metric evidence, request/trace correlation, service logs, ECS events, deployment evidence, safe containment, escalation, and recovery verification.
+- The Core Case availability procedure distinguishes the composite alarm's target-side 5xx error-budget child alarm from the zero-healthy-targets child alarm and records child-specific recovery criteria.
+- The synthetic tabletop records both alarm paths, expected disposition evidence, decisions, escalation conditions, recovery signals, a runbook gap, its correction, and the review outcome.
+
+**Project Scope Connection:**
+
+- Reliability, observability, and incident readiness for the TaxPulse ECS service boundary.
+- Documentation-only support for SCRUM-187 SLO operations and SCRUM-171 disposition evidence.
+- No application, workflow, UI, Terraform, alarm, dashboard, paging, or live infrastructure behavior was changed.
+
+**Changed Files:**
+
+- `docs/incident-runbook.md`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Synthetic tabletop completed on 2026-08-28 with reviewer role `Platform on-call documentation reviewer`; no live AWS resources were queried or changed.
+- Both failure-mode paths were exercised, including the Core Case target 5xx and zero-healthy-targets branches.
+- Confirmed all 12 numbered triage rows retain the required alarm documentation and SCRUM-171 disposition-template links.
+- Confirmed all four SCRUM-187 default alarm names are present and the environment-derived naming pattern is documented.
+- `git diff --check` passed.
+
+- `actionlint` was unavailable in the local environment and was not run.
+- Added the ZAP job after the existing ECS deployment and passed the authorized deployed
+  CloudFront SPA URL through the deployment job output.
+- `npx vitest run --config vitest.config.ts tests/typescript/workflows/zapBaselineSecurityGate.test.ts` passed: 7 tests, including clean, High-alert, and malformed-report gate cases.
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+## christopher-martus-jira186 - SCRUM-186
+
+**Branch:** `christopher-martus-jira186`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-186
+
+**Summary:** Document STRIDE threats and mitigations
+
+**Description:** Create a checked-in TaxPulse STRIDE threat register covering all six
+STRIDE categories, explicitly addressing tenant isolation and audit-trail tampering,
+with every mitigation linked to its implementation.
+
+**Acceptance Criteria:**
+
+- Each STRIDE category lists at least one concrete threat and mitigation.
+- Cross-tenant access or disclosure is explicitly identified as a tenant-isolation threat.
+- Audit-entry modification or deletion is explicitly identified as an audit-trail-tampering threat.
+- Every mitigation links to an existing repository file describing the implemented control.
+
+**Code Connection:**
+
+- Added the STRIDE register with threat scenarios, affected assets or trust boundaries,
+  priorities, mitigations, implementation references, and residual limitations for
+  authentication, workflow authorization, tenant-scoped repositories, audit storage,
+  platform administration, and tenant rate limiting.
+- Added a semantic contract test that verifies all six sections, required fields,
+  explicit tenant-isolation and audit-trail-tampering coverage, and existing local links.
+
+**Project Scope Connection:**
+
+This completes the repository documentation and validation slice for the TaxPulse
+security hardening scope. It does not create the SCRUM-185 data-flow diagram, modify
+security controls, change schemas or migrations, or claim distributed DoS protection
+or protection from privileged database tampering.
+
+**Changed Files:**
+
+- `docs/stride-threat-model.md`
+- `tests/typescript/strideThreatModel.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npx vitest run tests/typescript/strideThreatModel.test.ts` passed: 2 tests.
+- `npm run typecheck` passed.
+- `npm test` completed with 76 test files and 345 tests passing; 20 test files and 67
+  tests failed because the environment could not find a working container runtime for
+  Docker-backed integration tests. The new STRIDE contract test passed in the full run.
+- `git diff --check` passed.
+
+
+
+## christopher-martus-jira201 - SCRUM-201
+
+**Branch:** `christopher-martus-jira201`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-201
+
+**Summary:** Stand up the HTTP API with the shared JWT authorizer
+
+**Description:**
+
+Provision an HTTP API with a native JWT authorizer so serverless endpoints authorize
+with the RS256 token issued by the Core Case Service.
+
+**Acceptance Criteria:**
+
+- The HTTP API validates issuer, audience, JWKS key selected by `kid`, and token validity.
+- Invalid requests receive a gateway `401` before Lambda invocation.
+- Verified `tenant_id` and `role` claims reach target Lambdas through authorizer context.
+- A smoke test accepts a valid token and rejects expired or tampered tokens.
+
+**Code Connection:**
+
+- Added the configurable `JWT_AUDIENCE` access-token claim and validates it in the Core
+  Case Service JWT middleware. The default `taxpulse-http-api` will be used by the HTTP
+  API authorizer.
+- Replaced the REST API events with a single HTTP API that applies the native shared JWT
+  authorizer to both transition routes. The issuer now publishes OIDC discovery metadata
+  that points API Gateway to the existing public JWKS.
+- Updated both Lambda transport adapters to read verified HTTP API JWT claims from
+  `requestContext.authorizer.jwt.claims`, including the required `tenant_id` and `role`.
+- Added a deploy-time smoke command that proves a valid signed JWT reaches the protected
+  route while expired, tampered, and missing tokens receive `401` from API Gateway.
+- Added a sandbox issuer-metadata Lambda Function URL for environments without a custom
+  domain. It exposes only OIDC discovery and the public JWK, while the native authorizer
+  references its generated HTTPS URL.
+- Corrected the relocated target-Lambda bundle entrypoints and present-to-client handler
+  name so the SCRUM-201 deployment artifacts match the current source layout.
+
+**Project Scope Connection:**
+
+- Platform security boundary for the existing present-to-client and execute Lambda routes.
+
+**Changed Files:**
+
+- `src/typescript/authConfig.ts`
+- `src/typescript/authTypes.ts`
+- `src/typescript/tokenService.ts`
+- `src/typescript/jwtAuthentication.ts`
+- `src/typescript/jwksRoutes.ts`
+- `deployment/PresentToClient-Draft.template.yaml`
+- `src/typescript/shared/scripts/present-to-client-lambda/index.ts`
+- `src/typescript/shared/scripts/execute-lambda/index.ts`
+- `src/typescript/shared/scripts/httpApiJwtSmoke.ts`
+- `tests/typescript/shared/scripts/presentToClientLambda.test.ts`
+- `tests/typescript/shared/scripts/executeLambdaRuntime.test.ts`
+- `package.json`
+- `src/typescript/shared/scripts/issuer-metadata-lambda/index.ts`
+- `src/typescript/shared/scripts/lambda-build/build-issuer-metadata-lambda.mjs`
+- `tests/typescript/shared/scripts/issuerMetadataLambda.test.ts`
+- `src/typescript/shared/scripts/printJwtPublicJwk.ts`
+- `src/typescript/shared/scripts/lambda-build/build-present-to-client-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/build-execute-lambda.mjs`
+- `.env.example`
+- `README.md`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- The three focused Lambda/issuer metadata test files passed (8 tests).
+- `npm run build:present-to-client-lambda`, `npm run build:execute-lambda`, and
+  `npm run build:issuer-metadata-lambda` passed.
+- Sandbox AWS deployment created HTTP API `6ppu8m5ggd`, native JWT authorizer `64e7gb`,
+  the two JWT-protected transition routes, and a public issuer-metadata Lambda Function URL.
+- `npm run aws:http-api-jwt-smoke` passed against the deployed HTTP API: the valid RS256
+  token reached the target route (HTTP 422 for intentionally synthetic action data), while
+  expired, tampered, and missing tokens each returned HTTP 401 from API Gateway.
+
+
+
+
+## christopher-martus-jira165 - SCRUM-165
+
+**Branch:** `christopher-martus-jira165`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-165
+
+**Summary:** Add the Semgrep and Bandit SAST gate in CI/CD
+
+**Description:** Add a pull-request security gate that runs Semgrep against the
+TypeScript source and Bandit against the Python source, failing on high-severity
+findings.
+
+**Acceptance Criteria:**
+
+- A GitHub Actions workflow runs Semgrep against `src/typescript`.
+- The workflow runs Bandit against `src/tax_liability_engine`.
+- High-severity findings cause the workflow job to exit unsuccessfully.
+- The workflow runs automatically for every `pull_request`, without path filtering.
+
+**Code Connection:**
+
+- Added a Blacksmith-run GitHub Actions workflow with Python 3.13, Semgrep, and
+  Bandit installation.
+- Semgrep explicitly fails on `ERROR` findings, and Bandit explicitly fails on
+  `high` severity findings.
+- Recorded the runner and scanner decision in ADR-0036 and indexed it in `adr/README.md`.
+
+**Project Scope Connection:**
+
+This completes the repository-scoped Steps 1–2 of SCRUM-165 and establishes the
+CI/CD SAST enforcement boundary. Application code, scanner suppressions, and
+non-PR triggers are out of scope. Branch protection is the separate
+repository-administration rollout in Step 3.
+
+**Changed Files:**
+
+- `.github/workflows/sast-security-gate.yml`
+- `.github/workflows/ci.yml`
+- `adr/0036-sast-security-gate-on-blacksmith-runners.md`
+- `adr/README.md`
+- `planning/team/cm-ticket-journal.md`
+- `tests/typescript/workflows/sastSecurityGate.test.ts`
+
+**Validation Notes:**
+
+- `npx vitest run --config vitest.config.ts tests/typescript/workflows/sastSecurityGate.test.ts` passed: 2 tests.
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+
+
+## christopher-martus-jira202 - SCRUM-202
+
+**Branch:** `christopher-martus-jira202`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-202
+
+**Summary:** Provision the Sprint 5 event path and validate the fresh Terraform root
+
+**Description:** Complete the active Terraform root wiring, reproducible Lambda artifacts,
+focused root regression coverage, and fresh-apply smoke evidence for the SNS/SQS projection
+and transition API path.
+
+**Acceptance Criteria:**
+
+- Terraform provisions the stage-changed and action-item-created SNS topics, stage-changed
+  SQS queue, DLQ, redrive policy, subscription, and queue policy.
+- Terraform provisions the HTTP API, shared JWT authorizer, protected transition routes,
+  proxy integrations, and Lambda invocation permissions.
+- The active root connects the events, ECS, Lambda, and SPA modules without externally
+  supplied messaging identifiers and exposes the ALB, transition API, and SPA URLs.
+- An isolated fresh apply and smoke sequence succeeds through ALB calculation,
+  present-to-client transition, SNS/SQS delivery, and Client Approval projection.
+
+**Code Connection:** Added the active root event wiring, reproducible Lambda ZIP packaging,
+portable clean-environment ECS image inputs, separate transition/projection IAM roles,
+deployment documentation, and focused assertions covering event/module connections,
+Lambda artifacts, image sourcing, IAM boundaries, smoke ordering, and public outputs.
+
+**Project Scope Connection:** Completes the repository-side Sprint 5 delivery contract while
+preserving tenant-scoped projection behavior and JWT-protected transition access.
+
+**Changed Files:**
+
+- `deployment/PresentToClient-Draft.template.yaml`
+- `package-lock.json`
+- `package.json`
+- `src/typescript/shared/scripts/awsFreshApplySmoke.ts`
+- `src/typescript/shared/scripts/httpApiJwtSmoke.ts`
+- `src/typescript/shared/scripts/lambda-build/build-execute-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/build-present-to-client-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/build-stage-changed-consumer-lambda.mjs`
+- `src/typescript/shared/scripts/lambda-build/package-lambda.mjs`
+- `terraform/README.md`
+- `terraform/delivery.tf`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/ecs_services/variables.tf`
+- `terraform/modules/events/main.tf`
+- `terraform/modules/events/outputs.tf`
+- `terraform/modules/events/variables.tf`
+- `terraform/modules/lambda_consumers/main.tf`
+- `terraform/modules/lambda_consumers/variables.tf`
+- `terraform/providers.tf`
+- `terraform/variables.tf`
+- `tests/typescript/shared/scripts/awsFreshApplySmoke.test.ts`
+- `tests/typescript/shared/scripts/httpApiJwtSmoke.test.ts`
+- `tests/typescript/terraformSprint5Stack.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run build:lambdas` passed and rebuilt all three ZIP artifacts.
+- Focused Terraform contract suite passed: 8 tests.
+- `terraform fmt -check -recursive terraform` passed.
+- `terraform -chdir=terraform validate` passed.
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- `npm test` ran 423 tests: 354 passed and 69 database-backed tests failed because no
+  Docker-compatible container runtime or vector extension database is available locally.
+- AWS login and read-only preflight succeeded for account `814650854375` in `us-east-1`.
+  The backend bucket exists and has no `scrum-202-step4/` state prefix; both managed ECR
+  repositories contain immutable `v1.0.0.0` images, and the three Lambda ZIPs rebuilt locally.
+- Apply remains blocked before backend initialization: the available `TAX_PULSE_CONFIG` secret
+  contains the expected key names but its `DATABASE_URL` host is `localhost`, so it cannot
+  bootstrap ECS tasks in AWS. It also lacks the documented JWT audience/private-key fields.
+  No secret values were printed, no shared secret was modified, and no AWS resources were
+  created. A valid AWS-reachable runtime secret, synthetic bearer token, and prepared tenant/case
+  are required before applying the isolated stack.
+- `git diff --name-only origin/development...HEAD` reports 24 changed files, including this
+  journal entry; no credentials, tokens, tfvars, or taxpayer data were added.
+
+### Fresh-apply repair follow-up
+
+**Branch:** `christopher-martus-jira202`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-202
+
+**Summary:** Repair the Terraform root for an isolated, RS256-capable fresh apply.
+
+**Description:** Reconciled the code with the live AWS inventory without mutating shared
+resources. The `dev` state is incomplete and mixed with manually created infrastructure,
+so this follow-up makes a new stack safe to create under its own backend key, prefix, and
+environment.
+
+**Acceptance Criteria:**
+
+- An isolated root provisions the event path, transition HTTP API, JWT authorizer, and
+  projection consumer without relying on the shared `dev` state.
+- The root exposes public endpoints and configures a public RS256 issuer/JWKS source for
+  API Gateway and both ECS services.
+- A fresh plan is non-destructive and can be applied after approved signing-key inputs are
+  supplied.
+
+**Code Connection:** Added stack-scoped names and tags, managed runtime-secret wiring from
+the new RDS endpoint, HTTPS egress for private ECS tasks, issuer-metadata Lambda packaging
+and Terraform resources, current RS256 environment keys, least-privilege transition Lambda
+IAM, and opt-in account-global GitHub release-pipeline resources.
+
+**Project Scope Connection:** Removes the live blockers to SCRUM-202's isolated fresh apply
+while leaving the existing shared `dev` resources untouched.
+
+**Changed Files:**
+
+- `package.json`
+- `src/typescript/shared/scripts/lambda-build/build-issuer-metadata-lambda.mjs`
+- `terraform/README.md`
+- `terraform/runtime_config.tf`
+- `terraform/{database,delivery,dynamodb,outputs,providers,redis,release_pipeline,variables,vpc}.tf`
+- `terraform/modules/ecs_services/{main,variables}.tf`
+- `terraform/modules/lambda_consumers/{main,outputs,variables}.tf`
+- `tests/typescript/terraformSprint5Stack.test.ts`
+- `tests/typescript/workflows/terraformDeliveryModules.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- AWS read-only inventory authenticated as account `814650854375` in `us-east-1`.
+- The shared `dev` state plan was not applied; it proposed 47 adds, 12 changes, and 3
+  destroys, including target-group replacements and deletion of the legacy Lambda role.
+- `npm run build:lambdas` passed and now produces all four ZIP artifacts.
+- `terraform -chdir=terraform fmt -recursive` and `terraform -chdir=terraform validate` passed.
+- Focused Terraform and issuer tests passed: 17 tests across 3 files.
+- `npm run typecheck` and `git diff --check` passed.
+- A separate state key, `scrum-202/codex-preflight/terraform.tfstate`, produced an isolated
+  plan of 108 adds, 0 changes, and 0 destroys using only synthetic preflight values. No AWS
+  resources, secret values, credentials, or real keys were created or printed.
+
+### Deployed sandbox completion
+
+**Branch:** `christopher-martus-jira202`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-202
+
+**Summary:** Complete the canonical sandbox deployment and acceptance smoke test.
+
+**Description:** Corrected the deployed Tax Engine image/runtime compatibility and completed
+the SNS-to-SQS-to-Lambda projection path in the Terraform-managed sandbox.
+
+**Acceptance Criteria:**
+
+- SNS topics, SQS queue, DLQ, queue policy, and Lambda projection mapping are provisioned.
+- The JWT-protected HTTP API and both stub routes remain deployed.
+- Root public outputs expose the ALB, API Gateway, and SPA URLs.
+- The deployed smoke test returns 200 for the ALB calculation and authorized transition, then
+  observes the `Client Approval` DynamoDB projection.
+
+**Code Connection:** The Tax Engine now validates the shared JWT audience and runs the
+published x86_64-compatible image. The event queue visibility timeout exceeds the Lambda
+timeout, and the SNS subscription retains the standard notification envelope required by the
+projection consumer.
+
+**Project Scope Connection:** Resolves the final live deployment blockers for SCRUM-202 while
+keeping all application infrastructure under the canonical Terraform state.
+
+**Changed Files:**
+
+- `deployment/ecs/tax-engine.task-definition.json`
+- `src/tax_liability_engine/jwt_authentication.py`
+- `terraform/modules/ecs_services/main.tf`
+- `terraform/modules/events/main.tf`
+- `terraform/variables.tf`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused JWT authentication tests passed: 17 tests.
+- `terraform -chdir=terraform fmt -check` and `git diff --check` passed.
+- A final Terraform plan reported 0 adds and 0 destroys; its 22 in-place updates were applied.
+- The final AWS smoke passed with ALB calculation `200`, authorized transition `200`, and
+  DynamoDB projected stage `Client Approval` on the first poll.
+
+
+
+## christopher-martus-jira200 - SCRUM-200
+
+**Branch:** `christopher-martus-jira200`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-200
+
+**Summary:** Migrate the shared JWT from shared-key to RS256 with a JWKS
+
+**Description:**
+
+As a Security Engineer, migrate the shared JWT from a shared key to RS256 with a
+published JWKS so the gateway and Tax Calculation Engine verify tokens with public keys only.
+
+**Acceptance Criteria:**
+
+- The Node issuer signs access tokens with RS256 and a `kid` header.
+- The issuer publishes public keys by `kid` through a JWKS endpoint.
+- Node middleware and FastAPI select RS256 public keys by `kid` from JWKS and hold no signing key.
+- Existing valid, expired, and tampered-token tests pass against RS256.
+
+**Code Connection:**
+
+- Added validated issuer-only RS256 private-key and `kid` configuration plus public-key-only
+  JWKS verifier configuration; the former shared-secret environment setting is no longer read.
+- The Node issuer always signs access tokens with an `RS256` and `kid` protected header, and
+  publishes the corresponding public JWK at `GET /.well-known/jwks.json`.
+- Node authentication middleware uses `createRemoteJWKSet`, selects the public key by `kid`,
+  and restricts verification to RS256 without retaining a signing key.
+- The FastAPI dependency requires a JWKS URL, retrieves public keys by `kid`, caches them for
+  five minutes, refreshes once for an unknown key to support rotation, and accepts RS256 only.
+- Documented that the Core Case Service alone requires the RSA private key, while the Tax Engine
+  requires only the issuer and public JWKS URL.
+- Added focused RS256/JWKS FastAPI coverage for valid, expired, and tampered access tokens.
+- Added `cryptography` as the declared Python runtime dependency required by PyJWT's RS256
+  validation backend.
+
+**Project Scope Connection:**
+
+- Platform security. This prepares key separation without yet changing the token wire format
+  or access-control claims used by the Core Case Service and Tax Calculation Engine.
+
+**Changed Files:**
+
+- `src/typescript/jwtRs256Config.ts`
+- `src/typescript/jwksRoutes.ts`
+- `src/typescript/tokenService.ts`
+- `src/typescript/index.ts`
+- `src/typescript/jwtAuthentication.ts`
+- `src/typescript/shared/scripts/awsStageChangedSmoke.ts`
+- `src/tax_liability_engine/jwt_authentication.py`
+- `README.md`
+- `pyproject.toml`
+- `uv.lock`
+- `tests/tax_liability_engine/jwt_jwks_authentication_test.py`
+- `tests/typescript/jwtAuthentication.test.ts`
+- `tests/typescript/tokenService.test.ts`
+- `tests/typescript/authConfig.test.ts`
+- `.env.example`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Not run: this configuration-only slice deliberately defers test updates until the final
+  SCRUM-200 validation step.
+- `npm run typecheck` passed.
+- `uv run --isolated --with "cryptography>=44,<47" --with "pytest>=8" --with
+  "fastapi>=0.115,<1" --with "httpx>=0.28,<1" --with "PyJWT>=2.10,<3" python -m pytest
+  tests/tax_liability_engine/jwt_jwks_authentication_test.py` passed: 3 tests.
+- A focused `tsx` check built and schema-validated a deterministic stage-changed
+  CloudEvent through the relocated domain helper.
+- `npm run db:check` and `git diff --check` continue to pass after the second slice.
+- A scoped strict TypeScript compile of the updated repository passed after the third
+  slice.
+- `npm run db:check` and `git diff --check` continue to pass with the transactional write.
+- Follow-up test alignment: the Node middleware tests now generate synthetic extractable RSA
+  keys and retrieve the matching public JWK from a local JWKS endpoint; token-service tests
+  verify issued RS256 tokens with the public key and `kid`; JWT configuration tests cover
+  `JWT_JWKS_URL` and the retired shared-secret setting.
+- `npx vitest run tests/typescript/jwtAuthentication.test.ts tests/typescript/tokenService.test.ts
+  tests/typescript/authConfig.test.ts --config vitest.config.ts` passed: 27 tests.
+- Follow-up path normalization: renamed the Tax Plan Cycle CloudEvents directory and the
+  remaining smoke-script import to `cloudEvents`; `npm run typecheck` now passes across the
+  application, TypeScript tests, and Pulse UI.
+- `npx vitest run tests/typescript/features/taxPlanCycle/actionItemCreatedSnsPublisher.test.ts
+  tests/typescript/features/taxPlanCycle/stageChangedSnsPublisher.test.ts --config
+  vitest.config.ts` passed: 5 tests.
+- The application and TypeScript test typechecks passed. The combined `npm run typecheck`
+  then stopped in the unrelated Pulse UI because its local `@playwright/test` type
+  dependency is absent.
+- The focused CloudEvent schema and SNS publisher suites passed: 11 tests in two files.
+- Rebuilt the inherited Drizzle metadata chain so tenant login, deductions, client roster,
+  and the outbox are registered sequentially as migrations `0007` through `0010` with
+  matching snapshots. A no-op `drizzle-kit generate` confirmed there is no schema drift.
+- `npm run db:check`, `npm run typecheck`, and `git diff --check` passed after rebuilding
+  the migration metadata.
+- Standardized runtime, seed, and test migration execution on Drizzle. Drizzle Kit remains
+  the operator CLI, while the programmatic paths use Drizzle ORM's PostgreSQL migrator
+  and the shared `drizzle.__drizzle_migrations` ledger.
+- Removed the custom filename scanner and `drizzle_schema_migrations` ledger. Destructive
+  seed and shared-schema test setup now remove both `public` and `drizzle` before replaying
+  the generated journal from `0000`.
+- `npm run db:gen -- --name verify_no_schema_drift` reported no schema changes and created
+  no migration files. `npm run db:check`, `npm run typecheck`, and `git diff --check` passed.
+- `npm test` and `npm run test:integration` reached their database-backed suites but could
+  not start Testcontainers because no Docker-compatible runtime is available. The explicit
+  integration run still passed its six non-container authentication tests.
+- The Tax Plan Cycle integration suite collected successfully, but its 22 database tests
+  could not start because no Docker-compatible container runtime is available locally.
+  This includes both new transactional-outbox acceptance paths.
+- The cumulative SCRUM-133 diff is 316 changed lines (255 additions and 61 deletions),
+  remaining below the 500-line PR limit.
+
+
+## christopher-martus-jira133 - SCRUM-133
+
+**Branch:** `christopher-martus-jira133`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-133
+
+**Summary:** Write stage transitions through a transactional outbox
+
+**Description:** As a Backend Developer, I want stage transitions written through an
+outbox, so that an event is never lost when the case commits.
+
+**Acceptance Criteria:**
+
+- The stage change and its outbox row commit in the same database transaction.
+- The outbox row carries the serialized CloudEvent payload.
+- A test asserts a rolled-back transition leaves no outbox row.
+
+**Code Connection:**
+
+- The first implementation slice adds the minimal `outbox_event` persistence contract
+  with a generated identifier, serialized text payload, and creation timestamp.
+- The second slice moves CloudEvent construction and its input types into the domain event
+  module so both database persistence and SNS delivery can reuse the same validated
+  payload without coupling the repository to AWS infrastructure.
+- The third slice builds the CloudEvent from the tenant-scoped database row and writes its
+  serialized payload alongside the cycle stage and transition history in the existing
+  Drizzle transaction. Production composition no longer directly publishes during the
+  request, leaving the SNS publisher available for the SCRUM-134 relay.
+- The final slice extends the successful transition integration path to validate the
+  serialized outbox payload against the CloudEvent schema and forces an outbox insert
+  failure to prove the cycle, transition history, and outbox row roll back together.
+
+**Project Scope Connection:**
+
+The outbox table establishes the durable database boundary required to prevent committed
+stage-change events from being lost before asynchronous delivery.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0010_outbox_event.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0007_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0008_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0009_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/0010_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/shared/database/migrate.ts`
+- `src/typescript/shared/database/seed.ts`
+- `src/typescript/shared/scripts/drizzleMigrations.ts` (removed)
+- `src/typescript/shared/scripts/runMigrations.ts` (removed)
+- `tests/typescript/bootstrap/migrationTestUtils.ts`
+- `drizzle.config.ts`
+- `README.md`
+- `src/typescript/features/taxPlanCycle/stageChangedEvent.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/stageChangedSnsPublisher.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/integration.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:check` passed and loaded the updated Drizzle schema successfully.
+- `git diff --check` passed.
+
+
+## christopher-martus-jira179 - SCRUM-179
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Persist pgvector embeddings for deterministic AI-Assist corpus retrieval
+
+**Description:** Store embeddings and corpus metadata for the deterministic chunks produced
+by SCRUM-178, enabling later semantic retrieval work.
+
+**Acceptance Criteria:**
+
+- Every corpus chunk has a pgvector-backed persistence record and similarity index foundation.
+- Stored records preserve stable chunk metadata, citations, content hashes, and ordering fields.
+- The database and test infrastructure support the required vector PostgreSQL extension.
+
+**Code Connection:**
+
+- Adds `ai_assist_corpus_embedding` with stable `chunk_id`, corpus metadata, citation JSON,
+  embedding model, and `vector(1536)` embedding columns.
+- Adds an HNSW index using `vector_cosine_ops` for cosine similarity queries in the later
+  embedding/retrieval step.
+- Adds `CREATE EXTENSION IF NOT EXISTS vector` to the generated migration.
+
+**Project Scope Connection:**
+
+This is Step 1 of SCRUM-179 and provides only the AI-Assist corpus persistence foundation.
+Embedding calls, deterministic rebuild logic, similarity retrieval functions, scripts, and
+acceptance-focused tests remain for later plan steps. Hybrid retrieval, reranking, APIs, and
+tenant request enforcement remain out of scope.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0017_known_gabe_jones.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0017_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `docker-compose.yml`
+- `tests/typescript/bootstrap/dockerPostgres.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen` generated the migration.
+- `npm run db:check` passed.
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+- `git diff --check` passed.
+
+### Step 3 acceptance tests
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Verify deterministic corpus embedding persistence and similarity retrieval
+
+**Description:** Add focused acceptance tests for the embedding and retrieval helpers delivered
+in the preceding implementation steps.
+
+**Acceptance Criteria:**
+
+- Rebuild tests verify stable chunk ordering and preservation of corpus metadata.
+- Validation tests reject vectors with incorrect dimensions.
+- Retrieval tests verify vector-ranked results and numeric similarity conversion.
+
+**Code Connection:**
+
+- Adds `tests/typescript/assist/embeddings.test.ts` covering deterministic rebuild behavior,
+  metadata persistence, vector validation, and similarity result mapping.
+
+**Project Scope Connection:**
+
+This completes the planned acceptance-test step for SCRUM-179. Hybrid retrieval, reranking,
+RAGAS evaluation, APIs, and tenant request enforcement remain out of scope.
+
+**Changed Files:**
+
+- `tests/typescript/assist/embeddings.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused Vitest run passed: `tests/typescript/assist/embeddings.test.ts` (3 tests).
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+
+### Step 4 acceptance-focused coverage
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Complete acceptance-focused coverage for deterministic corpus embeddings
+
+**Description:** Extend the embedding tests to cover every acceptance-focused behavior from
+the executor handoff, including provider inputs, citation preservation, query limits,
+deterministic replacement, and stale chunk removal. Add an opt-in pgvector integration test
+for the migration objects and actual similarity SQL.
+
+**Acceptance Criteria:**
+
+- Unit tests use deterministic fake vectors and never call the OpenAI API.
+- Rebuild coverage verifies stable ordering, metadata/citations, identical repeated output,
+  and removal of stale chunks.
+- Retrieval coverage verifies semantic ordering and result limits.
+- The integration test verifies the vector extension/index and real pgvector query behavior.
+
+**Code Connection:**
+
+- `tests/typescript/assist/embeddings.test.ts` covers deterministic unit-level acceptance
+  behavior with a fake database and embedding provider.
+- `tests/typescript/assist/embeddings.integration.test.ts` exercises the generated migration
+  and similarity query against a pgvector-backed PostgreSQL container.
+
+**Project Scope Connection:**
+
+This completes only SCRUM-179's acceptance-focused test step. Hybrid retrieval, reranking,
+RAGAS evaluation, APIs, UI work, and tenant request enforcement remain out of scope.
+
+**Changed Files:**
+
+- `tests/typescript/assist/embeddings.test.ts`
+- `tests/typescript/assist/embeddings.integration.test.ts`
+- `src/typescript/shared/scripts/corpusEmbed.ts`
+- `package.json`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused Vitest unit run passed: 4 tests.
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+- `git diff --check` passed.
+- The focused integration test was discovered but could not run because this environment has
+  no container runtime; CI/Docker is required for `pgvector/pgvector:pg18`.
+- Added `npm run corpus:embed` to rebuild the pgvector index from the generated chunk artifact.
+
+### Review follow-up: retrieval coverage and provider cardinality
+
+**Branch:** `christopher-martus-jira179`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-179
+
+**Summary:** Strengthen semantic retrieval ranking and provider-response coverage
+
+**Description:** Address review feedback by asserting the full similarity-ranked result set and
+rejecting embedding providers that return anything other than one vector for a single query.
+
+**Acceptance Criteria:**
+
+- Retrieval tests prove that lower-similarity results follow higher-similarity results.
+- Retrieval rejects zero or multiple provider vectors for one query.
+
+**Code Connection:**
+
+- `retrieveSimilarCorpusChunks` validates the query provider response cardinality before
+  validating and sending the query vector to pgvector.
+- `embeddings.test.ts` asserts both returned ranks and covers zero/multiple query vectors.
+
+**Project Scope Connection:**
+
+This is a focused SCRUM-179 review follow-up for deterministic embedding retrieval correctness;
+hybrid retrieval, reranking, RAGAS evaluation, APIs, UI work, and tenant request enforcement
+remain out of scope.
+
+**Changed Files:**
+
+- `src/typescript/assist/embeddings.ts`
+- `tests/typescript/assist/embeddings.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm exec vitest run tests/typescript/assist/embeddings.test.ts` passed (5 tests).
+- `npm run typecheck` passed for the app, tests, and pulseUI.
+- `git diff --check` passed.
+
+## christopher-martus-jira144 - SCRUM-144 Seed Data Follow-up
+
+**Branch:** `christopher-martus-jira144`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-144
+
+**Summary:** Seed a client portal account with action items for manual acceptance testing
+
+**Description:** Add synthetic, client-scoped portal data that allows the Action Items screen
+and completion workflow to be exercised after a local database reset.
+
+**Acceptance Criteria:**
+
+- A seeded generic test Client can sign in and see action items for their current plan.
+- The items can be completed through the existing client portal workflow.
+
+**Code Connection:**
+
+- The seed model links the client user, credential, MFA enrollment, current Tax Plan Cycle,
+  and incomplete action-item rows to the same tenant and client ID.
+
+**Project Scope Connection:**
+
+This supports SCRUM-144's end-to-end portal acceptance flow without bypassing tenant isolation
+or scoped client access.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/seed.model.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- A focused `tsx` check built and schema-validated a deterministic stage-changed
+  CloudEvent through the relocated domain helper.
+- `npm run db:check` and `git diff --check` continue to pass after the second slice.
+- A scoped strict TypeScript compile of the updated repository passed after the third
+  slice.
+- `npm run db:check` and `git diff --check` continue to pass with the transactional write.
+- The application and TypeScript test typechecks passed. The combined `npm run typecheck`
+  then stopped in the unrelated Pulse UI because its local `@playwright/test` type
+  dependency is absent.
+- The focused CloudEvent schema and SNS publisher suites passed: 11 tests in two files.
+- Rebuilt the inherited Drizzle metadata chain so tenant login, deductions, client roster,
+  and the outbox are registered sequentially as migrations `0007` through `0010` with
+  matching snapshots. A no-op `drizzle-kit generate` confirmed there is no schema drift.
+- `npm run db:check`, `npm run typecheck`, and `git diff --check` passed after rebuilding
+  the migration metadata.
+- Standardized runtime, seed, and test migration execution on Drizzle. Drizzle Kit remains
+  the operator CLI, while the programmatic paths use Drizzle ORM's PostgreSQL migrator
+  and the shared `drizzle.__drizzle_migrations` ledger.
+- Removed the custom filename scanner and `drizzle_schema_migrations` ledger. Destructive
+  seed and shared-schema test setup now remove both `public` and `drizzle` before replaying
+  the generated journal from `0000`.
+- `npm run db:gen -- --name verify_no_schema_drift` reported no schema changes and created
+  no migration files. `npm run db:check`, `npm run typecheck`, and `git diff --check` passed.
+- `npm test` and `npm run test:integration` reached their database-backed suites but could
+  not start Testcontainers because no Docker-compatible runtime is available. The explicit
+  integration run still passed its six non-container authentication tests.
+- The Tax Plan Cycle integration suite collected successfully, but its 22 database tests
+  could not start because no Docker-compatible container runtime is available locally.
+  This includes both new transactional-outbox acceptance paths.
+- The cumulative SCRUM-133 diff is 316 changed lines (255 additions and 61 deletions),
+  remaining below the 500-line PR limit.
+
+## christopher-martus-jira192 - SCRUM-192
+
+**Branch:** `christopher-martus-jira192`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-192
+
+**Summary:** Provide an auth context and session hooks for login, refresh, and logout
+
+**Description:** As a Frontend Developer, I want an auth context that holds the session
+and a hook for login, token refresh, and logout, so that every screen, route guard, and
+query reads identity from one source.
+
+**Acceptance Criteria:**
+
+- An auth context provider holds the authenticated session and restores it across reloads.
+- A session hook exposes identity, authentication state, and session actions.
+- Login stores issued tokens; logout clears the session and cached data.
+- Refresh and invalidation are centralized and covered by component tests.
+
+**Code Connection:**
+
+- The first implementation slice defines the Pulse UI's typed session, BFF token-response,
+  MFA challenge, and hook contracts. It validates JWT identity claims centrally and maps
+  issued token responses to a browser session without retaining a refresh token in
+  JavaScript state.
+- The BFF now sets refresh tokens only in a `Secure`, `HttpOnly`, `SameSite=Strict`
+  cookie after MFA. `POST /auth/refresh` atomically revokes the presented active token
+  before issuing a replacement pair, and `POST /auth/logout` revokes when possible and
+  always clears the cookie.
+- `AuthProvider` restores the cookie-backed session at application startup and exposes
+  `useSession` actions for login, MFA completion, refresh, logout, and current access
+  token retrieval. The injected client seam keeps the component behavior testable.
+- Access-token access now refreshes within a 60-second expiry leeway. The shared
+  authenticated fetch wrapper retries a 401 exactly once after refresh, then invalidates
+  through logout; logout always invokes the supplied cache-clearing seam.
+- The browser auth client validates the BFF's login, MFA, refresh, and logout contracts
+  before session state changes; the provider keeps the user anonymous until MFA completes.
+- `useSession` now directly exposes `user` and `isAuthenticated`. The application-level
+  auth boundary blocks protected routed content while restoration is pending or when the
+  session is anonymous, forcing re-authentication through SCRUM-193's forthcoming UI.
+
+**Project Scope Connection:**
+
+This establishes the frontend identity boundary for the React SPA. Subsequent slices add
+the provider, BFF refresh/logout contract, and authenticated request behavior while
+preserving tenant and role isolation.
+
+**Changed Files:**
+
+- `src/pulseUI/auth/session.ts`
+- `src/pulseUI/auth/authClient.ts`
+- `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/auth/AuthBoundary.tsx`
+- `src/pulseUI/auth/authenticatedFetch.ts`
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/tests/auth/session.test.tsx`
+- `src/pulseUI/tests/auth/AuthProvider.test.tsx`
+- `src/pulseUI/tests/auth/authClient.test.tsx`
+- `src/pulseUI/tests/auth/authenticatedFetch.test.tsx`
+- `src/pulseUI/tests/auth/AuthBoundary.test.tsx`
+- `src/typescript/authSessionCookies.ts`
+- `src/typescript/authSessionRoutes.ts`
+- `src/typescript/authMfaLoginRoutes.ts`
+- `src/typescript/refreshTokenRepository.ts`
+- `src/typescript/tokenService.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authSessionRoutes.test.ts`
+- `tests/typescript/authMfaLoginRoutes.test.ts`
+- `tests/typescript/authMfaLogin.test.ts`
+- `tests/typescript/tokenService.test.ts`
+- `tests/typescript/bootstrap/authFlow.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm test -- --run tests/auth/session.test.tsx --cache=false` passed (3 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx --cache=false` passed (7 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx --cache=false` passed (12 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/authClient.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx --cache=false` passed (17 tests).
+- `npm test -- --run tests/auth/session.test.tsx tests/auth/authClient.test.tsx tests/auth/AuthProvider.test.tsx tests/auth/authenticatedFetch.test.tsx tests/auth/AuthBoundary.test.tsx --cache=false` passed (20 tests).
+- `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts tests/typescript/tokenService.test.ts tests/typescript/authMfaLogin.test.ts tests/typescript/coreCaseOpenApi.test.ts` passed (22 tests).
+- Root `npm run typecheck` remains blocked by pre-existing missing
+  `@pact-foundation/pact` resolution and incomplete Tax Engine test doubles. The new
+  auth contract compiles before those unrelated test failures.
+- Pulse UI `npm run typecheck` remains blocked by pre-existing route parameter/import
+  errors and missing `@tailwindcss/vite` type resolution. None reference the auth
+  provider or client.
+
+## christopher-martus-jira195 - SCRUM-195
+
+**Branch:** `christopher-martus-jira195`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-195
+
+**Summary:** Register User
+
+**Description:** As a new user, I want to register an account so that I can securely
+access the application.
+
+**Acceptance Criteria:**
+
+- A registration request accepts the required user details and creates a user with a
+  securely hashed password.
+- A request using an email address that is already registered returns a clear conflict
+  error without creating another user.
+- A successful registration returns the new user's non-sensitive account details and
+  never exposes the password or password hash.
+
+**Code Connection:**
+
+- `authRegistration.ts` defines strict registration input and safe account-output
+  schemas, along with server-controlled `Client` and `invited` defaults.
+- `authRegistrationService.ts` hashes passwords through the existing Argon2id helper
+  before delegating persistence.
+- `authRegistrationRepository.ts` inserts the user and credential in one PostgreSQL
+  transaction and maps the tenant-email unique-constraint violation to a registration
+  conflict.
+- `authRoutes.ts` exposes `POST /auth/register`, returning 201 for a safe account DTO,
+  400 for invalid bodies, and a Problem Details 409 for duplicate tenant emails.
+- `index.ts` wires the repository and service into the runtime auth router.
+- `coreCaseOpenApi.ts` documents the registration operation and its 201, 400, and 409
+  response contracts alongside the existing Authentication endpoints.
+
+**Project Scope Connection:**
+
+This completes the Identity & Auth registration boundary for the multi-tenant TaxPulse
+workspace. It keeps credentials separate from user-profile data, preserves tenant-scoped
+email uniqueness, and applies least-privilege defaults without allowing a caller to set
+their own role or status.
+
+**Changed Files:**
+
+- `src/typescript/authRegistration.ts`
+- `src/typescript/authRegistrationService.ts`
+- `src/typescript/authRegistrationRepository.ts`
+- `src/typescript/authRoutes.ts`
+- `src/typescript/coreCaseOpenApi.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authRegistration.test.ts`
+- `tests/typescript/authRegistrationService.test.ts`
+- `tests/typescript/authRegistrationRoutes.test.ts`
+- `tests/typescript/authRegistration.integration.test.ts`
+- `tests/typescript/coreCaseOpenApi.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- The focused registration contract, service, and route tests passed: 9 tests.
+- `npx vitest run tests/typescript/coreCaseOpenApi.test.ts --config vitest.config.ts`
+  passed: 8 tests.
+- `npx vitest run tests/typescript/authRegistration.integration.test.ts --config
+  vitest.integration.config.ts` passed with Docker access; it verifies Argon2id storage,
+  tenant-scoped conflicts, cross-tenant reuse of an email, and transaction rollback.
+- `git diff --check` passed.
+- The default sandbox cannot run the wider Testcontainers-backed suite without Docker
+  access; registration integration coverage was run with Docker access.
+
+## christopher-martus-jira86 - SCRUM-86
+
+**Branch:** `christopher-martus-jira86`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-86
+
+**Summary:** Compute scenario deltas against the baseline
+
+**Description:** As an Advisor, I want each scenario's delta versus the baseline
+computed, so that I can compare planning options for a client.
+
+**Acceptance Criteria:**
+
+- A scenario request accepts 2-5 scenarios of typed-in figures and rejects fewer than
+  2 or more than 5.
+- Each result reports total tax and the dollar delta versus the baseline.
+- Scenario calculations reuse the same bracket logic as the baseline calculation.
+
+**Code Connection:**
+
+- The persisted scenario result contract now reserves `total_tax` and
+  `delta_vs_baseline`. Python comparison request and result models use
+  `TaxCalculationRequest` for baseline and scenario typed figures, enforce the 2-5
+  request bound, and represent the signed delta. The comparison service calculates the
+  baseline once and delegates every scenario to `calculate_tax`, ensuring a single
+  calculation path for bracket logic.
+
+**Project Scope Connection:**
+
+This implements the typed Domain Compute contract between ticket 85 scenario persistence
+and ticket 87 transport. It does not add an HTTP endpoint, database migration, or bracket
+liability calculation.
+
+**Changed Files:**
+
+- `src/typescript/scenario.ts`
+- `tests/typescript/scenario.test.ts`
+- `tests/typescript/scenarioRepository.test.ts`
+- `src/python/tax_pulse_project_team_1/scenario_comparison.py`
+- `src/python/tax_pulse_project_team_1/__init__.py`
+- `tests/python/test_scenario_comparison.py`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `.venv\\Scripts\\python.exe -m pytest tests/python/test_scenario_comparison.py`
+  passed (7 tests; only an existing pytest-cache permission warning).
+- `.venv\\Scripts\\python.exe -m ruff format --check src/python tests/python` passed.
+- `.venv\\Scripts\\python.exe -m pyright --pythonpath ".\\.venv\\Scripts\\python.exe"`
+  passed with 0 errors and 0 warnings.
+- The real-bracket scenario comparison test passed as part of the focused 27-test
+  ticket-81/ticket-86 suite.
+- `.venv\\Scripts\\python.exe -m pytest tests/python/test_tax_calculation.py
+  tests/python/test_tax_brackets.py tests/python/test_tax_bracket_schedules.py
+  tests/python/test_scenario_comparison.py` passed (27 tests; only an existing
+  pytest-cache permission warning).
+- `.venv\\Scripts\\python.exe -m ruff format --check src/python tests/python` passed.
+- `.venv\\Scripts\\python.exe -m pyright --pythonpath ".\\.venv\\Scripts\\python.exe"`
+  passed with 0 errors and 0 warnings.
+
+## christopher-martus-jira81 - SCRUM-81
+
+**Branch:** `christopher-martus-jira81`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-81
+
+**Summary:** Implement bracket liability and effective/marginal rates
+
+**Description:** As an Advisor, I want federal and state bracket liability with effective
+and marginal rates, so that each Tax Plan Cycle shows real numbers.
+
+**Acceptance Criteria:**
+
+- The engine computes federal and state bracket liability for a given filing status and
+  state.
+- It derives the effective rate and the marginal rate from the brackets.
+- Identical inputs always return identical outputs (deterministic, no ML).
+
+**Code Connection:**
+
+- This first implementation slice adds an immutable `TaxBracket` value object and a
+  pure `calculate_bracket_liability` helper. The helper accumulates each reached income
+  range without I/O, time, randomness, or mutable shared state.
+- This second slice supplies immutable 2026 federal and 2025 California schedules for
+  every supported filing status. `get_bracket_schedules` returns the federal and
+  requested state schedules through a state-neutral lookup mapping.
+- This third slice upgrades the calculation contract to `Decimal` monetary values and
+  returns rounded federal, state, and total liabilities with combined effective and
+  marginal rates. It normalizes supported state codes and returns zero rates when
+  taxable income is zero.
+
+**Project Scope Connection:**
+
+This establishes the deterministic progressive-tax primitive for the Domain Compute
+service. The public calculation response and rate outputs will be added in subsequent
+SCRUM-81 slices.
+
+**Changed Files:**
+
+- `src/python/tax_pulse_project_team_1/tax_calculation.py`
+- `tests/python/test_tax_brackets.py`
+- `tests/python/test_tax_bracket_schedules.py`
+- `tests/python/test_tax_calculation.py`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Isolated calculation assertions for multi-bracket, boundary, and zero-income cases
+  passed via direct module execution.
+- `python -m ruff format --check src/python/tax_pulse_project_team_1/tax_calculation.py
+  tests/python/test_tax_brackets.py` passed.
+- `python -m pyright src/python/tax_pulse_project_team_1/tax_calculation.py` passed.
+- Isolated schedule lookup assertions for all supported filing statuses and California
+  bounds passed via direct module execution.
+- Isolated end-to-end assertions for the exact single-filer liabilities/rates,
+  zero-taxable-income rates, and repeated identical requests passed via direct module
+  execution.
+- Pytest collection is currently blocked before tests run because the local Python
+  environment is missing the project dependency `boto3`.
+
+## christopher-martus_jira85 - SCRUM-85
+
+**Branch:** `christopher-martus_jira85`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-85
+
+**Summary:** Create the scenario table for typed-in figures
+
+**Description:** As a Backend Developer, I want a scenario table, so that 2-5 modeled
+scenarios are persisted per cycle.
+
+**Acceptance Criteria:**
+
+- A migration creates a scenario table keyed to a case with name, typed-in figures, and
+  computed result.
+- A constraint or repository check limits a case to between 2 and 5 scenarios.
+- A test asserts a 6th scenario insert is rejected.
+
+**Code Connection:**
+
+- The first implementation slice defines the shared TypeScript schemas for manually
+  entered calculation figures and stored calculation results, plus the matching Drizzle
+  table contract. The migration creates that table, and the tenant-scoped repository
+  locks the parent case while counting inserts so a sixth scenario is rejected safely.
+
+**Project Scope Connection:**
+
+This establishes the PostgreSQL persistence boundary between Tax Plan Cycles and Domain
+Compute scenario comparisons. It does not expose an HTTP endpoint or calculate deltas.
+
+**Changed Files:**
+
+- `src/typescript/scenario.ts`
+- `src/typescript/db/schema.ts`
+- `src/typescript/db/drizzle-migrations/0006_scenario.sql`
+- `src/typescript/db/drizzle-migrations/meta/0006_snapshot.json`
+- `src/typescript/db/drizzle-migrations/meta/_journal.json`
+- `tests/typescript/scenario.test.ts`
+- `tests/typescript/scenarioMigration.test.ts`
+- `src/typescript/scenarioRepository.ts`
+- `tests/typescript/scenarioRepository.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npx vitest run tests/typescript/scenario.test.ts` passed (2 tests).
+- `npm run db:check` passed.
+- `npx vitest run tests/typescript/scenarioMigration.test.ts` is blocked because this
+  environment has no working container runtime for Testcontainers.
+- `npx vitest run tests/typescript/scenarioRepository.test.ts` is blocked for the same
+  Testcontainers runtime limitation; it contains the acceptance case that persists five
+  scenarios and rejects the sixth.
+
+## christopher-martus-jira79 - SCRUM-79
+
+**Branch:** `christopher-martus-jira79`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-79
+
+**Summary:** Create the bracket reference tables
+
+**Description:** As a Backend Developer, I want federal and state bracket reference
+tables seeded, so that the engine computes liability from real brackets.
+
+**Acceptance Criteria:**
+
+- A migration creates federal and state bracket tables with rate, lower, and upper
+  bounds by filing status.
+- A seed loads current-year federal and a sample state's brackets.
+- A query returns the brackets for a given filing status and state.
+
+**Code Connection:**
+
+- Drizzle schema definitions and migration `0005_fair_reaper.sql` create the global
+  `federal_tax_bracket` and `state_tax_bracket` reference tables, including tax year,
+  filing status, rate, lower bound, and nullable upper bound.
+- The shared seed loads all five supported filing statuses using 2026 federal schedules
+  from IRS Publication 505 and California's currently published 2025 Form 540 schedules.
+- `createBracketReferenceRepository` returns separately ordered federal and requested
+  state brackets for a filing status and state code.
+
+**Project Scope Connection:**
+
+This implements the reference-data persistence seam required by the Domain Compute
+service. The tables are global statutory data rather than tenant data. This ticket does
+not calculate liability, expose an HTTP endpoint, change the Python calculation seam, or
+add additional state datasets.
+
+**Changed Files:**
+
+- `src/typescript/db/schema.ts`
+- `src/typescript/db/drizzle-migrations/0005_fair_reaper.sql`
+- `src/typescript/db/drizzle-migrations/meta/0005_snapshot.json`
+- `src/typescript/db/drizzle-migrations/meta/_journal.json`
+- `src/typescript/db/seed.model.ts`
+- `src/typescript/db/seed.ts`
+- `src/typescript/bracketReferenceRepository.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/brackets/bracketReferenceMigration.test.ts`
+- `tests/typescript/brackets/bracketReferenceRepository.test.ts`
+- `package.json`
+- `planning/team/ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed after the schema, seed, and repository changes.
+- `npm run db:check` passed after generating the Drizzle migration.
+- Focused PostgreSQL tests and `npm run test:migration` require Testcontainers; they are
+  blocked in this environment because no working container runtime is available.
+
+## christopher-martus-jira193 - SCRUM-193
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Ticket:** [SCRUM-193](../Tax_pulse.csv)
+
+**Related ADRs:** [ADR-0017: Pulse UI React/Vite shell](../../adr/0017-pulse-ui-react-vite-shell.md) and [ADR-0020: Pulse UI layered application structure](../../adr/0020-pulse-ui-layered-application-structure.md)
+
+**Summary:** Build the sign-in, MFA, and password-reset UI wired to the auth context
+
+**Description:** Provide SPA sign-in, MFA challenge, and mocked password-reset screens
+on the auth-context foundation supplied by SCRUM-192.
+
+**Acceptance Criteria:**
+
+- Anonymous users see sign-in as the protected-workspace entry view.
+- Sign-in, MFA, and password-reset routes are public screens.
+- Sign-in submits credentials through the shared auth context and passes its MFA challenge
+  only through browser navigation state to the MFA screen.
+- MFA completion establishes the session, routes using the authenticated role, and logout
+  returns the SPA to sign-in.
+- Reset request and confirmation are local-only UI routes; they call no live endpoint.
+- Component coverage exercises the successful sign-in/MFA/logout flow and the reset
+  flow's no-network guarantee.
+
+**Deferred Role-Landing Note:**
+
+The SPA preserves the authenticated role and invokes role-based landing selection after
+MFA. All roles currently land on the shared dashboard because distinct role-specific
+views have not yet been delivered. The client portal is planned in SCRUM-142 and
+SCRUM-144; Firm Admin screens in SCRUM-146 through SCRUM-150; and TaxPulse Platform
+Admin screens in SCRUM-151 and SCRUM-152. This ticket must be revisited when those
+destinations are available.
+
+**Code Connection:**
+
+- The router now separates public authentication routes from an `AuthBoundary`-guarded
+  workspace layout. The boundary uses the new sign-in screen for anonymous sessions.
+- The sign-in form calls `useSession().login`; the typed, ephemeral route state carries
+  the returned tenant, email, and user challenge to the MFA view without persisting it.
+- MFA verification returns the authenticated user to the UI for role-based landing
+  selection. The current MVP maps every role to the existing dashboard until the later
+  client and platform-admin landing screens are available.
+- Shared authentication-screen styles use the established TaxPulse navy, gold, teal, and
+  Inter design language. The reset request form navigates locally to confirmation only.
+- Vite proxies only the local BFF auth endpoints while preserving the tenant subdomain;
+  this leaves Vite's `/auth/*.tsx` source-module URLs available to the browser. Password
+  login sends only email and password; the BFF derives tenant identity from that hostname.
+
+**Project Scope Connection:**
+
+This is the first UI-routing slice for the React SPA authentication flow. It introduces
+no BFF endpoint, token, password-reset, or authorization-policy change.
+
+**Migration Impact:**
+
+None. This ticket changes browser routes and UI state only; it adds no schema, data, or
+service migration.
+
+**Risk Notes:**
+
+Until the deferred role-specific views ship, all authenticated users share the dashboard
+landing route. Server-side authorization and tenant-scoped BFF enforcement remain the
+source of truth for access control.
+
+**Changed Files:**
+
+- `src/pulseUI/app/bootstrap.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/auth/AuthBoundary.tsx`
+- `src/pulseUI/auth/landingPath.ts`
+- `src/pulseUI/auth/mfaChallengeState.ts`
+- `src/pulseUI/auth/session.ts`
+- `src/pulseUI/auth/AuthProvider.tsx`
+- `src/pulseUI/auth/authClient.ts`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/shared/styles.css`
+- `src/pulseUI/vite.config.ts`
+- `src/pulseUI/pages/auth/SignInPage.tsx`
+- `src/pulseUI/pages/auth/MfaChallengePage.tsx`
+- `src/pulseUI/pages/auth/PasswordResetPage.tsx`
+- `src/pulseUI/pages/auth/PasswordResetConfirmationPage.tsx`
+- `src/pulseUI/tests/auth/AuthenticatedSessionProvider.tsx`
+- `src/pulseUI/tests/auth/SignInPage.test.tsx`
+- `src/pulseUI/tests/auth/PasswordResetPage.test.tsx`
+- `src/pulseUI/tests/auth/authClient.test.tsx`
+- Existing Pulse UI route/component tests
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI test` passed: 48 tests in 13 files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Root `npm run typecheck` passed after restoring the lockfile-pinned
+  `@pact-foundation/pact` development dependency.
+- `npm --prefix src/pulseUI run build` reaches production bundling but is blocked in this
+  checkout because Windows holds `dist/pulseUI/assets/index-BSegwS6H.css` open. Release
+  the external file lock or remove the stale generated output before rerunning the build.
+- Vitest result caching is disabled in the UI config so test runs do not depend on writing
+  to the local `node_modules/.vite` cache directory.
+
+## Follow-up: merged sign-in regression repair
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Restore the sign-in UI after the merged route and session changes.
+
+**Description:** Remove duplicated Pulse UI route registrations that prevent router construction.
+Retain hostname-derived tenant selection and allow refresh cookies over local HTTP while keeping
+production cookies secure.
+
+**Acceptance Criteria:**
+
+- The SPA router constructs without duplicate route identifiers.
+- Tenant identity continues to derive from the `{tenant-slug}.localhost` hostname.
+- Local HTTP sessions retain refresh cookies; production sessions retain the `Secure` cookie flag.
+
+**Code Connection:** Workspace routes are registered only beneath the authenticated workspace
+layout and rely on its `AuthBoundary`; the obsolete `localStorage` route guard no longer bypasses
+the auth context. The production composition passes cookie security based on `NODE_ENV`, while
+router defaults preserve secure cookies for non-local consumers and focused test servers.
+
+**Project Scope Connection:** This repairs SCRUM-193's sign-in and MFA session flow without
+changing tenancy resolution or authorization policy.
+
+**Changed Files:**
+
+- `src/pulseUI/app/routeTree.tsx`
+- `src/typescript/authSessionCookies.ts`
+- `src/typescript/authSessionRoutes.ts`
+- `src/typescript/authMfaLoginRoutes.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/authSessionRoutes.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI test -- --run tests/auth` passed: 24 tests in 7 files.
+- `npx vitest run tests/typescript/authSessionRoutes.test.ts tests/typescript/authMfaLoginRoutes.test.ts --config vitest.config.ts` passed.
+- `planning/team/cm-ticket-journal.md`
+
+## christopher-martus-jira103 - SCRUM-103
+
+**Branch:** `christopher-martus-jira103`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-103
+
+**Summary:** Render Estimated Tax by Quarter and Income Breakdown charts
+
+**Description:** As an Advisor, I want the quarterly and income charts, so that the
+client's tax picture is visible at a glance.
+
+**Acceptance Criteria:**
+
+- An Estimated Tax by Quarter bar chart renders the four quarterly estimates.
+- An Income Breakdown chart renders income by source.
+- Charts re-render when the underlying calculation data changes.
+
+**Code Connection:**
+
+- The initial implementation slice adds the typed read-model contract consumed by the
+  dashboard chart region. It carries one calculation identifier, exactly four labelled
+  quarterly estimates, and income totals grouped by source. `DashboardPage` now accepts
+  the latest snapshot at its component boundary. Responsive Estimated Tax by Quarter and
+  Income Breakdown components render the supplied quarter estimates and income sources.
+
+**Project Scope Connection:**
+
+This is the front-end contract for the Read-models/BFF data used by the two dashboard
+charts. It does not add a BFF endpoint, persistence, or a charting dependency. The
+dashboard shows clearly synthetic fallback chart values until the BFF supplies a current
+calculation snapshot.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/dashboard/dashboardChartData.ts`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.tsx`
+- `src/pulseUI/pages/dashboard/QuarterlyTaxChart.module.css`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.tsx`
+- `src/pulseUI/pages/dashboard/IncomeBreakdownChart.module.css`
+- `src/pulseUI/pages/dashboard/DashboardPage.tsx`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
+- - `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI test -- DashboardCharts.test.tsx` passed (1 test).
+- `DashboardCharts.test.tsx` covers initial chart values and re-rendering after a new
+  calculation snapshot is received.
+
+## christopher-martus-jira104 - SCRUM-104
+
+**Branch:** `christopher-martus-jira104`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-104
+
+**Summary:** Render Tax Breakdown and Year-over-Year charts
+
+**Description:** As an Advisor, I want the Tax Breakdown and Year-over-Year visuals, so
+that the dashboard is complete per the wireframe.
+
+**Acceptance Criteria:**
+
+- A Tax Breakdown panel renders federal, state, and effective-rate figures.
+- A Year-over-Year chart compares the current year against the prior year.
+- The four dashboard KPI cards (Estimated Total Tax, Effective Rate, YTD Gross Income,
+  Outstanding Payments) render.
+
+**Code Connection:**
+
+- The typed dashboard read-model now includes KPI, tax-breakdown, and current/prior-year
+  tax comparison fields, along with clearly synthetic fallback data.
+- `DashboardPage` renders the four required KPI cards and a data-driven federal, state,
+  and effective-rate breakdown. `YearOverYearTaxChart` presents the current and prior
+  tax years with accessible labels and proportional bars.
+- The dashboard visual test renders the page with two calculation snapshots and confirms
+  the required visual labels and updated values.
+
+**Project Scope Connection:**
+
+This completes the MVP dashboard presentation layer for the Read-models/BFF workstream.
+It consumes the existing typed component boundary and does not add a BFF endpoint,
+persistence, or a third-party chart dependency.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/dashboard/dashboardChartData.ts`
+- `src/pulseUI/pages/dashboard/DashboardPage.tsx`
+- `src/pulseUI/pages/dashboard/YearOverYearTaxChart.tsx`
+- `src/pulseUI/pages/dashboard/YearOverYearTaxChart.module.css`
+- `src/pulseUI/tests/dashboard/DashboardCharts.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `npm --prefix src/pulseUI run test -- --run tests/dashboard/DashboardCharts.test.tsx`
+  passed (2 tests).
+- `git diff --check` passed.
+- The Estimated Total Tax KPI is derived from the displayed federal and state amounts,
+  preventing the summary from disagreeing with the Tax Breakdown panel.
+
+
+## christopher-martus-jira105 - SCRUM-105
+
+**Branch:** `christopher-martus-jira105`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-105
+
+**Summary:** Scaffold the Income screen component from the wireframe
+
+**Description:** As a Frontend Developer, I want a typed Income screen component
+scaffolded from the wireframe, so that the screen has a stable structure before data is
+wired.
+
+**Acceptance Criteria:**
+
+- A typed React component renders the Income screen layout (header, KPI region, table
+  region) matching the wireframe.
+- The component declares typed props for the income data it will receive.
+- The component renders inert placeholder regions with no data fetching yet.
+
+**Code Connection:**
+
+- `IncomePage` exports typed income-event and screen-prop contracts, then renders the
+  wireframe-aligned Income Events header, five source KPI placeholders, table shell, and
+  empty placeholder state without reading from an API or query hook.
+- The `/income` route preserves its authentication boundary and provides an empty typed
+  payload so the scaffold can be reached without introducing live data behavior.
+
+**Project Scope Connection:**
+
+This creates the stable presentation seam for the React SPA's Income workspace. It
+intentionally excludes the income query hook, loading/error states, add-income form,
+live table rendering, and component/accessibility tests, which are owned by subsequent
+Income tickets.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/app/routeTree.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm run typecheck` is blocked by existing unresolved `react-hook-form` and
+  `@hookform/resolvers/zod` imports in `ScenarioPlanningForm.tsx`.
+- `npm run build` is blocked by the same existing unresolved dependencies.
+
+## christopher-martus-jira193 - SCRUM-193 authentication completion follow-up
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Complete the SPA authentication route and logout acceptance criteria
+
+**Description:** Remove the duplicate placeholder login experience, place all workspace
+routes behind the shared authentication boundary, wire every visible logout control, make
+anonymous route tests restore an actually anonymous session, and document tenant-aware
+local SPA login.
+
+**Acceptance Criteria:**
+
+- `/sign-in` is the only registered SPA sign-in route; the obsolete `/login` route and
+  placeholder page are removed.
+- Root, operator, and administration workspace routes redirect anonymous sessions to the
+  real sign-in screen.
+- Both the sidebar Logout and topbar Sign out controls call the auth-context logout path
+  and return the user to sign-in.
+- Component coverage exercises anonymous refresh failure, authenticated administration,
+  sign-in through MFA, and both visible logout controls.
+- Local development guidance uses `{tenant-login-slug}.localhost:5173` and explains why
+  plain localhost cannot resolve a login workspace.
+
+**Code Connection:**
+
+- Administration routes are children of the `AuthBoundary`-guarded workspace layout, and
+  the root route exposes only the public sign-in, MFA, and password-reset screens.
+- `AppShell` shares one logout handler between its sidebar and topbar controls, relying on
+  the auth provider's existing finally-path to clear the session before redirecting.
+- `TestSessionProvider` can return a valid refresh session or reject refresh for anonymous
+  coverage, while allowing focused client-method spies.
+- The README documents the tenant-subdomain URL already preserved by the Vite proxy; no
+  tenant ID is added to the login payload and no backend contract changes.
+
+**Project Scope Connection:**
+
+This closes the remaining SCRUM-193 SPA entry, route protection, logout, and local-login
+usability gaps while preserving server-controlled tenant resolution and existing
+role-landing behavior.
+
+**Changed Files:**
+
+- `README.md`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/components/AppShell.module.css`
+- `src/pulseUI/pages/LoginPage.tsx` (removed)
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/auth/AuthenticatedSessionProvider.tsx` (replaced)
+- `src/pulseUI/tests/auth/TestSessionProvider.tsx`
+- Authenticated workspace component tests updated to import `TestSessionProvider`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Focused Pulse UI auth/workspace validation passed: 38 tests in 7 files.
+- `npm run typecheck` passed for application, tests, and Pulse UI.
+- The full Pulse UI run passed 77 tests and retained four pre-existing failures: the
+  Deductions and Scenario Planner route tests render protected routes without an auth
+  provider. Supplying authentication also exposes that `/scenarios` currently renders
+  `EmptyPage`, outside SCRUM-193.
+- `npm --prefix src/pulseUI run build` transformed all modules but could not empty the
+  output directory because Windows holds `dist/pulseUI/assets/index-CkhYVya1.js` open.
+- Root `npm test` completed typechecking but remains blocked by unavailable Testcontainers
+  runtime tests and the existing Tax Plan Cycle JWT response assertion that expects a
+  `scenarios` field.
+
+## christopher-martus-jira193 - SCRUM-193 negative-path test follow-up
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Add negative-path coverage for the SPA sign-in and MFA flow
+
+**Description:** Extend the end-to-end component test for this branch's authentication
+screens beyond the successful sign-in, MFA, dashboard, and logout path.
+
+**Acceptance Criteria:**
+
+- Rejected credentials display the generic sign-in error and do not advance to MFA.
+- Rejected MFA verification displays an error and does not establish a workspace session.
+- Direct access to the MFA route without ephemeral challenge state returns the user to a
+  safe sign-in recovery path and never submits an MFA request.
+
+**Code Connection:** The route-level component coverage supplies rejecting auth-client
+test doubles and verifies both visible feedback and the absence of downstream authentication
+calls or protected dashboard content.
+
+**Project Scope Connection:** These cases protect SCRUM-193's public authentication screens
+and ephemeral MFA-state boundary without changing production authentication behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/auth/SignInPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused sign-in coverage passed: 4 tests in 1 file.
+- Full Pulse UI coverage passed: 107 tests in 29 files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `git diff --check` passed.
+
+## christopher-martus-jira193 - SCRUM-193 authentication styling follow-up
+
+**Branch:** `christopher-martus-jira193`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-193
+
+**Summary:** Align public authentication screens with the current Pulse UI theme
+
+**Description:** Replace the legacy light navy, teal, and gold authentication treatment
+with the dark indigo visual system used by the authenticated TaxPulse workspace.
+
+**Acceptance Criteria:**
+
+- Sign-in, MFA challenge, and password-reset screens use the shared workspace typography,
+  color tokens, surfaces, borders, controls, and focus treatment.
+- Authentication cards retain readable error states and responsive mobile sizing.
+- Existing authentication behavior and accessible form semantics remain unchanged.
+
+**Code Connection:** The shared authentication selectors now consume the current Pulse UI
+design tokens, add the same gradient brand mark used by the workspace shell, and provide
+consistent interactive states for inputs, buttons, and links. Because the public routes
+share this style layer, the sign-in, MFA, reset request, and reset confirmation screens stay
+visually consistent without duplicating page-level styles.
+
+**Project Scope Connection:** This closes the visual-system gap in SCRUM-193's public SPA
+authentication flow without changing tenant resolution, credentials, MFA state, or session
+behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/shared/styles.css`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Full Pulse UI coverage passed: 107 tests in 29 files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- A production Vite build passed using an isolated temporary output directory. The normal
+  `dist/pulseUI` directory was locked by an existing Node process during validation.
+- `git diff --check` passed.
+
+
+
+
+## christopher-martus-jira108 - SCRUM-108
+
+**Branch:** `christopher-martus-jira108`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-108
+
+**Summary:** Build the Add Income form with react-hook-form and zod
+
+**Description:** As a Frontend Developer, I want an Add Income form validated with
+react-hook-form and zod, so that malformed income entries are rejected at the boundary.
+
+**Acceptance Criteria:**
+
+- The form captures source, type, amount, and withholding and validates with
+  react-hook-form and zod.
+- A negative amount or missing required field surfaces an inline validation message and
+  blocks submit.
+- A valid submit invokes the create handler with the typed payload.
+
+**Code Connection:**
+
+- The first implementation slice defines the route-local Zod schema for source, type,
+  amount, and withholding. It separates raw form input from the parsed create payload,
+  trims the source, restricts type to the existing income categories, and converts
+  monetary input strings to finite, non-negative numbers.
+- `IncomePage` consumes and re-exports the shared category type so the screen and future
+  form use one income-type contract.
+- The second slice adds `IncomeEntryForm`, which delegates form state to react-hook-form
+  and validation to the Zod resolver. Required and invalid values render associated
+  inline alerts, while valid parsed payloads invoke the typed create handler before the
+  modal closes.
+- The third slice adds a typed create-handler prop to `IncomePage`, enables both existing
+  Add Income controls, and uses page-local state to open and close the form. The route
+  supplies the composition seam that SCRUM-109 can replace with live creation and table
+  refresh behavior.
+- The fourth slice styles the form with the Income screen's established Segoe UI stack,
+  dark surfaces, slate text, indigo actions, responsive layout, and visible validation
+  and focus states while reusing the shared modal shell.
+- The final slice covers missing fields, negative amounts, and successful submission of
+  parsed numeric values through the typed create handler.
+
+**Project Scope Connection:**
+
+This completes the typed validation boundary, functional Add Income form, Income page
+launch flow, visual treatment, and focused acceptance coverage. API persistence and
+table refresh remain outside this ticket.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/incomeEntrySchema.ts`
+- `src/pulseUI/pages/income/IncomeEntryForm.tsx`
+- `src/pulseUI/pages/income/IncomeEntryForm.module.css`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/components/IncomeEntryForm.test.tsx`
+- `src/pulseUI/app/routeTree.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test -- --run tests/components/IncomeEntryForm.test.tsx`
+  passed: 3 tests.
+
+## christopher-martus-jira120 - SCRUM-120
+
+**Branch:** `christopher-martus-jira120`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-120
+
+**Summary:** Render the KPI cards and read-only quarter timeline
+
+**Description:** As a Frontend Developer, I want the KPI cards and quarter timeline
+rendered read-only, so that estimated amounts and deadlines are visible without any
+recording action.
+
+**Acceptance Criteria:**
+
+- The four 1040-ES quarter items render with date and estimated amount from the hook data.
+- KPI cards render total estimated, paid so far, and remaining; a withholding-progress
+  bar renders coverage.
+- No mark-paid or payment-recording control is present; recording remains outside MVP.
+
+**Code Connection:**
+
+- The quarterly-estimate view model retains the endpoint's covered and remaining values,
+  allowing the KPI cards to sum the API contract directly while withholding remains the
+  separate input to the coverage calculation.
+- The withholding bar clamps coverage to the 0-100 range and exposes its value through a
+  progress indicator.
+- The page removes synthetic fallback quarters and maps successful hook data into a
+  canonical Q1-Q4 timeline with each deadline and estimated amount visible.
+- The focused route/component coverage verifies four hook-backed quarter items, KPI
+  totals, withholding coverage, and the absence of payment-recording controls.
+
+**Project Scope Connection:**
+
+This completes the read-only Quarterly Payments presentation slice for the React SPA. It
+consumes the tenant-scoped query boundary without introducing payment mutations, forms,
+or recording behavior. Loading, empty, and error-state presentation remains owned by
+SCRUM-119, while broader accessibility coverage remains owned by SCRUM-121.
+
+**Changed Files:**
+
+- `src/pulseUI/components/QuarterlyTimelineItem.tsx`
+- `src/pulseUI/components/WithholdingProgressChart.tsx`
+- `src/pulseUI/pages/quarterlyPayments/QuarterlyPaymentsPage.tsx`
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+  passed: 4 tests.
+- `npm --prefix src/pulseUI run build` passed; Vite reported only its existing bundle-size
+  advisory.
+- The full Pulse UI run passed 121 of 123 tests. Two unrelated Deductions tests fail
+  because their `caseApiGetJson` expectations omit the authenticated fetcher argument;
+  the SCRUM-120 test file passed within the same run.
+- `git diff --check` passed.
+
+## christopher-martus-jira121 - SCRUM-121
+
+**Branch:** `christopher-martus-jira121`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-121
+
+**Summary:** Add accessibility and a component test for the Quarterly Payments screen
+
+**Description:** As a Frontend Developer, I want the Quarterly Payments screen to pass
+an axe check and a component test, so that it is accessible and regression-guarded.
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the four quarter items and KPI cards render from sample data.
+- The test asserts no payment-recording control is present in the rendered screen.
+
+**Code Connection:**
+
+- The existing Quarterly Payments component test now runs `vitest-axe` against the
+  production screen rendered with its reusable sample-data fixture.
+- The regression assertions explicitly cover Q1 through Q4 and scope the three expected
+  totals to the labeled KPI region.
+- The read-only assertion continues to guard against payment and mark-paid controls.
+
+**Project Scope Connection:**
+
+This adds focused accessibility and regression coverage to the read-only Quarterly
+Payments presentation without changing its production behavior or the loading, empty,
+error, and retry states owned by SCRUM-119.
+
+**Changed Files:**
+
+- `src/pulseUI/tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+- Corrected the loading-state regression assertion to expect the two rendered occurrences
+  of `$3,620`: the Q1 estimated amount and its withholding-applied value.
+- `npm --prefix src/pulseUI test -- tests/quarterlyPayments/QuarterlyPaymentsPage.test.tsx`
+  passed: 8 tests, including the axe check.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- The full Pulse UI run passed 122 of 124 tests. The same two unrelated Deductions
+  tests documented by SCRUM-120 fail because their `caseApiGetJson` expectations omit
+  the authenticated fetcher argument; all Quarterly Payments tests passed.
+- `git diff --check` passed.
+
+## christopher-martus-jira109 - SCRUM-109
+
+**Branch:** `christopher-martus-jira109`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-109
+
+**Summary:** Render the income table from live data
+
+**Description:** As a Frontend Developer, I want the income table rendered from the hook
+data, so that recorded income events and their amounts are visible.
+
+**Acceptance Criteria:**
+
+- The table renders date, source, type, amount, and withholding columns from the hook data.
+- Per-source KPI cards (W-2, 1099, Capital Gains, Rental, Other) render above the table.
+- A newly added income event appears in the table after a successful create.
+
+**Code Connection:**
+
+- `IncomePage` now renders its typed `incomeEvents` input as table rows with readable
+  income-type labels, UTC-safe display dates, and USD-formatted amount and withholding
+  values. The empty state only renders when that collection is empty.
+- The five existing KPI cards now aggregate event amounts by W-2, 1099, Capital Gains,
+  Rental, and Other, including zero-dollar values for categories without events.
+- A compact component-flow test supplies the same prop contract that the SCRUM-106 hook
+  will use. It verifies table and KPI rendering, then exercises a successful form callback
+  and confirms the updated collection renders the new row and KPI value.
+- The live read query is connected, but production create persistence and cache invalidation
+  remain blocked until a create endpoint is available. The route therefore retains a
+  placeholder create handler and does not claim end-to-end persistence coverage.
+
+**Project Scope Connection:**
+
+This supplies the minimal presentation and aggregation behavior required for recorded
+income events while preserving the typed composition seam for the tenant-scoped income
+query. The remaining hook integration will make this presentation contract live without
+rewriting the table or KPI logic.
+
+**Changed Files:**
+
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/pages/income/IncomePage.module.css`
+- `src/pulseUI/tests/income/IncomePage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- The focused Income page tests passed: 5 tests, including a presentation-level successful
+  create callback that rerenders the new table row and its 1099 KPI total.
+- Full Pulse UI coverage passed: 146 tests in 34 files.
+- `npm --prefix src/pulseUI run build` passed; Vite reported its existing large-chunk
+  advisory warning.
+- `git diff --check` passed.
+
+
+## chirstopher-martus-jira110 - SCRUM-110
+
+**Branch:** `chirstopher-martus-jira110`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-110
+
+**Summary:** Add accessibility and a component test for the Income screen
+
+**Description:** As a Frontend Developer, I want the Income screen to pass an axe check
+and a component test, so that it is accessible and regression-guarded.
+
+
+**Acceptance Criteria:**
+
+- An axe accessibility check on the rendered screen reports no violations.
+- A component test asserts the table renders rows and the empty state for no data.
+- The form's inputs carry accessible labels and the test asserts a validation error is
+  announced.
+
+**Code Connection:**
+
+- `ToolHeader` accepts an optional heading ID, allowing both Income page states to connect
+  their `aria-labelledby` attribute to the visible Income Events heading.
+- The shared accessibility gate renders a populated `IncomeScreen`, confirms its named
+  table is present, runs axe against the rendered DOM, and requires zero violations.
+- Existing Income page component coverage verifies populated table rows and the no-data
+  empty state without duplicating those scenarios.
+- The Income form component test locates all four controls by accessible name and verifies
+  that an invalid Source input is marked invalid, described by its error, and announced
+  through an alert role.
+
+**Project Scope Connection:**
+
+This adds the minimal accessibility and regression coverage required for the Income tool.
+It does not change income data fetching, tenant-scoped access, creation persistence, or
+workflow behavior.
+
+**Changed Files:**
+
+- `src/pulseUI/components/ToolHeader.tsx`
+- `src/pulseUI/pages/income/IncomePage.tsx`
+- `src/pulseUI/tests/accessibility/axeGate.test.tsx`
+- `src/pulseUI/tests/components/IncomeEntryForm.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm --prefix src/pulseUI run typecheck` passed.
+- Focused Income coverage passed: 8 tests across the Income page and entry form suites.
+- The accessibility gate passed: 4 tests, including zero axe violations for the rendered
+  Income screen. JSDOM continues to emit its existing canvas/color-contrast warning.
+- Full Pulse UI coverage passed: 150 tests in 34 files.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run build` transformed all 2,108 modules but could not replace
+  the existing `dist/pulseUI/assets` directory because Windows returned `EPERM`; no source
+  compilation error was reported.
+
+
+## christopher-martus-jira142 - SCRUM-142
+
+**Branch:** `christopher-martus-jira142`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-142
+
+**Summary:** Build the client My Tax Plan view scoped to the client
+
+**Description:** As a Client, I want the My Tax Plan view, so that I can follow my plan's
+progress in the portal.
+
+**Acceptance Criteria:**
+
+- The portal shows the client's current Plan Cycle stage stepper scoped to only their own cycle.
+- The hero and plan summary (advisor, next meeting, projected savings, top recommendation) render.
+- The view is unreachable for another client's cycle.
+
+**Code Connection:**
+
+- Task 1 adds a parameter-free `GET /portal/my-tax-plan` BFF read. It takes the verified JWT
+  subject as `client_id`, combines it with the verified tenant ID, and never accepts a client or
+  case identifier from the browser.
+- The repository selects the latest unarchived cycle for that tenant-client pair. The BFF maps
+  the owned cycle to a typed portal read model, with the advisor sourced from the cycle owner and
+  nullable fields for summary values that have no authoritative record yet.
+- Client sign-in now lands on `/my-tax-plan`; the app shell redirects Client users away from
+  operator routes, shows only the portal navigation item, and reads the scoped endpoint through
+  one authenticated TanStack Query boundary.
+- The read-only My Tax Plan view renders the BFF-backed stage, advisor, next meeting, projected
+  savings, and top recommendation. Missing BFF values render explicit in-progress states rather
+  than fabricated meeting, savings, or recommendation data.
+- Client users are denied access to tenant-wide queue, direct-cycle, audit, creation, scenario,
+  and transition routes; their only Tax Plan read is the JWT-scoped portal endpoint.
+
+**Project Scope Connection:**
+
+This establishes the least-privilege server boundary for the client portal. It does not add a
+separate cycle status, a client-account mapping, portal writes, scenarios, action items, approval,
+or live stage updates.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/repositories/repository.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/index.ts`
+- `src/pulseUI/app/routeTree.tsx`
+- `src/pulseUI/auth/landingPath.ts`
+- `src/pulseUI/components/AppShell.tsx`
+- `src/pulseUI/entities/clientTaxPlanQueries.ts`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.tsx`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.module.css`
+- `src/pulseUI/shared/navigation.ts`
+- `src/pulseUI/shared/viewTitle.ts`
+- `src/pulseUI/tests/appShell.test.tsx`
+- `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`
+- `src/typescript/jwtAuthentication.ts`
+- `tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `git diff --check` passed.
+
+
+## christopher-martus-jira144 - SCRUM-144
+
+**Branch:** `christopher-martus-jira144`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-144
+
+**Summary:** Build the portal Action Items screen with completion
+
+**Description:** As a Client, I want to mark action items complete, so that my advisor can
+track execution.
+
+**Acceptance Criteria:**
+
+- The Action Items screen lists items with their deadline and lets the client mark each complete.
+- Completing an action item emits an event that updates the internal Action Item Tracking view.
+- A completed item reflects its new state without a manual refresh.
+
+**Code Connection:**
+
+- Adds a client-scoped BFF contract for listing the current plan's action items and completing
+  one by ID.
+- Extends the action-item repository with a case-scoped, incomplete-only completion update,
+  preventing a portal user from changing an item outside their current case.
+- Defines and exports the versioned `action_item_completed` CloudEvent contract so the later
+  publisher and tracking projection share a stable payload.
+- Instantiates the action-item repository in application startup and injects it into the
+  Tax Plan Cycle router.
+
+**Project Scope Connection:**
+
+This is the first MVP chunk for SCRUM-144. It establishes the portal BFF and event boundary;
+the Action Items UI, concrete event publisher/tracking consumer, and focused acceptance tests
+remain separate follow-up chunks to keep the PR small.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/repositories/actionItems.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/model.ts`
+- `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/index.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/typescript/index.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed.
+- `git diff --check` passed.
+- Focused acceptance tests are deliberately deferred to the final SCRUM-144 chunk.
+
+**Follow-up UI Chunk:**
+
+- Adds the Client-only `/action-items` route and portal navigation entry.
+- Adds a TanStack Query read/mutation pair for the portal action-items BFF. A successful
+  completion replaces the matching cached item, so the screen reflects completion immediately.
+- Adds the Action Items screen with descriptions, deadlines, completed state, completion
+  controls, and loading/error/empty states.
+- Changed files: `src/pulseUI/entities/clientActionItemQueries.ts`,
+  `src/pulseUI/pages/clientPortal/ActionItemsPage.tsx`,
+  `src/pulseUI/pages/clientPortal/ActionItemsPage.module.css`,
+  `src/pulseUI/app/routeTree.tsx`, and `src/pulseUI/shared/navigation.ts`.
+- Validation: `npm run typecheck` and `git diff --check` passed; focused UI tests remain
+  intentionally deferred to the final ticket chunk.
+
+**Follow-up Event/Projection Chunk:**
+
+- Publishes the versioned `action_item_completed` CloudEvent through the configured Tax Plan
+  Cycle SNS topic after portal completion succeeds.
+- Adds an idempotent completion-event consumer that applies the completed state to the action
+  item tracking read model. Its idempotent persistence operation is safe when the portal write
+  has already updated the same projection.
+- Changed files: `src/typescript/features/taxPlanCycle/repositories/actionItems.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/Consumer.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/SnsPublisher.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/index.ts`,
+  `src/typescript/features/taxPlanCycle/index.ts`, and `src/typescript/index.ts`.
+- Validation: `npm run typecheck` and `git diff --check` passed; focused event and UI tests
+  remain intentionally deferred to the final ticket chunk.
+
+**Final Acceptance-Test Chunk:**
+
+- Adds an authenticated BFF test that lists the current client's action items, completes one,
+  and asserts the emitted completion-event payload.
+- Adds a portal UI test that verifies the completed state replaces the action immediately after
+  the mutation response, without a manual refresh.
+- Updates the client shell guard to permit the Action Items route instead of redirecting it to
+  My Tax Plan.
+- Changed files: `tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`,
+  `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`, and `src/pulseUI/components/AppShell.tsx`.
+- Validation: `npm run typecheck`, `npx vitest run --config vitest.config.ts
+  tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`,
+  `npm --prefix src/pulseUI run test:vitest -- tests/clientPortal/MyTaxPlanPage.test.tsx`,
+  and `git diff --check` passed. The UI suite retains pre-existing jsdom `window.scrollTo`
+  warnings, but all five tests passed.
+- `npm run typecheck` is blocked by pre-existing duplicate `CloudEvents`/`cloudEvents`
+  directories whose paths differ only by casing (TS1261). The failure is outside this ticket's
+  changed files.
+- `npm --prefix src/pulseUI run typecheck` passed.
+
+**Completion Projection Follow-up:**
+
+- Adds a dedicated SNS-to-SQS adapter for the versioned `action_item_completed` event. The
+  adapter validates the message envelope and CloudEvent, uses Redis idempotency, applies the
+  case-scoped completion to the Action Item Tracking projection, and only deletes the SQS
+  message after successful handling.
+- Documents the dedicated `TAXPULSE_ACTION_ITEM_COMPLETED_QUEUE_URL` subscription required by
+  the tracking projection. This completes the event-handling contract without defining how
+  advisors generate action items, which remains outside SCRUM-144.
+- Changed files: `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/SqsConsumer.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/Consumer.ts`,
+  `src/typescript/features/taxPlanCycle/infrastructure/CloudEvents/actionItemCompleted/index.ts`,
+  `src/typescript/features/taxPlanCycle/index.ts`, `src/typescript/index.ts`,
+  `tests/typescript/features/taxPlanCycle/actionItemCompletedSqsConsumer.test.ts`, and
+  `docs/stage-changed-event.md`.
+- Validation: `npm run typecheck` and `npx vitest run --config vitest.config.ts
+  tests/typescript/features/taxPlanCycle/actionItemCompletedSqsConsumer.test.ts
+  tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts` passed.
+
+---
+
+## christopher-martus-jira143
+
+**Branch:** christopher-martus-jira143
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-143
+
+**Summary:** Show read-only scenarios and live stage updates in the portal
+
+**Description:** As a Client, I want read-only scenarios and live stage updates, so that I
+always see the current plan state.
+
+**Acceptance Criteria:**
+
+- Scenarios appear read-only to the client, matching the external permission matrix.
+- A stage-changed event updates the displayed stage without a manual refresh.
+- The advisor-messages panel renders read-only.
+
+**Code Connection:**
+
+- The JWT-scoped `GET /portal/my-tax-plan` BFF now reads persisted scenarios for the already
+  authorized client cycle and projects only each scenario's ID, name, total tax, and delta versus
+  baseline. Advisor-entered figures are intentionally excluded from the external response.
+- The portal includes a display-only Advisor Messages panel with an explicit empty state; no
+  message-composer or portal write path is introduced before an authoritative message read model
+  exists.
+
+**Project Scope Connection:**
+
+This is the first MVP chunk for SCRUM-143, extending SCRUM-142's scoped client portal without
+adding portal writes, a separate status field, or new event transport.
+
+The portal automatically refetches its scoped read model every 15 seconds and on window focus,
+so the stage label and stepper reconcile after the existing stage-changed workflow persists a
+transition without requiring a client-side page refresh.
+
+**Changed Files:**
+
+- `src/typescript/features/taxPlanCycle/taxPlanCycle.ts`
+- `src/typescript/features/taxPlanCycle/routes.ts`
+- `src/pulseUI/entities/clientTaxPlanQueries.ts`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.tsx`
+- `src/pulseUI/pages/clientPortal/MyTaxPlanPage.module.css`
+- `src/pulseUI/tests/clientPortal/MyTaxPlanPage.test.tsx`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- Focused tests cover the client-safe scenario BFF projection and automatic portal stage refresh.
+- `git diff --check` passed.
+- `npm --prefix src/pulseUI run typecheck` passed.
+- `npm run typecheck` remains blocked by the pre-existing duplicate `CloudEvents`/`cloudEvents`
+  directories whose paths differ only by casing (TS1261).
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+  passed (7 tests).
+- `npx vitest run --config vitest.config.ts tests/clientPortal/MyTaxPlanPage.test.tsx` passed
+  (4 tests); the suite emits pre-existing jsdom `window.scrollTo` warnings from TanStack Router.
+- `npm --prefix src/pulseUI test` passed: 163 tests in 36 files. The existing jsdom canvas and
+  scroll-restoration warnings remain non-failing.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/jwtProtectedRoutes.test.ts`
+  passed: 7 tests, including Client queue denial.
+
+## christopher-martus-jira134 - SCRUM-134
+
+**Branch:** `christopher-martus-jira134`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-134
+
+**Summary:** Relay outbox rows with retry
+
+**Description:** As a Backend Developer, I want a relay that publishes outbox rows and
+retries on failure, so that committed events are reliably delivered.
+
+**Acceptance Criteria:**
+
+- A relay publishes unsent outbox rows and marks them sent.
+- A transient publish failure is retried with backoff.
+- A test asserts a row is marked sent only after a successful publish.
+
+**Code Connection:**
+
+- Adds the nullable `outbox_event.sent_at` delivery marker. The relay will select rows
+  without this value and set it only after a successful publisher call.
+- `createOutboxRelay` reads unsent rows in creation order, publishes the serialized
+  CloudEvent payload, and records `sent_at` only after publication succeeds.
+- `createSnsOutboxEventPublisher` sends that stored payload to the configured SNS topic
+  without rebuilding the event.
+- The relay retries transient publisher failures up to three total attempts, using 100 ms,
+  then 200 ms exponential backoff by default. Retry count and timing are injectable for
+  deterministic tests.
+- A focused relay test simulates one transient publisher failure and verifies the row remains
+  unsent until the second publish attempt succeeds.
+
+**Project Scope Connection:**
+
+This provides the minimal relay path and transient-failure retry behavior for reliable
+delivery of the transactional outbox introduced in SCRUM-133, without introducing a worker
+runtime, scheduler, retries for database writes, or SCRUM-135 dead-letter behavior.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0013_low_callisto.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0013_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/features/taxPlanCycle/infrastructure/outboxRelay.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run typecheck` passed after the schema and migration change.
+- `npm run typecheck` passed after adding relay behavior and its test seam.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+  passed: 1 test verifies retry backoff and marks the row sent only after success.
+- `git diff --check` passed.
+
+
+## christopher-martus-jira135 - SCRUM-135
+
+**Branch:** `christopher-martus-jira135`
+
+**Assignee:** Christopher Martus
+
+**Jira Key:** SCRUM-135
+
+**Summary:** Route repeatedly failing messages to a DLQ
+
+**Description:** As a Backend Developer, I want a dead-letter queue, so that a poison
+message never blocks the queue.
+
+**Acceptance Criteria:**
+
+- A message that fails repeatedly past a max-retry count lands in a DLQ.
+- The DLQ entry preserves the original payload and the failure reason.
+- A test asserts a persistently failing message reaches the DLQ and the queue continues.
+
+**Code Connection:**
+
+- `outbox_dead_letter` stores the source outbox ID, original serialized payload, failure
+  reason, and failure timestamp.
+- The PostgreSQL relay store atomically inserts that record and removes the poison event
+  from the active outbox queue.
+- After the final configured publish attempt fails, the relay records the final error
+  message in the DLQ and continues processing later outbox events.
+- The focused relay test forces one event to fail twice, verifies the preserved payload and
+  failure reason, then verifies a later event is sent and no active messages remain.
+
+**Project Scope Connection:**
+
+This adds the minimal terminal-failure path to SCRUM-134's transactional outbox relay.
+It intentionally excludes DLQ replay tooling, alerting, and an external DLQ management API.
+
+**Changed Files:**
+
+- `src/typescript/shared/database/schema.ts`
+- `src/typescript/shared/database/drizzle-migrations/0014_zippy_luke_cage.sql`
+- `src/typescript/shared/database/drizzle-migrations/meta/0014_snapshot.json`
+- `src/typescript/shared/database/drizzle-migrations/meta/_journal.json`
+- `src/typescript/features/taxPlanCycle/infrastructure/outboxRelay.ts`
+- `src/typescript/features/taxPlanCycle/index.ts`
+- `src/typescript/index.ts`
+- `tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+- `planning/team/cm-ticket-journal.md`
+
+**Validation Notes:**
+
+- `npm run db:gen` generated the SCRUM-135 migration.
+- `npm run db:check` passed.
+- `npm run typecheck` passed.
+- `npx vitest run --config vitest.config.ts tests/typescript/features/taxPlanCycle/outboxRelay.test.ts`
+  passed: 2 tests, including persistent failure routing and continued processing.
+- The focused relay suite now includes a PostgreSQL-backed persistence test that asserts the
+  stored DLQ payload and failure reason, poison-event removal, and delivery of the following
+  event. Local execution could not start it because this workspace has no container runtime;
+  it requires the existing Docker-backed integration-test environment in CI.
+- `git diff --check` passed.

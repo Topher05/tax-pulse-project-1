@@ -26,14 +26,17 @@ Pull Request: release-v3.11.2
 -->
 <!-- List checks, tests, and manual verification. -->
 
+
 ## Risk Notes
 
-<!-- Call out migrations, rollout concerns, and any reviewer attention points. -->
+<!-- Call out migrations, rollout concerns, mocked or stubbed infrastructure boundaries,
+and any scan suppressions or exceptions that reviewers need to track. -->
 
 ## AI Review Checklist
 
 - [ ] Branch name follows the repo convention
 - [ ] Branch type follows Git flow expectations for main, development, feature, release, or hotfix
+- [ ] Ticket journal entry is present in the contributor's assigned `planning/team/` journal
 - [ ] Ticket reference and link is present
 - [ ] Brief matches the actual change
 - [ ] ADR link is present when needed
