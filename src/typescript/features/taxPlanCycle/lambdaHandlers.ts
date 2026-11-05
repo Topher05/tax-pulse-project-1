@@ -1,11 +1,11 @@
 import { jwtVerify } from "jose";
 import { z } from "zod";
 
-import { ProblemHttpError, type ProblemDetails } from "../../errors.js";
-import type { JwtConfig } from "../../authConfig.js";
-import type { AuthenticatedPrincipal, UserRole } from "../../authTypes.js";
+import { ProblemHttpError, type ProblemDetails } from "../../platform/http/errors.js";
+import type { JwtConfig } from "../auth/infrastructure/authConfig.js";
+import type { AuthenticatedPrincipal, UserRole } from "../auth/domain/authTypes.js";
 import { roleNameEnum } from "../../shared/database/schema.js";
-import type { AuditEntryWriter } from "../../auditEntryRepository.js";
+import type { AuditEntryWriter } from "../audit/persistence/auditEntryRepository.js";
 import {
   emitObservabilityEvent,
   cloudWatchObservabilityProvider,

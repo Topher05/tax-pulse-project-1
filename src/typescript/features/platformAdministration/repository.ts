@@ -7,7 +7,7 @@ import {
   removeTechnicalIdentifiers,
 } from "../../shared/displayLabels.js";
 
-import { serializeAuditEntryForOutput } from "../../auditEntryOutput.js";
+import { serializeAuditEntryForOutput } from "../audit/domain/auditEntryOutput.js";
 import {
   auditEntry as auditEntryTable,
   clientRoster,

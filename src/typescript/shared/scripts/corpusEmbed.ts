@@ -5,11 +5,11 @@ import { Client } from "pg";
 import {
   createOpenAIEmbeddingProvider,
   rebuildCorpusEmbeddings,
-} from "../../assist/embeddings.js";
+} from "../../features/assist/embeddings.js";
 import {
   defaultCorpusChunkArtifactPath,
   readCorpusChunkArtifact,
-} from "../../assist/corpus.js";
+} from "../../features/assist/corpus.js";
 import { assertComposePostgresReady } from "./composePostgres.js";
 
 loadEnv({ override: true });

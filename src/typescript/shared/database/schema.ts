@@ -18,7 +18,7 @@ import {
   uuid,
   vector,
 } from "drizzle-orm/pg-core";
-import type { ScenarioComputedResult, ScenarioTypedFigures } from "../../scenario.js";
+import type { ScenarioComputedResult, ScenarioTypedFigures } from "../../features/taxPlanCycle/domain/scenario.js";
 import { taxPlanCycleStages } from "../../features/taxPlanCycle/taxPlanCycle.js";
 import { incomeEventTypeValues } from "../../features/incomeEvents/incomeEvents.js";
 import {

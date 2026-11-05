@@ -3,10 +3,10 @@ import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import { SignJWT, importPKCS8 } from "jose";
 
-import { assistPromptLeakCanary } from "../../assist/explanation.js";
-import { loadAssistPromptInjectionFixtures } from "../../assist/promptInjectionFixtures.js";
-import { getJwtConfigFromEnv } from "../../authConfig.js";
-import { getJwtRs256IssuerConfigFromEnv } from "../../jwtRs256Config.js";
+import { assistPromptLeakCanary } from "../../features/assist/explanation.js";
+import { loadAssistPromptInjectionFixtures } from "../../features/assist/promptInjectionFixtures.js";
+import { getJwtConfigFromEnv } from "../../features/auth/infrastructure/authConfig.js";
+import { getJwtRs256IssuerConfigFromEnv } from "../../features/auth/infrastructure/jwtRs256Config.js";
 
 loadEnv({ quiet: true });
 

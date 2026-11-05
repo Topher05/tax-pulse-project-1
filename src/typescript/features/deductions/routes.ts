@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { NextFunction, Request, Response } from "express";
 import type * as z from "zod";
 
-import { ProblemHttpError } from "../../errors.js";
+import { ProblemHttpError } from "../../platform/http/errors.js";
 import {
   deductionCreateSchema,
   deductionTableRowSchema,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { scenarioSchema, scenarioTypedFiguresSchema } from "../../scenario.js";
+import { scenarioSchema, scenarioTypedFiguresSchema } from "./domain/scenario.js";
 
 const nonNegativeDecimalStringSchema = z
   .string()

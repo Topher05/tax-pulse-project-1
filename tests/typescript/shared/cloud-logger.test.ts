@@ -5,7 +5,7 @@ import { PassThrough } from "node:stream";
 import type { Express } from "express";
 import { describe, expect, test, vi } from "vitest";
 
-import { createApp } from "../../../src/typescript/app.js";
+import { createApp } from "../../../src/typescript/app/createApp.js";
 import { createLogger } from "../../../src/typescript/shared/cloud-logger/logger.js";
 import {
   cloudWatchObservabilityProvider,

@@ -8,8 +8,8 @@ import {
   SignJWT,
 } from "jose";
 
-import { getJwtConfigFromEnv } from "../../authConfig.js";
-import { getJwtRs256IssuerConfigFromEnv } from "../../jwtRs256Config.js";
+import { getJwtConfigFromEnv } from "../../features/auth/infrastructure/authConfig.js";
+import { getJwtRs256IssuerConfigFromEnv } from "../../features/auth/infrastructure/jwtRs256Config.js";
 
 loadEnv({ quiet: true });
 

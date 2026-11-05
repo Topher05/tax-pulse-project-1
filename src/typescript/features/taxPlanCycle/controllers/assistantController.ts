@@ -2,13 +2,13 @@ import { z } from "zod";
 
 import {
   type AssistExplanationProvider,
-} from "../../../assist/explanation.js";
+} from "../../assist/explanation.js";
 import {
   resolveAssistTenantCorpusScopes,
   type AssistTenantCorpusScope,
-} from "../../../assist/tenantScopes.js";
-import { detectAssistPromptInjection } from "../../../assist/promptSafety.js";
-import type { RankedCorpusChunk } from "../../../assist/retrieval.js";
+} from "../../assist/tenantScopes.js";
+import { detectAssistPromptInjection } from "../../assist/promptSafety.js";
+import type { RankedCorpusChunk } from "../../assist/retrieval.js";
 
 export const taxPlanDetailsAssistantRequestSchema = z.strictObject({
   recommendation_context: z.strictObject({
